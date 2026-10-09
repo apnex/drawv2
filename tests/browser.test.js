@@ -867,7 +867,8 @@ branch of `handle` is wired into none of the others.
 Driven through the REAL dispatch rather than by calling render directly, because the defect lives
 in which branch runs.
 */
-test('B228: cycling flow changes the marker every time, not only the first', { skip: SKIP }, async () => {
+// RESTATED at C-e step seven (H19.33; D5): the link keys are the network's rows, so the key is PRESSED, as a person presses it, under write access -- the handler this called is gone, and calling it skipped the read-only guard a press meets
+test('B228: cycling flow changes the marker every time, not only the first', { skip: SKIP }, () => withWriteAccess(async () => {
 	assert.equal(booted.loaded, true, 'precondition: fixture loaded');
 	const seen = await tab.eval(`(() => {
 		const app = window.draw;
@@ -889,7 +890,7 @@ test('B228: cycling flow changes the marker every time, not only the first', { s
 		const trace = [];
 		for (let i = 0; i < 3; i += 1) {
 			const before = String(model.get('link', link.id).direction);
-			app.input.onDirectionKey();
+			document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'f', bubbles: true }));
 			const after = String(model.get('link', link.id).direction);
 			trace.push(before + '->' + after);
 			out.push(markerOf());
@@ -900,7 +901,7 @@ test('B228: cycling flow changes the marker every time, not only the first', { s
 	assert.equal(seen.out[1], 'url(#flow-end)', 'forward must show the end marker after an update');
 	assert.equal(seen.out[2], 'url(#flow-start)', 'reverse must SWAP it, not keep the old one');
 	assert.equal(seen.out[3], 'none', 'and clearing must remove it rather than leave the last one');
-});
+}));
 
 /*
 B229: the readout carries the direction as STATE, not as a receipt that expires.
@@ -912,7 +913,8 @@ the cycle, or press again to find out -- which changes the thing they were askin
 The selection line already re-renders on selection and on any change to the selected entity, so
 putting the bar there makes it follow the document with no timer at all.
 */
-test('B229: the selection line says which way a selected link flows, and keeps saying it', { skip: SKIP }, async () => {
+// RESTATED at C-e step seven (H19.33; D5): the link keys are the network's rows, so the key is PRESSED, as a person presses it, under write access -- the handler this called is gone, and calling it skipped the read-only guard a press meets
+test('B229: the selection line says which way a selected link flows, and keeps saying it', { skip: SKIP }, () => withWriteAccess(async () => {
 	assert.equal(booted.loaded, true, 'precondition: fixture loaded');
 	const seen = await tab.eval(`(() => {
 		const app = window.draw;
@@ -922,7 +924,7 @@ test('B229: the selection line says which way a selected link flows, and keeps s
 		const line = () => document.getElementById('readout-bottom').textContent;
 		const bars = [];
 		for (let i = 0; i < 3; i += 1) {
-			app.input.onDirectionKey();
+			document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'f', bubbles: true }));
 			bars.push(line());
 		}
 		// and it must SURVIVE -- re-render with no further gesture and it still says the same thing
@@ -934,7 +936,7 @@ test('B229: the selection line says which way a selected link flows, and keeps s
 	assert.match(seen.bars[1], /<<</, 'reverse reads as <<<');
 	assert.match(seen.bars[2], /<->/, 'and undeclared reads as symmetric rather than as nothing');
 	assert.match(seen.after, /<->/, 'the line is STATE -- a re-render with no gesture says the same thing');
-});
+}));
 
 /*
 H15.6 / B226: the arrowhead must actually PAINT, not merely be referenced.
@@ -1008,7 +1010,8 @@ and then rasterises the link to count lit pixels against a solid control.
 A dashed line paints STRICTLY FEWER pixels than the same line solid. That is the measurement: not
 that an attribute is present, but that the ink changed.
 */
-test('H15.15: pressing k dashes the selected link, visibly', { skip: SKIP }, async () => {
+// RESTATED at C-e step seven (H19.33; D5): the link keys are the network's rows, so the key is PRESSED, as a person presses it, under write access -- the handler this called is gone, and calling it skipped the read-only guard a press meets
+test('H15.15: pressing k dashes the selected link, visibly', { skip: SKIP }, () => withWriteAccess(async () => {
 	assert.equal(booted.loaded, true, 'precondition: fixture loaded');
 	const seen = await tab.eval(`(async () => {
 		const app = window.draw;
@@ -1039,9 +1042,9 @@ test('H15.15: pressing k dashes the selected link, visibly', { skip: SKIP }, asy
 		};
 
 		const before = { attr: document.getElementById(link.id).getAttribute('stroke-dasharray'), px: await lit() };
-		app.input.onPlaneKey();
+		document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', bubbles: true }));
 		const dashed = { attr: document.getElementById(link.id).getAttribute('stroke-dasharray'), px: await lit(), control: app.model.get('link', link.id).control, said: document.getElementById('readout-bottom').textContent };
-		app.input.onPlaneKey();
+		document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', bubbles: true }));
 		const back = { attr: document.getElementById(link.id).getAttribute('stroke-dasharray'), px: await lit(), control: app.model.get('link', link.id).control };
 		return { before, dashed, back, saidAfter: document.getElementById('readout-bottom').textContent };
 	})()`);
@@ -1071,7 +1074,7 @@ test('H15.15: pressing k dashes the selected link, visibly', { skip: SKIP }, asy
 	// saying it the moment it is not -- measured at both instants rather than at the end
 	assert.match(seen.dashed.said, /\[control\]/, 'the readout names the plane while the link is on it');
 	assert.doesNotMatch(seen.saidAfter, /\[control\]/, 'and stops naming it the moment the link returns to data');
-});
+}));
 
 /*
 B235: a DERIVED weight must be what the browser draws, not what CSS overrides.

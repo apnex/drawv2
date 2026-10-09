@@ -26,9 +26,6 @@ the diff unreviewable and told the net nothing new.
 
 const plain = (e) => !e.ctrlKey && !e.metaKey && !e.altKey;
 // the situation terms the product's rows ask (engine/situation.mjs builds the value; the terms live with their tenant)
-const oneLink = (s) => s.selection.size === 1 && s.selection.kinds[0] === 'link';
-const oneBentLink = (s) => oneLink(s) && s.selection.bends > 0;
-const oneStraightLink = (s) => oneLink(s) && s.selection.bends === 0;
 const linkStepOnNode = (s) => s.gesture === 'link' && s.step === 'node';
 const meta = (e) => e.ctrlKey || e.metaKey;
 const is = (e, k) => e.key.toLowerCase() === k;
@@ -111,12 +108,7 @@ export const KEYMAP = [
 	// C-e (H19.33): `z` -- wrap the selection in a zone -- is the zones plugin's key row (zones/zone-keys.mjs)
 	// `c` means two things by situation -- the acceptance case of the Rules system, ruled 2026-09-30: close (or open) ONE
 	// link with a bend, refuse ONE link without, and anything else means nothing. Two rows, and no handler asks.
-	{ id: 'close', input: ['c'], context: 'one link with a bend selected',         mutates: true, on: (e) => is(e, 'c') && plain(e), when: oneBentLink,     run: 'onCloseKey' },
-	{ id: 'close-refused', input: ['c'], context: 'one link without a bend selected', mutates: true, on: (e) => is(e, 'c') && plain(e), when: oneStraightLink, run: 'onCloseRefused' },
-	{ id: 'direction', input: ['f'], mutates: true, on: (e) => is(e, 'f') && plain(e),                      run: 'onDirectionKey' },
-	{ id: 'plane', input: ['k'],     mutates: true, on: (e) => is(e, 'k') && plain(e),                      run: 'onPlaneKey' },
-	{ id: 'chain', input: ['l'],     mutates: true, on: (e) => is(e, 'l') && plain(e) && !e.shiftKey,       run: 'onChainKey' },
-	{ id: 'star', input: ['Shift+L'],      mutates: true, on: (e) => is(e, 'l') && plain(e) && e.shiftKey,        run: 'onStarKey' },
+	// C-e (H19.33): c, f, k, l and Shift+L are the network's key rows (network/link-keys.mjs)
 	{ id: 'rename', input: ['F2'],    mutates: true, on: (e) => e.key === 'F2',                              run: 'onRenameKey' },
 
 	/*

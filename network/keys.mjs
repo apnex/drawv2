@@ -24,6 +24,7 @@ THE SITUATION TERMS are the plugin's own, over the fields the host's situation d
 `gesture` and `step`. The plugin cannot import the product's predicates, and should not -- it names what it asks.
 */
 import { dragFacts } from './grammar.mjs';
+import { LINK_KEYS } from './link-keys.mjs';   // C-e: the link keys, the network's since step seven
 import { isAnchorWord } from '../devices/anchor-words.mjs';   // the drawn word (F4)   // the bare anchor, asked in one place (F-b)
    // the bare anchor, asked in one place (F-b)
 
@@ -36,6 +37,7 @@ const anAnchorSelected = (s) => s.selection.kinds.some(isAnchorWord);   // the s
 
 // the network's key rows; `session` is the network session the transit toggle acts on (absent where the rows are only read)
 const networkKeys = (session) => [
+	...LINK_KEYS,   // c, f, k, l, Shift+L -- first, where they sat among the product's rows
 	{ id: 'guide', input: ['g'], context: 'while drawing a link', doc: 'g during a link drag: a guide -- the route passes this anchor, placed or existing, node or waypoint, and the link does not pin it',
 		prevent: false, mutates: true, duringGesture: true,
 		on: (e) => is(e, 'g') && plain(e), when: drawingALink,

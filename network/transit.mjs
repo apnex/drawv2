@@ -44,7 +44,7 @@ export function createTransit() {
 		/*
 		Flip each anchor on its own (ruled 2026-09-28: many anchors at once, each flipped independently), as the EDIT that
 		stores it: a set of `transit`, or a whole put without it when the flip returns the anchor to its type's default -- a
-		clearing set would leave a key holding undefined (B220's shape; app/src/commands.js `cycleDirection`). An anchor whose
+		clearing set would leave a key holding undefined (B220's shape; network/link-keys.mjs, the `f` key). An anchor whose
 		type offers no choice is refused, and named. `entities` are the anchors as the model holds them.
 		*/
 		flip(entities) {

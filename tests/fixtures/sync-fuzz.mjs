@@ -22,7 +22,8 @@ import { loadCode, makeWorld, clock, shape, shapeDoc, diffDocs } from './sync-wo
 import path from 'node:path';
 import url from 'node:url';
 import { makeNode, makeWaypoint } from '../../devices/make-node.mjs';   // O-e1: the devices plugin's factories
-import { makeGroup } from '../../groups/make-group.mjs';   // C-e: the groups plugin's factory, as its Ctrl+G makes a group
+import { makeGroup } from '../../groups/make-group.mjs';
+import { linkCommand, directionCommand } from './plugin-edits.mjs';   // C-e: the network's link keys, run as their rows run   // C-e: the groups plugin's factory, as its Ctrl+G makes a group
 
 const here = path.dirname(url.fileURLToPath(import.meta.url));
 const MAIN = process.argv[1] && url.fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
@@ -149,7 +150,7 @@ async function runSeeded(seed, trace) {
 			case 'link': {
 				if (nodes.length < 2) return;
 				const a = pick(nodes), b = pick(nodes); if (a === b) return;
-				t.changes.commit(C.linkNodes(m, [a.id, b.id], false)); note = `${a.id}-${b.id}`; break;
+				t.changes.commit(linkCommand(m, [a.id, b.id], false)); note = `${a.id}-${b.id}`; break;
 			}
 			case 'group': {
 				const pool = [...nodes, ...wps];
@@ -167,7 +168,7 @@ async function runSeeded(seed, trace) {
 				selectOnly([l.id]);
 				t.changes.commit(C.setFields('replug', 'link', l.id, { src: a.id, dst: b.id }));   // the re-plug's command (C-d) note = `${l.id} ${a.id}->${b.id}`; break;
 			}
-			case 'flow': { if (!links.length) return; const l = pick(links); t.changes.commit(C.cycleDirection(l)); note = l.id; break; }
+			case 'flow': { if (!links.length) return; const l = pick(links); t.changes.commit(directionCommand(l)); note = l.id; break; }
 			// a hand pipe between two anchors with none, as `g` lays one
 			case 'pipe': {
 				if (all.length < 2) return;

@@ -5,7 +5,6 @@ its own: a thin behavior layer over `model.state.selection` (MS1), and NO render
 observers subscribe()). Reconcile-to-config (auto-prune on del, restore-on-load) is single-sourced
 in the Model (expandSelection/setSelection, load-filter, del-net). Testable without a renderer.
 */
-import { isTypedEntity } from '../../devices/device-shapes.mjs';   // whether a device is composed: the devices plugin's (O-e1)
 
 export class Selection {
 	constructor(model) {
@@ -59,7 +58,4 @@ export class Selection {
 
 	size() { return this.model.state.selection.size; }
 
-	selectedNodes() {
-		return this.list().filter((id) => (isTypedEntity('node', this.model.get('node', id)) ? this.model.get('node', id) : undefined));   // a waypoint is not one (F-c)
-	}
 }

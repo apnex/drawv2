@@ -179,3 +179,68 @@ test('C-e: the canvas holds no reshape key or builder of its own', () => {
 	assert.doesNotMatch(code('app/src/input.js'), /onReshape\b/);
 	assert.doesNotMatch(code('app/src/keymap.js'), /id: 'reshape'/);
 });
+
+// ---- C-e, step seven (D5): the network's link keys -- c, f, k, l and Shift+L -- are the network's ----
+
+const linkBoard = async (h) => {
+	const { makeLink } = await import('../network/link-queries.mjs');
+	const [a, b, c] = seedNodes(h.model, [[0, 0], [240, 0], [480, 0]]);
+	const w = makeWaypoint(h.model, { x: 120, y: 120 }); h.model.put('node', w);
+	const bent = { ...makeLink(h.model, a.id, b.id), via: [w.id] }; h.model.put('link', bent);
+	return { a, b, c, w, bent };
+};
+
+test('C-e: c closes and opens a bent link, f cycles its direction, k its plane -- each under its label -- the state under test', async () => {
+	const h = makeInput();
+	try {
+		const { bent } = await linkBoard(h);
+		const at = () => h.model.get('link', bent.id);
+		const press = (k) => { h.selection.set([bent.id]); h.capture.onKeyDown(key(k)); return h.commits.at(-1).label; };
+		assert.deepEqual([press('c'), at().closed], ['close path', true]);
+		assert.deepEqual([press('c'), at().closed], ['open path', false]);
+		assert.deepEqual([press('f'), at().direction], ['direction forward', 'forward']);
+		assert.deepEqual([press('f'), at().direction], ['direction reverse', 'reverse']);
+		assert.deepEqual([press('f'), 'direction' in at()], ['direction cleared', false], 'cleared: the key gone, not undefined');
+		assert.deepEqual([press('k'), at().control], ['control plane', true]);
+		assert.deepEqual([press('k'), 'control' in at()], ['data plane', false]);
+	} finally { h.restore(); }
+});
+
+test('C-e: l chains the selected devices and Shift+L stars them -- the new links selected; a waypoint is no device -- the state under test', async () => {
+	const h = makeInput();
+	try {
+		const { a, b, c, w } = await linkBoard(h);
+		const before = new Set(h.model.all('link').map((l) => l.id));
+		h.selection.set([b.id, c.id, w.id]);
+		h.capture.onKeyDown(key('l'));
+		const made = h.model.all('link').filter((l) => !before.has(l.id));
+		assert.deepEqual(made.map((l) => [l.src, l.dst]), [[b.id, c.id]], 'b to c; the waypoint skipped');
+		assert.deepEqual(h.selection.list(), made.map((l) => l.id));
+		assert.equal(h.commits.at(-1).label, 'chain');
+		h.selection.set([a.id, b.id, c.id]);
+		h.capture.onKeyDown(key('L', { shiftKey: true }));
+		assert.equal(h.commits.at(-1).label, 'star');
+		assert.deepEqual(h.model.all('link').filter((l) => !before.has(l.id)).map((l) => [l.src, l.dst]).sort(), [[a.id, c.id], [b.id, c.id]].sort(),
+			'a to c added; a to b and b to c already linked');
+	} finally { h.restore(); }
+});
+
+test('C-e: composed without the network, c, f, k and l do nothing and the help offers none of them', async () => {
+	const h = makeInput({ plugins: [] });
+	try {
+		const { b, c, bent } = await linkBoard(h);
+		const was = JSON.stringify(h.model.get('link', bent.id));
+		for (const k of ['c', 'f', 'k']) { h.selection.set([bent.id]); h.capture.onKeyDown(key(k)); }
+		assert.equal(JSON.stringify(h.model.get('link', bent.id)), was);
+		const links = h.model.all('link').length;
+		h.selection.set([b.id, c.id]); h.capture.onKeyDown(key('l'));
+		assert.equal(h.model.all('link').length, links);
+		assert.equal(keyLines(h).some((l) => ['c', 'f', 'k', 'l', 'Shift+L'].includes(l.inputs[0])), false);
+	} finally { h.restore(); }
+});
+
+test('C-e: the canvas holds no link key or link builder of its own', () => {
+	assert.doesNotMatch(code('app/src/commands.js'), /export function (toggleClosed|cycleDirection|toggleControl|linkNodes)\b/);
+	assert.doesNotMatch(code('app/src/input.js'), /toggleClosePath|cycleLinkDirection|toggleLinkPlane|linkSelectedNodes|onCloseKey|onDirectionKey|onPlaneKey|onChainKey|onStarKey/);
+	assert.doesNotMatch(code('app/src/keymap.js'), /id: '(close|close-refused|direction|plane|chain|star)'/);
+});

@@ -50,7 +50,8 @@ test('the network plugin hands its judge the facts, never Input\'s record', () =
 	plugin.judgeDrag(record({ route: ['g1'], steps: [{ key: 'g', stop: 'g1' }] }));
 	assert.deepEqual(seen.guides, ['g1']);
 	assert.equal('steps' in seen, false, 'the judge reads facts, not how Input kept them');
-	assert.deepEqual(plugin.keys.map((r) => r.id), ['guide', 'stop-on-node', 'transit']);
+	// RESTATED at C-e step seven (H19.33): the link keys -- c, f, k, l, Shift+L -- are the network's rows too, first in its list
+	assert.deepEqual(plugin.keys.map((r) => r.id), ['close', 'close-refused', 'direction', 'plane', 'chain', 'star', 'guide', 'stop-on-node', 'transit']);
 });
 
 // ---- the tables ----

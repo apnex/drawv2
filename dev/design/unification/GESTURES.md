@@ -22,6 +22,12 @@ Each table has exactly one row for every case: the Rules engine reads them, and 
 <!-- BEGIN GENERATED: keys. Run node tools/gesture-table.mjs --write; do not edit by hand. -->
 | row | what it means |
 |---|---|
+| `close` | close or open the selected route |
+| `close-refused` | say why a straight link cannot close |
+| `direction` | cycle the selected link's direction: forward, reverse, none |
+| `plane` | toggle the selected link's control plane (dashed; carries no data) |
+| `chain` | link the selected nodes in a chain |
+| `star` | link the selected nodes as a star |
 | `guide` | g during a link drag: a guide -- the route passes this anchor, placed or existing, node or waypoint, and the link does not pin it |
 | `stop-on-node` | w on a node during a link drag: a pin, the node a junction if it passes routes, cut there if it does not; released on it, the node is the destination |
 | `transit` | x: flip transit on each selected anchor or node -- off, links stop there and a dashed ring shows it; a host offers no choice |

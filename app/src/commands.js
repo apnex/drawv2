@@ -19,7 +19,6 @@ with the planner (app/src/changes.js), which is the one place a cascade, a strip
 disconnected browser previews with it as well, so it still never builds a document whose links dangle.
 */
 
-import { linkBetween, makeLink } from '../../network/link-queries.mjs';   // which links meet an anchor: the network's (K13d)
 import { clone } from '../../model/ops.mjs';
 import { kindOf, newId, projection } from '../../model/model.mjs';
 import { makeGroup } from '../../groups/make-group.mjs';   // the groups plugin's factory (O-c)
@@ -145,6 +144,11 @@ export function setFieldsAll(label, sets) {
 	return { label, entries: sets.map((x) => ({ op: 'set', kind: x.kind, id: x.id, after: x.after })) };
 }
 
+// C-e (D5): several entities put, as one edit under a plugin's label -- the network's chained links
+export function putEntities(label, puts) {
+	return { label, entries: puts.map((p) => ({ op: 'put', kind: p.kind, entity: clone(p.kind, p.entity) })) };
+}
+
 // C-e (D5): entities deleted, under a plugin's label -- each that still exists, as the model holds it
 export function deleteEntities(label, model, refs) {
 	return { label, entries: refs.filter((r) => model.get(r.kind, r.id)).map((r) => ({ op: 'del', kind: r.kind, entity: clone(r.kind, model.get(r.kind, r.id)) })) };
@@ -152,95 +156,6 @@ export function deleteEntities(label, model, refs) {
 
 export function setFields(label, kind, id, after) {
 	return { label, entries: [{ op: 'set', kind, id, after }] };
-}
-
-// re-plug: rewire one end of a link onto another node
-// fast-replace: retype a node in place — id/name/links/position survive
-// C — close/open a multi-hop route. The label states which way it went, so undo reads correctly.
-export function toggleClosed(link) {
-	const closed = !link.closed;
-	return { label: closed ? 'close path' : 'open path', entries: [{ op: 'set', kind: 'link', id: link.id, after: { closed } }] };
-}
-
-/*
-H15.6 -- CYCLE a link's declared direction. Three states, so this cycles rather than toggles.
-
-`direction` is absent (undeclared and symmetric), `forward` (the flow follows the stored order) or `reverse`
-(it runs against it) -- `flow`, a boolean, until the format batch (F1, 2026-10-03). The cycle is undeclared -> forward -> reverse -> undeclared, which lets an author
-reach every state from any state without needing to know which one they are in.
-
-RETURNING TO UNDECLARED REMOVES THE KEY rather than writing a third value. Absent is what every
-document written before this field carries and what `facing` reads as "no direction at all"; a link
-left holding `direction: null` would be a fourth state the model does not have. `direction` is listed OPTIONAL
-in model/shape.mjs, so the set-inverse rule turns the removing patch into a whole-entity put and
-undoing the last step restores a link byte-identical to one never declared.
-
-Direction is stored relative to `src`/`dst` and NOT as an end-name, so this never has to look at
-which end is which -- see `linkFacing` in network/roles.mjs for what reads it.
-*/
-export function cycleDirection(link) {
-	if (link.direction !== 'forward' && link.direction !== 'reverse') {
-		return { label: 'direction forward', entries: [{ op: 'set', kind: 'link', id: link.id, after: { direction: 'forward' } }] };
-	}
-	if (link.direction === 'forward') {
-		return { label: 'direction reverse', entries: [{ op: 'set', kind: 'link', id: link.id, after: { direction: 'reverse' } }] };
-	}
-	/*
-	CLEARING IS A PUT, not a set carrying undefined, and the difference is not cosmetic.
-
-	`after: { direction: undefined }` sets an OWN PROPERTY holding undefined. It vanishes from
-	JSON.stringify, survives `'direction' in link`, and FAILS a schema asking for `forward` or `reverse` --
-	so the clear was refused in memory and silently repaired by the next reload. That is B220's
-	shape: two doors disagreeing, with a restart hiding the evidence.
-
-	A whole-entity put is how this tree already removes a key -- `inverseOfSet` in planner/txn.mjs
-	reaches for the same move when a patch would have to restore an absence. The entity is built
-	without `direction` rather than with it undefined.
-	*/
-	const { direction, ...without } = link;
-	return { label: 'direction cleared', entries: [{ op: 'put', kind: 'link', entity: without }] };
-}
-
-/*
-H15.15 -- TOGGLE a link between the control plane and the data plane.
-
-`control: true` means the link carries no data-plane packets. Two states rather than three, so this
-toggles where `cycleDirection` cycles -- and turning it OFF removes the key rather than writing `false`,
-for the reason cycleDirection clears with a put: `after: { control: undefined }` sets an own property
-holding undefined, which is invisible to JSON, visible to `in`, and refused by a schema asking for a
-boolean. Absent is the ordinary data link and what every older document carries.
-*/
-export function toggleControl(link) {
-	if (link.control) {
-		const { control, ...without } = link;
-		return { label: 'data plane', entries: [{ op: 'put', kind: 'link', entity: without }] };
-	}
-	return { label: 'control plane', entries: [{ op: 'set', kind: 'link', id: link.id, after: { control: true } }] };
-}
-
-/*
-L / Shift+L — wire the selected nodes with no pointer travel. L chains them in selection order;
-Shift+L stars the first to every other. Existing pairs are skipped.
-
-Built against a projection, and the duplicate check is why. `input.js` had to put each new link into
-the LIVE model as it went, because `linkBetween` is what skips an existing pair and it reads the
-model — so a selection like [a, b, a] would author a-b twice if the first were not already there.
-That is a second, independent reason for the same eager put the clone path needed, and the same
-scratch removes it.
-*/
-export function linkNodes(model, nodeIds, star) {
-	const scratch = projection(model);
-	const pairs = star
-		? nodeIds.slice(1).map((n) => [nodeIds[0], n])
-		: nodeIds.slice(0, -1).map((n, i) => [n, nodeIds[i + 1]]);
-	const created = [];
-	pairs.forEach(([a, b]) => {
-		if (a === b || linkBetween(scratch, a, b)) return;   // skip self + existing, INCLUDING this batch
-		const link = makeLink(scratch, a, b);
-		scratch.put('link', link);
-		created.push(link);
-	});
-	return { label: star ? 'star' : 'chain', entries: created.map((l) => ({ op: 'put', kind: 'link', entity: clone('link', l) })) };
 }
 
 // a finished route: the materialised waypoints AND the link as one undo step, waypoints first so the

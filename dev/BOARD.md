@@ -1304,6 +1304,8 @@ AMENDED 2026-10-09: C-e's fifth step done -- the group keys are the groups plugi
 Next: the devices plugin's keys and commands, then the network's (with the clone followers) and the simulation's.
 AMENDED 2026-10-09: C-e's sixth step done -- `s` is the devices plugin's key.\
 Next: the network's keys and commands, with the clone followers, then the simulation's.
+AMENDED 2026-10-09: C-e's seventh step done -- `c`, `f`, `k`, `l` and Shift+L are the network's key rows.\
+Next: the network's route builders and its hand-built transit command, with the clone followers; then the simulation's.
 
 **Exit:** nothing stored needs a migration and none is kept; production's sync holds the network under the GR6 battery; the core holds no kind.
 

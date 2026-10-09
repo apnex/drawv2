@@ -12,6 +12,7 @@ meant two things and decided which inside its handler:
 Behaviour is unchanged. What moved is WHERE the decision lives: two rows in the product's table, over the situation,
 and handlers that ask nothing.
 */
+import { LINK_KEYS } from '../network/link-keys.mjs';
 import { makeLink } from '../network/link-queries.mjs';   // K13d: the network's link queries
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -76,13 +77,11 @@ test('anything else selected -- nothing, a node, two things: c means nothing', (
 });
 
 test('the two meanings are two ROWS, and the handlers they name ask nothing', () => {
-	const rows = KEYMAP.filter((r) => r.on(key('c')));
+	// RESTATED at C-e step seven (H19.33; D5): the link keys are the network's rows (network/link-keys.mjs); their runs are functions, held to the same rule
+	const rows = LINK_KEYS.filter((r) => r.on(key('c')));
 	assert.deepEqual(rows.map((r) => r.id).sort(), ['close', 'close-refused']);
 	assert.ok(rows.every((r) => typeof r.when === 'function'), 'each chosen by a condition over the situation');
-	for (const r of rows) {
-		const body = String(Input.prototype[r.run]) + String(r.run === 'onCloseKey' ? Input.prototype.toggleClosePath : '');
-		assert.doesNotMatch(body, /\bif\s*\(/, `${r.run} decides nothing -- its row did`);
-	}
+	for (const r of rows) assert.doesNotMatch(String(r.run), /\bif\s*\(/, `${r.id} decides nothing -- its row did`);
 });
 
 /*
@@ -125,7 +124,8 @@ test('Input refuses a plugin with anything but owner, keys and judgeDrag, and a 
 	assert.throws(() => makeInput({ plugins: [{ owner: 'x', keys: [], hook: () => {} }] }), /hook/);
 	assert.throws(() => makeInput({ plugins: [{ keys: [] }] }), /owner/);
 	assert.throws(() => makeInput({ plugins: [{ owner: 'a', judgeDrag: () => ({}) }, { owner: 'b', judgeDrag: () => ({}) }] }), /a, b/);
-	assert.throws(() => makeInput({ plugins: [{ owner: 'a', keys: [{ id: 'close', on: () => false, run: 'x' }] }] }), /close/, 'and an id the product already uses');
+	// RESTATED at C-e step seven: `close` became the network's; `undo` is still the product's
+	assert.throws(() => makeInput({ plugins: [{ owner: 'a', keys: [{ id: 'undo', on: () => false, run: 'x' }] }] }), /undo/, 'and an id the product already uses');
 });
 
 test('a plugin\'s row is handed the host\'s declared verbs, not Input -- and the selection as plain data', () => {
@@ -137,7 +137,7 @@ test('a plugin\'s row is handed the host\'s declared verbs, not Input -- and the
 		// RESTATED at C-d step one (H19.32): a third declared verb, `create` -- a plugin's release row makes an entity through it
 		// and the text box's two (C-d step three); the zones plugin's `z`: the selection's bounds, a receipt and a size (C-e step four)
 		// and the groups plugin's keys: a question over the Model, an entity put, entities removed (C-e step five)
-		assert.deepEqual(Object.keys(handed), ['addStop', 'selected', 'create', 'set', 'releaseTool', 'editFrame', 'selectionBounds', 'flash', 'dims', 'ask', 'put', 'remove', 'setAll']);   // and the devices plugin's reshape (C-e step six)   // and `set`, through which a handle's release row edits (C-d step two)
+		assert.deepEqual(Object.keys(handed), ['addStop', 'selected', 'create', 'set', 'releaseTool', 'editFrame', 'selectionBounds', 'flash', 'dims', 'ask', 'put', 'remove', 'setAll', 'putAll', 'select']);   // and the network's l: links put, the selection set (C-e step seven)   // and the devices plugin's reshape (C-e step six)   // and `set`, through which a handle's release row edits (C-d step two)
 		assert.notEqual(handed, h.input);
 		const [n] = seedNodes(h.model, [[0, 0, 'router']]);
 		h.selection.set([n.id]);

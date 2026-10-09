@@ -407,6 +407,9 @@ export class Input {
 			remove: (label, refs) => this.history.commit(commands.deleteEntities(label, this.model, refs)),
 			// C-e (D5): several entities' fields set, as one edit -- the devices plugin's reshape
 			setAll: (label, sets) => this.history.commit(commands.setFieldsAll(label, sets)),
+			// C-e (D5): several entities put as one edit, and the selection set -- the network's chained links
+			putAll: (label, puts) => this.history.commit(commands.putEntities(label, puts)),
+			select: (ids) => this.selection.set(ids),
 		};
 		// the pointer's tables on the same engine (stage 4): which gesture a press starts, a double click, a key release
 		// C-d (H19.32): the product's press rows and each canvas part's -- a plugin's rows over the shared gestures (D2)
@@ -786,81 +789,6 @@ export class Input {
 		}
 		return boxed ? { x, y, x2, y2 } : null;
 	}
-	/*
-	C — close / open the lone selected route. A closed route loops dst → src as a rounded
-	polygon (the router's close arg rounds the src/dst corners too). Only a multi-hop route
-	(≥1 waypoint) can close — a plain 2-point link would just double back on itself. Toggles,
-	as one undoable set on the link's `closed` flag.
-	*/
-	// reached only through the `close` row -- ONE link with a bend is selected -- so it asks nothing (dev/RULES.md section 11)
-	toggleClosePath() {
-		const link = this.model.get('link', this.selection.list()[0]);
-		const closed = !link.closed;
-		this.history.commit(commands.toggleClosed(link));
-		this.readout.flash(closed ? 'path closed' : 'path open');
-	}
-
-	/*
-	H15.6 -- F cycles the selected link's declared direction.
-
-	Single selection only, and a link. The same shape as `toggleClosePath` above, for the same
-	reason: a declaration is a statement about ONE path, and applying it to a multi-selection would
-	have to guess whether the author meant each link's own stored order or some shared direction --
-	and those differ the moment two links are stored facing opposite ways.
-	*/
-	cycleLinkDirection() {
-		const ids = this.selection.list();
-		if (ids.length !== 1 || kindOf(ids[0]) !== 'link') return;
-		const link = this.model.get('link', ids[0]);
-		if (!link) return;
-		const cmd = commands.cycleDirection(link);
-		this.history.commit(cmd);
-		/*
-		B227 -- SAY THE WHOLE RELATION, not just what changed.
-
-		`direction reverse` names the step and leaves the author to work out what it now means, which on
-		a link whose stored order they never chose is a puzzle rather than feedback. The endpoints
-		with an arrow between them says the RESULT, and the arrow is the same fact the canvas draws
-		-- so the readout and the picture cannot disagree.
-
-		`<->` for undeclared, because a symmetric link is not a link with no relationship; it is one
-		that carries flow both ways as far as anything here is concerned.
-		*/
-		// B229 -- no flash. The SELECTION line carries the relation persistently, so a receipt that
-		// vanishes after 1200ms would say the same thing worse: the author would have to remember
-		// it, or press again to see where they are in the cycle.
-		this.readout.render();
-	}
-
-	/*
-	H15.15 -- K toggles the selected link between the control plane and the data plane.
-
-	Single selection only, the same shape as `f` and `toggleClosePath` above: a plane is a statement
-	about ONE link, and a multi-selection would have to guess whether the author meant to set them
-	all control or to flip each independently.
-	*/
-	toggleLinkPlane() {
-		const ids = this.selection.list();
-		if (ids.length !== 1 || kindOf(ids[0]) !== 'link') return;
-		const link = this.model.get('link', ids[0]);
-		if (!link) return;
-		this.history.commit(commands.toggleControl(link));
-		this.readout.render();   // the selection line carries the plane, as it carries the direction
-	}
-
-	// L / Shift+L — the wiring itself is commands.linkNodes'; what stays is selecting the result
-	// and saying how many landed.
-	linkSelectedNodes(star) {
-		const nodes = this.selection.selectedNodes(); // Set insertion order
-		if (nodes.length < 2) return;
-		const cmd = commands.linkNodes(this.model, nodes, star);
-		if (!cmd.entries.length) return;
-		this.history.commit(cmd);
-		const ids = cmd.entries.map((e) => e.entity.id);
-		this.selection.set(ids);
-		this.readout.flash(`+${ids.length} link${ids.length > 1 ? 's' : ''}`);
-	}
-
 	// ---- pointer move ----
 	// a node already on this exact grid point (a stamp must never overlap) — engine occupancy index (R13)
 
@@ -1598,12 +1526,6 @@ export class Input {
 		if (after) this.history.amend(commands.setFields(spec.label, kind, ids[0], after));
 	}
 
-	onCloseKey() { this.toggleClosePath(); }
-	onCloseRefused() { this.readout.flash('✗ close needs a multi-hop route'); }   // the `close-refused` row: ONE link, no bend
-	onDirectionKey() { this.cycleLinkDirection(); }
-	onPlaneKey() { this.toggleLinkPlane(); }
-	onChainKey() { this.linkSelectedNodes(false); }
-	onStarKey()  { this.linkSelectedNodes(true); }
 
 	onRenameKey() {
 		this.labels.openFocused(this.selection.list().filter((id) => kindOf(id) !== 'link' && kindOf(id) !== 'group'));

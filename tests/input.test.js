@@ -14,6 +14,7 @@ its row, never asserted as correct and never written around.
 */
 
 // C-c (H19.31): the placed kinds, as the page composes them
+import { closeCommand, linkCommand } from './fixtures/plugin-edits.mjs';
 import { PRODUCT_CANVAS as PRODUCT_CANVAS_FOR_KEYS } from '../product/canvas.mjs';
 import { GROUP_KEYS } from '../groups/group-keys.mjs';
 import { ZONE_SIZE_STEP } from '../zones/zone-keys.mjs';
@@ -700,9 +701,9 @@ test('B44: no builder emits a `before` — the wire drops it and the server deri
 			commands.setFields('resize', 'node', a.id, DEVICE_SIZE_STEP.step({ ...a, span: { cols: 1, rows: 2 } }, 1, 1)),
 			commands.setFields('replug', 'link', link.id, { src: a.id, dst: b.id }),   // RESTATED at C-d: a re-plug sets through the one builder
 			commands.setFields('retype', 'node', a.id, { type: 'host' }),   // RESTATED at C-e: the hand's retype sets through the one builder
-			commands.toggleClosed(link),
+			closeCommand(link),   // RESTATED at C-e step seven (H19.33; D5): the link keys are the network's rows, run as the row runs (tests/fixtures/plugin-edits.mjs)
 			commands.renameDocument('x'),
-			commands.linkNodes(h.model, [a.id, b.id], false),
+			linkCommand(h.model, [a.id, b.id], false),
 			commands.routeLink([], link),
 		];
 		for (const cmd of built) {
@@ -732,8 +733,9 @@ test('B44: the migrated commands still do their jobs', () => {
 	try {
 		const [a, b, c] = seedNodes(h.model, [[0, 0], [180, 0], [360, 0]]);
 
+		// RESTATED at C-e step seven (H19.33; D5): the link keys are the network's rows -- driven by their keys
 		h.selection.set([a.id, b.id, c.id]);
-		h.input.linkSelectedNodes(false);
+		h.capture.onKeyDown(key('l'));
 		assert.equal(h.model.all('link').length, 2, 'chain wires n1-n2, n2-n3');
 
 		// AMENDED 2026-10-04 (V-d): bent through a waypoint that exists -- `w1` named none, a link the planner refuses
@@ -742,9 +744,9 @@ test('B44: the migrated commands still do their jobs', () => {
 		h.model.put('node', w);
 		h.model.set('link', link.id, { via: [w.id] });
 		h.selection.set([link.id]);
-		h.input.toggleClosePath();
+		h.capture.onKeyDown(key('c'));
 		assert.equal(h.model.get('link', link.id).closed, true, 'C closes a multi-hop route');
-		h.input.toggleClosePath();
+		h.capture.onKeyDown(key('c'));
 		assert.equal(h.model.get('link', link.id).closed, false, 'and re-opens it');
 	} finally { h.restore(); }
 });
@@ -915,7 +917,8 @@ test('B48: the matched rule NAMES the verb — the table is readable as the key 
 	];
 	const ctx = { readOnly: false, helpOpen: false, gesturing: false };
 	// RESTATED at C-e step five (H19.33): Ctrl+G and Ctrl+Shift+G are the groups plugin's rows, composed with the product's
-	const withGroups = composeRules({ owner: 'product', rules: KEYMAP }, { owner: 'groups', rules: GROUP_KEYS });
+	// and l, Shift+L the network's (C-e step seven)
+	const withGroups = composeRules({ owner: 'product', rules: KEYMAP }, { owner: 'groups', rules: GROUP_KEYS }, { owner: 'network', rules: networkInput(() => ({})).keys });
 	for (const [k, mod, id] of cases) {
 		const rule = resolveInput(withGroups, key(k, mod), sit(), ctx).rule;
 		assert.ok(rule, `${id}: nothing matched`);
@@ -975,7 +978,8 @@ test('Q3: composed with every canvas part\'s key rows, still no keystroke matche
 
 test('the product names no routing key: g means nothing in production, and the network\'s rows are its own', () => {
 	for (const s of SITUATIONS) assert.equal(resolveKey(key('g'), { gesturing: !!s.gesture }, s), null, 'no product row is about g');
-	assert.deepEqual(LAB_KEYS.filter((r) => r.owner === 'network').map((r) => r.id), ['guide', 'stop-on-node', 'transit']);
+	// RESTATED at C-e step seven (H19.33; D5): the link keys are the network's rows, first in its list
+	assert.deepEqual(LAB_KEYS.filter((r) => r.owner === 'network').map((r) => r.id), ['close', 'close-refused', 'direction', 'plane', 'chain', 'star', 'guide', 'stop-on-node', 'transit']);
 	const drawing = (step) => sit(undefined, 'link', step);
 	const lab = (k, s) => resolveInput(LAB_KEYS, key(k), s, { gesturing: !!s.gesture }).rule?.id ?? null;
 	assert.equal(lab('g', drawing('ground')), 'guide', 'g during a link drag is the network\'s guide');
@@ -1179,11 +1183,11 @@ test('B46: linkNodes will not author the same pair twice within one batch', () =
 		// a-b then b-a: the second is the same pair, and only a projection that already holds the
 		// first can see that. Against the live model it needs an eager put; against nothing at all
 		// it authors a duplicate.
-		const cmd = commands.linkNodes(h.model, [a.id, b.id, a.id], false);
+		const cmd = linkCommand(h.model, [a.id, b.id, a.id], false);
 		assert.equal(cmd.entries.length, 1, 'one link, not two');
 
 		h.history.commit(cmd);
-		assert.equal(commands.linkNodes(h.model, [a.id, b.id], false).entries.length, 0,
+		assert.equal(linkCommand(h.model, [a.id, b.id], false).entries.length, 0,
 			'and an ALREADY committed pair is still skipped');
 	} finally { h.restore(); }
 });

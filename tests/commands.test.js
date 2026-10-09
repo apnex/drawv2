@@ -231,7 +231,8 @@ what `facing` reads as "no direction". A link left holding `flow: null` would be
 model does not have.
 */
 test('H15.6: cycling direction walks undeclared, forward, reverse, and back to absent', async () => {
-	const { cycleDirection } = await import('../app/src/commands.js');
+	// RESTATED at C-e step seven (H19.33; D5): the link keys are the network's rows: `f` run as its row runs it
+	const { directionCommand: cycleDirection } = await import('./fixtures/plugin-edits.mjs');
 	const { linkFacing } = await import('../network/roles.mjs');
 
 	const undeclared = { id: 'link-aa0001', src: 'node-aa0001', dst: 'node-aa0002' };
