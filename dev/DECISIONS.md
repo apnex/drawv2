@@ -1827,3 +1827,8 @@ Asked to build it as the way several plugins draw one kind, the director chose "
 - Each plugin brings appearances for a kind, each declaring per derived state whether it composes or competes, ordered by a list of named layers rather than an integer priority (the ruling's own caution).
 - The network's anchor marks compete under the device, so a device emits none, by the rule rather than by a branch; the transit ring and the spawning mark compose; session state decorates.
 - An appearance names what else to redraw when its entity changes.
+
+**D4 -- a plugin's items join the shared press rows by the facts its picks declare -- 2026-10-09 (B308; H19.32).**\
+Asked how the press rows stop naming kinds -- what a right press moves, what a left press draws a link from, what Ctrl clones, what a press selects -- the director chose "A, plugins declare facts" (the proposer's recommendation) over "B, plugins bring rows", which would have grown the help overlay from one line per gesture to one per kind and gesture.
+- A plugin's pick declares facts about what it draws: placed, an anchor, clones, selects on a press; the product's few shared press rows read them.
+- The help overlay keeps its lines; each line's kind list is built from the plugins, so a few lists reorder.

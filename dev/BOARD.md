@@ -1169,6 +1169,7 @@ Elsewhere and unchanged: H10.30 and PD-3 are the director's calls; H15.5 and H17
 | H19.36 | A selected zone drawn again keeps its selected look -- a regression of C-a's first step | **B314** | S3 | `DONE` |
 | H19.37 | A reveal beat withholds a zone or a group again -- the renderer finds the element of every drawn kind; a regression of C-a's first two steps | **B315** | S3 | `DONE` |
 | H19.38 | Alt+right on a link's end handle starts nothing again -- a regression of C-d's second step, hidden by its own oracle edit | **B316** | S4 | `DONE` |
+| H19.39 | Ctrl over a selected link's end handle throws nothing -- hover ignores any handle; a regression of C-d's second step | **B317** | S2 | `DONE` |
 | H19.29 | C-a: drawing -- a painter per kind brought by its plugin, the renderer a dispatcher, layers ranked; zones first, then groups, devices and links | feature | S4 | `DONE` |
 | H19.30 | C-b: picking -- one id attribute on every drawn entity; a kind's pick modifier (the zone's Shift) | feature | S4 | `DONE` |
 | H19.31 | C-c: placing -- layout and extent as row facts; moving, cloning, nudging and snapping read them | feature | S4 | `DONE` |

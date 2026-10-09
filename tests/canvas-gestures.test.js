@@ -204,3 +204,16 @@ test('B316: Alt+right on a link\'s end handle or a zone\'s corner starts nothing
 		}
 	} finally { h.restore(); }
 });
+
+// B317 -- since C-d step two a link end's hit carries an id, and the overlay's hover, which ignored only a corner handle and an
+// id-less hit, took a link end handle for an entity named `src`: Ctrl pressed over it asked the model for kind `src`, and threw
+test('B317: hovering a link\'s end handle hovers nothing, and Ctrl pressed over it throws nothing', async () => {
+	const { key } = await import('./fixtures/client-harness.mjs');
+	const h = makeInput();
+	try {
+		await threeHosts(h);
+		h.capture.onHover(endHandle('src', 360, 330), true);
+		assert.equal(h.input.overlayUi.hovered, null, 'a handle is no entity to hover');
+		assert.doesNotThrow(() => h.capture.onKeyDown(key('Control', { ctrlKey: true })));
+	} finally { h.restore(); }
+});

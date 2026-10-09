@@ -53,7 +53,7 @@ export class Overlay {
 	// `gesturing` is the caller's: a drag owns the pointer, so hover must not track under it
 	hover(hit, on, evt, gesturing) {
 		if (gesturing) return;
-		if (!hit.id || hit.kind === 'handle') return;
+		if (!hit.id || hit.handle) return;   // a handle -- a corner, a link end -- is no entity to hover (B317: a link end carries an id)
 		this.renderer.setState(hit.id, 'hover', on);
 		if (!on) this.renderer.setState(hit.id, 'linkband', false);
 		this.hovered = on ? hit.id : (this.hovered === hit.id ? null : this.hovered);
