@@ -1180,7 +1180,7 @@ Elsewhere and unchanged: H10.30 and PD-3 are the director's calls; H15.5 and H17
 | H19.32 | C-d: handles, presses, gestures, releases -- rows a plugin brings for the shared gestures (D2) | feature | S4 | `DONE` |
 | H19.33 | C-e: keys, commands, readout, labels, grids -- each moved to its plugin; opening with the devices plugin's hand (palette, digit keys, stamping, pipette, retype, chaining), moved from C-d by the director | feature | S4 | `DONE` |
 | H19.34 | C-f: closed -- the canvas names no plugin's kind beyond a record that may only fall; B308 closed | **B308** | S4 | `DONE` |
-| H19.8 | Design, for approval: a type as a composition of packs | **B282** | S3 | `TODO` |
+| H19.8 | Design, for approval: a type as a composition of packs | **B282**, **B323** | S3 | `TODO` |
 | H19.9 | Transit off at a ring's pin opens the ring there, as ruled, and its pieces rejoin when transit returns -- the director's reports from production | **B299** | S2 | `DONE` |
 | H19.10 | Build the ruled model (`dev/design/unification/DEVICE-JUNCTIONS.md`): a link may be pinned through a device whose transit is on; transit off there cuts it; a ring through one opens like any other; and a link written pinned where transit is off is cut, from any door | **B301**, **B303** | S3 | `DONE` |
 | H19.11 | Guard the planner so no reaction commits a document a requested write could not -- B301's class of loss | **B302** | S2 | `DONE` |
@@ -1326,6 +1326,7 @@ AMENDED 2026-10-10: C-f's first step done -- run mode's regions, the header's co
 Next: the ratchet, with the draw-a-link gesture (D2) and the clone's naming recorded; B308 closes.
 AMENDED 2026-10-10: C-f done, B308 closed -- the canvas names no plugin's kind and imports no plugin beyond a record that may only fall (tests/canvas-names-no-plugin.test.js).\
 Next H19.8: B282's design -- multi-anchor devices, the migration, which anchor a link ends at; and the director's question, whether the anchor's canvas part becomes a layout plugin.
+AMENDED 2026-10-10: H19.8 drafted -- `dev/design/unification/WIDE-DEVICES.md`, B282's O4 half (a wide device's anchors, which anchor a link ends at, the migration) with B323, the door disagreement measured on the way; its pack half stays held. Production's 118 wide devices are all panels, which shapes the first decision.
 
 **Exit:** nothing stored needs a migration and none is kept; production's sync holds the network under the GR6 battery; the core holds no kind.
 
