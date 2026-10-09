@@ -7,9 +7,9 @@ Extent clamps stay a UI concern (canvas margins).
 import { STD, L_STD } from '../../kernel/spec.mjs';
 import { spanExtent, LAYOUTS, snapLayout } from '../../kernel/geometry.mjs';
 // CL3: canvas surface + usable extents come from the sovereign model/ substrate (single source).
-// IMPORTED (not a bare re-export) — snapNode/snapZone/grid-points reference NODE_EXT/ZONE_EXT locally.
+// IMPORTED (not a bare re-export) — snapNode references NODE_EXT locally. AMENDED C-e (H19.33): the grids' points are their
+// parts' (product/canvas.mjs, zones/zone-grid.mjs), and the zone extent is the zones plugin's alone.
 import { SURFACE, NODE_EXT } from '../../model/surface.mjs';
-import { ZONE_EXT } from '../../zones/zone-extent.mjs';   // the zones plugin's extent (O-b1)
 import { ANCHOR_KINDS } from '../../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
 export const GAP = STD.pitch;                     // 60 — from the kernel, not a local literal
 export const HALF = GAP / 2;
@@ -17,7 +17,7 @@ export const NODE_R = L_STD.frame.ext;            // node frame half-extent — 
 export { spanExtent };                            // a multi-cell node's px footprint — one owner, in the kernel
 
 // re-export the document-space magnitudes under the names snap.js consumers already use (CANVAS alias)
-export { SURFACE as CANVAS, NODE_EXT, ZONE_EXT };
+export { SURFACE as CANVAS, NODE_EXT };
 
 // B111: the GRID comes from the kernel layout, the CLAMP stays here -- canvas margins are a UI
 // concern and the pitch is not. This function used to carry the offset itself, which made it one of
@@ -40,18 +40,6 @@ export function resolveBox(p1, p2) {
 }
 
 export function dist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
-
-// grid-dot positions for the two visual grids (node grid + half-offset zone grid)
-export function nodePoints() {
-	const points = [];
-	for (let y = -NODE_EXT.y; y <= NODE_EXT.y; y += GAP) for (let x = -NODE_EXT.x; x <= NODE_EXT.x; x += GAP) points.push({ x, y });
-	return points;
-}
-export function zonePoints() {
-	const points = [];
-	for (let y = -ZONE_EXT.y; y <= ZONE_EXT.y; y += GAP) for (let x = -ZONE_EXT.x; x <= ZONE_EXT.x; x += GAP) points.push({ x, y });
-	return points;
-}
 
 /*
 ── DRAG GEOMETRY ─────────────────────────────────────────────────────────────────────────────────

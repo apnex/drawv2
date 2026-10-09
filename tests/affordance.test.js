@@ -117,10 +117,11 @@ test('a second datum replaces the first — markers do not accumulate', () => {
 test('Shift raises the zone layer indicator, but never mid-drag', () => {
 	const h = makeInput();
 	try {
-		h.input.syncZoneGrid({ shiftKey: true });
+		// RESTATED at C-e step thirteen (H19.33): `syncZoneGrid` had no caller and went; Shift is pressed, as a person presses it
+		h.capture.onKeyDown(key('Shift', { shiftKey: true }));
 		assert.equal(h.svg.classList.contains('zonegrid'), true, 'Shift is the zone-layer key (DESIGN U1)');
 
-		h.input.syncZoneGrid({ shiftKey: false });
+		h.capture.onKeyUp(key('Shift'));
 		assert.equal(h.svg.classList.contains('zonegrid'), false);
 	} finally { h.restore(); }
 });

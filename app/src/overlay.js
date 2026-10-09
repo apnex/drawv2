@@ -27,7 +27,8 @@ import { kindOf } from '../../model/model.mjs';
 const HANDLE = 12;
 
 export class Overlay {
-	constructor({ svg, model, selection, renderer, snap, handles = () => new Map(), hitFacts = () => new Map(), points = () => [] }) {
+	constructor({ svg, model, selection, renderer, snap, handles = () => new Map(), hitFacts = () => new Map(), points = () => [], grids = () => [] }) {
+		this.grids = grids;   // C-e: the grids shown by a modifier -- the zones plugin's, by Shift (by Input)
 		this.points = points;       // C-e: what each part's items cover (by Input)
 		this.hitFacts = hitFacts;   // D4: what each hit word is, from the canvas parts (by Input)
 		this.hoveredWord = null;    // the word the hovered entity was picked as -- a device's 'node', a waypoint's 'waypoint'
@@ -164,10 +165,11 @@ export class Overlay {
 		});
 	}
 
-	// ---- the zone-layer indicator ----
+	// ---- the grids shown by a modifier ----
 
-	// Shift raises the zone layer — but ortho-lock owns Shift mid-drag, so no flash during those
-	zoneGrid(shiftHeld, moving) {
-		this.svg.classList.toggle('zonegrid', !!shiftHeld && !moving);
+	// a grid shows while its modifier is held -- the zones plugin's, Shift -- but not mid-move or mid-clone, when the modifier
+	// locks the axis instead (C-e: each grid's declaration)
+	showGrids(mods, moving) {
+		for (const g of this.grids()) this.svg.classList.toggle(g.cls, !!mods?.[g.shownWith] && !moving);
 	}
 }

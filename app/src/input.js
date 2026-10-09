@@ -381,6 +381,8 @@ export class Input {
 		this.followers = commands.followersOf(parts);
 		// C-e: what Ctrl+A takes, each part's, in rank order
 		this.selectAlls = parts.filter((p) => p.selectAll).map((p) => p.selectAll).sort((a, b) => a.rank - b.rank);
+		// C-e: the grids a modifier shows -- the zones plugin's, by Shift
+		this.shownGrids = parts.flatMap((p) => (p.grids ?? []).filter((g) => g.shownWith));
 		// C-e: what a double-click edits, each part's, in rank order; and the kinds F2 renames
 		this.edits = parts.flatMap((p) => p.labels?.edits ?? []).sort((a, b) => a.rank - b.rank);
 		this.named = new Set(parts.flatMap((p) => p.labels?.named ?? []));
@@ -491,7 +493,8 @@ export class Input {
 		this.overlay = layerOf(svg, 'overlay');
 		// H6.3 — transient feedback is overlay.js's: hovered, armed, the datum marker and the
 		// crosshair moved with it. Input keeps only what a GESTURE needs (mode, ctx, and the input state).
-		this.overlayUi = new Overlay({ svg, model, selection, renderer, snap, handles: () => this.handles, hitFacts: () => this.hitFacts, points: () => this.points });   // C-d: the kinds' handles; D4: what each hit is
+		this.overlayUi = new Overlay({ svg, model, selection, renderer, snap, handles: () => this.handles, hitFacts: () => this.hitFacts, points: () => this.points,
+			grids: () => this.shownGrids });   // C-e: the grids a modifier shows   // C-d: the kinds' handles; D4: what each hit is
 		this.mode = null; // null | pending | clone-pending | move | clone | link | zone | marquee | resize
 		this.ctx = {};
 
@@ -603,7 +606,7 @@ export class Input {
 		if (!rule) return;
 
 		if (this.mode) this.cancelDrag(evt);   // a second press never stacks on an active gesture
-		this.overlayUi.zoneGrid(evt.shiftKey, false);
+		this.overlayUi.showGrids(evt, false);
 		evt.capture = true;   // capture takes the pointer once this returns (app/src/capture.js)
 
 		if (rule.run) return this[rule.run](hit, evt, pos);
@@ -920,7 +923,7 @@ export class Input {
 	move(evt) {
 		this.state = track(this.state, evt);
 		const moving = this.mode === 'move' || this.mode === 'clone';
-		this.overlayUi.zoneGrid(evt.shiftKey, moving);
+		this.overlayUi.showGrids(evt, moving);
 		const pos = evt.at;
 
 		if (!this.mode) {
@@ -964,7 +967,7 @@ export class Input {
 		this[rule.run](pos);
 		if (this.mode === become) {
 			// re-evaluate the layer indicator and render the first frame NOW, not on the next event
-			this.overlayUi.zoneGrid(evt.shiftKey, true);
+			this.overlayUi.showGrids(evt, true);
 			this.updateMove(pos, evt.shiftKey);
 		}
 	}
@@ -1037,7 +1040,7 @@ export class Input {
 		this.ctx = {};
 		this.readout.clearTransient();
 		this.overlayUi.refreshHover(pos);
-		this.overlayUi.zoneGrid(evt.shiftKey, false);   // gesture over: the layer indicator follows Shift again
+		this.overlayUi.showGrids(evt, false);   // gesture over: the layer indicator follows Shift again
 		g.commit?.(this, ctx, pos, evt);
 	}
 
@@ -1216,7 +1219,7 @@ export class Input {
 		this.ctx = {};
 		this.readout.clearTransient();
 		this.overlayUi.refreshHover(null);
-		if (evt) this.overlayUi.zoneGrid(evt.shiftKey, false);
+		if (evt) this.overlayUi.showGrids(evt, false);
 		this.onGestureEnd();
 	}
 
@@ -1313,7 +1316,7 @@ export class Input {
 			// re-render the drag NOW: the commit follows the last rendered frame
 			if (this.state.pointer.at) this.updateMove(this.state.pointer.at, true);
 		} else {
-			this.overlayUi.zoneGrid(true, false);
+			this.overlayUi.showGrids({ shiftKey: true }, false);
 		}
 	}
 
@@ -1519,10 +1522,6 @@ export class Input {
 		this.overlayUi.arm(evt, { readOnly: this.readOnly, gesturing: this.isGesturing() });
 	}
 
-	syncZoneGrid(evt) {
-		this.overlayUi.zoneGrid(evt.shiftKey, this.mode === 'move' || this.mode === 'clone');
-	}
-
 	// a key release: the ONE row it means (app/src/keymap.js KEY_RELEASES), through the same engine as a key press
 	keyUp(evt) {
 		const { rule } = resolveInput(this.releaseRules, evt, this.situation(null, this.mode), {
@@ -1533,7 +1532,7 @@ export class Input {
 
 	// Shift released: the zone grid goes, a move redraws with the axis lock off, and a hovered zone drops its states
 	onShiftUp() {
-		this.overlayUi.zoneGrid(false, false);
+		this.overlayUi.showGrids({ shiftKey: false }, false);
 		if ((this.mode === 'move' || this.mode === 'clone') && this.state.pointer.at) {
 			// re-render with the lock released: the commit follows the frame
 			this.updateMove(this.state.pointer.at, false);
