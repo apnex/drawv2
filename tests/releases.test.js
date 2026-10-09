@@ -102,8 +102,9 @@ test('a Ctrl+click toggles what it pressed while that still exists; a replug ret
 test('a press becomes a move except on a link, on a left press on a waypoint (B203), or on a locked client -- by the guard', () => {
 	const t = table(PRESS_DRAGS);
 	const MOVE = { type: 'move' };
-	for (const r of combos(['onLink', 'onWaypoint', 'leftPress'])) {
-		const want = !r.onLink && !(r.onWaypoint && r.leftPress) ? 'startMove' : 'nothing';
+	// RESTATED at C-d step four (D4): a link is what is not placed; a waypoint, an anchor whose left press draws a link
+	for (const r of combos(['unplaced', 'linksOnLeft', 'leftPress'])) {
+		const want = !r.unplaced && !(r.linksOnLeft && r.leftPress) ? 'startMove' : 'nothing';
 		assert.equal(resolveInput(t, MOVE, r, { readOnly: false }).rule?.run ?? 'nothing', want, JSON.stringify(r));
 		assert.equal(resolveInput(t, MOVE, r, { readOnly: true }).rule, null, 'a locked press never becomes a drag');
 	}

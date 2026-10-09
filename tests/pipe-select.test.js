@@ -101,8 +101,9 @@ test('N-c2: an element naming what a click selects is a mark, its kind read off 
 
 test('N-c2: a drag that starts on a mark never moves it, as on a link', () => {
 	const [startMove] = PRESS_DRAGS;
-	assert.equal(startMove.when({ onLink: false, onMark: true, onWaypoint: false, leftPress: true }), false);
-	assert.equal(startMove.when({ onLink: false, onMark: false, onWaypoint: false, leftPress: true }), true, 'a node still moves');
+	// RESTATED at C-d step four (D4): the facts are named for what they say -- not placed, an anchor whose left press draws a link
+	assert.equal(startMove.when({ unplaced: false, onMark: true, linksOnLeft: false, leftPress: true }), false);
+	assert.equal(startMove.when({ unplaced: false, onMark: false, linksOnLeft: false, leftPress: true }), true, 'a node still moves');
 });
 
 test('N-c2: a selected entity the cascade does not reach is deleted as itself, first, so undo restores it last', () => {

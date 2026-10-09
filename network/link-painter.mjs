@@ -40,7 +40,7 @@ const LINK_PAINTER = {
 	layer: 'links',
 	stacked: true,
 	// C-b: the path itself, and its click twin wherever a dotted or dashed stroke has a gap (B268)
-	picks: [{ self: 'link', word: 'link' }, { self: 'link-hit', word: 'link', id: (t) => t.dataset.link }],
+	picks: [{ self: 'link', word: 'link', clones: true }, { self: 'link-hit', word: 'link', id: (t) => t.dataset.link, clones: true }],   // D4: Ctrl+left clones it
 	create(link, { el, layer, model }) {
 		const d = linkPath(model, link);
 		if (!d) return null;

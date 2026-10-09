@@ -217,3 +217,66 @@ test('B317: hovering a link\'s end handle hovers nothing, and Ctrl pressed over 
 		assert.doesNotThrow(() => h.capture.onKeyDown(key('Control', { ctrlKey: true })));
 	} finally { h.restore(); }
 });
+
+// ---- C-d, step four (D4): the press rows read what the plugins' picks say their items are ----
+
+test('C-d: what a press starts follows the plugins\' facts -- a right press moves the placed, a left press draws from an anchor, Ctrl+left clones', async () => {
+	const { pressRows, hitFactsOf } = await import('../app/src/recognize.js');
+	const { picksOf } = await import('../app/src/pick.js');
+	const { placesOf } = await import('../app/src/snap.js');
+	const facts = hitFactsOf(picksOf(PRODUCT_CANVAS), placesOf(PRODUCT_CANVAS));
+	assert.deepEqual(Object.fromEntries([...facts].map(([w, f]) => [w, [f.placed, f.anchor, f.clones].map(Number).join('')])),
+		{ node: '111', link: '001', waypoint: '110', zone: '101' }, 'placed / anchor / clones, per hit word');
+	const rows = pressRows(picksOf(PRODUCT_CANVAS), placesOf(PRODUCT_CANVAS));
+	assert.deepEqual(rows.find((r) => r.id === 'r-press').input, ['right on node|waypoint|zone']);
+	assert.deepEqual(rows.find((r) => r.id === 'link').input, ['left on node|waypoint']);
+});
+
+test('C-d: without the zones plugin no press row names a zone', async () => {
+	const { pressRows } = await import('../app/src/recognize.js');
+	const { picksOf } = await import('../app/src/pick.js');
+	const { placesOf } = await import('../app/src/snap.js');
+	const without = PRODUCT_CANVAS.filter((p) => p.owner !== 'zones');
+	const docs = pressRows(picksOf(without), placesOf(without)).flatMap((r) => r.input ?? []).join(' ');
+	assert.doesNotMatch(docs, /zone/);
+});
+
+test('C-d: the press rows and the overlay\'s arming name no plugin\'s kind', () => {
+	// the shared draw-a-link gesture keeps its own name (D2: the product's gesture, the network's judge); no row tests a kind
+	assert.doesNotMatch(code('app/src/recognize.js').replace(/id: 'link'|gesture: 'link'/g, ''), /'node'|'zone'|'link'|'waypoint'/);
+	assert.doesNotMatch(code('app/src/overlay.js'), /kind === 'zone'|isTypedEntity\(kind, this\.model/, 'the arming reads the facts (the hover footprint is the coordinate picks\', a later step)');
+	assert.doesNotMatch(code('app/src/input.js'), /hit\.kind !== 'zone'|hit\.kind === 'link'|=== 'zone'\) \{/);
+});
+
+test('C-d: Ctrl over a hovered device or zone lights the clone; over a waypoint it does not (D4: placed and cloned)', async () => {
+	const { key, seedNodes } = await import('./fixtures/client-harness.mjs');
+	const { makeWaypoint } = await import('../devices/make-node.mjs');
+	const h = makeInput();
+	try {
+		const [n] = seedNodes(h.model, [[0, 0]]);
+		const w = makeWaypoint(h.model, { x: 120, y: 120 }); h.model.put('node', w);
+		const over = (word, id) => pointer(0, 0, { target: { tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: (s) => (s.includes(word) ? { id } : null) } });
+		const clone = (id) => h.stateCalls('renderer.setState').some(([x, cls, on]) => x === id && cls === 'armed-clone' && on);
+		h.capture.onHover(over('node', n.id), true);
+		h.capture.onKeyDown(key('Control', { ctrlKey: true }));
+		assert.ok(clone(n.id), 'a device');
+		h.capture.onHover(over('node', n.id), false);
+		h.capture.onHover(over('waypoint', w.id), true);
+		h.capture.onKeyDown(key('Control', { ctrlKey: true }));
+		assert.ok(!clone(w.id), 'not a waypoint');
+	} finally { h.restore(); }
+});
+
+test('C-d: a Shift-press on a zone selects it alone -- Shift is the zone\'s layer key, not selection-add', async () => {
+	const { seedNodes } = await import('./fixtures/client-harness.mjs');
+	const h = makeInput();
+	try {
+		const [n] = seedNodes(h.model, [[0, 0]]);
+		const z = makeZone(h.model, { x: 150, y: 150, w: 120, h: 120 }); h.model.put('zone', z);
+		h.selection.set([n.id]);
+		const onZone = pointer(200, 200, { shiftKey: true, target: { tagName: 'rect', classList: { contains: () => false }, dataset: {}, closest: (s) => (s.includes('zone') ? { id: z.id } : null) } });
+		h.capture.onDown(onZone);
+		h.capture.onUp(onZone);
+		assert.deepEqual(h.selection.list(), [z.id]);
+	} finally { h.restore(); }
+});

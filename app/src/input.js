@@ -35,10 +35,10 @@ Input — pointer/keyboard state machine. Two-button gestures (`dev/DECISIONS.md
 import { pathOf } from '../../network/network-queries.mjs';   // the network's questions over a Model (Q-a)
 import { linksBetween, makeLink } from '../../network/link-queries.mjs';   // which links meet an anchor: the network's (K13d)
 import { Overlay } from './overlay.js';
-import { RECOGNIZE, DOUBLE_CLICKS } from './recognize.js';
+import { pressRows, hitFactsOf, DOUBLE_CLICKS } from './recognize.js';
 import { KEYMAP, KEY_RELEASES } from './keymap.js';
 import { composeRules, resolveInput } from '../../kernel/input-rules.mjs';
-import { nodeAt, endpointAt, occupiedAt, occupiedAnyAt, inFootprint, footprintHits } from './pick.js';
+import { nodeAt, endpointAt, occupiedAt, occupiedAnyAt, inFootprint, footprintHits, picksOf } from './pick.js';
 import { CANVAS, GAP, HALF, NODE_R, NODE_EXT, ZONE_EXT, spanExtent, orthoDelta, snappedDelta, clampDelta, snapNode, snapIn, placesOf, resolveBox, pointInBox, dist } from './snap.js';
 import { el, crosshair, previewRect, previewLine, previewPath, isShown, setShown, layerOf } from './painter.js';
 import { emitToHost } from './capture.js';
@@ -124,9 +124,12 @@ const GESTURES = {
 		*/
 		// what the drag becomes is a row (app/src/releases.js PRESS_DRAGS): B203, links, and a locked client by the guard
 		update: (i, pos, evt) => i.escalate(pos, evt, 'pressDrag',
-			{ onLink: i.ctx.hit.kind === 'link', onMark: !!i.ctx.hit.mark, onWaypoint: i.ctx.hit.kind === 'waypoint', leftPress: !!i.ctx.leftPress }, 'move'),
+			// D4: what the press was on, by the plugins' facts -- something not placed (a link) never moves; an anchor whose left press
+			// always draws a link (a waypoint, B203) never moves on a left drag
+			{ unplaced: !i.hitFacts.get(i.ctx.hit.kind)?.placed && !i.ctx.hit.mark, onMark: !!i.ctx.hit.mark,
+				linksOnLeft: !!(i.hitFacts.get(i.ctx.hit.kind)?.anchor && !i.hitFacts.get(i.ctx.hit.kind)?.clones), leftPress: !!i.ctx.leftPress }, 'move'),
 		start: (i, hit, pos, evt) => {
-			i.beginPress(hit, pos, evt.shiftKey && hit.kind !== 'zone');   // for zones Shift is the layer key, not selection-add
+			i.beginPress(hit, pos, evt.shiftKey && i.hitFacts.get(hit.kind)?.modifier !== 'shiftKey');   // Shift is the layer key of what it picks -- a zone -- not selection-add (D4)
 			i.ctx.orthoReady = !evt.shiftKey;
 			i.ctx.leftPress = evt.button === 0;   // which button opened this press; only the left one is barred above
 			return i.ctx;
@@ -385,7 +388,9 @@ export class Input {
 		};
 		// the pointer's tables on the same engine (stage 4): which gesture a press starts, a double click, a key release
 		// C-d (H19.32): the product's press rows and each canvas part's -- a plugin's rows over the shared gestures (D2)
-		this.pressRules = composeRules({ owner: 'product', rules: RECOGNIZE }, ...parts.map((p) => ({ owner: p.owner, rules: p.presses ?? [] })));
+		// D4: what each drawn hit is -- placed, an anchor, cloned by Ctrl+left, picked under a modifier -- from the parts' picks and places
+		this.hitFacts = hitFactsOf(picksOf(parts), this.places);
+		this.pressRules = composeRules({ owner: 'product', rules: pressRows(picksOf(parts), this.places) }, ...parts.map((p) => ({ owner: p.owner, rules: p.presses ?? [] })));
 		this.doubleRules = composeRules({ owner: 'product', rules: DOUBLE_CLICKS });
 		this.releaseRules = composeRules({ owner: 'product', rules: KEY_RELEASES });
 		// K5: run mode's rows come from the composition root (app/src/run-mode.js via main.js); a composition without the
@@ -441,7 +446,7 @@ export class Input {
 		this.overlay = layerOf(svg, 'overlay');
 		// H6.3 — transient feedback is overlay.js's: hovered, armed, the datum marker and the
 		// crosshair moved with it. Input keeps only what a GESTURE needs (mode, ctx, and the input state).
-		this.overlayUi = new Overlay({ svg, model, selection, renderer, snap, handles: () => this.handles });   // C-d: the kinds' handles
+		this.overlayUi = new Overlay({ svg, model, selection, renderer, snap, handles: () => this.handles, hitFacts: () => this.hitFacts });   // C-d: the kinds' handles; D4: what each hit is
 		this.mode = null; // null | pending | clone-pending | move | clone | link | zone | marquee | resize
 		this.ctx = {};
 
@@ -672,7 +677,7 @@ export class Input {
 	startClone(pos) {
 		const hit = this.ctx.hit;
 		// links can't anchor a clone; the entity may also have died mid-press (undo)
-		if (hit.kind === 'link' || !this.model.get(kindOf(hit.id), hit.id)) {
+		if (!this.hitFacts.get(hit.kind)?.placed || !this.model.get(kindOf(hit.id), hit.id)) {   // only what is placed anchors a clone -- not a link (D4)
 			this.mode = null;
 			this.ctx = {};
 			return;
@@ -1644,7 +1649,8 @@ export class Input {
 			this.updateMove(this.state.pointer.at, false);
 		}
 		// the zone layer just went inert: a hovered zone must drop its states
-		if (this.overlayUi.hovered && kindOf(this.overlayUi.hovered) === 'zone') {
+		// what was picked only under Shift -- a zone -- is no longer under the pointer once Shift is up (D4)
+		if (this.overlayUi.hovered && this.hitFacts.get(this.overlayUi.hoveredWord)?.modifier === 'shiftKey') {
 			this.renderer.clearState(this.overlayUi.hovered, 'hover');
 			this.overlayUi.disarm();
 		}

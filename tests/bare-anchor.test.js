@@ -105,8 +105,8 @@ const RECORD = {
 	'kernel/svg-scene.mjs': [1, 'the scene\'s `waypoint` kind -- what is drawn, F4'],
 	'engine/situation.mjs': [3, 'the situation\'s word for what the pointer is over, derived through the module (F4)'],
 	// app/src/pick.js's one -- the waypoint's hit -- moved to the network's marks at C-b (H19.30)
-	'app/src/recognize.js': [4, 'the gesture rows\' hit words, F4'],
-	'app/src/input.js': [4, 'the hit, the palette hand and the step words, F4'],
+	// app/src/recognize.js's four -- the press rows' hit words -- went at C-d step four (D4): the rows read the plugins' facts
+	'app/src/input.js': [3, 'the palette hand and the step words, F4 -- the press escalation\'s hit word went at C-d step four (D4)'],
 	'app/src/palette.js': [2, 'the palette\'s waypoint tile, F4'],
 	'app/src/painter.js': [1, 'the palette\'s waypoint tile, F4'],
 	'app/src/help.js': [1, 'the help overlay\'s waypoint situation, F4'],

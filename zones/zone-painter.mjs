@@ -27,7 +27,7 @@ const ZONE_PAINTER = {
 	layer: 'zones',
 	stacked: true,
 	// C-b: an inert backdrop, picked only with Shift held -- a plain press passes through it to the canvas (DESIGN U1)
-	picks: [{ closest: 'g.zone', word: 'zone', modifier: 'shiftKey' }],
+	picks: [{ closest: 'g.zone', word: 'zone', modifier: 'shiftKey', clones: true }],   // D4: Ctrl+left clones it
 	create(entity, { el, applyLook, pillWidth, layer }) {
 		const g = el('g', { id: entity.id, class: 'zone' }, layer);
 		el('rect', { class: 'zone-rect', rx: ZONE_R }, g);

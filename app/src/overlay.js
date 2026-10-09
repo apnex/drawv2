@@ -29,7 +29,9 @@ import { isTypedEntity } from '../../devices/device-shapes.mjs';   // whether a 
 const HANDLE = 12;
 
 export class Overlay {
-	constructor({ svg, model, selection, renderer, snap, handles = () => new Map() }) {
+	constructor({ svg, model, selection, renderer, snap, handles = () => new Map(), hitFacts = () => new Map() }) {
+		this.hitFacts = hitFacts;   // D4: what each hit word is, from the canvas parts (by Input)
+		this.hoveredWord = null;    // the word the hovered entity was picked as -- a device's 'node', a waypoint's 'waypoint'
 		this.handleSpecs = handles;   // C-d: the kinds' handles, from the canvas parts (by Input)
 		this.svg = svg;
 		this.model = model;
@@ -57,6 +59,7 @@ export class Overlay {
 		this.renderer.setState(hit.id, 'hover', on);
 		if (!on) this.renderer.setState(hit.id, 'linkband', false);
 		this.hovered = on ? hit.id : (this.hovered === hit.id ? null : this.hovered);
+		this.hoveredWord = this.hovered ? (on ? hit.kind : this.hoveredWord) : null;
 		// deliberately does NOT arm. Arming needs to know whether the client is read-only, and this
 		// module must not hold that opinion (see the header). An early version self-armed here with
 		// default options and momentarily armed while Server-Locked — corrected a line later by the
@@ -75,6 +78,7 @@ export class Overlay {
 		if (!still) {
 			this.renderer.clearState(id, 'hover', 'linkband');
 			this.hovered = null;
+			this.hoveredWord = null;
 		}
 		this.disarm();
 	}
@@ -85,6 +89,7 @@ export class Overlay {
 		if (id === null || this.hovered === id) {
 			this.renderer.clearState(this.hovered, 'hover', 'linkband');
 			this.hovered = null;
+			this.hoveredWord = null;
 		}
 	}
 
@@ -98,9 +103,10 @@ export class Overlay {
 	arm(evt, { readOnly = false, gesturing = false } = {}) {
 		this.disarm();
 		if (readOnly || !this.hovered || gesturing) return;
-		const kind = kindOf(this.hovered);
+		// Ctrl arms what a Ctrl-drag clones and moves: a placed hit that clones -- a device, a zone (D4)
+		const facts = this.hitFacts().get(this.hoveredWord);
 		if (evt.altKey) this.armed = { id: this.hovered, cls: 'armed' };
-		else if (evt.ctrlKey && (isTypedEntity(kind, this.model.get(kind, this.hovered)) || kind === 'zone')) this.armed = { id: this.hovered, cls: 'armed-clone' };
+		else if (evt.ctrlKey && facts?.placed && facts?.clones) this.armed = { id: this.hovered, cls: 'armed-clone' };
 		if (this.armed) this.renderer.setState(this.armed.id, this.armed.cls, true);
 	}
 

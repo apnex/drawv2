@@ -1173,7 +1173,7 @@ Elsewhere and unchanged: H10.30 and PD-3 are the director's calls; H15.5 and H17
 | H19.29 | C-a: drawing -- a painter per kind brought by its plugin, the renderer a dispatcher, layers ranked; zones first, then groups, devices and links | feature | S4 | `DONE` |
 | H19.30 | C-b: picking -- one id attribute on every drawn entity; a kind's pick modifier (the zone's Shift) | feature | S4 | `DONE` |
 | H19.31 | C-c: placing -- layout and extent as row facts; moving, cloning, nudging and snapping read them | feature | S4 | `DONE` |
-| H19.32 | C-d: handles, presses, gestures, releases -- rows a plugin brings for the shared gestures (D2) | feature | S4 | `TODO` |
+| H19.32 | C-d: handles, presses, gestures, releases -- rows a plugin brings for the shared gestures (D2) | feature | S4 | `DONE` |
 | H19.33 | C-e: keys, commands, readout, labels, grids -- each moved to its plugin; opening with the devices plugin's hand (palette, digit keys, stamping, pipette, retype, chaining), moved from C-d by the director | feature | S4 | `TODO` |
 | H19.34 | C-f: closed -- the canvas names no plugin's kind beyond a record that may only fall; B308 closed | **B308** | S4 | `TODO` |
 | H19.8 | Design, for approval: a type as a composition of packs | **B282** | S3 | `TODO` |
@@ -1288,6 +1288,8 @@ Next: the text box, the device's stamping and chaining, and the press rows namin
 AMENDED 2026-10-09: C-d's third step done -- the text box is the devices plugin's row over the shared box gesture.\
 Device placing moves to C-e as one step, the director's choice; B316 fixed.\
 Next: C-d's last step, the press rows naming a zone, a link or a waypoint, and the Ctrl clone-arming.
+AMENDED 2026-10-09: C-d done -- the press rows read the facts the plugins' picks declare (D4); B317 fixed. The coordinate picks, the marquee's footprint picks and the draw-a-link gesture's targets carry into C-e with the hand.\
+Next H19.33, C-e, opening with the devices plugin's hand.
 
 **Exit:** nothing stored needs a migration and none is kept; production's sync holds the network under the GR6 battery; the core holds no kind.
 

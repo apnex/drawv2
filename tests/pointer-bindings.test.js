@@ -12,7 +12,13 @@ every hit, button, modifier set, held tool and read-only state the engine must s
 */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { RECOGNIZE, DOUBLE_CLICKS } from '../app/src/recognize.js';
+import { DOUBLE_CLICKS } from '../app/src/recognize.js';
+import { pressRows } from '../app/src/recognize.js';
+import { picksOf } from '../app/src/pick.js';
+import { placesOf } from '../app/src/snap.js';
+import { PRODUCT_CANVAS as CANVAS_FOR_ROWS } from '../product/canvas.mjs';
+// RESTATED at C-d step four (H19.32; D4): the product's press rows are composed from the plugins' picks and places
+const RECOGNIZE = pressRows(picksOf(CANVAS_FOR_ROWS), placesOf(CANVAS_FOR_ROWS));
 import { PRODUCT_CANVAS } from '../product/canvas.mjs';
 import { KEY_RELEASES } from '../app/src/keymap.js';
 import { RUN_PRESSES } from '../app/src/run-mode.js';

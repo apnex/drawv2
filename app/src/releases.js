@@ -28,7 +28,7 @@ THE FACTS each gesture hands over -- only what a row reads:
   ctrl-click  exists     the entity pressed still exists
   handle    the declaring plugin's facts (C-d): a link end's retargets and admitted (network/link-handles.mjs), a zone's changed
   box       area         the box has width and height (the opening row's own releases, C-d)
-  drag-start  onLink, onWaypoint, leftPress    what the press was on, and with which button
+  drag-start  unplaced, onMark, linksOnLeft, leftPress    what the press was on (by the plugins' facts, D4), and with which button
 */
 
 const released = (e) => e.type === 'up';
@@ -91,7 +91,7 @@ never moves at all.
 */
 export const PRESS_DRAGS = [
 	// a plugin's mark is never moved by a drag (H17.22 N-c2): what it joins decides where it is
-	{ id: 'start-move', mutates: true, on: moved, when: (r) => !r.onLink && !r.onMark && !(r.onWaypoint && r.leftPress), run: 'startMove' },
+	{ id: 'start-move', mutates: true, on: moved, when: (r) => !r.unplaced && !r.onMark && !(r.linksOnLeft && r.leftPress), run: 'startMove' },
 ];
 export const CLONE_DRAGS = [
 	{ id: 'start-clone', mutates: true, on: moved, run: 'startClone' },
