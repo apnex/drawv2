@@ -22,14 +22,13 @@ not acquire an opinion about mutation, which is precisely the coupling that prod
 
 import { el } from './painter.js';
 import { CANVAS, GAP, NODE_R, dist } from './snap.js';
-import { inFootprint } from './pick.js';
 import { kindOf } from '../../model/model.mjs';
-import { isTypedEntity } from '../../devices/device-shapes.mjs';   // whether a device is composed: the devices plugin's (O-e1)
 
 const HANDLE = 12;
 
 export class Overlay {
-	constructor({ svg, model, selection, renderer, snap, handles = () => new Map(), hitFacts = () => new Map() }) {
+	constructor({ svg, model, selection, renderer, snap, handles = () => new Map(), hitFacts = () => new Map(), points = () => [] }) {
+		this.points = points;       // C-e: what each part's items cover (by Input)
 		this.hitFacts = hitFacts;   // D4: what each hit word is, from the canvas parts (by Input)
 		this.hoveredWord = null;    // the word the hovered entity was picked as -- a device's 'node', a waypoint's 'waypoint'
 		this.handleSpecs = handles;   // C-d: the kinds' handles, from the canvas parts (by Input)
@@ -67,14 +66,14 @@ export class Overlay {
 		// make. The affordance test caught it. Arming is the caller's to sequence, with context.
 	}
 
-	// the pointer moved: is the hovered entity still under it? A node stays hovered anywhere in its
-	// FOOTPRINT, a waypoint within its radius.
+	// the pointer moved: is the hovered entity still under it?
 	refreshHover(pos) {
 		if (!this.hovered) return this.disarm();
 		const id = this.hovered;
 		const ent = this.model.get(kindOf(id), id);
-		const still = pos && ent && ent.x !== undefined
-			&& (isTypedEntity(kindOf(id), ent) ? inFootprint(ent, pos, NODE_R) : dist(ent, pos) <= NODE_R);
+		// what keeps it is what its part says it covers (C-e): a device's frame, a waypoint's radius; anything else, near its origin
+		const cover = this.points().find((a) => a.word === this.hoveredWord && a.under);
+		const still = pos && ent && ent.x !== undefined && (cover ? cover.under(ent, pos) : dist(ent, pos) <= NODE_R);
 		if (!still) {
 			this.renderer.clearState(id, 'hover', 'linkband');
 			this.hovered = null;

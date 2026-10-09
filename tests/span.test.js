@@ -917,10 +917,13 @@ test('B209: each role combination draws its own layers, in both renderers', asyn
 });
 
 test('B209: a waypoint that already has links is a valid link target', async () => {
+	// RESTATED at C-e step three (H19.33): `endpointAt` left app/src/pick.js -- a link end grabs what the network says a waypoint
+	// covers (network/anchor-points.mjs), and the old slice would have passed against a file that no longer holds it
 	const src = fs.readFileSync(new URL('../app/src/pick.js', import.meta.url), 'utf8');
-	const body = src.slice(src.indexOf('export function endpointAt'));
-	assert.doesNotMatch(body.slice(0, 400), /waypointFree\(/,
-		'endpointAt must offer a waypoint that already carries a link, or a junction cannot be DRAWN');
+	const points = fs.readFileSync(new URL('../network/anchor-points.mjs', import.meta.url), 'utf8');
+	assert.match(points, /word: 'waypoint', of: \(model\) => bareAnchors\(model\), grabs: near/, 'every waypoint is grabbed, the declaration as read');
+	assert.doesNotMatch(points, /waypointFree|free/i,
+		'a link end must be offered a waypoint that already carries a link, or a junction cannot be DRAWN');
 	// B211 -- and starting a link from one is the same question, so the predicate is gone entirely
 	assert.doesNotMatch(src, /export const waypointFree/,
 		'waypointFree has no caller: a junction must be startable from a bend, so every waypoint is a valid source');

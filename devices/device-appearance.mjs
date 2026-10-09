@@ -16,6 +16,7 @@ import { GLYPH_BB, TOKENS } from '../kernel/theme.mjs';
 import { hasDevice } from './device-fields.mjs';
 import { DEVICE_PRESSES } from './device-gestures.mjs';
 import { DEVICE_HAND } from './device-hand.mjs';
+import { DEVICE_POINTS } from './device-footprint.mjs';
 
 const FE = L_STD.frame.ext;            // the frame's half-extent (20)
 const SOCKET = STD.socket;             // the glyph box (26)
@@ -125,4 +126,4 @@ const DEVICE = {
 };
 
 // the devices plugin's canvas part (C-a: the device's appearance on the anchor)
-export const DEVICES_CANVAS = { owner: 'devices', appearances: [DEVICE], presses: DEVICE_PRESSES, hand: DEVICE_HAND };   // C-d: and the text box's row; C-e: its hand
+export const DEVICES_CANVAS = { owner: 'devices', appearances: [DEVICE], presses: DEVICE_PRESSES, hand: DEVICE_HAND, at: DEVICE_POINTS };   // C-d: the text box's row; C-e: its hand, what a device covers

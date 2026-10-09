@@ -102,6 +102,7 @@ const RECORD = {
 	'kernel/fixtures.mjs': [3, 'the spec viewer\'s scenes, in the scene\'s vocabulary'],
 	'kernel/geometry.mjs': [1, 'the scene\'s `waypoint` kind -- what is drawn, F4'],
 	'network/appearance.mjs': [1, 'the scene\'s `waypoint` kind -- what is drawn, F4'],
+	'network/anchor-points.mjs': [1, 'the word a waypoint is picked by at a point, as its drawn pick names it -- F4; C-e step three'],
 	'kernel/svg-scene.mjs': [1, 'the scene\'s `waypoint` kind -- what is drawn, F4'],
 	'engine/situation.mjs': [3, 'the situation\'s word for what the pointer is over, derived through the module (F4)'],
 	// app/src/pick.js's one -- the waypoint's hit -- moved to the network's marks at C-b (H19.30)

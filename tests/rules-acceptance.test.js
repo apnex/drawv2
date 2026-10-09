@@ -18,7 +18,12 @@ import assert from 'node:assert/strict';
 import { makeInput, key, seedNodes } from './fixtures/client-harness.mjs';
 import { KEYMAP } from '../app/src/keymap.js';
 import { Input } from '../app/src/input.js';
-import { nodeAt, occupiedAt } from '../app/src/pick.js';
+// RESTATED at C-e step three (H19.33): a device under the pointer is what the devices plugin says a device covers, asked as the
+// canvas asks it; a device on a cell is the devices plugin's question
+import { pointsOf, grabbedAt } from '../app/src/pick.js';
+import { occupiedAt } from '../devices/occupancy.mjs';
+import { PRODUCT_CANVAS as PARTS_FOR_POINTS } from '../product/canvas.mjs';
+const nodeAt = (model, pos) => grabbedAt(pointsOf(PARTS_FOR_POINTS), model, pos, ['node']);
 import { snapNode, GAP, NODE_EXT } from '../app/src/snap.js';
 import { makeNode, makeWaypoint } from '../devices/make-node.mjs';   // O-e1: the devices plugin's factories
 

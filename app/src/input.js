@@ -38,7 +38,8 @@ import { Overlay } from './overlay.js';
 import { pressRows, hitFactsOf, DOUBLE_CLICKS } from './recognize.js';
 import { KEYMAP, KEY_RELEASES } from './keymap.js';
 import { composeRules, resolveInput } from '../../kernel/input-rules.mjs';
-import { nodeAt, endpointAt, occupiedAt, occupiedAnyAt, inFootprint, footprintHits, picksOf } from './pick.js';
+import { occupiedAnyAt, picksOf, pointsOf, grabbedAt, takenIn } from './pick.js';
+import { inFootprint } from '../../devices/device-footprint.mjs';   // a text box's double-click hit -- C-e's labels step
 import { CANVAS, GAP, HALF, NODE_R, NODE_EXT, ZONE_EXT, spanExtent, orthoDelta, snappedDelta, clampDelta, snapNode, snapIn, placesOf, resolveBox, pointInBox, dist } from './snap.js';
 import { el, crosshair, previewRect, previewLine, previewPath, isShown, setShown, layerOf } from './painter.js';
 import { emitToHost } from './capture.js';
@@ -162,7 +163,7 @@ const GESTURES = {
 				found = spec.released(ctx, after, i.model);
 			} else {
 				i.endRetarget(ctx);
-				found = spec.released(ctx, nodeAt(i.model, pos), i.model);
+				found = spec.released(ctx, i.anchorAt(pos, spec.targets), i.model);   // what the handle lands on: its words (C-e)
 			}
 			i.act(i.decide(`handle:${ctx.kind}`, evt, found), { id: ctx.id, ...found });
 			i.overlayUi.handles();   // the handles ride the (possibly new) entity
@@ -181,7 +182,7 @@ const GESTURES = {
 				return;
 			}
 			// the fixed end is anchored; the dragged end follows the cursor or the device it hovers
-			const target = nodeAt(i.model, pos);
+			const target = i.anchorAt(pos, spec.targets);
 			i.ctx.line.update(i.ctx.fixed, target || pos);
 			i.retarget(target, i.ctx.fixedId);
 			i.readout.setLink(i.ctx.fixed.name || '?', (target && target.id !== i.ctx.fixedId) ? (target.name || '?') : snapNode(pos));
@@ -214,7 +215,7 @@ const GESTURES = {
 		commit: (i, ctx, pos, evt) => {
 			ctx.path.remove();
 			if (ctx.target) i.renderer.setState(ctx.target, 'hover', false);
-			const target = endpointAt(i.model, pos);
+			const target = i.anchorAt(pos);
 			const srcAlive = i.model.endpointOf(ctx.src.id);
 			const hasVia = !!((ctx.route ?? ctx.via)?.length);   // a guided link is no more a plain link than a pinned one
 			// a valid endpoint under the cursor: a node / free waypoint, distinct from src, not a via bend
@@ -276,7 +277,7 @@ const GESTURES = {
 			i.cleanupRoute(ctx);
 		},
 		update: (i, pos) => {
-			const target = endpointAt(i.model, pos);
+			const target = i.anchorAt(pos);
 			i.updateLinkPreview(pos);
 			i.retarget(target, i.ctx.src.id);
 			i.readout.setLink(i.ctx.src.name || '?', (target && target.id !== i.ctx.src.id) ? (target.name || '?') : snapNode(pos));
@@ -389,6 +390,9 @@ export class Input {
 		// C-d (H19.32): the product's press rows and each canvas part's -- a plugin's rows over the shared gestures (D2)
 		// D4: what each drawn hit is -- placed, an anchor, cloned by Ctrl+left, picked under a modifier -- from the parts' picks and places
 		this.hitFacts = hitFactsOf(picksOf(parts), this.places);
+		// C-e: what each part's items cover at a point and in a box, in the parts' order; a link ends at an anchor
+		this.points = pointsOf(parts);
+		this.anchorWords = [...this.hitFacts].filter(([, f]) => f.anchor).map(([w]) => w);
 		// C-e: the hand a part declares -- what can be held, how a held item stamps, what blocks it, retyping (devices/device-hand.mjs)
 		const hands = parts.filter((p) => p.hand);
 		if (hands.length > 1) throw new Error(`Input: a hand is brought by ${hands.map((p) => p.owner).join(' and by ')} -- one may`);
@@ -449,7 +453,7 @@ export class Input {
 		this.overlay = layerOf(svg, 'overlay');
 		// H6.3 — transient feedback is overlay.js's: hovered, armed, the datum marker and the
 		// crosshair moved with it. Input keeps only what a GESTURE needs (mode, ctx, and the input state).
-		this.overlayUi = new Overlay({ svg, model, selection, renderer, snap, handles: () => this.handles, hitFacts: () => this.hitFacts });   // C-d: the kinds' handles; D4: what each hit is
+		this.overlayUi = new Overlay({ svg, model, selection, renderer, snap, handles: () => this.handles, hitFacts: () => this.hitFacts, points: () => this.points });   // C-d: the kinds' handles; D4: what each hit is
 		this.mode = null; // null | pending | clone-pending | move | clone | link | zone | marquee | resize
 		this.ctx = {};
 
@@ -913,7 +917,7 @@ export class Input {
 		if (!this.state.pointer.at) return;
 		const ctx = this.ctx;
 		const snapped = snapNode(this.state.pointer.at);
-		const existing = waypointAt(this.model, snapped) ?? (nodes ? nodeAt(this.model, this.state.pointer.at) : null);   // occupancy index (R13)
+		const existing = waypointAt(this.model, snapped) ?? (nodes ? this.anchorAt(this.state.pointer.at) : null);   // occupancy index (R13)
 		if (existing && pin) {
 			if (existing.id === ctx.src.id) return;        // don't thread the source itself
 			/*
@@ -927,7 +931,7 @@ export class Input {
 			if (existing.id === ctx.src.id || ctx.route.includes(existing.id)) return;
 			ctx.route.push(existing.id);
 		} else {
-			if (occupiedAt(this.model, snapped)) return;        // a node cell -- refuse
+			if (occupiedAnyAt(this.model, snapped)) return;     // a taken cell -- refuse (no waypoint is on it, above: a device's)
 			const wp = makeWaypoint(this.model, snapped);
 			this.model.put(BARE_KIND, wp);            // live (visible); committed on release
 			if (pin) ctx.via.push(wp.id);
@@ -940,7 +944,7 @@ export class Input {
 
 	// the live route preview: a rounded polyline through src → threaded waypoints → cursor/target
 	updateLinkPreview(pos) {
-		const target = endpointAt(this.model, pos);
+		const target = this.anchorAt(pos);
 		const end = target ? { x: target.x, y: target.y } : snapNode(pos);
 		// the cursor is a free ANCHOR — pathOf resolves the rest of the route around it
 		// through every stop drawn so far, guides included, so the author sees the route they are drawing
@@ -1205,15 +1209,15 @@ export class Input {
 	selectInBox({ box }) { this.selection.set(this.pickedIn(box)); }
 	addInBox({ box }) { this.selection.add(this.pickedIn(box)); }
 
-	// what a marquee box picks: nodes by footprint, waypoints by position, and a link when BOTH its ends are picked.
-	// Zones are not marquee-pickable (the Shift layer); they are selected directly
+	// what a marquee box picks: what the parts say their items cover -- devices by footprint, waypoints by position, and a link
+	// when BOTH its ends are picked (C-e). Zones are not marquee-pickable (the Shift layer); they are selected directly
 	pickedIn(box) {
-		const picked = [];
-		typedNodes(this.model).forEach((n) => { if (footprintHits(n, box)) picked.push(n.id); });   // span-aware
-		bareAnchors(this.model).forEach((w) => { if (pointInBox(w, box)) picked.push(w.id); });
-		const inBox = new Set(picked);
-		this.model.all('link').forEach((l) => { if (inBox.has(l.src) && inBox.has(l.dst)) picked.push(l.id); });
-		return picked;
+		return takenIn(this.points, this.model, box);
+	}
+
+	// the anchor at a point, by what the parts say their items cover: of the named words, or of any anchor (C-e)
+	anchorAt(pos, words = this.anchorWords) {
+		return grabbedAt(this.points, this.model, pos, words);
 	}
 
 	toggleCtrlClicked(ctx) {
@@ -1387,7 +1391,7 @@ export class Input {
 	stepUnderPointer() {
 		if (!this.state.pointer.at) return null;
 		if (waypointAt(this.model, snapNode(this.state.pointer.at))) return 'waypoint';
-		return nodeAt(this.model, this.state.pointer.at) ? 'node' : 'ground';
+		return this.anchorAt(this.state.pointer.at) ? 'node' : 'ground';   // no waypoint on the cell, above: a device's
 	}
 
 	// ---- key handlers. Bodies unchanged from the ladder; only their dispatch moved. ----
@@ -1545,7 +1549,7 @@ export class Input {
 
 	onPipette() {
 		if (this.mode) return;
-		const over = this.state.pointer.at && nodeAt(this.model, this.state.pointer.at);
+		const over = this.state.pointer.at && this.anchorAt(this.state.pointer.at);   // a waypoint is no item: itemOf answers none
 		this.tools.setHand(over && this.handSpec ? this.handSpec.itemOf(over) : null);   // the item it was stamped from (C-e)
 		this.refreshHand();
 	}

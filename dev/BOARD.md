@@ -1295,6 +1295,8 @@ AMENDED 2026-10-09: C-e's first step done -- the hand is the devices plugin's to
 Next: the hand's ghost, the palette's tiles and drop, the readout's naming.
 AMENDED 2026-10-09: C-e's second step done -- the ghost and the palette's tiles draw the hand's preview, and a drop stamps through the hand; B318 fixed.\
 Next: the picks by coordinate, the marquee's footprint picks and the draw-a-link gesture's targets.
+AMENDED 2026-10-09: C-e's third step done -- what is at a point, in a box and under a hover is what the plugins say their items cover; the picker imports no plugin.\
+Next: keys and commands -- the step words, select-all, a delete's order, the zone keys.
 
 **Exit:** nothing stored needs a migration and none is kept; production's sync holds the network under the GR6 battery; the core holds no kind.
 

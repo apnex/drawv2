@@ -34,6 +34,7 @@ const LINK_HANDLES = {
 		return path ? { src: along(path[0], path[1]), dst: along(path[path.length - 1], path[path.length - 2]) } : null;
 	},
 	preview: 'retarget',
+	targets: ['node'],          // what a dragged end lands on: a device, by the word its pick names (C-e) -- not a waypoint
 	dragState: 'replugging',   // the real line de-emphasized while its end is dragged
 	start: (link, end) => ({ end, fixedId: end === 'src' ? link.dst : link.src, before: { src: link.src, dst: link.dst } }),
 	// what the release found: a genuine retarget -- onto a device, not the fixed end, not where it already was -- and whether the

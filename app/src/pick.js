@@ -6,7 +6,7 @@ One duty: *what is there?* Nothing here decides what to DO about it — that is 
 they are the same question asked of two inputs:
 
   · from a DOM event   `hitOf(evt)`      — what did the pointer land on? (reads the rendered tree)
-  · from a coordinate  `nodeAt(...)`     — what occupies this point? (reads the Model)
+  · from a coordinate  `grabbedAt(...)`  — what occupies this point? (reads the Model, by what the parts say they cover)
 
 Span-awareness is the reason these are not one-liners. A multi-cell node is hittable across its WHOLE
 footprint, not just near its origin cell, so every predicate goes through `spanExtent` rather than a
@@ -16,24 +16,7 @@ Lifted out of `input.js` at H6.2 with the bodies unchanged; `this.model` became 
 first of the three units INPUT.md §8 names.
 */
 
-import { NODE_R, dist, spanExtent } from './snap.js';
 import { kindOf } from '../../model/model.mjs';
-import { bareAnchors, typedNodes } from '../../devices/device-shapes.mjs';   // whether a device is composed: the devices plugin's (O-e1)
-import { occupiedAt as deviceOn } from '../../devices/occupancy.mjs';
-
-// ---- footprint predicates: a node occupies a RECTANGLE, not a point ----
-
-// is `pos` inside this node's footprint, padded by `pad`?
-export const inFootprint = (n, pos, pad = 0) => {
-	const { sw, sh } = spanExtent(n.span);
-	return pos.x >= n.x - pad && pos.x <= n.x + sw + pad && pos.y >= n.y - pad && pos.y <= n.y + sh + pad;
-};
-
-// does this node's footprint overlap `box`? (the marquee test)
-export const footprintHits = (n, box, pad = 0) => {
-	const { sw, sh } = spanExtent(n.span);
-	return n.x - pad <= box.x + box.w && n.x + sw + pad >= box.x && n.y - pad <= box.y + box.h && n.y + sh + pad >= box.y;
-};
 
 // ---- from a DOM event: what did the pointer land on? ----
 
@@ -101,31 +84,39 @@ export function hitWith(picks) {
 
 // ---- from a coordinate: what occupies this point? ----
 
-// the node whose footprint contains `pos`. Backs select, move, link-target and re-plug.
-export const nodeAt = (model, pos, slop = NODE_R + 4) =>
-	typedNodes(model).find((n) => inFootprint(n, pos, slop));
-
-// a waypoint belongs to at most one link; a FREE one can still take an endpoint
-
 /*
-B209 -- a valid link endpoint under the cursor: a node, or ANY waypoint.
-
-It used to be a node or a FREE waypoint, which meant a waypoint already carrying a link could not
-be linked to -- and a bend always carries one. So the gesture that makes a junction was refused at
-the pointer, before the validator ever saw it. That was correct while the validator refused the
-topology too; B207 relaxed that half, and this is the other.
-
-B211 deleted `waypointFree` with its last caller. The LINK rule used it to gate whether a left drag
-may START from a waypoint, and a junction has to be startable from a bend -- so being a valid target
-and being a valid source turned out to be the same question, and the answer to both is "any
-waypoint". A predicate every caller answers `true` is not a predicate.
+C-e, step three (H19.33) -- WHAT IS AT A POINT is what each part says its items cover (`at`), asked in the parts' order: the
+devices plugin's devices (devices/device-footprint.mjs), the network's waypoints and links (network/anchor-points.mjs). An entry
+names the word its items are picked by and the items (`of`), and any of: what a press grabs (`grabs`), what keeps a hover
+(`under`), what a box takes (`within`), and what a box takes once it took what the item joins (`joins`).
 */
-export function endpointAt(model, pos) {
-	const n = nodeAt(model, pos);
-	if (n) return n;
-	return bareAnchors(model).find((w) => dist(w, pos) <= NODE_R) || null;
+export function pointsOf(parts) {
+	const points = [];
+	for (const part of parts) for (const a of part.at ?? []) {
+		if (typeof a.word !== 'string' || typeof a.of !== 'function') throw new Error(`pick: ${part.owner}'s point picks name no word or no items`);
+		points.push({ ...a, owner: part.owner });
+	}
+	return points;
 }
 
-// cell occupancy (the engine's O(1) index, not a scan): a node rests here / anything rests here
-export const occupiedAt = (model, p) => deviceOn(model, p);   // a device on the cell: the devices plugin's question (O-e1)
+// the first item, in the parts' order, that grabs `pos` -- of the named words, or of any
+export function grabbedAt(points, model, pos, words = null) {
+	for (const a of points) {
+		if (!a.grabs || (words && !words.includes(a.word))) continue;
+		const found = a.of(model).find((x) => a.grabs(x, pos));
+		if (found) return found;
+	}
+	return null;
+}
+
+// what a box takes: every item whose cover meets it, then every item whose ends it took (a link with both ends inside)
+export function takenIn(points, model, box) {
+	const taken = [];
+	for (const a of points) if (a.within) for (const x of a.of(model)) if (a.within(x, box)) taken.push(x.id);
+	const inBox = new Set(taken);
+	for (const a of points) if (a.joins) for (const x of a.of(model)) if (a.joins(x, inBox)) taken.push(x.id);
+	return taken;
+}
+
+// cell occupancy (the engine's O(1) index, not a scan): anything rests here -- the core's
 export const occupiedAnyAt = (model, p) => model.occupiedAnyAt(p);
