@@ -76,3 +76,65 @@ test('C-d: a kind\'s handles brought twice are refused when Input is built, nami
 	const z = PRODUCT_CANVAS.find((p) => p.owner === 'zones');
 	assert.throws(() => makeInput({ parts: [...PRODUCT_CANVAS, { owner: 'again', handles: z.handles }] }), /Input: zone's handles are brought by zones and by again/);
 });
+
+// ---- C-d, step two: the link's end handles and re-plug, the network's handles over the shared handle gesture ----
+
+const endHandle = (end, x, y) => pointer(x, y, { target: { tagName: 'circle', classList: { contains: (c) => c === 'handle' }, dataset: { end }, closest: () => null } });
+const threeHosts = async (h) => {
+	const { seedNodes } = await import('./fixtures/client-harness.mjs');
+	const { makeLink } = await import('../network/link-queries.mjs');
+	const [n0, n1, n2] = seedNodes(h.model, [[0, 0], [360, 0], [360, 360]]);
+	const l = makeLink(h.model, n2.id, n1.id); h.model.put('link', l);
+	h.selection.set([l.id]);
+	return { n0, n1, n2, l };
+};
+
+test('C-d: dragging a selected link\'s src handle onto a device re-plugs it there; a cancelled drag changes nothing', async () => {
+	const h = makeInput();
+	try {
+		const { n0, n1, n2, l } = await threeHosts(h);
+		h.capture.onDown(endHandle('src', 360, 330));
+		h.capture.onMove(pointer(200, 0));
+		h.input.cancelDrag();
+		assert.deepEqual([h.model.get('link', l.id).src, h.model.get('link', l.id).dst], [n2.id, n1.id], 'cancelled: as it was');
+		h.capture.onDown(endHandle('src', 360, 330));
+		h.capture.onMove(pointer(30, 0));
+		h.capture.onUp(pointer(0, 0));
+		assert.deepEqual([h.model.get('link', l.id).src, h.model.get('link', l.id).dst], [n0.id, n1.id], 're-plugged onto the device released on');
+	} finally { h.restore(); }
+});
+
+test('C-d: without the network\'s part a link has no handles, and a press on one does nothing', async () => {
+	const h = makeInput({ parts: PRODUCT_CANVAS.filter((p) => p.owner !== 'network') });
+	try {
+		const { n2, l } = await threeHosts(h);
+		assert.equal(h.input.handles.has('link'), false);
+		h.capture.onDown(endHandle('src', 360, 330));
+		h.capture.onUp(pointer(0, 0));
+		assert.equal(h.model.get('link', l.id).src, n2.id);
+	} finally { h.restore(); }
+});
+
+test('C-d: the canvas holds no link handle or re-plug of its own; the handle gesture commits nothing itself', () => {
+	const input = code('app/src/input.js');
+	assert.doesNotMatch(input, /replugTo|'lhandle'|replugLink|\breplug: \{/);
+	assert.doesNotMatch(code('app/src/recognize.js'), /lhandle|id: 'resize'/);
+	assert.doesNotMatch(code('app/src/releases.js'), /REPLUG_RELEASES/);
+	assert.doesNotMatch(code('app/src/overlay.js'), /pathOf|'end'|'link'/);
+	assert.doesNotMatch(code('app/src/pick.js'), /dataset\.end|dataset\.corner|'lhandle'|'handle' \}/);
+	const slot = input.slice(input.indexOf('\thandle: {'), input.indexOf('\n\t},', input.indexOf('\thandle: {')));
+	assert.doesNotMatch(slot, /history\.commit/, 'its end is the declaring plugin\'s release rows');
+});
+
+test('C-d: a re-plug marks its link while the end is dragged, and a cancel unmarks it', async () => {
+	const h = makeInput();
+	try {
+		const { l } = await threeHosts(h);
+		const marks = () => h.stateCalls('renderer.setState').filter(([id, cls]) => id === l.id && cls === 'replugging').map(([, , on]) => on);
+		h.capture.onDown(endHandle('src', 360, 330));
+		h.capture.onMove(pointer(200, 0));
+		assert.deepEqual(marks(), [true], 'marked while dragged');
+		h.input.cancelDrag();
+		assert.deepEqual(marks(), [true, false], 'unmarked by the cancel');
+	} finally { h.restore(); }
+});

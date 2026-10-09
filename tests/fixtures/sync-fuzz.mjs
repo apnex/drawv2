@@ -162,7 +162,7 @@ async function runSeeded(seed, trace) {
 				if (!links.length || nodes.length < 2) return;
 				const l = pick(links), a = pick(nodes), b = pick(nodes); if (a === b) return;
 				selectOnly([l.id]);
-				t.changes.commit(C.replugLink(l.id, a.id, b.id)); note = `${l.id} ${a.id}->${b.id}`; break;
+				t.changes.commit(C.setFields('replug', 'link', l.id, { src: a.id, dst: b.id }));   // the re-plug's command (C-d) note = `${l.id} ${a.id}->${b.id}`; break;
 			}
 			case 'flow': { if (!links.length) return; const l = pick(links); t.changes.commit(C.cycleDirection(l)); note = l.id; break; }
 			// a hand pipe between two anchors with none, as `g` lays one

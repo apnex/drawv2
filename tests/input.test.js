@@ -693,7 +693,7 @@ test('B44: no builder emits a `before` — the wire drops it and the server deri
 		const built = [
 			commands.resizeZoneStep(h.model, [z.id], 1, 0),   // RESTATED at C-d: resizeZone is private; its step builds it
 			commands.resizeNodeSpan(a.id, { cols: 2, rows: 3 }),
-			commands.replugLink(link.id, a.id, b.id),
+			commands.setFields('replug', 'link', link.id, { src: a.id, dst: b.id }),   // RESTATED at C-d: a re-plug sets through the one builder
 			commands.retypeNode(a.id, 'host'),
 			commands.toggleClosed(link),
 			commands.renameDocument('x'),

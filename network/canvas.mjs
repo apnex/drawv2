@@ -6,5 +6,7 @@ product (product/canvas.mjs) with the other plugins' parts.
 
 import { LINK_PAINTERS } from './link-painter.mjs';
 import { NETWORK_APPEARANCES } from './anchor-appearance.mjs';
+import { LINK_PRESSES, LINK_HANDLE_SPECS } from './link-handles.mjs';
 
-export const NETWORK_CANVAS = { owner: 'network', painters: LINK_PAINTERS, appearances: NETWORK_APPEARANCES };
+// C-d: and its link's end handles, with the press row that opens the shared handle gesture on one
+export const NETWORK_CANVAS = { owner: 'network', painters: LINK_PAINTERS, appearances: NETWORK_APPEARANCES, presses: LINK_PRESSES, handles: LINK_HANDLE_SPECS };

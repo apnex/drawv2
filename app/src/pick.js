@@ -56,6 +56,11 @@ export function picksOf(parts) {
 				picks.push({ ...p, owner: part.owner, kind: d.kind });
 			}
 		}
+		// C-d: a handle is picked by the dataset key its declaration names, and called by its word (a corner handle, a link end)
+		for (const h of part.handles ?? []) {
+			if (typeof h.word !== 'string' || typeof h.key !== 'string') throw new Error(`pick: ${part.owner}'s handles for ${h.kind} name no word or no key`);
+			picks.push({ handle: h.key, word: h.word, owner: part.owner, kind: h.kind });
+		}
 	}
 	// a backdrop -- a pick under a modifier, passing a plain press through -- is tried after everything drawn over it
 	return [...picks.filter((p) => !p.modifier), ...picks.filter((p) => p.modifier)];
@@ -67,11 +72,12 @@ export function hitWith(picks) {
 		const target = evt.target;
 		if (!target.closest) return { kind: 'canvas', id: null };
 		if (target.classList && target.classList.contains('handle')) {
-			// link endpoint handles carry data-end; zone corner handles carry data-corner (the handles are C-d's)
-			if (target.dataset.end) return { kind: 'lhandle', end: target.dataset.end };
-			return { kind: 'handle', id: target.dataset.corner };
+			// a handle: the declaration whose dataset key it carries names it -- its word, and the handle as the hit's id (C-d)
+			for (const p of picks) if (p.handle && target.dataset?.[p.handle] !== undefined) return { kind: p.word, id: target.dataset[p.handle] };
+			return { kind: 'canvas', id: null };
 		}
 		for (const p of picks) {
+			if (p.handle) continue;
 			if (p.self) {
 				if (target.classList && target.classList.contains(p.self)) return { kind: p.word, id: p.id ? p.id(target) : target.id };
 				continue;

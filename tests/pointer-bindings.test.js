@@ -45,11 +45,12 @@ function oldResolve(hit, evt, ctx) {
 	return null;
 }
 // RESTATED at C-d step one (H19.32): the zone's draw is the zones plugin's row over the shared box gesture, its release the row's own: a box placed for zones is what the old table called the zone gesture
-const outcome = (r) => (r ? (r.gesture ? `gesture:${r.gesture === 'box' ? r.box.place : r.gesture}` : `run:${r.run}`) : 'nothing');
+// RESTATED at C-d step two (H19.32): a handle's press opens the shared handle gesture from the declaring plugin's row -- named, as the old table named the gesture, by the row's id (resize, replug)
+const outcome = (r) => (r ? (r.gesture ? `gesture:${r.gesture === 'box' ? r.box.place : r.gesture === 'handle' ? r.id : r.gesture}` : `run:${r.run}`) : 'nothing');
 
 // ---- every press worth distinguishing ----
 const HITS = [{ kind: 'canvas', id: null }, { kind: 'node', id: 'node-000001' }, { kind: 'waypoint', id: 'node-e00001' },
-	{ kind: 'zone', id: 'zone-000001' }, { kind: 'link', id: 'link-000001' }, { kind: 'handle', id: 'se' }, { kind: 'lhandle', end: 'src' }];
+	{ kind: 'zone', id: 'zone-000001' }, { kind: 'link', id: 'link-000001' }, { kind: 'handle', id: 'se' }, { kind: 'lhandle', id: 'src' }];   // C-d: a handle's hit carries the handle as its id
 const MODSETS = [];
 for (const shiftKey of [false, true]) for (const ctrlKey of [false, true]) for (const altKey of [false, true]) MODSETS.push({ shiftKey, ctrlKey, altKey, metaKey: false });
 const PRESSES = HITS.flatMap((on) => [0, 1, 2].flatMap((button) => MODSETS.map((m) => ({ type: 'down', button, on, ...m }))));

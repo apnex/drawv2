@@ -72,9 +72,8 @@ export const RECOGNIZE = [
 	{ id: 'r-clone', input: ['Ctrl+right on node|waypoint|zone'],   mutates: true,  on: (e) => R(e) && e.ctrlKey && !e.altKey && rightKinds(e.on),           gesture: 'clone-pending' },
 	{ id: 'r-press', input: ['right on node|waypoint|zone'],   mutates: false, on: (e) => R(e) && !e.ctrlKey && !e.altKey && rightKinds(e.on),          gesture: 'pending' },
 
-	// left button, most specific first in reading, and disjoint in fact: handles are drawn ON TOP, so they win over what is beneath
-	{ id: 'resize', input: ['left on handle'], context: 'a zone selected',    mutates: true,  on: (e) => L(e) && e.on.kind === 'handle', when: free,                   gesture: 'resize' },
-	{ id: 'replug', input: ['left on lhandle'], context: 'a link selected',    mutates: true,  on: (e) => L(e) && e.on.kind === 'lhandle', when: free,                  gesture: 'replug' },
+	// left button, most specific first in reading, and disjoint in fact. C-d (H19.32): a press on a handle opens the shared handle
+	// gesture from the row of the plugin that declared the handle -- the zones plugin's corners, the network's link ends
 	{ id: 'l-clone', input: ['Ctrl+left on node|zone|link'],   mutates: true,  on: (e) => L(e) && e.ctrlKey && entity(e.on), when: free,                gesture: 'clone-pending' },
 	{ id: 'link', input: ['left on node|waypoint'],      mutates: true,  on: (e) => L(e) && (e.on.kind === 'waypoint' || (e.on.kind === 'node' && !e.ctrlKey)), when: free, gesture: 'link' },
 	// C-d (H19.32): the zone's draw is the zones plugin's row, over the shared box gesture (zones/zone-gestures.mjs)

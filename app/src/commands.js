@@ -169,10 +169,6 @@ export function resizeNodeSpan(id, span) {
 }
 
 // re-plug: rewire one end of a link onto another node
-export function replugLink(id, src, dst) {
-	return { label: 'replug', entries: [{ op: 'set', kind: 'link', id, after: { src, dst } }] };
-}
-
 // fast-replace: retype a node in place — id/name/links/position survive
 export function retypeNode(id, type) {
 	return { label: 'retype', entries: [{ op: 'set', kind: 'node', id, after: { type } }] };

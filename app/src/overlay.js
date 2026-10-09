@@ -20,7 +20,6 @@ the gesture layer's to know, so `arm()` takes them rather than reaching for them
 not acquire an opinion about mutation, which is precisely the coupling that produced B18/B37/B42.
 ─────────────────────────────────────────────────────────────────────────────────────────────────*/
 
-import { pathOf } from '../../network/network-queries.mjs';   // the network's questions over a Model (Q-a)
 import { el } from './painter.js';
 import { CANVAS, GAP, NODE_R, dist } from './snap.js';
 import { inFootprint } from './pick.js';
@@ -142,26 +141,13 @@ export class Overlay {
 		if (ids.length !== 1) return;
 		const id = ids[0];
 
-		if (kindOf(id) === 'link') {
-			const path = pathOf(this.model, this.model.get('link', id));
-			if (!path) return;
-			// B29 — each handle sits on the route's OWN first/last segment, not on a straight line
-			// between the ends. On a routed link those are different directions entirely, and the
-			// handles used to float off the path they were supposed to grab.
-			const along = (from, to) => {
-				const d = Math.hypot(to[0] - from[0], to[1] - from[1]) || 1;
-				const off = Math.min(NODE_R + 6, d * 0.4);
-				return { x: from[0] + (to[0] - from[0]) / d * off, y: from[1] + (to[1] - from[1]) / d * off };
-			};
-			this.#place({ src: along(path[0], path[1]), dst: along(path[path.length - 1], path[path.length - 2]) }, 6, 'end');
-			return;
-		}
-
-		// C-d: a kind whose part declares handles -- a zone's corners, the zones plugin's
+		// C-d: a kind whose part declares handles -- a zone's corners, the zones plugin's; a link's ends, on the route's own first
+		// and last segments, the network's (B29)
 		const spec = this.handleSpecs().get(kindOf(id));
 		const entity = spec && this.model.get(kindOf(id), id);
-		if (!entity) return;
-		this.#place(spec.points(entity), spec.rx, spec.key);
+		const points = entity && spec.points(entity, this.model);
+		if (!points) return;
+		this.#place(points, spec.rx, spec.key);
 	}
 
 	// one rect per named point, tagged with the dataset key the recognizer reads back

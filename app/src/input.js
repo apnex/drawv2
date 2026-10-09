@@ -44,7 +44,7 @@ import { el, crosshair, previewRect, previewLine, previewPath, isShown, setShown
 import { emitToHost } from './capture.js';
 import { initialInputState, track } from './input-state.js';
 import { DRAG_THRESHOLD, dragging, releaseTrigger } from './triggers.js';
-import { LINK_RELEASES, MARQUEE_RELEASES, CTRL_CLICKS, REPLUG_RELEASES, PRESS_DRAGS, CLONE_DRAGS } from './releases.js';
+import { LINK_RELEASES, MARQUEE_RELEASES, CTRL_CLICKS, PRESS_DRAGS, CLONE_DRAGS } from './releases.js';
 import { roundedPath } from '../../kernel/router.mjs';
 import { BEND_R } from '../../kernel/spec.mjs';
 import { newId, kindOf } from '../../model/model.mjs';
@@ -146,76 +146,68 @@ const GESTURES = {
 	},
 
 	/*
-	C-d (H19.32; D2) -- THE SHARED HANDLE GESTURE: drag a handle of the lone selected entity, by what its kind's handles declare
-	(`handles`: where they are, what a drag to a point makes of the entity, the command's label) -- a zone's corners, from the
-	zones plugin. The live preview writes the shared Model (B7); history owns the real edit; a cancel rewinds.
+	C-d (H19.32; D2) -- THE SHARED HANDLE GESTURE: drag a handle of the lone selected entity, by what the plugin that declared the
+	handle says (`handles`) -- where they are, and one of two previews:
+	  reshape   what a drag to a point makes of the entity, written live to the shared Model (B7) and rewound at the end -- a
+	            zone's corners, the box its readout
+	  retarget  a preview line from the fixed anchor to the pointer or the device under it, the dragged entity marked -- a link's
+	            ends
+	On release the plugin says what it found (`released`), and its release rows say what that means -- the gesture commits
+	nothing itself, so a plugin's handle reaches the document through its own rows (a zone's resize, a link's re-plug).
 	*/
-	resize: {
-		commit: (i, ctx, pos) => {
-			const after = ctx.spec.at(ctx, pos);
-			const before = ctx.before;
-			i.model.set(ctx.kind, ctx.id, { ...before });   // rewind the live preview; history owns the real edit
-			if (Object.keys(after).every((k) => after[k] === before[k])) return;
-			i.history.commit(commands.setFields(ctx.spec.label, ctx.kind, ctx.id, after));
-		},
-		cancel: (i, ctx) => i.model.set(ctx.kind, ctx.id, { ...ctx.before }),   // a cancelled gesture is a no-op
-		update: (i, pos) => {
-			const patch = i.ctx.spec.at(i.ctx, pos);
-			i.model.set(i.ctx.kind, i.ctx.id, patch);   // live preview writes the shared Model (B7)
-			if (i.ctx.spec.readout === 'box') i.readout.setBox(patch);
-		},
-		start: (i, hit) => {
-			const id = i.selection.list().find((x) => i.handles.has(kindOf(x)));
-			const kind = id && kindOf(id), entity = id && i.model.get(kind, id);
-			if (!entity) return null;
-			const spec = i.handles.get(kind);
-			return { kind, id, spec, ...spec.start(entity, hit.id) };
-		}
-	},
-
-
-	replug: {
+	handle: {
 		commit: (i, ctx, pos, evt) => {
-			ctx.line.remove();
-			if (ctx.target) i.renderer.setState(ctx.target, 'hover', false);
-			i.renderer.setState(ctx.linkId, 'replugging', false);
-			const link = i.model.get('link', ctx.linkId);
-			const target = nodeAt(i.model, pos);
-			// the facts: a genuine retarget -- onto a node, not the fixed end, not where it already was -- and whether the pair
-			// has room. A routed link may join a pair that already has links; a straight one only a pair with room (B72, B80)
-			const retargets = !!(link && target && target.id !== ctx.fixedId && target.id !== (ctx.end === 'src' ? ctx.before.src : ctx.before.dst));
-			const newSrc = retargets && ctx.end === 'src' ? target.id : link?.src;
-			const newDst = retargets && ctx.end === 'dst' ? target.id : link?.dst;
-			const admitted = retargets && !pairHolders({ ...link, src: newSrc, dst: newDst }, linksBetween(i.model, newSrc, newDst), i.model).length;
-			i.act(i.decide('replug', evt, { retargets, admitted }), { ctx, newSrc, newDst });
-			i.overlayUi.handles();   // handles ride the (possibly new) endpoints
+			const { spec } = ctx;
+			let found;
+			if (spec.preview === 'reshape') {
+				const after = spec.at(ctx, pos);
+				i.model.set(ctx.kind, ctx.id, { ...ctx.before });   // rewind the live preview; history owns the real edit
+				found = spec.released(ctx, after, i.model);
+			} else {
+				i.endRetarget(ctx);
+				found = spec.released(ctx, nodeAt(i.model, pos), i.model);
+			}
+			i.act(i.decide(`handle:${ctx.kind}`, evt, found), { id: ctx.id, ...found });
+			i.overlayUi.handles();   // the handles ride the (possibly new) entity
 		},
 		cancel: (i, ctx) => {
-			// a cancelled re-plug is a no-op: drop the preview, restore the real line
-			ctx.line.remove();
-			if (ctx.target) i.renderer.setState(ctx.target, 'hover', false);
-			i.renderer.setState(ctx.linkId, 'replugging', false);
+			// a cancelled gesture is a no-op: a reshape rewound, a retarget's preview dropped
+			if (ctx.spec.preview === 'reshape') i.model.set(ctx.kind, ctx.id, { ...ctx.before });
+			else i.endRetarget(ctx);
 		},
 		update: (i, pos) => {
-			// the fixed end is anchored; the dragged end follows the cursor / hovered node
+			const { spec } = i.ctx;
+			if (spec.preview === 'reshape') {
+				const patch = spec.at(i.ctx, pos);
+				i.model.set(i.ctx.kind, i.ctx.id, patch);   // live preview writes the shared Model (B7)
+				i.readout.setBox(patch);
+				return;
+			}
+			// the fixed end is anchored; the dragged end follows the cursor or the device it hovers
 			const target = nodeAt(i.model, pos);
 			i.ctx.line.update(i.ctx.fixed, target || pos);
 			i.retarget(target, i.ctx.fixedId);
 			i.readout.setLink(i.ctx.fixed.name || '?', (target && target.id !== i.ctx.fixedId) ? (target.name || '?') : snapNode(pos));
 		},
 		start: (i, hit, pos) => {
-			const linkId = i.selection.list().find((id) => kindOf(id) === 'link');
-			const link = i.model.get('link', linkId);
-			if (!link) return null;
-			const fixedId = hit.end === 'src' ? link.dst : link.src;
-			const fixed = i.model.endpointOf(fixedId);   // an anchor is a node OR a waypoint (B29)
-			if (!fixed) return null;
-			i.renderer.setState(linkId, 'replugging', true);   // de-emphasize the real line while dragging
-			const ctx = { linkId, end: hit.end, fixedId, fixed, before: { src: link.src, dst: link.dst }, line: previewLine(i.overlay), target: null };
-			ctx.line.update(fixed, pos);
+			const spec = i.handleWords.get(hit.kind);
+			const id = spec && i.selection.list().find((x) => kindOf(x) === spec.kind);
+			const entity = id && i.model.get(spec.kind, id);
+			if (!entity) return null;
+			const ctx = { kind: spec.kind, id, spec, ...spec.start(entity, hit.id) };
+			if (spec.preview === 'retarget') {
+				ctx.fixed = i.model.endpointOf(ctx.fixedId);   // an anchor is a node OR a waypoint (B29)
+				if (!ctx.fixed) return null;
+				i.renderer.setState(id, spec.dragState, true);   // de-emphasize the real one while its end is dragged
+				ctx.line = previewLine(i.overlay);
+				ctx.target = null;
+				ctx.line.update(ctx.fixed, pos);
+			}
 			return ctx;
 		}
 	},
+
+
 
 	link: {
 		// only the LEFT button drives link mode: a right-button release during a chain (chord delete,
@@ -410,6 +402,8 @@ export class Input {
 			selected: () => this.selection.list().map((id) => { const e = this.model.get(kindOf(id), id); return { ...(e ?? {}), id, kind: kindOf(id) }; }),
 			// C-d: make an entity of a kind -- `make(model)` mints it -- commit its creation, and select it
 			create: (kind, make) => { const e = make(this.model); this.history.commit(commands.createEntity(kind, e)); this.selection.set([e.id]); },
+			// C-d: set an entity's fields -- a handle's release: a zone's box, a link's ends -- as one labelled edit
+			set: (label, kind, id, after) => this.history.commit(commands.setFields(label, kind, id, after)),
 		};
 		// the pointer's tables on the same engine (stage 4): which gesture a press starts, a double click, a key release
 		// C-d (H19.32): the product's press rows and each canvas part's -- a plugin's rows over the shared gestures (D2)
@@ -421,7 +415,7 @@ export class Input {
 		this.runRules = composeRules({ owner: 'product', rules: runRules });
 		// what each gesture MEANS when it ends, or when a press becomes a drag (stage 5, app/src/releases.js)
 		this.meaningRules = Object.fromEntries(Object.entries({ link: LINK_RELEASES, marquee: MARQUEE_RELEASES, ctrlClick: CTRL_CLICKS,
-			replug: REPLUG_RELEASES, pressDrag: PRESS_DRAGS, cloneDrag: CLONE_DRAGS })
+			pressDrag: PRESS_DRAGS, cloneDrag: CLONE_DRAGS })
 			.map(([name, rules]) => [name, composeRules({ owner: 'product', rules })]));
 		// C-d: a plugin row opening a shared gesture brings what its release means, resolved under the row's own id
 		for (const p of parts) for (const row of p.presses ?? []) {
@@ -430,9 +424,15 @@ export class Input {
 		}
 		// C-d: the handles a lone selected entity shows, by kind, from the canvas parts
 		this.handles = new Map();
+		this.handleWords = new Map();   // the hit word a press on a handle carries -> its declaration
 		for (const p of parts) for (const h of p.handles ?? []) {
 			if (this.handles.has(h.kind)) throw new Error(`Input: ${h.kind}'s handles are brought by ${this.handles.get(h.kind).owner} and by ${p.owner}`);
-			this.handles.set(h.kind, { ...h, owner: p.owner });
+			if (!['reshape', 'retarget'].includes(h.preview)) throw new Error(`Input: ${p.owner}'s handles for ${h.kind} preview neither by reshape nor by retarget`);
+			const spec = { ...h, owner: p.owner };
+			this.handles.set(h.kind, spec);
+			this.handleWords.set(h.word, spec);
+			// what a handle's release means: the declaring plugin's rows, resolved under the kind's handle table
+			this.meaningRules[`handle:${h.kind}`] = composeRules({ owner: p.owner, rules: h.releases ?? [] });
 		}
 		this.model = model;
 		this.history = history;
@@ -484,7 +484,7 @@ export class Input {
 		});
 		model.onChange((action, kind, entity) => {
 			// zone resize handles + link endpoint handles track their entity's geometry
-			if (this.handles.has(kind) || kind === 'link' || action === 'load') this.overlayUi.handles();   // C-d: a kind with handles
+			if (this.handles.has(kind) || action === 'load') this.overlayUi.handles();   // C-d: a kind with handles -- a zone, a link
 			// a gesture must not survive a document swap (chain mode has no held
 			// button, so the header menu is reachable mid-gesture)
 			if (action === 'load' && this.mode) this.cancelDrag();
@@ -1019,6 +1019,13 @@ export class Input {
 	// read-only decision actually has to be made.
 	// highlight the entity a drag would land on, and un-highlight the one it left. Identical in the
 	// link and replug updates, so it lives once.
+	// the end of a retarget's preview: its line dropped, the hovered target and the dragged entity unmarked (C-d)
+	endRetarget(ctx) {
+		ctx.line.remove();
+		if (ctx.target) this.renderer.setState(ctx.target, 'hover', false);
+		this.renderer.setState(ctx.id, ctx.spec.dragState, false);
+	}
+
 	retarget(target, excludeId) {
 		if (this.ctx.target && (!target || target.id !== this.ctx.target)) {
 			this.renderer.setState(this.ctx.target, 'hover', false);
@@ -1232,10 +1239,6 @@ export class Input {
 	toggleCtrlClicked(ctx) {
 		this.selection.toggle(ctx.hit.id);
 		this.labels.setFocus(ctx.hit.id);
-	}
-
-	replugTo({ ctx, newSrc, newDst }) {
-		this.history.commit(commands.replugLink(ctx.linkId, newSrc, newDst));
 	}
 
 	chainFrom(node, pos) {

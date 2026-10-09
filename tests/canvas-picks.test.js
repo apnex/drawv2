@@ -44,7 +44,8 @@ test('C-b: without the zones plugin a zone is never picked -- the rule is the pl
 test('C-b: the picker names no plugin\'s kind -- each drawer declares how its element is picked', () => {
 	assert.doesNotMatch(code('app/src/pick.js'), /g\.node|g\.waypoint|g\.zone|'link(-hit)?'|'node'|'waypoint'|'zone'/);
 	const owners = picksOf(PRODUCT_CANVAS).map((p) => `${p.owner}:${p.word}`);
-	assert.deepEqual(owners.sort(), ['devices:node', 'network:link', 'network:link', 'network:waypoint', 'zones:zone']);
+	// RESTATED at C-d step two: and each handle declaration, by its word -- a corner handle, a link end
+	assert.deepEqual(owners.sort(), ['devices:node', 'network:lhandle', 'network:link', 'network:link', 'network:waypoint', 'zones:handle', 'zones:zone']);
 });
 
 test('C-b: a malformed pick is refused when the picks are composed, naming its owner', () => {

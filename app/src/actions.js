@@ -50,8 +50,6 @@ export const ACTION_LABELS = {
 	'gesture:link': 'draw a link: release on a node or waypoint',
 	'gesture:clone-pending': 'clone: drag the copy into place',
 	'gesture:pending': 'select; drag to move',
-	'gesture:resize': 'resize the zone',
-	'gesture:replug': 're-plug the link onto another node',
 	'gesture:marquee': 'marquee select, with every link whose ends are both inside',
 	deleteUnderCursor: 'delete what is under the pointer',
 	editUnderPointer: 'edit the label under the pointer',

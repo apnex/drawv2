@@ -1281,6 +1281,8 @@ AMENDED 2026-10-09: C-c done -- which kinds are placed on the grid, and how, is 
 Next H19.32, C-d, the gestures as rows for shared gestures.
 AMENDED 2026-10-09: C-d's first step done -- the zone's draw and resize are the zones plugin's rows over the canvas's shared box and handle gestures.\
 Next: the link's handles and replug, the text box, the device's stamping.
+AMENDED 2026-10-09: C-d's second step done -- the link's end handles and re-plug are the network's, over the shared handle gesture, which now commits nothing itself.\
+Next: the text box, the device's stamping and chaining, and the press rows naming a zone, a link or a waypoint.
 
 **Exit:** nothing stored needs a migration and none is kept; production's sync holds the network under the GR6 battery; the core holds no kind.
 

@@ -81,18 +81,29 @@ const ZONE_DRAW = {
 	},
 };
 
-// a lone selected zone's corner handles, and what dragging one does
+// a lone selected zone's corner handles, and what dragging one does -- RESHAPED live, the box its readout
 const ZONE_HANDLES = {
 	kind: 'zone',
-	points: (zone) => zoneCorners(zone),
-	key: 'corner',   // the dataset key a handle carries -- the hit's id (app/src/pick.js)
+	word: 'handle',   // what a press on one is called -- a corner handle
+	key: 'corner',    // the dataset key a handle carries -- the hit's id (app/src/pick.js)
 	rx: 2,
+	points: (zone) => zoneCorners(zone),
+	preview: 'reshape',
 	// the corner diagonally across from the grabbed one stays put
 	start: (zone, handle) => ({ fixedCorner: zoneCorners(zone)[OPPOSITE_CORNER[handle]], before: { x: zone.x, y: zone.y, w: zone.w, h: zone.h } }),
 	at: (ctx, pos) => resizeBox(pos, ctx.fixedCorner),
-	label: 'resize',
-	readout: 'box',
+	// what the release found: whether the box changed, and the box
+	released: (ctx, after) => ({ changed: Object.keys(after).some((k) => after[k] !== ctx.before[k]), after }),
+	releases: [{ id: 'resize', mutates: true, on: (e) => e.type === 'up', when: (r) => r.changed, run: (host, d) => host.set('resize', 'zone', d.id, d.after) }],
 };
 
-export const ZONE_PRESSES = [ZONE_DRAW];
+// a press on a corner handle opens the shared handle gesture -- handles are drawn ON TOP, so they win over what is beneath
+const ZONE_RESIZE = {
+	id: 'resize', input: ['left on handle'], context: 'a zone selected', mutates: true, doc: 'resize the zone',
+	on: (e) => e.button === 0 && e.on.kind === ZONE_HANDLES.word,
+	when: (s) => !s.tool,
+	gesture: 'handle',
+};
+
+export const ZONE_PRESSES = [ZONE_DRAW, ZONE_RESIZE];
 export const ZONE_HANDLE_SPECS = [ZONE_HANDLES];

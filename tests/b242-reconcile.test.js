@@ -44,7 +44,9 @@ import path from 'node:path';
 import { Model } from '../model/model.mjs';
 import { Changes } from '../app/src/changes.js';
 import { Sync } from '../app/src/sync.js';
-import { createEntity, deleteSelection, renameEntity, replugLink, nudgeSelection, moveEntities } from '../app/src/commands.js';
+import { createEntity, deleteSelection, renameEntity, setFields, nudgeSelection, moveEntities } from '../app/src/commands.js';
+// RESTATED at C-d step two (H19.32): a re-plug sets the link's ends through the one builder, as the network's handle row does
+const replugLink = (id, src, dst) => setFields('replug', 'link', id, { src, dst });
 import { Session } from '../server/protocol.js';
 import { OWNER, openStore } from './fixtures/app.mjs';
 import { productKinds } from '../product/kinds.mjs';
