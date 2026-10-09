@@ -11,6 +11,9 @@ was measured against lives on in `Model#pathOf`, which `tests/model.test.js` hol
 `draw link path` route now exposes.
 */
 
+// RESTATED at C-e step ten (H19.33): how a link reads on the selection line is the network's, so the readout is composed with
+// the product's parts, as the page composes it
+import { PRODUCT_CANVAS } from '../product/canvas.mjs';
 import { makeLink } from '../network/link-queries.mjs';   // K13d: the network's link queries
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -34,7 +37,7 @@ function routed() {
 test('readout: a link between two nodes names both', () => {
 	const { m, a, b } = routed();
 	const sel = new Selection(m);
-	const r = new Readout({ model: m, selection: sel, elements: [] });
+	const r = new Readout({ model: m, selection: sel, elements: [], parts: PRODUCT_CANVAS });
 	const l = makeLink(m, a.id, b.id);
 	m.put('link', l);
 	sel.set([l.id]);
@@ -54,7 +57,7 @@ test('readout: a link between two nodes names both', () => {
 test('B29: readout names a WAYPOINT endpoint instead of printing `?`', () => {
 	const { m, a, w } = routed();
 	const sel = new Selection(m);
-	const r = new Readout({ model: m, selection: sel, elements: [] });
+	const r = new Readout({ model: m, selection: sel, elements: [], parts: PRODUCT_CANVAS });
 	const l = makeLink(m, a.id, w.id);
 	m.put('link', l);
 	sel.set([l.id]);

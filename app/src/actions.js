@@ -19,7 +19,6 @@ export const ACTION_LABELS = {
 	onEditMode: 'edit mode: show the socket grid on content panels',
 	onRunMode: 'run mode: panel buttons act, and inputs edit',
 	onLabels: 'show or hide names',
-	onSelectAll: 'select every node, zone and link',
 	onDatum: 'set the datum at the pointer',
 	onDatumClear: 'clear the datum',
 	onWaypointKey: 'drop a waypoint; while drawing a link, pin a bend',

@@ -8,15 +8,21 @@ clicking any mount toggles, persisted.
 */
 
 import { kindOf } from '../../model/model.mjs';
-import { GAP, spanExtent } from './snap.js';
-import { linkMarker } from '../../network/appearance.mjs';
-import { isTypedEntity } from '../../devices/device-shapes.mjs';   // whether a device is composed: the devices plugin's (O-e1)
+import { placesOf } from './snap.js';
 
 const UNITS_KEY = 'draw.units';
 
 export class Readout {
-	constructor({ model, selection, elements }) {
+	// C-e: `parts` -- how each kind reads on the selection line (`describe`), and each placed kind's size (C-c places)
+	constructor({ model, selection, elements, parts = [] }) {
 		this.model = model;
+		this.describes = new Map();
+		for (const p of parts) for (const d of p.describe ?? []) {
+			if (this.describes.has(d.kind)) throw new Error(`Readout: ${d.kind}'s description is brought by ${this.describes.get(d.kind).owner} and by ${p.owner}`);
+			this.describes.set(d.kind, { ...d, owner: p.owner });
+		}
+		this.places = placesOf(parts);
+		this.fmt = { pair: (x, y) => this.pair(x, y), rel: (x, y) => this.rel(x, y), dims: (w, h) => this.dims(w, h), model };
 		this.selection = selection;
 		this.elements = elements.filter(Boolean);
 		this.cursor = null;    // snapped grid point under the pointer
@@ -121,36 +127,10 @@ export class Readout {
 			const kind = kindOf(id);
 			const entity = this.model.get(kind, id);
 			if (!entity) return null;
-			if (isTypedEntity(kind, entity)) return `${entity.name || 'node'} ${this.pair(entity.x, entity.y)}${this.rel(entity.x, entity.y)}`;
-			if (kind === 'zone') return `${entity.name || 'zone'} ${this.pair(entity.x, entity.y)} ${this.dims(entity.w, entity.h)}${this.rel(entity.x, entity.y)}`;
-			if (kind === 'link') {
-				// an ANCHOR is a node OR a waypoint (B29). A waypoint has no name — it is a bend, not a
-				// component — so it reads as its position, which is the only thing that identifies it.
-				const nameOf = (id) => {
-					const e = this.model.endpointOf(id);
-					if (!e) return '?';
-					return e.name || this.pair(e.x, e.y);
-				};
-				/*
-				B229 -- THE BAR CARRIES THE DECLARED DIRECTION, and it is persistent state rather
-				than a receipt.
-
-				This was a hardcoded arrow, so a selected link read the same whichever way it
-				flowed. Cycling `f` flashed the answer for 1200ms and then the line reverted to
-				saying nothing about direction -- the author had to remember, or press again.
-
-				A selection line is the right home for it because it is STATE: it is already
-				re-rendered on selection and on any change to the selected entity, so the bar
-				follows the document without a timer. `<->` for undeclared, because a symmetric
-				link carries flow both ways rather than having no relationship.
-				*/
-				const head = linkMarker(entity);
-				const bar = head === 'end' ? '>>>' : head === 'start' ? '<<<' : '<->';
-				// H15.15 -- the PLANE is state too, so it sits on the selection line rather than
-				// flashing once. A data link says nothing, because it is the ordinary case.
-				const plane = entity.control ? ' [control]' : '';
-				return `${nameOf(entity.src)} ${bar} ${nameOf(entity.dst)}${plane}`;
-			}
+			// C-e: the kind's part says how it reads -- a device, a zone, a link; anything else, or a part saying nothing (a
+			// waypoint), reads as its id
+			const line = this.describes.get(kind)?.line(entity, this.fmt);
+			if (line != null) return line;
 			return id;
 		}
 		// multi-selection: count + bounding box of positioned entities, plus — for
@@ -161,8 +141,8 @@ export class Readout {
 			const kind = kindOf(id);
 			const entity = this.model.get(kind, id);
 			if (!entity || entity.x === undefined) return;
-			let w = entity.w || 0, h = entity.h || 0;
-			if (kind === 'node' && entity.span) { const e = spanExtent(entity.span); w = e.sw; h = e.sh; }   // span-aware footprint
+			const place = this.places.get(kind);   // C-e: a placed kind's size -- a device's span, a zone's box (C-c)
+			const { w, h } = place ? place.size(entity) : { w: entity.w || 0, h: entity.h || 0 };
 			minX = Math.min(minX, entity.x); minY = Math.min(minY, entity.y);
 			maxX = Math.max(maxX, entity.x + w); maxY = Math.max(maxY, entity.y + h);
 			centers.push({ x: entity.x + w / 2, y: entity.y + h / 2 });

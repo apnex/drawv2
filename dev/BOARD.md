@@ -1310,6 +1310,8 @@ AMENDED 2026-10-09: C-e's eighth step done -- what follows a clone is each plugi
 Next: the simulation's spawn and tower; then the readout, labels, select-all, grids and selection reflections.
 AMENDED 2026-10-09: C-e's ninth step done -- run mode's spawner and tower are the simulation's rows, handed in by the product page alone (H17-D7).\
 Next: the readout, labels and panel rows, select-all, grids and selection reflections.
+AMENDED 2026-10-09: C-e's tenth step done -- how a kind reads on the selection line, and what Ctrl+A takes, are each plugin's.\
+Next: labels and the panel rows; then the zone grid, the selection reflections and the survey's open findings.
 
 **Exit:** nothing stored needs a migration and none is kept; production's sync holds the network under the GR6 battery; the core holds no kind.
 

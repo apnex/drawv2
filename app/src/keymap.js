@@ -83,7 +83,12 @@ export const KEYMAP = [
 	{ id: 'labels', input: ['Tab'],    prevent: false, mutates: false, on: (e) => e.key === 'Tab',        run: 'onLabels' },
 
 	// ---- inspection: SCOPE decision 5 promises these keep working while locked ----
-	{ id: 'select-all', input: ['Ctrl+A'], mutates: false, on: (e) => meta(e) && is(e, 'a'), run: 'onSelectAll' },
+	// C-e: what Ctrl+A takes is each part's (`selectAll`), and so are the kinds its help names, in rank order; with none, no row
+	{ id: 'select-all', input: ['Ctrl+A'], mutates: false, on: (e) => meta(e) && is(e, 'a'), run: 'onSelectAll',
+		doc: (parts) => {
+			const words = parts.filter((p) => p.selectAll).map((p) => p.selectAll).sort((a, b) => a.rank - b.rank).map((x) => x.word);
+			return words.length ? `select every ${words.length > 1 ? `${words.slice(0, -1).join(', ')} and ${words.at(-1)}` : words[0]}` : null;
+		} },
 	{ id: 'datum', input: ['Space'],       mutates: false, on: (e) => e.key === ' ' && !e.shiftKey, run: 'onDatum' },
 	{ id: 'datum-clear', input: ['Shift+Space'], mutates: false, on: (e) => e.key === ' ' && e.shiftKey,  run: 'onDatumClear' },
 

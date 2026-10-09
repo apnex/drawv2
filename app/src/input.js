@@ -380,6 +380,8 @@ export class Input {
 		this.deleteRanks = commands.deleteRanksOf(parts);
 		// C-e: what follows a clone, each part's, in rank order
 		this.followers = commands.followersOf(parts);
+		// C-e: what Ctrl+A takes, each part's, in rank order
+		this.selectAlls = parts.filter((p) => p.selectAll).map((p) => p.selectAll).sort((a, b) => a.rank - b.rank);
 		// C-e: what Shift+arrow makes of a lone selected entity, by kind -- each part's size step
 		this.sizeSteps = new Map();
 		for (const p of parts) if (p.sizeStep) {
@@ -1382,12 +1384,9 @@ export class Input {
 		this.toggleHelp();
 	}
 
+	// C-e: every entity of each kind whose part says Ctrl+A takes it, in rank order -- devices, zones, links
 	onSelectAll() {
-		this.selection.set([
-			...typedNodes(this.model).map((n) => n.id),
-			...this.model.all('zone').map((z) => z.id),
-			...this.model.all('link').map((l) => l.id)
-		]);
+		this.selection.set(this.selectAlls.flatMap((s) => s.ids(this.model)));
 	}
 
 	onDatum() {
