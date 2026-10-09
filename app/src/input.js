@@ -522,7 +522,7 @@ export class Input {
 			// hovered/armed state must die with its entity (chord delete, undo, load)
 			if (action === 'del' || action === 'load') {
 				if (this.overlayUi.hovered && (action === 'load' || entity.id === this.overlayUi.hovered)) {
-					this.renderer.clearState(this.overlayUi.hovered, 'hover', 'linkband');
+					this.renderer.clearState(this.overlayUi.hovered, 'hover', ...this.overlayUi.idleStates());
 			
 					this.overlayUi.disarm();
 				}
@@ -653,7 +653,7 @@ export class Input {
 	that acts. The rows are app/src/run-mode.js, handed in by the composition root (K5); the handlers are here.
 	*/
 	runModePress(evt) {
-		const { rule } = resolveInput(this.runRules, evt, this.situation(evt.region?.waypoint ?? null), { readOnly: this.readOnly });
+		const { rule } = resolveInput(this.runRules, evt, this.situation(evt.region?.target ?? null), { readOnly: this.readOnly });   // C-f: what the press aims at
 		if (!rule) return;
 		// a plugin's row -- the simulation's spawner and tower (C-e) -- acts through the host; what it changed may move occupancy
 		if (typeof rule.run === 'function') { rule.run(this.pluginHost, evt); this.afterHistory(); return; }
@@ -999,10 +999,12 @@ export class Input {
 
 	// crosshair cursor + ring emphasis when idle over a node: left-drag draws a link
 	idleAffordance(evt) {
-		const hit = evt.on;
-		if (hit.kind !== 'node') return;
-		this.renderer.setState(hit.id, 'linkband', !evt.ctrlKey && !evt.altKey);
+		// C-f: the state the item under the pointer shows when idle, its pick's -- a device's crosshair ring: a left drag draws a link
+		const idle = this.hitFacts.get(evt.on.kind)?.idle;
+		if (!idle) return;
+		this.renderer.setState(evt.on.id, idle, !evt.ctrlKey && !evt.altKey);
 	}
+
 
 	// ---- pointer up ----
 	/*

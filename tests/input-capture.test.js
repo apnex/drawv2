@@ -6,9 +6,10 @@ the input layers, and then does on the real event what they asked for and cannot
 pointer. These hold that contract, and G1 itself: the input layers read no DOM.
 */
 // RESTATED at C-b (H19.30): what a press lands on is answered by the plugins' picks, which the page hands Capture
-import { picksOf } from '../app/src/pick.js';
+import { picksOf, regionsOf } from '../app/src/pick.js';
 import { PRODUCT_CANVAS } from '../product/canvas.mjs';
 const PICKS = picksOf(PRODUCT_CANVAS);
+const REGIONS = regionsOf(PRODUCT_CANVAS);   // C-f: run mode's regions, the parts'
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -27,7 +28,7 @@ const quietHost = { addEventListener() {} };
 // the input event a sink is handed for one DOM event -- seen as the input layers see it, through a Capture
 function seen(svg, method, evt) {
 	const { got, sink } = probe();
-	new Capture({ svg, host: quietHost, sink, picks: PICKS })[method](evt);
+	new Capture({ svg, host: quietHost, sink, picks: PICKS, regions: REGIONS })[method](evt);   // RESTATED at C-f: and the parts' run-mode regions
 	return got[0][1];
 }
 

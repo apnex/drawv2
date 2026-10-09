@@ -8,7 +8,7 @@ import { editOf } from './commands.js';   // C-e (D5): the network's edit, built
 import { Clock } from './clock.js';
 import { Movers } from './movers.js';
 import { helpSections, renderHelp } from './help.js';
-import { composeCanvas } from './compose-canvas.js';   // K8: the canvas half, composed as the lab composes it
+import { composeCanvas, tallyOf } from './compose-canvas.js';   // K8: the canvas half, composed as the lab composes it
 import { Palette } from './palette.js';
 import { Net, wsUrl } from './net.js';
 import { Sync, bindGestureDefer } from './sync.js';
@@ -16,7 +16,6 @@ import { Watchdog } from './watchdog.js';
 import { Reveal } from './reveal.js';
 import { makeSpectator, followTarget } from './spectate.js';
 import { RUN_PRESSES } from './run-mode.js';   // K5: run mode is the product's, handed to Input here
-import { typedNodes } from '../../devices/device-shapes.mjs';   // whether a device is composed: the devices plugin's (O-e1)
 import { productKinds } from '../../product/kinds.mjs';
 import { PRODUCT_CANVAS } from '../../product/canvas.mjs';   // the plugins' canvas parts (C-a)
 import { NETWORK_ROWS } from '../../network/kinds.mjs';   // the network's kind and the field it contributes (S-a)
@@ -723,7 +722,7 @@ const sync = new Sync({
 			menu.say.classList.toggle('err', !!(said && said.err));
 			menu.say.title = said ? `${new Date(said.at).toLocaleTimeString()} -- ${said.text}` : 'the last thing the server said';
 		}
-		menu.banner.textContent = `${typedNodes(model).length} nodes / ${model.all('link').length} links / ${model.all('zone').length} zones`;
+		menu.banner.textContent = tallyOf(PRODUCT_CANVAS, model);   // C-f: each part's count
 		// D29 — the server came back holding LESS than we do: it restarted before flushing changes
 		// it had already acked. Say so. The alternative is reverting the user's work in silence.
 		if (rewound) {

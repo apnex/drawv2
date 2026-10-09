@@ -33,11 +33,11 @@ function spawnToggle(wp, now) {
 }
 
 export const SPAWN_RUNS = [
-	{ id: 'toggle-spawn', input: ['left on region:waypoint'], context: 'in run mode, on an endpoint', mutates: true, prevent: false, doc: 'arm or disarm the spawner',
-		on: (e) => e.button === 0 && !!e.region?.waypoint, when: (s) => inReadView(s) && onEndpoint(s),
+	{ id: 'toggle-spawn', input: ['left on region:endpoint'], context: 'in run mode, on an endpoint', mutates: true, prevent: false, doc: 'arm or disarm the spawner',
+		on: (e) => e.button === 0 && !!e.region?.target, when: (s) => inReadView(s) && onEndpoint(s),   // what a run press aims at: the network's waypoint
 		run: (host, evt) => {
 			evt.claimed = true;
-			const id = evt.region.waypoint;
+			const id = evt.region.target;
 			const wp = host.ask((model) => bareAnchor(model, id));
 			if (!wp) return;
 			const edit = spawnToggle(wp, host.now());
@@ -45,7 +45,7 @@ export const SPAWN_RUNS = [
 			else host.set(edit.label, BARE_KIND, id, edit.set);
 		} },
 	{ id: 'place-tower', input: ['left on region:ground'], context: 'in run mode, where the cell is free', mutates: true, prevent: false, doc: 'place a tower',
-		on: (e) => e.button === 0 && !!e.region && !e.region.control && !e.region.overWaypoint && !e.region.entity,
+		on: (e) => e.button === 0 && !!e.region && !e.region.control && !e.region.overTarget && !e.region.entity,
 		when: (s) => inReadView(s) && onOpenGround(s),
 		run: (host, evt) => {
 			const cell = host.snap('node', evt.at);

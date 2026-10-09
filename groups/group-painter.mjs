@@ -47,4 +47,5 @@ const GROUP_PAINTER = {
 
 // the groups plugin's canvas part (C-a: its painter)
 // C-e: and its keys -- Ctrl+G, Ctrl+Shift+G -- and its rank in a delete: first, before what it gathers
-export const GROUPS_CANVAS = { owner: 'groups', painters: [GROUP_PAINTER] , keys: GROUP_KEYS, deleteRanks: { group: 0 }, follows: [GROUP_FOLLOWER] };
+export const GROUPS_CANVAS = { owner: 'groups', painters: [GROUP_PAINTER] , keys: GROUP_KEYS, deleteRanks: { group: 0 }, follows: [GROUP_FOLLOWER],
+	drawn: ['.group'] };   // C-f: what it draws, a press on which run mode places nothing on

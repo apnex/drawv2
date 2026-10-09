@@ -31,7 +31,7 @@ import { LabelEditor } from './labeledit.js';
 import { Tools } from './tools.js';
 import { Input } from './input.js';
 import { Capture } from './capture.js';
-import { picksOf } from './pick.js';
+import { picksOf, regionsOf } from './pick.js';
 import { Readout } from './readout.js';
 
 /*
@@ -82,6 +82,11 @@ export function composeCanvas({ svg, defs, host, network = null, kinds = undefin
 		host, help, now, snap, plugins, runRules, parts });   // C-c, C-d: the canvas parts -- places, press rows, handles
 	let capture = null;
 	// the DOM's events, as input events (dev/design/input/GESTURE-SYSTEM.md, L0) -- once the root's own listeners are in
-	const listen = () => (capture ??= new Capture({ svg, host, sink: input, picks: picksOf(parts) }));   // C-b: the plugins' picks
+	const listen = () => (capture ??= new Capture({ svg, host, sink: input, picks: picksOf(parts), regions: regionsOf(parts) }));   // C-b: the plugins' picks; C-f: run mode's regions
 	return { model, history, renderer, selection, labels, readout: shownReadout, snap, tools: heldTools, input, listen };
+}
+
+// C-f (H19.34): the header's counts, each part's (`tally`: a rank, a word, a count) -- devices, links, zones, as the page has always said
+export function tallyOf(parts, model) {
+	return parts.filter((p) => p.tally).map((p) => p.tally).sort((a, b) => a.rank - b.rank).map((t) => `${t.of(model)} ${t.word}`).join(' / ');
 }

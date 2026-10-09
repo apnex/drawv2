@@ -9,6 +9,7 @@ a branch. The network's transit ring composes over it. It was the renderer's own
 corpus and tests/appearance.test.js hold that.
 */
 
+import { typedNodes } from './device-shapes.mjs';
 import { STD, L_STD } from '../kernel/spec.mjs';
 import { selBox, contentLayout, hexColor, isPanel, frameRadius, frameWidth, showsSockets } from '../kernel/renderer.mjs';
 import { spanExtent } from '../kernel/geometry.mjs';
@@ -90,7 +91,9 @@ const DEVICE = {
 	state: (entity) => (hasDevice(entity) ? 'device' : null),
 	composes: false,
 	root: { layer: 'nodes', class: () => 'node' },
-	picks: [{ closest: 'g.node:not(.ghost)', word: 'node', clones: true }],   // C-b: a held tool's ghost is no device; D4: Ctrl+left clones it
+	// C-b: a held tool's ghost is no device; D4: Ctrl+left clones it; C-f: idle under the pointer it shows the crosshair ring -- a
+	// left drag draws a link from it
+	picks: [{ closest: 'g.node:not(.ghost)', word: 'node', clones: true, idle: 'linkband' }],
 	rootAttrs: (entity) => [['data-span', spanSig(entity)], ['data-content', contentSig(entity)]].filter(([, v]) => v),
 	// what changes the structure -- a footprint or the content -- renders afresh; a move keeps the look's fast path
 	structure: (entity) => `${spanSig(entity)}|${contentSig(entity)}`,
@@ -132,4 +135,5 @@ const DEVICE = {
 // the devices plugin's canvas part (C-a: the device's appearance on the anchor)
 // C-d: the text box's row; C-e: its hand, what a device covers, its size step under the canvas's Shift+arrow
 export const DEVICES_CANVAS = { owner: 'devices', appearances: [DEVICE], presses: DEVICE_PRESSES, hand: DEVICE_HAND, at: DEVICE_POINTS, sizeStep: DEVICE_SIZE_STEP,
-	keys: DEVICE_KEYS, describe: DEVICE_DESCRIBE, selectAll: DEVICE_SELECT_ALL, labels: DEVICE_LABELS };   // C-e: its key, `s`; how it reads, Ctrl+A; where its label edits
+	keys: DEVICE_KEYS, describe: DEVICE_DESCRIBE, selectAll: DEVICE_SELECT_ALL, labels: DEVICE_LABELS,
+	drawn: ['.node'], tally: { rank: 0, word: 'nodes', of: (model) => typedNodes(model).length } };   // C-f: what it draws; its count   // C-e: its key, `s`; how it reads, Ctrl+A; where its label edits

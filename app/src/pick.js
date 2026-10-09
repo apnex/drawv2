@@ -118,5 +118,11 @@ export function takenIn(points, model, box) {
 	return taken;
 }
 
+// C-f (H19.34) -- WHAT RUN MODE READS UNDER A PRESS, by what the parts say: the page selectors of what each draws (`drawn`) and of
+// what a run-mode press aims at (`runTargets` -- the network's waypoint, an endpoint to arm), each joined for one `closest`
+export function regionsOf(parts) {
+	return { drawn: parts.flatMap((p) => p.drawn ?? []).join(','), target: parts.flatMap((p) => p.runTargets ?? []).join(',') };
+}
+
 // cell occupancy (the engine's O(1) index, not a scan): anything rests here -- the core's
 export const occupiedAnyAt = (model, p) => model.occupiedAnyAt(p);

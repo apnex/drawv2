@@ -10,7 +10,7 @@ THE GRAMMAR
   keys       [Ctrl+][Shift+][Alt+]key   a character, or Space, Enter, Escape, Tab, Delete, Backspace, F2, Shift, Alt,
                                         Control; `Arrows` is the four arrow keys, `1-6` the six digits
   presses    [mods+]left|right on K     K is node, waypoint, zone, link, canvas, handle (a zone's corner), lhandle (a
-                                        link's end), or, in run mode, region:waypoint, region:ground, region:action,
+                                        link's end), or, in run mode, region:endpoint, region:ground, region:action,
                                         region:input -- several joined by |
   double     double                     a double click
 
@@ -21,13 +21,15 @@ import { ACTION_LABELS, actionOf } from './actions.js';
 
 const MODS = { Ctrl: 'ctrlKey', Shift: 'shiftKey', Alt: 'altKey', Meta: 'metaKey' };
 const NAMED = { Space: [' '], Arrows: ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'], '1-6': ['1', '2', '3', '4', '5', '6'] };
+// C-f: a press's region as capture reads it by the parts' selectors -- what a run press aims at (an endpoint), and the drawn item a
+// control sits in
 const REGIONS = {
-	waypoint: { waypoint: 'waypoint-000001', overWaypoint: true },
+	endpoint: { target: 'node-000001', overTarget: true },
 	ground: {},
 	action: { action: 'help', control: true },
-	input: { input: 0, node: 'node-000001', control: true, entity: true },
+	input: { input: 0, owner: 'node-000001', control: true, entity: true },
 };
-const blank = { waypoint: null, overWaypoint: false, action: null, input: null, node: null, control: false, entity: false };
+const blank = { target: null, overTarget: false, action: null, input: null, owner: null, control: false, entity: false };
 // a `mark` is what a plugin draws for the canvas to select (app/src/pick.js, H17.22 N-c2): any kind, flagged as a mark
 const hitOf = (kind) => (kind === 'canvas' ? { kind, id: null } : kind === 'handle' ? { kind, id: 'se', handle: true } : kind === 'lhandle' ? { kind, id: 'src', handle: true } : kind === 'mark' ? { kind: 'plugin', id: 'plugin-000001', mark: true } : { kind, id: `${kind}-000001` });
 
@@ -49,7 +51,7 @@ export function eventsFor(input) {
 
 // an input as a person reads it
 const KIND_WORDS = { node: 'a node', waypoint: 'a waypoint', zone: 'a zone', link: 'a link', canvas: 'the canvas', handle: 'a corner handle', lhandle: 'a link end', mark: 'a plugin\'s mark',
-	'region:waypoint': 'an endpoint', 'region:ground': 'open ground', 'region:action': 'a panel button', 'region:input': 'a panel input' };
+	'region:endpoint': 'an endpoint', 'region:ground': 'open ground', 'region:action': 'a panel button', 'region:input': 'a panel input' };
 export function shown(input) {
 	if (input === 'double') return 'double-click';
 	const press = /^(?:(.+)\+)?(left|right) on (.+)$/.exec(input);

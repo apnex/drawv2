@@ -66,7 +66,8 @@ export function hitFactsOf(picks, places) {
 	for (const p of picks) {
 		if (p.handle) continue;
 		const was = facts.get(p.word) ?? {};
-		facts.set(p.word, { placed: was.placed || places.has(p.kind), anchor: was.anchor || ANCHOR_KINDS.includes(p.kind), clones: was.clones || !!p.clones, modifier: was.modifier ?? p.modifier ?? null });
+		facts.set(p.word, { placed: was.placed || places.has(p.kind), anchor: was.anchor || ANCHOR_KINDS.includes(p.kind), clones: was.clones || !!p.clones, modifier: was.modifier ?? p.modifier ?? null,
+			idle: was.idle ?? p.idle ?? null });   // C-f: the state it shows idle under the pointer -- a device's ring
 	}
 	return facts;
 }

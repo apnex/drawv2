@@ -1322,6 +1322,8 @@ AMENDED 2026-10-10: C-e's thirteenth step done -- the grids are declared by what
 Next: the selection reflections and the survey's other open findings; then H19.33 closes.
 AMENDED 2026-10-10: C-e done -- fourteen steps; its last, the network's selection reflections and the survey's open findings, B322 fixed among them.\
 Next H19.34, C-f: the ratchet that the canvas names no plugin's kind, with what remains recorded.
+AMENDED 2026-10-10: C-f's first step done -- run mode's regions, the header's counts and the hover ring out of the canvas, the director's choice.\
+Next: the ratchet, with the draw-a-link gesture (D2) and the clone's naming recorded; B308 closes.
 
 **Exit:** nothing stored needs a migration and none is kept; production's sync holds the network under the GR6 battery; the core holds no kind.
 

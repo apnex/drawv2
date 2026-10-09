@@ -33,33 +33,34 @@ const FIELD = 'input, textarea, select, [contenteditable=""], [contenteditable="
 const CONTROL = 'button, a[href], select, input, textarea, [tabindex]';
 const askable = (t) => !!t && typeof t.closest === 'function';
 
-// the run-mode controls under a press, from the target -- null when the target cannot be asked
-function regionOf(target) {
+// the run-mode controls under a press, from the target -- null when the target cannot be asked. C-f: by the parts' selectors
+// (app/src/pick.js `regionsOf`) -- what they draw, and what a run press aims at
+function regionOf(target, { drawn = '', target: aim = '' } = {}) {
 	if (!askable(target)) return null;
-	const wp = target.closest('.waypoint');
+	const t = aim ? target.closest(aim) : null;
 	const c = target.closest('[data-action],[data-input]');
-	const node = c && typeof c.closest === 'function' ? c.closest('.node') : null;
+	const owner = c && drawn && typeof c.closest === 'function' ? c.closest(drawn) : null;   // the drawn item a control sits in
 	const data = (c && c.dataset) || {};   // read defensively: an element without a dataset carries no control
 	return {
-		waypoint: wp ? wp.id : null,
-		overWaypoint: !!wp,   // an element answered, id or not -- run mode places nothing over one
+		target: t ? t.id : null,
+		overTarget: !!t,   // an element answered, id or not -- run mode places nothing over one
 		action: data.action ? data.action : null,
 		input: c && !data.action && data.input !== undefined ? Number(data.idx) : null,
-		node: node ? node.id : null,
+		owner: owner ? owner.id : null,
 		control: !!c,
-		entity: !!target.closest('.node,.zone,.link,.group'),
+		entity: drawn ? !!target.closest(drawn) : false,   // on something a part draws
 	};
 }
 
 // one DOM event as an input event -- plain data, and the only place a DOM event is read
-function inputEvent(evt, svg, type, hitOf) {
+function inputEvent(evt, svg, type, hitOf, regions) {
 	const pointer = type !== 'key-down' && type !== 'key-up';
 	return {
 		type,
 		button: evt.button ?? 0, key: evt.key ?? null, repeat: !!evt.repeat,   // null, never undefined: plain data survives JSON
 		shiftKey: !!evt.shiftKey, ctrlKey: !!evt.ctrlKey, altKey: !!evt.altKey, metaKey: !!evt.metaKey,
 		...(pointer ? { at: toCanvas(evt, svg), on: hitOf(evt) } : {}),
-		...(type === 'down' ? { region: regionOf(evt.target) } : {}),
+		...(type === 'down' ? { region: regionOf(evt.target, regions) } : {}),
 		...(type === 'key-down' ? { onControl: askable(evt.target) && !!evt.target.closest(CONTROL) } : {}),
 		claimed: false, capture: false,
 	};
@@ -74,8 +75,9 @@ Input today -- and receives only input events.
 */
 export class Capture {
 	// C-b: `picks`, the canvas parts' (app/src/pick.js `picksOf`) -- what a press lands on is answered by the plugin that drew it
-	constructor({ svg, host, sink, picks = [] }) {
-		this.svg = svg; this.sink = sink; this.hitOf = hitWith(picks);
+	// C-f: `regions`, the parts' run-mode selectors (app/src/pick.js `regionsOf`)
+	constructor({ svg, host, sink, picks = [], regions = {} }) {
+		this.svg = svg; this.sink = sink; this.hitOf = hitWith(picks); this.regions = regions;
 		svg.addEventListener('pointerleave', () => sink.leave());
 		svg.addEventListener('pointerdown', (e) => this.onDown(e));
 		svg.addEventListener('pointermove', (e) => this.onMove(e));
@@ -93,7 +95,7 @@ export class Capture {
 
 	// hand one event over, then claim it and take the pointer if the input layers said to
 	#round(evt, type, deliver) {
-		const e = inputEvent(evt, this.svg, type, this.hitOf);
+		const e = inputEvent(evt, this.svg, type, this.hitOf, this.regions);
 		try { deliver(e); } finally {
 			if (e.claimed) evt.preventDefault();
 			if (e.capture) { try { this.svg.setPointerCapture(evt.pointerId); } catch { /* synthetic events */ } }

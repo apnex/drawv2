@@ -110,7 +110,7 @@ const RECORD = {
 	'app/src/input.js': [1, 'the step words, F4 -- the press escalation\'s hit word went at C-d step four (D4), the hand\'s two at C-e step one'],
 	// app/src/palette.js's waypoint literals went at C-e step two (H19.33): no hand holds a waypoint, so no tile or ghost draws one
 	// app/src/painter.js's waypoint literals went at C-e step two (H19.33): no hand holds a waypoint, so no tile or ghost draws one
-	'app/src/help.js': [1, 'the help overlay\'s waypoint situation, F4'],
+	// app/src/help.js's one -- the run-mode region word for an endpoint -- went at C-f step one: the region is what a part aims at
 	'app/src/keymap.js': [1, 'the `w` key\'s id, F4'],
 	// app/src/releases.js's one -- a waypoint hand the retype refused -- went at C-e step fourteen: no hand holds a waypoint
 	'network/anchor-appearance.mjs': [2, 'the drawn waypoint\'s class and its layer -- the network\'s marks, F4; moved from app/src/renderer.js at C-a (D3) -- and its pick, the hit\'s word, moved from app/src/pick.js at C-b'],

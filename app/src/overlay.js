@@ -57,7 +57,8 @@ export class Overlay {
 		if (gesturing) return;
 		if (!hit.id || hit.handle) return;   // a handle -- a corner, a link end -- is no entity to hover (B317: a link end carries an id)
 		this.renderer.setState(hit.id, 'hover', on);
-		if (!on) this.renderer.setState(hit.id, 'linkband', false);
+		const idle = this.hitFacts().get(hit.kind)?.idle;   // C-f: the idle state its pick shows -- a device's ring
+		if (!on && idle) this.renderer.setState(hit.id, idle, false);
 		this.hovered = on ? hit.id : (this.hovered === hit.id ? null : this.hovered);
 		this.hoveredWord = this.hovered ? (on ? hit.kind : this.hoveredWord) : null;
 		// deliberately does NOT arm. Arming needs to know whether the client is read-only, and this
@@ -76,7 +77,7 @@ export class Overlay {
 		const cover = this.points().find((a) => a.word === this.hoveredWord && a.under);
 		const still = pos && ent && ent.x !== undefined && (cover ? cover.under(ent, pos) : dist(ent, pos) <= NODE_R);
 		if (!still) {
-			this.renderer.clearState(id, 'hover', 'linkband');
+			this.renderer.clearState(id, 'hover', ...this.idleStates());
 			this.hovered = null;
 			this.hoveredWord = null;
 		}
@@ -87,7 +88,7 @@ export class Overlay {
 	clearHover(id = null) {
 		if (!this.hovered) return;
 		if (id === null || this.hovered === id) {
-			this.renderer.clearState(this.hovered, 'hover', 'linkband');
+			this.renderer.clearState(this.hovered, 'hover', ...this.idleStates());
 			this.hovered = null;
 			this.hoveredWord = null;
 		}
@@ -163,6 +164,11 @@ export class Overlay {
 				x: p.x - HANDLE / 2, y: p.y - HANDLE / 2, rx }, this.layer);
 			h.dataset[datasetKey] = name;
 		});
+	}
+
+	// C-f: every idle state the parts' picks show -- what a hover's end clears
+	idleStates() {
+		return [...new Set([...this.hitFacts().values()].map((f) => f.idle).filter(Boolean))];
 	}
 
 	// ---- the grids shown by a modifier ----

@@ -55,7 +55,7 @@ export function spawnCommand(model, id, now) {
 		set: (label, kind, eid, after) => { sent = setFields(label, kind, eid, after); },
 		put: (label, kind, make) => { sent = putEntity(label, kind, make(model)); },
 	};
-	SPAWN_RUNS.find((r) => r.id === 'toggle-spawn').run(host, { region: { waypoint: id } });
+	SPAWN_RUNS.find((r) => r.id === 'toggle-spawn').run(host, { region: { target: id } });   // C-f: what the press aims at
 	return sent;
 }
 

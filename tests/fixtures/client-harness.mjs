@@ -40,7 +40,7 @@ import { CANVAS, GAP } from '../../app/src/snap.js';
 import { Input } from '../../app/src/input.js';
 import { RUN_PRESSES } from '../../app/src/run-mode.js';
 import { Capture } from '../../app/src/capture.js';
-import { picksOf } from '../../app/src/pick.js';
+import { picksOf, regionsOf } from '../../app/src/pick.js';
 import { PRODUCT_CANVAS } from '../../product/canvas.mjs';
 import { networkInput } from '../../network/keys.mjs';
 import { createNetworkSession } from '../../network/session.mjs';
@@ -267,7 +267,7 @@ export function makeInput({ readOnly = false, bare = false, host: hostOverride =
 	} catch (e) { restore(); throw e; }   // a refused composition must not leave the stub DOM installed
 	if (readOnly) input.setReadOnly(true);
 	// L0: tests drive the page's events through capture, as a browser does -- Input itself takes only input events
-	const capture = new Capture({ svg, host, sink: input, picks: picksOf(parts) });   // C-b: the plugins' picks, as the page composes them
+	const capture = new Capture({ svg, host, sink: input, picks: picksOf(parts), regions: regionsOf(parts) });   // C-b: the plugins' picks; C-f: run mode's regions, as the page composes them
 
 	return {
 		input, capture, model, history, selection, svg, commits, calls, restore, renderer, labels, tools, help, snap,
