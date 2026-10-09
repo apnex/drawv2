@@ -23,7 +23,7 @@ import { clone } from '../../model/ops.mjs';
 import { kindOf, projection } from '../../model/model.mjs';
 import { GAP, clampDelta } from './snap.js';
 import { BARE_KIND } from '../../model/anchors.mjs';
-import { bareAnchor, isTypedEntity } from '../../devices/device-shapes.mjs';
+import { isTypedEntity } from '../../devices/device-shapes.mjs';
 import { drawnKind } from '../../devices/anchor-words.mjs';   // the drawn word (F4)   // the bare anchor, asked in one place (F-b)
 
 // entities are cloned at every command boundary: the live store object must never
@@ -330,47 +330,4 @@ export function cloneSubgraph(model, seedIds, places, followers = []) {
 	};
 	for (const f of followers) f.follow({ model, scratch, idMap, cloneAnchor: (src) => cloneEntity(kindOf(src.id), src), add });
 	return { clones, idMap };
-}
-
-/*
-H12.7 -- arm or disarm an endpoint waypoint as a spawner.
-
-ASYMMETRIC ON PURPOSE, and the asymmetry is forced by the ops vocabulary rather than chosen.
-
-Arming ADDS a key, which `set` expresses. Disarming REMOVES one, which `set` cannot: `model.set` is
-`Object.assign`, so a patch of `{ spawn: undefined }` writes the key as undefined rather than
-dropping it, and the validator then refuses the entity because `spawn` must be a whole object. So
-disarming is a `put` of the entity WITHOUT the field -- the same reasoning `planner/txn.mjs`
-already applies in reverse, where a `set` that introduces a key inverts as a whole-entity `put`.
-
-`since` is stamped by the CALLER from the agreed clock, never from `Date.now()` here. A builder
-that read the wall clock would put a local instant into a shared document, and every other peer
-would compute departures from a phase that was never theirs.
-*/
-export function toggleSpawn(model, waypointId, now, opts = {}) {
-	const wp = bareAnchor(model, waypointId);
-	if (!wp) return null;
-	if (wp.spawn) {
-		const { spawn, ...without } = wp;
-		return { label: 'stop spawning', entries: [{ op: 'put', kind: BARE_KIND, entity: clone(BARE_KIND, without) }] };
-	}
-	/*
-	RED by default, per the director. It is DOCUMENT state rather than a stylesheet rule, because a
-	spawner may eventually want its own colour -- so changing this default moves NEW spawners only,
-	and anything already armed keeps the colour it was authored with. Disarm and re-arm to adopt it.
-	*/
-	const spawn = {
-		interval: opts.interval ?? 900,
-		// CELLS per second (B172). 1.4 crosses a cell in about 700ms, which reads as travelling
-		// rather than flickering. The conversion to pixels is the simulation's, done once.
-		speed: opts.speed ?? 1.4,
-		// a KIND, not a colour -- the stylesheet owns the look, so changing it reaches spawners
-		// that already exist rather than only the next one armed
-		kind: opts.kind ?? 'packet',
-		since: now,
-	};
-	// NESTED, not spread. `after` is the patch applied to the WAYPOINT, so a bare spread would
-	// write interval/speed/colour as top-level waypoint fields and the server would refuse them --
-	// which is exactly what it did, and what the test below caught before it ever reached a wire.
-	return { label: 'spawn', entries: [{ op: 'set', kind: BARE_KIND, id: waypointId, after: { spawn } }] };
 }

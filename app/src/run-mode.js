@@ -7,12 +7,10 @@ them in as \`runRules\`. Run mode is the product's feature -- spawners and tower
 no run-mode rows of its own, and a composition without the simulation passes none: the lab passes none, as ruled
 (dev/DECISIONS.md, the lab's absent bindings).
 */
-import { inReadView, onEndpoint, onOpenGround } from '../../engine/situation.mjs';
+import { SPAWN_RUNS } from '../../engine/spawn-runs.mjs';
 
 export const RUN_PRESSES = [
-	{ id: 'toggle-spawn', input: ['left on region:waypoint'], context: 'in run mode, on an endpoint', mutates: true,  prevent: false, on: (e) => e.button === 0 && !!e.region?.waypoint, when: (s) => inReadView(s) && onEndpoint(s), run: 'toggleSpawnHere' },
-	{ id: 'place-tower', input: ['left on region:ground'], context: 'in run mode, where the cell is free',  mutates: true,  prevent: false, on: (e) => e.button === 0 && !!e.region && !e.region.control && !e.region.overWaypoint && !e.region.entity,
-		when: (s) => inReadView(s) && onOpenGround(s), run: 'placeTowerHere' },
+	...SPAWN_RUNS,   // C-e (H19.33): the spawner and the tower are the simulation's rows (engine/spawn-runs.mjs)
 	{ id: 'fire-action', input: ['left on region:action'],  mutates: false, prevent: false, on: (e) => e.button === 0 && !!e.region?.action, run: 'fireActionHere' },
 	{ id: 'open-input', input: ['left on region:input'],   mutates: true,  prevent: false, on: (e) => e.button === 0 && !!e.region && e.region.input !== null && !e.region.action, run: 'openInputHere' },
 ];

@@ -50,8 +50,6 @@ export const ACTION_LABELS = {
 	stampClicked: 'stamp the held type there',
 	addInBox: 'add what the marquee takes to the selection',
 	// ---- run mode ----
-	toggleSpawnHere: 'arm or disarm the spawner',
-	placeTowerHere: 'place a tower',
 	fireActionHere: 'press the panel button',
 	openInputHere: 'edit the panel input',
 };

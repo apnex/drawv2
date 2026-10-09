@@ -35,7 +35,7 @@ commit lands as a SECOND transaction in the log. The document converges; the his
 user action can therefore cost two undos, and two entries against `LOG_MAX`. That is a real cost and
 it is not addressed here.
 */
-import { reshapeCommand, closeCommand } from './fixtures/plugin-edits.mjs';
+import { reshapeCommand, closeCommand, spawnCommand } from './fixtures/plugin-edits.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeNode } from '../devices/make-node.mjs';   // O-e1: the devices plugin's factories
@@ -138,7 +138,7 @@ test('F5: replaying an arm leaves the spawner armed with the same instant', () =
 	// `since` decides where every packet is. A replay that restamped it would teleport the whole
 	// route for every viewer, which is the H12 defect class arriving by a new door.
 	const m = doc();
-	const ops = wire(commands.toggleSpawn(m, WP_A, 1_788_300_000_000));
+	const ops = wire(spawnCommand(m, WP_A, 1_788_300_000_000));   // RESTATED at C-e step nine: the simulation's run-mode row
 	applyOps(m, ops);
 	const first = JSON.stringify(m.get('node', WP_A).spawn);
 	applyOps(m, ops);

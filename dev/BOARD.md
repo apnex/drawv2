@@ -1308,6 +1308,8 @@ AMENDED 2026-10-09: C-e's seventh step done -- `c`, `f`, `k`, `l` and Shift+L ar
 Next: the network's route builders and its hand-built transit command, with the clone followers; then the simulation's.
 AMENDED 2026-10-09: C-e's eighth step done -- what follows a clone is each plugin's, and the network's transit edit goes through a generic builder; the draw-a-link commit stays the product's (D2), for C-f's record.\
 Next: the simulation's spawn and tower; then the readout, labels, select-all, grids and selection reflections.
+AMENDED 2026-10-09: C-e's ninth step done -- run mode's spawner and tower are the simulation's rows, handed in by the product page alone (H17-D7).\
+Next: the readout, labels and panel rows, select-all, grids and selection reflections.
 
 **Exit:** nothing stored needs a migration and none is kept; production's sync holds the network under the GR6 battery; the core holds no kind.
 

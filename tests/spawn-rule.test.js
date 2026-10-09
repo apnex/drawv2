@@ -10,12 +10,14 @@ gesture through a headless DOM has cost this tree two rounds already and proved 
 time: the synthetic event failed to move the selection and the "correct" reading was the probe
 failing, not the code. These call the decision directly.
 */
+import fs from 'node:fs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Model } from './fixtures/composed.mjs';   // the network's kinds, the link among them (S-e)
 import { situationOf, inReadView, onEndpoint } from '../engine/situation.mjs';
 import { waypointRoles } from '../network/roles.mjs';
-import { toggleSpawn } from '../app/src/commands.js';
+// RESTATED at C-e step nine (H19.33; D5): arming is the simulation's run-mode row; it is run as the row runs it
+import { spawnCommand as toggleSpawn } from './fixtures/plugin-edits.mjs';
 import { validateEntity } from './fixtures/composed.mjs';   // the composition production runs; the validator takes no default since S-f
 import { applyOps } from '../model/ops.mjs';
 
@@ -109,9 +111,7 @@ test('H12.7: the built spawn passes the authored bounds it will be validated aga
 	const spawn = toggleSpawn(m, WP_A, NOW).entries[0].after;
 	applyOps(m, [{ op: 'set', kind: 'node', id: WP_A, patch: spawn }]);
 	assert.equal(validateEntity('node', m.get('node', WP_A)), null);
-	// and a caller may override, still within bounds
-	const custom = toggleSpawn(doc(), WP_A, NOW, { interval: 300, speed: 400, kind: 'packet' }).entries[0].after;
-	assert.deepEqual(custom, { spawn: { interval: 300, speed: 400, kind: 'packet', since: NOW } });
+	// CORRECTED at C-e step nine: "a caller may override" held a path no caller took -- the overrides went with the builder
 });
 
 test('H12.7: a missing waypoint yields no command rather than a throw', () => {
@@ -121,5 +121,6 @@ test('H12.7: a missing waypoint yields no command rather than a throw', () => {
 test('H12.7: the builder never reads a wall clock -- the instant is always the caller\'s', () => {
 	// a builder that stamped Date.now() would put a LOCAL instant into a shared document, and every
 	// other peer would compute departures from a phase that was never theirs
-	assert.doesNotMatch(toggleSpawn.toString(), /Date\.now/, 'the phase must come from the agreed clock');
+	// RESTATED at C-e step nine: the row and its decision are the simulation's module, read whole
+	assert.doesNotMatch(fs.readFileSync(new URL('../engine/spawn-runs.mjs', import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, ''), /Date\.now/, 'the phase must come from the agreed clock');
 });

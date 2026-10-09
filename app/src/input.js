@@ -55,7 +55,7 @@ import { situationOf } from '../../engine/situation.mjs';
 import { waypointRolesIn } from '../../network/roles.mjs';
 import { BARE_KIND, ANCHOR_KINDS } from '../../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
 import { bareAnchor, bareAnchors, typedNodes, isTypedEntity } from '../../devices/device-shapes.mjs';
-import { makeNode, makeWaypoint } from '../../devices/make-node.mjs';   // the devices plugin's factories (O-e1)
+import { makeWaypoint } from '../../devices/make-node.mjs';   // the devices plugin's factories (O-e1)
 import { waypointAt } from '../../devices/occupancy.mjs';   // which waypoint is on a cell: the devices plugin's (O-e1)
 
 
@@ -409,6 +409,10 @@ export class Input {
 			remove: (label, refs) => this.history.commit(commands.deleteEntities(label, this.model, refs)),
 			// C-e (D5): several entities' fields set, as one edit -- the devices plugin's reshape
 			setAll: (label, sets) => this.history.commit(commands.setFieldsAll(label, sets)),
+			// C-e: the agreed instant; a point snapped to a place's grid; an entity made and committed, the selection untouched
+			now: () => this.now(),
+			snap: (place, pos) => snapIn(this.places.get(place), pos),
+			add: (kind, make) => this.history.commit(commands.createEntity(kind, make(this.model))),
 			// C-e (D5): several entities put as one edit, and the selection set -- the network's chained links
 			putAll: (label, puts) => this.history.commit(commands.putEntities(label, puts)),
 			select: (ids) => this.selection.set(ids),
@@ -640,23 +644,10 @@ export class Input {
 	*/
 	runModePress(evt) {
 		const { rule } = resolveInput(this.runRules, evt, this.situation(evt.region?.waypoint ?? null), { readOnly: this.readOnly });
-		if (rule) this[rule.run](evt);
-	}
-
-	toggleSpawnHere(evt) {
-		evt.claimed = true;
-		const wp = evt.region.waypoint;
-		const cmd = commands.toggleSpawn(this.model, wp, this.situation(wp).at);
-		if (cmd) { this.history.commit(cmd); this.afterHistory(); }
-	}
-
-	placeTowerHere(evt) {
-		const snapped = snapNode(evt.at);
-		if (occupiedAnyAt(this.model, snapped)) return;   // a taken cell places nothing
-		evt.claimed = true;
-		const node = makeNode(this.model, 'loadbalancer', snapped);
-		this.history.commit(commands.createEntity('node', node));
-		this.afterHistory();
+		if (!rule) return;
+		// a plugin's row -- the simulation's spawner and tower (C-e) -- acts through the host; what it changed may move occupancy
+		if (typeof rule.run === 'function') { rule.run(this.pluginHost, evt); this.afterHistory(); return; }
+		this[rule.run](evt);
 	}
 
 	fireActionHere(evt) {

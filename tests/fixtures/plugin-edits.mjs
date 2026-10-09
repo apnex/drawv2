@@ -9,6 +9,7 @@ still holds the product's decision, not a copy of it.
 import { setFieldsAll, setFields, putEntity, putEntities } from '../../app/src/commands.js';
 import { DEVICE_KEYS } from '../../devices/device-keys.mjs';
 import { LINK_KEYS } from '../../network/link-keys.mjs';
+import { SPAWN_RUNS } from '../../engine/spawn-runs.mjs';
 import { kindOf } from '../../model/model.mjs';
 
 // `s` on these ids: the devices plugin's reshape, as the command Input would send (empty when nothing is a device)
@@ -43,3 +44,16 @@ export const directionCommand = (link) => runLinkKey(holding(link), 'direction',
 export const planeCommand = (link) => runLinkKey(holding(link), 'plane', asSelected(link));
 export const linkCommand = (model, ids, star) => runLinkKey(model, star ? 'star' : 'chain',
 	ids.map((id) => ({ ...(model.get(kindOf(id), id) ?? {}), id, kind: kindOf(id) })));
+
+// a press on this endpoint in run mode, at the agreed instant `now`: the simulation's row, as the command Input would send -- or
+// null when the row sends nothing (a waypoint that does not exist)
+export function spawnCommand(model, id, now) {
+	let sent = null;
+	const host = {
+		ask: (question) => question(model), now: () => now,
+		set: (label, kind, eid, after) => { sent = setFields(label, kind, eid, after); },
+		put: (label, kind, make) => { sent = putEntity(label, kind, make(model)); },
+	};
+	SPAWN_RUNS.find((r) => r.id === 'toggle-spawn').run(host, { region: { waypoint: id } });
+	return sent;
+}
