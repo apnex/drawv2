@@ -1832,3 +1832,8 @@ Asked to build it as the way several plugins draw one kind, the director chose "
 Asked how the press rows stop naming kinds -- what a right press moves, what a left press draws a link from, what Ctrl clones, what a press selects -- the director chose "A, plugins declare facts" (the proposer's recommendation) over "B, plugins bring rows", which would have grown the help overlay from one line per gesture to one per kind and gesture.
 - A plugin's pick declares facts about what it draws: placed, an anchor, clones, selects on a press; the product's few shared press rows read them.
 - The help overlay keeps its lines; each line's kind list is built from the plugins, so a few lists reorder.
+
+**D5 -- a plugin's edits are data; the canvas's generic builders build every command -- 2026-10-09 (B308; H19.33).**\
+Asked how plugin commands reach history once keys move to plugins, given B44's rule that every committed change comes from a builder in `app/src/commands.js`, the director chose "A, edits as data" (the proposer's recommendation) over "B, plugin builder files", which would have changed B44 and its scanner and needed a design of record and an M7 audit, and "C, keys only", which would have left some 46 kind-naming lines in the canvas.
+- A plugin decides what changes -- the next direction, the zone around a selection, a size step -- and hands it to the host's generic verbs (`set`, `create`, and those the moved keys need); `app/src/commands.js` keeps generic builders only, and B44 stands as written.
+- The network's hand-built command (`network/host.mjs`, outside the scan's reach) moves onto the same path when the network's keys move.

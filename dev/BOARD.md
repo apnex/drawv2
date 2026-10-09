@@ -1171,6 +1171,7 @@ Elsewhere and unchanged: H10.30 and PD-3 are the director's calls; H15.5 and H17
 | H19.38 | Alt+right on a link's end handle starts nothing again -- a regression of C-d's second step, hidden by its own oracle edit | **B316** | S4 | `DONE` |
 | H19.39 | Ctrl over a selected link's end handle throws nothing -- hover ignores any handle; a regression of C-d's second step | **B317** | S2 | `DONE` |
 | H19.40 | The stamp ghost previews a device at the size it stamps it -- the glyph fitted, from the hand's preview | **B318** | S4 | `DONE` |
+| H19.41 | `z` wraps a wide device whole -- the bounds from each placed kind's size | **B319** | S4 | `DONE` |
 | H19.29 | C-a: drawing -- a painter per kind brought by its plugin, the renderer a dispatcher, layers ranked; zones first, then groups, devices and links | feature | S4 | `DONE` |
 | H19.30 | C-b: picking -- one id attribute on every drawn entity; a kind's pick modifier (the zone's Shift) | feature | S4 | `DONE` |
 | H19.31 | C-c: placing -- layout and extent as row facts; moving, cloning, nudging and snapping read them | feature | S4 | `DONE` |
@@ -1297,6 +1298,8 @@ AMENDED 2026-10-09: C-e's second step done -- the ghost and the palette's tiles 
 Next: the picks by coordinate, the marquee's footprint picks and the draw-a-link gesture's targets.
 AMENDED 2026-10-09: C-e's third step done -- what is at a point, in a box and under a hover is what the plugins say their items cover; the picker imports no plugin.\
 Next: keys and commands -- the step words, select-all, a delete's order, the zone keys.
+AMENDED 2026-10-09: C-e's fourth step done -- the zone keys are the zones plugin's, and the size steps each plugin's (D5); B319 fixed.\
+Next: the groups plugin's keys and commands, then the devices', the network's and the simulation's.
 
 **Exit:** nothing stored needs a migration and none is kept; production's sync holds the network under the GR6 battery; the core holds no kind.
 

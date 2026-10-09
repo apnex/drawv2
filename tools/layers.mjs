@@ -201,6 +201,7 @@ export const ENTRIES = {
 			'devices/device-gestures.mjs',   // C-d (H19.32): the devices plugin's text box row
 			'devices/device-hand.mjs',   // C-e (H19.33): the devices plugin's hand
 			'devices/device-footprint.mjs', 'network/anchor-points.mjs',   // C-e (H19.33): what a device, a waypoint and a link cover
+			'zones/zone-keys.mjs', 'devices/device-size.mjs',   // C-e (H19.33): the zone keys, and the size steps
 			'groups/group-painter.mjs',   // C-a (H19.29): the groups plugin's painter
 			'devices/device-appearance.mjs', 'network/anchor-appearance.mjs', 'engine/spawn-appearance.mjs',   // C-a (D3): the anchor's appearances
 			'network/link-painter.mjs', 'network/canvas.mjs',   // C-a (H19.29): the network's link painter and its canvas part
@@ -257,6 +258,7 @@ export const ENTRIES = {
 			'devices/device-gestures.mjs',   // C-d (H19.32): the devices plugin's text box row
 			'devices/device-hand.mjs',   // C-e (H19.33): the devices plugin's hand
 			'devices/device-footprint.mjs', 'network/anchor-points.mjs',   // C-e (H19.33): what a device, a waypoint and a link cover
+			'zones/zone-keys.mjs', 'devices/device-size.mjs',   // C-e (H19.33): the zone keys, and the size steps
 			'groups/group-painter.mjs',   // C-a (H19.29): the groups plugin's painter
 			'devices/device-appearance.mjs', 'network/anchor-appearance.mjs', 'engine/spawn-appearance.mjs',   // C-a (D3): the anchor's appearances
 			'network/link-painter.mjs', 'network/canvas.mjs',   // C-a (H19.29): the network's link painter and its canvas part

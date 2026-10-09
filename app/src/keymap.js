@@ -105,8 +105,10 @@ export const KEYMAP = [
 	{ id: 'pipette', input: ['q'],   mutates: true, on: (e) => is(e, 'q') && plain(e),                      run: 'onPipette' },
 	{ id: 'stamp', input: ['Enter'],     prevent: false, mutates: true, on: (e) => e.key === 'Enter',                           run: 'onStampKey' },
 	{ id: 'nudge', input: ['Arrows'],       mutates: true, on: (e) => arrow(e) && !e.shiftKey,                   run: 'onArrowKey' },
-	{ id: 'resize-step', input: ['Shift+Arrows'], mutates: true, on: (e) => arrow(e) && e.shiftKey,                    run: 'onResizeStep' },
-	{ id: 'wrap', input: ['z'],      mutates: true, on: (e) => is(e, 'z') && !meta(e),                      run: 'onWrapKey' },
+	// C-e: what a step does is each part's size step (`sizeStep`), and so is how the help says it; with none, no row
+	{ id: 'resize-step', input: ['Shift+Arrows'], mutates: true, on: (e) => arrow(e) && e.shiftKey,                    run: 'onResizeStep',
+		doc: (parts) => (parts.some((p) => p.sizeStep) ? parts.filter((p) => p.sizeStep).map((p) => p.sizeStep.doc).join(', or ') : null) },
+	// C-e (H19.33): `z` -- wrap the selection in a zone -- is the zones plugin's key row (zones/zone-keys.mjs)
 	// `c` means two things by situation -- the acceptance case of the Rules system, ruled 2026-09-30: close (or open) ONE
 	// link with a bend, refuse ONE link without, and anything else means nothing. Two rows, and no handler asks.
 	{ id: 'close', input: ['c'], context: 'one link with a bend selected',         mutates: true, on: (e) => is(e, 'c') && plain(e), when: oneBentLink,     run: 'onCloseKey' },

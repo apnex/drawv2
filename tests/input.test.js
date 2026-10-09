@@ -14,6 +14,8 @@ its row, never asserted as correct and never written around.
 */
 
 // C-c (H19.31): the placed kinds, as the page composes them
+import { ZONE_SIZE_STEP } from '../zones/zone-keys.mjs';
+import { DEVICE_SIZE_STEP } from '../devices/device-size.mjs';
 import { placesOf as placesOfCanvas } from '../app/src/snap.js';
 import { PRODUCT_CANVAS as CANVAS_PARTS } from '../product/canvas.mjs';
 const PLACES = placesOfCanvas(CANVAS_PARTS);
@@ -691,8 +693,9 @@ test('B44: no builder emits a `before` — the wire drops it and the server deri
 		h.model.put('link', link);
 
 		const built = [
-			commands.resizeZoneStep(h.model, [z.id], 1, 0),   // RESTATED at C-d: resizeZone is private; its step builds it
-			commands.resizeNodeSpan(a.id, { cols: 2, rows: 3 }),
+			// RESTATED at C-e step four (D5): a size step sets through the one builder, with what the zones and devices plugins make of it
+			commands.setFields('resize', 'zone', z.id, ZONE_SIZE_STEP.step(z, 1, 0)),
+			commands.setFields('resize', 'node', a.id, DEVICE_SIZE_STEP.step({ ...a, span: { cols: 1, rows: 2 } }, 1, 1)),
 			commands.setFields('replug', 'link', link.id, { src: a.id, dst: b.id }),   // RESTATED at C-d: a re-plug sets through the one builder
 			commands.setFields('retype', 'node', a.id, { type: 'host' }),   // RESTATED at C-e: the hand's retype sets through the one builder
 			commands.toggleClosed(link),
@@ -1056,20 +1059,25 @@ They are testable directly now, which is the point: each takes a model and a sel
 and return empty entries, because `Changes.commit`/`amend` both no-op on an empty command — that is
 what lets the call sites be one line.
 */
-test('B46: wrapSelection fits a zone to the selection, and yields nothing for a link-only one', () => {
+// RESTATED at C-e step four (H19.33; D5): `wrapSelection` left the builders -- `z` is the zones plugin's key row, asking the
+// canvas for the selection's bounds -- so the same three facts are held through the key
+test('B46: z fits a zone to the selection, and makes nothing for a link-only one', () => {
 	const h = makeInput();
 	try {
 		const [a, b] = seedNodes(h.model, [[0, 0], [180, 180]]);
-		const cmd = commands.wrapSelection(h.model, [a.id, b.id]);
-		const zone = cmd.entries[0].entity;
+		h.selection.set([a.id, b.id]);
+		h.capture.onKeyDown(key('z'));
+		const [zone] = h.model.all('zone');
 		assert.ok(zone.x < 0 && zone.y < 0, 'the box snaps OUT past the nodes');
 		assert.ok(zone.x + zone.w > 180 && zone.y + zone.h > 180, 'and encloses the far one');
+		h.model.del('zone', zone.id);
 
 		const link = makeLink(h.model, a.id, b.id);
 		h.model.put('link', link);
-		assert.equal(commands.wrapSelection(h.model, [link.id]).entries.length, 0,
-			'a link has no x — nothing to wrap');
-		assert.equal(commands.wrapSelection(h.model, []).entries.length, 0);
+		h.selection.set([link.id]); h.capture.onKeyDown(key('z'));
+		assert.equal(h.model.all('zone').length, 0, 'a link has no place -- nothing to wrap');
+		h.selection.set([]); h.capture.onKeyDown(key('z'));
+		assert.equal(h.model.all('zone').length, 0);
 	} finally { h.restore(); }
 });
 
@@ -1091,20 +1099,21 @@ test('B46: nudgeSelection clamps at the canvas edge and yields nothing when it c
 	} finally { h.restore(); }
 });
 
-test('B46: the two Shift+arrow builders self-guard, so exactly one ever acts', () => {
+// RESTATED at C-e step four (H19.33; D5): the two builders became the zones and devices plugins' size steps, and the canvas
+// asks only the lone selected entity's -- so "exactly one acts" holds by the kind, and each step still says nothing when it
+// has nothing to do
+test('B46: a Shift+arrow step is the lone selected entity\'s kind\'s, so exactly one ever acts', () => {
 	const h = makeInput();
 	try {
 		const [n] = seedNodes(h.model, [[0, 0]]);
 		const z = makeZone(h.model, { x: 0, y: 0, w: 300, h: 300 });
 		h.model.put('zone', z);
+		assert.deepEqual(ZONE_SIZE_STEP.step(z, 1, 0), { x: 0, y: 0, w: 360, h: 300 }, 'the zone grows a cell');
+		assert.equal(DEVICE_SIZE_STEP.step(n, 1, 0).span.cols, 2, 'the device grows its span');
+		assert.equal(DEVICE_SIZE_STEP.step(n, -1, 0), null, 'a step to nothing is none');
 
-		assert.equal(commands.resizeNodeStep(h.model, [z.id], 1, 0).entries.length, 0, 'zone selected: node builder is silent');
-		assert.equal(commands.resizeZoneStep(h.model, [z.id], 1, 0).entries.length, 1, 'zone builder acts');
-
-		assert.equal(commands.resizeZoneStep(h.model, [n.id], 1, 0).entries.length, 0, 'node selected: zone builder is silent');
-		assert.equal(commands.resizeNodeStep(h.model, [n.id], 1, 0).entries[0].after.span.cols, 2, 'node builder grows the span');
-
-		assert.equal(commands.resizeZoneStep(h.model, [z.id, n.id], 1, 0).entries.length, 0, 'a MIXED selection resizes nothing');
+		h.selection.set([z.id, n.id]); h.capture.onKeyDown(key('ArrowRight', { shiftKey: true }));
+		assert.deepEqual([h.model.get('zone', z.id).w, h.model.get('node', n.id).span], [300, undefined], 'a MIXED selection resizes nothing');
 	} finally { h.restore(); }
 });
 

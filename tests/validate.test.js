@@ -286,7 +286,8 @@ test('B86: the span and content caps are one number across both peers', async ()
 	mutant: reverting one of the two clamps left the other matching. So the assertion is the absence
 	of the literal, which is the only thing that actually differs.
 	*/
-	const src = fs.readFileSync(new URL('../app/src/commands.js', import.meta.url), 'utf8');
+	// RESTATED at C-e step four (H19.33; D5): the span step left app/src/commands.js for the devices plugin's size step
+	const src = fs.readFileSync(new URL('../devices/device-size.mjs', import.meta.url), 'utf8');
 	assert.doesNotMatch(src, /,\s*64\s*\)/, 'the client clamps to the shared cap, never a literal of its own');
 	assert.equal((src.match(/SPAN_MAX/g) || []).length, 3, 'both clamps and the import, so neither reverted alone');
 

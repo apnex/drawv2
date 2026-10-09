@@ -29,8 +29,6 @@ export const ACTION_LABELS = {
 	onPipette: 'pick up the type of the node under the pointer',
 	onStampKey: 'stamp the held type at the pointer',
 	onArrowKey: 'nudge the selection one cell',
-	onResizeStep: 'resize the selected zone, or grow the selected node',
-	onWrapKey: 'wrap the selection in a zone',
 	onCloseKey: 'close or open the selected route',
 	onCloseRefused: 'say why a straight link cannot close',
 	onDirectionKey: 'cycle the selected link\'s direction: forward, reverse, none',

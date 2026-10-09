@@ -22,11 +22,9 @@ disconnected browser previews with it as well, so it still never builds a docume
 import { linkBetween, makeLink } from '../../network/link-queries.mjs';   // which links meet an anchor: the network's (K13d)
 import { clone } from '../../model/ops.mjs';
 import { kindOf, newId, projection } from '../../model/model.mjs';
-import { makeZone } from '../../zones/make-zone.mjs';   // the zones plugin's factory (O-b1)
 import { makeGroup } from '../../groups/make-group.mjs';   // the groups plugin's factory (O-c)
-import { GAP, HALF, ZONE_EXT, clampDelta } from './snap.js';
-import { SPAN_MAX } from '../../model/limits.mjs';
-import { BARE_KIND, ANCHOR_KINDS } from '../../model/anchors.mjs';
+import { GAP, clampDelta } from './snap.js';
+import { BARE_KIND } from '../../model/anchors.mjs';
 import { bareAnchor, isTypedEntity } from '../../devices/device-shapes.mjs';
 import { drawnKind } from '../../devices/anchor-words.mjs';   // the drawn word (F4)   // the bare anchor, asked in one place (F-b)
 
@@ -156,16 +154,6 @@ export function ungroupAll(model, groupIds) {
 // the handles' (a zone's corners: 'resize')
 export function setFields(label, kind, id, after) {
 	return { label, entries: [{ op: 'set', kind, id, after }] };
-}
-
-function resizeZone(id, after) {   // C-d: the zone's resize step (Shift+arrows) builds it; the handle drag sets the box itself
-	return { label: 'resize', entries: [{ op: 'set', kind: 'zone', id, after: { x: after.x, y: after.y, w: after.w, h: after.h } }] };
-}
-
-// Shift+arrow: grow/shrink the lone selected node's span one cell (W1). Same 'resize' label as the
-// zone path on purpose — one coalescing window covers a burst of either (D11).
-export function resizeNodeSpan(id, span) {
-	return { label: 'resize', entries: [{ op: 'set', kind: 'node', id, after: { span: { cols: span.cols, rows: span.rows } } }] };
 }
 
 // re-plug: rewire one end of a link onto another node
@@ -334,27 +322,6 @@ They self-guard and return EMPTY ENTRIES when there is nothing to do, following 
 never needs a guard of its own — which is what lets the call sites collapse to one line.
 */
 
-// Z — fit a zone around the selection: the bounding box, snapped OUT to the zone grid (±HALF + k·GAP)
-// and clamped to the canvas. Link-only or empty selections produce nothing.
-export function wrapSelection(model, ids) {
-	let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity, boxed = 0;
-	ids.forEach((id) => {
-		const e = model.get(kindOf(id), id);
-		if (!e || e.x === undefined) return;
-		minX = Math.min(minX, e.x); minY = Math.min(minY, e.y);
-		maxX = Math.max(maxX, e.x + (e.w || 0)); maxY = Math.max(maxY, e.y + (e.h || 0));
-		boxed++;
-	});
-	if (boxed === 0) return { label: 'create zone', entries: [] };
-	const floorZ = (v) => Math.floor((v - HALF) / GAP) * GAP + HALF;
-	const ceilZ = (v) => Math.ceil((v - HALF) / GAP) * GAP + HALF;
-	const x = Math.max(floorZ(minX - HALF), -ZONE_EXT.x);
-	const y = Math.max(floorZ(minY - HALF), -ZONE_EXT.y);
-	const x2 = Math.min(ceilZ(maxX + HALF), ZONE_EXT.x);
-	const y2 = Math.min(ceilZ(maxY + HALF), ZONE_EXT.y);
-	return createEntity('zone', makeZone(model, { x, y, w: Math.max(x2 - x, GAP), h: Math.max(y2 - y, GAP) }));
-}
-
 // arrow keys — shift the movable part of the selection one cell, clamped so nothing leaves the canvas
 export function nudgeSelection(model, ids, dx, dy, places) {   // C-c: `places`, the placed kinds (snap.js placesOf)
 	const moved = [];
@@ -370,31 +337,6 @@ export function nudgeSelection(model, ids, dx, dy, places) {   // C-c: `places`,
 	return moveEntities(moved.map((m) => ({
 		kind: m.kind, id: m.id, after: { x: m.before.x + delta.x, y: m.before.y + delta.y },
 	})));
-}
-
-// Shift+arrow on a LONE zone — NW corner fixed, minimum one cell, clamped to the canvas
-export function resizeZoneStep(model, ids, dx, dy) {
-	const none = { label: 'resize', entries: [] };
-	if (ids.length !== 1 || kindOf(ids[0]) !== 'zone') return none;
-	const zone = model.get('zone', ids[0]);
-	if (!zone) return none;
-	const w = Math.min(Math.max(zone.w + dx * GAP, GAP), ZONE_EXT.x - zone.x);
-	const h = Math.min(Math.max(zone.h + dy * GAP, GAP), ZONE_EXT.y - zone.y);
-	if (w === zone.w && h === zone.h) return none;
-	return resizeZone(zone.id, { x: zone.x, y: zone.y, w, h });
-}
-
-// Shift+arrow on a LONE node — grow its span one cell (W1). Origin fixed, capped at the validator's 64.
-export function resizeNodeStep(model, ids, dx, dy) {
-	const none = { label: 'resize', entries: [] };
-	if (ids.length !== 1 || kindOf(ids[0]) !== 'node') return none;
-	const node = (isTypedEntity('node', model.get('node', ids[0])) ? model.get('node', ids[0]) : undefined);
-	if (!node) return none;
-	const cur = node.span || { cols: 1, rows: 1 };
-	const cols = Math.min(Math.max(cur.cols + dx, 1), SPAN_MAX);
-	const rows = Math.min(Math.max(cur.rows + dy, 1), SPAN_MAX);
-	if (cols === cur.cols && rows === cur.rows) return none;
-	return resizeNodeSpan(node.id, { cols, rows });
 }
 
 /*

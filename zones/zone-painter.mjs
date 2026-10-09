@@ -11,6 +11,7 @@ the K8 DOM corpus holds that.
 import { STD, L_STD } from '../kernel/spec.mjs';
 import { ZONE_EXT } from './zone-extent.mjs';
 import { ZONE_PRESSES, ZONE_HANDLE_SPECS } from './zone-gestures.mjs';
+import { ZONE_KEYS, ZONE_SIZE_STEP } from './zone-keys.mjs';
 
 const ZONE_R = L_STD.zone.r;   // the zone's corner radius (14)
 
@@ -46,4 +47,6 @@ const ZONE_PLACE = { kind: 'zone', layout: 'zone', ext: ZONE_EXT, size: (zone) =
 
 // the zones plugin's canvas part: what it brings to the page (C-a: its painter; C-b its pick, on the painter; C-c its place;
 // C-d its press row over the shared box gesture, and its handles)
-export const ZONES_CANVAS = { owner: 'zones', painters: [ZONE_PAINTER], places: [ZONE_PLACE], presses: ZONE_PRESSES, handles: ZONE_HANDLE_SPECS };
+// C-e: and its keys -- `z` -- and its size step under the canvas's Shift+arrow
+export const ZONES_CANVAS = { owner: 'zones', painters: [ZONE_PAINTER], places: [ZONE_PLACE], presses: ZONE_PRESSES, handles: ZONE_HANDLE_SPECS,
+	keys: ZONE_KEYS, sizeStep: ZONE_SIZE_STEP };

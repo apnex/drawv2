@@ -372,7 +372,17 @@ export class Input {
 		if (judges.length > 1) throw new Error(`Input: two plugins judge the link drag (${judges.map((p) => p.owner).join(', ')}) -- one may`);
 		this.judgeDrag = judges[0]?.judgeDrag ?? null;
 		// the key table: the product's rows and each plugin's, through the Rules engine
-		this.keyRules = composeRules({ owner: 'product', rules: KEYMAP }, ...plugins.map((p) => ({ owner: p.owner, rules: p.keys ?? [] })));
+		// C-e: a product row may phrase its help from the composition (`doc(parts)`, absent when it answers null); a canvas part
+		// may bring key rows, as a plugin does -- the zones plugin's `z`
+		const productKeys = KEYMAP.flatMap((r) => (typeof r.doc !== 'function' ? [r] : r.doc(parts) === null ? [] : [{ ...r, doc: r.doc(parts) }]));
+		this.keyRules = composeRules({ owner: 'product', rules: productKeys }, ...plugins.map((p) => ({ owner: p.owner, rules: p.keys ?? [] })),
+			...parts.filter((p) => p.keys).map((p) => ({ owner: p.owner, rules: p.keys })));
+		// C-e: what Shift+arrow makes of a lone selected entity, by kind -- each part's size step
+		this.sizeSteps = new Map();
+		for (const p of parts) if (p.sizeStep) {
+			if (this.sizeSteps.has(p.sizeStep.kind)) throw new Error(`Input: ${p.sizeStep.kind}'s size step is brought by ${this.sizeSteps.get(p.sizeStep.kind).owner} and by ${p.owner}`);
+			this.sizeSteps.set(p.sizeStep.kind, { ...p.sizeStep, owner: p.owner });
+		}
 		// declared verbs only, never Input: add a drag step; read the selection as plain data (id, kind, type, name)
 		this.pluginHost = {
 			addStop: (step) => this.addStop(step),
@@ -385,6 +395,11 @@ export class Input {
 			// C-d: release the held tool -- the text tool, the one a press can hold -- and open the editor on a text box's frame
 			releaseTool: () => this.tools.setTextTool(false),
 			editFrame: (id) => this.labels.openFrame(id),
+			// C-e: the bounds of the selected placed entities, each by what its place says its size is -- or null with none placed
+			selectionBounds: () => this.selectionBounds(),
+			// C-e: a brief receipt on the readout, and a size in its units
+			flash: (text) => this.readout.flash(text),
+			dims: (w, h) => this.readout.dims(w, h),
 		};
 		// the pointer's tables on the same engine (stage 4): which gesture a press starts, a double click, a key release
 		// C-d (H19.32): the product's press rows and each canvas part's -- a plugin's rows over the shared gestures (D2)
@@ -752,22 +767,18 @@ export class Input {
 		this.readout.flash(`+${placed.length} cloned Δ[${cells(delta.x)}, ${cells(delta.y)}]`);
 	}
 
-	/*
-	Z — wrap the selection in a fitted zone: the bounding box of the positioned
-	entities, given a 30px margin and rounded OUT to the enclosing zone-grid
-	rectangle (for pure-node selections the +30 already lands on the grid).
-	*/
-	// Z — wrap the selection in a fitted zone. The box arithmetic is commands.wrapSelection's (B46);
-	// what stays is the consequence: select the new zone and say what was made.
-	wrapInZone() {
-		const cmd = commands.wrapSelection(this.model, this.selection.list());
-		if (!cmd.entries.length) return;   // empty or link-only selection
-		const zone = cmd.entries[0].entity;
-		this.history.commit(cmd);
-		this.selection.set([zone.id]);
-		this.readout.flash(`zone ${this.readout.dims(zone.w, zone.h)}`);
+	// the bounds of the selected placed entities -- a zone's box, a device's span (C-c places' `size`) -- or null with none (C-e)
+	selectionBounds() {
+		let x = Infinity, y = Infinity, x2 = -Infinity, y2 = -Infinity, boxed = 0;
+		for (const id of this.selection.list()) {
+			const kind = kindOf(id), place = this.places.get(kind), e = place && this.model.get(kind, id);
+			if (!e) continue;
+			const { w, h } = place.size(e);
+			x = Math.min(x, e.x); y = Math.min(y, e.y); x2 = Math.max(x2, e.x + w); y2 = Math.max(y2, e.y + h);
+			boxed++;
+		}
+		return boxed ? { x, y, x2, y2 } : null;
 	}
-
 	/*
 	C — close / open the lone selected route. A closed route loops dst → src as a rounded
 	polygon (the router's close arg rounds the src/dst corners too). Only a multi-hop route
@@ -1574,18 +1585,17 @@ export class Input {
 		if (dir) this.history.amend(commands.nudgeSelection(this.model, this.selection.list(), dir[0], dir[1], this.places));
 	}
 
-	// Shift+arrow. Both resize paths self-guard on the selection kind, so exactly one of them acts:
-	// a lone zone grows by a cell, a lone node grows its span by a cell, anything else is a no-op.
+	// Shift+arrow: a lone selected entity steps its size by what its part says (C-e) -- a zone a cell, a device's span a cell;
+	// anything else, a waypoint or a mixed selection, nothing. Amended, as a nudge is, so steps accumulate
 	onResizeStep(evt) {
 		const dir = ARROW[evt.key];
-		if (!dir) return;
 		const ids = this.selection.list();
-		// both builders self-guard on the selection kind, so exactly one of them yields entries
-		this.history.amend(commands.resizeZoneStep(this.model, ids, dir[0], dir[1]));
-		this.history.amend(commands.resizeNodeStep(this.model, ids, dir[0], dir[1]));
+		if (!dir || ids.length !== 1) return;
+		const kind = kindOf(ids[0]), spec = this.sizeSteps.get(kind), e = spec && this.model.get(kind, ids[0]);
+		const after = e && spec.step(e, dir[0], dir[1]);
+		if (after) this.history.amend(commands.setFields(spec.label, kind, ids[0], after));
 	}
 
-	onWrapKey() { this.wrapInZone(); }
 	onCloseKey() { this.toggleClosePath(); }
 	onCloseRefused() { this.readout.flash('✗ close needs a multi-hop route'); }   // the `close-refused` row: ONE link, no bend
 	onDirectionKey() { this.cycleLinkDirection(); }
