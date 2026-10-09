@@ -148,18 +148,20 @@ test('a selected link lights its waypoints, and releases them when selection mov
 	model.put('node', { id: 'node-aa0003', name: 'node-aa0003', x: 300, y: 300 });   // on no link at all
 	model.put('link', { id: 'link-aa0001', name: 'link-aa0001', src: 'node-aa0001', dst: 'node-ea0001', via: ['node-aa0002'] });
 
+	// RESTATED at C-e step fourteen (H19.33): the path's light is the network's reflection, marked by the renderer's one step
+	const { NETWORK_REFLECTS } = await import('../network/selection-reflects.mjs');
 	const state = new Map();
-	const host = { model, selectedSet: new Set(['link-aa0001']), pathLit: undefined,
+	const host = { model, selectedSet: new Set(['link-aa0001']), reflects: NETWORK_REFLECTS.filter((r) => r.cls === 'on-selected-path'), marked: new Map(),
 		setState: (id, cls, on) => state.set(`${id}:${cls}`, on) };
 
-	Renderer.prototype.reflectPathSelection.call(host);
+	Renderer.prototype.reflectParts.call(host);
 	assert.equal(state.get('node-ea0001:on-selected-path'), true, 'the endpoint lights');
 	assert.equal(state.get('node-aa0002:on-selected-path'), true, 'and so does the bend — it sits ON the line');
 	assert.equal(state.has('node-aa0003:on-selected-path'), false, 'a waypoint elsewhere is untouched');
 
 	// the selection moves to the node: the path's anchors must let go
 	host.selectedSet = new Set(['node-aa0001']);
-	Renderer.prototype.reflectPathSelection.call(host);
+	Renderer.prototype.reflectParts.call(host);
 	assert.equal(state.get('node-ea0001:on-selected-path'), false, 'the endpoint releases');
 	assert.equal(state.get('node-aa0002:on-selected-path'), false, 'and the bend releases');
 });

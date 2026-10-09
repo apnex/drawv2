@@ -133,7 +133,7 @@ export function applyAnswer(model, selection, ops) {
 	// SUCCESSION (TG-1b): a delete that names what it was absorbed into -- the planner's join says so -- hands the selection on
 	const carry = ops.filter((o) => o.op === 'del' && o.into && selection.has(o.id)).map((o) => o.into);
 	applyOps(model, ops);
-	const live = carry.filter((id) => model.get('link', id) && !selection.has(id));
+	const live = carry.filter((id) => model.entityExists(id) && !selection.has(id));   // C-e: whatever it joined into, still there
 	if (live.length) selection.add(live);
 }
 

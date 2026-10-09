@@ -1173,11 +1173,12 @@ Elsewhere and unchanged: H10.30 and PD-3 are the director's calls; H15.5 and H17
 | H19.40 | The stamp ghost previews a device at the size it stamps it -- the glyph fitted, from the hand's preview | **B318** | S4 | `DONE` |
 | H19.41 | `z` wraps a wide device whole -- the bounds from each placed kind's size | **B319** | S4 | `DONE` |
 | H19.42 | F2 with a pipe selected opens no name editor -- F2 renames only the kinds a part says are named | **B321** | S4 | `DONE` |
+| H19.43 | A pipe put again keeps its drawn line -- the renderer removes only what it draws | **B322** | S3 | `DONE` |
 | H19.29 | C-a: drawing -- a painter per kind brought by its plugin, the renderer a dispatcher, layers ranked; zones first, then groups, devices and links | feature | S4 | `DONE` |
 | H19.30 | C-b: picking -- one id attribute on every drawn entity; a kind's pick modifier (the zone's Shift) | feature | S4 | `DONE` |
 | H19.31 | C-c: placing -- layout and extent as row facts; moving, cloning, nudging and snapping read them | feature | S4 | `DONE` |
 | H19.32 | C-d: handles, presses, gestures, releases -- rows a plugin brings for the shared gestures (D2) | feature | S4 | `DONE` |
-| H19.33 | C-e: keys, commands, readout, labels, grids -- each moved to its plugin; opening with the devices plugin's hand (palette, digit keys, stamping, pipette, retype, chaining), moved from C-d by the director | feature | S4 | `TODO` |
+| H19.33 | C-e: keys, commands, readout, labels, grids -- each moved to its plugin; opening with the devices plugin's hand (palette, digit keys, stamping, pipette, retype, chaining), moved from C-d by the director | feature | S4 | `DONE` |
 | H19.34 | C-f: closed -- the canvas names no plugin's kind beyond a record that may only fall; B308 closed | **B308** | S4 | `TODO` |
 | H19.8 | Design, for approval: a type as a composition of packs | **B282** | S3 | `TODO` |
 | H19.9 | Transit off at a ring's pin opens the ring there, as ruled, and its pieces rejoin when transit returns -- the director's reports from production | **B299** | S2 | `DONE` |
@@ -1319,6 +1320,8 @@ AMENDED 2026-10-10: C-e's twelfth step done -- a panel's content and its run-mod
 Next: the zone grid, the selection reflections and the survey's other open findings; then H19.33 closes.
 AMENDED 2026-10-10: C-e's thirteenth step done -- the grids are declared by what places on them.\
 Next: the selection reflections and the survey's other open findings; then H19.33 closes.
+AMENDED 2026-10-10: C-e done -- fourteen steps; its last, the network's selection reflections and the survey's open findings, B322 fixed among them.\
+Next H19.34, C-f: the ratchet that the canvas names no plugin's kind, with what remains recorded.
 
 **Exit:** nothing stored needs a migration and none is kept; production's sync holds the network under the GR6 battery; the core holds no kind.
 

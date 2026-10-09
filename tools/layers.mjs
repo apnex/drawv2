@@ -212,6 +212,7 @@ export const ENTRIES = {
 			'devices/device-facts.mjs', 'zones/zone-facts.mjs', 'network/link-facts.mjs',   // C-e (H19.33): how a kind reads, and Ctrl+A
 			'devices/device-labels.mjs', 'zones/zone-labels.mjs',   // C-e (H19.33): where a kind's label edits
 			'zones/zone-grid.mjs',   // C-e (H19.33): the zone grid
+			'network/selection-reflects.mjs',   // C-e (H19.33): what a selected link lights
 			'groups/group-painter.mjs',   // C-a (H19.29): the groups plugin's painter
 			'devices/device-appearance.mjs', 'network/anchor-appearance.mjs', 'engine/spawn-appearance.mjs',   // C-a (D3): the anchor's appearances
 			'network/link-painter.mjs', 'network/canvas.mjs',   // C-a (H19.29): the network's link painter and its canvas part
@@ -276,6 +277,7 @@ export const ENTRIES = {
 			'devices/device-facts.mjs', 'zones/zone-facts.mjs', 'network/link-facts.mjs',   // C-e (H19.33): how a kind reads, and Ctrl+A
 			'devices/device-labels.mjs', 'zones/zone-labels.mjs',   // C-e (H19.33): where a kind's label edits
 			'zones/zone-grid.mjs',   // C-e (H19.33): the zone grid
+			'network/selection-reflects.mjs',   // C-e (H19.33): what a selected link lights
 			'groups/group-painter.mjs',   // C-a (H19.29): the groups plugin's painter
 			'devices/device-appearance.mjs', 'network/anchor-appearance.mjs', 'engine/spawn-appearance.mjs',   // C-a (D3): the anchor's appearances
 			'network/link-painter.mjs', 'network/canvas.mjs',   // C-a (H19.29): the network's link painter and its canvas part

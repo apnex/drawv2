@@ -52,16 +52,20 @@ function oldLink(r) {
 const LINK_FACTS = ['dst', 'dstIsSrc', 'srcAlive', 'validTarget', 'hasVia', 'admitted', 'judged', 'click', 'atStart',
 	'shift', 'ctrl', 'alt', 'pressShift', 'srcIsNode', 'handIsSrcType', 'chained', 'srcSelected'];
 
-test('the link release chooses what the old handler did, for every combination of its facts', () => {
+test('the link release chooses what the old handler did, for every combination of its facts', async () => {
 	const t = table(LINK_RELEASES);
 	let n = 0;
 	const differ = [];
-	for (const hand of [null, 'router', 'waypoint']) for (const r of combos(LINK_FACTS, { hand })) {
+	// CORRECTED at C-e step fourteen (H19.33): the hand holds the devices plugin's items since C-e step one, and a waypoint is
+	// none of them -- so `hand: 'waypoint'` is a fact no release receives, and the rule's clause for it went. Held over every
+	// value the hand can hold, each of the devices plugin's items and none; the old handler's clause is unchanged for them.
+	const { DEVICE_HAND } = await import('../devices/device-hand.mjs');
+	for (const hand of [null, ...DEVICE_HAND.items]) for (const r of combos(LINK_FACTS, { hand })) {
 		n++;
 		const was = oldLink(r), now = choose(t, r);
 		if (was !== now && differ.length < 5) differ.push(`${JSON.stringify(r)}: ${now}, was ${was}`);
 	}
-	assert.equal(n, 2 ** 17 * 3);
+	assert.equal(n, 2 ** 17 * (1 + DEVICE_HAND.items.length));
 	assert.deepEqual(differ, []);
 });
 

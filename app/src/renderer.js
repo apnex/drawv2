@@ -6,13 +6,10 @@ Draws nodes at their EXACT entity px (so live drag stays smooth); the committed 
 always on-grid. The kernel's resolve()/renderScene() remain the headless/export authority.
 */
 
-import { isLinkDown, blockersOf } from '../../network/network-queries.mjs';   // the network's questions over a Model (Q-a)
 import { el, setAttrs } from './painter.js';
 import { L_STD } from '../../kernel/spec.mjs';
 import { selBox } from '../../kernel/renderer.mjs';
-import { BARE_KIND } from '../../model/anchors.mjs';
 import { kindOf } from '../../model/model.mjs';
-import { bareAnchor } from '../../devices/device-shapes.mjs';
 import { byDrawingOrder } from '../../model/stacking.mjs';   // the stacking (F-d)   // the bare anchor, asked in one place (F-b)
 
 const SELECT_BOX = selBox(L_STD);      // the kernel's selection brackets (±23)
@@ -125,6 +122,13 @@ export class Renderer {
 		// C-a: every layer an entity is drawn into is a painter's or an appearance's; the renderer keeps none of its own
 		this.layers = {};
 		this.selectedSet = new Set();   // the renderer OWNS the 'selected' visual state (Selection is renderer-free)
+		// C-e: what a selection lights beyond itself, each part's -- a class, and the ids it marks (the network's: a selected link's
+		// waypoints, a down link's blockers) -- and the ids each class marks now
+		this.reflects = parts.flatMap((p) => (p.reflects ?? []).map((r) => {
+			if (typeof r.cls !== 'string' || typeof r.of !== 'function') throw new Error(`Renderer: ${p.owner}'s selection reflection names no class or no marks`);
+			return { ...r, owner: p.owner };
+		}));
+		this.marked = new Map();
 		this.labels = true;             // node and zone names, Tab-toggled; visible by default
 		this.modeWatchers = [];         // who hears a mode change (watchMode)
 		this.mode = 'view';             // W4/W5 — view | edit | run (client/session, ephemeral). edit shows the
@@ -217,59 +221,19 @@ export class Renderer {
 		this.selectedSet.forEach((id) => { if (!next.has(id)) this.setState(id, 'selected', false); });
 		next.forEach((id) => { if (!this.selectedSet.has(id)) this.setState(id, 'selected', true); });
 		this.selectedSet = next;
-		this.reflectPathSelection();
-		this.reflectBlockers();
+		this.reflectParts();
 	}
 
-	/*
-	The links BLOCKING a selected down link are highlighted -- ruled 2026-09-30: "when I select a down/broken link
-	that cannot be healed due to another link occupying my preferred path, also highlight that blocking link in
-	orange so I can see the path that is blocking".
-
-	The model says who blocks (`blockersOf`, empty in production, which has no pipes). Every link path is visited so
-	a highlight left from an earlier selection -- or an earlier board -- is removed, not stranded: the half B218 and
-	B228 each got wrong once. Called again after an edit, since an edit can change who blocks whom.
-	*/
-	reflectBlockers() {
-		const blocking = new Set();
-		for (const id of this.selectedSet) {
-			const link = this.model.get('link', id);
-			if (link && isLinkDown(this.model, link)) for (const by of blockersOf(this.model, link)) blocking.add(by);
+	// C-e: each part's reflection marked -- what it marked before and marks no longer, unmarked; what it marks, marked, again
+	// each time, so an element drawn afresh since is marked too
+	reflectParts() {
+		for (const r of this.reflects) {
+			const next = r.of(this.model, this.selectedSet);
+			const prev = this.marked.get(r.cls) ?? new Set();
+			prev.forEach((id) => { if (!next.has(id)) this.setState(id, r.cls, false); });
+			next.forEach((id) => this.setState(id, r.cls, true));
+			this.marked.set(r.cls, next);
 		}
-		for (const path of this.svg.querySelector('#links').querySelectorAll('path.link')) path.classList.toggle('blocking', blocking.has(path.id));   // C-e moves this reflection to the network
-	}
-
-	/*
-	A selected path highlights its own ANCHORS, not just its line.
-
-	Selecting a link turns it green; its waypoints kept the link colour, so a green line ran through
-	blue rings and terminated on blue pads -- the path and the thing it is made of disagreeing about
-	whether they are selected.
-
-	BOTH roles, not endpoints alone. A bend's hollow ring sits ON the line, so a blue ring around a
-	green path reads as a foreign object rather than part of it. The whole path highlights or none
-	of it does.
-
-	A separate class from `selected`: these waypoints are not themselves selected -- deleting the
-	selection must not delete them, and their own brackets must stay off. This says "the path you
-	have selected passes through me".
-
-	Client-only, deliberately. The SVG export never receives a selection (`svg.mjs` calls
-	`docToSchema(doc)` with no `opts.selected`), because a downloaded picture should not carry
-	somebody's transient highlight.
-	*/
-	reflectPathSelection() {
-		const lit = new Set();
-		for (const id of this.selectedSet) {
-			const link = this.model.get('link', id);
-			if (!link) continue;
-			for (const w of [link.src, link.dst, ...(link.via || [])]) {
-				if (bareAnchor(this.model, w)) lit.add(w);
-			}
-		}
-		this.pathLit?.forEach((id) => { if (!lit.has(id)) this.setState(id, 'on-selected-path', false); });
-		lit.forEach((id) => this.setState(id, 'on-selected-path', true));
-		this.pathLit = lit;
 	}
 
 	handle(action, kind, entity) {
@@ -289,7 +253,7 @@ export class Renderer {
 		is gone.
 		*/
 		if (action === 'del') {
-			this.remove(entity.id);
+			if (this.draws(kind)) this.remove(entity.id);   // B322: only what it drew
 			this.redrawAfter(kind, entity);   // from the DELETED entity -- the model no longer knows what it touched (B218)
 		}
 	}
@@ -355,14 +319,18 @@ export class Renderer {
 		for (const e of own) layer.insertBefore(e, ref);
 	}
 
+	// what the renderer draws -- by a painter, or by appearances; anything else -- the network's pipe, painted by the network -- it
+	// neither draws nor removes (B322)
+	draws(kind) { return this.painters.has(kind) || this.appearances.has(kind); }
+
 	draw(kind, entity) {
+		if (!this.draws(kind)) return;     // B322: its element is another drawer's
 		this.remove(entity.id);             // put is create-or-replace
 		// C-a: a kind a plugin paints, its painter draws
 		const painter = this.painters.get(kind);
 		if (painter) { painter.create(entity, this.kit(painter)); this.reapplyStates(entity.id); this.redrawAfter(kind, entity); return; }   // B314: its session states too
 		// D3: a kind several plugins draw on, composed from their appearances
-		if (this.appearances.has(kind)) { this.drawComposed(kind, entity); this.reapplyStates(entity.id); return; }
-		this.reapplyStates(entity.id);
+		this.drawComposed(kind, entity); this.reapplyStates(entity.id);
 	}
 
 
@@ -393,11 +361,11 @@ export class Renderer {
 		}
 	}
 
-	// fresh DOM loses the session states: re-apply 'selected' if this entity is selected (undo/redo/load), and the highlight of
-	// one lit by a selected path, since render() replaces the DOM -- for every drawn kind, a painted one too (B314)
+	// fresh DOM loses the session states: re-apply 'selected' if this entity is selected (undo/redo/load), and a reflection that
+	// keeps -- a waypoint lit by a selected path -- since render() replaces the DOM -- for every drawn kind, a painted one too (B314)
 	reapplyStates(id) {
 		if (this.selectedSet.has(id)) this.setState(id, 'selected', true);
-		if (this.pathLit?.has(id)) this.setState(id, 'on-selected-path', true);
+		for (const r of this.reflects) if (r.keeps && this.marked.get(r.cls)?.has(id)) this.setState(id, r.cls, true);   // a lit path's waypoint (C-e)
 	}
 
 	// C-a: what a painter or an appearance is handed -- the canvas's element builder and look applier, the label pill's width, its

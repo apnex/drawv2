@@ -39,7 +39,8 @@ const commits = (r) => r.dst && r.srcAlive && !r.dstIsSrc && (r.admitted || (r.j
 const chainsOn = (r) => r.validTarget && r.shift && !r.hasVia;   // Shift-release on an anchor: the run carries on from it
 const clickHere = (r) => r.srcAlive && !r.hasVia && r.click && r.atStart;
 // a plain click on a node with a different type held retypes it -- never the anchor of a chained run, never with a modifier
-const retypes = (r) => clickHere(r) && r.srcIsNode && !!r.hand && r.hand !== 'waypoint' && !r.chained
+// (C-e: `r.hand !== 'waypoint'` went -- the hand holds the devices plugin's items, and a waypoint is none of them)
+const retypes = (r) => clickHere(r) && r.srcIsNode && !!r.hand && !r.chained
 	&& !r.shift && !r.ctrl && !r.alt && !r.handIsSrcType;
 const clicks = (r) => !commits(r) && !chainsOn(r) && clickHere(r) && !retypes(r);
 

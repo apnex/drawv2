@@ -112,7 +112,7 @@ const RECORD = {
 	// app/src/painter.js's waypoint literals went at C-e step two (H19.33): no hand holds a waypoint, so no tile or ghost draws one
 	'app/src/help.js': [1, 'the help overlay\'s waypoint situation, F4'],
 	'app/src/keymap.js': [1, 'the `w` key\'s id, F4'],
-	'app/src/releases.js': [1, 'the palette hand, F4'],
+	// app/src/releases.js's one -- a waypoint hand the retype refused -- went at C-e step fourteen: no hand holds a waypoint
 	'network/anchor-appearance.mjs': [2, 'the drawn waypoint\'s class and its layer -- the network\'s marks, F4; moved from app/src/renderer.js at C-a (D3) -- and its pick, the hit\'s word, moved from app/src/pick.js at C-b'],
 	'lab/src/root.js': [1, 'the page\'s waypoint layer id'],
 };

@@ -422,7 +422,8 @@ export class Sync {
 
 	// ---- inbound ----
 	localEntityCount() {
-		return ['node', 'link', 'zone', 'group'].reduce((n, k) => n + this.model.all(k).length, 0);
+		// every kind the Model was composed with -- a pipe too, which the list it held omitted (C-e, the survey's finding)
+		return this.model.kinds.list.reduce((n, k) => n + this.model.all(k).length, 0);
 	}
 
 	onMessage(msg) {
