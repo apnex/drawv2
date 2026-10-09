@@ -32,6 +32,10 @@ scenarios S2 and S3 are the brief's (lab-design/brief/instruments/d3-reconcile-r
 replug uses the real builder where the brief hand-built the op.
 */
 
+// C-c (H19.31): the placed kinds, as the page composes them
+import { placesOf as placesOfCanvas } from '../app/src/snap.js';
+import { PRODUCT_CANVAS as CANVAS_PARTS } from '../product/canvas.mjs';
+const PLACES = placesOfCanvas(CANVAS_PARTS);
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -231,7 +235,7 @@ would re-apply it and pull the node back to where the nudge left it.
 test('C4 live drag: the answer to the tab\'s own nudge does not pull back a drag already moving that node', async () => {
 	const w = await world(LONE);
 	try {
-		w.changes.amend(nudgeSelection(w.tab, [A], 1, 0));
+		w.changes.amend(nudgeSelection(w.tab, [A], 1, 0, PLACES));
 		w.changes.flush();                                            // the window's timer, standing in
 		w.serve();
 		w.tab.set('node', A, { x: 480, y: 0 });                       // a drag in progress: Input writes the model directly
@@ -275,14 +279,14 @@ middle nudge.
 test('C4 burst: a coalesced burst\'s answer converges, and does not re-apply the burst over a drag', async () => {
 	const w = await world(LONE);
 	try {
-		for (let i = 0; i < 3; i++) w.changes.amend(nudgeSelection(w.tab, [A], 1, 0));
+		for (let i = 0; i < 3; i++) w.changes.amend(nudgeSelection(w.tab, [A], 1, 0, PLACES));
 		w.changes.flush();
 		const [burst] = w.serve();
 		assert.equal(opsOf(burst).length, 3, 'one request, three ops on one node');
 		w.deliver();
 		assert.equal(shape(w.tab), shape(w.server()), 'the burst converged');
 
-		for (let i = 0; i < 3; i++) w.changes.amend(nudgeSelection(w.tab, [A], 0, 1));
+		for (let i = 0; i < 3; i++) w.changes.amend(nudgeSelection(w.tab, [A], 0, 1, PLACES));
 		w.changes.flush();
 		w.serve();
 		const start = { ...w.tab.get('node', A) };
@@ -361,7 +365,7 @@ test('C4 undo: a nudge still in the open burst window survives the reversal\'s a
 
 		w.changes.undo();
 		w.serve();                                                    // the undo leaves; the nudge below has not
-		const nudge = nudgeSelection(w.tab, [A], 1, 0);
+		const nudge = nudgeSelection(w.tab, [A], 1, 0, PLACES);
 		w.changes.amend(nudge);
 		const nudged = nudge.entries[0].after;
 

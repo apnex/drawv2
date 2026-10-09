@@ -13,6 +13,10 @@ From the command line, a tally over many seeds:
 
 `--trace SEED` prints the full event log of one run, which is the replay.
 */
+// C-c (H19.31): the placed kinds, as the page composes them
+import { placesOf } from '../../app/src/snap.js';
+import { PRODUCT_CANVAS } from '../../product/canvas.mjs';
+const PLACES = placesOf(PRODUCT_CANVAS);
 import { makeLink } from '../../network/link-queries.mjs';   // K13d: the network's link queries
 import { loadCode, makeWorld, clock, shape, shapeDoc, diffDocs } from './sync-world.mjs';
 import path from 'node:path';
@@ -109,7 +113,7 @@ async function runSeeded(seed, trace) {
 				const ids = rng() < 0.6 && t.sel.length && t.sel.every((id) => m.get(id.split('-')[0], id)) ? t.sel : [pick(movable)[1]];
 				selectOnly(ids);
 				const [dx, dy] = pick([[1, 0], [-1, 0], [0, 1], [0, -1]]);
-				t.changes.amend(C.nudgeSelection(m, ids, dx, dy)); note = `${ids} ${dx},${dy}`; break;
+				t.changes.amend(C.nudgeSelection(m, ids, dx, dy, PLACES));   // C-c: the placed kinds note = `${ids} ${dx},${dy}`; break;
 			}
 			case 'timer': t.changes.flush(); break;
 			case 'move': {

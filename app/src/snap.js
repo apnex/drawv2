@@ -85,20 +85,15 @@ drag is refused at the edge, so a multi-select never tears apart. Clamps the FOO
 origin: a multi-cell node's far edge must stay inside the extent too, and the clamped value is
 re-quantised to the grid so the group lands on cells rather than against the wall.
 */
-export function clampDelta(model, moved, delta) {
+// C-c: each moved entity held inside its kind's declared extent by its declared size (`places`, placesOf below)
+export function clampDelta(model, moved, delta, places) {
 	let minX = -Infinity, maxX = Infinity, minY = -Infinity, maxY = Infinity;
 	moved.forEach((m) => {
-		if (ANCHOR_KINDS.includes(m.kind)) {
-			const n = model.get(m.kind, m.id);   // a bare anchor has no span, so its footprint is one cell
-			const { sw, sh } = spanExtent(n && n.span);
-			minX = Math.max(minX, -NODE_EXT.x - m.before.x); maxX = Math.min(maxX, NODE_EXT.x - sw - m.before.x);
-			minY = Math.max(minY, -NODE_EXT.y - m.before.y); maxY = Math.min(maxY, NODE_EXT.y - sh - m.before.y);
-		} else {
-			const entity = model.get('zone', m.id);
-			if (!entity) return;
-			minX = Math.max(minX, -ZONE_EXT.x - m.before.x); maxX = Math.min(maxX, ZONE_EXT.x - entity.w - m.before.x);
-			minY = Math.max(minY, -ZONE_EXT.y - m.before.y); maxY = Math.min(maxY, ZONE_EXT.y - entity.h - m.before.y);
-		}
+		const place = places.get(m.kind), entity = model.get(m.kind, m.id);
+		if (!place || !entity) return;
+		const { w, h } = place.size(entity);
+		minX = Math.max(minX, -place.ext.x - m.before.x); maxX = Math.min(maxX, place.ext.x - w - m.before.x);
+		minY = Math.max(minY, -place.ext.y - m.before.y); maxY = Math.min(maxY, place.ext.y - h - m.before.y);
 	});
 	const clampAxis = (v, lo, hi) => {
 		if (v < lo) return Math.ceil(lo / GAP) * GAP;
@@ -113,12 +108,40 @@ The delta a drag should commit: ortho-locked, snapped against the BASE entity (C
 then clamped for the whole set. Snapping the base rather than each entity is what keeps a
 multi-select rigid — every member moves by one delta, so relative positions are preserved exactly.
 */
-export function snappedDelta(model, ctx, pos, ortho) {
+export function snappedDelta(model, ctx, pos, ortho, places) {
 	const base = ctx.moved.find((m) => m.id === ctx.baseId) || ctx.moved[0];
 	const rawDelta = orthoDelta({ x: pos.x - ctx.start.x, y: pos.y - ctx.start.y }, ortho);
 	const baseRaw = { x: base.before.x + rawDelta.x, y: base.before.y + rawDelta.y };
-	const baseSnapped = base.kind === 'zone' ? snapZone(baseRaw) : snapNode(baseRaw);
-	return clampDelta(model, ctx.moved, { x: baseSnapped.x - base.before.x, y: baseSnapped.y - base.before.y });
+	const baseSnapped = snapIn(places.get(base.kind), baseRaw);   // C-c: on the base's own grid, within its own extent
+	return clampDelta(model, ctx.moved, { x: baseSnapped.x - base.before.x, y: baseSnapped.y - base.before.y }, places);
+}
+
+/*
+C-c (H19.31; CANVAS-PLUGINS.md, D1) -- THE PLACED KINDS, declared by the canvas parts that bring them: `places: [{ kind,
+layout, ext, size(entity) -> { w, h } }]` -- the kernel layout its grid follows (the node grid, or the zone's half-offset one),
+the extent it stays within, and its size beyond one cell, which the clamp holds inside the extent. Moving, duplicating,
+cloning and nudging read these rather than asking whether a kind is an anchor or a zone. A layout the kernel lacks, a place
+without a size, or a kind placed twice is refused, naming its owner.
+*/
+export function placesOf(parts) {
+	const places = new Map();
+	for (const part of parts) {
+		for (const p of part.places ?? []) {
+			if (!LAYOUTS[p.layout]) throw new Error(`place: ${part.owner}'s place for ${p.kind} names layout ${p.layout}, which the kernel does not have`);
+			if (typeof p.size !== 'function') throw new Error(`place: ${part.owner}'s place for ${p.kind} has no size`);
+			if (places.has(p.kind)) throw new Error(`place: ${p.kind} is placed by ${places.get(p.kind).owner} and by ${part.owner}`);
+			places.set(p.kind, { ...p, owner: part.owner });
+		}
+	}
+	return places;
+}
+
+// a point on a placed kind's grid, within its extent
+export function snapIn(place, pos) {
+	return {
+		x: clamped(LAYOUTS[place.layout], pos.x, -place.ext.x, place.ext.x),
+		y: clamped(LAYOUTS[place.layout], pos.y, -place.ext.y, place.ext.y)
+	};
 }
 
 /*

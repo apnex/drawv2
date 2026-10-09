@@ -10,15 +10,25 @@ THE ANCHOR'S ORDER is the product's to declare, since several plugins draw on on
 Named lists rather than integer priorities -- the ruling's own caution: "priority as a bare integer is where this shape rots".
 */
 
+import { NODE_EXT } from '../model/surface.mjs';
+import { spanExtent } from '../kernel/geometry.mjs';
 import { ZONES_CANVAS } from '../zones/zone-painter.mjs';
 import { GROUPS_CANVAS } from '../groups/group-painter.mjs';
 import { DEVICES_CANVAS } from '../devices/device-appearance.mjs';
 import { NETWORK_CANVAS } from '../network/canvas.mjs';
 import { SIMULATION_CANVAS } from '../engine/spawn-appearance.mjs';
 
+/*
+C-c: THE ANCHOR'S PLACE, the product's to declare as the anchor is the core's: the node grid, within the node extent, its size beyond
+one cell a wide device's span -- the one place the canvas reads a device's field for the anchor, until B282 makes a wide device
+several anchors (O4, the recorded width exception).
+*/
+const ANCHOR_PLACE = { kind: 'node', layout: 'node', ext: NODE_EXT, size: (anchor) => { const { sw, sh } = spanExtent(anchor.span); return { w: sw, h: sh }; } };
+
 const ANCHOR_ORDER = {
 	owner: 'the product',
 	orders: { node: { layers: ['frame', 'sockets', 'body', 'marks', 'transit', 'select', 'label'], ranks: ['device', 'marks'] } },
+	places: [ANCHOR_PLACE],
 };
 
 // painters back to front on a full render: zones, group hulls, links -- and the anchors over them, by appearances

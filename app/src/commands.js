@@ -358,16 +358,16 @@ export function wrapSelection(model, ids) {
 }
 
 // arrow keys — shift the movable part of the selection one cell, clamped so nothing leaves the canvas
-export function nudgeSelection(model, ids, dx, dy) {
+export function nudgeSelection(model, ids, dx, dy, places) {   // C-c: `places`, the placed kinds (snap.js placesOf)
 	const moved = [];
 	ids.forEach((id) => {
 		const kind = kindOf(id);
-		if (!ANCHOR_KINDS.includes(kind) && kind !== 'zone') return;
+		if (!places.has(kind)) return;
 		const e = model.get(kind, id);
 		if (e) moved.push({ kind, id, before: { x: e.x, y: e.y } });
 	});
 	if (moved.length === 0) return { label: 'move', entries: [] };
-	const delta = clampDelta(model, moved, { x: dx * GAP, y: dy * GAP });
+	const delta = clampDelta(model, moved, { x: dx * GAP, y: dy * GAP }, places);
 	if (delta.x === 0 && delta.y === 0) return { label: 'move', entries: [] };
 	return moveEntities(moved.map((m) => ({
 		kind: m.kind, id: m.id, after: { x: m.before.x + delta.x, y: m.before.y + delta.y },
@@ -413,7 +413,7 @@ decision and the two callers differ, which is exactly why it does not belong in 
 puts them live so they render under the pointer (INPUT.md I-IN5 — live preview writes the shared
 Model); Ctrl+D never shows them and goes straight to a commit.
 */
-export function cloneSubgraph(model, seedIds) {
+export function cloneSubgraph(model, seedIds, places) {   // C-c: the seeds a placed kind's (snap.js placesOf)
 	const scratch = projection(model);       // allocate against a namespace that includes the batch
 	const idMap = new Map();
 	const clones = [];
@@ -445,7 +445,7 @@ export function cloneSubgraph(model, seedIds) {
 
 	seedIds.forEach((id) => {
 		const kind = kindOf(id);
-		if (!ANCHOR_KINDS.includes(kind) && kind !== 'zone') return;   // B30: waypoints are placeable
+		if (!places.has(kind)) return;   // B30: waypoints are placeable -- every placed kind is (C-c)
 		const src = model.get(kind, id);
 		if (src) cloneEntity(kind, src);
 	});

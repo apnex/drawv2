@@ -41,6 +41,7 @@ import { Input } from '../../app/src/input.js';
 import { RUN_PRESSES } from '../../app/src/run-mode.js';
 import { Capture } from '../../app/src/capture.js';
 import { picksOf } from '../../app/src/pick.js';
+import { placesOf } from '../../app/src/snap.js';
 import { PRODUCT_CANVAS } from '../../product/canvas.mjs';
 import { networkInput } from '../../network/keys.mjs';
 import { createNetworkSession } from '../../network/session.mjs';
@@ -252,7 +253,7 @@ export function makeInput({ readOnly = false, bare = false, host: hostOverride =
 	let input;
 	try {
 		input = bare
-			? new Input({ svg, model, history, selection, renderer, labels, host, help, snap })
+			? new Input({ svg, model, history, selection, renderer, labels, host, help, snap, places: placesOf(PRODUCT_CANVAS) })   // places are composition, not a collaborator (C-c)
 			// run mode's rows as the production root hands them in (K5); `bare` omits them as it omits every collaborator
 			: new Input({ svg, model, history, selection, renderer, labels, readout, tools, dataview, host, help, snap, runRules: RUN_PRESSES,
 				/*
@@ -262,7 +263,8 @@ export function makeInput({ readOnly = false, bare = false, host: hostOverride =
 				gesture corpus's 75 scenarios -- ran the page as it was before P5, with no g and no x.
 				`routeHook` stays: a STUB judge, for tests of the plugin seam itself; `plugins`, a composition given whole.
 				*/
-				plugins: plugins ?? [networkInput(routeHook ?? ((drag) => session.judge(drag, model.all('link'), model).verdict), session)] });
+				plugins: plugins ?? [networkInput(routeHook ?? ((drag) => session.judge(drag, model.all('link'), model).verdict), session)],
+				places: placesOf(PRODUCT_CANVAS) });   // C-c: the placed kinds, as the page composes them
 	} catch (e) { restore(); throw e; }   // a refused composition must not leave the stub DOM installed
 	if (readOnly) input.setReadOnly(true);
 	// L0: tests drive the page's events through capture, as a browser does -- Input itself takes only input events

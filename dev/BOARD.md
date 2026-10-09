@@ -1170,7 +1170,7 @@ Elsewhere and unchanged: H10.30 and PD-3 are the director's calls; H15.5 and H17
 | H19.37 | A reveal beat withholds a zone or a group again -- the renderer finds the element of every drawn kind; a regression of C-a's first two steps | **B315** | S3 | `DONE` |
 | H19.29 | C-a: drawing -- a painter per kind brought by its plugin, the renderer a dispatcher, layers ranked; zones first, then groups, devices and links | feature | S4 | `DONE` |
 | H19.30 | C-b: picking -- one id attribute on every drawn entity; a kind's pick modifier (the zone's Shift) | feature | S4 | `DONE` |
-| H19.31 | C-c: placing -- layout and extent as row facts; moving, cloning, nudging and snapping read them | feature | S4 | `TODO` |
+| H19.31 | C-c: placing -- layout and extent as row facts; moving, cloning, nudging and snapping read them | feature | S4 | `DONE` |
 | H19.32 | C-d: handles, presses, gestures, releases -- rows a plugin brings for the shared gestures (D2) | feature | S4 | `TODO` |
 | H19.33 | C-e: keys, commands, readout, labels, grids -- each moved to its plugin | feature | S4 | `TODO` |
 | H19.34 | C-f: closed -- the canvas names no plugin's kind beyond a record that may only fall; B308 closed | **B308** | S4 | `TODO` |
@@ -1277,6 +1277,8 @@ AMENDED 2026-10-09: C-a done -- the network's link painter; every entity is draw
 Next H19.30, C-b, picking.
 AMENDED 2026-10-09: C-b done -- what a press lands on is answered by the plugin that drew it, a backdrop tried last; the picker names no plugin's kind.\
 Next H19.31, C-c, placing.
+AMENDED 2026-10-09: C-c done -- which kinds are placed on the grid, and how, is declared by the parts that bring them; moving, duplicating, cloning, nudging and clamping read the declarations.\
+Next H19.32, C-d, the gestures as rows for shared gestures.
 
 **Exit:** nothing stored needs a migration and none is kept; production's sync holds the network under the GR6 battery; the core holds no kind.
 

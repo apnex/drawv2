@@ -13,6 +13,10 @@ refactor can prove it unchanged. Where today's behaviour is a known defect it is
 its row, never asserted as correct and never written around.
 */
 
+// C-c (H19.31): the placed kinds, as the page composes them
+import { placesOf as placesOfCanvas } from '../app/src/snap.js';
+import { PRODUCT_CANVAS as CANVAS_PARTS } from '../product/canvas.mjs';
+const PLACES = placesOfCanvas(CANVAS_PARTS);
 import { linkBetween, linksBetween, makeLink } from '../network/link-queries.mjs';   // K13d: the network's link queries
 import { test } from 'node:test';
 import { makeZone } from '../zones/make-zone.mjs';   // O-b1: the zones plugin's factory
@@ -1073,16 +1077,16 @@ test('B46: nudgeSelection clamps at the canvas edge and yields nothing when it c
 	const h = makeInput();
 	try {
 		const [a] = seedNodes(h.model, [[0, 0]]);
-		const cmd = commands.nudgeSelection(h.model, [a.id], 1, 0);
+		const cmd = commands.nudgeSelection(h.model, [a.id], 1, 0, PLACES);
 		assert.equal(cmd.entries[0].after.x, GAP, 'one cell right');
 
 		// park it ON the node extent — note that is NODE_EXT, not CANVAS.hw: the canvas is wider than
 		// the area a node may occupy, and clamping to the wrong one reads as a passing test that
 		// proves nothing (from CANVAS.hw the clamp pulls the node BACK, a perfectly real change).
 		h.model.set('node', a.id, { x: NODE_EXT.x });
-		assert.equal(commands.nudgeSelection(h.model, [a.id], 1, 0).entries.length, 0,
+		assert.equal(commands.nudgeSelection(h.model, [a.id], 1, 0, PLACES).entries.length, 0,
 			'clamped flat against the edge — no change, so no command');
-		assert.equal(commands.nudgeSelection(h.model, [a.id], -1, 0).entries.length, 1,
+		assert.equal(commands.nudgeSelection(h.model, [a.id], -1, 0, PLACES).entries.length, 1,
 			'but it can still come back the other way');
 	} finally { h.restore(); }
 });
@@ -1119,7 +1123,7 @@ test('B46: cloneSubgraph names siblings uniquely and touches nothing real', () =
 		const ns = seedNodes(h.model, [[0, 0], [180, 0], [360, 0]]);
 		const before = h.model.all('node').length;
 
-		const { clones } = commands.cloneSubgraph(h.model, ns.map((n) => n.id));
+		const { clones } = commands.cloneSubgraph(h.model, ns.map((n) => n.id), PLACES);
 		const names = clones.map((c) => c.entity.name);
 		assert.equal(new Set(names).size, 3, `siblings must not collide, got ${JSON.stringify(names)}`);
 		assert.equal(new Set(clones.map((c) => c.entity.id)).size, 3, 'nor may their ids');
@@ -1136,7 +1140,7 @@ test('B46: cloneSubgraph carries a route and gives it its OWN bends', () => {
 		const link = { ...makeLink(h.model, a.id, b.id), via: [wp.id], closed: true };
 		h.model.put('link', link);
 
-		const { clones } = commands.cloneSubgraph(h.model, [a.id, b.id]);
+		const { clones } = commands.cloneSubgraph(h.model, [a.id, b.id], PLACES);
 		const copy = clones.find((c) => c.kind === 'link').entity;
 		assert.equal(copy.closed, true, 'the closed flag is authored geometry, not decoration');
 		assert.equal(copy.via.length, 1);

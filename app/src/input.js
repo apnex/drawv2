@@ -39,7 +39,7 @@ import { RECOGNIZE, DOUBLE_CLICKS } from './recognize.js';
 import { KEYMAP, KEY_RELEASES } from './keymap.js';
 import { composeRules, resolveInput } from '../../kernel/input-rules.mjs';
 import { nodeAt, endpointAt, occupiedAt, occupiedAnyAt, inFootprint, footprintHits } from './pick.js';
-import { CANVAS, GAP, HALF, NODE_R, NODE_EXT, ZONE_EXT, spanExtent, orthoDelta, snappedDelta, clampDelta, resizeBox, snapNode, snapZone, resolveBox, pointInBox, dist, zoneCorners, OPPOSITE_CORNER } from './snap.js';
+import { CANVAS, GAP, HALF, NODE_R, NODE_EXT, ZONE_EXT, spanExtent, orthoDelta, snappedDelta, clampDelta, resizeBox, snapNode, snapZone, snapIn, resolveBox, pointInBox, dist, zoneCorners, OPPOSITE_CORNER } from './snap.js';
 import { el, crosshair, previewRect, previewLine, previewPath, isShown, setShown, layerOf } from './painter.js';
 import { emitToHost } from './capture.js';
 import { initialInputState, track } from './input-state.js';
@@ -357,9 +357,6 @@ const GESTURES = {
 	},
 };
 
-// a kind placed on the grid, which a move, a duplicate or a clone offsets: an anchor (a waypoint or a device) or a zone (B30, B311)
-const isPositioned = (kind) => ANCHOR_KINDS.includes(kind) || kind === 'zone';
-
 export class Input {
 	/*
 	`host` is the surface that owns GLOBAL key events and receives outbound host actions — `window` in
@@ -368,7 +365,9 @@ export class Input {
 	`help` arrives the same way; main.js already had that element, and resolving it twice meant two
 	owners of one node.
 	*/
-	constructor({ svg, model, history, selection, renderer, labels, readout, tools, host, help, snap, now, plugins = [], runRules = [] }) {
+	constructor({ svg, model, history, selection, renderer, labels, readout, tools, host, help, snap, now, plugins = [], runRules = [], places = new Map() }) {
+		// C-c: the kinds placed on the grid, and how -- the canvas parts' (snap.js placesOf)
+		this.places = places;
 		this.svg = svg;
 		/*
 		The route hook -- how the incubating network plugin (ruled 2026-09-28) sees a finished link drag
@@ -653,7 +652,7 @@ export class Input {
 		const moved = [];
 		this.selection.list().forEach((id) => {
 			const kind = kindOf(id);
-			if (!ANCHOR_KINDS.includes(kind) && kind !== 'zone') return;
+			if (!this.places.has(kind)) return;   // C-c: a placed kind moves
 			const entity = this.model.get(kind, id);
 			if (entity) moved.push({ kind, id, before: { x: entity.x, y: entity.y } });
 		});
@@ -677,7 +676,7 @@ export class Input {
 			return;
 		}
 		if (!this.selection.has(hit.id)) this.selection.set([hit.id]);
-		const result = commands.cloneSubgraph(this.model, this.selection.list());
+		const result = commands.cloneSubgraph(this.model, this.selection.list(), this.places);
 		if (!result) { this.mode = null; this.ctx = {}; return; }
 		const { clones, idMap } = result;
 
@@ -687,9 +686,9 @@ export class Input {
 
 		// B311: every positioned copy moves with the drag -- a copied bend with its link -- as Ctrl+D moves them
 		const moved = clones
-			.filter((c) => isPositioned(c.kind))
+			.filter((c) => this.places.has(c.kind))
 			.map((c) => ({ kind: c.kind, id: c.entity.id, before: { x: c.entity.x, y: c.entity.y } }));
-		const picked = this.selection.list().filter((id) => isPositioned(kindOf(id))).map((id) => idMap.get(id)).filter(Boolean);
+		const picked = this.selection.list().filter((id) => this.places.has(kindOf(id))).map((id) => idMap.get(id)).filter(Boolean);
 		this.mode = 'clone';
 		this.ctx = { ...this.ctx, clones, moved, baseKind: hit.kind, baseId: idMap.get(hit.id) };
 		this.selection.set(picked);   // the copies of what was selected
@@ -701,7 +700,7 @@ export class Input {
 	the canvas; if both axes clamp to zero it refuses rather than overlap.
 	*/
 	duplicateSelection() {
-		const seeds = this.selection.list().filter((id) => isPositioned(kindOf(id)));   // B30
+		const seeds = this.selection.list().filter((id) => this.places.has(kindOf(id)));   // B30
 		if (seeds.length === 0) return;
 		// clamp the pitch against the ORIGINALS (clones start at the same spots)
 		const refs = seeds.map((id) => {
@@ -709,13 +708,13 @@ export class Input {
 			const e = this.model.get(kind, id);
 			return { kind, id, before: { x: e.x, y: e.y } };
 		});
-		const delta = clampDelta(this.model, refs, { ...this.lastDelta });
+		const delta = clampDelta(this.model, refs, { ...this.lastDelta }, this.places);
 		const cells = (v) => this.readout.signed(v / GAP);
 		if (delta.x === 0 && delta.y === 0) {
 			this.readout.flash(`✗ no room Δ[${cells(this.lastDelta.x)}, ${cells(this.lastDelta.y)}]`);
 			return;
 		}
-		const result = commands.cloneSubgraph(this.model, seeds);
+		const result = commands.cloneSubgraph(this.model, seeds, this.places);
 		if (!result) return;
 
 		// the clones are inert objects, so the pitch is applied to them directly. This used to put
@@ -727,7 +726,7 @@ export class Input {
 		original's cell, the planner refused two anchors on one cell (B112), and nothing was copied while the readout said it was.
 		*/
 		result.clones.forEach((c) => {
-			if (isPositioned(c.kind)) { c.entity.x += delta.x; c.entity.y += delta.y; }
+			if (this.places.has(c.kind)) { c.entity.x += delta.x; c.entity.y += delta.y; }
 		});
 		const ops = this.history.commit(commands.cloneEntities(result.clones));
 		if (!ops || ops.length === 0) { this.readout.flash(`✗ duplicate refused Δ[${cells(delta.x)}, ${cells(delta.y)}]`); return; }   // B311: a refusal is not a copy
@@ -1026,7 +1025,7 @@ export class Input {
 		const rawDelta = orthoDelta(
 			{ x: pos.x - this.ctx.start.x, y: pos.y - this.ctx.start.y }, ortho);
 		// clamp live: out-of-bounds coordinates must never reach the model
-		const delta = clampDelta(this.model, this.ctx.moved, rawDelta);
+		const delta = clampDelta(this.model, this.ctx.moved, rawDelta, this.places);
 		this.ctx.moved.forEach((m) => {
 			this.model.set(m.kind, m.id, {
 				x: m.before.x + delta.x,
@@ -1035,7 +1034,7 @@ export class Input {
 		});
 		const base = this.ctx.moved.find((m) => m.id === this.ctx.baseId) || this.ctx.moved[0];
 		const raw = { x: base.before.x + delta.x, y: base.before.y + delta.y };
-		const target = base.kind === 'zone' ? snapZone(raw) : snapNode(raw);   // node + waypoint → node grid
+		const target = snapIn(this.places.get(base.kind), raw);   // C-c: on the base's own grid
 		this.overlayUi.crosshair.show(target);
 		this.readout.setDrag(target, {
 			x: (target.x - base.before.x) / GAP,
@@ -1230,7 +1229,7 @@ export class Input {
 	commitMove(ctx, pos, ortho) {
 		ctx.moved = ctx.moved.filter((m) => this.model.get(m.kind, m.id));
 		if (ctx.moved.length === 0) return;
-		const delta = snappedDelta(this.model, ctx, pos, ortho);
+		const delta = snappedDelta(this.model, ctx, pos, ortho, this.places);
 		const moves = ctx.moved.map((m) => ({
 			kind: m.kind, id: m.id,
 			before: m.before,
@@ -1245,7 +1244,7 @@ export class Input {
 
 	commitClone(ctx, pos, ortho) {
 		ctx.moved = ctx.moved.filter((m) => this.model.get(m.kind, m.id));
-		const delta = ctx.moved.length ? snappedDelta(this.model, ctx, pos, ortho) : { x: 0, y: 0 };
+		const delta = ctx.moved.length ? snappedDelta(this.model, ctx, pos, ortho, this.places) : { x: 0, y: 0 };
 		ctx.moved.forEach((m) => {
 			this.model.set(m.kind, m.id, { x: m.before.x + delta.x, y: m.before.y + delta.y });
 		});
@@ -1565,7 +1564,7 @@ export class Input {
 	*/
 	onArrowKey(evt) {
 		const dir = ARROW[evt.key];
-		if (dir) this.history.amend(commands.nudgeSelection(this.model, this.selection.list(), dir[0], dir[1]));
+		if (dir) this.history.amend(commands.nudgeSelection(this.model, this.selection.list(), dir[0], dir[1], this.places));
 	}
 
 	// Shift+arrow. Both resize paths self-guard on the selection kind, so exactly one of them acts:

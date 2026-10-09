@@ -20,7 +20,7 @@ this does not start capturing: it returns `listen()`, and a root calls it once i
 import { sharedDefs } from '../../kernel/renderer.mjs';
 import { cellOf, gridDot } from '../../kernel/geometry.mjs';
 import { el, crosshair } from './painter.js';
-import { nodePoints, zonePoints, CANVAS, GAP } from './snap.js';
+import { nodePoints, zonePoints, CANVAS, GAP, placesOf } from './snap.js';
 import { Model } from '../../model/model.mjs';
 import { attachRelations } from '../../engine/store.mjs';
 import { Changes, applyAnswer } from './changes.js';
@@ -83,7 +83,7 @@ export function composeCanvas({ svg, defs, host, network = null, kinds = undefin
 	const snap = crosshair(svg.querySelector('#snaplayer'), CANVAS, GAP);
 	const heldTools = tools ? new Tools({ svg, snap }) : null;
 	const input = new Input({ svg, model, history, selection, renderer, labels, readout: shownReadout, tools: heldTools,
-		host, help, now, snap, plugins, runRules });
+		host, help, now, snap, plugins, runRules, places: placesOf(parts) });   // C-c: the placed kinds
 	let capture = null;
 	// the DOM's events, as input events (dev/design/input/GESTURE-SYSTEM.md, L0) -- once the root's own listeners are in
 	const listen = () => (capture ??= new Capture({ svg, host, sink: input, picks: picksOf(parts) }));   // C-b: the plugins' picks

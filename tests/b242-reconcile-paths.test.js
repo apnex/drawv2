@@ -23,6 +23,10 @@ production. Only the sockets are replaced, by queues the test drains in order, w
 hold an answer back, lose one with a socket, or deliver one mid-gesture.
 */
 
+// C-c (H19.31): the placed kinds, as the page composes them
+import { placesOf as placesOfCanvas } from '../app/src/snap.js';
+import { PRODUCT_CANVAS as CANVAS_PARTS } from '../product/canvas.mjs';
+const PLACES = placesOfCanvas(CANVAS_PARTS);
 import { test, mock } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -282,7 +286,7 @@ test('a snapshot keeps the nudge the open burst window still holds', async () =>
 	try {
 		refusedMove(w, B, A);
 		w.serve();                                             // refused on the server; the refusal waits
-		w.changes.amend(nudgeSelection(w.tab, [X], 1, 0));    // a nudge, its window open
+		w.changes.amend(nudgeSelection(w.tab, [X], 1, 0, PLACES));    // a nudge, its window open
 		const nudged = w.tab.get('node', X).x;
 		w.deliverTo('error');                                  // the refusal: the tab asks for a snapshot
 		w.serve();
@@ -502,7 +506,7 @@ test('C4 live drag: the answer to an earlier request does not snap back a dragge
 	try {
 		w.changes.commit(renameEntity('group', G, 'g1', 'mine'));
 		w.serve();                                             // answered; the answer waits
-		w.changes.amend(nudgeSelection(w.tab, [A], 1, 0));    // the node's own edit, still in its window
+		w.changes.amend(nudgeSelection(w.tab, [A], 1, 0, PLACES));    // the node's own edit, still in its window
 		w.tab.set('node', A, { x: 480, y: 0 });                // then a drag of it, in progress
 		w.deliverTo('ack');
 		assert.deepEqual([w.tab.get('node', A).x, w.tab.get('node', A).y], [480, 0], 'the drag holds');
