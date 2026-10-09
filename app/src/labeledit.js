@@ -3,16 +3,18 @@ LabelEditor — inline rename for nodes and zones. An HTML input positioned over
 the entity's label; Enter/blur commits an undoable rename, Escape cancels.
 */
 
-import { NODE_R } from './snap.js';
 import { kindOf } from '../../model/model.mjs';
 import { NAME_MAX, CONTENT_VALUE_MAX } from '../../model/limits.mjs';
 import * as commands from './commands.js';
-import { drawnKind } from '../../devices/anchor-words.mjs';   // the drawn word (F4)   // the bare anchor, asked in one place (F-b)
 
 // the caps are the model's, shared with the server rather than restated here (B86)
 
 export class LabelEditor {
-	constructor({ svg, model, history }) {
+	// C-e: `labelAt(entity)` -- where a kind's label sits, the parts' (devices/device-labels.mjs); null for the default, by its corner
+	// C-e: and `wordOf(kind, entity)` -- the word a Tab rename run groups by, the parts' (a device or a waypoint); the kind without one
+	constructor({ svg, model, history, labelAt = () => null, wordOf = () => null }) {
+		this.labelAt = labelAt;
+		this.wordOf = (kind, e) => wordOf(kind, e) ?? kind;
 		this.svg = svg;
 		this.model = model;
 		this.history = history;
@@ -60,11 +62,8 @@ export class LabelEditor {
 		if (this.input) this.close(false);
 		const entity = this.model.get(kind, id);
 		if (!entity) return;
-		const drawn = drawnKind(kind, entity);   // a waypoint is a node with no type (F-c), placed and stepped as a waypoint
-
-		const placement = drawn === 'node'
-			? this.toScreen({ x: entity.x, y: entity.y + NODE_R + 6 })
-			: this.toScreen({ x: entity.x + 10, y: entity.y + 6 });
+		const at = this.labelAt(entity);   // under a device, centred; else beside the corner
+		const placement = at ? this.toScreen({ x: at.x, y: at.y }) : this.toScreen({ x: entity.x + 10, y: entity.y + 6 });
 
 		const input = document.createElement('input');
 		input.id = 'label-editor';
@@ -73,7 +72,7 @@ export class LabelEditor {
 		input.value = entity.name || '';
 		const width = 160;
 		input.style.width = `${width}px`;
-		input.style.left = `${drawn === 'node' ? placement.x - width / 2 : placement.x}px`;
+		input.style.left = `${at?.centred ? placement.x - width / 2 : placement.x}px`;
 		input.style.top = `${placement.y}px`;
 
 		input.addEventListener('keydown', (evt) => {
@@ -161,7 +160,8 @@ export class LabelEditor {
 
 	// next/previous same-kind entity in reading order (y, then x), wrapping
 	neighbor(kind, id, dir) {
-		const list = [...this.model.all(kind).filter((e) => drawnKind(kind, e) === drawnKind(kind, this.model.get(kind, id)))].sort((p, q) => (p.y - q.y) || (p.x - q.x));
+		const word = this.wordOf(kind, this.model.get(kind, id));
+		const list = [...this.model.all(kind).filter((e) => this.wordOf(kind, e) === word)].sort((p, q) => (p.y - q.y) || (p.x - q.x));
 		const i = list.findIndex((e) => e.id === id);
 		if (i < 0 || list.length < 2) return null;
 		return list[(i + dir + list.length) % list.length].id;

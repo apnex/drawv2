@@ -1172,6 +1172,7 @@ Elsewhere and unchanged: H10.30 and PD-3 are the director's calls; H15.5 and H17
 | H19.39 | Ctrl over a selected link's end handle throws nothing -- hover ignores any handle; a regression of C-d's second step | **B317** | S2 | `DONE` |
 | H19.40 | The stamp ghost previews a device at the size it stamps it -- the glyph fitted, from the hand's preview | **B318** | S4 | `DONE` |
 | H19.41 | `z` wraps a wide device whole -- the bounds from each placed kind's size | **B319** | S4 | `DONE` |
+| H19.42 | F2 with a pipe selected opens no name editor -- F2 renames only the kinds a part says are named | **B321** | S4 | `DONE` |
 | H19.29 | C-a: drawing -- a painter per kind brought by its plugin, the renderer a dispatcher, layers ranked; zones first, then groups, devices and links | feature | S4 | `DONE` |
 | H19.30 | C-b: picking -- one id attribute on every drawn entity; a kind's pick modifier (the zone's Shift) | feature | S4 | `DONE` |
 | H19.31 | C-c: placing -- layout and extent as row facts; moving, cloning, nudging and snapping read them | feature | S4 | `DONE` |
@@ -1312,6 +1313,8 @@ AMENDED 2026-10-09: C-e's ninth step done -- run mode's spawner and tower are th
 Next: the readout, labels and panel rows, select-all, grids and selection reflections.
 AMENDED 2026-10-09: C-e's tenth step done -- how a kind reads on the selection line, and what Ctrl+A takes, are each plugin's.\
 Next: labels and the panel rows; then the zone grid, the selection reflections and the survey's open findings.
+AMENDED 2026-10-09: C-e's eleventh step done -- where a kind's name is edited is its plugin's; B321 fixed.\
+Next: the panel's content edits; then the zone grid, the selection reflections and the survey's other open findings.
 
 **Exit:** nothing stored needs a migration and none is kept; production's sync holds the network under the GR6 battery; the core holds no kind.
 

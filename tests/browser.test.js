@@ -1339,6 +1339,29 @@ test('C-e: a tile dropped on a free cell stamps that device there, selected; dro
 	} finally { t.ws.close(); }
 });
 
+
+/*
+C-e step eleven (H19.33) -- where a kind's label sits is its plugin's to say: a device's name editor opens centred under the device.
+Read off the real page, since the editor is a DOM element the unit harness never builds.
+*/
+test('C-e: a device\'s name editor opens centred under the device', { skip: SKIP }, async () => {
+	const t = await freshTab();
+	try {
+		const got = JSON.parse(await t.eval(`(async () => {
+			const id = 'node-ba0004';   // the fixture's load balancer
+			draw.labels.open('node', id);
+			await new Promise((r) => requestAnimationFrame(r));
+			const ed = document.getElementById('label-editor').getBoundingClientRect();
+			const dev = document.getElementById(id).querySelector('[data-layer="frame"]').getBoundingClientRect();
+			draw.labels.close(false);
+			// the editor's STYLED width (160 px) is centred on the device; its padding makes the box itself a little wider
+			return JSON.stringify({ dx: Math.round((ed.left + 80) - (dev.left + dev.width / 2)), below: Math.round(ed.top - dev.bottom) });
+		})()`));
+		assert.ok(Math.abs(got.dx) <= 2, `its styled width centred under the device, off by ${got.dx} px`);
+		assert.ok(got.below >= 0 && got.below <= 12, `just below its frame, ${got.below} px`);
+	} finally { t.ws.close(); }
+});
+
 /*
 H15.23 (B255) -- the colour registry reaches the page. Every colour the stylesheet uses is now a `var(--tok-...)` read
 from app/tokens.css, so a page that failed to load that file would lose every colour at once and still boot. Read off the

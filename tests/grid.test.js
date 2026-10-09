@@ -3,7 +3,7 @@ import { LAYOUTS, onLayout, snapLayout, cellOn, pxOn, nearestAnchor, anchorAt } 
 import { STD } from '../kernel/spec.mjs';
 import assert from 'node:assert/strict';
 import * as snap from '../app/src/snap.js';
-import { CANVAS, GAP, NODE_EXT, ZONE_EXT, spanExtent, snapNode, resolveBox, pointInBox, dist, nodePoints, snapIn, placesOf } from '../app/src/snap.js';
+import { CANVAS, GAP, NODE_EXT, ZONE_EXT, spanExtent, snapNode, resolveBox, dist, nodePoints, snapIn, placesOf } from '../app/src/snap.js';
 import { PRODUCT_CANVAS } from '../product/canvas.mjs';
 // RESTATED at C-d step one (H19.32): the zone grid is the zones plugin's place, snapped through it -- snapZone left the canvas
 const snapZone = (pos) => snapIn(placesOf(PRODUCT_CANVAS).get('zone'), pos);
@@ -57,11 +57,15 @@ test('resolveBox normalizes any corner pair', () => {
 	assert.deepEqual(resolveBox({ x: 0, y: 0 }, { x: 0, y: 0 }), { x: 0, y: 0, w: 0, h: 0 });
 });
 
-test('pointInBox is inclusive of edges', () => {
-	const box = { x: -30, y: -30, w: 60, h: 60 };
-	assert.ok(pointInBox({ x: -30, y: -30 }, box));
-	assert.ok(pointInBox({ x: 30, y: 30 }, box));
-	assert.ok(!pointInBox({ x: 31, y: 0 }, box));
+// CORRECTED at C-e step eleven (H19.33): `pointInBox` left the canvas with its last callers -- the marquee's waypoint test is the
+// network's (network/anchor-points.mjs) and the zone's double-click the zones plugin's -- so the inclusive edge is held there
+test('a zone\'s box is inclusive of its edges, for a double-click', async () => {
+	const { ZONE_LABELS } = await import('../zones/zone-labels.mjs');
+	const model = { all: () => [{ id: 'zone-aa0001', x: -30, y: -30, w: 60, h: 60 }] };
+	const at = (x, y) => ZONE_LABELS.edits[0].find(model, { x, y })?.id ?? null;
+	assert.equal(at(-30, -30), 'zone-aa0001');
+	assert.equal(at(30, 30), 'zone-aa0001');
+	assert.equal(at(31, 0), null);
 });
 
 test('dist is euclidean', () => {

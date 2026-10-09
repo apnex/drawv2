@@ -39,8 +39,7 @@ import { pressRows, hitFactsOf, DOUBLE_CLICKS } from './recognize.js';
 import { KEYMAP, KEY_RELEASES } from './keymap.js';
 import { composeRules, resolveInput } from '../../kernel/input-rules.mjs';
 import { occupiedAnyAt, picksOf, pointsOf, grabbedAt, takenIn } from './pick.js';
-import { inFootprint } from '../../devices/device-footprint.mjs';   // a text box's double-click hit -- C-e's labels step
-import { CANVAS, GAP, HALF, NODE_R, NODE_EXT, ZONE_EXT, spanExtent, orthoDelta, snappedDelta, clampDelta, snapNode, snapIn, placesOf, resolveBox, pointInBox, dist } from './snap.js';
+import { GAP, orthoDelta, snappedDelta, clampDelta, snapNode, snapIn, placesOf, resolveBox, dist } from './snap.js';
 import { el, crosshair, previewRect, previewLine, previewPath, isShown, setShown, layerOf } from './painter.js';
 import { emitToHost } from './capture.js';
 import { initialInputState, track } from './input-state.js';
@@ -54,7 +53,7 @@ import * as commands from './commands.js';
 import { situationOf } from '../../engine/situation.mjs';
 import { waypointRolesIn } from '../../network/roles.mjs';
 import { BARE_KIND, ANCHOR_KINDS } from '../../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
-import { bareAnchor, bareAnchors, typedNodes, isTypedEntity } from '../../devices/device-shapes.mjs';
+import { bareAnchor } from '../../devices/device-shapes.mjs';
 import { makeWaypoint } from '../../devices/make-node.mjs';   // the devices plugin's factories (O-e1)
 import { waypointAt } from '../../devices/occupancy.mjs';   // which waypoint is on a cell: the devices plugin's (O-e1)
 
@@ -382,6 +381,9 @@ export class Input {
 		this.followers = commands.followersOf(parts);
 		// C-e: what Ctrl+A takes, each part's, in rank order
 		this.selectAlls = parts.filter((p) => p.selectAll).map((p) => p.selectAll).sort((a, b) => a.rank - b.rank);
+		// C-e: what a double-click edits, each part's, in rank order; and the kinds F2 renames
+		this.edits = parts.flatMap((p) => p.labels?.edits ?? []).sort((a, b) => a.rank - b.rank);
+		this.named = new Set(parts.flatMap((p) => p.labels?.named ?? []));
 		// C-e: what Shift+arrow makes of a lone selected entity, by kind -- each part's size step
 		this.sizeSteps = new Map();
 		for (const p of parts) if (p.sizeStep) {
@@ -1251,45 +1253,20 @@ export class Input {
 	}
 
 	// the `edit-label` binding: a locked client never reaches here -- the engine's guard refuses it (app/src/recognize.js)
+	// C-e: what a double-click edits is what the parts say they edit at the point, in rank order -- a text box's text, a device's
+	// name, a zone's name (devices/device-labels.mjs, zones/zone-labels.mjs); the first that answers wins
 	editUnderPointer(evt) {
-		// hit GEOMETRICALLY: pointer capture (taken on every press) retargets the
-		// browser-synthesized dblclick to the svg, so what capture says is under it is useless here.
-		// Icon hits beat label-strip hits; nearest wins; ties go to the topmost
-		// (last-rendered) — the strip is wider than a grid cell, so first-match
-		// would resolve to a NEIGHBOUR for nodes one cell apart
-		const pos = evt.at;
-		// A1 — a TEXT BOX is hit by its whole FOOTPRINT (not just the origin cell), so double-clicking ANYWHERE
-		// on the box edits its text. (A plain node / panel still routes to the name-edit / icon test below.)
-		const tbs = this.model.all('node').filter((n) => Array.isArray(n.content) && n.content.length === 1 && n.content[0].content === 'text'
-			&& inFootprint(n, pos, NODE_R));
-		const tb = tbs[tbs.length - 1]; // topmost (last-rendered)
-		if (tb) {
-			if (this.mode) this.cancelDrag(evt);
-			this.selection.set([tb.id]);
-			this.labels.setFocus(tb.id);
-			return this.labels.openFrame(tb.id);
-		}
-		const nodes = typedNodes(this.model);
-		const best = (cands) => cands.sort((p, q) => p.d - q.d || q.i - p.i)[0];
-		const icon = best(nodes.map((n, i) => ({ n, d: dist(n, pos), i }))
-			.filter((c) => c.d <= NODE_R + 4));
-		const strip = icon ? null : best(nodes.map((n, i) => ({ n, d: Math.abs(pos.x - n.x), i }))
-			.filter((c) => c.d <= 75 && pos.y - c.n.y >= NODE_R && pos.y - c.n.y <= NODE_R + 28));
-		const node = (icon || strip) && (icon || strip).n;
-		let target = node ? { kind: 'node', id: node.id } : null;
-		if (!target) {
-			const zones = this.model.all('zone').filter((z) =>
-				pointInBox(pos, { x: z.x, y: z.y, w: z.w, h: z.h }));
-			const zone = zones[zones.length - 1]; // topmost
-			if (zone) target = { kind: 'zone', id: zone.id };
-		}
+		let target = null;
+		for (const e of this.edits) if ((target = e.find(this.model, evt.at))) break;
 		if (!target) return;
 		if (this.mode) this.cancelDrag(evt);
 		// rename implies selection: handles/readout/F2 follow the edited entity
 		this.selection.set([target.id]);
 		this.labels.setFocus(target.id);
-		this.labels.open(target.kind, target.id);   // name edit (text boxes are handled by the footprint check above)
+		if (target.edits === 'frame') return this.labels.openFrame(target.id);
+		this.labels.open(target.kind, target.id);
 	}
+
 
 
 
@@ -1520,7 +1497,8 @@ export class Input {
 
 
 	onRenameKey() {
-		this.labels.openFocused(this.selection.list().filter((id) => kindOf(id) !== 'link' && kindOf(id) !== 'group'));
+		// C-e: only what a part says is named -- a device, a zone; not a link, a group or a pipe (B321)
+		this.labels.openFocused(this.selection.list().filter((id) => this.named.has(kindOf(id))));
 	}
 
 	// D21 — reverse another writer's whole run in one action. Deliberately NOT Ctrl+Z: taking back N

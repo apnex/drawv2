@@ -76,7 +76,9 @@ export function composeCanvas({ svg, defs, host, network = null, kinds = undefin
 	const history = new Changes(model, { preview, apply: (ops) => applyAnswer(model, selection, ops) });
 	const renderer = new Renderer(model, svg, { parts });   // C-a: the plugins' canvas parts, their painters among them
 	selection.subscribe(() => renderer.reflectSelection(selection.list()));   // the renderer owns the selected look
-	const labels = new LabelEditor({ svg, model, history });
+	// C-e: where each kind's label sits -- the first part that says so
+	const labels = new LabelEditor({ svg, model, history, labelAt: (e) => parts.map((p) => p.labels?.labelAt?.(e)).find((x) => x) ?? null,
+		wordOf: (kind, e) => parts.map((p) => p.labels?.wordOf?.(kind, e)).find((x) => x) ?? null });   // C-e: and what a Tab run groups by
 	const shownReadout = readoutEl ? new Readout({ model, selection, elements: [readoutEl], parts }) : null;   // C-e: each kind's words, from its part
 	// B36 -- one crosshair on #snaplayer, owned here and shared by everything that draws it: Overlay inside Input, and the
 	// held tools' ghost. Two owners of one layer drew two crosshairs.

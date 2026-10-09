@@ -20,6 +20,7 @@ import { DEVICE_POINTS } from './device-footprint.mjs';
 import { DEVICE_SIZE_STEP } from './device-size.mjs';
 import { DEVICE_KEYS } from './device-keys.mjs';
 import { DEVICE_DESCRIBE, DEVICE_SELECT_ALL } from './device-facts.mjs';
+import { DEVICE_LABELS } from './device-labels.mjs';
 
 const FE = L_STD.frame.ext;            // the frame's half-extent (20)
 const SOCKET = STD.socket;             // the glyph box (26)
@@ -131,4 +132,4 @@ const DEVICE = {
 // the devices plugin's canvas part (C-a: the device's appearance on the anchor)
 // C-d: the text box's row; C-e: its hand, what a device covers, its size step under the canvas's Shift+arrow
 export const DEVICES_CANVAS = { owner: 'devices', appearances: [DEVICE], presses: DEVICE_PRESSES, hand: DEVICE_HAND, at: DEVICE_POINTS, sizeStep: DEVICE_SIZE_STEP,
-	keys: DEVICE_KEYS, describe: DEVICE_DESCRIBE, selectAll: DEVICE_SELECT_ALL };   // C-e: its key, `s`; how it reads, and Ctrl+A
+	keys: DEVICE_KEYS, describe: DEVICE_DESCRIBE, selectAll: DEVICE_SELECT_ALL, labels: DEVICE_LABELS };   // C-e: its key, `s`; how it reads, Ctrl+A; where its label edits
