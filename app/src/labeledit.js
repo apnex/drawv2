@@ -12,8 +12,10 @@ import * as commands from './commands.js';
 export class LabelEditor {
 	// C-e: `labelAt(entity)` -- where a kind's label sits, the parts' (devices/device-labels.mjs); null for the default, by its corner
 	// C-e: and `wordOf(kind, entity)` -- the word a Tab rename run groups by, the parts' (a device or a waypoint); the kind without one
-	constructor({ svg, model, history, labelAt = () => null, wordOf = () => null }) {
+	// and `contentOf(entity, idx)` -- what reads and edits an entity's region, the parts' (a panel's, the devices plugin's), or null
+	constructor({ svg, model, history, labelAt = () => null, wordOf = () => null, contentOf = () => null }) {
 		this.labelAt = labelAt;
+		this.contentOf = contentOf;
 		this.wordOf = (kind, e) => wordOf(kind, e) ?? kind;
 		this.svg = svg;
 		this.model = model;
@@ -120,16 +122,17 @@ export class LabelEditor {
 
 	openContent(nodeId, idx, rectEl) {
 		if (this.input) this.close(false);
-		const node = this.model.get('node', nodeId);
-		if (!node || !Array.isArray(node.content) || !node.content[idx]) return;
-		const region = node.content[idx];
+		const entity = this.model.get(kindOf(nodeId), nodeId);
+		const spec = entity && this.contentOf(entity, idx);
+		if (!spec) return;
+		const region = spec.valueOf(entity, idx);   // its value and alignment (C-e)
 		const box = rectEl.getBoundingClientRect();
 
 		const input = document.createElement('input');
 		input.id = 'label-editor';
 		input.maxLength = CONTENT_VALUE_MAX;
 		input.spellcheck = false;
-		input.value = region.value || '';
+		input.value = region.value;
 		// match the box EXACTLY so the editor doesn't appear to enlarge it: border/padding inside the rect
 		// (border-box), the box's own width (no min), and the box's 15px SVG text scaled to the current zoom.
 		const scale = (this.svg.getScreenCTM() || { a: 1 }).a;
@@ -140,7 +143,7 @@ export class LabelEditor {
 		input.style.height = `${box.height}px`;
 		input.style.fontSize = `${15 * scale}px`;
 		input.style.padding = '0 2px';
-		input.style.textAlign = region.align || 'left';
+		input.style.textAlign = region.align;
 
 		input.addEventListener('keydown', (evt) => {
 			evt.stopPropagation();
@@ -149,7 +152,7 @@ export class LabelEditor {
 		});
 		input.addEventListener('blur', () => this.close(true));
 
-		this.editing = { mode: 'content', nodeId, idx, before: region.value || '' };
+		this.editing = { mode: 'content', nodeId, idx, before: region.value };
 		this.input = input;
 		this.onResize = () => this.close(true);
 		window.addEventListener('resize', this.onResize);
@@ -183,9 +186,11 @@ export class LabelEditor {
 		if (editing.mode === 'content') {
 			const after = input.value.slice(0, 256);
 			if (after === editing.before) return;
-			const node = this.model.get('node', editing.nodeId);   // may have vanished (undo / diagram switch)
-			if (!node || !Array.isArray(node.content) || !node.content[editing.idx]) return;
-			this.history.commit(commands.setContentValue(this.model, editing.nodeId, editing.idx, after));
+			const kind = kindOf(editing.nodeId), entity = this.model.get(kind, editing.nodeId);   // may have vanished (undo / diagram switch)
+			const spec = entity && this.contentOf(entity, editing.idx);
+			if (!spec) return;
+			const edit = spec.edit(entity, editing.idx, after);   // the part's edit -- a copy of the regions (C-e)
+			this.history.commit(commands.setFields(edit.label, kind, editing.nodeId, edit.after));
 			return;
 		}
 		// rename a node / zone (Enter/blur)

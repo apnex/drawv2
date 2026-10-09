@@ -10,6 +10,7 @@ import { setFieldsAll, setFields, putEntity, putEntities } from '../../app/src/c
 import { DEVICE_KEYS } from '../../devices/device-keys.mjs';
 import { LINK_KEYS } from '../../network/link-keys.mjs';
 import { SPAWN_RUNS } from '../../engine/spawn-runs.mjs';
+import { DEVICE_LABELS as DEVICE_LABELS_FOR_EDITS } from '../../devices/device-labels.mjs';
 import { kindOf } from '../../model/model.mjs';
 
 // `s` on these ids: the devices plugin's reshape, as the command Input would send (empty when nothing is a device)
@@ -56,4 +57,14 @@ export function spawnCommand(model, id, now) {
 	};
 	SPAWN_RUNS.find((r) => r.id === 'toggle-spawn').run(host, { region: { waypoint: id } });
 	return sent;
+}
+
+// a panel input's value set, as the label editor commits it: the devices plugin's edit through the one builder (C-e step twelve)
+// -- empty when the device has no such region
+export function contentCommand(model, id, idx, value) {
+	const kind = kindOf(id), n = model.get(kind, id);
+	const c = DEVICE_LABELS_FOR_EDITS.content;
+	if (!n || c.valueOf(n, idx) == null) return { label: 'edit', entries: [] };
+	const e = c.edit(n, idx, value);
+	return setFields(e.label, kind, id, e.after);
 }

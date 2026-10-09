@@ -1315,6 +1315,8 @@ AMENDED 2026-10-09: C-e's tenth step done -- how a kind reads on the selection l
 Next: labels and the panel rows; then the zone grid, the selection reflections and the survey's open findings.
 AMENDED 2026-10-09: C-e's eleventh step done -- where a kind's name is edited is its plugin's; B321 fixed.\
 Next: the panel's content edits; then the zone grid, the selection reflections and the survey's other open findings.
+AMENDED 2026-10-10: C-e's twelfth step done -- a panel's content and its run-mode rows are the devices plugin's.\
+Next: the zone grid, the selection reflections and the survey's other open findings; then H19.33 closes.
 
 **Exit:** nothing stored needs a migration and none is kept; production's sync holds the network under the GR6 battery; the core holds no kind.
 

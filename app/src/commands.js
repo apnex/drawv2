@@ -97,18 +97,6 @@ export function deleteSelection(model, ids, ranks = {}) {
 	return { label: 'delete', entries };
 }
 
-// W6 — live input editing: write a new value into a node's content region (idx). Deep-copies the whole
-// content array (regions are objects in an array) so before/after are independent history snapshots.
-export function setContentValue(model, nodeId, idx, value) {
-	const node = model.get('node', nodeId);
-	if (!node || !Array.isArray(node.content) || !node.content[idx]) return { label: 'edit', entries: [] };
-	const dup = (c) => c.map((r) => ({ ...r, ...(r.at ? { at: [...r.at] } : {}) }));
-	const before = dup(node.content);
-	const after = dup(node.content);
-	after[idx].value = value;
-	return { label: 'edit', entries: [{ op: 'set', kind: 'node', id: nodeId, after: { content: after } }] };
-}
-
 export function renameEntity(kind, id, before, after) {
 	return {
 		label: 'rename',

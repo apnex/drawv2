@@ -20,7 +20,9 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Model } from './fixtures/composed.mjs';   // the network's kinds, the link among them (S-e)
 import { createEntity, moveEntities, deleteSelection, putEntity, deleteEntities,
-	setContentValue, renameEntity } from '../app/src/commands.js';
+	renameEntity } from '../app/src/commands.js';
+// RESTATED at C-e step twelve (H19.33): a panel's region is the devices plugin's to edit; run as the label editor commits it
+import { contentCommand as setContentValue } from './fixtures/plugin-edits.mjs';
 import { applyOps } from '../model/ops.mjs';
 import { Changes } from '../app/src/changes.js';
 import { plan as planComposed } from './fixtures/composed.mjs';   // the planner production runs (V-d)

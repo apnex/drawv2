@@ -180,6 +180,7 @@ export const ENTRIES = {
 		modules: [
 			'app/src/capture.js', 'app/src/changes.js', 'app/src/clock.js', 'app/src/commands.js', 'app/src/input-state.js', 'app/src/input.js', 'app/src/keymap.js',
 			'engine/spawn-runs.mjs',   // C-e (H19.33): the simulation's run-mode rows, which run-mode.js hands in -- the page's alone
+			'devices/device-panels.mjs',   // C-e (H19.33): the devices plugin's panel rows, likewise
 			'app/src/actions.js', 'app/src/help.js', 'app/src/run-mode.js', 'app/src/labeledit.js', 'app/src/main.js', 'app/src/movers.js', 'app/src/net.js', 'app/src/overlay.js',
 			'app/src/painter.js', 'app/src/paintloop.js', 'app/src/palette.js', 'app/src/pick.js', 'app/src/readout.js',
 			'app/src/recognize.js', 'app/src/releases.js', 'app/src/renderer.js', 'app/src/reveal.js', 'app/src/selection.js', 'app/src/snap.js', 'app/src/triggers.js', 'app/src/tools.js', 'app/src/compose-canvas.js',

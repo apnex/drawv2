@@ -49,8 +49,6 @@ export const ACTION_LABELS = {
 	stampClicked: 'stamp the held type there',
 	addInBox: 'add what the marquee takes to the selection',
 	// ---- run mode ----
-	fireActionHere: 'press the panel button',
-	openInputHere: 'edit the panel input',
 };
 
 // the action a row names: its run, or the gesture it starts

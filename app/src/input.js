@@ -417,6 +417,9 @@ export class Input {
 			now: () => this.now(),
 			snap: (place, pos) => snapIn(this.places.get(place), pos),
 			add: (kind, make) => this.history.commit(commands.createEntity(kind, make(this.model))),
+			// C-e: an event handed to the host page (a panel button, W5), and the inline editor opened on an entity's region
+			emit: (type, detail) => emitToHost(this.host, type, detail),
+			editRegion: (id, idx) => this.labels.openRegion(id, idx),
 			// C-e (D5): several entities put as one edit, and the selection set -- the network's chained links
 			putAll: (label, puts) => this.history.commit(commands.putEntities(label, puts)),
 			select: (ids) => this.selection.set(ids),
@@ -654,15 +657,6 @@ export class Input {
 		this[rule.run](evt);
 	}
 
-	fireActionHere(evt) {
-		evt.claimed = true;
-		emitToHost(this.host, 'draw:action', { action: evt.region.action, id: evt.region.node });
-	}
-
-	openInputHere(evt) {
-		evt.claimed = true;
-		if (evt.region.node) this.labels.openRegion(evt.region.node, evt.region.input);
-	}
 
 
 	deleteUnderCursor(hit) {

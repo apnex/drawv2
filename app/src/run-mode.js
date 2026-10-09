@@ -8,9 +8,9 @@ no run-mode rows of its own, and a composition without the simulation passes non
 (dev/DECISIONS.md, the lab's absent bindings).
 */
 import { SPAWN_RUNS } from '../../engine/spawn-runs.mjs';
+import { PANEL_RUNS } from '../../devices/device-panels.mjs';
 
 export const RUN_PRESSES = [
 	...SPAWN_RUNS,   // C-e (H19.33): the spawner and the tower are the simulation's rows (engine/spawn-runs.mjs)
-	{ id: 'fire-action', input: ['left on region:action'],  mutates: false, prevent: false, on: (e) => e.button === 0 && !!e.region?.action, run: 'fireActionHere' },
-	{ id: 'open-input', input: ['left on region:input'],   mutates: true,  prevent: false, on: (e) => e.button === 0 && !!e.region && e.region.input !== null && !e.region.action, run: 'openInputHere' },
+	...PANEL_RUNS,   // C-e (H19.33): a panel's button and input are the devices plugin's rows (devices/device-panels.mjs)
 ];
