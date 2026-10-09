@@ -170,10 +170,6 @@ export function resizeNodeSpan(id, span) {
 
 // re-plug: rewire one end of a link onto another node
 // fast-replace: retype a node in place — id/name/links/position survive
-export function retypeNode(id, type) {
-	return { label: 'retype', entries: [{ op: 'set', kind: 'node', id, after: { type } }] };
-}
-
 // C — close/open a multi-hop route. The label states which way it went, so undo reads correctly.
 export function toggleClosed(link) {
 	const closed = !link.closed;

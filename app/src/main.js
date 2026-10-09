@@ -87,7 +87,8 @@ const networkHost = pageNetwork.attach({ model, renderer, selection, history, pi
 		const banner = document.getElementById('banner');
 		if (banner) banner.textContent = text;
 	} });
-const palette = new Palette({ container: document.getElementById('palette'), svg, model, history, selection, snap, tools });
+const palette = new Palette({ container: document.getElementById('palette'), svg, model, history, selection, snap, tools,
+	items: PRODUCT_CANVAS.find((p) => p.hand)?.hand.items ?? [] });   // C-e: the hand's items -- the devices plugin's
 // capture starts AFTER the palette's key listener is registered: its Escape cancels a sidebar drag and is spent there, so
 // the held hand stays (tests/browser.test.js "K8: Escape during a sidebar drag")
 listen();

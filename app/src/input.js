@@ -50,7 +50,6 @@ import { BEND_R } from '../../kernel/spec.mjs';
 import { newId, kindOf } from '../../model/model.mjs';
 import { groupOf } from '../../groups/group-of.mjs';   // the groups plugin's lookup (O-c)
 import { pairHolders } from '../../network/link-rules.mjs';
-import { NODE_TYPES } from './tools.js';   // K7: the stamp hand's types, with the hand
 import * as commands from './commands.js';
 import { situationOf } from '../../engine/situation.mjs';
 import { waypointRolesIn } from '../../network/roles.mjs';
@@ -267,7 +266,7 @@ const GESTURES = {
 				dst: !!dst, dstIsSrc: dst === ctx.src.id, srcAlive: !!srcAlive, validTarget: !!validTarget, hasVia, admitted, judged: !!i.judgeDrag,
 				click: evt.trigger === 'click', atStart: dist(pos, ctx.start) <= DRAG_THRESHOLD,
 				shift: !!evt.shiftKey, ctrl: !!evt.ctrlKey, alt: !!evt.altKey, pressShift: !!ctx.shift,
-				srcIsNode: !!(isTypedEntity('node', i.model.get('node', ctx.src.id)) ? i.model.get('node', ctx.src.id) : undefined), hand, handIsSrcType: hand === ctx.src.type, chained: !!i.state.chained,
+				srcIsNode: i.handSpec?.itemOf(i.model.get('node', ctx.src.id)) != null, hand, handIsSrcType: hand !== null && hand === i.handSpec?.itemOf(ctx.src), chained: !!i.state.chained,
 				srcSelected: i.selection.has(ctx.src.id),
 			}), { ctx, pos, dst, via, route, target, validTarget });
 		},
@@ -390,6 +389,10 @@ export class Input {
 		// C-d (H19.32): the product's press rows and each canvas part's -- a plugin's rows over the shared gestures (D2)
 		// D4: what each drawn hit is -- placed, an anchor, cloned by Ctrl+left, picked under a modifier -- from the parts' picks and places
 		this.hitFacts = hitFactsOf(picksOf(parts), this.places);
+		// C-e: the hand a part declares -- what can be held, how a held item stamps, what blocks it, retyping (devices/device-hand.mjs)
+		const hands = parts.filter((p) => p.hand);
+		if (hands.length > 1) throw new Error(`Input: a hand is brought by ${hands.map((p) => p.owner).join(' and by ')} -- one may`);
+		this.handSpec = hands[0]?.hand ?? null;
 		this.pressRules = composeRules({ owner: 'product', rules: pressRows(picksOf(parts), this.places) }, ...parts.map((p) => ({ owner: p.owner, rules: p.presses ?? [] })));
 		this.doubleRules = composeRules({ owner: 'product', rules: DOUBLE_CLICKS });
 		this.releaseRules = composeRules({ owner: 'product', rules: KEY_RELEASES });
@@ -840,23 +843,16 @@ export class Input {
 	// a node already on this exact grid point (a stamp must never overlap) — engine occupancy index (R13)
 
 	// stamp the held type at the snapped cell; refuses occupied cells
+	// C-e: the held item stamped on its grid where it is not blocked, by the hand's declaration (devices/device-hand.mjs)
 	stampAt(pos) {
-		const type = this.tools.hand;
-		if (!type) return false;
-		const snapped = snapNode(pos);
-		if (type === 'waypoint') {
-			if (occupiedAnyAt(this.model, snapped)) return false;
-			const wp = makeWaypoint(this.model, snapped);
-			this.history.commit(commands.createEntity(BARE_KIND, wp));
-			this.selection.set([wp.id]);
-			this.labels.setFocus(wp.id);
-			return true;
-		}
-		if (occupiedAt(this.model, snapped)) return false;
-		const node = makeNode(this.model, type, snapped);
-		this.history.commit(commands.createEntity('node', node));
-		this.selection.set([node.id]); // the hand stays armed; selection follows
-		this.labels.setFocus(node.id);
+		const item = this.tools.hand, spec = this.handSpec;
+		if (!item || !spec) return false;
+		const cell = snapIn(this.places.get(spec.place), pos);
+		if (spec.blocked(this.model, cell)) return false;
+		const { kind, entity } = spec.stamp(this.model, item, cell);
+		this.history.commit(commands.createEntity(kind, entity));
+		this.selection.set([entity.id]); // the hand stays armed; selection follows
+		this.labels.setFocus(entity.id);
 		return true;
 	}
 
@@ -866,10 +862,10 @@ export class Input {
 
 	// a valid link endpoint under the cursor: a node, or a FREE waypoint (occupied ones can't take a link)
 
-	// stamp-hand occupied check: a waypoint needs an empty cell (no node OR waypoint); a node only no node
+	// the held item cannot stamp on this cell -- the hand's own rule (a device stands there)
 	handBlocked(snapped) {
-		if (!this.tools.hand) return false;
-		return this.tools.hand === 'waypoint' ? occupiedAnyAt(this.model, snapped) : occupiedAt(this.model, snapped);
+		if (!this.tools.hand || !this.handSpec) return false;
+		return this.handSpec.blocked(this.model, snapped);
 	}
 
 	// 'w' when idle: drop a standalone waypoint at the snapped cursor cell (empty cells only)
@@ -1189,7 +1185,8 @@ export class Input {
 	chainOnFromTarget({ target, pos }) { this.chainFrom(target, pos); }
 
 	retypeClicked({ ctx }) {
-		this.history.commit(commands.retypeNode(ctx.src.id, this.tools.hand));
+		const r = this.handSpec.retype(this.tools.hand);   // the hand's own edit (C-e)
+		this.history.commit(commands.setFields(r.label, r.kind, ctx.src.id, r.after));
 		this.selection.set([ctx.src.id]);
 		this.labels.setFocus(ctx.src.id);
 	}
@@ -1483,7 +1480,7 @@ export class Input {
 	onHandDigit(evt) {
 		// B146: no `7` branch. The waypoint left the palette because it is a routing anchor rather
 		// than a node type, and `w` already places one in both states.
-		const type = NODE_TYPES[Number(evt.key) - 1];
+		const type = this.handSpec?.items[Number(evt.key) - 1];   // C-e: the hand's nth item
 		if (!type) return;
 		// B147: mid-link-drag a digit CREATES that node and carries the run through it
 		if (this.mode === 'link') { evt.claimed = true; return this.chainThroughNode(type); }
@@ -1511,12 +1508,12 @@ export class Input {
 		if (!this.state.pointer.at) return;
 		const snapped = snapNode(this.state.pointer.at);
 		// the same refusal `addStop` makes, for the same reason: a taken cell is taken
-		if (occupiedAt(this.model, snapped)) return;
+		if (!this.handSpec || this.handSpec.blocked(this.model, snapped)) return;   // the hand's rule (C-e)
 		// the source can die mid-gesture (a peer deleting it), and committing onto a corpse would
 		// write a link to nothing
 		if (!this.model.endpointOf(this.ctx.src.id)) return;
 
-		const node = makeNode(this.model, type, snapped);
+		const { entity: node } = this.handSpec.stamp(this.model, type, snapped);   // the held item, stamped by the hand (C-e)
 		this.model.put('node', node);          // live, so the preview and the next segment can see it
 		const via = [...(this.ctx.via || [])];
 		const link = { ...makeLink(this.model, this.ctx.src.id, node.id), ...(via.length ? { via } : {}) };
@@ -1549,7 +1546,7 @@ export class Input {
 	onPipette() {
 		if (this.mode) return;
 		const over = this.state.pointer.at && nodeAt(this.model, this.state.pointer.at);
-		this.tools.setHand(over ? over.type : null);
+		this.tools.setHand(over && this.handSpec ? this.handSpec.itemOf(over) : null);   // the item it was stamped from (C-e)
 		this.refreshHand();
 	}
 

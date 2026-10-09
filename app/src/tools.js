@@ -9,12 +9,11 @@ canvas layer, and the palette is one VIEW of it: its tiles light up for the held
 for a hand like a digit does. The palette is not needed to hold one: a composition without it can still pass tools.
 The lab passes none, as before -- its Input holds nothing, so digits and `t` stay inert there.
 
-`NODE_TYPES` came with it: the digits 1-6 index it, which makes it the hand's list. One device table, shared with the
-CLI's glyph map, is cut K6's to build; until then this is the one literal, and the palette reads it from here.
+AMENDED 2026-10-09 (C-e, H19.33): what can be held is the devices plugin's hand (devices/device-hand.mjs `DEVICE_HAND.items`),
+which the digits index and the palette shows; it was `NODE_TYPES` here.
 */
 import { ghostNode } from './painter.js';
 
-export const NODE_TYPES = ['host', 'server', 'loadbalancer', 'firewall', 'vxlan', 'router'];
 
 export class Tools {
 	constructor({ svg, snap }) {

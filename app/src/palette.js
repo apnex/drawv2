@@ -11,7 +11,6 @@ digit does, and the tiles light up for whatever the tools hold.
 import { CANVAS, GAP, snapNode } from './snap.js';
 import { toCanvas, ghostNode } from './painter.js';
 import * as commands from './commands.js';
-import { NODE_TYPES } from './tools.js';
 import { GLYPH_BB } from '../../kernel/theme.mjs';
 import { STD } from '../../kernel/spec.mjs';
 import { BARE_KIND } from '../../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
@@ -35,7 +34,7 @@ equal only at 1:1 zoom. Two constants is the correct answer; two ANONYMOUS const
 const CLICK_SLOP = 5;
 
 export class Palette {
-	constructor({ container, svg, model, history, selection, snap, tools }) {
+	constructor({ container, svg, model, history, selection, snap, tools, items = [] }) {   // items: what the hand can hold (C-e)
 		this.svg = svg;
 		this.model = model;
 		this.history = history;
@@ -44,6 +43,7 @@ export class Palette {
 		this.snap = snap;   // B36 — the one crosshair, shared with Overlay; see overlay.js
 		this.drag = null;
 		this.tools = tools;   // K7: the held tools this palette shows and arms (app/src/tools.js)
+		this.holdable = items;   // what the hand can hold, in order -- the devices plugin's (C-e)
 		this.items = {};       // type -> tile element
 		this.build(container);
 		// the held type's tile lights up, whoever armed it -- a digit, Q, Escape, a lock, or this palette
@@ -65,7 +65,7 @@ export class Palette {
 	}
 
 	build(container) {
-		NODE_TYPES.forEach((type, i) => {
+		this.holdable.forEach((type, i) => {
 			const item = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
 			item.setAttribute('viewBox', '-26 -26 52 52');
 			item.setAttribute('class', 'palette-item node');

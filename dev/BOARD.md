@@ -1290,6 +1290,8 @@ Device placing moves to C-e as one step, the director's choice; B316 fixed.\
 Next: C-d's last step, the press rows naming a zone, a link or a waypoint, and the Ctrl clone-arming.
 AMENDED 2026-10-09: C-d done -- the press rows read the facts the plugins' picks declare (D4); B317 fixed. The coordinate picks, the marquee's footprint picks and the draw-a-link gesture's targets carry into C-e with the hand.\
 Next H19.33, C-e, opening with the devices plugin's hand.
+AMENDED 2026-10-09: C-e's first step done -- the hand is the devices plugin's to declare: its items, its stamp, what blocks it, the pipette's item, the retype.\
+Next: the hand's ghost, the palette's tiles and drop, the readout's naming.
 
 **Exit:** nothing stored needs a migration and none is kept; production's sync holds the network under the GR6 battery; the core holds no kind.
 
