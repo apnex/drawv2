@@ -62,9 +62,4 @@ export class Selection {
 	selectedNodes() {
 		return this.list().filter((id) => (isTypedEntity('node', this.model.get('node', id)) ? this.model.get('node', id) : undefined));   // a waypoint is not one (F-c)
 	}
-
-	// nodes AND waypoints in the selection — the entities that can be grouped / moved as one
-	groupable() {
-		return this.list().filter((id) => this.model.endpointOf(id));
-	}
 }

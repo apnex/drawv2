@@ -133,8 +133,7 @@ export const KEYMAP = [
 	{ id: 'undo', input: ['Ctrl+Z'],     mutates: true, on: (e) => meta(e) && is(e, 'z') && !e.shiftKey,            run: 'onUndoKey' },
 	{ id: 'redo', input: ['Ctrl+Shift+Z', 'Ctrl+Y'],     mutates: true, on: (e) => meta(e) && (is(e, 'y') || (is(e, 'z') && e.shiftKey)), run: 'onRedoKey' },
 	{ id: 'dup', input: ['Ctrl+D'],      mutates: true, on: (e) => meta(e) && is(e, 'd'),                          run: 'onDuplicate' },
-	{ id: 'group', input: ['Ctrl+G'],    mutates: true, on: (e) => meta(e) && is(e, 'g') && !e.shiftKey,            run: 'onGroupKey' },
-	{ id: 'ungroup', input: ['Ctrl+Shift+G'],  mutates: true, on: (e) => meta(e) && is(e, 'g') && e.shiftKey,             run: 'onUngroupKey' },
+	// C-e (H19.33): Ctrl+G and Ctrl+Shift+G are the groups plugin's key rows (groups/group-keys.mjs)
 	{ id: 'delete', input: ['Delete', 'Backspace'],   prevent: false, mutates: true, on: (e) => (e.key === 'Delete' || e.key === 'Backspace') && !(meta(e) && e.shiftKey && e.key === 'Backspace'), run: 'onDeleteKey' },
 ];
 

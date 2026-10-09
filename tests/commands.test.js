@@ -8,10 +8,15 @@
 // The closure is deliberately still here: a disconnected browser must not build a document whose
 // links dangle. The server re-derives the same cascade idempotently over these explicit ops.
 
+// RESTATED at C-e step five (H19.33; D5): `createGroup` and `ungroupAll` left the builders -- the groups plugin's keys make the
+// group and hand it to `putEntity`, and name the groups for `deleteEntities` -- so these tests hold the generic builders with
+// the edits the plugin makes, and the at-least-two rule through the plugin's own row
+import { makeGroup } from '../groups/make-group.mjs';
+import { GROUP_KEYS } from '../groups/group-keys.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Model } from './fixtures/composed.mjs';   // the network's kinds, the link among them (S-e)
-import { createEntity, moveEntities, deleteSelection, createGroup, ungroupAll,
+import { createEntity, moveEntities, deleteSelection, putEntity, deleteEntities,
 	setContentValue, reshapeNodes, renameEntity } from '../app/src/commands.js';
 import { applyOps } from '../model/ops.mjs';
 import { Changes } from '../app/src/changes.js';
@@ -45,10 +50,10 @@ test('every builder emits forward intent only — no entry carries `before`', ()
 		createEntity('node', node('node-ab0001')),
 		moveEntities([{ kind: 'node', id: 'node-aa0001', before: { x: 0, y: 0 }, after: { x: 60, y: 60 } }]),
 		deleteSelection(m, new Set(['node-aa0001'])),
-		createGroup(m, ['node-aa0001', 'node-aa0002']),
+		putEntity('group', 'group', makeGroup(m, ['node-aa0001', 'node-aa0002'])),
 		reshapeNodes(m, ['node-aa0001']),
 		renameEntity('node', 'node-aa0001', 'old', 'new'),
-		ungroupAll(m, []),
+		deleteEntities('ungroup', m, []),
 	];
 	for (const c of commands) {
 		for (const e of c.entries) {
@@ -111,20 +116,26 @@ test('deleting a waypoint ENDPOINT deletes the link rather than stripping it', (
 	assert.equal(m.get('link', 'link-ea0002'), undefined);
 });
 
-// AMENDED 2026-10-04 (V-d): the steal is the planner's group-steal, previewed; createGroup sends the group alone
-test('createGroup steals members, through the planner\'s rule', () => {
+// AMENDED 2026-10-04 (V-d): the steal is the planner's group-steal, previewed; a new group is sent alone
+test('a new group steals members, through the planner\'s rule', () => {
 	const m = seeded();
 	m.put('group', { id: 'group-fa0001', name: 'a', members: ['node-aa0001', 'node-aa0002', 'node-aa0003'] });
-	const req = apply(m, createGroup(m, ['node-aa0002', 'node-aa0003']));
+	const req = apply(m, putEntity('group', 'group', makeGroup(m, ['node-aa0002', 'node-aa0003'])));
 	assert.deepEqual(req.ops.map((o) => `${o.op}/${o.kind}`), ['put/group'], 'intent only');
 	const membership = m.all('group').flatMap((g) => g.members);
 	assert.equal(new Set(membership).size, membership.length, 'no node in two groups');
 });
 
-test('createGroup requires at least two endpoints', () => {
+test('Ctrl+G requires at least two endpoints', () => {
 	const m = seeded();
-	assert.equal(createGroup(m, ['node-aa0001']).entries.length, 0);
-	assert.equal(createGroup(m, []).entries.length, 0);
+	const group = GROUP_KEYS.find((r) => r.id === 'group');
+	const put = [];
+	const host = (ids) => ({ selected: () => ids.map((id) => ({ ...m.get('node', id), id, kind: 'node' })), put: (...a) => put.push(a) });
+	group.run(host(['node-aa0001']));
+	group.run(host([]));
+	assert.equal(put.length, 0, 'one endpoint, or none, makes no group');
+	group.run(host(['node-aa0001', 'node-aa0002']));
+	assert.equal(put.length, 1, 'two make one -- the control');
 });
 
 // AMENDED 2026-10-04 (V-d): the fixture ids are hex -- `ga`, `ha`, `ia` are not, and the preview refuses them as the server would
@@ -146,11 +157,11 @@ test('reshapeNodes toggles circle<->square and skips non-nodes', () => {
 	assert.equal(m.get('node', 'node-c20001').shape, 'circle');
 });
 
-test('ungroupAll removes every named group in one command', () => {
+test('removing named groups is one command', () => {
 	const m = seeded();
 	m.put('group', { id: 'group-c30001', name: 'a', members: ['node-aa0001', 'node-aa0002'] });
 	m.put('group', { id: 'group-c30002', name: 'b', members: ['node-aa0002', 'node-aa0003'] });
-	apply(m, ungroupAll(m, ['group-c30001', 'group-c30002']));
+	apply(m, deleteEntities('ungroup', m, [{ kind: 'group', id: 'group-c30001' }, { kind: 'group', id: 'group-c30002' }]));
 	assert.equal(m.all('group').length, 0);
 });
 
@@ -192,7 +203,8 @@ test('B87: every del entry a builder emits carries an entity, across every branc
 		['waypoint whose strip would collide', (m) => deleteSelection(m, new Set(['node-aa0005']))],
 		['node carrying links away', (m) => deleteSelection(m, new Set(['node-aa0001']))],
 		['group emptied below two', (m) => deleteSelection(m, new Set(['node-aa0002']))],
-		['ungroup', (m) => ungroupAll(m, ['node-aa0002'])],
+		// CORRECTED at C-e step five: this case named a NODE as the group to remove, so it emitted nothing and held nothing
+		['ungroup', (m) => deleteEntities('ungroup', m, [{ kind: 'group', id: 'group-aa0007' }])],
 	]) {
 		const m = cases();
 		const cmd = build(m);

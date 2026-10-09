@@ -80,20 +80,23 @@ with it (app/src/changes.js), so this sends the deletes the author made and the 
 Selected entities only, each once, by its kind -- a plugin's too (a hand pipe, B281): dependents first, so the request reads
 as the author would say it.
 */
-export function deleteSelection(model, ids) {
-	const RANK = { group: 0, zone: 1, link: 2, node: 4 };   // a plugin's kind ranks 3
-	const entries = [...ids].filter((id) => model.entityExists(id))
-		.map((id) => ({ id, kind: kindOf(id) }))
-		.sort((a, b) => (RANK[a.kind] ?? 3) - (RANK[b.kind] ?? 3))
-		.map(({ id, kind }) => ({ op: 'del', kind, entity: clone(kind, model.get(kind, id)) }));
-	return { label: 'delete', entries };
+// C-e (H19.33): each kind's rank in a delete is its part's (`deleteRanks`) -- the groups plugin's group first, the zones plugin's
+// zone, the network's link, the anchor last; a kind no part ranks, 3
+export function deleteRanksOf(parts) {
+	const ranks = {}, by = {};
+	for (const p of parts) for (const [kind, rank] of Object.entries(p.deleteRanks ?? {})) {
+		if (kind in ranks) throw new Error(`commands: ${kind}'s rank in a delete is brought by ${by[kind]} and by ${p.owner}`);
+		ranks[kind] = rank; by[kind] = p.owner;
+	}
+	return ranks;
 }
 
-// Group a selection: the group, and nothing else -- the planner's `group-steal` takes its members from any other group (V-d)
-export function createGroup(model, memberIds) {
-	const members = memberIds.filter((id) => model.endpointOf(id));
-	if (members.length < 2) return { label: 'group', entries: [] };
-	return { label: 'group', entries: [{ op: 'put', kind: 'group', entity: makeGroup(model, members) }] };
+export function deleteSelection(model, ids, ranks = {}) {
+	const entries = [...ids].filter((id) => model.entityExists(id))
+		.map((id) => ({ id, kind: kindOf(id) }))
+		.sort((a, b) => (ranks[a.kind] ?? 3) - (ranks[b.kind] ?? 3))
+		.map(({ id, kind }) => ({ op: 'del', kind, entity: clone(kind, model.get(kind, id)) }));
+	return { label: 'delete', entries };
 }
 
 // W6 — live input editing: write a new value into a node's content region (idx). Deep-copies the whole
@@ -134,16 +137,6 @@ export function cloneEntities(clones) {
 	};
 }
 
-// one undoable command covering every group being dissolved
-export function ungroupAll(model, groupIds) {
-	const entries = [];
-	groupIds.forEach((id) => {
-		const group = model.get('group', id);
-		if (group) entries.push({ op: 'del', kind: 'group', entity: clone('group', group) });
-	});
-	return { label: 'ungroup', entries };
-}
-
 // ---- H6.2 Tier B: the last six, previously built by hand inside input.js (B44) ----
 // They lived there because each is a one-liner at its call site. That is exactly why they drifted:
 // four carried a dead `before` and two aliased the live store through a shallow spread, both against
@@ -152,6 +145,16 @@ export function ungroupAll(model, groupIds) {
 // drag a zone corner: the committed geometry (the live preview already wrote it; history owns the edit)
 // C-d (H19.32): an entity's fields set to what a handle drag made of them -- the shared handle gesture's one command, its label
 // the handles' (a zone's corners: 'resize')
+// C-e (D5): one entity put, under a plugin's label -- a group the groups plugin made
+export function putEntity(label, kind, entity) {
+	return { label, entries: [{ op: 'put', kind, entity: clone(kind, entity) }] };
+}
+
+// C-e (D5): entities deleted, under a plugin's label -- each that still exists, as the model holds it
+export function deleteEntities(label, model, refs) {
+	return { label, entries: refs.filter((r) => model.get(r.kind, r.id)).map((r) => ({ op: 'del', kind: r.kind, entity: clone(r.kind, model.get(r.kind, r.id)) })) };
+}
+
 export function setFields(label, kind, id, after) {
 	return { label, entries: [{ op: 'set', kind, id, after }] };
 }

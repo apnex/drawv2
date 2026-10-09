@@ -11,4 +11,5 @@ import { NETWORK_POINTS } from './anchor-points.mjs';
 
 // C-d: and its link's end handles, with the press row that opens the shared handle gesture on one
 // C-e: and what a waypoint and a link cover at a point and in a box
-export const NETWORK_CANVAS = { owner: 'network', painters: LINK_PAINTERS, appearances: NETWORK_APPEARANCES, presses: LINK_PRESSES, handles: LINK_HANDLE_SPECS, at: NETWORK_POINTS };
+export const NETWORK_CANVAS = { owner: 'network', painters: LINK_PAINTERS, appearances: NETWORK_APPEARANCES, presses: LINK_PRESSES, handles: LINK_HANDLE_SPECS, at: NETWORK_POINTS,
+	deleteRanks: { link: 2 } };   // a link is deleted before the anchors it joins

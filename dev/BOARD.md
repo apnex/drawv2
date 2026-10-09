@@ -1300,6 +1300,8 @@ AMENDED 2026-10-09: C-e's third step done -- what is at a point, in a box and un
 Next: keys and commands -- the step words, select-all, a delete's order, the zone keys.
 AMENDED 2026-10-09: C-e's fourth step done -- the zone keys are the zones plugin's, and the size steps each plugin's (D5); B319 fixed.\
 Next: the groups plugin's keys and commands, then the devices', the network's and the simulation's.
+AMENDED 2026-10-09: C-e's fifth step done -- the group keys are the groups plugin's, and a kind's rank in a delete its part's.\
+Next: the devices plugin's keys and commands, then the network's (with the clone followers) and the simulation's.
 
 **Exit:** nothing stored needs a migration and none is kept; production's sync holds the network under the GR6 battery; the core holds no kind.
 

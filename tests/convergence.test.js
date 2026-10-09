@@ -17,7 +17,8 @@ import { Model } from '../model/model.mjs';
 import { applyOps } from '../model/ops.mjs';
 import { Changes } from '../app/src/changes.js';
 import { Sync } from '../app/src/sync.js';
-import { createEntity, moveEntities, deleteSelection, createGroup } from '../app/src/commands.js';
+import { createEntity, moveEntities, deleteSelection, putEntity } from '../app/src/commands.js';
+import { makeGroup } from '../groups/make-group.mjs';   // RESTATED at C-e step five (D5): a group is the groups plugin's edit, put
 import { OWNER, openStore } from './fixtures/app.mjs';
 import { productKinds } from '../product/kinds.mjs';
 import { NETWORK_ROWS } from '../network/kinds.mjs';
@@ -152,7 +153,7 @@ function drive(env, count) {
 				who.changes.commit(createEntity('link', { id: `link-${hex(2000 + i)}`, src: s.id, dst: d.id }));
 			}
 		} else if (roll < 0.85 && nodes.length >= 2) {
-			who.changes.commit(createGroup(who.model, [nodes[0].id, nodes[1].id]));
+			who.changes.commit(putEntity('group', 'group', makeGroup(who.model, [nodes[0].id, nodes[1].id])));
 		} else {
 			// the cascade-heavy shape: delete a node that links and groups depend on
 			const n = nodes[Math.floor(r() * nodes.length) % nodes.length];

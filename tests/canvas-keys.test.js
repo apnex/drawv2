@@ -87,3 +87,59 @@ test('C-e: the canvas holds no zone key or size step of its own', () => {
 	assert.doesNotMatch(code('app/src/input.js'), /wrapInZone|onWrapKey|resizeZoneStep|resizeNodeStep/);
 	assert.doesNotMatch(code('app/src/keymap.js'), /id: 'wrap'/);
 });
+
+// ---- C-e, step five (D5): the group keys are the groups plugin's; a delete's order is each plugin's ----
+
+const groups = (h) => h.model.all('group');
+
+test('C-e: Ctrl+G groups the selected anchors, labelled "group", the selection kept; Ctrl+Shift+G on a member ungroups -- the state under test', () => {
+	const h = makeInput();
+	try {
+		const [a, b] = seedNodes(h.model, [[0, 0], [120, 0]]);
+		h.selection.set([a.id, b.id]);
+		h.capture.onKeyDown(key('g', { ctrlKey: true }));
+		assert.deepEqual(groups(h).map((g) => g.members.slice().sort()), [[a.id, b.id].sort()]);
+		assert.equal(h.commits.at(-1).label, 'group');
+		assert.deepEqual(h.selection.list(), [a.id, b.id], 'the selection kept');
+		h.selection.set([a.id]);
+		h.capture.onKeyDown(key('g', { ctrlKey: true, shiftKey: true }));
+		assert.equal(groups(h).length, 0);
+		assert.equal(h.commits.at(-1).label, 'ungroup');
+	} finally { h.restore(); }
+});
+
+test('C-e: a delete sends a group, then a zone, then a link, then a node -- each plugin\'s rank', async () => {
+	const { makeLink } = await import('../network/link-queries.mjs');
+	const { makeGroup } = await import('../groups/make-group.mjs');
+	const h = makeInput();
+	try {
+		const [a, b, c] = seedNodes(h.model, [[0, 0], [120, 0], [240, 240]]);
+		const l = makeLink(h.model, a.id, b.id); h.model.put('link', l);
+		const g = makeGroup(h.model, [a.id, b.id]); h.model.put('group', g);
+		const z = makeZone(h.model, { x: 330, y: 330, w: 120, h: 120 }); h.model.put('zone', z);
+		// a group -- reached only by the builder, handed one -- goes before them all, as the groups plugin ranks it
+		const { deleteSelection, deleteRanksOf } = await import('../app/src/commands.js');
+		const cmd = deleteSelection(h.model, new Set([c.id, l.id, z.id, g.id].reverse()), deleteRanksOf(PRODUCT_CANVAS));
+		assert.deepEqual(cmd.entries.map((e) => e.kind), ['group', 'zone', 'link', 'node']);
+		h.selection.set([c.id, l.id, z.id]);   // a group is never selected: the selection keeps no group id
+		h.capture.onKeyDown(key('Delete'));
+		assert.deepEqual(h.commits.at(-1).ops.map((o) => o.kind), ['zone', 'link', 'node'], 'on the page');
+	} finally { h.restore(); }
+});
+
+test('C-e: without the groups plugin\'s part Ctrl+G groups nothing and the help offers no group key', () => {
+	const h = makeInput({ parts: PRODUCT_CANVAS.filter((p) => p.owner !== 'groups') });
+	try {
+		const [a, b] = seedNodes(h.model, [[0, 0], [120, 0]]);
+		h.selection.set([a.id, b.id]);
+		h.capture.onKeyDown(key('g', { ctrlKey: true }));
+		assert.equal(groups(h).length, 0);
+		assert.equal(keyLines(h).some((l) => /^Ctrl\+(Shift\+)?G$/.test(l.inputs[0])), false);
+	} finally { h.restore(); }
+});
+
+test('C-e: the canvas holds no group key, group builder or delete ranking of its own', () => {
+	assert.doesNotMatch(code('app/src/commands.js'), /export function createGroup|export function ungroupAll|const RANK = \{/);
+	assert.doesNotMatch(code('app/src/input.js'), /onGroupKey|onUngroupKey|groupOf\(/);
+	assert.doesNotMatch(code('app/src/keymap.js'), /id: 'group'|id: 'ungroup'/);
+});

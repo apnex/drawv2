@@ -22,6 +22,7 @@ import { loadCode, makeWorld, clock, shape, shapeDoc, diffDocs } from './sync-wo
 import path from 'node:path';
 import url from 'node:url';
 import { makeNode, makeWaypoint } from '../../devices/make-node.mjs';   // O-e1: the devices plugin's factories
+import { makeGroup } from '../../groups/make-group.mjs';   // C-e: the groups plugin's factory, as its Ctrl+G makes a group
 
 const here = path.dirname(url.fileURLToPath(import.meta.url));
 const MAIN = process.argv[1] && url.fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
@@ -155,9 +156,11 @@ async function runSeeded(seed, trace) {
 				if (pool.length < 2) return;
 				const ids = [...new Set([pick(pool).id, pick(pool).id, pick(pool).id])];
 				selectOnly(ids);
-				t.changes.commit(C.createGroup(m, ids)); note = ids.join(','); break;
+				// RESTATED at C-e step five (D5): the groups plugin's Ctrl+G -- two or more anchors, a group put; fewer, nothing
+				if (ids.length >= 2) t.changes.commit(C.putEntity('group', 'group', makeGroup(m, ids)));
+				note = ids.join(','); break;
 			}
-			case 'ungroup': { if (!groups.length) return; const g = pick(groups); t.changes.commit(C.ungroupAll(m, [g.id])); note = g.id; break; }
+			case 'ungroup': { if (!groups.length) return; const g = pick(groups); t.changes.commit(C.deleteEntities('ungroup', m, [{ kind: 'group', id: g.id }])); note = g.id; break; }   // Ctrl+Shift+G (C-e)
 			case 'replug': {
 				if (!links.length || nodes.length < 2) return;
 				const l = pick(links), a = pick(nodes), b = pick(nodes); if (a === b) return;

@@ -49,7 +49,6 @@ import { LINK_RELEASES, MARQUEE_RELEASES, CTRL_CLICKS, PRESS_DRAGS, CLONE_DRAGS 
 import { roundedPath } from '../../kernel/router.mjs';
 import { BEND_R } from '../../kernel/spec.mjs';
 import { newId, kindOf } from '../../model/model.mjs';
-import { groupOf } from '../../groups/group-of.mjs';   // the groups plugin's lookup (O-c)
 import { pairHolders } from '../../network/link-rules.mjs';
 import * as commands from './commands.js';
 import { situationOf } from '../../engine/situation.mjs';
@@ -377,6 +376,8 @@ export class Input {
 		const productKeys = KEYMAP.flatMap((r) => (typeof r.doc !== 'function' ? [r] : r.doc(parts) === null ? [] : [{ ...r, doc: r.doc(parts) }]));
 		this.keyRules = composeRules({ owner: 'product', rules: productKeys }, ...plugins.map((p) => ({ owner: p.owner, rules: p.keys ?? [] })),
 			...parts.filter((p) => p.keys).map((p) => ({ owner: p.owner, rules: p.keys })));
+		// C-e: each kind's rank in a delete, its part's
+		this.deleteRanks = commands.deleteRanksOf(parts);
 		// C-e: what Shift+arrow makes of a lone selected entity, by kind -- each part's size step
 		this.sizeSteps = new Map();
 		for (const p of parts) if (p.sizeStep) {
@@ -400,6 +401,10 @@ export class Input {
 			// C-e: a brief receipt on the readout, and a size in its units
 			flash: (text) => this.readout.flash(text),
 			dims: (w, h) => this.readout.dims(w, h),
+			// C-e (D5): a plugin's question over the Model, answered; an entity it made, put under its label; entities deleted
+			ask: (question) => question(this.model),
+			put: (label, kind, make) => this.history.commit(commands.putEntity(label, kind, make(this.model))),
+			remove: (label, refs) => this.history.commit(commands.deleteEntities(label, this.model, refs)),
 		};
 		// the pointer's tables on the same engine (stage 4): which gesture a press starts, a double click, a key release
 		// C-d (H19.32): the product's press rows and each canvas part's -- a plugin's rows over the shared gestures (D2)
@@ -661,7 +666,7 @@ export class Input {
 	deleteUnderCursor(hit) {
 		if (this.isGesturing()) return;
 		// B258: `deleteSelection` takes a Set -- an Array threw on `ids.has` whenever the board held a link
-		this.history.commit(commands.deleteSelection(this.model, new Set([hit.id])));
+		this.history.commit(commands.deleteSelection(this.model, new Set([hit.id]), this.deleteRanks));
 		this.afterHistory();
 	}
 
@@ -1614,19 +1619,10 @@ export class Input {
 	onRedoKey() { this.history.redo(); this.afterHistory(); }
 	onDuplicate() { this.duplicateSelection(); }   // claims the bookmark shortcut
 
-	onGroupKey() {
-		this.history.commit(commands.createGroup(this.model, this.selection.groupable()));
-	}
-
-	onUngroupKey() {
-		const groups = new Set(this.selection.groupable().map((id) => groupOf(this.model, id)).filter(Boolean).map((g) => g.id));
-		this.history.commit(commands.ungroupAll(this.model, [...groups]));
-	}
-
 	onDeleteKey(evt) {
 		if (this.selection.size() === 0) return;
 		evt.claimed = true;
-		this.history.commit(commands.deleteSelection(this.model, new Set(this.selection.list())));
+		this.history.commit(commands.deleteSelection(this.model, new Set(this.selection.list()), this.deleteRanks));
 		// selection auto-prunes on the delete's emits (selection.js)
 	}
 

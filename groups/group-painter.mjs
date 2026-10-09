@@ -8,6 +8,7 @@ a group when a member moves by asking the core which entity gathers the member (
 The elements and every attribute are what the renderer built: the K8 DOM corpus holds that.
 */
 
+import { GROUP_KEYS } from './group-keys.mjs';
 import { L_STD } from '../kernel/spec.mjs';
 import { TOKENS } from '../kernel/theme.mjs';
 import { groupHull, spanExtent } from '../kernel/geometry.mjs';
@@ -44,4 +45,5 @@ const GROUP_PAINTER = {
 };
 
 // the groups plugin's canvas part (C-a: its painter)
-export const GROUPS_CANVAS = { owner: 'groups', painters: [GROUP_PAINTER] };
+// C-e: and its keys -- Ctrl+G, Ctrl+Shift+G -- and its rank in a delete: first, before what it gathers
+export const GROUPS_CANVAS = { owner: 'groups', painters: [GROUP_PAINTER] , keys: GROUP_KEYS, deleteRanks: { group: 0 } };

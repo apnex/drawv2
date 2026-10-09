@@ -29,6 +29,7 @@ const ANCHOR_ORDER = {
 	owner: 'the product',
 	orders: { node: { layers: ['frame', 'sockets', 'body', 'marks', 'transit', 'select', 'label'], ranks: ['device', 'marks'] } },
 	places: [ANCHOR_PLACE],
+	deleteRanks: { node: 4 },   // C-e: an anchor is deleted last; a kind no part ranks, 3
 };
 
 // painters back to front on a full render: zones, group hulls, links -- and the anchors over them, by appearances

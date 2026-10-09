@@ -136,7 +136,8 @@ test('a plugin\'s row is handed the host\'s declared verbs, not Input -- and the
 		assert.ok(handed, 'the row ran');
 		// RESTATED at C-d step one (H19.32): a third declared verb, `create` -- a plugin's release row makes an entity through it
 		// and the text box's two (C-d step three); the zones plugin's `z`: the selection's bounds, a receipt and a size (C-e step four)
-		assert.deepEqual(Object.keys(handed), ['addStop', 'selected', 'create', 'set', 'releaseTool', 'editFrame', 'selectionBounds', 'flash', 'dims']);   // and `set`, through which a handle's release row edits (C-d step two)
+		// and the groups plugin's keys: a question over the Model, an entity put, entities removed (C-e step five)
+		assert.deepEqual(Object.keys(handed), ['addStop', 'selected', 'create', 'set', 'releaseTool', 'editFrame', 'selectionBounds', 'flash', 'dims', 'ask', 'put', 'remove']);   // and `set`, through which a handle's release row edits (C-d step two)
 		assert.notEqual(handed, h.input);
 		const [n] = seedNodes(h.model, [[0, 0, 'router']]);
 		h.selection.set([n.id]);

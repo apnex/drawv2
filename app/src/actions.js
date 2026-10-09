@@ -40,8 +40,6 @@ export const ACTION_LABELS = {
 	onUndoKey: 'undo',
 	onRedoKey: 'redo',
 	onDuplicate: 'duplicate the selection at the remembered pitch',
-	onGroupKey: 'group the selection',
-	onUngroupKey: 'ungroup',
 	onDeleteKey: 'delete the selection',
 	// ---- what a press starts ----
 	'gesture:link': 'draw a link: release on a node or waypoint',

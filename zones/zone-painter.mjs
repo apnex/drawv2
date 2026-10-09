@@ -49,4 +49,4 @@ const ZONE_PLACE = { kind: 'zone', layout: 'zone', ext: ZONE_EXT, size: (zone) =
 // C-d its press row over the shared box gesture, and its handles)
 // C-e: and its keys -- `z` -- and its size step under the canvas's Shift+arrow
 export const ZONES_CANVAS = { owner: 'zones', painters: [ZONE_PAINTER], places: [ZONE_PLACE], presses: ZONE_PRESSES, handles: ZONE_HANDLE_SPECS,
-	keys: ZONE_KEYS, sizeStep: ZONE_SIZE_STEP };
+	keys: ZONE_KEYS, sizeStep: ZONE_SIZE_STEP, deleteRanks: { zone: 1 } };   // a zone is deleted after a group, before a link

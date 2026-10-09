@@ -14,6 +14,8 @@ its row, never asserted as correct and never written around.
 */
 
 // C-c (H19.31): the placed kinds, as the page composes them
+import { PRODUCT_CANVAS as PRODUCT_CANVAS_FOR_KEYS } from '../product/canvas.mjs';
+import { GROUP_KEYS } from '../groups/group-keys.mjs';
 import { ZONE_SIZE_STEP } from '../zones/zone-keys.mjs';
 import { DEVICE_SIZE_STEP } from '../devices/device-size.mjs';
 import { placesOf as placesOfCanvas } from '../app/src/snap.js';
@@ -912,8 +914,10 @@ test('B48: the matched rule NAMES the verb — the table is readable as the key 
 		['g',         { ctrlKey: true, shiftKey: true }, 'ungroup'],
 	];
 	const ctx = { readOnly: false, helpOpen: false, gesturing: false };
+	// RESTATED at C-e step five (H19.33): Ctrl+G and Ctrl+Shift+G are the groups plugin's rows, composed with the product's
+	const withGroups = composeRules({ owner: 'product', rules: KEYMAP }, { owner: 'groups', rules: GROUP_KEYS });
 	for (const [k, mod, id] of cases) {
-		const rule = resolveKey(key(k, mod), ctx);
+		const rule = resolveInput(withGroups, key(k, mod), sit(), ctx).rule;
 		assert.ok(rule, `${id}: nothing matched`);
 		assert.equal(rule.id, id, `${JSON.stringify(mod)}+${k} must resolve to '${id}', got '${rule.id}'`);
 	}
@@ -953,9 +957,19 @@ the product's rows -- as the lab composes them -- no keystroke matches two rows 
 Q3 asks of every composition, not only of the product alone.
 */
 const LAB_KEYS = composeRules({ owner: 'product', rules: KEYMAP }, { owner: 'network', rules: networkInput(() => ({})).keys });
+// AMENDED at C-e step five (H19.33): the canvas parts bring key rows too -- the zones plugin's `z`, the groups plugin's Ctrl+G and
+// Ctrl+Shift+G -- so the page's composition is held as well, every part's rows beside the product's and the network's
+const PAGE_KEYS = composeRules({ owner: 'product', rules: KEYMAP }, { owner: 'network', rules: networkInput(() => ({})).keys },
+	...PRODUCT_CANVAS_FOR_KEYS.filter((p) => p.keys).map((p) => ({ owner: p.owner, rules: p.keys })));
 
 test('Q3: composed with the network plugin, still no keystroke matches two rows', () => {
 	const found = overlapsIn(LAB_KEYS, KEY_INPUTS, SITUATIONS, GUARD_STATES).map((o) => `${o.situation.gesture}/${o.situation.step} ${o.input.key} -> ${o.ids.join('/')}`);
+	assert.deepEqual(found, []);
+});
+
+test('Q3: composed with every canvas part\'s key rows, still no keystroke matches two rows', () => {
+	assert.deepEqual(PAGE_KEYS.filter((r) => r.owner === 'zones' || r.owner === 'groups').map((r) => r.id), ['wrap', 'group', 'ungroup'], 'the parts\' rows are in it');
+	const found = overlapsIn(PAGE_KEYS, KEY_INPUTS, SITUATIONS, GUARD_STATES).map((o) => `${o.situation.gesture}/${o.situation.step} ${o.input.key} -> ${o.ids.join('/')}`);
 	assert.deepEqual(found, []);
 });
 
