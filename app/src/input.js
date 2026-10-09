@@ -39,16 +39,15 @@ import { RECOGNIZE, DOUBLE_CLICKS } from './recognize.js';
 import { KEYMAP, KEY_RELEASES } from './keymap.js';
 import { composeRules, resolveInput } from '../../kernel/input-rules.mjs';
 import { nodeAt, endpointAt, occupiedAt, occupiedAnyAt, inFootprint, footprintHits } from './pick.js';
-import { CANVAS, GAP, HALF, NODE_R, NODE_EXT, ZONE_EXT, spanExtent, orthoDelta, snappedDelta, clampDelta, resizeBox, snapNode, snapZone, snapIn, resolveBox, pointInBox, dist, zoneCorners, OPPOSITE_CORNER } from './snap.js';
+import { CANVAS, GAP, HALF, NODE_R, NODE_EXT, ZONE_EXT, spanExtent, orthoDelta, snappedDelta, clampDelta, snapNode, snapIn, placesOf, resolveBox, pointInBox, dist } from './snap.js';
 import { el, crosshair, previewRect, previewLine, previewPath, isShown, setShown, layerOf } from './painter.js';
 import { emitToHost } from './capture.js';
 import { initialInputState, track } from './input-state.js';
 import { DRAG_THRESHOLD, dragging, releaseTrigger } from './triggers.js';
-import { LINK_RELEASES, MARQUEE_RELEASES, CTRL_CLICKS, REPLUG_RELEASES, ZONE_RELEASES, PRESS_DRAGS, CLONE_DRAGS } from './releases.js';
+import { LINK_RELEASES, MARQUEE_RELEASES, CTRL_CLICKS, REPLUG_RELEASES, PRESS_DRAGS, CLONE_DRAGS } from './releases.js';
 import { roundedPath } from '../../kernel/router.mjs';
 import { BEND_R } from '../../kernel/spec.mjs';
 import { newId, kindOf } from '../../model/model.mjs';
-import { makeZone } from '../../zones/make-zone.mjs';   // the zones plugin's factory (O-b1)
 import { groupOf } from '../../groups/group-of.mjs';   // the groups plugin's lookup (O-c)
 import { pairHolders } from '../../network/link-rules.mjs';
 import { NODE_TYPES } from './tools.js';   // K7: the stamp hand's types, with the hand
@@ -146,29 +145,34 @@ const GESTURES = {
 		start: (i, hit, pos, evt) => ({ hit, start: pos, orthoReady: !evt.shiftKey })
 	},
 
+	/*
+	C-d (H19.32; D2) -- THE SHARED HANDLE GESTURE: drag a handle of the lone selected entity, by what its kind's handles declare
+	(`handles`: where they are, what a drag to a point makes of the entity, the command's label) -- a zone's corners, from the
+	zones plugin. The live preview writes the shared Model (B7); history owns the real edit; a cancel rewinds.
+	*/
 	resize: {
 		commit: (i, ctx, pos) => {
-			const after = resizeBox(pos, ctx.fixedCorner);
+			const after = ctx.spec.at(ctx, pos);
 			const before = ctx.before;
-			i.model.set('zone', ctx.zone, { ...before });   // rewind the live preview; history owns the real edit
-			if (after.x === before.x && after.y === before.y && after.w === before.w && after.h === before.h) return;
-			i.history.commit(commands.resizeZone(ctx.zone, after));
+			i.model.set(ctx.kind, ctx.id, { ...before });   // rewind the live preview; history owns the real edit
+			if (Object.keys(after).every((k) => after[k] === before[k])) return;
+			i.history.commit(commands.setFields(ctx.spec.label, ctx.kind, ctx.id, after));
 		},
-		cancel: (i, ctx) => i.model.set('zone', ctx.zone, { ...ctx.before }),   // a cancelled gesture is a no-op
+		cancel: (i, ctx) => i.model.set(ctx.kind, ctx.id, { ...ctx.before }),   // a cancelled gesture is a no-op
 		update: (i, pos) => {
-			const box = resizeBox(pos, i.ctx.fixedCorner);
-			i.model.set('zone', i.ctx.zone, box);   // live preview writes the shared Model (B7)
-			i.readout.setBox(box);
+			const patch = i.ctx.spec.at(i.ctx, pos);
+			i.model.set(i.ctx.kind, i.ctx.id, patch);   // live preview writes the shared Model (B7)
+			if (i.ctx.spec.readout === 'box') i.readout.setBox(patch);
 		},
 		start: (i, hit) => {
-			const zoneId = i.selection.list().find((id) => kindOf(id) === 'zone');
-			const zone = i.model.get('zone', zoneId);
-			if (!zone) return null;
-			// the FIXED corner is the one OPPOSITE the grabbed handle
-			const fixedCorner = zoneCorners(zone)[OPPOSITE_CORNER[hit.id]];
-			return { zone: zoneId, fixedCorner, before: { x: zone.x, y: zone.y, w: zone.w, h: zone.h } };
+			const id = i.selection.list().find((x) => i.handles.has(kindOf(x)));
+			const kind = id && kindOf(id), entity = id && i.model.get(kind, id);
+			if (!entity) return null;
+			const spec = i.handles.get(kind);
+			return { kind, id, spec, ...spec.start(entity, hit.id) };
 		}
 	},
+
 
 	replug: {
 		commit: (i, ctx, pos, evt) => {
@@ -300,25 +304,31 @@ const GESTURES = {
 		}
 	},
 
-	zone: {
+	/*
+	C-d (H19.32; D2) -- THE SHARED BOX GESTURE: a press opens a preview rect on the grid of the kind its row places, and the
+	release's meaning is the opening row's own (`box.releases`) -- a zone over it, from the zones plugin's row.
+	*/
+	box: {
 		commit: (i, ctx, pos, evt) => {
 			ctx.rect.remove();
-			const box = resolveBox(ctx.p1, snapZone(pos));
-			i.act(i.decide('zone', evt, { area: box.w > 0 && box.h > 0 }), box);
+			const box = resolveBox(ctx.p1, snapIn(ctx.place, pos));
+			i.act(i.decide(ctx.releases, evt, { area: box.w > 0 && box.h > 0 }), box);
 		},
 		cancel: (i, ctx) => ctx.rect.remove(),
 		update: (i, pos) => {
-			const box = resolveBox(i.ctx.p1, snapZone(pos));
+			const box = resolveBox(i.ctx.p1, snapIn(i.ctx.place, pos));
 			i.ctx.rect.update(box);
 			i.readout.setBox(box);
 		},
-		start: (i, hit, pos) => {
-			const p1 = snapZone(pos);
-			const ctx = { p1, rect: previewRect(i.overlay, 'zone-rect preview') };
+		start: (i, hit, pos, evt, rule) => {
+			const place = i.places.get(rule.box.place);
+			const p1 = snapIn(place, pos);
+			const ctx = { p1, place, releases: rule.id, rect: previewRect(i.overlay, rule.box.preview) };
 			ctx.rect.update(resolveBox(p1, p1));
 			return ctx;
 		}
 	},
+
 
 	marquee: {
 		commit: (i, ctx, pos, evt) => {
@@ -365,9 +375,9 @@ export class Input {
 	`help` arrives the same way; main.js already had that element, and resolving it twice meant two
 	owners of one node.
 	*/
-	constructor({ svg, model, history, selection, renderer, labels, readout, tools, host, help, snap, now, plugins = [], runRules = [], places = new Map() }) {
-		// C-c: the kinds placed on the grid, and how -- the canvas parts' (snap.js placesOf)
-		this.places = places;
+	constructor({ svg, model, history, selection, renderer, labels, readout, tools, host, help, snap, now, plugins = [], runRules = [], parts = [] }) {
+		// C-c: the kinds placed on the grid, and how -- the canvas parts' (snap.js placesOf); C-d: their press rows and handles, below
+		this.places = placesOf(parts);
 		this.svg = svg;
 		/*
 		The route hook -- how the incubating network plugin (ruled 2026-09-28) sees a finished link drag
@@ -398,9 +408,12 @@ export class Input {
 			addStop: (step) => this.addStop(step),
 			// each selected entity as the model holds it, with its kind (a plugin reads the fields it owns -- the network, transit)
 			selected: () => this.selection.list().map((id) => { const e = this.model.get(kindOf(id), id); return { ...(e ?? {}), id, kind: kindOf(id) }; }),
+			// C-d: make an entity of a kind -- `make(model)` mints it -- commit its creation, and select it
+			create: (kind, make) => { const e = make(this.model); this.history.commit(commands.createEntity(kind, e)); this.selection.set([e.id]); },
 		};
 		// the pointer's tables on the same engine (stage 4): which gesture a press starts, a double click, a key release
-		this.pressRules = composeRules({ owner: 'product', rules: RECOGNIZE });
+		// C-d (H19.32): the product's press rows and each canvas part's -- a plugin's rows over the shared gestures (D2)
+		this.pressRules = composeRules({ owner: 'product', rules: RECOGNIZE }, ...parts.map((p) => ({ owner: p.owner, rules: p.presses ?? [] })));
 		this.doubleRules = composeRules({ owner: 'product', rules: DOUBLE_CLICKS });
 		this.releaseRules = composeRules({ owner: 'product', rules: KEY_RELEASES });
 		// K5: run mode's rows come from the composition root (app/src/run-mode.js via main.js); a composition without the
@@ -408,8 +421,19 @@ export class Input {
 		this.runRules = composeRules({ owner: 'product', rules: runRules });
 		// what each gesture MEANS when it ends, or when a press becomes a drag (stage 5, app/src/releases.js)
 		this.meaningRules = Object.fromEntries(Object.entries({ link: LINK_RELEASES, marquee: MARQUEE_RELEASES, ctrlClick: CTRL_CLICKS,
-			replug: REPLUG_RELEASES, zone: ZONE_RELEASES, pressDrag: PRESS_DRAGS, cloneDrag: CLONE_DRAGS })
+			replug: REPLUG_RELEASES, pressDrag: PRESS_DRAGS, cloneDrag: CLONE_DRAGS })
 			.map(([name, rules]) => [name, composeRules({ owner: 'product', rules })]));
+		// C-d: a plugin row opening a shared gesture brings what its release means, resolved under the row's own id
+		for (const p of parts) for (const row of p.presses ?? []) {
+			const releases = row.box?.releases;
+			if (releases) this.meaningRules[row.id] = composeRules({ owner: p.owner, rules: releases });
+		}
+		// C-d: the handles a lone selected entity shows, by kind, from the canvas parts
+		this.handles = new Map();
+		for (const p of parts) for (const h of p.handles ?? []) {
+			if (this.handles.has(h.kind)) throw new Error(`Input: ${h.kind}'s handles are brought by ${this.handles.get(h.kind).owner} and by ${p.owner}`);
+			this.handles.set(h.kind, { ...h, owner: p.owner });
+		}
 		this.model = model;
 		this.history = history;
 		this.selection = selection;
@@ -439,7 +463,7 @@ export class Input {
 		this.overlay = layerOf(svg, 'overlay');
 		// H6.3 — transient feedback is overlay.js's: hovered, armed, the datum marker and the
 		// crosshair moved with it. Input keeps only what a GESTURE needs (mode, ctx, and the input state).
-		this.overlayUi = new Overlay({ svg, model, selection, renderer, snap });
+		this.overlayUi = new Overlay({ svg, model, selection, renderer, snap, handles: () => this.handles });   // C-d: the kinds' handles
 		this.mode = null; // null | pending | clone-pending | move | clone | link | zone | marquee | resize
 		this.ctx = {};
 
@@ -460,7 +484,7 @@ export class Input {
 		});
 		model.onChange((action, kind, entity) => {
 			// zone resize handles + link endpoint handles track their entity's geometry
-			if (kind === 'zone' || kind === 'link' || action === 'load') this.overlayUi.handles();
+			if (this.handles.has(kind) || kind === 'link' || action === 'load') this.overlayUi.handles();   // C-d: a kind with handles
 			// a gesture must not survive a document swap (chain mode has no held
 			// button, so the header menu is reachable mid-gesture)
 			if (action === 'load' && this.mode) this.cancelDrag();
@@ -557,7 +581,7 @@ export class Input {
 		if (rule.run) return this[rule.run](hit, evt, pos);
 		const handler = GESTURES[rule.gesture];
 		this.mode = rule.gesture;
-		this.ctx = handler.start(this, hit, pos, evt) || {};
+		this.ctx = handler.start(this, hit, pos, evt, rule) || {};   // C-d: the row too -- a shared gesture reads what its row declares
 	}
 
 
@@ -1108,7 +1132,9 @@ export class Input {
 	}
 
 	act(rule, data) {
-		if (rule) this[rule.run](data);
+		if (!rule) return;
+		if (typeof rule.run === 'function') rule.run(this.pluginHost, data);   // a plugin's row acts through the host (C-d)
+		else this[rule.run](data);
 	}
 
 	// ---- the actions a release names. Each does what it is named; the row decided that it applies. ----
@@ -1210,12 +1236,6 @@ export class Input {
 
 	replugTo({ ctx, newSrc, newDst }) {
 		this.history.commit(commands.replugLink(ctx.linkId, newSrc, newDst));
-	}
-
-	createZoneFrom(box) {
-		const zone = makeZone(this.model, box);
-		this.history.commit(commands.createEntity('zone', zone));
-		this.selection.set([zone.id]);
 	}
 
 	chainFrom(node, pos) {

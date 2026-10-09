@@ -13,6 +13,7 @@ every hit, button, modifier set, held tool and read-only state the engine must s
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { RECOGNIZE, DOUBLE_CLICKS } from '../app/src/recognize.js';
+import { PRODUCT_CANVAS } from '../product/canvas.mjs';
 import { KEY_RELEASES } from '../app/src/keymap.js';
 import { RUN_PRESSES } from '../app/src/run-mode.js';
 import { composeRules, resolveInput, overlapsIn } from '../kernel/input-rules.mjs';
@@ -43,7 +44,8 @@ function oldResolve(hit, evt, ctx) {
 	}
 	return null;
 }
-const outcome = (r) => (r ? (r.gesture ? `gesture:${r.gesture}` : `run:${r.run}`) : 'nothing');
+// RESTATED at C-d step one (H19.32): the zone's draw is the zones plugin's row over the shared box gesture, its release the row's own: a box placed for zones is what the old table called the zone gesture
+const outcome = (r) => (r ? (r.gesture ? `gesture:${r.gesture === 'box' ? r.box.place : r.gesture}` : `run:${r.run}`) : 'nothing');
 
 // ---- every press worth distinguishing ----
 const HITS = [{ kind: 'canvas', id: null }, { kind: 'node', id: 'node-000001' }, { kind: 'waypoint', id: 'node-e00001' },
@@ -53,7 +55,8 @@ for (const shiftKey of [false, true]) for (const ctrlKey of [false, true]) for (
 const PRESSES = HITS.flatMap((on) => [0, 1, 2].flatMap((button) => MODSETS.map((m) => ({ type: 'down', button, on, ...m }))));
 const SITUATIONS = [{ tool: false }, { tool: true }];
 const GUARDS = [{ readOnly: false }, { readOnly: true }];
-const PRESS_TABLE = composeRules({ owner: 'product', rules: RECOGNIZE });
+// the press rows as the page composes them: the product's and each canvas part's (C-d)
+const PRESS_TABLE = composeRules({ owner: 'product', rules: RECOGNIZE }, ...PRODUCT_CANVAS.map((p) => ({ owner: p.owner, rules: p.presses ?? [] })));
 
 /*
 ONE STATE IS UNREACHABLE, and is left out rather than given rows: a tool held on a locked client. Locking releases a held

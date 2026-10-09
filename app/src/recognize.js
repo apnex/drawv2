@@ -77,7 +77,7 @@ export const RECOGNIZE = [
 	{ id: 'replug', input: ['left on lhandle'], context: 'a link selected',    mutates: true,  on: (e) => L(e) && e.on.kind === 'lhandle', when: free,                  gesture: 'replug' },
 	{ id: 'l-clone', input: ['Ctrl+left on node|zone|link'],   mutates: true,  on: (e) => L(e) && e.ctrlKey && entity(e.on), when: free,                gesture: 'clone-pending' },
 	{ id: 'link', input: ['left on node|waypoint'],      mutates: true,  on: (e) => L(e) && (e.on.kind === 'waypoint' || (e.on.kind === 'node' && !e.ctrlKey)), when: free, gesture: 'link' },
-	{ id: 'zone-draw', input: ['Shift+left on canvas'], mutates: true,  on: (e) => L(e) && e.on.kind === 'canvas' && e.shiftKey, when: free,     gesture: 'zone' },
+	// C-d (H19.32): the zone's draw is the zones plugin's row, over the shared box gesture (zones/zone-gestures.mjs)
 
 	// the non-mutating tail. These are what a Server-Locked client is left with, and SCOPE decision 5
 	// promises exactly them: "selection, the data view, and the readout still work".

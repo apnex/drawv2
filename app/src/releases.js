@@ -28,7 +28,7 @@ THE FACTS each gesture hands over -- only what a row reads:
   ctrl-click  exists     the entity pressed still exists
   replug    retargets    released on a node other than the fixed end and the end it left
             admitted     the pair has room (B72)
-  zone      area         the box has width and height
+  box       area         the box has width and height (the opening row's own releases, C-d)
   drag-start  onLink, onWaypoint, leftPress    what the press was on, and with which button
 */
 
@@ -81,9 +81,7 @@ export const REPLUG_RELEASES = [
 ];
 
 // ---- a zone drawn: made when it has area ----
-export const ZONE_RELEASES = [
-	{ id: 'create-zone', mutates: true, on: released, when: (r) => r.area, run: 'createZoneFrom' },
-];
+// C-d (H19.32): what a released box means is the row's that opened it -- the zones plugin's makes a zone (zones/zone-gestures.mjs)
 
 /*
 ---- a press becoming a drag ----

@@ -691,7 +691,7 @@ test('B44: no builder emits a `before` — the wire drops it and the server deri
 		h.model.put('link', link);
 
 		const built = [
-			commands.resizeZone(z.id, { x: 0, y: 0, w: 9, h: 9 }),
+			commands.resizeZoneStep(h.model, [z.id], 1, 0),   // RESTATED at C-d: resizeZone is private; its step builds it
 			commands.resizeNodeSpan(a.id, { cols: 2, rows: 3 }),
 			commands.replugLink(link.id, a.id, b.id),
 			commands.retypeNode(a.id, 'host'),

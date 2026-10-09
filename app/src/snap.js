@@ -33,12 +33,6 @@ export function snapNode(pos) {
 	};
 }
 
-export function snapZone(pos) {
-	return {
-		x: clamped(LAYOUTS.zone, pos.x, -ZONE_EXT.x, ZONE_EXT.x),
-		y: clamped(LAYOUTS.zone, pos.y, -ZONE_EXT.y, ZONE_EXT.y)
-	};
-}
 
 
 export function resolveBox(p1, p2) {
@@ -71,7 +65,6 @@ because the duty is already snap.js's — "constrain a position or delta to the 
 — and A3 says a concern earns a boundary by being one concern, not by being noticed.
 ─────────────────────────────────────────────────────────────────────────────────────────────────*/
 
-const MIN_ZONE = GAP;   // a zone is never smaller than one cell
 
 // axis lock (AutoCAD ORTHO): collapse the smaller component so a drag runs true
 export function orthoDelta(delta, ortho) {
@@ -144,42 +137,4 @@ export function snapIn(place, pos) {
 	};
 }
 
-/*
-The four corners of a zone, named the way the handles are. B36 — this was written out twice with the
-coordinates transposed: overlay.js placed handles at the ACTUAL corners, and input.js listed, for
-each handle, the OPPOSITE corner to pin during a resize. Same four expressions, related by a mapping
-that existed only in the reader's head.
 
-Splitting it into a corner table plus an explicit OPPOSITE makes that relationship the thing being
-stated, instead of something you recover by comparing two literals.
-*/
-export const zoneCorners = (z) => ({
-	nw: { x: z.x,       y: z.y },
-	ne: { x: z.x + z.w, y: z.y },
-	sw: { x: z.x,       y: z.y + z.h },
-	se: { x: z.x + z.w, y: z.y + z.h },
-});
-
-// grab a handle, and the corner diagonally across from it is the one that stays put
-export const OPPOSITE_CORNER = { nw: 'se', ne: 'sw', sw: 'ne', se: 'nw' };
-
-/*
-A zone resize box from the dragged corner and the FIXED one. Enforces a one-cell minimum by pushing
-INWARD when the fixed corner sits on an edge — a blind push there would be clamped straight back to
-zero width.
-*/
-export function resizeBox(pos, fixedCorner) {
-	const corner = snapZone(pos);
-	if (Math.abs(corner.x - fixedCorner.x) < MIN_ZONE) {
-		const dir = corner.x >= fixedCorner.x ? 1 : -1;
-		corner.x = fixedCorner.x + dir * MIN_ZONE;
-		if (corner.x < -ZONE_EXT.x || corner.x > ZONE_EXT.x) corner.x = fixedCorner.x - dir * MIN_ZONE;
-	}
-	if (Math.abs(corner.y - fixedCorner.y) < MIN_ZONE) {
-		const dir = corner.y >= fixedCorner.y ? 1 : -1;
-		corner.y = fixedCorner.y + dir * MIN_ZONE;
-		if (corner.y < -ZONE_EXT.y || corner.y > ZONE_EXT.y) corner.y = fixedCorner.y - dir * MIN_ZONE;
-	}
-	const box = resolveBox(fixedCorner, corner);
-	return { x: box.x, y: box.y, w: box.w, h: box.h };
-}

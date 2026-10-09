@@ -12,7 +12,10 @@ engine's guard and nothing else's), and test 6 (B245 -- a cancelled drag keeps a
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { LINK_RELEASES, MARQUEE_RELEASES, CTRL_CLICKS, REPLUG_RELEASES, ZONE_RELEASES, PRESS_DRAGS, CLONE_DRAGS } from '../app/src/releases.js';
+import { LINK_RELEASES, MARQUEE_RELEASES, CTRL_CLICKS, REPLUG_RELEASES, PRESS_DRAGS, CLONE_DRAGS } from '../app/src/releases.js';
+import { ZONE_PRESSES } from '../zones/zone-gestures.mjs';
+// RESTATED at C-d step one (H19.32): the zone's draw is the zones plugin's row over the shared box gesture, its release the row's own
+const ZONE_RELEASES = ZONE_PRESSES.find((r) => r.id === 'zone-draw').box.releases;
 import { composeRules, resolveInput, overlapsIn } from '../kernel/input-rules.mjs';
 import { makeInput, key, pointer, seedNodes } from './fixtures/client-harness.mjs';
 import { makeWaypoint } from '../devices/make-node.mjs';   // O-e1: the devices plugin's factories
@@ -89,7 +92,7 @@ test('a Ctrl+click toggles what it pressed while that still exists; a replug ret
 	assert.equal(choose(table(CTRL_CLICKS), { exists: true }), 'toggleCtrlClicked');
 	assert.equal(choose(table(CTRL_CLICKS), { exists: false }), 'nothing');
 	for (const r of combos(['retargets', 'admitted'])) assert.equal(choose(table(REPLUG_RELEASES), r), r.retargets && r.admitted ? 'replugTo' : 'nothing');
-	assert.equal(choose(table(ZONE_RELEASES), { area: true }), 'createZoneFrom');
+	assert.equal(resolveInput(table(ZONE_RELEASES), UP, { area: true }, { readOnly: false }).rule?.id, 'create-zone', 'a box with an area makes a zone (the plugin row, by id)');
 	assert.equal(choose(table(ZONE_RELEASES), { area: false }), 'nothing');
 });
 
@@ -117,7 +120,8 @@ by this stage; the rows decide WHETHER a drag becomes one, which is the meaning 
 */
 test('acceptance 3: every release a table decides names an action that exists, and the actions read no situation', () => {
 	for (const r of [PRESS_DRAGS, CLONE_DRAGS].flat()) assert.equal(typeof method(r.run), 'string');
-	const rows = [LINK_RELEASES, MARQUEE_RELEASES, CTRL_CLICKS, REPLUG_RELEASES, ZONE_RELEASES].flat();
+	// the zone's release is the plugin's row, acting through the host -- not one of Input's methods (C-d)
+	const rows = [LINK_RELEASES, MARQUEE_RELEASES, CTRL_CLICKS, REPLUG_RELEASES].flat();
 	for (const r of rows) {
 		const body = method(r.run);
 		assert.doesNotMatch(body, /\bevt\b|shiftKey|ctrlKey|altKey|\.trigger\b|selection\.has|state\.chained|readOnly/, `${r.run} decides nothing -- its row did`);
@@ -126,7 +130,7 @@ test('acceptance 3: every release a table decides names an action that exists, a
 
 test('acceptance 3: the link, marquee, Ctrl+click, replug and zone releases commit nothing and select nothing themselves', () => {
 	const slots = code(INPUT_SRC.slice(INPUT_SRC.indexOf('const GESTURES = {'), INPUT_SRC.indexOf('\n};', INPUT_SRC.indexOf('const GESTURES = {'))));
-	for (const name of ['link', "'clone-pending'", 'replug', 'zone', 'marquee']) {
+	for (const name of ['link', "'clone-pending'", 'replug', 'box', 'marquee']) {   // the zone's draw is the shared box gesture (C-d)
 		const at = slots.indexOf(`\t${name}: {`);
 		const commit = slots.slice(slots.indexOf('commit:', at), slots.indexOf('cancel:', at) > 0 && slots.indexOf('cancel:', at) < slots.indexOf('\t},', at) ? slots.indexOf('cancel:', at) : slots.indexOf('update:', at));
 		assert.match(commit, /i\.decide\(/, `${name}: its release asks the engine`);

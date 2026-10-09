@@ -152,7 +152,13 @@ export function ungroupAll(model, groupIds) {
 // rules stated at the top of THIS file. A builder cannot disagree with its own module.
 
 // drag a zone corner: the committed geometry (the live preview already wrote it; history owns the edit)
-export function resizeZone(id, after) {
+// C-d (H19.32): an entity's fields set to what a handle drag made of them -- the shared handle gesture's one command, its label
+// the handles' (a zone's corners: 'resize')
+export function setFields(label, kind, id, after) {
+	return { label, entries: [{ op: 'set', kind, id, after }] };
+}
+
+function resizeZone(id, after) {   // C-d: the zone's resize step (Shift+arrows) builds it; the handle drag sets the box itself
 	return { label: 'resize', entries: [{ op: 'set', kind: 'zone', id, after: { x: after.x, y: after.y, w: after.w, h: after.h } }] };
 }
 

@@ -41,7 +41,6 @@ import { Input } from '../../app/src/input.js';
 import { RUN_PRESSES } from '../../app/src/run-mode.js';
 import { Capture } from '../../app/src/capture.js';
 import { picksOf } from '../../app/src/pick.js';
-import { placesOf } from '../../app/src/snap.js';
 import { PRODUCT_CANVAS } from '../../product/canvas.mjs';
 import { networkInput } from '../../network/keys.mjs';
 import { createNetworkSession } from '../../network/session.mjs';
@@ -163,7 +162,7 @@ A real Model, a real Changes, a real Selection, a real Input. The collaborators 
 stubbed, because nothing here asserts on drawing — `renderer` and `labels` are recorded so a test
 can show a gesture did not, say, open the label editor, without asserting on pixels.
 */
-export function makeInput({ readOnly = false, bare = false, host: hostOverride = null, routeHook = null, plugins = null } = {}) {
+export function makeInput({ readOnly = false, bare = false, host: hostOverride = null, routeHook = null, plugins = null, parts = PRODUCT_CANVAS } = {}) {   // parts: the canvas parts, the page's by default (C-d)
 	const restore = installDom();
 
 	// the kinds the product page composes (S-b, G1), and its network: a Model holding links draws with one (V-e, J2) -- the
@@ -253,7 +252,7 @@ export function makeInput({ readOnly = false, bare = false, host: hostOverride =
 	let input;
 	try {
 		input = bare
-			? new Input({ svg, model, history, selection, renderer, labels, host, help, snap, places: placesOf(PRODUCT_CANVAS) })   // places are composition, not a collaborator (C-c)
+			? new Input({ svg, model, history, selection, renderer, labels, host, help, snap, parts })   // places are composition, not a collaborator (C-c)
 			// run mode's rows as the production root hands them in (K5); `bare` omits them as it omits every collaborator
 			: new Input({ svg, model, history, selection, renderer, labels, readout, tools, dataview, host, help, snap, runRules: RUN_PRESSES,
 				/*
@@ -264,11 +263,11 @@ export function makeInput({ readOnly = false, bare = false, host: hostOverride =
 				`routeHook` stays: a STUB judge, for tests of the plugin seam itself; `plugins`, a composition given whole.
 				*/
 				plugins: plugins ?? [networkInput(routeHook ?? ((drag) => session.judge(drag, model.all('link'), model).verdict), session)],
-				places: placesOf(PRODUCT_CANVAS) });   // C-c: the placed kinds, as the page composes them
+				parts });   // C-c: the placed kinds, as the page composes them
 	} catch (e) { restore(); throw e; }   // a refused composition must not leave the stub DOM installed
 	if (readOnly) input.setReadOnly(true);
 	// L0: tests drive the page's events through capture, as a browser does -- Input itself takes only input events
-	const capture = new Capture({ svg, host, sink: input, picks: picksOf(PRODUCT_CANVAS) });   // C-b: the plugins' picks, as the page composes them
+	const capture = new Capture({ svg, host, sink: input, picks: picksOf(parts) });   // C-b: the plugins' picks, as the page composes them
 
 	return {
 		input, capture, model, history, selection, svg, commits, calls, restore, renderer, labels, tools, help, snap,

@@ -1279,6 +1279,8 @@ AMENDED 2026-10-09: C-b done -- what a press lands on is answered by the plugin 
 Next H19.31, C-c, placing.
 AMENDED 2026-10-09: C-c done -- which kinds are placed on the grid, and how, is declared by the parts that bring them; moving, duplicating, cloning, nudging and clamping read the declarations.\
 Next H19.32, C-d, the gestures as rows for shared gestures.
+AMENDED 2026-10-09: C-d's first step done -- the zone's draw and resize are the zones plugin's rows over the canvas's shared box and handle gestures.\
+Next: the link's handles and replug, the text box, the device's stamping.
 
 **Exit:** nothing stored needs a migration and none is kept; production's sync holds the network under the GR6 battery; the core holds no kind.
 

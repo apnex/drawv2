@@ -52,7 +52,6 @@ export const ACTION_LABELS = {
 	'gesture:pending': 'select; drag to move',
 	'gesture:resize': 'resize the zone',
 	'gesture:replug': 're-plug the link onto another node',
-	'gesture:zone': 'draw a zone',
 	'gesture:marquee': 'marquee select, with every link whose ends are both inside',
 	deleteUnderCursor: 'delete what is under the pointer',
 	editUnderPointer: 'edit the label under the pointer',

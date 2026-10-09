@@ -22,7 +22,7 @@ not acquire an opinion about mutation, which is precisely the coupling that prod
 
 import { pathOf } from '../../network/network-queries.mjs';   // the network's questions over a Model (Q-a)
 import { el } from './painter.js';
-import { CANVAS, GAP, NODE_R, dist, zoneCorners } from './snap.js';
+import { CANVAS, GAP, NODE_R, dist } from './snap.js';
 import { inFootprint } from './pick.js';
 import { kindOf } from '../../model/model.mjs';
 import { isTypedEntity } from '../../devices/device-shapes.mjs';   // whether a device is composed: the devices plugin's (O-e1)
@@ -30,7 +30,8 @@ import { isTypedEntity } from '../../devices/device-shapes.mjs';   // whether a 
 const HANDLE = 12;
 
 export class Overlay {
-	constructor({ svg, model, selection, renderer, snap }) {
+	constructor({ svg, model, selection, renderer, snap, handles = () => new Map() }) {
+		this.handleSpecs = handles;   // C-d: the kinds' handles, from the canvas parts (by Input)
 		this.svg = svg;
 		this.model = model;
 		this.selection = selection;
@@ -156,10 +157,11 @@ export class Overlay {
 			return;
 		}
 
-		if (kindOf(id) !== 'zone') return;
-		const z = this.model.get('zone', id);
-		if (!z) return;
-		this.#place(zoneCorners(z), 2, 'corner');
+		// C-d: a kind whose part declares handles -- a zone's corners, the zones plugin's
+		const spec = this.handleSpecs().get(kindOf(id));
+		const entity = spec && this.model.get(kindOf(id), id);
+		if (!entity) return;
+		this.#place(spec.points(entity), spec.rx, spec.key);
 	}
 
 	// one rect per named point, tagged with the dataset key the recognizer reads back

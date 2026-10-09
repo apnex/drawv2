@@ -10,6 +10,7 @@ the K8 DOM corpus holds that.
 
 import { STD, L_STD } from '../kernel/spec.mjs';
 import { ZONE_EXT } from './zone-extent.mjs';
+import { ZONE_PRESSES, ZONE_HANDLE_SPECS } from './zone-gestures.mjs';
 
 const ZONE_R = L_STD.zone.r;   // the zone's corner radius (14)
 
@@ -43,5 +44,6 @@ const ZONE_PAINTER = {
 // C-c: a zone is placed on the half-offset grid, within its extent, its size its own box
 const ZONE_PLACE = { kind: 'zone', layout: 'zone', ext: ZONE_EXT, size: (zone) => ({ w: zone.w, h: zone.h }) };
 
-// the zones plugin's canvas part: what it brings to the page (C-a: its painter; C-b its pick, on the painter; C-c its place)
-export const ZONES_CANVAS = { owner: 'zones', painters: [ZONE_PAINTER], places: [ZONE_PLACE] };
+// the zones plugin's canvas part: what it brings to the page (C-a: its painter; C-b its pick, on the painter; C-c its place;
+// C-d its press row over the shared box gesture, and its handles)
+export const ZONES_CANVAS = { owner: 'zones', painters: [ZONE_PAINTER], places: [ZONE_PLACE], presses: ZONE_PRESSES, handles: ZONE_HANDLE_SPECS };
