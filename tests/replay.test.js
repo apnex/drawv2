@@ -35,6 +35,7 @@ commit lands as a SECOND transaction in the log. The document converges; the his
 user action can therefore cost two undos, and two entries against `LOG_MAX`. That is a real cost and
 it is not addressed here.
 */
+import { reshapeCommand } from './fixtures/plugin-edits.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeNode } from '../devices/make-node.mjs';   // O-e1: the devices plugin's factories
@@ -126,7 +127,7 @@ test('F5: replaying a toggle does not toggle it BACK', () => {
 test('F5: replaying a reshape does not flip the shape back', () => {
 	// same hazard as the toggle above: the op must carry the resulting shape, not "the other one"
 	const m = doc();
-	const ops = wire(commands.reshapeNodes(m, [NODE]));
+	const ops = wire(reshapeCommand(m, [NODE]));   // RESTATED at C-e step six: the devices plugin's `s`, run as its row runs it
 	applyOps(m, ops);
 	const shape = m.get('node', NODE).shape;
 	applyOps(m, ops);

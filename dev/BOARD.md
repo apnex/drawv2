@@ -1302,6 +1302,8 @@ AMENDED 2026-10-09: C-e's fourth step done -- the zone keys are the zones plugin
 Next: the groups plugin's keys and commands, then the devices', the network's and the simulation's.
 AMENDED 2026-10-09: C-e's fifth step done -- the group keys are the groups plugin's, and a kind's rank in a delete its part's.\
 Next: the devices plugin's keys and commands, then the network's (with the clone followers) and the simulation's.
+AMENDED 2026-10-09: C-e's sixth step done -- `s` is the devices plugin's key.\
+Next: the network's keys and commands, with the clone followers, then the simulation's.
 
 **Exit:** nothing stored needs a migration and none is kept; production's sync holds the network under the GR6 battery; the core holds no kind.
 

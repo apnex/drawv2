@@ -24,7 +24,6 @@ export const ACTION_LABELS = {
 	onDatumClear: 'clear the datum',
 	onWaypointKey: 'drop a waypoint; while drawing a link, pin a bend',
 	onTextTool: 'arm the text tool: then drag a text box, or click for one cell',
-	onReshape: 'reshape the selected nodes',
 	onHandDigit: 'pick up a node type to stamp; while drawing a link, place one and chain on',
 	onPipette: 'pick up the type of the node under the pointer',
 	onStampKey: 'stamp the held type at the pointer',

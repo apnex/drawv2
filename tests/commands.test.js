@@ -11,13 +11,16 @@
 // RESTATED at C-e step five (H19.33; D5): `createGroup` and `ungroupAll` left the builders -- the groups plugin's keys make the
 // group and hand it to `putEntity`, and name the groups for `deleteEntities` -- so these tests hold the generic builders with
 // the edits the plugin makes, and the at-least-two rule through the plugin's own row
+// RESTATED at C-e step six (D5): `reshapeNodes` left the builders -- `s` is the devices plugin's row -- so the reshape is run as
+// the row runs it (tests/fixtures/plugin-edits.mjs)
+import { reshapeCommand as reshapeNodes } from './fixtures/plugin-edits.mjs';
 import { makeGroup } from '../groups/make-group.mjs';
 import { GROUP_KEYS } from '../groups/group-keys.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Model } from './fixtures/composed.mjs';   // the network's kinds, the link among them (S-e)
 import { createEntity, moveEntities, deleteSelection, putEntity, deleteEntities,
-	setContentValue, reshapeNodes, renameEntity } from '../app/src/commands.js';
+	setContentValue, renameEntity } from '../app/src/commands.js';
 import { applyOps } from '../model/ops.mjs';
 import { Changes } from '../app/src/changes.js';
 import { plan as planComposed } from './fixtures/composed.mjs';   // the planner production runs (V-d)

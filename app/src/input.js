@@ -405,6 +405,8 @@ export class Input {
 			ask: (question) => question(this.model),
 			put: (label, kind, make) => this.history.commit(commands.putEntity(label, kind, make(this.model))),
 			remove: (label, refs) => this.history.commit(commands.deleteEntities(label, this.model, refs)),
+			// C-e (D5): several entities' fields set, as one edit -- the devices plugin's reshape
+			setAll: (label, sets) => this.history.commit(commands.setFieldsAll(label, sets)),
 		};
 		// the pointer's tables on the same engine (stage 4): which gesture a press starts, a double click, a key release
 		// C-d (H19.32): the product's press rows and each canvas part's -- a plugin's rows over the shared gestures (D2)
@@ -1489,11 +1491,6 @@ export class Input {
 	// A1 — tap to ARM/disarm the text tool. A toggle, not a held key; auto-repeat ignored.
 	onTextTool() {
 		this.tools.setTextTool(!this.tools.textTool);
-	}
-
-	onReshape() {
-		const cmd = commands.reshapeNodes(this.model, this.selection.list());
-		if (cmd.entries.length) this.history.commit(cmd);
 	}
 
 	// ---- the stamp hand, and mid-drag chaining. ----

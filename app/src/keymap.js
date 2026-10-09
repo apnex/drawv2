@@ -98,7 +98,7 @@ export const KEYMAP = [
 	// at all any more: it is the network plugin's, and production composes none (dev/RULES.md section 11).
 	{ id: 'waypoint', input: ['w'],  prevent: false, mutates: true, duringGesture: true, on: (e) => is(e, 'w') && plain(e), when: (s) => !linkStepOnNode(s), run: 'onWaypointKey' },
 	{ id: 'text-tool', input: ['t'], mutates: true, on: (e) => is(e, 't') && plain(e) && !e.repeat,         run: 'onTextTool' },
-	{ id: 'reshape', input: ['s'],   mutates: true, on: (e) => is(e, 's') && plain(e),                      run: 'onReshape' },
+	// C-e (H19.33): `s` -- reshape the selected nodes -- is the devices plugin's key row (devices/device-keys.mjs)
 		// B147: meaningful mid-drag now -- a digit places that node and carries the link run through
 	// it, which is the same argument `w` already makes for a bend
 	{ id: 'hand', input: ['1-6'],      mutates: true, duringGesture: true, on: (e) => /^[1-6]$/.test(e.key) && plain(e), run: 'onHandDigit' },

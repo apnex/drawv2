@@ -111,16 +111,6 @@ export function setContentValue(model, nodeId, idx, value) {
 	return { label: 'edit', entries: [{ op: 'set', kind: 'node', id: nodeId, after: { content: after } }] };
 }
 
-// toggle each selected node's frame shape (circle <-> square) — one undoable command. Non-node ids and
-// missing nodes are skipped (model.get returns undefined).
-export function reshapeNodes(model, ids) {
-	const entries = ids.map((id) => (isTypedEntity('node', model.get('node', id)) ? model.get('node', id) : undefined)).filter(Boolean).map((n) => {
-		const before = n.shape || 'circle';
-		return { op: 'set', kind: 'node', id: n.id, after: { shape: before === 'square' ? 'circle' : 'square' } };
-	});
-	return { label: 'reshape', entries };
-}
-
 export function renameEntity(kind, id, before, after) {
 	return {
 		label: 'rename',
@@ -148,6 +138,11 @@ export function cloneEntities(clones) {
 // C-e (D5): one entity put, under a plugin's label -- a group the groups plugin made
 export function putEntity(label, kind, entity) {
 	return { label, entries: [{ op: 'put', kind, entity: clone(kind, entity) }] };
+}
+
+// C-e (D5): several entities' fields set, as one edit under a plugin's label -- the devices plugin's reshape
+export function setFieldsAll(label, sets) {
+	return { label, entries: sets.map((x) => ({ op: 'set', kind: x.kind, id: x.id, after: x.after })) };
 }
 
 // C-e (D5): entities deleted, under a plugin's label -- each that still exists, as the model holds it

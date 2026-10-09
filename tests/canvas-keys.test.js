@@ -143,3 +143,39 @@ test('C-e: the canvas holds no group key, group builder or delete ranking of its
 	assert.doesNotMatch(code('app/src/input.js'), /onGroupKey|onUngroupKey|groupOf\(/);
 	assert.doesNotMatch(code('app/src/keymap.js'), /id: 'group'|id: 'ungroup'/);
 });
+
+// ---- C-e, step six (D5): the devices plugin's key -- s reshapes the selected devices ----
+
+test('C-e: s flips each selected device between circle and square, labelled "reshape"; a waypoint and a link untouched -- the state under test', async () => {
+	const { makeLink } = await import('../network/link-queries.mjs');
+	const h = makeInput();
+	try {
+		const [a, b] = seedNodes(h.model, [[0, 0], [120, 0]]);
+		h.model.set('node', b.id, { shape: 'square' });
+		const w = makeWaypoint(h.model, { x: 240, y: 240 }); h.model.put('node', w);
+		const l = makeLink(h.model, a.id, b.id); h.model.put('link', l);
+		h.selection.set([a.id, b.id, w.id, l.id]);
+		h.capture.onKeyDown(key('s'));
+		assert.deepEqual([h.model.get('node', a.id).shape, h.model.get('node', b.id).shape], ['square', 'circle']);
+		assert.equal(h.model.get('node', w.id).shape, undefined, 'a waypoint has no shape to flip');
+		assert.equal(h.commits.at(-1).label, 'reshape');
+		assert.deepEqual(h.commits.at(-1).ops.map((o) => o.id).sort(), [a.id, b.id].sort());
+	} finally { h.restore(); }
+});
+
+test('C-e: without the devices plugin\'s part s reshapes nothing and the help offers no reshape key', () => {
+	const h = makeInput({ parts: PRODUCT_CANVAS.filter((p) => p.owner !== 'devices') });
+	try {
+		const [a] = seedNodes(h.model, [[0, 0]]);
+		h.selection.set([a.id]);
+		h.capture.onKeyDown(key('s'));
+		assert.equal(h.model.get('node', a.id).shape, 'circle');
+		assert.equal(keyLines(h).some((l) => l.inputs[0] === 's'), false);
+	} finally { h.restore(); }
+});
+
+test('C-e: the canvas holds no reshape key or builder of its own', () => {
+	assert.doesNotMatch(code('app/src/commands.js'), /reshapeNodes/);
+	assert.doesNotMatch(code('app/src/input.js'), /onReshape\b/);
+	assert.doesNotMatch(code('app/src/keymap.js'), /id: 'reshape'/);
+});

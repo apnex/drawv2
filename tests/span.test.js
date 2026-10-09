@@ -10,7 +10,9 @@ import { bboxOf, cellOf } from '../kernel/geometry.mjs';
 import { STD, L_STD } from '../kernel/spec.mjs';
 import { docToSchema, schemaToDoc } from '../kernel/adapt.mjs';
 import { validateEntity, validateDoc } from './fixtures/composed.mjs';   // the network's kinds, as the store validates (S-e)
-import { createEntity, setContentValue, reshapeNodes } from '../app/src/commands.js';
+import { createEntity, setContentValue } from '../app/src/commands.js';
+// RESTATED at C-e step six (D5): `s` is the devices plugin's row; the reshape is run as the row runs it
+import { reshapeCommand as reshapeNodes } from './fixtures/plugin-edits.mjs';
 import { controlBarDoc } from './fixtures/control-bar-doc.mjs';
 import { makeNode, makeTextBox } from '../devices/make-node.mjs';   // O-e1: the devices plugin's factories
 import { occupiedAt } from '../devices/occupancy.mjs';   // O-e1: which device or waypoint is on a cell
