@@ -29,7 +29,7 @@ const REGIONS = {
 };
 const blank = { waypoint: null, overWaypoint: false, action: null, input: null, node: null, control: false, entity: false };
 // a `mark` is what a plugin draws for the canvas to select (app/src/pick.js, H17.22 N-c2): any kind, flagged as a mark
-const hitOf = (kind) => (kind === 'canvas' ? { kind, id: null } : kind === 'handle' ? { kind, id: 'se' } : kind === 'lhandle' ? { kind, id: 'src' } : kind === 'mark' ? { kind: 'plugin', id: 'plugin-000001', mark: true } : { kind, id: `${kind}-000001` });
+const hitOf = (kind) => (kind === 'canvas' ? { kind, id: null } : kind === 'handle' ? { kind, id: 'se', handle: true } : kind === 'lhandle' ? { kind, id: 'src', handle: true } : kind === 'mark' ? { kind: 'plugin', id: 'plugin-000001', mark: true } : { kind, id: `${kind}-000001` });
 
 // every event an input names -- a key chord may name several (Arrows), a press one per kind
 export function eventsFor(input) {

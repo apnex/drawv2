@@ -191,3 +191,16 @@ test('C-d: the text box\'s frame shows once the pointer moves -- not at the pres
 		h.input.cancelDrag();
 	} finally { h.restore(); }
 });
+
+// B316 -- C-d step two gave a link end's hit an id, and the Alt+right delete chord, which matched any hit with an id but a corner
+// handle, came to take a press on a link end (it deleted nothing: the id names no entity). A handle's hit is flagged now.
+test('B316: Alt+right on a link\'s end handle or a zone\'s corner starts nothing', async () => {
+	const { resolveInput } = await import('../kernel/input-rules.mjs');
+	const h = makeInput();
+	try {
+		for (const on of [{ kind: 'lhandle', id: 'src', handle: true }, { kind: 'handle', id: 'se', handle: true }]) {
+			const evt = { type: 'down', button: 2, altKey: true, shiftKey: false, ctrlKey: false, metaKey: false, on };
+			assert.equal(resolveInput(h.input.pressRules, evt, h.input.situation(), { readOnly: false }).rule, null, `${on.kind}: no row`);
+		}
+	} finally { h.restore(); }
+});

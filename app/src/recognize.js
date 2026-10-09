@@ -66,7 +66,7 @@ export const RECOGNIZE = [
 	// C-d (H19.32): a held tool's press -- the text box -- is the devices plugin's row over the shared box gesture
 
 	// right button: the delete chord, then clone, then press
-	{ id: 'chord', input: ['Alt+right on node|waypoint|zone|link'],     mutates: true,  on: (e) => R(e) && e.altKey && !!e.on.id && e.on.kind !== 'handle',      run: 'deleteUnderCursor' },
+	{ id: 'chord', input: ['Alt+right on node|waypoint|zone|link'],     mutates: true,  on: (e) => R(e) && e.altKey && !!e.on.id && !e.on.handle,      run: 'deleteUnderCursor' },
 	{ id: 'r-clone', input: ['Ctrl+right on node|waypoint|zone'],   mutates: true,  on: (e) => R(e) && e.ctrlKey && !e.altKey && rightKinds(e.on),           gesture: 'clone-pending' },
 	{ id: 'r-press', input: ['right on node|waypoint|zone'],   mutates: false, on: (e) => R(e) && !e.ctrlKey && !e.altKey && rightKinds(e.on),          gesture: 'pending' },
 

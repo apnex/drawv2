@@ -37,6 +37,8 @@ const OLD = [
 	{ id: 'press',     mutates: false, when: (h, e) => L(e) && selectable(h),                     gesture: 'pending' },
 	{ id: 'marquee',   mutates: false, when: (h, e) => L(e) && h.kind === 'canvas',                gesture: 'marquee' },
 ];
+// a hit as the old table received it: a corner handle as now, a link end with its end and no id, neither flagged
+const oldHit = (h) => (h.kind === 'lhandle' ? { kind: 'lhandle', end: h.id } : h.handle ? { kind: h.kind, id: h.id } : h);
 function oldResolve(hit, evt, ctx) {
 	for (const r of OLD) {
 		if (r.mutates && ctx.readOnly) continue;
@@ -53,7 +55,7 @@ const outcome = (r) => (r ? (r.gesture ? `gesture:${OLD_NAME[r.id] ?? r.gesture}
 
 // ---- every press worth distinguishing ----
 const HITS = [{ kind: 'canvas', id: null }, { kind: 'node', id: 'node-000001' }, { kind: 'waypoint', id: 'node-e00001' },
-	{ kind: 'zone', id: 'zone-000001' }, { kind: 'link', id: 'link-000001' }, { kind: 'handle', id: 'se' }, { kind: 'lhandle', id: 'src' }];   // C-d: a handle's hit carries the handle as its id
+	{ kind: 'zone', id: 'zone-000001' }, { kind: 'link', id: 'link-000001' }, { kind: 'handle', id: 'se', handle: true }, { kind: 'lhandle', id: 'src', handle: true }];   // C-d: a handle's hit carries the handle as its id, flagged
 const MODSETS = [];
 for (const shiftKey of [false, true]) for (const ctrlKey of [false, true]) for (const altKey of [false, true]) MODSETS.push({ shiftKey, ctrlKey, altKey, metaKey: false });
 const PRESSES = HITS.flatMap((on) => [0, 1, 2].flatMap((button) => MODSETS.map((m) => ({ type: 'down', button, on, ...m }))));
@@ -85,7 +87,9 @@ test('the pointer table starts exactly the gesture the old ordered table did, fo
 	const differ = [];
 	for (const g of GUARDS) for (const s of SITUATIONS) for (const e of PRESSES) {
 		if (!reachable(g, s)) continue;
-		const was = outcome(oldResolve(e.on, e, { readOnly: g.readOnly, tool: s.tool }));
+		// CORRECTED at B316: the old table saw a link end's hit with no id ({ kind: 'lhandle', end }) -- C-d step two gave the old side
+		// the new shape, and so hid that the delete chord came to match a link end's handle
+		const was = outcome(oldResolve(oldHit(e.on), e, { readOnly: g.readOnly, tool: s.tool }));
 		const now = outcome(resolveInput(PRESS_TABLE, e, s, g).rule);
 		if (was !== now) differ.push(`${JSON.stringify(g)} tool=${s.tool} ${e.on.kind} b${e.button} ${JSON.stringify({ s: e.shiftKey, c: e.ctrlKey, a: e.altKey })}: ${now}, was ${was}`);
 	}

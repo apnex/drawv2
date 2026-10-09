@@ -1168,11 +1168,12 @@ Elsewhere and unchanged: H10.30 and PD-3 are the director's calls; H15.5 and H17
 | H19.35 | An anchor's change redraws what it changes: a link pinned through a moved device, a waypoint's spawning mark -- found reading the anchor's drawing for C-a | **B312**, **B313** | S3 | `DONE` |
 | H19.36 | A selected zone drawn again keeps its selected look -- a regression of C-a's first step | **B314** | S3 | `DONE` |
 | H19.37 | A reveal beat withholds a zone or a group again -- the renderer finds the element of every drawn kind; a regression of C-a's first two steps | **B315** | S3 | `DONE` |
+| H19.38 | Alt+right on a link's end handle starts nothing again -- a regression of C-d's second step, hidden by its own oracle edit | **B316** | S4 | `DONE` |
 | H19.29 | C-a: drawing -- a painter per kind brought by its plugin, the renderer a dispatcher, layers ranked; zones first, then groups, devices and links | feature | S4 | `DONE` |
 | H19.30 | C-b: picking -- one id attribute on every drawn entity; a kind's pick modifier (the zone's Shift) | feature | S4 | `DONE` |
 | H19.31 | C-c: placing -- layout and extent as row facts; moving, cloning, nudging and snapping read them | feature | S4 | `DONE` |
 | H19.32 | C-d: handles, presses, gestures, releases -- rows a plugin brings for the shared gestures (D2) | feature | S4 | `TODO` |
-| H19.33 | C-e: keys, commands, readout, labels, grids -- each moved to its plugin | feature | S4 | `TODO` |
+| H19.33 | C-e: keys, commands, readout, labels, grids -- each moved to its plugin; opening with the devices plugin's hand (palette, digit keys, stamping, pipette, retype, chaining), moved from C-d by the director | feature | S4 | `TODO` |
 | H19.34 | C-f: closed -- the canvas names no plugin's kind beyond a record that may only fall; B308 closed | **B308** | S4 | `TODO` |
 | H19.8 | Design, for approval: a type as a composition of packs | **B282** | S3 | `TODO` |
 | H19.9 | Transit off at a ring's pin opens the ring there, as ruled, and its pieces rejoin when transit returns -- the director's reports from production | **B299** | S2 | `DONE` |
@@ -1284,7 +1285,8 @@ Next: the link's handles and replug, the text box, the device's stamping.
 AMENDED 2026-10-09: C-d's second step done -- the link's end handles and re-plug are the network's, over the shared handle gesture, which now commits nothing itself.\
 Next: the text box, the device's stamping and chaining, and the press rows naming a zone, a link or a waypoint.
 AMENDED 2026-10-09: C-d's third step done -- the text box is the devices plugin's row over the shared box gesture.\
-Next: the device's stamping and chaining.
+Device placing moves to C-e as one step, the director's choice; B316 fixed.\
+Next: C-d's last step, the press rows naming a zone, a link or a waypoint, and the Ctrl clone-arming.
 
 **Exit:** nothing stored needs a migration and none is kept; production's sync holds the network under the GR6 battery; the core holds no kind.
 

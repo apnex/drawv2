@@ -31,7 +31,7 @@ test('C-b: the product\'s picks answer a device, a waypoint, a zone under Shift,
 	assert.deepEqual(hit({ target: inside('zone', 'zone-0b0003') }), { kind: 'canvas', id: null }, 'a zone passes a plain press through (U1)');
 	assert.deepEqual(hit({ target: self('link', { id: 'link-0b0004' }) }), { kind: 'link', id: 'link-0b0004' });
 	assert.deepEqual(hit({ target: self('link-hit', { dataset: { link: 'link-0b0004' } }) }), { kind: 'link', id: 'link-0b0004' }, 'the click twin takes the click (B268)');
-	assert.deepEqual(hit({ target: self('handle', { dataset: { corner: 'se' } }) }), { kind: 'handle', id: 'se' });
+	assert.deepEqual(hit({ target: self('handle', { dataset: { corner: 'se' } }) }), { kind: 'handle', id: 'se', handle: true }, 'a handle, flagged (B316)');
 	assert.deepEqual(hit({ target: { classList: { contains: () => false }, dataset: { select: 'pipe-0b0001-0b0002' }, closest: () => null } }), { kind: 'pipe', id: 'pipe-0b0001-0b0002', mark: true });
 	assert.deepEqual(hit({ target: { classList: { contains: () => false }, dataset: {}, closest: () => null } }), { kind: 'canvas', id: null });
 });

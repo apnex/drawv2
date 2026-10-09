@@ -73,7 +73,8 @@ export function hitWith(picks) {
 		if (!target.closest) return { kind: 'canvas', id: null };
 		if (target.classList && target.classList.contains('handle')) {
 			// a handle: the declaration whose dataset key it carries names it -- its word, and the handle as the hit's id (C-d)
-			for (const p of picks) if (p.handle && target.dataset?.[p.handle] !== undefined) return { kind: p.word, id: target.dataset[p.handle] };
+			// `handle` flags it, as `mark` flags a plugin's mark: a handle names no entity, so no row may take its id for one (B316)
+			for (const p of picks) if (p.handle && target.dataset?.[p.handle] !== undefined) return { kind: p.word, id: target.dataset[p.handle], handle: true };
 			return { kind: 'canvas', id: null };
 		}
 		for (const p of picks) {
