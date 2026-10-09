@@ -138,3 +138,56 @@ test('C-d: a re-plug marks its link while the end is dragged, and a cancel unmar
 		assert.deepEqual(marks(), [true, false], 'unmarked by the cancel');
 	} finally { h.restore(); }
 });
+
+// ---- C-d, step three: the text box, the devices plugin's row over the shared box gesture ----
+
+test('C-d: with the text tool held, a drag makes a text panel over the cells it spans, selected; the tool is released', async () => {
+	const { key } = await import('./fixtures/client-harness.mjs');
+	const h = makeInput();
+	try {
+		h.capture.onKeyDown(key('t'));
+		h.capture.onDown(pointer(0, 0));
+		h.capture.onMove(pointer(120, 60));
+		h.capture.onUp(pointer(120, 60));
+		const [tb] = h.model.all('node');
+		assert.ok(tb, 'a panel was made');
+		assert.deepEqual({ type: tb.type, x: tb.x, y: tb.y, span: tb.span }, { type: 'text', x: 0, y: 0, span: { cols: 3, rows: 2 } });
+		assert.deepEqual(h.selection.list(), [tb.id]);
+		assert.equal(h.tools.textTool, false, 'one panel per arm');
+	} finally { h.restore(); }
+});
+
+test('C-d: without the devices plugin\'s part, a press with the text tool held makes nothing', async () => {
+	const { key } = await import('./fixtures/client-harness.mjs');
+	const h = makeInput({ parts: PRODUCT_CANVAS.filter((p) => p.owner !== 'devices') });
+	try {
+		h.capture.onKeyDown(key('t'));
+		h.capture.onDown(pointer(0, 0));
+		h.capture.onUp(pointer(0, 0));
+		assert.equal(h.model.all('node').length, 0);
+	} finally { h.restore(); }
+});
+
+test('C-d: the canvas holds no text box of its own', () => {
+	const input = code('app/src/input.js');
+	assert.doesNotMatch(input, /textbox-preview|makeTextBox|frameSpan|\btextbox: \{/);
+	assert.doesNotMatch(code('app/src/recognize.js'), /gesture: 'textbox'|id: 'tool'/);
+});
+
+test('C-d: the text box\'s frame shows once the pointer moves -- not at the press; the zone\'s box shows at once', async () => {
+	const { key } = await import('./fixtures/client-harness.mjs');
+	const h = makeInput();
+	try {
+		const preview = (cls) => h.input.overlay.children.find((c) => (c.getAttribute('class') || '').includes(cls));
+		h.capture.onKeyDown(key('t'));
+		h.capture.onDown(pointer(60, 60));
+		assert.equal(Number(preview('textbox-preview').getAttribute('width')), 0, 'not yet');
+		h.capture.onMove(pointer(180, 60));
+		assert.ok(Number(preview('textbox-preview').getAttribute('width')) > 0, 'once it moves');
+		h.input.cancelDrag();
+		h.tools.setTextTool(false);   // a cancel keeps the tool held; released, the canvas's Shift-press is the zone's
+		h.capture.onDown(pointer(0, 0, { shiftKey: true }));
+		assert.equal(Number(preview('zone-rect').getAttribute('x')), 30, 'the zone\'s, at once, on its grid');
+		h.input.cancelDrag();
+	} finally { h.restore(); }
+});

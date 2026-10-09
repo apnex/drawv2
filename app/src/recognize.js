@@ -39,8 +39,7 @@ const entity = (h) => h.kind === 'node' || h.kind === 'zone' || h.kind === 'link
 const selectable = (h) => entity(h) || h.kind === 'waypoint';
 // the right button presses these; a link is not one of them
 const rightKinds = (h) => h.kind === 'node' || h.kind === 'zone' || h.kind === 'waypoint';
-// the situation terms: whether a tool is held (the text tool, today)
-const held = (s) => !!s.tool;
+// the situation terms: whether no tool is held (a held tool's press is the devices plugin's, C-d)
 const free = (s) => !s.tool;
 
 /*
@@ -64,8 +63,7 @@ tests/pointer-bindings.test.js holds the old table and its resolver as an oracle
 rows start the same gesture.
 */
 export const RECOGNIZE = [
-	// a held tool places on the next click, whatever is under it
-	{ id: 'tool', input: ['left on canvas|node|waypoint|zone|link'], context: 'the text tool held',      mutates: true,  on: (e) => L(e), when: held,                                             gesture: 'textbox' },
+	// C-d (H19.32): a held tool's press -- the text box -- is the devices plugin's row over the shared box gesture
 
 	// right button: the delete chord, then clone, then press
 	{ id: 'chord', input: ['Alt+right on node|waypoint|zone|link'],     mutates: true,  on: (e) => R(e) && e.altKey && !!e.on.id && e.on.kind !== 'handle',      run: 'deleteUnderCursor' },

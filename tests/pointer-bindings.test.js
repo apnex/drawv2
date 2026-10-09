@@ -46,7 +46,10 @@ function oldResolve(hit, evt, ctx) {
 }
 // RESTATED at C-d step one (H19.32): the zone's draw is the zones plugin's row over the shared box gesture, its release the row's own: a box placed for zones is what the old table called the zone gesture
 // RESTATED at C-d step two (H19.32): a handle's press opens the shared handle gesture from the declaring plugin's row -- named, as the old table named the gesture, by the row's id (resize, replug)
-const outcome = (r) => (r ? (r.gesture ? `gesture:${r.gesture === 'box' ? r.box.place : r.gesture === 'handle' ? r.id : r.gesture}` : `run:${r.run}`) : 'nothing');
+// RESTATED at C-d step three: the text box is the devices plugin's row over the box gesture too -- each shared gesture's row named
+// by the gesture the old table started
+const OLD_NAME = { 'zone-draw': 'zone', tool: 'textbox', resize: 'resize', replug: 'replug' };
+const outcome = (r) => (r ? (r.gesture ? `gesture:${OLD_NAME[r.id] ?? r.gesture}` : `run:${r.run}`) : 'nothing');
 
 // ---- every press worth distinguishing ----
 const HITS = [{ kind: 'canvas', id: null }, { kind: 'node', id: 'node-000001' }, { kind: 'waypoint', id: 'node-e00001' },

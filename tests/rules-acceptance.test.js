@@ -130,7 +130,7 @@ test('a plugin\'s row is handed the host\'s declared verbs, not Input -- and the
 		h.capture.onKeyDown(key('F9'));
 		assert.ok(handed, 'the row ran');
 		// RESTATED at C-d step one (H19.32): a third declared verb, `create` -- a plugin's release row makes an entity through it
-		assert.deepEqual(Object.keys(handed), ['addStop', 'selected', 'create', 'set']);   // and `set`, through which a handle's release row edits (C-d step two)
+		assert.deepEqual(Object.keys(handed), ['addStop', 'selected', 'create', 'set', 'releaseTool', 'editFrame']);   // and the text box's two (C-d step three)   // and `set`, through which a handle's release row edits (C-d step two)
 		assert.notEqual(handed, h.input);
 		const [n] = seedNodes(h.model, [[0, 0, 'router']]);
 		h.selection.set([n.id]);

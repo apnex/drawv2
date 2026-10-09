@@ -1283,6 +1283,8 @@ AMENDED 2026-10-09: C-d's first step done -- the zone's draw and resize are the 
 Next: the link's handles and replug, the text box, the device's stamping.
 AMENDED 2026-10-09: C-d's second step done -- the link's end handles and re-plug are the network's, over the shared handle gesture, which now commits nothing itself.\
 Next: the text box, the device's stamping and chaining, and the press rows naming a zone, a link or a waypoint.
+AMENDED 2026-10-09: C-d's third step done -- the text box is the devices plugin's row over the shared box gesture.\
+Next: the device's stamping and chaining.
 
 **Exit:** nothing stored needs a migration and none is kept; production's sync holds the network under the GR6 battery; the core holds no kind.
 

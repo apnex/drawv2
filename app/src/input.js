@@ -56,7 +56,7 @@ import { situationOf } from '../../engine/situation.mjs';
 import { waypointRolesIn } from '../../network/roles.mjs';
 import { BARE_KIND, ANCHOR_KINDS } from '../../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
 import { bareAnchor, bareAnchors, typedNodes, isTypedEntity } from '../../devices/device-shapes.mjs';
-import { makeNode, makeWaypoint, makeTextBox } from '../../devices/make-node.mjs';   // the devices plugin's factories (O-e1)
+import { makeNode, makeWaypoint } from '../../devices/make-node.mjs';   // the devices plugin's factories (O-e1)
 import { waypointAt } from '../../devices/occupancy.mjs';   // which waypoint is on a cell: the devices plugin's (O-e1)
 
 
@@ -64,11 +64,6 @@ const ARROW = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowD
 
 // A1 — the node-frame rect spanning two snapped cell-centre points: the text-box draw preview + its
 // footprint (origin cell + span counts). a click (a===b) → a 1×1 frame; a drag → the spanned frame.
-const frameSpan = (a, b) => {
-	const x0 = Math.min(a.x, b.x), y0 = Math.min(a.y, b.y), x1 = Math.max(a.x, b.x), y1 = Math.max(a.y, b.y);
-	return { x: x0 - NODE_R, y: y0 - NODE_R, w: (x1 - x0) + 2 * NODE_R, h: (y1 - y0) + 2 * NODE_R,
-		origin: { x: x0, y: y0 }, cols: Math.round((x1 - x0) / GAP) + 1, rows: Math.round((y1 - y0) / GAP) + 1 };
-};
 
 /*
 GESTURES — one entry per mode, one uniform shape (INPUT.md §7).
@@ -303,20 +298,22 @@ const GESTURES = {
 	box: {
 		commit: (i, ctx, pos, evt) => {
 			ctx.rect.remove();
-			const box = resolveBox(ctx.p1, snapIn(ctx.place, pos));
+			const box = ctx.shape(ctx.p1, snapIn(ctx.place, pos));
 			i.act(i.decide(ctx.releases, evt, { area: box.w > 0 && box.h > 0 }), box);
 		},
 		cancel: (i, ctx) => ctx.rect.remove(),
 		update: (i, pos) => {
-			const box = resolveBox(i.ctx.p1, snapIn(i.ctx.place, pos));
+			const box = i.ctx.shape(i.ctx.p1, snapIn(i.ctx.place, pos));
 			i.ctx.rect.update(box);
 			i.readout.setBox(box);
 		},
+		// the row's box: the grid it snaps to, its preview's class, and its shape -- the rect two points span, or the row's own
+		// frame (a text box's: the cells it spans, with a frame's margin)
 		start: (i, hit, pos, evt, rule) => {
 			const place = i.places.get(rule.box.place);
 			const p1 = snapIn(place, pos);
-			const ctx = { p1, place, releases: rule.id, rect: previewRect(i.overlay, rule.box.preview) };
-			ctx.rect.update(resolveBox(p1, p1));
+			const ctx = { p1, place, shape: rule.box.frame ?? resolveBox, releases: rule.id, rect: previewRect(i.overlay, rule.box.preview) };
+			if (rule.box.previewOnPress !== false) ctx.rect.update(ctx.shape(p1, p1));
 			return ctx;
 		}
 	},
@@ -334,29 +331,7 @@ const GESTURES = {
 		start: (i, hit, pos) => ({ p1: pos, rect: previewRect(i.overlay, 'marquee') })
 	},
 
-	textbox: {
-		commit: (i, ctx, pos) => {
-			ctx.rect.remove();
-			const f = frameSpan(ctx.p1, snapNode(pos));   // origin + span counts (a click → 1×1)
-			const tb = makeTextBox(i.model, f.origin, { cols: f.cols, rows: f.rows });
-			i.history.commit(commands.createEntity('node', tb));
-			i.selection.set([tb.id]);
-			i.tools.setTextTool(false);   // one box per arm — re-tap 't' for another
-			// open the inline editor on the text region, positioned over the new box's frame
-			i.labels.openFrame(tb.id);
-		},
-		cancel: (i, ctx) => ctx.rect.remove(),
-		update: (i, pos) => {
-			const box = frameSpan(i.ctx.p1, snapNode(pos));
-			i.ctx.rect.update(box);
-			i.readout.setBox(box);
-		},
-		start: (i, hit, pos) => {
-			if (i.labels.isOpen()) i.labels.close(true);
-			const p1 = snapNode(pos);
-			return { p1, rect: previewRect(i.overlay, 'textbox-preview') };
-		}
-	},
+
 };
 
 export class Input {
@@ -401,9 +376,12 @@ export class Input {
 			// each selected entity as the model holds it, with its kind (a plugin reads the fields it owns -- the network, transit)
 			selected: () => this.selection.list().map((id) => { const e = this.model.get(kindOf(id), id); return { ...(e ?? {}), id, kind: kindOf(id) }; }),
 			// C-d: make an entity of a kind -- `make(model)` mints it -- commit its creation, and select it
-			create: (kind, make) => { const e = make(this.model); this.history.commit(commands.createEntity(kind, e)); this.selection.set([e.id]); },
+			create: (kind, make) => { const e = make(this.model); this.history.commit(commands.createEntity(kind, e)); this.selection.set([e.id]); return e.id; },
 			// C-d: set an entity's fields -- a handle's release: a zone's box, a link's ends -- as one labelled edit
 			set: (label, kind, id, after) => this.history.commit(commands.setFields(label, kind, id, after)),
+			// C-d: release the held tool -- the text tool, the one a press can hold -- and open the editor on a text box's frame
+			releaseTool: () => this.tools.setTextTool(false),
+			editFrame: (id) => this.labels.openFrame(id),
 		};
 		// the pointer's tables on the same engine (stage 4): which gesture a press starts, a double click, a key release
 		// C-d (H19.32): the product's press rows and each canvas part's -- a plugin's rows over the shared gestures (D2)

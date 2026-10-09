@@ -14,6 +14,7 @@ import { selBox, contentLayout, hexColor, isPanel, frameRadius, frameWidth, show
 import { spanExtent } from '../kernel/geometry.mjs';
 import { GLYPH_BB, TOKENS } from '../kernel/theme.mjs';
 import { hasDevice } from './device-fields.mjs';
+import { DEVICE_PRESSES } from './device-gestures.mjs';
 
 const FE = L_STD.frame.ext;            // the frame's half-extent (20)
 const SOCKET = STD.socket;             // the glyph box (26)
@@ -123,4 +124,4 @@ const DEVICE = {
 };
 
 // the devices plugin's canvas part (C-a: the device's appearance on the anchor)
-export const DEVICES_CANVAS = { owner: 'devices', appearances: [DEVICE] };
+export const DEVICES_CANVAS = { owner: 'devices', appearances: [DEVICE], presses: DEVICE_PRESSES };   // C-d: and the text box's row

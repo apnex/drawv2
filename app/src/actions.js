@@ -46,7 +46,6 @@ export const ACTION_LABELS = {
 	onUngroupKey: 'ungroup',
 	onDeleteKey: 'delete the selection',
 	// ---- what a press starts ----
-	'gesture:textbox': 'place a text box',
 	'gesture:link': 'draw a link: release on a node or waypoint',
 	'gesture:clone-pending': 'clone: drag the copy into place',
 	'gesture:pending': 'select; drag to move',

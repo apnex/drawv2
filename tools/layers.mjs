@@ -198,6 +198,7 @@ export const ENTRIES = {
 			'zones/zone-kind.mjs', 'zones/zone-extent.mjs', 'zones/make-zone.mjs',   // O-b1 (H19.19): the zones plugin -- its row, extent and factory
 			'zones/zone-painter.mjs', 'product/canvas.mjs',   // C-a (H19.29): the zones plugin's painter, and the product's canvas parts
 			'zones/zone-gestures.mjs',   // C-d (H19.32): the zones plugin's press row and handles
+			'devices/device-gestures.mjs',   // C-d (H19.32): the devices plugin's text box row
 			'groups/group-painter.mjs',   // C-a (H19.29): the groups plugin's painter
 			'devices/device-appearance.mjs', 'network/anchor-appearance.mjs', 'engine/spawn-appearance.mjs',   // C-a (D3): the anchor's appearances
 			'network/link-painter.mjs', 'network/canvas.mjs',   // C-a (H19.29): the network's link painter and its canvas part
@@ -251,6 +252,7 @@ export const ENTRIES = {
 			'zones/zone-kind.mjs', 'zones/zone-extent.mjs', 'zones/make-zone.mjs',   // O-b1 (H19.19): the zones plugin -- its row, extent and factory
 			'zones/zone-painter.mjs', 'product/canvas.mjs',   // C-a (H19.29): the zones plugin's painter, and the product's canvas parts
 			'zones/zone-gestures.mjs',   // C-d (H19.32): the zones plugin's press row and handles
+			'devices/device-gestures.mjs',   // C-d (H19.32): the devices plugin's text box row
 			'groups/group-painter.mjs',   // C-a (H19.29): the groups plugin's painter
 			'devices/device-appearance.mjs', 'network/anchor-appearance.mjs', 'engine/spawn-appearance.mjs',   // C-a (D3): the anchor's appearances
 			'network/link-painter.mjs', 'network/canvas.mjs',   // C-a (H19.29): the network's link painter and its canvas part
