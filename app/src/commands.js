@@ -20,8 +20,7 @@ disconnected browser previews with it as well, so it still never builds a docume
 */
 
 import { clone } from '../../model/ops.mjs';
-import { kindOf, newId, projection } from '../../model/model.mjs';
-import { makeGroup } from '../../groups/make-group.mjs';   // the groups plugin's factory (O-c)
+import { kindOf, projection } from '../../model/model.mjs';
 import { GAP, clampDelta } from './snap.js';
 import { BARE_KIND } from '../../model/anchors.mjs';
 import { bareAnchor, isTypedEntity } from '../../devices/device-shapes.mjs';
@@ -149,6 +148,14 @@ export function putEntities(label, puts) {
 	return { label, entries: puts.map((p) => ({ op: 'put', kind: p.kind, entity: clone(p.kind, p.entity) })) };
 }
 
+// C-e (D5): a plugin's edit handed over as entries -- the network's transit -- each rebuilt here, so a put or a delete
+// carries its own copy and nothing the wire drops (B44)
+export function editOf(label, entries) {
+	return { label, entries: entries.map((e) => (e.op === 'set'
+		? { op: 'set', kind: e.kind, id: e.id, after: { ...e.after } }
+		: { op: e.op, kind: e.kind, entity: clone(e.kind, e.entity) })) };
+}
+
 // C-e (D5): entities deleted, under a plugin's label -- each that still exists, as the model holds it
 export function deleteEntities(label, model, refs) {
 	return { label, entries: refs.filter((r) => model.get(r.kind, r.id)).map((r) => ({ op: 'del', kind: r.kind, entity: clone(r.kind, model.get(r.kind, r.id)) })) };
@@ -266,7 +273,13 @@ decision and the two callers differ, which is exactly why it does not belong in 
 puts them live so they render under the pointer (INPUT.md I-IN5 — live preview writes the shared
 Model); Ctrl+D never shows them and goes straight to a commit.
 */
-export function cloneSubgraph(model, seedIds, places) {   // C-c: the seeds a placed kind's (snap.js placesOf)
+// C-e (H19.33): what follows a clone, each part's, in rank order -- the network's link (1), the groups plugin's group (2)
+export function followersOf(parts) {
+	return parts.flatMap((p) => (p.follows ?? []).map((f) => ({ ...f, owner: p.owner }))).sort((a, b) => a.rank - b.rank);
+}
+
+// C-c: the seeds a placed kind's (snap.js placesOf); C-e: what follows them, the parts' followers (followersOf)
+export function cloneSubgraph(model, seedIds, places, followers = []) {
 	const scratch = projection(model);       // allocate against a namespace that includes the batch
 	const idMap = new Map();
 	const clones = [];
@@ -305,42 +318,17 @@ export function cloneSubgraph(model, seedIds, places) {   // C-c: the seeds a pl
 	if (idMap.size === 0) return null;
 
 	/*
-	Links whose BOTH endpoints were cloned — carrying the route, not just the ends (B30).
-
-	A link's `via` list and its `closed` flag are authored geometry: dropping them turns a multi-hop
-	route into a straight line silently, which is loss of intent rather than a cosmetic difference.
-	Any via waypoint not already in the clone set is pulled in here, because a cloned route needs its
-	OWN bends — pointing the copy at the originals would make two links share them, which the
-	validator forbids outright (a waypoint belongs to at most one link, in at most one role).
+	C-e (H19.33) -- WHAT FOLLOWS the seeds is each part's: a link both of whose ends were cloned, with bends of its own (the
+	network, network/link-clone.mjs), then a group all of whose members were (the groups plugin, groups/group-clone.mjs). A
+	follower clones a further anchor through the canvas's own cloner, and adds each copy -- into the scratch, so the next
+	sibling sees it, and into the batch.
 	*/
-	model.all('link').forEach((link) => {
-		if (!idMap.has(link.src) || !idMap.has(link.dst) || idMap.has(link.id)) return;
-		const via = Array.isArray(link.via) ? link.via : [];
-		via.forEach((wid) => {
-			if (idMap.has(wid)) return;
-			const w = bareAnchor(model, wid);
-			if (w) cloneEntity(BARE_KIND, w);
-		});
-		// B187 -- the copy is named from the SCRATCH model, so a duplicated subgraph does not collide
-		// with the names already in it
-		const copy = { id: newId('link', scratch.collection('link')), name: scratch.nextName('link'),
-			src: idMap.get(link.src), dst: idMap.get(link.dst) };
-		const mapped = via.map((wid) => idMap.get(wid)).filter(Boolean);
-		if (mapped.length) copy.via = mapped;
-		if (link.closed) copy.closed = true;
-		idMap.set(link.id, copy.id);
-		scratch.put('link', copy);
-		clones.push({ kind: 'link', entity: copy });
-	});
-
-	// groups fully contained in the clone set
-	model.all('group').forEach((group) => {
-		if (group.members.length > 0 && group.members.every((m) => idMap.has(m))) {
-			const copy = makeGroup(scratch, group.members.map((m) => idMap.get(m)));
-			scratch.put('group', copy);
-			clones.push({ kind: 'group', entity: copy });
-		}
-	});
+	const add = (kind, copy, fromId = null) => {
+		if (fromId) idMap.set(fromId, copy.id);
+		scratch.put(kind, copy);
+		clones.push({ kind, entity: copy });
+	};
+	for (const f of followers) f.follow({ model, scratch, idMap, cloneAnchor: (src) => cloneEntity(kindOf(src.id), src), add });
 	return { clones, idMap };
 }
 

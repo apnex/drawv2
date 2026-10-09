@@ -30,7 +30,8 @@ places: the drag judge's links and transit stops, the sweep, and the ages noted 
 promotion's P5, since the product page holds no such model. The sweep is the planner's now; the judge reads the tab, which
 holds what the planner holds once an answer is applied, and the ages are noted on the tab `apply` has just brought to it.
 */
-export function attachNetwork({ session, model, renderer, selection, history, pipeLayer, el, say, pending = () => false }) {
+// `edit(label, entries)`: commit an edit the network made as entries -- the canvas's generic builder (D5, C-e step eight)
+export function attachNetwork({ session, model, renderer, selection, edit, pipeLayer, el, say, pending = () => false }) {
 	const { network } = session;
 
 	/*
@@ -145,7 +146,7 @@ export function attachNetwork({ session, model, renderer, selection, history, pi
 		const said = session.takeNotice() ?? '';
 		if (!entries?.length) { settle(''); say(`${said}${downSummary(model)}`); return; }
 		pendingTransit = said;
-		history.commit({ label: 'transit', entries });
+		edit('transit', entries);   // through the canvas's generic builder -- the network builds no command by hand (D5)
 		for (const id of ids) { const e = model.endpointOf(id); if (e) renderer.render(kindOf(id), e); }   // the ring, at once
 	});
 	const transitNotice = (answer) => {

@@ -10,6 +10,9 @@ The lab's matrix rows PIPE-01 to PIPE-05 hold the whole gesture in real Chrome.
 
 None of the canvas's seams names a plugin kind; production, which draws no marks, is unchanged.
 */
+// RESTATED at C-e step eight (H19.33; D5): the network commits its transit edit through `edit`, which the composition backs
+// with the canvas's generic builder -- so each test's commit sees the command `editOf` builds, as the page's history does
+import { editOf } from '../app/src/commands.js';
 import { isLinkDown } from '../network/network-queries.mjs';   // Q-a: the network's questions
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -48,7 +51,7 @@ test('N-c2: the painter draws each pipe under its id, and gives only a hand pipe
 	const net = attachNetwork({
 		session: { network: { view: { of: () => ({ route: () => null }) } }, takeNotice: () => null, onTransitChange: () => {} },
 		model: m, renderer: { update: () => {}, reflectSelection: () => {}, render: () => {}, watchMode: () => {} },
-		selection: { subscribe: () => {}, list: () => selected }, history: { commit: () => {} },
+		selection: { subscribe: () => {}, list: () => selected }, edit: (label, entries) => (() => {})(editOf(label, entries)),
 		pipeLayer: f.root, el: f.el, say: () => {},
 	});
 	net.paint();
@@ -74,7 +77,7 @@ test('the painter keeps one element per pipe across paints, updating it in place
 	const net = attachNetwork({
 		session: { network: { view: { of: () => ({ route: () => null }) } }, takeNotice: () => null, onTransitChange: () => {} },
 		model: m, renderer: { update: () => {}, reflectSelection: () => {}, render: () => {}, watchMode: () => {} },
-		selection: { subscribe: () => {}, list: () => [] }, history: { commit: () => {} }, pipeLayer: f.root, el: f.el, say: () => {},
+		selection: { subscribe: () => {}, list: () => [] }, edit: (label, entries) => (() => {})(editOf(label, entries)), pipeLayer: f.root, el: f.el, say: () => {},
 	});
 	const hand = pipeEntity(A, W, 'hand').id, link = pipeEntity(W, B, 'link').id;
 	const nodes = () => new Set(f.all());
@@ -133,7 +136,7 @@ test('the painter marks hidden every pipe an up link runs over, keeping it in th
 	const f = fakeLayer();
 	attachNetwork({
 		session, model: m, renderer: { update: () => {}, reflectSelection: () => {}, render: () => {}, watchMode: () => {} },
-		selection: { subscribe: () => {}, list: () => [] }, history: { commit: () => {} }, pipeLayer: f.root, el: f.el, say: () => {},
+		selection: { subscribe: () => {}, list: () => [] }, edit: (label, entries) => (() => {})(editOf(label, entries)), pipeLayer: f.root, el: f.el, say: () => {},
 	}).paint();
 	assert.equal(isLinkDown(m, m.get('link', 'link-000002')), true);
 	const groups = f.all().filter((n) => n.attrs.class?.startsWith('pipe-of'));

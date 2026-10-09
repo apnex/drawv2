@@ -378,6 +378,8 @@ export class Input {
 			...parts.filter((p) => p.keys).map((p) => ({ owner: p.owner, rules: p.keys })));
 		// C-e: each kind's rank in a delete, its part's
 		this.deleteRanks = commands.deleteRanksOf(parts);
+		// C-e: what follows a clone, each part's, in rank order
+		this.followers = commands.followersOf(parts);
 		// C-e: what Shift+arrow makes of a lone selected entity, by kind -- each part's size step
 		this.sizeSteps = new Map();
 		for (const p of parts) if (p.sizeStep) {
@@ -715,7 +717,7 @@ export class Input {
 			return;
 		}
 		if (!this.selection.has(hit.id)) this.selection.set([hit.id]);
-		const result = commands.cloneSubgraph(this.model, this.selection.list(), this.places);
+		const result = commands.cloneSubgraph(this.model, this.selection.list(), this.places, this.followers);
 		if (!result) { this.mode = null; this.ctx = {}; return; }
 		const { clones, idMap } = result;
 
@@ -753,7 +755,7 @@ export class Input {
 			this.readout.flash(`✗ no room Δ[${cells(this.lastDelta.x)}, ${cells(this.lastDelta.y)}]`);
 			return;
 		}
-		const result = commands.cloneSubgraph(this.model, seeds, this.places);
+		const result = commands.cloneSubgraph(this.model, seeds, this.places, this.followers);
 		if (!result) return;
 
 		// the clones are inert objects, so the pitch is applied to them directly. This used to put

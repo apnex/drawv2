@@ -22,6 +22,7 @@ composition, and it is the whole reason the lab can show the planner's cascade a
 network: the tab model proposes, the authority model rules, exactly as production does.
 */
 
+import { editOf } from '../../app/src/commands.js';   // C-e (D5): the network's edit, built by the canvas's generic builder
 import { cellOf } from '../../kernel/geometry.mjs';
 import { el } from '../../app/src/painter.js';
 import { Model } from '../../model/model.mjs';
@@ -101,7 +102,7 @@ settle that follows every change -- the plugin's choreography, which promotion a
 What stays here is the lab's own: the in-page planner below (the authority model and its log), the refusal that takes the
 planner's document back, the notice, and which fixed board to load.
 */
-const net = page.attach({ model, renderer, selection, history, pipeLayer: svg.querySelector('#pipes'), el, say });
+const net = page.attach({ model, renderer, selection, edit: (label, entries) => history.commit(editOf(label, entries)), pipeLayer: svg.querySelector('#pipes'), el, say });   // C-e (D5)
 const capture = listen();   // the DOM's events, as input events (L0)
 /*
 THE DOOR (G11): a planner refusal is VISIBLE.

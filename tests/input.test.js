@@ -22,6 +22,8 @@ import { DEVICE_SIZE_STEP } from '../devices/device-size.mjs';
 import { placesOf as placesOfCanvas } from '../app/src/snap.js';
 import { PRODUCT_CANVAS as CANVAS_PARTS } from '../product/canvas.mjs';
 const PLACES = placesOfCanvas(CANVAS_PARTS);
+// C-e step eight (H19.33): what follows a clone is each part's -- the network's link, the groups plugin's group
+const FOLLOWERS = commands.followersOf(PRODUCT_CANVAS_FOR_KEYS);
 import { linkBetween, linksBetween, makeLink } from '../network/link-queries.mjs';   // K13d: the network's link queries
 import { test } from 'node:test';
 import { makeZone } from '../zones/make-zone.mjs';   // O-b1: the zones plugin's factory
@@ -1150,7 +1152,7 @@ test('B46: cloneSubgraph names siblings uniquely and touches nothing real', () =
 		const ns = seedNodes(h.model, [[0, 0], [180, 0], [360, 0]]);
 		const before = h.model.all('node').length;
 
-		const { clones } = commands.cloneSubgraph(h.model, ns.map((n) => n.id), PLACES);
+		const { clones } = commands.cloneSubgraph(h.model, ns.map((n) => n.id), PLACES, FOLLOWERS);
 		const names = clones.map((c) => c.entity.name);
 		assert.equal(new Set(names).size, 3, `siblings must not collide, got ${JSON.stringify(names)}`);
 		assert.equal(new Set(clones.map((c) => c.entity.id)).size, 3, 'nor may their ids');
@@ -1167,7 +1169,7 @@ test('B46: cloneSubgraph carries a route and gives it its OWN bends', () => {
 		const link = { ...makeLink(h.model, a.id, b.id), via: [wp.id], closed: true };
 		h.model.put('link', link);
 
-		const { clones } = commands.cloneSubgraph(h.model, [a.id, b.id], PLACES);
+		const { clones } = commands.cloneSubgraph(h.model, [a.id, b.id], PLACES, FOLLOWERS);   // RESTATED at C-e step eight: the route follows by the network's follower
 		const copy = clones.find((c) => c.kind === 'link').entity;
 		assert.equal(copy.closed, true, 'the closed flag is authored geometry, not decoration');
 		assert.equal(copy.via.length, 1);

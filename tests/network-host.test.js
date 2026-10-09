@@ -6,6 +6,9 @@ run in, which that outcome depends on and which moved out of the lab root with t
 the board settles; a drag that commits nothing settles at once; a refusal settles and says so. Since H17.22 N-c the host
 sweeps nothing -- the planner does, in the edit -- and paints the tab's own pipes. Each part is a recording stand-in.
 */
+// RESTATED at C-e step eight (H19.33; D5): the network commits its transit edit through `edit`, which the composition backs
+// with the canvas's generic builder -- so each test's commit sees the command `editOf` builds, as the page's history does
+import { editOf } from '../app/src/commands.js';
 import { isLinkDown } from '../network/network-queries.mjs';   // Q-a: the network's questions
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -40,7 +43,7 @@ function rig({ commits = true, accepts = true } = {}) {
 		session, model, authority: { all: () => [] },
 		renderer: { update: rec('update'), reflectSelection: rec('reflect'), render: rec('render'), watchMode: () => {} },
 		selection: { subscribe: () => {}, list: () => [] },
-		history: { commit: rec('commit') },
+		edit: (label, entries) => (rec('commit'))(editOf(label, entries)),
 		pipeLayer: fakeLayer().root, el: fakeLayer().el, say: rec('say'),
 	});
 	return { net, calls, names: () => calls.map((c) => c[0]), onChange: () => onChange, onTransit: () => onTransit };
@@ -109,7 +112,7 @@ test('F-e: a transit change commits the session\'s edit as given, and no edit of
 		session: { network: { stopsAt: () => false, declaresNoTransit: () => false, view: { of: () => ({ route: () => null }) } }, takeNotice: () => 'transit off at P', onTransitChange: (fn) => { onTransit = fn; } },
 		model, renderer: { update: () => {}, reflectSelection: () => {}, render: () => {}, watchMode: () => {} },
 		selection: { subscribe: () => {}, list: () => [] },
-		history: { commit: (c) => commits.push(c) }, ...(() => { const f = fakeLayer(); return { pipeLayer: f.root, el: f.el }; })(), say: () => {},
+		edit: (label, entries) => ((c) => commits.push(c))(editOf(label, entries)), ...(() => { const f = fakeLayer(); return { pipeLayer: f.root, el: f.el }; })(), say: () => {},
 	});
 	const edit = [{ op: 'set', kind: 'node', id: 'node-000003', after: { transit: false } }];
 	onTransit(['node-000003'], edit);
@@ -153,11 +156,11 @@ test('B283: turning transit off at two pins of one link at once makes three stra
 	net = attachNetwork({
 		session, model, renderer: { update: () => {}, reflectSelection: () => {}, render: () => {}, watchMode: () => {} },
 		selection: { subscribe: () => {}, list: () => [] },
-		history: { commit: (c) => {
+		edit: (label, entries) => ((c) => {
 			commits.push(c);
 			const r = plan(model, c.entries.map(toOp), { links: session.network.links, kinds: productKinds(...NETWORK_ROWS) });
 			net.answered(c, { ok: r.ok, error: r.error, version: commits.length, ops: r.ops }, () => applyOps(model, r.ops));
-		} },
+		})(editOf(label, entries)),
 		...(() => { const f = fakeLayer(); return { pipeLayer: f.root, el: f.el }; })(), say: (t) => said.push(t),
 	});
 	const anchors = [A, B].map((id) => ({ ...model.get('node', id), kind: 'node' }));

@@ -4,6 +4,7 @@ history, selection, input gesture machine, palette, label editor, readout, data-
 server sync to a KERNEL-SOURCED renderer. The kernel owns every geometry number + the glyph art.
 */
 
+import { editOf } from './commands.js';   // C-e (D5): the network's edit, built here
 import { Clock } from './clock.js';
 import { Movers } from './movers.js';
 import { helpSections, renderHelp } from './help.js';
@@ -79,7 +80,8 @@ warnings drawn after it.
 */
 let networkSaid = null;   // { text, run }: the network's last word, and the undo log's foreign run when it was said
 const foreignKey = () => { const r = history.foreignRun && history.foreignRun(); return r ? `${r.actor}|${r.run}|${r.label}` : ''; };
-const networkHost = pageNetwork.attach({ model, renderer, selection, history, pipeLayer: svg.querySelector('#pipes'), el,
+// C-e (D5): the network's edits reach history through the canvas's generic builder
+const networkHost = pageNetwork.attach({ model, renderer, selection, edit: (label, entries) => history.commit(editOf(label, entries)), pipeLayer: svg.querySelector('#pipes'), el,
 	pending: () => sync.outbox.some((m) => !m.answered),
 	say: (text) => {
 		if (!text) return;

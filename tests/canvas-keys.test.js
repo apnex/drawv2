@@ -244,3 +244,85 @@ test('C-e: the canvas holds no link key or link builder of its own', () => {
 	assert.doesNotMatch(code('app/src/input.js'), /toggleClosePath|cycleLinkDirection|toggleLinkPlane|linkSelectedNodes|onCloseKey|onDirectionKey|onPlaneKey|onChainKey|onStarKey/);
 	assert.doesNotMatch(code('app/src/keymap.js'), /id: '(close|close-refused|direction|plane|chain|star)'/);
 });
+
+// ---- C-e, step eight (D5): what follows a clone -- a link both of whose ends were cloned, a group all of whose members were --
+// is each plugin's to declare; the network's transit edit reaches history through a generic builder ----
+
+const cloneBoard = async (h) => {
+	const { makeLink } = await import('../network/link-queries.mjs');
+	const { makeGroup } = await import('../groups/make-group.mjs');
+	const [a, b] = seedNodes(h.model, [[0, 0], [240, 0]]);
+	const w = makeWaypoint(h.model, { x: 120, y: 120 }); h.model.put('node', w);
+	h.model.put('link', { ...makeLink(h.model, a.id, b.id), via: [w.id] });
+	h.model.put('group', makeGroup(h.model, [a.id, b.id]));
+	return { a, b };
+};
+const made = (h, before) => {
+	const now = ['node', 'link', 'group'].flatMap((k) => h.model.all(k).filter((e) => !before.has(e.id)).map(() => k));
+	return now.reduce((n, k) => ({ ...n, [k]: (n[k] ?? 0) + 1 }), {});
+};
+const ids = (h) => new Set(['node', 'link', 'group'].flatMap((k) => h.model.all(k).map((e) => e.id)));
+
+test('C-e: Ctrl+D on two linked, grouped devices copies them, the link with a bend of its own, and the group -- the state under test', async () => {
+	const h = makeInput();
+	try {
+		const { a, b } = await cloneBoard(h);
+		const before = ids(h);
+		h.selection.set([a.id, b.id]);
+		h.capture.onKeyDown(key('d', { ctrlKey: true }));
+		assert.deepEqual(made(h, before), { node: 3, link: 1, group: 1 });
+	} finally { h.restore(); }
+});
+
+test('C-e: composed without the network part no link follows a clone; without the groups part no group does', async () => {
+	for (const [owner, want] of [['network', { node: 2, group: 1 }], ['groups', { node: 3, link: 1 }]]) {
+		const h = makeInput({ parts: PRODUCT_CANVAS.filter((p) => p.owner !== owner) });
+		try {
+			const { a, b } = await cloneBoard(h);
+			const before = ids(h);
+			h.selection.set([a.id, b.id]);
+			h.capture.onKeyDown(key('d', { ctrlKey: true }));
+			assert.deepEqual(made(h, before), want, `without ${owner}`);
+		} finally { h.restore(); }
+	}
+});
+
+test('C-e: the clone builder names no follower, and the network builds no command by hand', () => {
+	const body = code('app/src/commands.js').slice(code('app/src/commands.js').indexOf('export function cloneSubgraph'));
+	assert.doesNotMatch(body.slice(0, body.indexOf('\n}\n')), /model\.all\('(link|group)'\)|makeGroup/);
+	assert.doesNotMatch(code('network/host.mjs'), /label: 'transit', entries/);
+});
+
+test('C-e: a group holding a link\'s bend follows a clone of the link\'s ends -- the link follows first, pulling the bend in', async () => {
+	const { makeLink } = await import('../network/link-queries.mjs');
+	const { makeGroup } = await import('../groups/make-group.mjs');
+	const h = makeInput();
+	try {
+		const [a, b] = seedNodes(h.model, [[0, 0], [240, 0]]);
+		const w = makeWaypoint(h.model, { x: 120, y: 120 }); h.model.put('node', w);
+		h.model.put('link', { ...makeLink(h.model, a.id, b.id), via: [w.id] });
+		h.model.put('group', makeGroup(h.model, [a.id, b.id, w.id]));
+		// on the page a group is selected whole -- selecting a member selects them all, the bend too (measured) -- so the order
+		// shows only when the builder is handed the link's ends alone: the link must follow first, or the group is left behind
+		const { cloneSubgraph, followersOf } = await import('../app/src/commands.js');
+		const { placesOf } = await import('../app/src/snap.js');
+		const { clones } = cloneSubgraph(h.model, [a.id, b.id], placesOf(PRODUCT_CANVAS), followersOf(PRODUCT_CANVAS));
+		assert.deepEqual(clones.map((c) => c.kind), ['node', 'node', 'node', 'link', 'group'], 'the ends, the bend the link pulls in, the link, the group');
+		const before = ids(h);
+		h.selection.set([a.id, b.id]);
+		assert.equal(h.selection.list().length, 3, 'the bend selected with its group');
+		h.capture.onKeyDown(key('d', { ctrlKey: true }));
+		assert.deepEqual(made(h, before), { node: 3, link: 1, group: 1 });
+	} finally { h.restore(); }
+});
+
+test('C-e: editOf hands over copies -- a put\'s entity and a set\'s patch are never the objects it was given', async () => {
+	const { editOf } = await import('../app/src/commands.js');
+	const entity = { id: 'node-ab0001', name: 'w', x: 0, y: 0 };
+	const after = { transit: false };
+	const cmd = editOf('transit', [{ op: 'put', kind: 'node', entity }, { op: 'set', kind: 'node', id: 'node-ab0002', after }]);
+	assert.equal(cmd.label, 'transit');
+	assert.deepEqual(cmd.entries, [{ op: 'put', kind: 'node', entity }, { op: 'set', kind: 'node', id: 'node-ab0002', after }]);
+	assert.notEqual(cmd.entries[0].entity, entity);
+	assert.notEqual(cmd.entries[1].after, after);
+});
