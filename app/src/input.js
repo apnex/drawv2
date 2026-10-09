@@ -844,8 +844,8 @@ export class Input {
 
 	// stamp the held type at the snapped cell; refuses occupied cells
 	// C-e: the held item stamped on its grid where it is not blocked, by the hand's declaration (devices/device-hand.mjs)
-	stampAt(pos) {
-		const item = this.tools.hand, spec = this.handSpec;
+	stampAt(pos, item = this.tools.hand) {   // the held item -- or a palette tile's, dropped (C-e)
+		const spec = this.handSpec;
 		if (!item || !spec) return false;
 		const cell = snapIn(this.places.get(spec.place), pos);
 		if (spec.blocked(this.model, cell)) return false;

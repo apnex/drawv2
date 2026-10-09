@@ -80,3 +80,33 @@ test('C-e: a held type clicked onto a device\'s cell sends nothing; a click on a
 		assert.deepEqual(h.selection.list(), [d.id]);
 	} finally { h.restore(); }
 });
+
+// ---- C-e, step two: the hand's preview -- the ghost and the palette tiles draw the item from it; the drop stamps through it ----
+
+// B318 -- the stamp ghost drew a device's glyph unfitted, at the art's own extent, while the device it stamps fits the glyph to
+// its box (B205): measured on the page, a ghost's glyph was 85-115% of the stamped device's, by type. The ghost now draws the
+// hand's preview, fitted as the device is.
+test('B318: the ghost draws each item\'s glyph fitted to the socket box, as the device it stamps is', async () => {
+	const { STD } = await import('../kernel/spec.mjs');
+	const { GLYPH_BB } = await import('../kernel/theme.mjs');
+	const { ghostNode } = await import('../app/src/painter.js');
+	const hand = PRODUCT_CANVAS.find((p) => p.hand).hand;
+	const h = makeInput();
+	try {
+		for (const item of hand.items) {
+			ghostNode(h.input.overlay, hand.preview(item));
+			const g = h.input.overlay.children.at(-1);
+			const fit = g.children.find((c) => c.tagName.toLowerCase() === 'svg');   // the harness's elements carry an upper-case tag
+			assert.ok(fit, `${item}: a fit box`);
+			const S = STD.socket;
+			assert.deepEqual(['x', 'y', 'width', 'height', 'viewBox'].map((a) => String(fit.getAttribute(a))),
+				[String(-S / 2), String(-S / 2), String(S), String(S), GLYPH_BB[item].join(' ')], `${item}: fitted to its own box`);
+		}
+	} finally { h.restore(); }
+});
+
+test('C-e: the canvas draws no device of its own for a ghost or a tile, and the palette makes nothing itself', () => {
+	assert.doesNotMatch(code('app/src/painter.js'), /waypointLayers|'waypoint'|glyph-/);
+	assert.doesNotMatch(code('app/src/palette.js'), /makeNode|makeWaypoint|BARE_KIND|createEntity|GLYPH_BB|glyph-|m-circle/);
+	assert.doesNotMatch(code('app/src/tools.js'), /ghostNode\(this\.overlay, this\.hand\)/);
+});

@@ -107,8 +107,8 @@ const RECORD = {
 	// app/src/pick.js's one -- the waypoint's hit -- moved to the network's marks at C-b (H19.30)
 	// app/src/recognize.js's four -- the press rows' hit words -- went at C-d step four (D4): the rows read the plugins' facts
 	'app/src/input.js': [1, 'the step words, F4 -- the press escalation\'s hit word went at C-d step four (D4), the hand\'s two at C-e step one'],
-	'app/src/palette.js': [2, 'the palette\'s waypoint tile, F4'],
-	'app/src/painter.js': [1, 'the palette\'s waypoint tile, F4'],
+	// app/src/palette.js's waypoint literals went at C-e step two (H19.33): no hand holds a waypoint, so no tile or ghost draws one
+	// app/src/painter.js's waypoint literals went at C-e step two (H19.33): no hand holds a waypoint, so no tile or ghost draws one
 	'app/src/help.js': [1, 'the help overlay\'s waypoint situation, F4'],
 	'app/src/keymap.js': [1, 'the `w` key\'s id, F4'],
 	'app/src/releases.js': [1, 'the palette hand, F4'],

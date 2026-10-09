@@ -8,13 +8,8 @@ app/src/tools.js, the canvas layer, where the gesture machine reads them; a tile
 digit does, and the tiles light up for whatever the tools hold.
 */
 
-import { CANVAS, GAP, snapNode } from './snap.js';
-import { toCanvas, ghostNode } from './painter.js';
-import * as commands from './commands.js';
-import { GLYPH_BB } from '../../kernel/theme.mjs';
-import { STD } from '../../kernel/spec.mjs';
-import { BARE_KIND } from '../../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
-import { makeNode, makeWaypoint } from '../../devices/make-node.mjs';   // the devices plugin's factories (O-e1)
+import { CANVAS, snapNode } from './snap.js';
+import { toCanvas, ghostNode, buildPreview } from './painter.js';
 
 
 /*
@@ -34,16 +29,16 @@ equal only at 1:1 zoom. Two constants is the correct answer; two ANONYMOUS const
 const CLICK_SLOP = 5;
 
 export class Palette {
-	constructor({ container, svg, model, history, selection, snap, tools, items = [] }) {   // items: what the hand can hold (C-e)
+	// C-e: `hand` -- what can be held and how an item looks, the devices plugin's; `stamp(item, pos)` -- a drop, stamped by the canvas
+	constructor({ container, svg, snap, tools, hand = null, stamp = () => false }) {
 		this.svg = svg;
-		this.model = model;
-		this.history = history;
-		this.selection = selection;
 		this.overlay = svg.querySelector('#overlay');
 		this.snap = snap;   // B36 — the one crosshair, shared with Overlay; see overlay.js
 		this.drag = null;
 		this.tools = tools;   // K7: the held tools this palette shows and arms (app/src/tools.js)
-		this.holdable = items;   // what the hand can hold, in order -- the devices plugin's (C-e)
+		this.holdable = hand?.items ?? [];   // what the hand can hold, in order -- the devices plugin's (C-e)
+		this.preview = hand?.preview;
+		this.stamp = stamp;
 		this.items = {};       // type -> tile element
 		this.build(container);
 		// the held type's tile lights up, whoever armed it -- a digit, Q, Escape, a lock, or this palette
@@ -96,26 +91,9 @@ export class Palette {
 			test environment, so it needs a DOM shim before it can land. The property that matters --
 			one source for the numbers -- holds either way.
 			*/
-			const frame = document.createElementNS('http://www.w3.org/2000/svg', 'use');
-			frame.setAttribute('href', '#m-circle');
-			item.appendChild(frame);
-
-			// the glyph FITTED to its own bounding box in a socket-sized box -- the nested <svg> the
-			// kernel emits, built with DOM calls because the numbers are what must not drift, and
-			// parsing the kernel's string needs a DOMParser the test environment does not have
-			const [bx, by, bw, bh] = GLYPH_BB[type] || GLYPH_BB.host;
-			const S = STD.socket;
-			const box = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-			box.setAttribute('x', -S / 2);
-			box.setAttribute('y', -S / 2);
-			box.setAttribute('width', S);
-			box.setAttribute('height', S);
-			box.setAttribute('viewBox', `${bx} ${by} ${bw} ${bh}`);
-			box.setAttribute('preserveAspectRatio', 'xMidYMid meet');
-			const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
-			use.setAttribute('href', `#glyph-${type}`);
-			box.appendChild(use);
-			item.appendChild(box);
+			// AMENDED at C-e step two (H19.33): the frame and the fitted glyph are the hand's preview -- the same numbers, now declared
+			// by the devices plugin, and the ghost draws them too (B318)
+			buildPreview(item, this.preview(type));
 			// hotkey badge: digit i+1 arms this type into the hand
 			const badge = document.createElementNS('http://www.w3.org/2000/svg', 'text');
 			badge.setAttribute('class', 'digit-badge');
@@ -174,7 +152,7 @@ export class Palette {
 			if (this.drag.ghost) { this.drag.ghost.remove(); this.drag.ghost = null; this.snap.hide(); }
 			return;
 		}
-		if (!this.drag.ghost) this.drag.ghost = ghostNode(this.overlay, this.drag.type);
+		if (!this.drag.ghost) this.drag.ghost = ghostNode(this.overlay, this.preview(this.drag.type));   // the hand's preview (B318)
 		this.drag.ghost.moveTo(pos);
 		this.snap.show(snapNode(pos));
 	}
@@ -191,9 +169,8 @@ export class Palette {
 			if (Math.hypot(evt.clientX - sx, evt.clientY - sy) < CLICK_SLOP) this.tools.toggleHand(type);
 			return;
 		}
-		const snapped = snapNode(pos);
-		const entity = type === 'waypoint' ? makeWaypoint(this.model, snapped) : makeNode(this.model, type, snapped);
-		this.history.commit(commands.createEntity(type === 'waypoint' ? BARE_KIND : 'node', entity));
-		this.selection.set([entity.id]);
+		// a drop stamps the tile's item where it lands, as a click with it held does: the hand's grid, its rule for what blocks a
+		// stamp, the selection following (C-e)
+		this.stamp(type, pos);
 	}
 }

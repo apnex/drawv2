@@ -510,11 +510,7 @@ arrangement stored a hex per spawner and three repaints only ever reached newly 
 .mover.packet { fill: var(--tok-packet); }
 .waypoint.armed .wp-ring { stroke: var(--tok-danger); stroke-opacity: 1; }
 .waypoint.armed .wp-dot { fill: var(--tok-danger); }
-/* stamp ghost (waypoint hand): ring has no inline stroke, so CSS provides it; red when blocked */
-.node.ghost .wp-ring { stroke: var(--tok-link); }
-.node.ghost .wp-dot { fill: var(--tok-link); }
-.node.ghost.blocked .wp-ring { stroke: var(--tok-danger); }
-.node.ghost.blocked .wp-dot { fill: var(--tok-danger); }
+/* (the waypoint hand's ghost rules went with its branch: no hand holds a waypoint -- C-e, H19.33) */
 
 /* ---- handles (zone resize + link re-plug) ---- */
 .handle { fill: var(--tok-link); stroke: var(--tok-panel); stroke-width: 2; }

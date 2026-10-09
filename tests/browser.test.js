@@ -1278,6 +1278,64 @@ test('K8: Escape during a sidebar drag cancels the drag and is spent there -- th
 	} finally { t.ws.close(); }
 });
 
+
+/*
+B318 (C-e step two, H19.33) -- the stamp ghost previews the device it stamps at the device's size. It drew the glyph unfitted,
+at the art's own extent, so a held router's ghost was 115% of the router it stamped and a host's 87% (measured on this page,
+2026-10-09). Read off the real page: for every item the hand holds, the ghost's glyph and a device's glyph draw the same box.
+*/
+test('B318: the stamp ghost draws each device\'s glyph the size the device draws it', { skip: SKIP }, async () => {
+	const t = await freshTab();
+	try {
+		const got = JSON.parse(await t.eval(`(async () => {
+			const frame = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+			const out = {};
+			let n = 0;
+			for (const type of ['host', 'server', 'loadbalancer', 'firewall', 'vxlan', 'router']) {
+				const id = 'node-b318' + String(++n).padStart(2, '0');
+				draw.model.put('node', { id, name: '', type, shape: 'circle', x: -600 + 120 * n, y: 360 });   // local only: this tab's
+				draw.tools.setHand(type); draw.tools.trackHand({ x: -600 + 120 * n, y: 480 }, false);
+				await frame();
+				const ghost = document.querySelector('#overlay .node.ghost [data-layer="glyph"]').getBoundingClientRect();
+				const real = document.getElementById(id).querySelector('[data-layer="glyph"]').getBoundingClientRect();
+				out[type] = [+(ghost.width - real.width).toFixed(2), +(ghost.height - real.height).toFixed(2)];
+			}
+			draw.tools.setHand(null);
+			return JSON.stringify(out);
+		})()`));
+		for (const [type, [dw, dh]] of Object.entries(got)) assert.ok(Math.abs(dw) < 0.5 && Math.abs(dh) < 0.5, `${type}: the ghost's glyph is off the device's by ${dw} x ${dh} px`);
+	} finally { t.ws.close(); }
+});
+
+/*
+C-e step two -- a palette tile dropped on the canvas stamps through the hand: a free cell takes the device, selected; an occupied
+cell takes nothing (it was refused before too, by the planner, a step later and with no message).
+*/
+test('C-e: a tile dropped on a free cell stamps that device there, selected; dropped on an occupied cell, nothing', { skip: SKIP }, async () => {
+	const t = await freshTab();
+	try {
+		const centre = (sel) => t.eval(`JSON.stringify((() => { const r = document.querySelector('${sel}').getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; })())`).then(JSON.parse);
+		const [tx, ty] = await centre('.palette-item[data-type="host"]');
+		const drop = async (x, y) => {
+			await t.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: tx, y: ty });
+			await t.send('Input.dispatchMouseEvent', { type: 'mousePressed', x: tx, y: ty, button: 'left', clickCount: 1, buttons: 1 });
+			await t.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x, y, button: 'left', buttons: 1 });
+			await t.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', clickCount: 1 });
+			await sleep(300);
+		};
+		const nodes = () => t.eval(`draw.model.all('node').length`);
+		const [lx, ly] = await centre('#node-ba0004');   // the fixture's load balancer
+		const was = await nodes();
+		await drop(lx, ly);
+		assert.equal(await nodes(), was, 'an occupied cell takes nothing');
+		await drop(lx, ly + 120);
+		assert.equal(await nodes(), was + 1, 'a free cell takes the device');
+		const made = JSON.parse(await t.eval(`JSON.stringify((() => { const id = draw.selection.list()[0]; const n = draw.model.get('node', id); return n ? [n.type, n.x - draw.model.get('node', 'node-ba0004').x] : null; })())`));
+		assert.deepEqual(made, ['host', 0], 'the host, selected, in the load balancer\'s column');
+		await t.eval(`draw.history.undo(), 1`);   // the K8 board is shared: leave it as it booted
+	} finally { t.ws.close(); }
+});
+
 /*
 H15.23 (B255) -- the colour registry reaches the page. Every colour the stylesheet uses is now a `var(--tok-...)` read
 from app/tokens.css, so a page that failed to load that file would lose every colour at once and still boot. Read off the

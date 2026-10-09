@@ -4,9 +4,6 @@ Painter — low-level SVG DOM helpers + ephemeral overlay widgets
 no model knowledge, raw canvas coordinates only.
 */
 
-import { waypointLayers } from '../../network/appearance.mjs';
-import { L_STD } from '../../kernel/spec.mjs';
-import { TOKENS } from '../../kernel/theme.mjs';
 
 const NS = 'http://www.w3.org/2000/svg';
 
@@ -57,28 +54,24 @@ export function crosshair(overlay, canvas, gap) {
 	};
 }
 
-export function ghostNode(overlay, type, shape = 'circle') {
-	const g = el('g', { class: 'node ghost' }, overlay);
-	if (type === 'waypoint') {
-		/*
-		B224 -- the ladder has ONE source, and this was a fourth copy of it.
-
-		These two circles were written by hand: radius 20 at stroke-width 1.6, and a dot at 2.2,
-		against the kernel's 2 and 2. The outer one also carried `wp-ring`, the ENDPOINT pad class,
-		at the ANCHOR's radius -- a name that stopped being right at B199.
-
-		A ghost is a preview of what will be placed, so it must be drawn by whatever draws the
-		real thing. An empty role set is the bare anchor, which is exactly what placing one makes.
-		*/
-		for (const l of waypointLayers([], L_STD.frame.ext)) {
-			el('circle', l.fill === 'solid'
-				? { class: l.cls, r: l.radius, fill: TOKENS.waypoint }
-				: { class: l.cls, r: l.radius, fill: l.fill, stroke: TOKENS.waypoint, 'stroke-width': l.width, 'stroke-opacity': l.opacity }, g);
-		}
-	} else {
-		el('use', { 'data-layer': 'frame', href: `#m-${shape}` }, g);
-		el('use', { 'data-layer': 'glyph', href: `#glyph-${type}` }, g);
+// a preview a hand declares -- elements as data, `{ tag, attrs, children }` -- built under a parent (C-e)
+export function buildPreview(parent, preview) {
+	for (const p of preview) {
+		const node = el(p.tag, p.attrs, parent);
+		if (p.children) buildPreview(node, p.children);
 	}
+	return parent;
+}
+
+/*
+THE STAMP GHOST draws the held item's preview, the hand's (C-e, H19.33): what will be stamped, drawn from the numbers the device
+is drawn with. It drew the glyph unfitted, at the art's own extent, so a ghost was 85-115% of the device it stamped (B318). Its
+waypoint branch went with it: no hand holds a waypoint (`w` places one, with no ghost), and B224's ladder still draws every
+waypoint the canvas shows.
+*/
+export function ghostNode(overlay, preview) {
+	const g = el('g', { class: 'node ghost' }, overlay);
+	buildPreview(g, preview);
 	return {
 		moveTo(pos) { g.setAttribute('transform', `translate(${pos.x},${pos.y})`); },
 		setBlocked(on) { g.classList.toggle('blocked', !!on); },

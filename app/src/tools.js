@@ -16,10 +16,11 @@ import { ghostNode } from './painter.js';
 
 
 export class Tools {
-	constructor({ svg, snap }) {
+	constructor({ svg, snap, preview = null }) {
 		this.svg = svg;
 		this.overlay = svg.querySelector('#overlay');
 		this.snap = snap;   // B36 — the one crosshair, shared with Overlay; see overlay.js
+		this.preview = preview;   // how a held item looks -- the hand's (C-e): the ghost draws it
 		/*
 		The two HELD TOOLS. Both are "armed, waiting for a canvas action", and they are separate
 		fields rather than one because they are consumed differently: a hand STAMPS on click and needs
@@ -82,9 +83,10 @@ export class Tools {
 	// ghost rides the SNAPPED cell; red when the cell is occupied (won't stamp)
 	trackHand(pos, blocked) {
 		if (!this.hand) return;
-		if (!this.handGhost) this.handGhost = ghostNode(this.overlay, this.hand);
-		this.handGhost.moveTo(pos);
-		this.handGhost.setBlocked(blocked);
+		// the ghost draws the hand's preview; a composition handing none still shows the crosshair (C-e)
+		if (!this.handGhost && this.preview) this.handGhost = ghostNode(this.overlay, this.preview(this.hand));
+		this.handGhost?.moveTo(pos);
+		this.handGhost?.setBlocked(blocked);
 		this.snap.show(pos);
 	}
 

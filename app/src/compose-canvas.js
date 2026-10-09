@@ -81,7 +81,7 @@ export function composeCanvas({ svg, defs, host, network = null, kinds = undefin
 	// B36 -- one crosshair on #snaplayer, owned here and shared by everything that draws it: Overlay inside Input, and the
 	// held tools' ghost. Two owners of one layer drew two crosshairs.
 	const snap = crosshair(svg.querySelector('#snaplayer'), CANVAS, GAP);
-	const heldTools = tools ? new Tools({ svg, snap }) : null;
+	const heldTools = tools ? new Tools({ svg, snap, preview: parts.find((p) => p.hand)?.hand.preview ?? null }) : null;   // C-e: the ghost draws the hand's preview
 	const input = new Input({ svg, model, history, selection, renderer, labels, readout: shownReadout, tools: heldTools,
 		host, help, now, snap, plugins, runRules, parts });   // C-c, C-d: the canvas parts -- places, press rows, handles
 	let capture = null;
