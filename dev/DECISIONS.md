@@ -1767,7 +1767,8 @@ Asked against `dev/design/unification/DEVICE-JUNCTIONS.md` section 9, the direct
 Asked what becomes of the register now that production follows `main` on every push, the director chose the proposer's recommendation, "retire it".
 - It stays as the record of the upgrade, audited after the cutover, and takes no new entries: with production tracking `main` there is no gap between them for it to list.
 - A change a user or an agent will notice is recorded where it already is -- its backlog row and its commit.
-- Its open items move to the board: Cloud Armor stays H10.30; the device table stays with H17.3's remaining cuts; the director's look at the page's colours, network panel and undelete card becomes an item of its own.
+- Its open items move to the board: Cloud Armor stays H10.30; the device table stays with H17.3's remaining cuts; the director's look at the page's colours, network panel and undelete card becomes an item of its own.\
+  CORRECTED 2026-10-10: Cloud Armor was not open -- the throttle had been live since 2026-08-27 (B159, closed with H10.30).
 
 **B304 -- a tab whose preview the server answered otherwise fetches the document again -- 2026-10-07 (H19.15).**\
 Shown that a tab's preview of an edit is never corrected when another writer's edit reached the server first and the server answered otherwise (18 runs in 300 of the sync fuzz, with only ordinary edits), the director chose the proposer's recommendation: "agree with refetch".

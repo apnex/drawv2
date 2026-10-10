@@ -578,7 +578,7 @@ Amended 2026-08-21: the milestone was written human-first and did not say so; th
 
 ---
 
-## H10 -- client surface and observability - `WIP`
+## H10 -- client surface and observability - `DONE`
 
 The half of the system a person actually touches, and the half with no verifier behind it.\
 Every item here was found by using the application rather than by running the gate, which is itself the argument for the observability items ranking above the cosmetic ones.
@@ -610,7 +610,7 @@ Every item here was found by using the application rather than by running the ga
 | H10.27 | The header's eleven controls are four different heights because none is declared. One `--control-h`, applied to every child | **B156** | S4 - S | `DONE` |
 | H10.28 | The four single-glyph header buttons are sized by their glyph's advance, two of them non-ASCII, so they are neither square nor equal. Width from `--control-h` | **B157** | S4 - S | `DONE` |
 | H10.29 | A per-principal diagram quota. The 500 cap is global, so one signed-in stranger can lock out the owner -- and it gates widening sign-in | **B158** | S2 - S | `DONE` |
-| H10.30 | Cloud Armor on the agent door, which is deliberately IAP-free. Threshold measured, preview first | **B159** | S2 - M | `TODO` |
+| H10.30 | Cloud Armor on the agent door, which is deliberately IAP-free. Threshold measured, preview first | **B159** | S2 - M | `DONE` |
 | H10.31 | `draw` reads a throttle as a credential problem and gives up on a condition that clears by waiting. Bounded backoff, announced | **B160** | S2 - S | `DONE` |
 | H10.32 | A verb targeting with `--diagram` drops a positional id and answers about a different diagram, silently. Refuse an unread positional in the dispatcher | **B161** | S2 - S | `DONE` |
 | H10.33 | Deleting a link orphans its `via` waypoints and they still render, so a removed shape leaves debris and holds its anchors. The cascade exists for a node's links and not for a link's bends | **B162** | S3 - S | `DONE` |
@@ -1138,7 +1138,8 @@ B266 closed, and H18 with it.\
 
 Opened 2026-10-07 by the director, re-triaging the board once production ran the network: "Agreed with recommended order. approved."\
 The order: first what the cutover made deletable, then the sync hardening production now depends on, then the next unification arc, each designed for approval before any code.\
-Elsewhere and unchanged: H10.30 and PD-3 are the director's calls; H15.5 and H17.3 stay in their milestones; B295 stays held.
+Elsewhere and unchanged: H10.30 and PD-3 are the director's calls; H15.5 and H17.3 stay in their milestones; B295 stays held.\
+CORRECTED 2026-10-10: H10.30 was done before H19 opened -- the throttle has been live on the agent door since 2026-08-27 (B159, now closed), and the board was wrong to call it the director's call; H10 closes with it.
 
 | # | Item | Cites | Sev | State |
 |---|---|---|---|---|
@@ -1365,6 +1366,7 @@ Scored so the comparison is a judgement, not an omission.\
 | **B127** | S4 | Parallel connections between two containers: superseded by the network model, designed with B256 | B256 is opened |
 | **B320** | S4 | B54's liveness test can evict its healthy peer under machine load (40 ms pings, one shared event loop) -- seen once, on a pre-push run at load 13.5 | a second B54 failure in any gate or pre-push run |
 | **B282** | S3 | A device type as a composition of packs (B282's pack half), and anchors along a wide device | the second pack that composes; or the first wide device needing links at more than one point (WD1) |
+| **B326** | S4 | The agent door's throttle refuses with no log an operator reads (no load-balancer logging on its backend) | an agent reports a 429, a flood is suspected, or the threshold is next changed |
 | **B325** | S4 | A diagram varies its grids -- its own extent, then its own pitch and offset (WD7) | the infinite canvas and scrolling are designed, or a diagram needs a grid unlike the others |
 | **B324** | S4 | The palette drop test found its page reloaded mid-test, once, on a pre-push run; the cause unseen, and 9 of 9 reruns passed | a second failure of this test in any gate or pre-push run |
 | **B79** | S3 | The connection walk's apparatus is outside the repository; the false record is corrected, the rest held with B127 | B127 revives, or a decision rests on the walk again |

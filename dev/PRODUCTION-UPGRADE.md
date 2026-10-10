@@ -68,7 +68,7 @@ The held backlog row B276 is this register's trigger: it fires when the director
 |---|---|---|---|
 | PU14 | The image copies `planner/` (Dockerfile). | K4, `7630d73` | the built image serves `/planner/txn.mjs` |
 | PU15 | CI fails a run that skips any test, so a browser suite cannot stop silently. | B250, `7f1c366` | CI's last run reports `skipped 0` and `scan-skips: PASS` |
-| PU16 | The agent door has no Cloud Armor; deliberately IAP-free and still unthrottled. | H10.30 | carried: the director's call, independent of this upgrade |
+| PU16 | The agent door has no Cloud Armor; deliberately IAP-free and still unthrottled. | H10.30 | carried: the director's call, independent of this upgrade -- CORRECTED 2026-10-10: false when written; the throttle was live from 2026-08-27 (B159) |
 | PU31 | Production is frozen on `draw:2538ab8` from the format batch's first stage (H18.3) until the cutover: `main` then writes schema 2, which that image refuses. A fix production needs is built on a branch from `2538ab8`, deployed from there, and landed on `main`. | F3, H18.2 | production serves `2538ab8` or a commit on its fix branch, until P9 |
 
 ---
