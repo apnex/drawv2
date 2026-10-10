@@ -73,7 +73,7 @@ test('F-b: the export\'s adapter draws exactly the document\'s bare anchors as w
 
 // ---- the ratchet ----
 
-const ROOTS = ['app/src', 'model', 'planner', 'engine', 'kernel', 'network', 'server', 'cli', 'lab/src', 'devices', 'zones', 'groups'];   // O-e1: and the plugins
+const ROOTS = ['app/src', 'model', 'planner', 'engine', 'kernel', 'network', 'server', 'cli', 'lab/src', 'devices', 'layouts', 'zones', 'groups'];   // O-e1: and the plugins
 const walk = (d) => fs.readdirSync(path.join(root, d), { withFileTypes: true })
 	.flatMap((e) => (e.isDirectory() ? walk(path.join(d, e.name)) : /\.m?js$/.test(e.name) ? [path.join(d, e.name)] : []));
 // code lines only: block comments and whole-line comments are prose, which may say "waypoint" freely

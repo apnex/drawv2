@@ -117,6 +117,7 @@ export async function createApp({ dataDir, secretsDir, port = 8080, clientDir, h
 	const modelDir = path.resolve(root, '..', 'model'); // the model substrate ESM (mounted at /model)
 	const plannerDir = path.resolve(root, '..', 'planner'); // K4 (H17-D5): the planner, served whole (mounted at /planner); `server/` never is
 	const networkDir = path.resolve(root, '..', 'network'); // S-b (H18.12): the network plugin, which the product page composes (mounted at /network)
+	const layoutsDir = path.resolve(root, '..', 'layouts'); // WD-b1 (H19.45): the layouts plugin (mounted at /layouts)
 	const zonesDir = path.resolve(root, '..', 'zones'); // O-b1 (H19.19): the zones plugin, which the product page composes (mounted at /zones)
 	const groupsDir = path.resolve(root, '..', 'groups'); // O-c (H19.20): the groups plugin, which the product page composes (mounted at /groups)
 	const devicesDir = path.resolve(root, '..', 'devices'); // O-e1 (H19.21): the devices plugin, which the product page composes (mounted at /devices)
@@ -220,6 +221,7 @@ export async function createApp({ dataDir, secretsDir, port = 8080, clientDir, h
 	const hasModel = fs.existsSync(modelDir);
 	const hasPlanner = fs.existsSync(plannerDir);
 	const hasNetwork = fs.existsSync(networkDir);
+	const hasLayouts = fs.existsSync(layoutsDir);
 	const hasZones = fs.existsSync(zonesDir);
 	const hasGroups = fs.existsSync(groupsDir);
 	const hasDevices = fs.existsSync(devicesDir);
@@ -290,6 +292,7 @@ export async function createApp({ dataDir, secretsDir, port = 8080, clientDir, h
 		if (hasModel && url.pathname.startsWith('/model/')) return serveFrom(req, res, modelDir, '/model');
 		if (hasPlanner && url.pathname.startsWith('/planner/')) return serveFrom(req, res, plannerDir, '/planner');
 		if (hasNetwork && url.pathname.startsWith('/network/')) return serveFrom(req, res, networkDir, '/network');
+		if (hasLayouts && url.pathname.startsWith('/layouts/')) return serveFrom(req, res, layoutsDir, '/layouts');
 		if (hasZones && url.pathname.startsWith('/zones/')) return serveFrom(req, res, zonesDir, '/zones');
 		if (hasGroups && url.pathname.startsWith('/groups/')) return serveFrom(req, res, groupsDir, '/groups');
 		if (hasDevices && url.pathname.startsWith('/devices/')) return serveFrom(req, res, devicesDir, '/devices');

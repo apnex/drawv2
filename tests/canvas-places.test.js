@@ -16,7 +16,7 @@ import { Model } from './fixtures/composed.mjs';
 import { placesOf } from '../app/src/snap.js';
 import { nudgeSelection } from '../app/src/commands.js';
 import { PRODUCT_CANVAS } from '../product/canvas.mjs';
-import { ZONE_EXT } from '../zones/zone-extent.mjs';
+import { ZONE_EXT } from '../layouts/layout-table.mjs';
 
 const code = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
 const PLACES = placesOf(PRODUCT_CANVAS);

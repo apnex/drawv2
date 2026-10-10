@@ -96,7 +96,7 @@ test('GR10: the entity block carries the schema the server actually validates', 
 	noticing. B96 is called out as the same disease a few lines below this one. The kind check below
 	is the assertion the title always promised.
 	*/
-	const entities = section('Entities (four)');   // four since the format batch (F-c)
+	const entities = section('Entities (five)');   // four since the format batch (F-c); five since WD-b1 (H19.45), the layouts
 	assert.equal(entities.includes('"rev"'), false, 'meta.rev died at CS5');
 	assert.equal(entities.includes('"grid"'), false, 'meta.grid died at CS5');
 	assert.match(entities, /"version"/);

@@ -24,7 +24,8 @@ const code = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), '
 const zones = async () => ({ ...(await import('../zones/zone-kind.mjs')), ...(await import('../zones/make-zone.mjs')) });
 
 test('O-b1: production composes node, zone, group, link, pipe -- the state under test, unchanged', () => {
-	assert.deepEqual(KINDS.list, ['node', 'zone', 'group', 'link', 'pipe']);
+// RESTATED at WD-b1 (H19.45; WD6): the layouts plugin's kind is composed first -- a document lists its grids before what sits on them
+	assert.deepEqual(KINDS.list, ['layout', 'node', 'zone', 'group', 'link', 'pipe']);
 });
 
 test('O-b1: the core composes no zone, and the zone row is the zones plugin\'s', async () => {

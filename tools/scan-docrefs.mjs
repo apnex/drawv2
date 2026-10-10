@@ -81,6 +81,7 @@ const ALLOW = {
 	'*:server/txn.mjs': 'moved to planner/txn.mjs at K4 (H17-D5); a record written while it lived here cites it here',
 	// B291 (H19.3): the migrations and their tests, deleted once every stored document was schema 2; records written while they lived cite them
 	'*:server/migrate.mjs': 'the schema 2 migration, deleted at H19.3 (B291) once every stored document was schema 2; records written while it lived cite it',
+	'*:zones/zone-extent.mjs': 'the zone extent, moved at WD-b1 (H19.45) to the layouts plugin\'s table, layouts/layout-table.mjs; records written while it lived cite it',
 	'*:tools/migrate-schema.mjs': 'the format batch\'s dry run, deleted at H19.3 (B291) with the migration it proved; records written while it lived cite it',
 	'*:tools/migrate-version.mjs': 'the CS5 migration, deleted at H19.3 (B291) once every stored document was schema 2; records written while it lived cite it',
 	'*:tests/migration.test.js': 'the CS5 migration\'s gates, deleted at H19.3 (B291) with tools/migrate-version.mjs; records written while it lived cite it',

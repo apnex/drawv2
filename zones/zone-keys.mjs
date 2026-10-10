@@ -11,7 +11,7 @@ size-step row reads this (`sizeStep`), since a device answers the same key. It w
 */
 
 import { STD } from '../kernel/spec.mjs';
-import { ZONE_EXT } from './zone-extent.mjs';
+import { ZONE_EXT } from '../layouts/layout-table.mjs';   // WD-b1: the zone layout's extent, the layouts plugin's
 import { makeZone } from './make-zone.mjs';
 
 const GAP = STD.pitch;

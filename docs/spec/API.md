@@ -94,7 +94,7 @@ Read it with this amendment in hand: its `beat` is this document's unnamed story
 
 ---
 
-## Entities (four)
+## Entities (five)
 
 ```json
 {
@@ -108,7 +108,9 @@ Read it with this amendment in hand: its `beat` is this document's unnamed story
   "links":  [ { "id": "link-9f00aa", "src": "node-a1b2c3", "dst": "node-d4e5f6",
                 "via": ["node-5e5e5e"], "closed": false, "direction": "forward" } ],
   "zones":  [ { "id": "zone-77bb01", "name": "dmz", "x": 480, "y": 240, "w": 240, "h": 180 } ],
-  "groups": [ { "id": "group-3c3c3c", "name": "web-tier", "members": ["node-a1b2c3"] } ]
+  "groups": [ { "id": "group-3c3c3c", "name": "web-tier", "members": ["node-a1b2c3"] } ],
+  "layouts": [ { "id": "layout-000001", "name": "node", "pitch": 60, "offset": 0,  "ext": { "x": 900, "y": 480 } },
+               { "id": "layout-000002", "name": "zone", "pitch": 60, "offset": 30, "ext": { "x": 930, "y": 510 } } ]
 }
 ```
 
@@ -131,6 +133,10 @@ Still pending from the same amendment and not yet built: a grant may name an OWN
   ENDPOINT waypoint may carry a `spawn` composite, which makes it emit movers along its link in
   read view -- whole or absent, never partial. The numbers a mover obeys are declared in
   `engine/kinds.mjs`, never stored here.
+- layout: one of the diagram's two grids, stored in every diagram (AMENDED 2026-10-10, WD-b1; `dev/design/unification/WIDE-DEVICES.md` section 12):
+  `node`, the grid nodes sit on, and `zone`, the half-offset grid a zone's corners sit on -- each with its `pitch`, the
+  `offset` of its lattice from the origin, and its extent `ext`. Every diagram holds exactly these two, with these values
+  and ids: a diagram may not yet vary its grids (WD7), so an edit that changes, adds or deletes a layout is refused.
 - link: a route between two endpoints, each a node, typed or not. Bends through any `via`
   waypoints and is drawn with rounded corners (`BEND_R` on the grid pitch); `closed` makes it
   a ring with no ends; `direction`, `forward` or `reverse`, is a declared direction. `src`/`dst`/`closed`
@@ -248,7 +254,7 @@ zone-285c5e      group-8582bf         diagram-7bc886
 template-c8d87c
 ```
 
-The server enforces `^(node|link|zone|group|diagram|template)-[0-9a-f]{6}$` and refuses anything else, including uppercase hex, five digits or seven, and a kind outside that list.\
+The server enforces `^(layout|node|link|zone|group|diagram|template)-[0-9a-f]{6}$` and refuses anything else, including uppercase hex, five digits or seven, and a kind outside that list.\
 AMENDED 2026-10-03: `waypoint` left the grammar with the format batch -- a waypoint is a node with no type, and its id says `node` (P-10).\
 A refusal here is a `422` naming the op that carried the bad id.
 

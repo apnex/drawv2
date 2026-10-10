@@ -31,10 +31,11 @@ test('S-e: the product composes three kinds and names no link; the network bring
 	// RESTATED at O-b1 (H19.19): the core composes node and group; the zone is the zones plugin's, which the product composes between them
 	// RESTATED at O-c (H19.20): the group left the core too -- the node alone is the core's kind
 	assert.deepEqual(CORE_KINDS.list, ['node']);
-	assert.deepEqual(PRODUCT_KINDS.list, ['node', 'zone', 'group']);
+// RESTATED at WD-b1 (H19.45; WD6): the layouts plugin's kind is composed first -- a document lists its grids before what sits on them
+	assert.deepEqual(PRODUCT_KINDS.list, ['layout', 'node', 'zone', 'group']);
 	assert.equal(LINK_ROW.owner, 'the network');
 	assert.ok(NETWORK_ROWS.includes(LINK_ROW), 'composing the network brings the link');
-	assert.deepEqual(KINDS.list, ['node', 'zone', 'group', 'link', 'pipe'], 'the composition production runs');
+	assert.deepEqual(KINDS.list, ['layout', 'node', 'zone', 'group', 'link', 'pipe'], 'the composition production runs');
 	assert.equal(KINDS.row('link').owner, 'the network');
 });
 

@@ -32,27 +32,28 @@ connection (SD11b), the planner knows nothing of the page, and nothing imports a
 export const ALLOWED = {
 	core: ['core'],
 	network: ['core', 'devices', 'network'],
-	zones: ['core', 'zones'],   // O-b1 (H19.19): the zones plugin -- the zone kind; it imports the core and itself
+	layouts: ['core', 'layouts'],   // WD-b1 (H19.45): the layouts plugin -- the two grids as stored entities; it imports the core and itself
+	zones: ['core', 'layouts', 'zones'],   // O-b1 (H19.19): the zones plugin -- the zone kind; WD-b1: its extent is the zone layout's
 	groups: ['core', 'groups'],   // O-c (H19.20): the groups plugin -- the group kind and its rules; it imports the core and itself
 	devices: ['core', 'devices'],   // O-e1 (H19.21; O4): the devices plugin -- whether a device is composed on an anchor; it imports the core and itself
 	planner: ['core', 'network', 'planner'],   // O-d (H19.22): it composes nothing, so it imports no plugin
-	product: ['core', 'devices', 'network', 'zones', 'groups', 'simulation', 'product'],   // C-a (D3): the network's appearances on the anchor among the product's canvas parts   // O-d (H19.22): the product's composition -- the anchor and the shipped plugins
-	canvas: ['core', 'devices', 'network', 'zones', 'groups', 'planner', 'canvas'],
-	chrome: ['core', 'devices', 'network', 'zones', 'groups', 'planner', 'product', 'canvas', 'simulation', 'export', 'chrome'],
+	product: ['core', 'devices', 'network', 'layouts', 'zones', 'groups', 'simulation', 'product'],   // C-a (D3): the network's appearances on the anchor among the product's canvas parts   // O-d (H19.22): the product's composition -- the anchor and the shipped plugins
+	canvas: ['core', 'devices', 'network', 'layouts', 'zones', 'groups', 'planner', 'canvas'],
+	chrome: ['core', 'devices', 'network', 'layouts', 'zones', 'groups', 'planner', 'product', 'canvas', 'simulation', 'export', 'chrome'],
 	simulation: ['core', 'devices', 'network', 'simulation'],
 	export: ['core', 'network', 'export'],
-	'server-only': ['core', 'devices', 'network', 'zones', 'groups', 'planner', 'product', 'simulation', 'export', 'server-only', 'serve'],
+	'server-only': ['core', 'devices', 'network', 'layouts', 'zones', 'groups', 'planner', 'product', 'simulation', 'export', 'server-only', 'serve'],
 	serve: [],   // K9: it imports nothing but Node's own modules
 	// O-d (H19.22): the CLI's reader takes the product's composition (cli/verbs.mjs `modelOf`) from product/, so the interim
 	// `planner` allowance O-b1 gave it is gone
-	cli: ['core', 'devices', 'network', 'zones', 'groups', 'simulation', 'product', 'cli'],
-	lab: ['core', 'devices', 'network', 'zones', 'groups', 'planner', 'product', 'canvas', 'lab', 'serve'],
-	tools: ['core', 'devices', 'network', 'zones', 'groups', 'planner', 'product', 'canvas', 'chrome', 'simulation', 'export', 'server-only', 'serve', 'cli', 'tools'],
-	tests: ['core', 'devices', 'network', 'zones', 'groups', 'planner', 'product', 'canvas', 'chrome', 'simulation', 'export', 'server-only', 'serve', 'cli', 'tools', 'tests'],
+	cli: ['core', 'devices', 'network', 'layouts', 'zones', 'groups', 'simulation', 'product', 'cli'],
+	lab: ['core', 'devices', 'network', 'layouts', 'zones', 'groups', 'planner', 'product', 'canvas', 'lab', 'serve'],
+	tools: ['core', 'devices', 'network', 'layouts', 'zones', 'groups', 'planner', 'product', 'canvas', 'chrome', 'simulation', 'export', 'server-only', 'serve', 'cli', 'tools'],
+	tests: ['core', 'devices', 'network', 'layouts', 'zones', 'groups', 'planner', 'product', 'canvas', 'chrome', 'simulation', 'export', 'server-only', 'serve', 'cli', 'tools', 'tests'],
 };
 
 // the layers that ship: what L7k calls "the product"
-export const PRODUCT_LAYERS = ['core', 'devices', 'network', 'zones', 'groups', 'product', 'planner', 'canvas', 'chrome', 'simulation', 'export', 'server-only', 'serve', 'cli'];
+export const PRODUCT_LAYERS = ['core', 'layouts', 'devices', 'network', 'zones', 'groups', 'product', 'planner', 'canvas', 'chrome', 'simulation', 'export', 'server-only', 'serve', 'cli'];
 
 /*
 The folders scan-layers walks. A folder with a `layer` gives every module in it that layer, so a new
@@ -78,6 +79,7 @@ export const FOLDERS = [
 	*/
 	{ dir: 'planner', layer: 'planner' },   // K4 (H17-D5): the planner, served whole to the lab, never `server/`
 	{ dir: 'network', layer: 'network' },
+	{ dir: 'layouts', layer: 'layouts' },   // WD-b1 (H19.45): the layouts plugin (WIDE-DEVICES.md section 12)
 	{ dir: 'zones', layer: 'zones' },   // O-b1 (H19.19): the zones plugin (KINDS-AS-PLUGINS.md)
 	{ dir: 'groups', layer: 'groups' },   // O-c (H19.20): the groups plugin (KINDS-AS-PLUGINS.md)
 	{ dir: 'devices', layer: 'devices' },   // O-e1 (H19.21): the devices plugin (KINDS-AS-PLUGINS.md section 16)
@@ -198,7 +200,7 @@ export const ENTRIES = {
 			'planner/txn.mjs', 'planner/validate.js', 'planner/edges.mjs', 'model/invariants.mjs',
 			'kernel/palette.mjs', 'model/reveal.mjs', 'model/shape.mjs', 'model/surface.mjs',
 			'product/kinds.mjs',   // the product's composition (O-d): the anchor and the shipped plugins, with the network's rows
-			'zones/zone-kind.mjs', 'zones/zone-extent.mjs', 'zones/make-zone.mjs',   // O-b1 (H19.19): the zones plugin -- its row, extent and factory
+			'zones/zone-kind.mjs', 'layouts/layout-table.mjs', 'layouts/layout-kind.mjs', 'zones/make-zone.mjs',   // O-b1 (H19.19): the zones plugin -- its row, extent and factory
 			'zones/zone-painter.mjs', 'product/canvas.mjs',   // C-a (H19.29): the zones plugin's painter, and the product's canvas parts
 			'zones/zone-gestures.mjs',   // C-d (H19.32): the zones plugin's press row and handles
 			'devices/device-gestures.mjs',   // C-d (H19.32): the devices plugin's text box row
@@ -263,7 +265,7 @@ export const ENTRIES = {
 			'model/surface.mjs', 'product/kinds.mjs', 'planner/log.mjs', 'planner/txn.mjs', 'planner/validate.js',
 			'network/link-reactions.mjs',
 			'planner/edges.mjs',   // the planner's edges (PL-4)
-			'zones/zone-kind.mjs', 'zones/zone-extent.mjs', 'zones/make-zone.mjs',   // O-b1 (H19.19): the zones plugin -- its row, extent and factory
+			'zones/zone-kind.mjs', 'layouts/layout-table.mjs', 'layouts/layout-kind.mjs', 'zones/make-zone.mjs',   // O-b1 (H19.19): the zones plugin -- its row, extent and factory
 			'zones/zone-painter.mjs', 'product/canvas.mjs',   // C-a (H19.29): the zones plugin's painter, and the product's canvas parts
 			'zones/zone-gestures.mjs',   // C-d (H19.32): the zones plugin's press row and handles
 			'devices/device-gestures.mjs',   // C-d (H19.32): the devices plugin's text box row
@@ -306,7 +308,7 @@ export const ENTRIES = {
 			// S-e (H18.15): the planner loads no network module -- the link's references and its straight-pair invariant are the
 			// network's row's, handed in with the composition; model/referential.mjs and the pair capacity left its closure
 			'planner/edges.mjs',   // the planner's edges (PL-4)
-			'zones/zone-kind.mjs', 'zones/zone-extent.mjs',   // O-b1 (H19.19): the zones plugin's row and extent, composed by productKinds; its factory is not loaded
+			'zones/zone-kind.mjs', 'layouts/layout-table.mjs', 'layouts/layout-kind.mjs',   // O-b1 (H19.19): the zones plugin's row and extent, composed by productKinds; its factory is not loaded
 			'groups/group-kind.mjs', 'groups/group-rules.mjs',   // O-c (H19.20): the groups plugin's row and rules; its factory and lookup are not loaded
 			'devices/device-fields.mjs', 'engine/spawn-field.mjs',   // O-e2 (H19.21): the device's and the spawner's fields, composed onto the anchor
 		],
@@ -699,7 +701,7 @@ export const UNUSED_EXPORTS = {
 		arrived: ['network/link-reactions.mjs', 'product/kinds.mjs', 'planner/edges.mjs', 'model/order.mjs', 'planner/txn.mjs', 'planner/log.mjs', 'planner/validate.js',
 			'model/anchors.mjs',   // H18.4 F-b: the bare anchor, asked in one place
 			'network/pair-capacity.mjs',   // S-b: the pair rule's one home, split out of model/invariants.mjs
-			'zones/zone-kind.mjs', 'zones/zone-extent.mjs',   // O-b1 (H19.19): the zones plugin's row and extent, out of the core and the planner
+			'zones/zone-kind.mjs', 'layouts/layout-table.mjs', 'layouts/layout-kind.mjs',   // O-b1 (H19.19): the zones plugin's row and extent, out of the core and the planner
 			'groups/group-kind.mjs', 'groups/group-rules.mjs',   // O-c (H19.20): the groups plugin's row and rules, out of the core and the planner (planner/tenants.mjs moved here)
 			'devices/device-fields.mjs', 'engine/spawn-field.mjs'],   // O-e2 (H19.21): the device's and the spawner's fields, out of the planner
 		/*
@@ -793,9 +795,9 @@ keeps the order it had in its scanner. L1 checks that every entry is a folder in
 scan-dead reads every scanned folder except the tests (which it reads separately, as its TESTS).
 */
 export const SCANNER_ROOTS = {
-	dead: ['kernel', 'engine', 'model', 'app/src', 'server', 'planner', 'tools', 'cli', 'lab', 'network', 'zones', 'groups', 'devices', 'product'],   // scan-dead PROD: where a consumer counts as production
+	dead: ['kernel', 'engine', 'model', 'app/src', 'server', 'planner', 'tools', 'cli', 'lab', 'network', 'layouts', 'zones', 'groups', 'devices', 'product'],   // scan-dead PROD: where a consumer counts as production
 	deadMethods: ['server', 'planner', 'model', 'engine', 'kernel'],                 // scan-dead METHOD_SCOPE: where a public method must have a caller
-	docrefs: ['kernel', 'engine', 'model', 'app/src', 'server', 'planner', 'cli', 'zones', 'groups', 'devices', 'product'],     // scan-docrefs CODE_ROOTS: code whose comments cite paths
+	docrefs: ['kernel', 'engine', 'model', 'app/src', 'server', 'planner', 'cli', 'layouts', 'zones', 'groups', 'devices', 'product'],     // scan-docrefs CODE_ROOTS: code whose comments cite paths
 	twins: ['kernel', 'engine', 'model', 'app/src', 'server', 'planner'],     // scan-twins ROOTS: where shared arithmetic is compared
 	writers: ['server', 'planner', 'model'],     // scan-writers ROOTS: where the one-writer rule is held
 };

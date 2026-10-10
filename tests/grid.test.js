@@ -8,7 +8,7 @@ import { PRODUCT_CANVAS } from '../product/canvas.mjs';
 // RESTATED at C-d step one (H19.32): the zone grid is the zones plugin's place, snapped through it -- snapZone left the canvas
 const snapZone = (pos) => snapIn(placesOf(PRODUCT_CANVAS).get('zone'), pos);
 import { SURFACE, NODE_EXT as DOC_NODE_EXT } from '../model/surface.mjs';
-import { ZONE_EXT as DOC_ZONE_EXT } from '../zones/zone-extent.mjs';   // CORRECTED at O-b1: the zone extent is the zones plugin's
+import { ZONE_EXT as DOC_ZONE_EXT } from '../layouts/layout-table.mjs';   // CORRECTED at O-b1: the zone extent is the zones plugin's
 // RESTATED at C-e step thirteen (H19.33): the grids' points are their parts', and snap.js no longer re-exports the zone extent
 const ZONE_EXT = DOC_ZONE_EXT;
 const nodePoints = () => PRODUCT_CANVAS.flatMap((p) => p.grids ?? []).find((g) => g.layer === 'grid-nodes').points();

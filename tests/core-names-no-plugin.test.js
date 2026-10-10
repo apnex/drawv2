@@ -44,7 +44,8 @@ test('O-d: the product composes node, zone, group, link, pipe from the core\'s a
 	const { productKinds } = await import('../product/kinds.mjs');
 	const { NETWORK_ROWS } = await import('../network/kinds.mjs');
 	const k = productKinds(...NETWORK_ROWS);
-	assert.deepEqual(k.list, ['node', 'zone', 'group', 'link', 'pipe']);
+// RESTATED at WD-b1 (H19.45; WD6): the layouts plugin's kind is composed first -- a document lists its grids before what sits on them
+	assert.deepEqual(k.list, ['layout', 'node', 'zone', 'group', 'link', 'pipe']);
 	assert.equal(k.checked, true);
 });
 

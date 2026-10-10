@@ -14,7 +14,7 @@ import { NAME_MAX } from '../model/limits.mjs';
 import { anchorCellsWithin } from '../model/surface.mjs';
 import { LAYOUTS, onLayout } from '../kernel/geometry.mjs';
 import { STD } from '../kernel/spec.mjs';
-import { ZONE_EXT } from './zone-extent.mjs';
+import { ZONE_EXT } from '../layouts/layout-table.mjs';   // WD-b1: the zone layout's extent, the layouts plugin's
 
 const ORDER_MAX = Number.MAX_SAFE_INTEGER;
 const PITCH = STD.pitch;

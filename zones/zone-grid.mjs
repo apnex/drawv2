@@ -10,7 +10,7 @@ It was app/src/snap.js `zonePoints`, app/src/compose-canvas.js `ZONE_GRID_DOT` a
 */
 
 import { STD } from '../kernel/spec.mjs';
-import { ZONE_EXT } from './zone-extent.mjs';
+import { ZONE_EXT } from '../layouts/layout-table.mjs';   // WD-b1: the zone layout's extent, the layouts plugin's
 
 const GAP = STD.pitch;
 

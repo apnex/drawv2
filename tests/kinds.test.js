@@ -42,7 +42,7 @@ const BARE = linkTenant({ owner: 'bare links', keepsOrphan: () => false, says: {
 
 test('N-a: a composition lists its kinds and what each opts into', () => {
 	// three since S-e: a waypoint is a node with no type (F-c), and the link is the network's kind
-	assert.deepEqual(WITH_PROBE.list, ['node', 'zone', 'group', 'probe']);
+	assert.deepEqual(WITH_PROBE.list, ['layout', 'node', 'zone', 'group', 'probe']);   // WD-b1: the layouts plugin's kind first
 	assert.deepEqual(WITH_PROBE.selectable, ['node', 'zone', 'probe']);
 	assert.deepEqual(WITH_PROBE.named, ['node', 'zone', 'group'], 'a probe opts out of names (N5)');
 	assert.deepEqual(WITH_PROBE.anchors, ['node']);
@@ -51,7 +51,8 @@ test('N-a: a composition lists its kinds and what each opts into', () => {
 	// RESTATED at O-b1 (H19.19): the core composes node and group; the zone is the zones plugin's, which the product composes between them
 	// RESTATED at O-c (H19.20): the group left the core too -- the node alone is the core's kind
 	assert.deepEqual(CORE_KINDS.list, ['node']);
-	assert.deepEqual(PRODUCT_KINDS.list, ['node', 'zone', 'group']);
+// RESTATED at WD-b1 (H19.45; WD6): the layouts plugin's kind is composed first -- a document lists its grids before what sits on them
+	assert.deepEqual(PRODUCT_KINDS.list, ['layout', 'node', 'zone', 'group']);
 });
 
 test('N-a: a composition is refused when built -- each way a row can be wrong, named', () => {
@@ -105,7 +106,7 @@ test('N-a: the product\'s planner refuses the plugin kind, and a model and plann
 	const product = new Model({ kinds: PRODUCT_KINDS });
 	assert.equal(plan(product, [{ op: 'put', kind: 'probe', entity: { id: 'probe-00000b', at: NODE.id } }], { links: BARE, kinds: PRODUCT_KINDS }).error, 'unknown kind: probe');
 	assert.throws(() => plan(new Model({ kinds: WITH_PROBE }), [{ op: 'put', kind: 'node', entity: NODE }], { links: BARE, kinds: PRODUCT_KINDS }),
-		/plan: the model is composed with kinds node, zone, group, probe and the planner with node, zone, group/);
+		/plan: the model is composed with kinds layout, node, zone, group, probe and the planner with layout, node, zone, group/);   // WD-b1
 	assert.throws(() => plan(product, [{ op: 'put', kind: 'node', entity: NODE }], { kinds: WITH_PROBE, links: BARE }), /plan: the model is composed with kinds/);
 	assert.throws(() => plan(product, [{ op: 'put', kind: 'node', entity: NODE }], { kinds: CORE_KINDS, links: BARE }), /kinds is a composition whose every row carries its checks/);
 	// S-b: and no plan runs without a link tenant -- none is a default

@@ -41,6 +41,7 @@ COPY lab/ lab/
 COPY network/ network/
 
 # the ZONES plugin (O-b1, H19.19; KINDS-AS-PLUGINS.md): the zone kind, which the product and the lab compose
+COPY layouts/ layouts/
 COPY zones/ zones/
 
 # the GROUPS plugin (O-c, H19.20): the group kind and its rules, which the product and the lab compose

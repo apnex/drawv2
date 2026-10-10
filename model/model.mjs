@@ -112,6 +112,23 @@ export class Model {
 		};
 		this.subs = [];
 		this.index = null; // optional maintained-relations index (engine attachRelations); null → query methods scan
+		this.completeAlways();   // WD-b1: the entities every document holds, held from the start
+	}
+
+	/*
+	WD-b1 (H19.45) -- the entities every document of this composition holds (model/shape.mjs `always`), each a copy of its
+	own, put where a document lacks one: when the Model is made, and when a document is loaded without one. Not a change
+	anyone made, so it emits nothing of its own; a load emits once, after it.
+	*/
+	completeAlways() {
+		for (const [kind, held] of Object.entries(this.kinds.always ?? {})) {
+			for (const e of held) if (!this.collection(kind)[e.id]) this.collection(kind)[e.id] = structuredClone(e);
+		}
+	}
+
+	// whether an id names an entity every document holds -- what a count of an author's work leaves out (app/src/sync.js)
+	isAlwaysHeld(id) {
+		return Object.values(this.kinds.always ?? {}).some((held) => held.some((e) => e.id === id));
 	}
 
 	onChange(fn) {
@@ -314,6 +331,7 @@ export class Model {
 				this.collection(kind)[e.id] = { ...e };
 			});
 		});
+		this.completeAlways();   // WD-b1: a document loaded without an entity every document holds is completed
 		if (doc.meta) {
 			// grants REPLACE rather than merge: a revoked principal must not survive a reload by
 			// hiding in the previous state, which a spread of the old over the new would allow.

@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import fs from 'node:fs';
 import { LINK_ROW } from '../network/link-kind.mjs';
 import { NODE_EXT } from '../model/surface.mjs';
-import { ZONE_EXT } from '../zones/zone-extent.mjs';
+import { ZONE_EXT } from '../layouts/layout-table.mjs';
 import { ZONE_ROWS } from '../zones/zone-kind.mjs';
 import { violations } from '../model/invariants.mjs';
 import { commit } from './fixtures/composed.mjs';
@@ -331,7 +331,8 @@ test('B86: validate.js consults the shared OPTIONAL map, and declares none of it
 	const { ZONE_ROWS: ZR } = await import('../zones/zone-kind.mjs');
 	// RESTATED at O-e2 (H19.21): the node's optional fields are the anchor's (order) and those the devices plugin and the simulation compose on
 	const { DEVICE_FIELDS: DF } = await import('../devices/device-fields.mjs'), { SPAWN_FIELDS: SF } = await import('../engine/spawn-field.mjs');
-	assert.deepEqual(PRODUCT_KINDS.optional, { node: new Set([...OPTIONAL.node, ...DF.optional, ...SF.optional]), zone: new Set(ZR[0].optional), group: new Set((await import('../groups/group-kind.mjs')).GROUP_ROWS[0].optional) }, 'and the product\'s composition carries the table\'s map, unchanged');
+// RESTATED at WD-b1 (H19.45; WD6): the layouts plugin's kind is composed first -- a document lists its grids before what sits on them
+	assert.deepEqual(PRODUCT_KINDS.optional, { layout: new Set(), node: new Set([...OPTIONAL.node, ...DF.optional, ...SF.optional]), zone: new Set(ZR[0].optional), group: new Set((await import('../groups/group-kind.mjs')).GROUP_ROWS[0].optional) }, 'and the product\'s composition carries the table\'s map, unchanged');
 	const txn = fs.readFileSync(new URL('../planner/txn.mjs', import.meta.url), 'utf8');
 	assert.doesNotMatch(txn, /import \{[^}]*OPTIONAL[^}]*\} from/,
 		'and txn.mjs no longer imports it unused, which is what made the tree look single-sourced');
@@ -569,7 +570,8 @@ test('B206: self-conflict and sharing are independent checks', async () => {
 
 	const { violations } = await import('../model/invariants.mjs');
 	const { KINDS } = await import('./fixtures/composed.mjs');   // the straight-pair rule is the link row's own since S-e
-	const asModel = (links) => ({ kinds: KINDS, all: (k) => (k === 'link' ? links : []), get: () => null });
+	// RESTATED at WD-b1 (H19.45): a model holds the entities every document holds -- the two layouts -- so the stand-in answers them
+	const asModel = (links) => ({ kinds: KINDS, all: (k) => (k === 'link' ? links : []), get: (k, id) => (KINDS.always[k] ?? []).find((e) => e.id === id) ?? null });
 	assert.deepEqual(violations(asModel(parallel)), [],
 		'one routed and one straight between a pair is legal -- they render differently');
 	assert.equal(violations(asModel([...parallel, { id: 'l3', src: 'n1', dst: 'n2' }])).length, 1,

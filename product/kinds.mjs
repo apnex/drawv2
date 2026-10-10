@@ -21,6 +21,7 @@ import { NODE_EXT, anchorCellsWithin } from '../model/surface.mjs';
 import { LAYOUTS, onLayout } from '../kernel/geometry.mjs';
 import { STD } from '../kernel/spec.mjs';
 import { ZONE_ROWS } from '../zones/zone-kind.mjs';
+import { LAYOUT_ROWS } from '../layouts/layout-kind.mjs';   // WD-b1: the layouts plugin's kind
 import { GROUP_ROWS } from '../groups/group-kind.mjs';
 import { DEVICE_FIELDS } from '../devices/device-fields.mjs';
 import { SPAWN_FIELDS } from '../engine/spawn-field.mjs';
@@ -96,5 +97,6 @@ const ANCHOR_FIELDS = {
 const ANCHOR_ROWS = CORE_ROWS.map((row) => ({ ...row, fields: ANCHOR_FIELDS, cap: ANCHOR_CAP }));
 
 // the shipped kinds and fields, in the order a document lists its collections, then a plugin's rows
-const SHIPPED = [...ANCHOR_ROWS, ...ZONE_ROWS, ...GROUP_ROWS, DEVICE_FIELDS, SPAWN_FIELDS];
+// WD-b1: the layouts first -- a document lists its grids before what sits on them
+const SHIPPED = [...LAYOUT_ROWS, ...ANCHOR_ROWS, ...ZONE_ROWS, ...GROUP_ROWS, DEVICE_FIELDS, SPAWN_FIELDS];
 export const productKinds = (...pluginRows) => composeKinds([...SHIPPED, ...pluginRows], pluginRows.length ? `the product with ${pluginRows.filter((r) => !r.extends).map((r) => r.kind).join(', ')}` : 'the product');

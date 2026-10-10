@@ -9,7 +9,7 @@ the K8 DOM corpus holds that.
 */
 
 import { STD, L_STD } from '../kernel/spec.mjs';
-import { ZONE_EXT } from './zone-extent.mjs';
+import { ZONE_EXT } from '../layouts/layout-table.mjs';   // WD-b1: the zone layout's extent, the layouts plugin's
 import { ZONE_PRESSES, ZONE_HANDLE_SPECS } from './zone-gestures.mjs';
 import { ZONE_KEYS, ZONE_SIZE_STEP } from './zone-keys.mjs';
 import { ZONE_DESCRIBE, ZONE_SELECT_ALL } from './zone-facts.mjs';

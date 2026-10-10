@@ -1280,7 +1280,8 @@ test('PL-5: the kind table is the one list of kinds, and what still states them 
 	// H17.22 N-a: the id grammar is built from the rows -- the product composes exactly the table's kinds, each row
 	// accepting its own kind's id and no other's
 	const PRODUCT_KINDS = (await import('../product/kinds.mjs')).productKinds();
-	assert.deepEqual(PRODUCT_KINDS.list, ['node', 'zone', 'group'], 'the product composes the table\'s kind, the zones plugin\'s and the groups plugin\'s');
+// RESTATED at WD-b1 (H19.45; WD6): the layouts plugin's kind is composed first -- a document lists its grids before what sits on them
+	assert.deepEqual(PRODUCT_KINDS.list, ['layout', 'node', 'zone', 'group'], 'the product composes the layouts plugin\'s kind, the table\'s, the zones plugin\'s and the groups plugin\'s');
 	for (const k of PRODUCT_KINDS.list) for (const other of PRODUCT_KINDS.list) assert.equal(PRODUCT_KINDS.row(k).fields.id(`${other}-00aa11`), k === other, `${k} accepts ${other} ids: ${k === other}`);
 	// a Model's collections are the table's, in its order
 	const m = new Model();

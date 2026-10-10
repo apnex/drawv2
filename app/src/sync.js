@@ -423,7 +423,9 @@ export class Sync {
 	// ---- inbound ----
 	localEntityCount() {
 		// every kind the Model was composed with -- a pipe too, which the list it held omitted (C-e, the survey's finding)
-		return this.model.kinds.list.reduce((n, k) => n + this.model.all(k).length, 0);
+		// WD-b1: and not what every document holds -- a fresh tab holds the two layouts before it hydrates, and counting them
+		// would take every page load for work drawn offline
+		return this.model.kinds.list.reduce((n, k) => n + this.model.all(k).filter((e) => !this.model.isAlwaysHeld(e.id)).length, 0);
 	}
 
 	onMessage(msg) {

@@ -11,7 +11,7 @@ now, and the canvas runs the shared gestures they name. Nothing a user sees chan
 
 import { STD } from '../kernel/spec.mjs';
 import { LAYOUTS, snapLayout } from '../kernel/geometry.mjs';
-import { ZONE_EXT } from './zone-extent.mjs';
+import { ZONE_EXT } from '../layouts/layout-table.mjs';   // WD-b1: the zone layout's extent, the layouts plugin's
 import { makeZone } from './make-zone.mjs';
 
 const MIN_ZONE = STD.pitch;   // a zone is at least one cell (B86), the pitch the kernel's

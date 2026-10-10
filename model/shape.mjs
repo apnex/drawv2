@@ -121,7 +121,13 @@ O-c (H19.20) -- A ROW MAY GATHER: `gathers` names one of its list fields, and th
 -- found by the Model (`gathererOf`), and selecting the id selects the whole list. It is how the core does for a group what it
 did by name -- the 2026-10-02 ruling's "a group's membership is stated in those terms, not by naming kinds".
 */
-const ROW_KEYS = ['kind', 'owner', 'collection', 'selectable', 'named', 'anchor', 'composite', 'optional', 'references', 'fields', 'refers', 'cap', 'invariants', 'needs', 'tenant', 'gathers'];
+/*
+WD-b1 (H19.45; dev/design/unification/WIDE-DEVICES.md section 12) -- A ROW MAY DECLARE THE ENTITIES EVERY DOCUMENT HOLDS:
+`always`, a list of whole entities of the kind, each with its own id. The Model holds them from the moment it is made and
+completes a document loaded without them, so every maker of a document -- the server's, the tab's, the lab's, a test's --
+holds them by construction rather than by remembering (the layouts plugin's two grids).
+*/
+const ROW_KEYS = ['kind', 'owner', 'collection', 'selectable', 'named', 'anchor', 'composite', 'optional', 'references', 'fields', 'refers', 'cap', 'invariants', 'needs', 'tenant', 'gathers', 'always'];
 /*
 S-a (H18.11; ruled 2026-10-03, G3) -- A PLUGIN MAY CONTRIBUTE FIELDS TO A KIND IT DOES NOT OWN. A field's meaning belongs to
 whoever reads it: the network's `transit` is stored on a node, the product's kind, but only the network gives it meaning.
@@ -167,6 +173,12 @@ export function composeKinds(given, who = 'a composition') {
 		if (row.needs !== undefined && !(Array.isArray(row.needs) && row.needs.length && row.needs.every((n) => typeof n === 'string'))) throw new Error(`${who}: kind ${row.kind}: needs names what a Model holding it must have attached -- ['network'] (Q-a)`);
 		if (row.invariants !== undefined && typeof row.invariants !== 'function') throw new Error(`${who}: kind ${row.kind}: its invariants are a function, (model, report)`);
 		if (row.tenant !== undefined && !(typeof row.tenant?.owner === 'string' && Array.isArray(row.tenant.reactions))) throw new Error(`${who}: kind ${row.kind}: its tenant is { owner, reactions } (O-a)`);
+		if (row.always !== undefined) {
+			const prefix = `${row.kind}-`;
+			if (!Array.isArray(row.always) || row.always.some((e) => !e || typeof e !== 'object' || typeof e.id !== 'string' || !e.id.startsWith(prefix)))
+				throw new Error(`${who}: kind ${row.kind}'s always-held entities are a list of ${row.kind} entities, each with its own id`);
+			if (new Set(row.always.map((e) => e.id)).size !== row.always.length) throw new Error(`${who}: kind ${row.kind} holds an entity always twice`);
+		}
 		if (row.gathers !== undefined && !(row.composite ?? []).includes(row.gathers)) throw new Error(`${who}: kind ${row.kind} gathers ${row.gathers}, which is not one of its list fields (O-c)`);
 		byName.set(row.kind, row);
 		byCollection.set(row.collection, row.kind);
@@ -217,6 +229,8 @@ export function composeKinds(given, who = 'a composition') {
 		checked: rows.every((r) => r.fields !== undefined),
 		// the kinds that gather, and the list field each gathers by (O-c)
 		gathers: Object.fromEntries(rows.filter((r) => r.gathers).map((r) => [r.kind, r.gathers])),
+		// the entities every document holds, by kind (WD-b1: the layouts plugin's two grids)
+		always: Object.fromEntries(rows.filter((r) => r.always).map((r) => [r.kind, r.always])),
 		// the tenants the rows bring, in the composition's order -- what the planner runs after the link tenant (O-a)
 		tenants: rows.filter((r) => r.tenant).map((r) => r.tenant),
 		// who brought a field another owner's kind carries (S-a): `kind.field` -> owner
