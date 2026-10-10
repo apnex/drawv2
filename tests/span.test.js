@@ -814,7 +814,8 @@ test('B200: the node grid and the waypoint centre are one dot, from one source',
 	// K8: the grid is drawn by the one canvas composition (app/src/compose-canvas.js), for the product page and the lab
 	// RESTATED at C-e step thirteen (H19.33): it draws each part's declared grid -- the anchor grid is the product's, declared
 	// with its dot in product/canvas.mjs, which is where the radius is now read
-	const main = fs.readFileSync(new URL('../product/canvas.mjs', import.meta.url), 'utf8');
+	// RESTATED at WD-b2 (H19.46): both grids are the layouts plugin's, its node grid's dot declared in layouts/layout-canvas.mjs
+	const main = fs.readFileSync(new URL('../layouts/layout-canvas.mjs', import.meta.url), 'utf8');
 	// RESTATED at C-a (H19.29, D3): the anchor's drawing is the plugins' appearances now -- the network's marks, the devices plugin's device
 	const renderer = fs.readFileSync(new URL('../network/anchor-appearance.mjs', import.meta.url), 'utf8');
 	const kernelRenderer = (fs.readFileSync(new URL('../kernel/renderer.mjs', import.meta.url), 'utf8') + fs.readFileSync(new URL('../kernel/svg-scene.mjs', import.meta.url), 'utf8'));

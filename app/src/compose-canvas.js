@@ -33,6 +33,7 @@ import { Input } from './input.js';
 import { Capture } from './capture.js';
 import { picksOf, regionsOf } from './pick.js';
 import { Readout } from './readout.js';
+import { Grids } from './grids.js';   // WD-b2: the grids, from the open diagram's records
 
 /*
   svg        the page's canvas element
@@ -48,17 +49,13 @@ Returns every part, and `listen()`, which starts event capture and answers the C
 export function composeCanvas({ svg, defs, host, network = null, kinds = undefined, parts = [], readoutEl = null, tools = false, help = null, now, plugins = [], runRules = [] }) {
 	// the kernel's glyph and frame defs: the kernel owns the look
 	defs.innerHTML = sharedDefs();
-	// C-e: each part's grid, its dots drawn into the page layer it names -- the product's anchor grid, the zones plugin's
-	for (const p of parts) for (const g of p.grids ?? []) {
-		const layer = svg.querySelector(`#${g.layer}`);
-		if (!layer) throw new Error(`composeCanvas: ${p.owner}'s grid draws into #${g.layer}, which this page does not have`);
-		g.points().forEach((pt) => el('circle', { cx: pt.x, cy: pt.y, r: g.r }, layer));
-	}
 
 	const model = new Model({ attached: { network }, kinds });   // the kinds a composition brings -- the core's when none are passed, so no links (S-e) (H17.22 N-a)
 	// R3: the maintained reverse indices, registered before any other subscriber so they see a fresh index; `cellOf` is
 	// injected here, at a composition root, so engine/ imports no kernel
 	attachRelations(model, { cellOf });
+	// WD-b2 (H19.46): each grid a part declares, drawn from the open diagram and again on every load -- the layouts plugin's two
+	new Grids({ svg, parts, model });
 	const selection = new Selection(model);
 	/*
 	the commit boundary: a root's transport subscribes to it, not to the model. V-d (H18.28; PL-6): it previews each commit

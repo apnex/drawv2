@@ -83,6 +83,7 @@ const ALLOW = {
 	'*:server/migrate.mjs': 'the schema 2 migration, deleted at H19.3 (B291) once every stored document was schema 2; records written while it lived cite it',
 	'*:server/migrate-schema-3.mjs': 'the schema 3 migration -- built at WD-b1 (H19.45), run once from history at its deploy and never carried (WD9); records written while it lived cite it',
 	'*:tools/migrate-down-to-schema-2.mjs': 'the way back from schema 3 -- built at WD-b1 (H19.45) and deleted before its deploy, the director ruling a full-forward deploy (WD9); records written while it lived cite it',
+	'*:zones/zone-grid.mjs': 'the zone grid, moved at WD-b2 (H19.46) to the layouts plugin\'s canvas part, layouts/layout-canvas.mjs; records written while it lived cite it',
 	'*:zones/zone-extent.mjs': 'the zone extent, moved at WD-b1 (H19.45) to the layouts plugin\'s table, layouts/layout-table.mjs; records written while it lived cite it',
 	'*:tools/migrate-schema.mjs': 'the format batch\'s dry run, deleted at H19.3 (B291) with the migration it proved; records written while it lived cite it',
 	'*:tools/migrate-version.mjs': 'the CS5 migration, deleted at H19.3 (B291) once every stored document was schema 2; records written while it lived cite it',

@@ -39,7 +39,7 @@ import { pressRows, hitFactsOf, DOUBLE_CLICKS } from './recognize.js';
 import { KEYMAP, KEY_RELEASES } from './keymap.js';
 import { composeRules, resolveInput } from '../../kernel/input-rules.mjs';
 import { occupiedAnyAt, picksOf, pointsOf, grabbedAt, takenIn } from './pick.js';
-import { GAP, orthoDelta, snappedDelta, clampDelta, snapNode, snapIn, placesOf, resolveBox, dist } from './snap.js';
+import { GAP, orthoDelta, snappedDelta, clampDelta, snapNode, snapIn, placesOf, gridsOf, resolveBox, dist } from './snap.js';
 import { el, crosshair, previewRect, previewLine, previewPath, isShown, setShown, layerOf } from './painter.js';
 import { emitToHost } from './capture.js';
 import { initialInputState, track } from './input-state.js';
@@ -382,7 +382,7 @@ export class Input {
 		// C-e: what Ctrl+A takes, each part's, in rank order
 		this.selectAlls = parts.filter((p) => p.selectAll).map((p) => p.selectAll).sort((a, b) => a.rank - b.rank);
 		// C-e: the grids a modifier shows -- the zones plugin's, by Shift
-		this.shownGrids = parts.flatMap((p) => (p.grids ?? []).filter((g) => g.shownWith));
+		this.shownGrids = gridsOf(parts).filter((g) => g.shownWith);   // WD-b2: of the grids drawn (snap.js `gridsOf`)
 		// C-e: what a double-click edits, each part's, in rank order; and the kinds F2 renames
 		this.edits = parts.flatMap((p) => p.labels?.edits ?? []).sort((a, b) => a.rank - b.rank);
 		this.named = new Set(parts.flatMap((p) => p.labels?.named ?? []));

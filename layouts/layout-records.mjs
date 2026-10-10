@@ -9,10 +9,15 @@ loudly).
 
 import { LAYOUT_TABLE } from './layout-table.mjs';
 
+// one layout record by its name -- the grid the canvas draws (layouts/layout-canvas.mjs) -- a plain copy, or an error naming it
+export function layoutNamed(model, name) {
+	const want = LAYOUT_TABLE.find((l) => l.name === name);
+	if (!want) throw new Error(`no layout is named ${name}`);
+	const l = model.get('layout', want.id);
+	if (!l) throw new Error(`the ${want.name} layout (${want.id}) is missing -- every diagram holds its two layouts`);
+	return { id: l.id, name: l.name, pitch: l.pitch, offset: l.offset, ext: { x: l.ext.x, y: l.ext.y } };
+}
+
 export function layoutRecords(model) {
-	return LAYOUT_TABLE.map((want) => {
-		const l = model.get('layout', want.id);
-		if (!l) throw new Error(`the ${want.name} layout (${want.id}) is missing -- every diagram holds its two layouts`);
-		return { id: l.id, name: l.name, pitch: l.pitch, offset: l.offset, ext: { x: l.ext.x, y: l.ext.y } };
-	});
+	return LAYOUT_TABLE.map((want) => layoutNamed(model, want.name));
 }

@@ -1,3 +1,4 @@
+import { Model } from './fixtures/composed.mjs';   // WD-b2: a grid reads the diagram's layout record
 import { test } from 'node:test';
 import { LAYOUTS, onLayout, snapLayout, cellOn, pxOn, nearestAnchor, anchorAt } from '../kernel/geometry.mjs';
 import { STD } from '../kernel/spec.mjs';
@@ -11,7 +12,8 @@ import { SURFACE, NODE_EXT as DOC_NODE_EXT } from '../model/surface.mjs';
 import { ZONE_EXT as DOC_ZONE_EXT } from '../layouts/layout-table.mjs';   // CORRECTED at O-b1: the zone extent is the zones plugin's
 // RESTATED at C-e step thirteen (H19.33): the grids' points are their parts', and snap.js no longer re-exports the zone extent
 const ZONE_EXT = DOC_ZONE_EXT;
-const nodePoints = () => PRODUCT_CANVAS.flatMap((p) => p.grids ?? []).find((g) => g.layer === 'grid-nodes').points();
+// RESTATED at WD-b2 (H19.46): a grid's points are read from the open diagram's layout record -- here a fresh Model's
+const nodePoints = () => PRODUCT_CANVAS.flatMap((p) => p.grids ?? []).find((g) => g.layer === 'grid-nodes').points(new Model());
 
 // Grid math lives in app/src/snap.js (shipped). The center-origin geometry was ported from the
 // retired client/src/grid.js; as of CL3 the canvas surface + usable extents are single-sourced

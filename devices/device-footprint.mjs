@@ -25,6 +25,19 @@ const footprintHits = (n, box, pad = 0) => {
 	return n.x - pad <= box.x + box.w && n.x + sw + pad >= box.x && n.y - pad <= box.y + box.h && n.y + sh + pad >= box.y;
 };
 
+/*
+WD-b2 (H19.46) -- A DEVICE'S SIZE, for its place: the extent of its span beyond its own cell, from the cell's centre, as the
+anchor's place read it from product/canvas.mjs until the layouts plugin took the place. A node with no span -- a device of one
+cell, or a waypoint -- answers nothing, and the canvas reads one cell (app/src/snap.js `placesOf`).
+*/
+export const DEVICE_SIZES = {
+	node: (n) => {
+		if (!n.span) return undefined;
+		const { sw, sh } = spanExtent(n.span);
+		return { w: sw, h: sh };
+	},
+};
+
 export const DEVICE_POINTS = [{
 	word: 'node',
 	of: (model) => typedNodes(model),

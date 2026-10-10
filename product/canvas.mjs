@@ -10,9 +10,7 @@ THE ANCHOR'S ORDER is the product's to declare, since several plugins draw on on
 Named lists rather than integer priorities -- the ruling's own caution: "priority as a bare integer is where this shape rots".
 */
 
-import { NODE_EXT } from '../model/surface.mjs';
-import { spanExtent, gridDot } from '../kernel/geometry.mjs';
-import { STD } from '../kernel/spec.mjs';
+import { LAYOUTS_CANVAS } from '../layouts/layout-canvas.mjs';
 import { ZONES_CANVAS } from '../zones/zone-painter.mjs';
 import { GROUPS_CANVAS } from '../groups/group-painter.mjs';
 import { DEVICES_CANVAS } from '../devices/device-appearance.mjs';
@@ -20,36 +18,15 @@ import { NETWORK_CANVAS } from '../network/canvas.mjs';
 import { SIMULATION_CANVAS } from '../engine/spawn-appearance.mjs';
 
 /*
-C-c: THE ANCHOR'S PLACE, the product's to declare as the anchor is the core's: the node grid, within the node extent, its size beyond
-one cell a wide device's span -- the one place the canvas reads a device's field for the anchor, until B282 makes a wide device
-several anchors (O4, the recorded width exception).
+WD-b2 (H19.46): THE PRODUCT'S PART IS COMPOSITION -- the anchor's drawing order among the plugins' appearances and its rank in a
+delete. The anchor's place and the anchor grid, with the width exception the place's size recorded, moved to the layouts plugin
+(layouts/layout-canvas.mjs), and a device's size to the devices plugin (devices/device-footprint.mjs `DEVICE_SIZES`).
 */
-/*
-THE ANCHOR GRID, always shown, into the page's `#grid-nodes` layer (C-e step thirteen; it was app/src/snap.js `nodePoints` and
-app/src/compose-canvas.js). B200 -- ITS DOT IS THE DOT A WAYPOINT HIGHLIGHTS: the kernel owns it as `gridDot`, and the waypoint
-renderer draws its own circle at the same radius in a brighter fill, one layer up, so a waypoint READS as the grid point lit up
-while in fact occluding it. Two circles, deliberately: a waypoint restyling a grid element would couple the two layers, and the
-radius is the only part that has to agree.
-*/
-const ANCHOR_GRID = {
-	layer: 'grid-nodes',
-	points: () => {
-		const points = [];
-		for (let y = -NODE_EXT.y; y <= NODE_EXT.y; y += STD.pitch) for (let x = -NODE_EXT.x; x <= NODE_EXT.x; x += STD.pitch) points.push({ x, y });
-		return points;
-	},
-	r: gridDot().radius,
-};
-
-const ANCHOR_PLACE = { kind: 'node', layout: 'node', ext: NODE_EXT, size: (anchor) => { const { sw, sh } = spanExtent(anchor.span); return { w: sw, h: sh }; } };
-
 const ANCHOR_ORDER = {
 	owner: 'the product',
 	orders: { node: { layers: ['frame', 'sockets', 'body', 'marks', 'transit', 'select', 'label'], ranks: ['device', 'marks'] } },
-	places: [ANCHOR_PLACE],
-	grids: [ANCHOR_GRID],
 	deleteRanks: { node: 4 },   // C-e: an anchor is deleted last; a kind no part ranks, 3
 };
 
 // painters back to front on a full render: zones, group hulls, links -- and the anchors over them, by appearances
-export const PRODUCT_CANVAS = [ANCHOR_ORDER, ZONES_CANVAS, GROUPS_CANVAS, DEVICES_CANVAS, NETWORK_CANVAS, SIMULATION_CANVAS];
+export const PRODUCT_CANVAS = [ANCHOR_ORDER, LAYOUTS_CANVAS, ZONES_CANVAS, GROUPS_CANVAS, DEVICES_CANVAS, NETWORK_CANVAS, SIMULATION_CANVAS];

@@ -8,7 +8,7 @@ import { STD, L_STD } from '../../kernel/spec.mjs';
 import { spanExtent, LAYOUTS, snapLayout } from '../../kernel/geometry.mjs';
 // CL3: canvas surface + usable extents come from the sovereign model/ substrate (single source).
 // IMPORTED (not a bare re-export) — snapNode references NODE_EXT locally. AMENDED C-e (H19.33): the grids' points are their
-// parts' (product/canvas.mjs, zones/zone-grid.mjs), and the zone extent is the zones plugin's alone.
+// parts'. AMENDED WD-b2 (H19.46): both grids are the layouts plugin's (layouts/layout-canvas.mjs), drawn by app/src/grids.js.
 import { SURFACE, NODE_EXT } from '../../model/surface.mjs';
 import { ANCHOR_KINDS } from '../../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
 export const GAP = STD.pitch;                     // 60 — from the kernel, not a local literal
@@ -100,17 +100,44 @@ the extent it stays within, and its size beyond one cell, which the clamp holds 
 cloning and nudging read these rather than asking whether a kind is an anchor or a zone. A layout the kernel lacks, a place
 without a size, or a kind placed twice is refused, naming its owner.
 */
+/*
+WD-b2 (H19.46; dev/design/unification/WIDE-DEVICES.md section 5.1) -- A PLACE'S SIZE COMES FROM ONE SOURCE, WHICH THE PLACE
+DECLARES: its own `size`, as the zones plugin's carries a zone's, or `sizedBy: 'parts'` -- its kind's parts size it, as the
+devices plugin declares a device's (`sizes`), at most one answering, and none meaning one cell, so a page composed without the
+devices plugin draws every anchor one cell (CANVAS-PLUGINS.md: a page without a plugin's part draws none of what it brings).
+A place declaring neither, or both, or sized twice -- its own size and a part's, or two parts' -- is refused here, when the canvas
+is composed, naming the parts; a sizer answering nothing for an entity means one cell. What a size means stays the place's: for
+the anchor, the extent beyond its cell from the cell's centre; for a zone, its whole box from its corner.
+*/
 export function placesOf(parts) {
 	const places = new Map();
 	for (const part of parts) {
 		for (const p of part.places ?? []) {
 			if (!LAYOUTS[p.layout]) throw new Error(`place: ${part.owner}'s place for ${p.kind} names layout ${p.layout}, which the kernel does not have`);
-			if (typeof p.size !== 'function') throw new Error(`place: ${part.owner}'s place for ${p.kind} has no size`);
 			if (places.has(p.kind)) throw new Error(`place: ${p.kind} is placed by ${places.get(p.kind).owner} and by ${part.owner}`);
 			places.set(p.kind, { ...p, owner: part.owner });
 		}
 	}
+	for (const [kind, p] of places) {
+		const own = typeof p.size === 'function', byParts = p.sizedBy === 'parts';
+		if (own === byParts) {
+			throw new Error(`place: ${kind} ${own ? `declares both its own size and that its kind's parts size it, in ${p.owner}'s place` : `has no size -- ${p.owner}'s place declares neither its own size nor that its kind's parts size it`}`);
+		}
+		const sources = [
+			...(own ? [{ who: `${p.owner}'s place`, size: p.size }] : []),
+			...parts.filter((part) => typeof part.sizes?.[kind] === 'function').map((part) => ({ who: `${part.owner}'s sizes`, size: part.sizes[kind] })),
+		];
+		if (sources.length > 1) throw new Error(`place: ${kind} is sized by ${sources.map((s) => s.who).join(' and by ')} -- a placed kind takes its size from one source`);
+		const size = sources[0]?.size ?? (() => undefined);
+		places.set(kind, { ...p, size: (entity) => size(entity) ?? { w: 0, h: 0 } });
+	}
 	return places;
+}
+
+// WD-b2 (H19.46): the grids the page draws -- each a part declares, on a layout some part places a kind on
+export function gridsOf(parts) {
+	const placed = new Set([...placesOf(parts).values()].map((p) => p.layout));
+	return parts.flatMap((p) => (p.grids ?? []).filter((g) => placed.has(g.layout)));
 }
 
 // a point on a placed kind's grid, within its extent

@@ -8,6 +8,7 @@ half-offset grid while Shift is held and no move or clone is under way. The canv
 its declaration; `zonePoints`, `nodePoints`, the zone grid's dot and `Input#syncZoneGrid` (which had no caller) left the canvas.
 Nothing a user sees changes: the K8 DOM corpus records both grids' dots.
 */
+import { Model } from './fixtures/composed.mjs';   // WD-b2: a grid reads the diagram's layout record
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -46,11 +47,13 @@ test('C-e: without the zones plugin Shift shows no grid', () => {
 	} finally { h.restore(); }
 });
 
-test('C-e: the product declares the anchor grid, always shown; the zones plugin the half-offset grid, shown with Shift', () => {
+// RESTATED at WD-b2 (H19.46): both grids are the layouts plugin's, drawn from the diagram's layout records (tests/layouts-canvas.test.js)
+test('C-e: the layouts plugin declares the anchor grid, always shown, and the half-offset grid, shown with Shift', () => {
 	const grids = PRODUCT_CANVAS.flatMap((p) => (p.grids ?? []).map((g) => ({ ...g, owner: p.owner })));
-	assert.deepEqual(grids.map((g) => [g.owner, g.layer, g.points().length, g.r, g.shownWith ?? null, g.cls ?? null]),
-		[['the product', 'grid-nodes', 31 * 17, gridDot().radius, null, null], ['zones', 'grid-zones', 32 * 18, 5, 'shiftKey', 'zonegrid']]);
-	const zone = grids[1].points();
+	const m = new Model();
+	assert.deepEqual(grids.map((g) => [g.owner, g.layer, g.points(m).length, g.r, g.shownWith ?? null, g.cls ?? null]),
+		[['layouts', 'grid-nodes', 31 * 17, gridDot().radius, null, null], ['layouts', 'grid-zones', 32 * 18, 5, 'shiftKey', 'zonegrid']]);
+	const zone = grids[1].points(m);
 	assert.deepEqual([zone[0], zone.at(-1)], [{ x: -930, y: -510 }, { x: 930, y: 510 }], 'the half-offset lattice, edge to edge');
 });
 

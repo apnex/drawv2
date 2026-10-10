@@ -65,7 +65,8 @@ test('C-c: the canvas names no list of placed kinds', () => {
 test('C-c: a malformed place is refused when the places are composed, naming its owner', () => {
 	assert.throws(() => placesOf([{ owner: 'p', places: [{ kind: 'x', layout: 'nowhere', ext: { x: 1, y: 1 }, size: () => ({ w: 0, h: 0 }) }] }]), /place: p's place for x names layout nowhere, which the kernel does not have/);
 	assert.throws(() => placesOf([...PRODUCT_CANVAS, { owner: 'p', places: [{ kind: 'zone', layout: 'zone', ext: { x: 1, y: 1 }, size: () => ({ w: 0, h: 0 }) }] }]), /place: zone is placed by zones and by p/);
-	assert.throws(() => placesOf([{ owner: 'p', places: [{ kind: 'x', layout: 'node', ext: { x: 1, y: 1 } }] }]), /place: p's place for x has no size/);
+	// RESTATED at WD-b2 (H19.46): a place declares its size's source -- its own size, or its kind's parts -- and one declaring neither is refused, naming it
+	assert.throws(() => placesOf([{ owner: 'p', places: [{ kind: 'x', layout: 'node', ext: { x: 1, y: 1 } }] }]), /place: x has no size -- p's place declares neither its own size nor that its kind's parts size it/);
 });
 
 test('C-c: a dragged zone snaps on its own half-offset grid, not the node grid', async () => {

@@ -25,8 +25,9 @@ import { LAYER } from '../tools/layers.mjs';
 
 const root = path.resolve(import.meta.dirname, '..');
 const code = (file) => fs.readFileSync(path.join(root, file), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
-const KIND_WORD = /'(zones?|groups?|links?|pipes?)'|'[^'\n]*\.(zone|group|link|pipe)\b[^'\n]*'/g;
-const PLUGIN_FOLDERS = ['devices', 'network', 'zones', 'groups'];
+// AMENDED WD-b2 (H19.46): the layouts plugin's kind and folder too -- the canvas draws its grids through a part, naming neither
+const KIND_WORD = /'(zones?|groups?|links?|pipes?|layouts?)'|'[^'\n]*\.(zone|group|link|pipe|layout)\b[^'\n]*'/g;
+const PLUGIN_FOLDERS = ['devices', 'network', 'zones', 'groups', 'layouts'];
 const pluginOf = (p) => (PLUGIN_FOLDERS.includes(p.split('/')[0]) ? p.split('/')[0] : ['simulation', 'network'].find((l) => (LAYER[l] ?? []).includes(p)) ?? null);
 const pluginImports = (file, text) => [...text.matchAll(/^import [^;]*? from '([^']+)'/gm)]
 	.map((m) => path.normalize(path.join(path.dirname(file), m[1]))).filter((p) => pluginOf(p));

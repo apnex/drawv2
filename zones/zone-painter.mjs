@@ -14,7 +14,6 @@ import { ZONE_PRESSES, ZONE_HANDLE_SPECS } from './zone-gestures.mjs';
 import { ZONE_KEYS, ZONE_SIZE_STEP } from './zone-keys.mjs';
 import { ZONE_DESCRIBE, ZONE_SELECT_ALL } from './zone-facts.mjs';
 import { ZONE_LABELS } from './zone-labels.mjs';
-import { ZONE_GRID } from './zone-grid.mjs';
 
 const ZONE_R = L_STD.zone.r;   // the zone's corner radius (14)
 
@@ -53,5 +52,4 @@ const ZONE_PLACE = { kind: 'zone', layout: 'zone', ext: ZONE_EXT, size: (zone) =
 // C-e: and its keys -- `z` -- and its size step under the canvas's Shift+arrow
 export const ZONES_CANVAS = { owner: 'zones', painters: [ZONE_PAINTER], places: [ZONE_PLACE], presses: ZONE_PRESSES, handles: ZONE_HANDLE_SPECS,
 	keys: ZONE_KEYS, sizeStep: ZONE_SIZE_STEP, deleteRanks: { zone: 1 }, describe: ZONE_DESCRIBE, selectAll: ZONE_SELECT_ALL, labels: ZONE_LABELS,
-	grids: [ZONE_GRID],   // C-e: and its grid, shown with Shift
 	drawn: ['.zone'], tally: { rank: 2, word: 'zones', of: (model) => model.all('zone').length } };   // C-f: what it draws, for run mode; its count   // a zone is deleted after a group, before a link

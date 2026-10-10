@@ -89,6 +89,8 @@ export function fakeEl(tag = 'div', id = '') {
 			return c;
 		},
 		removeChild(c) { this.children = this.children.filter((x) => x !== c); return c; },
+		// WD-b2: the grids clear a layer before redrawing it (app/src/grids.js)
+		replaceChildren(...nodes) { this.children = []; for (const c of nodes) this.appendChild(c); },
 		// a real detach: setDatumMarker removes its marker and re-adds, so a no-op remove() would
 		// leave every datum ever placed in the layer and the count assertions would be meaningless
 		remove() {

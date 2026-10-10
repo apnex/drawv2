@@ -130,7 +130,7 @@ export const LAYER = {
 		'app/src/capture.js', 'app/src/changes.js', 'app/src/commands.js', 'app/src/input-state.js', 'app/src/input.js', 'app/src/keymap.js',
 		'app/src/labeledit.js',  // the label editor Input drives for t, F2 and double-click; the lab loads it, and its window reads are L11's canvas ratchet
 		'app/src/overlay.js', 'app/src/painter.js', 'app/src/pick.js', 'app/src/recognize.js', 'app/src/releases.js', 'app/src/renderer.js',
-		'app/src/selection.js', 'app/src/snap.js', 'app/src/triggers.js',
+		'app/src/selection.js', 'app/src/snap.js', 'app/src/triggers.js', 'app/src/grids.js',   // WD-b2 (H19.46): the grids, drawn from the open diagram
 		'app/src/actions.js',    // every action a binding names, with its label (gesture system stage 6)
 		'app/src/tools.js',      // K7: the held tools -- stamp hand, text tool, the hand's ghost; the palette is a view of them
 		'app/src/compose-canvas.js', // K8: the canvas half of a page, composed once for the product and the lab
@@ -213,7 +213,7 @@ export const ENTRIES = {
 			'network/link-clone.mjs', 'groups/group-clone.mjs',   // C-e (H19.33): what follows a clone
 			'devices/device-facts.mjs', 'zones/zone-facts.mjs', 'network/link-facts.mjs',   // C-e (H19.33): how a kind reads, and Ctrl+A
 			'devices/device-labels.mjs', 'zones/zone-labels.mjs',   // C-e (H19.33): where a kind's label edits
-			'zones/zone-grid.mjs',   // C-e (H19.33): the zone grid
+			'layouts/layout-canvas.mjs', 'layouts/layout-records.mjs', 'app/src/grids.js',   // WD-b2 (H19.46): the layouts plugin's grids and the anchor's place, drawn from the records (the zone grid was zones/zone-grid.mjs)
 			'network/selection-reflects.mjs',   // C-e (H19.33): what a selected link lights
 			'groups/group-painter.mjs',   // C-a (H19.29): the groups plugin's painter
 			'devices/device-appearance.mjs', 'network/anchor-appearance.mjs', 'engine/spawn-appearance.mjs',   // C-a (D3): the anchor's appearances
@@ -278,7 +278,7 @@ export const ENTRIES = {
 			'network/link-clone.mjs', 'groups/group-clone.mjs',   // C-e (H19.33): what follows a clone
 			'devices/device-facts.mjs', 'zones/zone-facts.mjs', 'network/link-facts.mjs',   // C-e (H19.33): how a kind reads, and Ctrl+A
 			'devices/device-labels.mjs', 'zones/zone-labels.mjs',   // C-e (H19.33): where a kind's label edits
-			'zones/zone-grid.mjs',   // C-e (H19.33): the zone grid
+			'layouts/layout-canvas.mjs', 'layouts/layout-records.mjs', 'app/src/grids.js',   // WD-b2 (H19.46): the layouts plugin's grids and the anchor's place, drawn from the records (the zone grid was zones/zone-grid.mjs)
 			'network/selection-reflects.mjs',   // C-e (H19.33): what a selected link lights
 			'groups/group-painter.mjs',   // C-a (H19.29): the groups plugin's painter
 			'devices/device-appearance.mjs', 'network/anchor-appearance.mjs', 'engine/spawn-appearance.mjs',   // C-a (D3): the anchor's appearances
