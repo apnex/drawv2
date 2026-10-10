@@ -285,3 +285,56 @@ Section 5's WD-b (a plugin for the anchor's grid alone) is superseded by this se
   Adds: every reader of an extent and of the canvas surface reads the diagram's records (some 85 lines in about 45 files), and the canvas's size follows the open diagram.
 - **Everything, spacing included:** a diagram may set its own pitch and offset.
   Adds: every reader of the pitch -- the kernel's drawing, routing and export, the CLI, which restates it -- reads the diagram's records (some 90 lines in about 28 files, the kernel's arithmetic among them).
+
+AMENDED 2026-10-10 -- **WD7 ruled: nothing varies yet** (`dev/DECISIONS.md` WD7) -- each diagram stores its two layouts with today's values; "We will chase full programmability of layouts when we go after infinite canvas and scrolling" (the director), recorded as WD7's revival trigger.
+
+### 12.4 To-state, after WD7
+
+- **A layouts plugin** (`layouts/`, its kind `layout`, as `zones/` holds `zone`) owns both grids.
+  A layout record holds its geometry: `name` (`node` or `zone`), `pitch`, `offset` and `ext` -- the planner refusing any value but the product's own (WD7).
+  How a grid is shown -- its dot's size, its page layer, and that the zone grid shows while Shift is held -- is the plugin's code, keyed by the layout's name: a keyboard binding is no fact of the document.
+- **A diagram always holds its two layouts:** the layout row declares them -- with fixed ids, `layout-000001` (`node`) and `layout-000002` (`zone`), since ids are a document's own and a fixed id keeps the migration pure.
+  This is a contract addition: a kind's row may declare the entities every document of the composition holds, and the core's new document, the server's `create`, the seed and the lab's boards gain them by construction rather than each maker remembering.
+  Deleting one, adding a second of a name, or changing a value is refused at every door, by the row's checks and its invariant.
+- **A kind uses a layout by name, declared on the kind:** the anchor's place names `node`, the zone's `zone`; a place's extent is its layout's.
+  No node or zone entity changes, and nothing selects, clones, deletes or exports a layout (`kernel/adapt.mjs` reads the collections it names).
+- **One table of the two grids' values, in the layouts plugin:** the zone extent moves there from `zones/zone-extent.mjs` (the zones plugin then depends on the layouts plugin); the device extent stays the core's (`model/surface.mjs`, which the core's anchor capability reads) and the arithmetic's offsets the kernel's (`kernel/geometry.mjs` `LAYOUTS`, which may import no plugin) -- the table built from them where it can be, and held equal to them by a test where it cannot.
+- **The grids are drawn from the open diagram's records,** redrawn when a diagram is loaded; with WD7 every diagram draws the same dots.
+- **`meta.schema` 3, by one migration, the format batch's way:** a pure function adding the two layouts to a schema 2 document, run on every path into the store (boot, reload, `create`, templates), so an open tab from before that posts its document is migrated rather than refused; schema 1 still refused with B291's sentence; the migration deleted once every stored document is schema 3.
+- **Section 5's WD-b is superseded:** the anchor's place and size contract (section 5.1) stand, the place's extent read from its layout.
+
+### 12.5 Build order -- revised
+
+| stage | what lands | proven by |
+|---|---|---|
+| **WD-a** | as section 5.2: one rule at every door (B323), the pointer (WD5) -- independent of layouts, built first | as section 5.2 |
+| **WD-b1** | **The layouts plugin and the format:** the `layout` kind and its row, the always-held entities contract, schema 3, the migration on every store path; every repository document migrated in source (`templates/`, the corpora, the test documents; the lab's boards gain theirs by construction); the plugin's deploy plumbing | tests 7 to 10; a dry run on a private production copy -- every diagram migrated, booted in a real store, none skipped, no violation, every entity equal to its source but the two layouts; an open tab running the build before against the new server, observed and recorded; a production backup taken as the restore point before deploy |
+| **WD-b2** | **The canvas reads the layouts:** the grids drawn from the records; a place's extent from its layout; the size contract (section 5.1); the zone extent moved into the plugin; the product's part reduced to composition | tests 4, 6 and 9; the K8 DOM's grids identical; every corpus unchanged but the layouts WD-b1 added |
+| **WD-c** | **Closed:** the migration deleted once every stored document is schema 3 (measured on the bucket); B323 closed; B282's O4 half closed, its pack half held with WD1's trigger; WD7's trigger on a backlog row; KINDS-AS-PLUGINS section 16.3's exception recorded as ended | the gate; production deployed, its boot reporting every diagram loaded and no invariant violation |
+
+**Size, by judgement:** WD-a moderate; WD-b1 large -- a kind, a contract addition, a schema change and its migration across the store, the corpora and 17 test files; WD-b2 moderate; WD-c small.
+
+### 12.6 Acceptance tests -- added
+
+7. **Every diagram holds its two layouts** -- a document made by the server's `create`, by the core's new Model, by the seed and by a lab board holds `layout-000001` (`node`) and `layout-000002` (`zone`) with the product's values; an op deleting either, adding a second `node`, or setting a value is refused by the planner, naming the layout.
+8. **The migration** -- pure (the same input gives the same output) and idempotent (a schema 3 document passes unchanged); a schema 2 document gains exactly the two layouts and `meta.schema` 3, every other entity equal to its source; it runs on boot, reload, `create` and the templates; a schema 1 document is refused with B291's sentence.
+9. **The grids come from the records** -- a diagram's grid dots are drawn from its layouts, redrawn on load; the K8 DOM's grids identical.
+10. **One table** -- the layouts plugin's values equal the kernel's offsets (`LAYOUTS`), its pitch (`STD.pitch`), the core's device extent (`NODE_EXT`) and the zone extent; the agent API's list of layouts is the open diagram's records' names.
+
+### 12.7 Axiom alignment audit (M7) -- for the revised scope
+
+| axiom | weight | how it holds -- or the tension |
+|---|---|---|
+| A1 Sovereign State Transparency | load-bearing | a diagram's grids become stated in the diagram, readable by every door, rather than implied by code |
+| A9 Chaos-Validated Deployment | load-bearing | a migration of production's records (D7): a pure function, a dry run on a private copy booted in a real store, a restore point taken first, the old-tab case observed before deploy, and the migration deleted after -- the format batch's proven route |
+| A2 Isomorphic Specification | load-bearing | one table of the grids' values in the layouts plugin, held equal by test to the constants the core and the kernel keep; the planner refuses any other value, so record and code cannot drift while WD7 holds |
+| A3 Sovereign Composition | load-bearing | both grids one plugin's concern; a kind names the layout it uses. **Tension:** stored records nothing yet varies are a format ahead of its use -- the proposer recommended configuring the grids in code; the director chose stored entities (WD6) and fixed values until the infinite canvas (WD7); carried as the director's choice and a guardrail, not a fail |
+| A13 Director Intent Amplification | load-bearing | the director's model -- generic layouts, "layout-* an entity" -- built as stated; its cost shown before the ruling; its programmability deferred in the director's words |
+| A4, A8, A10, A14 | supporting | rulings and measures recorded whole; each stage gated; WD7's trigger kept on a row |
+| the rest | not materially implicated | no agent seam, context or LLM path changes |
+
+**Verdict: pass, with guardrails** -- section 8's, and:
+1. no WD-b1 deploy without the dry run's every-diagram result, the old-tab observation and a fresh backup recorded;
+2. the planner refuses every layout value but the product's own while WD7 holds;
+3. the migration deleted at WD-c, once the bucket holds schema 3 alone (B291's pattern);
+4. the layouts plugin's plumbing by the checklist.

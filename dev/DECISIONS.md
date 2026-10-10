@@ -1879,3 +1879,8 @@ Shown both readings -- the two grids as settings configured in a layout plugin's
 - **A layout plugin owns both grids,** the device grid and the zone grid, and the kinds that use them say which they use.
 - **Each diagram stores its grids** as `layout-*` entities, each with its spec.
 - **WD4's "the anchor grid alone" is revised;** the format change, its migration and what each spec may hold are this design's to measure and put to the director.
+
+**WD7 -- a stored layout holds today's values in every diagram, for now -- 2026-10-10 (H19.8).**\
+Asked what a stored layout may vary from one diagram to the next in this delta -- nothing yet, its extent, or everything, spacing included -- the director chose "continue as recommended" (nothing yet: each record holds its spec, and the planner refuses any value but the product's own): "We will chase full programmability of layouts when we go after infinite canvas and scrolling".
+- **Each diagram stores its two layouts with today's values;** every reader keeps today's values, and the grids are drawn from the records.
+- **REVIVAL TRIGGER (RU3) for varying a layout per diagram:** the infinite canvas and scrolling, in the director's words.
