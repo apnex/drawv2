@@ -1362,6 +1362,7 @@ Scored so the comparison is a judgement, not an omission.\
 | **B274** | S4 | The gesture system as a shared component: its neutral core, draw as its first tenant, narrow `exports` entry points | a second app needs gesture input |
 | **B127** | S4 | Parallel connections between two containers: superseded by the network model, designed with B256 | B256 is opened |
 | **B320** | S4 | B54's liveness test can evict its healthy peer under machine load (40 ms pings, one shared event loop) -- seen once, on a pre-push run at load 13.5 | a second B54 failure in any gate or pre-push run |
+| **B324** | S4 | The palette drop test found its page reloaded mid-test, once, on a pre-push run; the cause unseen, and 9 of 9 reruns passed | a second failure of this test in any gate or pre-push run |
 | **B79** | S3 | The connection walk's apparatus is outside the repository; the false record is corrected, the rest held with B127 | B127 revives, or a decision rests on the walk again |
 | **B108** | S3 | Detecting a test wired to a copy of its subject: undecidable as stated; mutation is the technique that works | mutation testing is automated, or the defect recurs |
 | **B248** | S4 | SD12's stored plugin list; the refusal it would make is held since B307 by the composition | a second plugin, or a peer composed without one |
