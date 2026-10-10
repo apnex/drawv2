@@ -338,3 +338,27 @@ AMENDED 2026-10-10 -- **WD7 ruled: nothing varies yet** (`dev/DECISIONS.md` WD7)
 2. the planner refuses every layout value but the product's own while WD7 holds;
 3. the migration deleted at WD-c, once the bucket holds schema 3 alone (B291's pattern);
 4. the layouts plugin's plumbing by the checklist.
+
+---
+
+## 13. The third adversarial pass, on section 12
+
+**Reviewer:** the same independent agent, given section 12 and told to break it against the code; read only.\
+**Its verdict:** "not ratifiable yet; ratifiable after the changes above" -- one blocker and five major findings; WD6 and WD7 need no reopening; one finding needs a ruling, put to the director as WD8.
+
+| # | sev | finding | disposition |
+|---|---|---|---|
+| 1 | blocker | always-held layouts make a fresh tab's offline count non-zero (`app/src/sync.js` `localEntityCount`, counting every kind since C-e step fourteen), so every page load would `create` a new diagram | accepted -- the count counts what a document holds beyond its always-held entities; a test that opening a page creates nothing |
+| 2 | major | nothing makes a document hold its layouts: `Model.load` replaces collections wholesale; the seed writes schema 3 with none; a document with no `meta.schema` counts as current; `validateDoc` runs no invariant | accepted -- **completion:** every path into a store or a Model completes a document with its always-held entities (fixed ids and values, so it is deterministic), a document with no `meta.schema` migrated as schema 2; `validateDoc` then requires them; a reader of a layout fails loudly, naming it, rather than drawing nothing |
+| 3 | major | "every path into the store" misses `restore` and `#seedFromExamples`, names a "reload" that does not exist, and boot writes back nothing, so the bucket might never be schema 3; deleted copies stay schema 2 | accepted -- the paths named (`init`, `restore`, `create`, `seed`, `#seedFromExamples`, `#loadTemplates`); boot marks a migrated document dirty so it is written back; the migration deleted at WD-c only once the bucket's live documents are schema 3 and the 7-day soft-delete window has passed, B291's sentence corrected to say a refused copy predates schema 3 |
+| 4 | major | the `layouts` collection collides with the agent API's `/layouts` addresses, which serve the kernel's names | **WD8**, put to the director |
+| 5 | major | "a place's extent is its layout's" cannot be built as stated: the placed kinds are built once, before any diagram loads, and the snapping takes no model | accepted -- the records drive the grid drawing alone, redrawn on load; places keep the table, held equal by WD7's refusal; extent from the record is WD7's trigger's delta |
+| 6 | major | a backup is no way back once users have edited: the old image refuses schema 3 | accepted -- a down-migration (drop the layouts, set schema 2) kept and tested until WD-c, so rolling the image back keeps every edit |
+| 7 | minor | tests 9 and 10 sit in a stage that cannot pass them; the zone extent's import direction would flip between stages; the layer manifest's lists need updating | accepted -- each test in the stage that passes it; the zone extent moves into the layouts plugin at WD-b1, the zones plugin importing it from then; the manifest's changes on the checklist |
+| 8 | minor | tests 7 and 8 and the old-tab guardrail are not binary | accepted -- test 7 names `new Model({ kinds: productKinds(...NETWORK_ROWS) })`; test 8 names the store's paths; the old tab passes when it loads, its edits commit, nothing is refused and it reloads on the revision change |
+| 9 | minor | the size estimate's test list is incomplete | accepted -- the kinds-list tests and every test loading a document without layouts added to WD-b1 |
+| 10 | minor | the contract should say a layout is not selectable, not in the shared name list, and deep-copied per Model | accepted -- stated; fixed ids measured safe (not an anchor kind; the id format; no undo record touches one) |
+| 11 | minor | factual: the zone's place is `zones/zone-painter.mjs`; only the server refuses an unknown collection, the tab drops it; makers missed -- the tab's offline `create`, the lab's authority Model, `kernel/adapt.mjs` `schemaToDoc` | accepted -- corrected, the makers added to completion's reach |
+| 12 | minor | A1 overclaims while records equal code; test 10 is tautological where the table is built from the constants; WD7's check belongs in the layout row's cross-field rule | accepted -- A1 restated (the grids recorded in each diagram, most readers on the table until WD7's trigger); test 10 kept for the parts not built from the constants; WD7's check the row's rule |
+
+CORRECTED (finding 11; section 12.1): "the doors refuse an unknown collection" holds of the server; the tab's Model drops one silently on load -- which is why a tab from before the change survives a schema 3 snapshot.
