@@ -33,11 +33,13 @@ const plannerModules = () => fs.readdirSync(path.join(root, 'planner')).filter((
 // file -> [count, reason]; a count may only fall, and a file not here holds none
 const RECORD = {
 	// model/model.mjs's 7 -- its link methods -- went to the network at K13d (H19.25, network/link-queries.mjs)
-	'kernel/geometry.mjs': [5, 'the canvas\'s zone grid and the zone and group drawing elements -- B308, the canvas\'s half'],
+	// AMENDED 2026-10-10 (re-triage): B308 closed with the canvas arc; these are the export door's, deferred with its trigger (CANVAS-PLUGINS.md
+	// section 7), and the zone lattice's name in `LAYOUTS`, whose copy of the layout records B325 holds
+	'kernel/geometry.mjs': [5, 'the zone lattice\'s name (`LAYOUTS`, B325) and the zone and group elements the export door draws by kind (CANVAS-PLUGINS.md section 7, deferred)'],
 };
 // and the device fields a core module reads, the same way
 const DEVICE_RECORD = {
-	'kernel/renderer.mjs': [3, 'the canvas\'s frame and content-region drawing primitives (`shape`, `content`) -- B308, the canvas\'s half'],
+	'kernel/renderer.mjs': [3, 'the frame and content-region primitives the export door and the devices plugin\'s painter share (`shape`, `content`; CANVAS-PLUGINS.md section 7, deferred)'],
 };
 
 test('O-d: the product composes layout, node, zone, group, link, pipe from the core\'s anchor and the plugins, in product/kinds.mjs', async () => {
