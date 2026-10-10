@@ -1327,6 +1327,7 @@ Next: the ratchet, with the draw-a-link gesture (D2) and the clone's naming reco
 AMENDED 2026-10-10: C-f done, B308 closed -- the canvas names no plugin's kind and imports no plugin beyond a record that may only fall (tests/canvas-names-no-plugin.test.js).\
 Next H19.8: B282's design -- multi-anchor devices, the migration, which anchor a link ends at; and the director's question, whether the anchor's canvas part becomes a layout plugin.
 AMENDED 2026-10-10: H19.8 drafted -- `dev/design/unification/WIDE-DEVICES.md`, B282's O4 half (a wide device's anchors, which anchor a link ends at, the migration) with B323, the door disagreement measured on the way; its pack half stays held. Production's 118 wide devices are all panels, which shapes the first decision.
+AMENDED 2026-10-10: H19.8's title names B282's held half; the design is B282's O4 half -- a wide device's anchors -- with B323. Ruled WD1, WD2 and WD4; its adversarial review found WD2's "taken under host panels" costlier than shown, so WD2 is put to the director again.
 
 **Exit:** nothing stored needs a migration and none is kept; production's sync holds the network under the GR6 battery; the core holds no kind.
 

@@ -1837,3 +1837,22 @@ Asked how the press rows stop naming kinds -- what a right press moves, what a l
 Asked how plugin commands reach history once keys move to plugins, given B44's rule that every committed change comes from a builder in `app/src/commands.js`, the director chose "A, edits as data" (the proposer's recommendation) over "B, plugin builder files", which would have changed B44 and its scanner and needed a design of record and an M7 audit, and "C, keys only", which would have left some 46 kind-naming lines in the canvas.
 - A plugin decides what changes -- the next direction, the zone around a selection, a size step -- and hands it to the host's generic verbs (`set`, `create`, and those the moved keys need); `app/src/commands.js` keeps generic builders only, and B44 stands as written.
 - The network's hand-built command (`network/host.mjs`, outside the scan's reach) moves onto the same path when the network's keys move.
+
+**WD1 -- a wide device has one anchor; the devices plugin declares the cells it covers -- 2026-10-10 (B282, B323; H19.8).**\
+Shown, measured against production's 38 diagrams, that all 118 wide devices are content panels -- 109 text labels and callouts, 9 host panels -- that only 6 links end at one, and that 7 bends already sit under labels, the director chose "one anchor, declared footprint" (the proposer's recommendation) over anchors at a device's corners (188 added, 5 collisions, a stored-format change and a migration) and an anchor at every cell (937 added, 7 collisions).
+- **AMENDS O4:** "A wide device that occupies multiple cells has multiple anchors" reads, with the director's refinement ("any number of anchors"), one anchor until a use needs more; "An anchor occupies a single cell" stands.
+- **The cells a device covers are the devices plugin's to declare,** not an anchor's -- the width exception (KINDS-AS-PLUGINS section 16.3) ends as a declaration the occupancy index asks, rather than a plugin field it reads.
+- **No stored change, no migration;** every link still ends at the device's one anchor, so which anchor a link ends at (WD3) falls away.
+- **REVIVAL TRIGGER (RU3) for anchors along a device:** the first wide device that needs links at more than one point -- a bus bar, a panel with ports.
+
+**WD2 -- another anchor may sit on a cell a text label covers, and on no other wide device's -- at every door -- 2026-10-10 (B323; H19.8).**\
+Asked whether a bend or a waypoint may sit on a cell a wide device covers, held alike at the planner, the server, the agent door and the tab, the director chose "free under labels only" (the proposer's recommendation) over "free for every device" (the server's rule today) and "taken for every device" (the tab's rule today, which would move production's 7 bends under labels and redraw routes in 5 diagrams).
+- **A text panel's covered cells are free to other anchors** -- a label names the route it sits on; every overlap in production is one.
+- **Any other wide device's covered cells are taken,** now at every door: the server will refuse what the tab refuses today.
+- **The rule is the devices plugin's,** declared with the footprint (WD1) and checked by the planner as the plugin's rule, so the doors cannot disagree again (B323).
+
+**WD4 -- the anchor's canvas part becomes a layout plugin, now -- 2026-10-10 (H19.8).**\
+Asked, after the director's own question ("this would be a 'layout' plugin correct?"), where the anchor's canvas part lives -- its grid, its placement and its grid's dots -- the director chose "a layout plugin now" over the proposer's recommendation, "the product's until a second page needs a different anchor grid", and over "the canvas's own".
+- **A `layout` plugin owns the anchor grid:** the anchor's place on the node lattice, its extent and the grid's dots.
+- **The product keeps composition:** the anchor's drawing order among the plugins' appearances, and its rank in a delete.
+- **The cost, named and accepted:** a new top-level folder and its deploy plumbing, for one composition today.
