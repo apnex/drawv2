@@ -1134,7 +1134,7 @@ B266 closed, and H18 with it.\
 
 ---
 
-## H19 -- after the cutover: deduplicate, harden, unify - `WIP`
+## H19 -- after the cutover: deduplicate, harden, unify - `DONE`
 
 Opened 2026-10-07 by the director, re-triaging the board once production ran the network: "Agreed with recommended order. approved."\
 The order: first what the cutover made deletable, then the sync hardening production now depends on, then the next unification arc, each designed for approval before any code.\
@@ -1177,7 +1177,7 @@ Elsewhere and unchanged: H10.30 and PD-3 are the director's calls; H15.5 and H17
 | H19.44 | WD-a: one rule at every door -- the occupancy index keys an anchor by its own cell, the width exception ends; a placing gesture acts on the item under the pointer (WD2 revisited, WD5) | **B323** | S3 | `DONE` |
 | H19.45 | WD-b1: the layouts plugin and stored layouts -- the `layout` kind, two per diagram, schema 3 by one migration run once at a frozen deploy, none carried (WD9), `/layouts` serving the records (WD6, WD7, WD8) | feature | S3 | `DONE` |
 | H19.46 | WD-b2: the canvas reads the layouts -- the grids drawn from the records, a place's size from one source | feature | S4 | `DONE` |
-| H19.47 | WD-c: closed -- B282's O4 half closed, WD7's trigger kept (AMENDED by WD9: the migration's deletion moved into WD-b1) | **B282** | S4 | `TODO` |
+| H19.47 | WD-c: closed -- B282's O4 half closed, WD7's trigger kept (AMENDED by WD9: the migration's deletion moved into WD-b1) | **B282** | S4 | `DONE` |
 | H19.29 | C-a: drawing -- a painter per kind brought by its plugin, the renderer a dispatcher, layers ranked; zones first, then groups, devices and links | feature | S4 | `DONE` |
 | H19.30 | C-b: picking -- one id attribute on every drawn entity; a kind's pick modifier (the zone's Shift) | feature | S4 | `DONE` |
 | H19.31 | C-c: placing -- layout and extent as row facts; moving, cloning, nudging and snapping read them | feature | S4 | `DONE` |
@@ -1341,6 +1341,8 @@ AMENDED 2026-10-10: WD-b1 done and deployed frozen (draw-00205-25k, accab1b; 204
 Next H19.46, WD-b2.
 AMENDED 2026-10-10: WD-b2 done and deployed (draw-00206-nj6, fba56a9): the grids drawn from the open diagram's layout records and redrawn on a load; the anchor's place and both grids the layouts plugin's, the product's part composition alone; a place declares its size's source, the devices plugin sizing a device -- the design's rule amended so a page without the devices plugin still composes.\
 Next H19.47, WD-c.
+AMENDED 2026-10-10: WD-c done -- the wide-devices arc (H19.8, H19.44 to H19.47) is closed: B282's O4 half closed and its pack half held with WD1's trigger added; WD7's trigger on a row (B325); B310's spent trigger replaced; KINDS-AS-PLUGINS section 16.3's width exception recorded as ended; the director's "A device owns its size" recorded (WD10); acceptance test 2 given the test it lacked.\
+H19.47 was H19's last open item, so H19 closes, its exit measured 2026-10-10: production's bucket holds 38 of 38 diagrams in schema 3, each with both layouts, and no migration module exists (WD9); the GR6 fuzz battery runs the network's edits in every gate (`tests/sync-fuzz.test.js`, U-e); the core holds the anchor's storage row alone (`tests/core-names-no-plugin.test.js`, O-d -- the exit's "no kind" as O4 amended it).
 
 **Exit:** nothing stored needs a migration and none is kept; production's sync holds the network under the GR6 battery; the core holds no kind.
 
@@ -1362,11 +1364,13 @@ Scored so the comparison is a judgement, not an omission.\
 | **B274** | S4 | The gesture system as a shared component: its neutral core, draw as its first tenant, narrow `exports` entry points | a second app needs gesture input |
 | **B127** | S4 | Parallel connections between two containers: superseded by the network model, designed with B256 | B256 is opened |
 | **B320** | S4 | B54's liveness test can evict its healthy peer under machine load (40 ms pings, one shared event loop) -- seen once, on a pre-push run at load 13.5 | a second B54 failure in any gate or pre-push run |
+| **B282** | S3 | A device type as a composition of packs (B282's pack half), and anchors along a wide device | the second pack that composes; or the first wide device needing links at more than one point (WD1) |
+| **B325** | S4 | A diagram varies its grids -- its own extent, then its own pitch and offset (WD7) | the infinite canvas and scrolling are designed, or a diagram needs a grid unlike the others |
 | **B324** | S4 | The palette drop test found its page reloaded mid-test, once, on a pre-push run; the cause unseen, and 9 of 9 reruns passed | a second failure of this test in any gate or pre-push run |
 | **B79** | S3 | The connection walk's apparatus is outside the repository; the false record is corrected, the rest held with B127 | B127 revives, or a decision rests on the walk again |
 | **B108** | S3 | Detecting a test wired to a copy of its subject: undecidable as stated; mutation is the technique that works | mutation testing is automated, or the defect recurs |
 | **B248** | S4 | SD12's stored plugin list; the refusal it would make is held since B307 by the composition | a second plugin, or a peer composed without one |
-| **B310** | S4 | the REST API's "anchor" means a grid point, the word the core's entity owns since O4 | B282's design, or an agent misreading the word |
+| **B310** | S4 | the REST API's "anchor" means a grid point, the word the core's entity owns since O4 | an agent misreading the word, or the next change to `/layouts/<name>/anchors` or `nearest` (B282's design held it) |
 | **B253** | S4 | Two same-origin tabs share one outbox key; no divergence in 600 two-tab runs since the re-fetch (H19.16) | two-tab divergence is reported, or the outbox's storage is next changed |
 | **B254** | S4 | The answer to the tab's own undo can land mid-drag; 6 runs in 600 undo-heavy (H19.16) | a user reports a node jumping during a drag |
 | **B256** | S4 | Pipes carry one link each, and a link may not run a pipe twice (hairpins) | concurrent links on one pipe are designed -- a parallel renderer or sub-anchors |

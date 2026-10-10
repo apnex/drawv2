@@ -131,3 +131,23 @@ test('WD-a: the ghost says the same after a refresh -- an undo re-reads it -- as
 		}
 	} finally { h.restore(); }
 });
+
+// WD-c (H19.47): acceptance test 2 -- the rule did not change, so every shipped template holds it, and every other document rule
+test('WD-c: every shipped template holds every document rule -- one anchor to a point among them -- as the store loads it', async () => {
+	const { violations } = await import('../model/invariants.mjs');
+	const dir = new URL('../templates/', import.meta.url);
+	const files = fs.readdirSync(dir).filter((f) => f.endsWith('.json'));
+	assert.ok(files.length >= 4, 'the template set is present -- otherwise this passes vacuously');
+	let wideDevices = 0;
+	for (const f of files) {
+		const m = new Model();
+		m.load(JSON.parse(fs.readFileSync(new URL(f, dir), 'utf8')));
+		wideDevices += m.all('node').filter((n) => n.span).length;
+		assert.deepEqual(violations(m), [], `${f}: no violation`);
+	}
+	const broken = new Model();
+	broken.put('node', makeWaypoint(broken, { x: 60, y: 0 }));
+	broken.put('node', { ...makeWaypoint(broken, { x: 60, y: 0 }), id: 'node-0c1201', name: 'second' });
+	assert.match(String(violations(broken)), /occupy the same anchor/, 'two anchors on one point is a violation -- the control');
+	assert.ok(wideDevices >= 3, `the templates hold wide devices, so the rule is tried on them (measured 3; found ${wideDevices})`);
+});

@@ -40,7 +40,7 @@ const DEVICE_RECORD = {
 	'kernel/renderer.mjs': [3, 'the canvas\'s frame and content-region drawing primitives (`shape`, `content`) -- B308, the canvas\'s half'],
 };
 
-test('O-d: the product composes node, zone, group, link, pipe from the core\'s anchor and the plugins, in product/kinds.mjs', async () => {
+test('O-d: the product composes layout, node, zone, group, link, pipe from the core\'s anchor and the plugins, in product/kinds.mjs', async () => {
 	const { productKinds } = await import('../product/kinds.mjs');
 	const { NETWORK_ROWS } = await import('../network/kinds.mjs');
 	const k = productKinds(...NETWORK_ROWS);

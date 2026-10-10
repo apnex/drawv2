@@ -70,7 +70,7 @@ export const DEVICE_FIELDS = {
 	/*
 	F-c (H18.5) -- ONE ANCHOR, TWO SHAPES: a device composed on it, or none -- a waypoint (P-10). Whether a device is composed
 	is fixed when the anchor is made, so a bend can never become a router or the reverse (FORMAT-BATCH.md section 4); `shape`,
-	`span` and `content` are a device's alone. Relaxing the first belongs to B282. It was the node row's rule, with the
+	`span` and `content` are a device's alone. Relaxing the first belongs to B282's held half, a type as a composition of packs. It was the node row's rule, with the
 	spawner's half; that half is the simulation's now (engine/spawn-field.mjs), and runs after this one, as it did.
 	*/
 	refers: (entity, access, patch, before) => {

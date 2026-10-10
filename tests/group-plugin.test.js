@@ -33,7 +33,7 @@ const without = (field) => composeKinds(KINDS.list.map((k) => KINDS.row(k)).map(
 	return rest;
 }), `group without ${field}`);
 
-test('O-c: production composes node, zone, group, link, pipe, and selecting a member selects its group -- the state under test', () => {
+test('O-c: production composes layout, node, zone, group, link, pipe, and selecting a member selects its group -- the state under test', () => {
 // RESTATED at WD-b1 (H19.45; WD6): the layouts plugin's kind is composed first -- a document lists its grids before what sits on them
 	assert.deepEqual(KINDS.list, ['layout', 'node', 'zone', 'group', 'link', 'pipe']);
 	const m = model();

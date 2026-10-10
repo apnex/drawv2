@@ -19,8 +19,8 @@ import { SIMULATION_CANVAS } from '../engine/spawn-appearance.mjs';
 
 /*
 WD-b2 (H19.46): THE PRODUCT'S PART IS COMPOSITION -- the anchor's drawing order among the plugins' appearances and its rank in a
-delete. The anchor's place and the anchor grid, with the width exception the place's size recorded, moved to the layouts plugin
-(layouts/layout-canvas.mjs), and a device's size to the devices plugin (devices/device-footprint.mjs `DEVICE_SIZES`).
+delete. The anchor's place and the anchor grid moved to the layouts plugin (layouts/layout-canvas.mjs), and a device's size to the
+devices plugin (devices/device-footprint.mjs `DEVICE_SIZES`) -- a device owns its size (WD10).
 */
 const ANCHOR_ORDER = {
 	owner: 'the product',

@@ -1901,3 +1901,10 @@ Told that WD-b1 was built and its guardrails met -- a dry run on a private copy 
 - **The always-held completion stays on every path:** it is schema 3's own contract, not a migration -- a document without its two layouts is given them.
 - **Measured consequence:** 24 deleted diagrams in the bucket's seven-day soft-delete window are schema 2, so the app's restore refuses them, as the cutover's older generations were refused (B291); they lapse by 2026-10-17.
 - **Amends the build order:** WD-c's deletion of the migration lands in WD-b1; WD-c keeps B282's O4 half, WD7's trigger row and KINDS-AS-PLUGINS section 16.3's record.
+
+**WD10 -- a device owns its size -- 2026-10-10 (H19.46).**\
+Building WD-b2 found that the ratified size rule -- a placed kind with no size source refused, and only the devices plugin sizing the anchor -- would refuse a page composed without the devices plugin.
+Told the change as built -- a place declares where its size comes from, its own (a zone) or its kind's plugins (the anchor), none answering meaning one cell -- and asked why a device would need "the size", the director, shown that it is a device's footprint and not the grid's spacing, answered "Yes makes sense. A device owns its size.":
+- **A device's footprint is the devices plugin's to answer** (`devices/device-footprint.mjs` `DEVICE_SIZES`, from its span); the grid's spacing is the diagram's layouts', and neither reads the other.
+- **A place declares its size's source** (`app/src/snap.js` `placesOf`); neither, both, or two answering is refused when the canvas is composed, naming the parts.
+- **Amends WIDE-DEVICES.md section 5.1's size rule** as its WD-b2 build finding records.

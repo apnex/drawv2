@@ -23,7 +23,7 @@ import { createTransit } from '../network/transit.mjs';
 const code = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
 const zones = async () => ({ ...(await import('../zones/zone-kind.mjs')), ...(await import('../zones/make-zone.mjs')) });
 
-test('O-b1: production composes node, zone, group, link, pipe -- the state under test, unchanged', () => {
+test('O-b1: production composes layout, node, zone, group, link, pipe -- the state under test, the layouts plugin\'s kind first since WD-b1', () => {
 // RESTATED at WD-b1 (H19.45; WD6): the layouts plugin's kind is composed first -- a document lists its grids before what sits on them
 	assert.deepEqual(KINDS.list, ['layout', 'node', 'zone', 'group', 'link', 'pipe']);
 });

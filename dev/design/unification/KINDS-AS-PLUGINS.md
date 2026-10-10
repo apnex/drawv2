@@ -278,7 +278,9 @@ The ruling's anchor occupies one cell; today's wide device is one anchor coverin
 Until B282 makes a wide device several anchors, the one-per-cell rule and its index keep reading the device's `span` -- the one place the core reads a plugin's field.\
 It is named in the layer rule that holds the core (O-d), so it cannot spread, and it ends in B282's build.\
 CORRECTED 2026-10-08, building O-e2: the one-per-cell rule does not read `span` -- B112 compares anchor points (`model/invariants.mjs`), so a cell a wide device covers is guarded by the occupancy index alone (`engine/relations.mjs` `cellsOf`), a module of the network's rung, not the core's.\
-No core module reads `span`; the exception is the index's, and O-d names it there.
+No core module reads `span`; the exception is the index's, and O-d names it there.\
+AMENDED 2026-10-10 -- **ended**, not by B282's several anchors but by its design's ruling that a wide device is one anchor (WD1, amending O4): at WD-a (H19.44) the occupancy index keys an anchor by its own cell, so no module below the plugins reads `span` (held by `tests/wide-devices.test.js`), and at WD-b2 (H19.46) a device's size became the devices plugin's to answer (`dev/design/unification/WIDE-DEVICES.md`).\
+Acceptance test 1's composition now leads with the layouts plugin's kind: `layout`, node, zone, group, link, pipe (WD-b1, H19.45).
 
 ### 16.4 Two additions to the field contract
 

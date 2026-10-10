@@ -399,3 +399,15 @@ A place declaring neither or both, or sized by two sources, is still refused whe
 AMENDED 2026-10-10 -- **WD-b2 done and deployed** (H19.46; `fba56a9`, revisions `draw-00206-nj6` and `draw-lab-00162-4gn`): the grids are the layouts plugin's (`layouts/layout-canvas.mjs`), each read from the open diagram's layout record and drawn by `app/src/grids.js`, again on every load and never on an edit; a grid is drawn only where a part places on its lattice (`app/src/snap.js` `gridsOf`); the anchor's place is the layouts plugin's and a device's size the devices plugin's (`devices/device-footprint.mjs` `DEVICE_SIZES`), so the product's part is its drawing order and delete rank alone, and the comment recording the width exception there is retired.
 **Measured:** the K8 DOM corpus and every recorded corpus unchanged; in a real page, a record loaded at pitch 120 redrew the node grid to 135 dots and a record at pitch 60 back to 527, the diagram untouched; the deployed lab draws both grids from its records as K8 records them.\
 **Held by:** `tests/layouts-canvas.test.js` (tests 4, 6 and 9), with the canvas ratchet extended to the layouts plugin.
+
+AMENDED 2026-10-10 -- **WD-c done: the arc is closed** (H19.47).
+- **B282's O4 half closed:** a wide device is one anchor (WD1), every door holds one anchor to a point, and the grids are stored layouts; its pack half stays held, with WD1's trigger added (the first wide device needing links at more than one point).
+- **WD7's trigger on a row:** B325, a diagram varying its grids, revived when the infinite canvas and scrolling are designed.
+- **B310's spent trigger replaced:** this design held it (section 4); it revives on an agent misreading "anchor", or the next change to the grid routes.
+- **KINDS-AS-PLUGINS section 16.3's width exception recorded as ended,** and the comments describing it retired.
+- **The director's "A device owns its size" recorded** as WD10, ratifying the WD-b2 build finding above.
+- **Acceptance test 2 given its test:** every shipped template holds every document rule, three of them wide devices (`tests/wide-devices.test.js`); the arc had no test for it until this close.
+
+**The arc, start to close:** designed and approved (`04a6a52` to `11c82f4`, three adversarial passes), then built in four stages, each deployed: WD-a (`b198eb6`, `draw-00204`), WD-b1 (`accab1b`, `draw-00205`, frozen and full-forward), WD-b2 (`fba56a9`, `draw-00206`), and WD-c (records, tests and comments; no change a user sees, so not deployed).\
+**Acceptance, section 6 and 12.6, each held:** test 1 and 3 by `tests/wide-devices.test.js`; test 2 likewise, at this close; test 4, 6 and 9 by `tests/layouts-canvas.test.js`; test 5 by the corpora, unchanged at every stage; test 7 and 8 by `tests/layouts.test.js` and `tests/schema-3.test.js`; test 10 by `tests/layouts.test.js`; test 11 by `tests/layouts-api.test.js`.
+
