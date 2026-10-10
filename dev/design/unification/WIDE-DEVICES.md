@@ -251,3 +251,37 @@ Finding 17: the fence's open items fall away with WD2 or are named above; templa
 | 10 | minor | section 10 marked finding 3 moot and missed finding 16's reach; the fence was unchanged | accepted -- section 10 CORRECTED; the fence AMENDED |
 | 11 | minor | `w` and `g` mid-drag thread a bend already on the snapped cell before the device | accepted -- in section 5.1's table, as it is today for the 7 under labels |
 | 12 | minor | comments still record the width exception | accepted -- retired in WD-c, the four files named |
+
+---
+
+## 12. Stored layouts (WD6) -- revising WD4
+
+AMENDED 2026-10-10 -- the director, told that "layout" already names a grid in the code, asked whether both grids should be one generic layout plugin and "layout-*" entities "configured with their specs", and chose stored layout entities (`dev/DECISIONS.md` WD6).\
+Section 5's WD-b (a plugin for the anchor's grid alone) is superseded by this section once its decision below is ruled.
+
+### 12.1 From-state -- measured 2026-10-10
+
+- **The grid arithmetic is already generic:** one snapping and on-grid arithmetic configured twice (`kernel/geometry.mjs` `LAYOUTS`: the device grid at offset 0, the zone grid at half a pitch), which the agent API already lists (`server/rest.js`, `GET /diagrams/<id>/layouts`) and serves free points from (`server/anchor.mjs`).
+- **Each grid's settings are scattered:** the device grid's extent in the core (`model/surface.mjs` `NODE_EXT`), its checks in the product (`product/kinds.mjs`), its place and dots in the product's canvas part; the zone grid's extent, checks, place, dots and Shift in the zones plugin (`zones/zone-extent.mjs`, `zones/zone-kind.mjs`, `zones/zone-grid.mjs`).
+- **What reads a grid's values:** the pitch, 63 lines in 22 product files and 26 in the kernel's drawing, routing and export; the device grid's extent 19 lines in 7 files; the zone grid's 24 in 7; the canvas surface 42 in 36; the arithmetic 42 lines in 8.
+- **What a stored-format change must carry:** production's 38 diagrams and its 4 templates (`templates/`); the lab's boards (`lab/seeds.json`); the recorded corpora (`tests/fixtures/*.json`); 17 test files that build a schema 2 document; every maker of a new document (`server/store.js`, `server/seed.js`, `model/model.mjs`); the CLI's `--doc` (`cli/verbs.mjs`, which names schema 2).
+- **The precedent:** the format batch (`dev/design/unification/FORMAT-BATCH.md`) -- one pure migration run on every path into the store, a dry run on a production backup, `meta.schema` raised, a staged deploy, and the migration deleted once every stored document is current (B291).
+- **The doors refuse an unknown collection** (B307), so a stored layout is a kind composed at every door.
+
+### 12.2 To-state, as far as WD6 fixes it
+
+- **A layout plugin owns the layout kind:** `layout-<hex>` entities, two in every diagram, each named -- `node`, the device grid; `zone`, the zone grid -- with its spec.
+- **A kind uses a layout by name, declared on the kind** -- the anchor's place the `node` layout, the zone's the `zone` layout -- so no node or zone entity changes.
+- **A diagram always holds its two layouts:** made with every new diagram; neither may be deleted; a name is unique in a diagram.
+- **One migration, the format batch's way:** `meta.schema` 3; a pure function adding the two layouts, run on every path into the store (boot, reload, create, templates); a dry run on a private production copy that boots a real store; every repository document migrated in source; a restore point (a production backup) before deploy; the migration deleted once every stored document is schema 3.
+- **What each spec may hold differently from one diagram to the next is WD7, below.**
+
+### 12.3 WD7 -- what a stored layout may vary, in this delta
+
+- **Nothing yet:** each record holds its spec -- name, offset, pitch, extent, dot, when shown -- and the planner refuses any value but the product's own, so every reader keeps today's values; the layout plugin draws the grids from the records.
+  Varying a grid is a later delta, with its trigger (a diagram that needs a grid unlike the others -- the infinite canvas, B289).
+  Cost: the migration and the new kind; nothing a user sees changes.
+- **Its extent:** a diagram may set its own edges -- a larger canvas.
+  Adds: every reader of an extent and of the canvas surface reads the diagram's records (some 85 lines in about 45 files), and the canvas's size follows the open diagram.
+- **Everything, spacing included:** a diagram may set its own pitch and offset.
+  Adds: every reader of the pitch -- the kernel's drawing, routing and export, the CLI, which restates it -- reads the diagram's records (some 90 lines in about 28 files, the kernel's arithmetic among them).

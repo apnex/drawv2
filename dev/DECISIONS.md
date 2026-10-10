@@ -1872,3 +1872,10 @@ Asked what a placing gesture does with the pointer over a wide device's frame, t
 - **Elsewhere, one anchor to a point decides** (B112, WD2 revisited) -- including on a covered cell outside a frame.
 - **The hand's ghost and the readout say blocked exactly where those gestures place nothing.**
 - The planner, the server and the agent door are unaffected: this is what a pointer means, not a rule about cells.
+
+**WD6 -- the grids are stored layout entities, two in every diagram, a layout plugin owning the kind -- 2026-10-10 (H19.8; revises WD4).**\
+Told, on the folder's name, that "layout" already names a grid in the code -- the device grid and the zone grid, one generic snapping arithmetic configured twice (`kernel/geometry.mjs` `LAYOUTS`), which the agent API already lists -- the director asked: "Wouldn't both grids be a unified plugin 'generic layout' that the anchors / zones call in their own way? ... Should we just make layout-* an entity, have 2 of them configured with their specs?"
+Shown both readings -- the two grids as settings configured in a layout plugin's code (the proposer's recommendation: no stored change), or as `layout-*` entities stored in every diagram (a format change and a migration, with nothing yet needing a per-diagram grid) -- the director chose: "stored layout entities".
+- **A layout plugin owns both grids,** the device grid and the zone grid, and the kinds that use them say which they use.
+- **Each diagram stores its grids** as `layout-*` entities, each with its spec.
+- **WD4's "the anchor grid alone" is revised;** the format change, its migration and what each spec may hold are this design's to measure and put to the director.
