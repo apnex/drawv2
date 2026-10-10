@@ -159,7 +159,7 @@ export const LAYER = {
 	],
 	'server-only': [
 		'server/anchor.mjs',     // anchor resolution; the store passes it to the planner as its placement edge (K3, PL-4), and it stays 404 (K4)
-		'server/app.js', 'server/codes.mjs', 'server/docfile.mjs', 'server/migrate-schema-3.mjs', 'server/files.mjs', 'server/hub.js', 'server/identity.mjs',
+		'server/app.js', 'server/codes.mjs', 'server/docfile.mjs', 'server/files.mjs', 'server/hub.js', 'server/identity.mjs',
 		'server/locks.js', 'server/origin.mjs', 'server/protocol.js', 'server/rest.js', 'server/routes.mjs', 'server/seed.js',
 		'server/server.js', 'server/sessionlog.mjs', 'server/store.js',
 	],

@@ -20,10 +20,9 @@ import { commit as txnCommit, undo as txnUndo, redo as txnRedo } from '../planne
 import { resolveAnchor } from './anchor.mjs';
 import { Log } from '../planner/log.mjs';
 import { serialize, parse } from './docfile.mjs';
-import { migrateToSchema3 } from './migrate-schema-3.mjs';   // WD-b1 (H19.45): on every path a whole document takes in; deleted at WD-c
 import { fsFiles } from './files.mjs';
 import { NAME_MAX } from '../model/limits.mjs';   // truncates where validate.js rejects (B86)
-import { SCHEMA } from '../model/shape.mjs';   // the document generation
+import { SCHEMA, completeAlwaysHeld } from '../model/shape.mjs';   // the document generation; WD-b1: the always-held completion
 import { productKinds } from '../product/kinds.mjs';
 import { NETWORK_ROWS } from '../network/kinds.mjs';
 import { createNetwork } from '../network/network.mjs';
@@ -135,14 +134,25 @@ a file kept by hand -- is refused at every door with this sentence rather than t
 those documents as records (ruled 2026-10-07).
 */
 /*
-AMENDED 2026-10-10 (WD-b1, H19.45): schema 3 adds the layouts, and a schema 2 document is migrated on its way in, on every one of
-these doors (server/migrate-schema-3.mjs, deleted at WD-c) -- so what reaches this refusal is older than schema 2, and the
-sentence says the version keeps no migration from it rather than none at all.
+AMENDED 2026-10-10 (WD-b1, H19.45; WD9): schema 3 adds the layouts. Production's documents were migrated once, during the
+deploy's freeze, by the migration as tested at 9643c99, and no migration is carried (the director: "Lets do a full-forward
+deploy - no legacy carried"), so this refuses schema 2 as it refuses schema 1 -- and says so without naming the cutover, which a schema 2 document
+did not predate.
 */
+/*
+WD-b1 (H19.45) -- A WHOLE DOCUMENT IS COMPLETED WITH THE ENTITIES EVERY DOCUMENT HOLDS BEFORE IT IS JUDGED, on every door (`init`,
+`restore`, `create`, `#seedFromExamples`, `#loadTemplates`): a document without its two layouts -- an agent's, a tab's from
+before schema 3 whose Model dropped the collection it did not know -- is given them. Schema 3's own contract, not a migration
+(model/shape.mjs `completeAlwaysHeld`); a value that is not a document is left for the validator to refuse.
+*/
+function completedDoc(doc) {
+	return doc && typeof doc === 'object' && !Array.isArray(doc) ? completeAlwaysHeld(doc, KINDS) : doc;
+}
+
 function refusalForOlderSchema(doc) {
 	const n = doc?.meta?.schema;
 	return n !== undefined && n !== SCHEMA
-		? `written before the cutover, in schema ${n}: this version reads schema ${SCHEMA}, migrating schema 2 to it, and keeps no migration from schema ${n} -- the pre-cutover backups hold it as a record (B291)`
+		? `written in schema ${n}, an older format: this version reads schema ${SCHEMA} only and keeps no migration -- the backups taken at each format change hold it as a record (B291, WD9)`
 		: null;
 }
 
@@ -233,7 +243,8 @@ export class Store {
 			try {
 				const read = parse(await this.files.read(file));
 				const { log } = read;
-				const { doc, migrated } = migrateToSchema3(read.doc, KINDS);   // WD-b1: a schema 2 file is read as schema 3
+				const doc = completedDoc(read.doc);   // WD-b1: given its layouts if it lacks them
+				const completed = doc !== read.doc;
 				const err = refusalForOlderSchema(doc) ?? validateDoc(doc, { kinds: KINDS });
 				if (err) {
 					failures.push(`${file}: ${err}`);
@@ -254,8 +265,8 @@ export class Store {
 				// only the filename-canonicalisation case dirties on boot; a clean load rewrites nothing
 				// a filename that does not match, or a retired key removed above: either way the file
 				// on disk is not what we now hold, so write it back once (Slides Phase 2)
-				// WD-b1 (H19.45): and a migrated one -- written back as schema 3, so the bucket becomes schema 3 and WD-c may delete the migration
-				if (file !== `${doc.meta.id}.json` || migrated) this.markDirty(doc.meta.id);
+				// WD-b1 (H19.45): and a completed one -- written back holding its layouts
+				if (file !== `${doc.meta.id}.json` || completed) this.markDirty(doc.meta.id);
 			} catch (e) {
 				failures.push(`${file}: ${e.message}`);
 				console.warn(`[ store ] skipping ${file}: ${e.message}`);
@@ -560,7 +571,7 @@ export class Store {
 		let first = null;
 		for (const file of fs.readdirSync(this.examplesDir).filter((f) => FILE.test(f)).sort()) {
 			try {
-				const { doc } = migrateToSchema3(parse(fs.readFileSync(path.join(this.examplesDir, file), 'utf8')).doc, KINDS);   // WD-b1
+				const doc = completedDoc(parse(fs.readFileSync(path.join(this.examplesDir, file), 'utf8')).doc);   // WD-b1
 				const err = refusalForOlderSchema(doc) ?? validateDoc(doc, { kinds: KINDS });
 				if (err) { console.warn(`[ store ] skipping example ${file}: ${err}`); continue; }
 				if (this.diagrams.has(doc.meta.id)) continue;
@@ -703,8 +714,8 @@ export class Store {
 			// the server-side name are substituted first, so validation cannot pass on a value the
 			// store then discards. Nothing is installed unless it passes (I1, by purity).
 			// B291: a document in the format before the cutover is refused, said plainly
-			// WD-b1 (H19.45): a schema 2 one is migrated, and a tab's from before the change -- schema 3, no layouts -- completed
-			const candidate = migrateToSchema3({ ...doc, meta: { ...doc.meta, id, name } }, KINDS).doc;
+			// WD-b1 (H19.45): given its layouts if it lacks them -- an agent's, or a tab's from before schema 3
+			const candidate = completedDoc({ ...doc, meta: { ...doc.meta, id, name } });
 			const err = refusalForOlderSchema(candidate) ?? validateDoc(candidate, { kinds: KINDS });
 			if (err) return { ok: false, error: err };
 			/*
@@ -770,7 +781,7 @@ export class Store {
 		let bad = 0;
 		for (const file of fs.readdirSync(this.templatesDir).filter((f) => f.endsWith('.json')).sort()) {
 			try {
-				const { doc } = migrateToSchema3(JSON.parse(fs.readFileSync(path.join(this.templatesDir, file), 'utf8')), KINDS);   // WD-b1
+				const doc = completedDoc(JSON.parse(fs.readFileSync(path.join(this.templatesDir, file), 'utf8')));   // WD-b1
 				const why = refusalForOlderSchema(doc) ?? validateDoc(doc, { kinds: KINDS });
 				if (why) throw new Error(why);
 				if (!String(doc.meta.id).startsWith('template-')) throw new Error('not a template id');
@@ -1012,7 +1023,8 @@ export class Store {
 		await this.files.restore(`${id}.json`, hit.generation);
 		const read = parse(await this.files.read(`${id}.json`));
 		const { log } = read;
-		const { doc, migrated } = migrateToSchema3(read.doc, KINDS);   // WD-b1: a generation deleted before schema 3
+		const doc = completedDoc(read.doc);   // WD-b1: given its layouts if it lacks them
+		const completed = doc !== read.doc;
 		const old = refusalForOlderSchema(doc);
 		if (old) return `cannot restore ${id}: it was deleted ${old}`;
 		const err = validateDoc(doc, { kinds: KINDS });
@@ -1031,7 +1043,7 @@ export class Store {
 		this shipped.
 		*/
 		this.install(id, doc, Log.from(log, doc.meta.version), `${id}.json`);
-		if (migrated) this.markDirty(id);   // WD-b1: written back as schema 3, as boot writes a migrated file back
+		if (completed) this.markDirty(id);   // WD-b1: written back holding its layouts, as boot writes a completed file back
 		return null;
 	}
 

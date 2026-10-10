@@ -1177,7 +1177,7 @@ Elsewhere and unchanged: H10.30 and PD-3 are the director's calls; H15.5 and H17
 | H19.44 | WD-a: one rule at every door -- the occupancy index keys an anchor by its own cell, the width exception ends; a placing gesture acts on the item under the pointer (WD2 revisited, WD5) | **B323** | S3 | `DONE` |
 | H19.45 | WD-b1: the layouts plugin and stored layouts -- the `layout` kind, two per diagram, schema 3 by one migration on every store path, `/layouts` serving the records (WD6, WD7, WD8) | feature | S3 | `TODO` |
 | H19.46 | WD-b2: the canvas reads the layouts -- the grids drawn from the records, a place's size from one source | feature | S4 | `TODO` |
-| H19.47 | WD-c: closed -- the migration deleted after the soft-delete window, B282's O4 half closed, WD7's trigger kept | **B282** | S4 | `TODO` |
+| H19.47 | WD-c: closed -- B282's O4 half closed, WD7's trigger kept (AMENDED by WD9: the migration's deletion moved into WD-b1) | **B282** | S4 | `TODO` |
 | H19.29 | C-a: drawing -- a painter per kind brought by its plugin, the renderer a dispatcher, layers ranked; zones first, then groups, devices and links | feature | S4 | `DONE` |
 | H19.30 | C-b: picking -- one id attribute on every drawn entity; a kind's pick modifier (the zone's Shift) | feature | S4 | `DONE` |
 | H19.31 | C-c: placing -- layout and extent as row facts; moving, cloning, nudging and snapping read them | feature | S4 | `DONE` |
@@ -1336,6 +1336,7 @@ AMENDED 2026-10-10: H19.8 approved by the director ("approved. continue") after 
 Next H19.44, WD-a.
 AMENDED 2026-10-10: WD-a done -- one anchor to a point at every door, the width exception ended, and a placing gesture acts on the item under the pointer; B323 closed with it, its whole fix having landed (the design's WD-c named it; AMENDED there).\
 Next H19.45, WD-b1.
+AMENDED 2026-10-10: WD-b1 built and its guardrails met; the director ruled WD9 -- deploy frozen and full-forward, no migration and no way back carried -- so H19.45 deletes the migration before its deploy and H19.47 no longer does.
 
 **Exit:** nothing stored needs a migration and none is kept; production's sync holds the network under the GR6 battery; the core holds no kind.
 

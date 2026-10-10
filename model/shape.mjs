@@ -43,7 +43,7 @@ validator, which accepts this generation alone. Was four literals that nothing f
 the cutover and the migration was deleted (B291), so a schema 1 document is refused at every door, saying so.
 */
 export const SCHEMA = 3;
-// WD-b1 (H19.45): schema 3 -- every document holds its two layouts (layouts/layout-kind.mjs); server/migrate-schema-3.mjs brings a schema 2 one there
+// WD-b1 (H19.45): schema 3 -- every document holds its two layouts (layouts/layout-kind.mjs); production's were migrated once at the deploy, and no migration is kept (WD9)
 
 // the core's kind; a plugin's are composed after it -- the zones plugin's (O-b1), the groups plugin's (O-c), the network's
 // (S-e) -- in the order a document lists its collections

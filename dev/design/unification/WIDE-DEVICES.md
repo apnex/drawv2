@@ -383,3 +383,6 @@ AMENDED 2026-10-10 -- **WD-b1 built, not deployed** (H19.45; commits `1d5b420`, 
 **Measured beside it:** the image now live refuses to boot on schema 3 files ("38 diagram file(s) present, none loaded"), so a rollback runs the way back, or restores the backup, before the older image is deployed.\
 **Guardrail 1, the old tab,** observed locally (the old server, then the new one on the same port, data and a different revision): the old tab's edit made offline committed one second after the new server answered; it loaded the schema 3 document; nothing was refused on either side; it reloaded onto the new revision eleven seconds later, by its poll; its next edit committed.
 **Guardrail 1, the backup:** taken at the deploy, frozen, as the P9 runbook takes it -- the restore point is the bucket as the deploy found it.
+
+AMENDED 2026-10-10 -- **WD9 ruled: WD-b1 deploys full-forward** (`dev/DECISIONS.md` WD9): production's documents are migrated once during the freeze, by the migration as tested at `9643c99`, run from history; the deployed version carries neither the migration nor the way back (section 13, finding 6, superseded), reads schema 3 alone and keeps the always-held completion on every path.\
+WD-c's deletion of the migration therefore lands in WD-b1, and section 12.7's guardrail 3 is met there; the frozen backup is the restore point.

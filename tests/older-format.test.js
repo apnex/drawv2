@@ -5,6 +5,9 @@ Every stored document became schema 2 at the cutover (P9), so the migration that
 2026-10-07: the pre-cutover backups are records, not a rollback). What reaches the store in the older format now -- a file
 in the data directory, a document posted to `create`, a deleted diagram's older generation brought back by `restore` --
 is refused with one sentence naming the cutover, rather than the validator's bare "unsupported meta.schema".
+
+AMENDED 2026-10-10 (WD-b1, H19.45; WD9): schema 3 is current and no migration is kept, so schema 2 is refused the same way, by a
+sentence naming the older format rather than the cutover (tests/schema-3.test.js).
 */
 import { test } from 'node:test';
 import { KINDS } from './fixtures/composed.mjs';   // O-b1: a reader is handed its caller's kinds
@@ -18,10 +21,11 @@ import { openStore, OWNER } from './fixtures/app.mjs';
 const older = (id) => ({ meta: { id, name: 'before the cutover', version: 3, schema: 1, owner: '', grants: {} },
 	nodes: [{ id: 'node-0d0001', name: 'a', type: 'host', shape: 'circle', x: 0, y: 0 }],
 	waypoints: [{ id: 'waypoint-0d0002', name: 'w', x: 120, y: 0 }], links: [], zones: [], groups: [], selection: [] });
-const current = (id) => ({ meta: { id, name: 'after the cutover', version: 0, schema: 2, owner: '', grants: {} },
+// RESTATED at WD-b1 (H19.45; WD9): the current format is schema 3, and the store completes the layouts a document lacks
+const current = (id) => ({ meta: { id, name: 'after the cutover', version: 0, schema: 3, owner: '', grants: {} },
 	nodes: [], links: [], pipes: [], zones: [], groups: [], selection: [] });
-// RESTATED at WD-b1 (H19.45): schema 3 migrates schema 2 on its way in, so the sentence says no migration from schema 1, not none
-const SAID = /written before the cutover, in schema 1: this version reads schema 3, migrating schema 2 to it, and keeps no migration from schema 1/;
+// RESTATED at WD-b1 (H19.45; WD9): no migration is kept, and the sentence names no cutover -- a schema 2 document is refused by it too
+const SAID = /written in schema 1, an older format: this version reads schema 3 only and keeps no migration/;
 
 test('B291: a stored file from before the cutover is skipped at boot, with the reason said; the rest load', async () => {
 	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-older-'));

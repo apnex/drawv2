@@ -733,7 +733,7 @@ VERBS.push(
 		name: 'create', group: 'Lifecycle', usage: 'draw create [name]', route: '/diagrams', method: 'POST',
 		summary: 'mint a diagram; answers its id', example: 'draw create topology',
 		args: [{ name: 'name', about: 'what to call it; the server names it if omitted' }],
-		flags: [{ name: '--doc', about: 'a JSON document, in the current format (schema 3; a schema 2 one is migrated), to install instead of an empty one' }],
+		flags: [{ name: '--doc', about: 'a JSON document, in the current format (schema 3), to install instead of an empty one' }],
 		async run(ctx, args) {
 			let body = args[0] ? { name: args[0] } : {};
 			if (ctx.flags.doc) {

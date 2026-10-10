@@ -1892,3 +1892,12 @@ Asked how to resolve it -- `/layouts` serving the records, naming the stored kin
 - **The addresses by name keep their answers:** `/layouts/<name>/nearest` and `/layouts/<name>/anchors`.
 - **A write to a layout through the API is refused while WD7 holds.**
 - "Layouts" then means one thing at every door: the diagram's grids.
+
+**WD9 -- WD-b1 deploys full-forward: no migration and no way back carried -- 2026-10-10 (H19.45).**\
+Told that WD-b1 was built and its guardrails met -- a dry run on a private copy of production, the old-tab observation, the way back rehearsed -- and asked whether to deploy frozen or live, the director answered "deploy frozen. Lets do a full-forward deploy - no legacy carried":
+- **Production's documents are migrated once, during the freeze,** by the migration as tested at `9643c99`, run from history on the frozen backup and the result written to the bucket before the new version boots.
+- **The deployed version carries no migration:** it reads schema 3 alone, and refuses an older document with B291's sentence.
+- **The way back is not kept** (`dev/design/unification/WIDE-DEVICES.md` section 13, finding 6): a defect after the deploy is fixed forward, and the frozen backup is the restore point, as at the P9 cutover ("Dont need to maintain rollback").
+- **The always-held completion stays on every path:** it is schema 3's own contract, not a migration -- a document without its two layouts is given them.
+- **Measured consequence:** 24 deleted diagrams in the bucket's seven-day soft-delete window are schema 2, so the app's restore refuses them, as the cutover's older generations were refused (B291); they lapse by 2026-10-17.
+- **Amends the build order:** WD-c's deletion of the migration lands in WD-b1; WD-c keeps B282's O4 half, WD7's trigger row and KINDS-AS-PLUGINS section 16.3's record.

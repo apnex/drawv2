@@ -271,7 +271,7 @@ export function validateDoc(doc, { kinds } = {}) {
 	}
 	/*
 	WD-b1 (H19.45) -- THE ENTITIES EVERY DOCUMENT HOLDS ARE REQUIRED (a row's `always`, model/shape.mjs): a document reaches a
-	validator completed (server/migrate-schema-3.mjs, model/shape.mjs `completeAlwaysHeld`) or is refused, naming the one it
+	validator completed (server/store.js `completedDoc`, model/shape.mjs `completeAlwaysHeld`) or is refused, naming the one it
 	lacks. Their values are the row's own check above (the layouts': WD7).
 	*/
 	for (const [kind, held] of Object.entries(kinds.always ?? {})) {
