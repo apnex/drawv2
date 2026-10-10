@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { Model } from './fixtures/composed.mjs';   // the network's kinds, the link among them (S-e)
+import { Model, heldLayouts } from './fixtures/composed.mjs';   // the network's kinds, the link among them (S-e)
 import { attachRelations } from '../engine/store.mjs';
 import { resolve } from '../kernel/engine.mjs';
 import { selBox, isPanel, frameRadius, showsSockets } from '../kernel/renderer.mjs';
@@ -115,7 +115,8 @@ test('validateEntity accepts an optional span; rejects malformed; 1×1 (no span)
 });
 
 test('validateDoc accepts a document containing a span node', () => {
-	const doc = { meta: { id: 'diagram-000000', name: 'd' },
+	// RESTATED at WD-b1 (H19.45): a document holds its two layouts (tests/fixtures/composed.mjs `heldLayouts`)
+	const doc = { meta: { id: 'diagram-000000', name: 'd' }, layouts: heldLayouts(),
 		nodes: [{ id: 'node-000006', name: 'p', type: 'host', shape: 'square', x: 2 * P, y: 0, span: { cols: 3, rows: 2 } }],
 		links: [], zones: [], groups: [] };
 	assert.equal(validateDoc(doc), null);

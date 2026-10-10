@@ -10,6 +10,7 @@ corpus and every existing test ran before and after.
 
 The plugin kind here is a test's own, `probe`, so this stage proves the mechanism and not the network's pipe (N-b).
 */
+import { heldLayouts } from './fixtures/composed.mjs';   // WD-b1: the two layouts a schema 3 document holds
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { composeKinds, CORE_KINDS } from '../model/shape.mjs';
@@ -121,7 +122,8 @@ test('N-a: the product\'s planner refuses the plugin kind, and a model and plann
 });
 
 test('N-a: a document with the plugin kind validates against its composition, and not against the product\'s', () => {
-	const doc = { meta: { id: 'diagram-00000a', name: 'd', version: 0, schema: 2 }, nodes: [NODE], probes: [{ id: 'probe-00000b', at: NODE.id }],
+	// RESTATED at WD-b1 (H19.45): schema 3 -- a document holds its two layouts (tests/fixtures/composed.mjs `heldLayouts`)
+	const doc = { meta: { id: 'diagram-00000a', name: 'd', version: 0, schema: 3 }, layouts: heldLayouts(), nodes: [NODE], probes: [{ id: 'probe-00000b', at: NODE.id }],
 		reveal: { origin: 1, beats: [{ interval: 0, ids: ['probe-00000b', NODE.id] }] }, selection: ['probe-00000b'] };
 	assert.equal(validateDoc(doc, { kinds: WITH_PROBE }), null);
 	assert.equal(validateDoc({ ...doc, probes: [{ id: 'probe-00000b', at: 'node-0000ff' }] }, { kinds: WITH_PROBE }), 'probe at a node that does not exist: node-0000ff (probe-00000b)');

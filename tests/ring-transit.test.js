@@ -19,7 +19,7 @@ import { productKinds } from '../product/kinds.mjs';
 import { NETWORK_ROWS } from '../network/kinds.mjs';
 import { pipeEntity } from '../network/pipe-kind.mjs';
 import { waypointRolesIn } from '../network/roles.mjs';
-import { validateDoc } from './fixtures/composed.mjs';
+import { validateDoc, heldLayouts } from './fixtures/composed.mjs';
 
 const KINDS = productKinds(...NETWORK_ROWS);
 const NET = createNetwork(createTransit());
@@ -90,7 +90,8 @@ test('B299: two of a ring\'s pins off in one edit -- opened at the first, cut at
 });
 
 test('B299: a loop is valid only open and round two or more other stops; a closed one, or one round a single stop, is a self-link', () => {
-	const doc = (link) => ({ meta: { id: 'diagram-0f0001', name: 'l', version: 0, schema: 2 },
+	// RESTATED at WD-b1 (H19.45): schema 3 -- a document holds its two layouts (tests/fixtures/composed.mjs `heldLayouts`)
+	const doc = (link) => ({ meta: { id: 'diagram-0f0001', name: 'l', version: 0, schema: 3 }, layouts: heldLayouts(),
 		nodes: [A, P, Q].map((id, i) => ({ id, name: id, x: i * 120, y: 0 })), links: [{ id: 'link-0f0001', name: 'l', ...link }],
 		pipes: [], zones: [], groups: [], selection: [] });
 	assert.equal(validateDoc(doc({ src: A, via: [P, Q], dst: A })), null, 'open, round two stops: a loop');

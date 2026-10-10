@@ -20,7 +20,8 @@ const older = (id) => ({ meta: { id, name: 'before the cutover', version: 3, sch
 	waypoints: [{ id: 'waypoint-0d0002', name: 'w', x: 120, y: 0 }], links: [], zones: [], groups: [], selection: [] });
 const current = (id) => ({ meta: { id, name: 'after the cutover', version: 0, schema: 2, owner: '', grants: {} },
 	nodes: [], links: [], pipes: [], zones: [], groups: [], selection: [] });
-const SAID = /written before the cutover, in schema 1: this version reads schema 2 only and keeps no migration/;
+// RESTATED at WD-b1 (H19.45): schema 3 migrates schema 2 on its way in, so the sentence says no migration from schema 1, not none
+const SAID = /written before the cutover, in schema 1: this version reads schema 3, migrating schema 2 to it, and keeps no migration from schema 1/;
 
 test('B291: a stored file from before the cutover is skipped at boot, with the reason said; the rest load', async () => {
 	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-older-'));

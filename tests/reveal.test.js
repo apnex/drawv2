@@ -16,14 +16,15 @@ of seconds because a stamp crossed a machine boundary.
 */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { Model } from './fixtures/composed.mjs';   // the composition production runs (S-b)
+import { Model, heldLayouts } from './fixtures/composed.mjs';   // the composition production runs (S-b)
 import { validateDoc } from './fixtures/composed.mjs';   // the network's kinds, as the store validates (S-e)
 import { revealedAt, beatsOf } from '../model/reveal.mjs';
 
 const NODE = (id, name, x, y) => ({ id, name, type: 'server', x, y });
 function doc(nodes = [], extra = {}) {
 	return {
-		meta: { id: 'diagram-aa0001', name: 'r', version: 1, schema: 2 },
+		// RESTATED at WD-b1 (H19.45): schema 3 -- a document holds its two layouts (tests/fixtures/composed.mjs `heldLayouts`)
+		meta: { id: 'diagram-aa0001', name: 'r', version: 1, schema: 3 }, layouts: heldLayouts(),
 		nodes, links: [], zones: [], groups: [], selection: [], ...extra,
 	};
 }

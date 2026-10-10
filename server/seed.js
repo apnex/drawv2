@@ -5,10 +5,13 @@ are stable across reseeds.
 */
 
 import { newId } from '../model/model.mjs';
-import { SCHEMA } from '../model/shape.mjs';
+import { SCHEMA, completeAlwaysHeld } from '../model/shape.mjs';
 import { pipeEntity } from '../network/pipe-kind.mjs';   // a link's leg is a pipe (P3), and the seed is stored complete
+import { productKinds } from '../product/kinds.mjs';   // WD-b1: the always-held entities are the product's (its layouts); the store passes its own composition
 
-export function seedDoc() {
+// WD-b1 (H19.45): made with the entities every document of the composition holds -- its two layouts -- by the composition's
+// own completion rather than a list kept here (model/shape.mjs `completeAlwaysHeld`)
+export function seedDoc(kinds = productKinds()) {
 	const taken = {};
 	const make = (kind) => {
 		const id = newId(kind, taken);
@@ -39,7 +42,7 @@ export function seedDoc() {
 	on the way into the store; it is deleted, and nothing completes a document now.
 	*/
 	const ordered = (list) => list.map((e, i) => ({ ...e, order: i + 1 }));
-	return {
+	return completeAlwaysHeld({
 		meta: {
 			id: make('diagram'),
 			name: 'example',
@@ -56,5 +59,5 @@ export function seedDoc() {
 		groups: [
 			{ id: make('group'), name: 'web-servers', members: [n(4), n(5), n(6)] }
 		]
-	};
+	}, kinds);
 }

@@ -22,6 +22,7 @@ a particular place at a particular instant. Those belong to `tests/movers.test.j
 them with arithmetic and no browser. What only a browser can answer is whether the DOM ends up in
 the shape the design claims, and that is all this asks.
 */
+import { heldLayouts } from './fixtures/composed.mjs';   // WD-b1: the two layouts a schema 3 document holds
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
@@ -43,7 +44,8 @@ const NET_DIAGRAM = 'diagram-fe0001';   // sorts after the harness's: the shared
 function networkBoard() {
 	const host = (id, x, y) => ({ id, name: id.slice(-2), type: 'host', shape: 'square', x, y });
 	return {
-		meta: { id: NET_DIAGRAM, name: 'network', version: 1, schema: 2 },
+		// RESTATED at WD-b1 (H19.45): schema 3 -- a document holds its two layouts (tests/fixtures/composed.mjs `heldLayouts`)
+		meta: { id: NET_DIAGRAM, name: 'network', version: 1, schema: 3 }, layouts: heldLayouts(),
 		nodes: [host('node-ab00a1', -360, 0), host('node-ab00a2', 360, 0), { id: 'node-ab00f1', name: 'f', x: 0, y: -240 },
 			host('node-ab00c1', -360, 240), host('node-ab00c2', 360, 240)],
 		links: [
@@ -72,7 +74,8 @@ exist without the harness having to arm them first.
 function fixture() {
 	const wp = (id, x, y, spawn) => ({ id, name: id, x, y, ...(spawn ? { spawn } : {}) });   // a waypoint: a node with no type, named (B187)
 	return {
-		meta: { id: DIAGRAM, name: 'harness', version: 1, schema: 2 },
+		// RESTATED at WD-b1 (H19.45): schema 3 -- a document holds its two layouts (tests/fixtures/composed.mjs `heldLayouts`)
+		meta: { id: DIAGRAM, name: 'harness', version: 1, schema: 3 }, layouts: heldLayouts(),
 		/*
 		The tower sits BESIDE the route, two cells off, not on it.
 

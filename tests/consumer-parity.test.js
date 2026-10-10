@@ -5,7 +5,7 @@
 import { PRODUCT_CANVAS } from '../product/canvas.mjs';   // C-a: the plugins' canvas parts, their painters among them
 import { pathOf, isLinkDown, blockersOf, networkOf } from '../network/network-queries.mjs';   // Q-a: the network's questions
 import { test } from 'node:test';
-import { KINDS } from './fixtures/composed.mjs';   // O-b1: a reader is handed its caller's kinds
+import { KINDS, heldLayouts } from './fixtures/composed.mjs';   // O-b1: a reader is handed its caller's kinds
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -36,8 +36,9 @@ Every shape a link takes:
   ring     p -> q -> r -> p, closed, along its stops
 and a hand pipe c - d no link runs over.
 */
+// RESTATED at WD-b1 (H19.45): schema 3 -- a document holds its two layouts (tests/fixtures/composed.mjs `heldLayouts`)
 const board = () => ({
-	meta: { id: ID, name: 'parity', version: 0, schema: 2 },
+	meta: { id: ID, name: 'parity', version: 0, schema: 3 }, layouts: heldLayouts(),
 	nodes: [
 		{ id: 'node-0c00a1', name: 'a', type: 'host', shape: 'square', x: -360, y: 0, order: 1 },
 		{ id: 'node-0c00a2', name: 'c', type: 'host', shape: 'square', x: 360, y: 0, order: 2 },

@@ -42,7 +42,8 @@ validator, which accepts this generation alone. Was four literals that nothing f
 2 is promotion's format batch (dev/design/unification/FORMAT-BATCH.md; ruled 2026-10-03). Every stored document became 2 at
 the cutover and the migration was deleted (B291), so a schema 1 document is refused at every door, saying so.
 */
-export const SCHEMA = 2;
+export const SCHEMA = 3;
+// WD-b1 (H19.45): schema 3 -- every document holds its two layouts (layouts/layout-kind.mjs); server/migrate-schema-3.mjs brings a schema 2 one there
 
 // the core's kind; a plugin's are composed after it -- the zones plugin's (O-b1), the groups plugin's (O-c), the network's
 // (S-e) -- in the order a document lists its collections
@@ -242,3 +243,24 @@ export function composeKinds(given, who = 'a composition') {
 export const CORE_ROWS = KINDS.map((kind) => ({ kind, owner: 'the core', ...STORAGE[kind] }));
 // what `new Model()` is composed with when nothing else is passed: the product's three, so no links (S-e)
 export const CORE_KINDS = composeKinds(CORE_ROWS, 'the core');
+
+/*
+WD-b1 (H19.45; dev/design/unification/WIDE-DEVICES.md section 13, finding 2) -- A DOCUMENT COMPLETED WITH THE ENTITIES EVERY
+DOCUMENT HOLDS (a row's `always`): each one missing put, a copy of its own, after what the collection holds. Pure: the same
+object back when nothing is missing, so a caller can tell completion from no change; a collection that is not a list is left
+for the validator to refuse. The Model completes itself the same way (model/model.mjs `completeAlways`); this is for a
+document on its way to a validator, which requires them (planner/validate.js `validateDoc`).
+*/
+export function completeAlwaysHeld(doc, kinds) {
+	let out = doc;
+	for (const [kind, held] of Object.entries(kinds.always ?? {})) {
+		const key = kinds.collection[kind];
+		if (key in doc && !Array.isArray(doc[key])) continue;
+		const have = doc[key] ?? [];
+		const missing = held.filter((e) => !have.some((h) => h?.id === e.id));
+		if (!missing.length) continue;
+		if (out === doc) out = { ...doc };
+		out[key] = [...have, ...missing.map((e) => structuredClone(e))];
+	}
+	return out;
+}

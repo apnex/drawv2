@@ -12,7 +12,7 @@ across the kernel migration; only render/geometry are re-platformed onto the ker
 // the kinds, their collections and which are selectable: a composition of kind rows (model/shape.mjs, H17.22 N-a), the
 // core's three unless one is passed (no links since S-e). The selectable list was re-exported here for planner/validate.js's id regex; the
 // validator now reads the composition it is handed.
-import { CORE_KINDS, SCHEMA } from './shape.mjs';
+import { CORE_KINDS, SCHEMA, completeAlwaysHeld } from './shape.mjs';
 // B246: every query that answers links answers in one order on every peer -- ascending id (model/order.mjs)
 import { byId, nextOrder } from './order.mjs';
 import { BARE_KIND, anchorOf } from './anchors.mjs';   // the anchor's stored kind, and resolving one (O-e1: whether a device is composed is devices/device-shapes.mjs's)
@@ -117,8 +117,8 @@ export class Model {
 
 	/*
 	WD-b1 (H19.45) -- the entities every document of this composition holds (model/shape.mjs `always`), each a copy of its
-	own, put where a document lacks one: when the Model is made, and when a document is loaded without one. Not a change
-	anyone made, so it emits nothing of its own; a load emits once, after it.
+	own, held from the moment the Model is made; a document loaded without one is completed by the same rule on its way in
+	(`load`, model/shape.mjs `completeAlwaysHeld`). Not a change anyone made, so it emits nothing.
 	*/
 	completeAlways() {
 		for (const [kind, held] of Object.entries(this.kinds.always ?? {})) {
@@ -325,13 +325,13 @@ export class Model {
 	}
 
 	load(doc) {
+		doc = completeAlwaysHeld(doc, this.kinds);   // WD-b1: a document loaded without an entity every document holds is completed
 		this.kinds.list.forEach((kind) => {
 			this.state[this.kinds.collection[kind]] = {};
 			(doc[this.kinds.collection[kind]] || []).forEach((e) => {
 				this.collection(kind)[e.id] = { ...e };
 			});
 		});
-		this.completeAlways();   // WD-b1: a document loaded without an entity every document holds is completed
 		if (doc.meta) {
 			// grants REPLACE rather than merge: a revoked principal must not survive a reload by
 			// hiding in the previous state, which a spread of the old over the new would allow.

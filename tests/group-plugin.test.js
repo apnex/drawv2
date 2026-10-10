@@ -16,7 +16,7 @@ import { CORE_KINDS, composeKinds } from '../model/shape.mjs';
 import { commit } from '../planner/txn.mjs';
 import { Log } from '../planner/log.mjs';
 import { validateDoc } from '../planner/validate.js';
-import { KINDS, NETWORK } from './fixtures/composed.mjs';
+import { KINDS, NETWORK, heldLayouts } from './fixtures/composed.mjs';
 import { createNetwork } from '../network/network.mjs';
 import { createTransit } from '../network/transit.mjs';
 import { attachRelations } from '../engine/store.mjs';
@@ -88,7 +88,8 @@ test('O-c: the selection gathers by the row\'s declaration -- a group row that g
 
 test('O-c: a composition without the groups plugin refuses a group by name, and its index holds without one', () => {
 	const kinds = composeKinds(KINDS.list.filter((k) => k !== 'group').map((k) => KINDS.row(k)), 'no groups');
-	const doc = { meta: { id: 'diagram-0e0001', name: 'd', version: 0, schema: 2 }, nodes: [], zones: [], links: [], pipes: [], selection: [] };
+	// RESTATED at WD-b1 (H19.45): schema 3 -- a document holds its two layouts (tests/fixtures/composed.mjs `heldLayouts`)
+	const doc = { meta: { id: 'diagram-0e0001', name: 'd', version: 0, schema: 3 }, layouts: heldLayouts(), nodes: [], zones: [], links: [], pipes: [], selection: [] };
 	assert.equal(validateDoc(doc, { kinds }), null);
 	assert.match(validateDoc({ ...doc, groups: [] }, { kinds }), /unknown collection: groups/);
 	const m = model(kinds);

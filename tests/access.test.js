@@ -14,7 +14,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { Store } from '../server/store.js';
 import { validateMetaPatch } from '../planner/validate.js';
-import { validateDoc } from './fixtures/composed.mjs';   // the network's kinds, as the store validates (S-e)
+import { validateDoc, heldLayouts } from './fixtures/composed.mjs';   // the network's kinds, as the store validates (S-e)
 import { createApp } from '../server/app.js';
 import { Session, snapshotBody } from '../server/protocol.js';
 import { Locks } from '../server/locks.js';
@@ -153,9 +153,10 @@ test('H9.1: a client cannot grant itself access through a meta patch', () => {
 });
 
 test('H9.1: the document validator refuses a malformed principal or level', () => {
+	// RESTATED at WD-b1 (H19.45): schema 3 -- a document holds its two layouts (tests/fixtures/composed.mjs `heldLayouts`)
 	const doc = (meta) => ({
-		meta: { id: 'diagram-aa0001', name: 't', version: 0, schema: 2, ...meta },
-		nodes: [], links: [], zones: [], groups: [],
+		meta: { id: 'diagram-aa0001', name: 't', version: 0, schema: 3, ...meta },
+		nodes: [], links: [], zones: [], groups: [], layouts: heldLayouts(),
 	});
 	assert.equal(validateDoc(doc({})), null, 'legacy documents carry neither key and still load');
 	assert.equal(validateDoc(doc({ owner: OWNER, grants: { [CODE]: 'read' } })), null);
@@ -937,9 +938,10 @@ the split; this is the grammar half of it.
 The grammar is asserted rather than the regex, because the point is which strings the system will
 and will not accept as an identity, and narrowing a grammar later is the change you cannot make.
 */
+// RESTATED at WD-b1 (H19.45): schema 3 -- a document holds its two layouts (tests/fixtures/composed.mjs `heldLayouts`)
 const principalDoc = (owner) => ({
-	meta: { id: 'diagram-aa0001', name: 't', version: 0, schema: 2, owner },
-	nodes: [], links: [], zones: [], groups: [],
+	meta: { id: 'diagram-aa0001', name: 't', version: 0, schema: 3, owner },
+	nodes: [], links: [], zones: [], groups: [], layouts: heldLayouts(),
 });
 const acceptsPrincipal = (p) => validateDoc(principalDoc(p)) === null;
 

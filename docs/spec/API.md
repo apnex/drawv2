@@ -29,6 +29,10 @@ AMENDED 2026-10-07 (B291): a document handed to `create` is installed as it is, 
 Nothing migrates it now: one written before the cutover (`meta.schema` 1) is refused with a sentence that says so, and a link whose ends no pipes join comes up down until a pipe is laid.\
 AMENDED 2026-10-07 (B307): a top-level key the server's composition does not hold -- `waypoints`, or a plugin's collection it is not composed with -- is refused, `unknown collection: <key>`, where it was accepted and dropped.
 
+AMENDED 2026-10-10 (WD-b1, H19.45): the current format is schema 3 -- schema 2 with the diagram's two layouts (`layouts`, below).\
+A schema 2 document handed to `create`, or one with no `meta.schema`, is migrated to schema 3 on its way in, its two layouts added; one in schema 3 lacking them -- a tab open from before the change -- is completed the same way; one in schema 1 is still refused.\
+The migration is deleted at WD-c, once every stored document is schema 3 (`dev/design/unification/WIDE-DEVICES.md` section 12).
+
 An agent's work belongs to whoever authorised the agent (ruled 2026-08-23, **B100**).\
 A diagram created by `agent:planner` is owned by the principal that claimed that agent name, and the agent is left an ordinary `write` grant on it.\
 This document previously said the caller owns what it creates, which was true of a human and produced work nobody could reach when an agent did it: owned by `agent:<name>` with no grants, invisible to the person who authorised the agent, on their own deployment.
@@ -98,7 +102,7 @@ Read it with this amendment in hand: its `beat` is this document's unnamed story
 
 ```json
 {
-  "meta":   { "id": "diagram-x", "name": "demo", "version": 12, "schema": 2,
+  "meta":   { "id": "diagram-x", "name": "demo", "version": 12, "schema": 3,
               "owner": "user:someone@example.com",
               "grants": { "user:other@example.com": "read", "agent:planner": "write" },
               },
@@ -152,6 +156,8 @@ Still pending from the same amendment and not yet built: a grant may name an OWN
 
 AMENDED 2026-10-03, by promotion's format batch (`dev/design/unification/FORMAT-BATCH.md`): `meta.schema` is 2; a waypoint is a node with no `type`, where it was its own kind, `waypoint`, stored under `waypoints` (P-10); `link.flow`, `true` or `false`, is `direction`, `forward` or `reverse` (F1).\
 Every document entering the store is migrated first, so a schema 1 document is accepted and stored as schema 2.
+
+AMENDED 2026-10-10 (WD-b1, H19.45): `meta.schema` is 3, which adds the diagram's two layouts; a schema 2 document entering the store is migrated to schema 3 until WD-c, and a schema 1 document is refused (B291).
 
 ---
 

@@ -1,6 +1,7 @@
 // CS2 — the log is durable. Undo survives a process restart, the file round-trips exactly, a
 // corrupt log costs history but never the diagram, and a failed write retries and is observable.
 
+import { heldLayouts } from './fixtures/composed.mjs';   // WD-b1: the two layouts a schema 3 document holds
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -507,7 +508,8 @@ above -- count it, name it, and let `/health` say `corrupt` rather than `degrade
 test('B83: a document with a cross-entity violation LOADS, and is counted', async () => {
 	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-inv-'));
 	const doc = {
-		meta: { id: 'diagram-ee0001', name: 'broken', version: 0, schema: 2, owner: '', grants: {} },
+		// RESTATED at WD-b1 (H19.45): schema 3 -- a document holds its two layouts (tests/fixtures/composed.mjs `heldLayouts`)
+		meta: { id: 'diagram-ee0001', name: 'broken', version: 0, schema: 3, owner: '', grants: {} }, layouts: heldLayouts(),
 		nodes: [0, 1].map((i) => ({ id: `node-ee000${i}`, name: `n${i}`, type: 'host', shape: 'circle', x: i * 60, y: 0 })),
 		pipes: [], zones: [], groups: [], selection: [],
 		// two straight links on one pair: writable before the rule existed, uncreatable now
@@ -538,7 +540,8 @@ carries it.
 */
 test('Phase 2: the schema refuses meta.slides', async () => {
 	const { validateDoc } = await import('./fixtures/composed.mjs');
-	const doc = { meta: { id: 'diagram-51de52', name: 'legacy', version: 0, schema: 2, owner: '', grants: {},
+	// RESTATED at WD-b1 (H19.45): schema 3 -- a document holds its two layouts (tests/fixtures/composed.mjs `heldLayouts`)
+	const doc = { meta: { id: 'diagram-51de52', name: 'legacy', version: 0, schema: 3, owner: '', grants: {},
 		slides: { url: 'https://docs.google.com/x', presentationId: 'p', pageId: 'g' } },
 		nodes: [], pipes: [], links: [], zones: [], groups: [], selection: [] };
 	assert.match(validateDoc(doc), /unknown meta key: slides/, 'the validator no longer knows the name of the deleted feature');

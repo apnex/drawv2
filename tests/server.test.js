@@ -1,3 +1,4 @@
+import { heldLayouts } from './fixtures/composed.mjs';   // WD-b1: the two layouts a schema 3 document holds
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -1066,8 +1067,9 @@ test('corrupt and invalid files in the data dir are skipped at boot', async () =
 	fs.writeFileSync(path.join(dir, 'diagram-bad001.json'), 'not json at all {{{');
 	fs.writeFileSync(path.join(dir, 'diagram-bad002.json'), JSON.stringify({ meta: { id: 'diagram-bad002', name: 'x' }, nodes: [{ id: 'node-zz', evil: true }] }));
 	const good = {
-		meta: { id: 'diagram-aaaa11', name: 'good', version: 0, schema: 2 },
-		nodes: [], links: [], pipes: [], zones: [], groups: []
+		// RESTATED at WD-b1 (H19.45): schema 3 -- a document holds its two layouts (tests/fixtures/composed.mjs `heldLayouts`)
+		meta: { id: 'diagram-aaaa11', name: 'good', version: 0, schema: 3 },
+		nodes: [], links: [], pipes: [], zones: [], groups: [], layouts: heldLayouts()
 	};
 	fs.writeFileSync(path.join(dir, 'diagram-aaaa11.json'), JSON.stringify(good));
 

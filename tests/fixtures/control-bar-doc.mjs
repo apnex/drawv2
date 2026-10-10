@@ -6,6 +6,7 @@
 const C = 60;          // pitch (cell -> px); the doc is px, center-origin
 const ACT = '#4fc3f7';  // the 'active' accent used by the slides cluster
 
+import { heldLayouts } from './composed.mjs';   // WD-b1: the two layouts a schema 3 document holds
 export function controlBarDoc() {
 	const bar = {
 		id: 'node-ba0001', name: 'control-bar', type: 'host', shape: 'circle',   // rounded panel corners (rx = circle radius)
@@ -32,5 +33,6 @@ export function controlBarDoc() {
 	const links = [
 		{ id: 'link-000001', name: 'link-000001', src: 'node-c11001', dst: 'node-d22001' },
 		{ id: 'link-000002', name: 'link-000002', src: 'node-d22001', dst: 'node-e33001' }];
-	return { meta: { id: 'diagram-cba001', name: 'control-bar' }, nodes, links, zones: [], groups: [] };
+	// RESTATED at WD-b1 (H19.45): a document holds its two layouts (tests/fixtures/composed.mjs `heldLayouts`)
+	return { meta: { id: 'diagram-cba001', name: 'control-bar' }, layouts: heldLayouts(), nodes, links, zones: [], groups: [] };
 }

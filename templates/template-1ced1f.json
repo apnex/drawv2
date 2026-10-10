@@ -3,7 +3,7 @@
 		"id": "template-1ced1f",
 		"name": "multi-site",
 		"version": 0,
-		"schema": 2
+		"schema": 3
 	},
 	"nodes": [
 		{
@@ -768,6 +768,28 @@
 			"a": "node-9831c2",
 			"b": "node-a96657",
 			"laid": "link"
+		}
+	],
+	"layouts": [
+		{
+			"id": "layout-000001",
+			"name": "node",
+			"pitch": 60,
+			"offset": 0,
+			"ext": {
+				"x": 900,
+				"y": 480
+			}
+		},
+		{
+			"id": "layout-000002",
+			"name": "zone",
+			"pitch": 60,
+			"offset": 30,
+			"ext": {
+				"x": 930,
+				"y": 510
+			}
 		}
 	]
 }

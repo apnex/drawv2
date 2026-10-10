@@ -3,7 +3,7 @@
 		"id": "template-47f426",
 		"name": "agent-draw",
 		"version": 0,
-		"schema": 2
+		"schema": 3
 	},
 	"nodes": [
 		{
@@ -155,6 +155,28 @@
 			"a": "node-a0ba87",
 			"b": "node-e7cc7e",
 			"laid": "link"
+		}
+	],
+	"layouts": [
+		{
+			"id": "layout-000001",
+			"name": "node",
+			"pitch": 60,
+			"offset": 0,
+			"ext": {
+				"x": 900,
+				"y": 480
+			}
+		},
+		{
+			"id": "layout-000002",
+			"name": "zone",
+			"pitch": 60,
+			"offset": 30,
+			"ext": {
+				"x": 930,
+				"y": 510
+			}
 		}
 	]
 }

@@ -5,7 +5,7 @@ import { NODE_EXT } from '../model/surface.mjs';
 import { ZONE_EXT } from '../layouts/layout-table.mjs';
 import { ZONE_ROWS } from '../zones/zone-kind.mjs';
 import { violations } from '../model/invariants.mjs';
-import { commit } from './fixtures/composed.mjs';
+import { commit, heldLayouts } from './fixtures/composed.mjs';
 import { Log } from '../planner/log.mjs';
 import { STD } from '../kernel/spec.mjs';
 import assert from 'node:assert/strict';
@@ -25,8 +25,9 @@ test('validateSelectionIds is shape-only over selectable kinds', () => {
 	assert.match(validateSelectionIds(new Array(10001).fill('node-abc123')), /exceeds limit/);
 });
 
+// RESTATED at WD-b1 (H19.45): a document holds its two layouts (tests/fixtures/composed.mjs `heldLayouts`)
 const baseDoc = (selection) => ({
-	meta: { id: 'diagram-abc123', name: 'd' },
+	meta: { id: 'diagram-abc123', name: 'd' }, layouts: heldLayouts(),
 	nodes: [], links: [], zones: [], groups: [], selection
 });
 
@@ -59,7 +60,8 @@ true rather than merely documented.
 test('B95: a Model is not a doc, and toJSON is the boundary between them', () => {
 	const model = new Model();
 	model.load({
-		meta: { id: 'diagram-aa0001', name: 't', version: 0, schema: 2 },
+		// RESTATED at WD-b1 (H19.45): schema 3 -- a document holds its two layouts (tests/fixtures/composed.mjs `heldLayouts`)
+		meta: { id: 'diagram-aa0001', name: 't', version: 0, schema: 3 }, layouts: heldLayouts(),
 		nodes: [], links: [], zones: [], groups: [],
 	});
 
@@ -254,7 +256,8 @@ test('B86: the name cap is one number, and truncation lands where rejection begi
 	const { NAME_MAX } = await import('../model/limits.mjs');
 	const { validateDoc } = await import('./fixtures/composed.mjs');
 	// collections by their names: the fixture carried singular keys -- `node: {}` and the like -- that the validator ignored until B307
-	const doc = (name) => ({ meta: { id: 'diagram-aa0001', name, version: 1 }, nodes: [], links: [], groups: [], zones: [] });
+	// RESTATED at WD-b1 (H19.45): a document holds its two layouts (tests/fixtures/composed.mjs `heldLayouts`)
+	const doc = (name) => ({ meta: { id: 'diagram-aa0001', name, version: 1 }, layouts: heldLayouts(), nodes: [], links: [], groups: [], zones: [] });
 
 	assert.equal(validateDoc(doc('x'.repeat(NAME_MAX))), null, 'exactly at the cap is legal');
 	assert.match(validateDoc(doc('x'.repeat(NAME_MAX + 1))) || '', /meta\.name/, 'one past it is refused');
@@ -383,7 +386,8 @@ test('B83: the document door and the mutation door reach the same verdict', asyn
 
 	const N = (n, x) => ({ id: `node-aa000${n}`, type: 'host', x, y: 0, name: `n${n}` });
 	const W = (n, y) => ({ id: `node-ea000${n}`, name: `w${n}`, x: 60, y });   // a waypoint: a node with no type (F-c)
-	const base = { meta: { id: 'diagram-aa0001', name: 't', version: 1 }, zones: [], groups: [] };
+	// RESTATED at WD-b1 (H19.45): a document holds its two layouts (tests/fixtures/composed.mjs `heldLayouts`)
+	const base = { meta: { id: 'diagram-aa0001', name: 't', version: 1 }, layouts: heldLayouts(), zones: [], groups: [] };
 
 	const cases = {
 		'clean, two nodes and a link':
@@ -457,7 +461,8 @@ failure rather than a boot failure.
 */
 test('H9.9: a template id is a valid document id, and a made-up kind is not', async () => {
 	const { validateDoc } = await import('./fixtures/composed.mjs');
-	const doc = (id) => ({ meta: { id, name: 't', version: 0 }, nodes: [], links: [], groups: [], zones: [] });
+	// RESTATED at WD-b1 (H19.45): a document holds its two layouts (tests/fixtures/composed.mjs `heldLayouts`)
+	const doc = (id) => ({ meta: { id, name: 't', version: 0 }, layouts: heldLayouts(), nodes: [], links: [], groups: [], zones: [] });
 
 	assert.equal(validateDoc(doc('template-4f2c11')), null, 'a template is a document');
 	assert.equal(validateDoc(doc('diagram-4f2c11')), null, 'and so is a diagram, unchanged');

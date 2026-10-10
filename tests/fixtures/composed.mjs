@@ -13,6 +13,9 @@ import { createNetwork } from '../../network/network.mjs';
 import { createTransit } from '../../network/transit.mjs';
 
 export const KINDS = productKinds(...NETWORK_ROWS);
+// WD-b1 (H19.45): the two layouts every schema 3 document holds (layouts/layout-kind.mjs), fresh copies -- what a document a test
+// builds by hand carries, as a stored one does
+export const heldLayouts = () => structuredClone(KINDS.always.layout);
 export const NETWORK = createNetwork(createTransit());
 export const PLAN = { links: NETWORK.links, kinds: KINDS };
 

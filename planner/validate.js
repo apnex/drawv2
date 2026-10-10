@@ -269,6 +269,14 @@ export function validateDoc(doc, { kinds } = {}) {
 			if (err) return `${err} (${entity.id})`;
 		}
 	}
+	/*
+	WD-b1 (H19.45) -- THE ENTITIES EVERY DOCUMENT HOLDS ARE REQUIRED (a row's `always`, model/shape.mjs): a document reaches a
+	validator completed (server/migrate-schema-3.mjs, model/shape.mjs `completeAlwaysHeld`) or is refused, naming the one it
+	lacks. Their values are the row's own check above (the layouts': WD7).
+	*/
+	for (const [kind, held] of Object.entries(kinds.always ?? {})) {
+		for (const e of held) if (!byKind[kind]?.has(e.id)) return `the ${e.name ?? kind} ${kind} (${e.id}) is missing -- every document holds it`;
+	}
 	// model-state (status): shape-validate the persisted selection key if present. Tolerate-stale by
 	// design — see validateSelectionIds. (MS1)
 	if ('selection' in doc) {

@@ -3,7 +3,7 @@
 
 import { pathOf, isLinkDown } from '../network/network-queries.mjs';   // Q-a: the network's questions
 import { test } from 'node:test';
-import { KINDS } from './fixtures/composed.mjs';   // O-b1: a reader is handed its caller's kinds
+import { KINDS, heldLayouts } from './fixtures/composed.mjs';   // O-b1: a reader is handed its caller's kinds
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -13,8 +13,9 @@ import { readModel, readerNetwork } from '../network/read-model.mjs';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 // a link from A to B whose route, over its pipes, bends up through a waypoint W its stops never name
+// RESTATED at WD-b1 (H19.45): schema 3 -- a document holds its two layouts (tests/fixtures/composed.mjs `heldLayouts`)
 const detour = () => ({
-	meta: { id: 'diagram-000001', name: 'd', version: 0, schema: 2 },
+	meta: { id: 'diagram-000001', name: 'd', version: 0, schema: 3 }, layouts: heldLayouts(),
 	nodes: [
 		{ id: 'node-00000a', name: 'A', type: 'host', shape: 'square', x: 0, y: 0 },
 		{ id: 'node-00000b', name: 'B', type: 'host', shape: 'square', x: 360, y: 0 },
