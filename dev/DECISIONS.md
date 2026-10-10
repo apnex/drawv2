@@ -1856,3 +1856,19 @@ Asked, after the director's own question ("this would be a 'layout' plugin corre
 - **A `layout` plugin owns the anchor grid:** the anchor's place on the node lattice, its extent and the grid's dots.
 - **The product keeps composition:** the anchor's drawing order among the plugins' appearances, and its rank in a delete.
 - **The cost, named and accepted:** a new top-level folder and its deploy plumbing, for one composition today.
+
+AMENDED 2026-10-10 -- **WD2, revisited: another anchor may sit on a cell any wide device covers, at every door** (B323; H19.8).\
+The design's adversarial review found WD2's "taken under any other wide device" costlier than shown when it was ruled: the agent API and the CLI would need a word for a cell neither free nor occupied, or `draw parity` and `draw map` break; Ctrl+D of a wide host panel at its default step, and moving or resizing one over a bend, would be refused; undo would restore a forbidden state unchecked; and no door protected a panel's cells against a move even before.
+Measured: no anchor sits under any of production's 9 host panels, no two panels overlap, and the stored undo history never put one there.
+Asked again, the director chose "free for every device" (the proposer's recommendation, revised) over keeping WD2 as ruled.
+- **One rule at every door: one anchor to a point (B112),** the server's rule today; the tab stops refusing a stamp, a waypoint, a drag's stop or a tower on a cell a wide device covers.
+- **Nothing an agent, the CLI, undo or Ctrl+D sees changes.**
+- **WD2 as first ruled is superseded;** its text stays above, as frozen history does.
+
+**WD5 -- in the tab, a gesture that places at the pointer acts on the item under it -- 2026-10-10 (H19.8).**\
+The design's second adversarial pass found that, once the index keys an anchor by its own cell (WD2 revisited), the tab's placing gestures would place under a panel by keys and drops while a click there still lands on the panel, and the hand's ghost would say "stamp" where a click retypes.
+Asked what a placing gesture does with the pointer over a wide device's frame, the director chose "acts on the panel" (the proposer's recommendation) over "place anywhere the rule allows".
+- **A gesture that places at the pointer places nothing while an item is under the pointer** -- by what the parts say they cover under a hover (`under`: a device's frame, a waypoint's radius) -- as a click landing on the item already does: an idle `w`, Enter with a type held, a palette drop, a digit key mid-drag; a click, a run-mode press and a drag's stop already act on the item by what they hit or grab.
+- **Elsewhere, one anchor to a point decides** (B112, WD2 revisited) -- including on a covered cell outside a frame.
+- **The hand's ghost and the readout say blocked exactly where those gestures place nothing.**
+- The planner, the server and the agent door are unaffected: this is what a pointer means, not a rule about cells.

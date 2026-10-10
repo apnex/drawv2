@@ -62,7 +62,9 @@ Whatever the anchors become, B323 asks for one rule at every door.
 
 ## 4. The fence and the anti-scope
 
-**In:** what a wide device's anchors are and where; which anchor a link or a pipe ends at; whether a device's covered cells are taken, held at every door (B323); the end of the width exception; the migration of the stored diagrams if the format changes; the anchor's canvas part, if the director rules it a plugin.
+**In:** what a wide device's anchors are and where; which anchor a link or a pipe ends at; whether a device's covered cells are taken, held at every door (B323); the end of the width exception; the migration of the stored diagrams if the format changes; the anchor's canvas part, if the director rules it a plugin.\
+AMENDED 2026-10-10, after the rulings: **in** -- one anchor to a point at every door (B323); the tab's index brought to it, ending the width exception; what a placing gesture does under the pointer (WD5); the layout plugin and a place's size (WD4).\
+**Out,** fallen away with the rulings: anchors along a device and which one a link ends at (WD1's trigger), a migration (no stored change), a word for a taken cell (none is taken).
 **Out:**
 - **A device type as a composition of packs** -- B282's other half, held.
 - **What a panel draws** -- its content regions, frame and labels stay as they are.
@@ -71,46 +73,66 @@ Whatever the anchors become, B323 asks for one rule at every door.
 
 ---
 
-## 5. To-state and build order -- written after WD1, WD2 and WD4
+## 5. To-state and build order -- rewritten after WD2 was revisited and WD5 ruled
+
+REWRITTEN 2026-10-10, twice: the version the first adversarial pass read is at commit `5e8cead`; sections 9 and 11 record both passes, and section 10 what the first changed.
 
 ### 5.1 To-state
 
-- **A wide device is one anchor** (WD1); what it covers is the devices plugin's to declare, twice:
-  - **its footprint** -- the cells it is drawn over, picked by and sized by, every wide device's (already the plugin's: `devices/device-footprint.mjs`; the place's size, below);
-  - **the points it takes** beyond its own anchor -- a wide device's other cells, but none for a text label (WD2).
-- **One declaration of what an entity takes, read at every door** (B323).
-  The field contract gains one key: an extension may declare `takes(entity)`, the points beyond the anchor's own that an entity holds.
-  - **The core's one-occupant rule** (B112, `model/invariants.mjs`) holds every anchor's point and every declared taken point to one holder, through the composition -- it names no plugin and reads no device field.
-  - **The tab's occupancy index** (`engine/relations.mjs`) keys an entity by its own cell and its declared taken points; it reads `span` no more, and the width exception ends.
-  - **The agent door's free cells** (`server/anchor.mjs`, and the REST listing of free anchors in `server/rest.js`) are counted the same way, so an agent is never offered a cell the planner refuses.
-  - A composition without the devices plugin declares nothing taken: every anchor holds its own point alone.
-- **A layout plugin owns the anchor grid** (WD4): the anchor's place on the node lattice and its extent, and the grid's dots -- moved from `product/canvas.mjs`.
-  A place's size beyond one cell is asked of the part that composes the entity -- the devices plugin's footprint -- so neither the layout plugin nor the product reads a device field.
+- **A wide device is one anchor** (WD1); what it covers -- the cells it is drawn over, picked by and sized by -- is the devices plugin's to declare, as it already declares it (`devices/device-footprint.mjs`).
+- **One rule at every door: one anchor to a point** (B112, `model/invariants.mjs`, on the network's rung), as the planner, the server and the agent door hold it today (WD2, revisited).
+  The tab's occupancy index (`engine/relations.mjs`) keys an anchor by its own cell alone, reading `span` no more, so the width exception ends and the index answers what every scan answers (`model/model.mjs` `occupiedAnyAt`, `devices/occupancy.mjs`).
+  The agent API, the CLI, undo, redo and Ctrl+D change nothing.
+- **What a placing gesture does is what is under the pointer** (WD5): a gesture that places at the pointer places nothing while an item is under it -- by what the parts say they cover under a hover (`under`: a device's frame, a waypoint's radius) -- and elsewhere one anchor to a point decides.
+- **The tab's paths, each with what changes** (measured by the second pass; a device frame reaches 20 px from its cell's centre, its pick 24 px, a snap 30 px):
+
+| path | where | today | after |
+|---|---|---|---|
+| idle `w` | `app/src/input.js` `placeWaypoint` | refused on any covered cell | refused under an item (WD5); placed on a covered cell outside a frame |
+| Enter with a type held | `onStampKey`, then `stampAt` | refused on a covered cell (a device's `blocked`) | as `w` |
+| a palette drop | `stampAt(pos, item)` | as Enter | as `w` |
+| a digit key mid-drag | `chainThroughNode` | refused on a covered cell | as `w` |
+| a click with a type held | `stampClicked`, then `stampAt` | lands on the device over its frame; refused on a covered cell outside it | over the frame as today; outside it, placed on a covered cell |
+| a run-mode tower | `engine/spawn-runs.mjs` | none on a drawn item; refused on a covered cell outside it | on a drawn item as today; outside it, placed on a covered cell |
+| `w` or `g` mid-drag | `addStop` | threads a device the pick grabs (24 px); refused on a covered cell outside it | threads it as today; outside it, a stop on a covered cell; a bend already on the snapped cell is threaded first, as it is today for the 7 under labels |
+| the hand's ghost and the readout's cursor line | `handBlocked`, `tools.js`, `readout.js` | blocked on a covered cell | blocked exactly where the gestures above place nothing |
+
+Over a device's frame nothing changes for a user; the change is the strip of a covered cell outside the frame, and keys or a drop over a waypoint, which now place nothing where today a stamp was sent and refused by the planner.
+
+- **A layout plugin owns the anchor grid** (WD4): the anchor's place on the node lattice and its extent, and the grid's dots, moved from `product/canvas.mjs` -- in a folder named for search, proposed `anchor-grid/`, since "layout" already names the kernel's lattices, the REST `/layouts` and a place's `layout` (first pass, finding 9).
   The product keeps composition: the anchor's drawing order among the plugins' appearances, and its rank in a delete.
-- **Stored documents do not change.**
-  Every anchor in production stays valid: the 7 overlaps are under labels, which take nothing.
-  An edit that would put an anchor on a point a host panel takes is refused at every door, as the tab refuses it today; a diagram already holding one would be loaded and reported, never refused (B83, `server/store.js`), and its other edits admitted (`planner/txn.mjs` refuses only a violation introduced or worsened).
+- **A place's size comes from exactly one source:** the place's own `size`, as the zones plugin's carries it today, or one part's `sizes` for that kind -- so the anchor's place, the layout plugin's, carries none, and the devices plugin declares a device's size from its span.
+  - A placed kind with neither, or with both, is refused when the canvas is composed, naming the parts -- `app/src/snap.js` `placesOf` keeps its refusal of a sizeless place, now naming the sources it looked for.
+  - A sizer that answers nothing for an entity means one cell, `{ w: 0, h: 0 }` -- a waypoint.
+  - What a size means stays the place's: for the anchor, the extent beyond its cell from the cell's centre; for a zone, its whole box from its corner -- as `clampDelta`, `selectionBounds` and the readout's box read it today.
+  Neither the layout plugin nor the product reads a device field.
+- **Stored documents do not change,** and every anchor in production stays valid.
 
 ### 5.2 Build order -- each stage provable before the next depends on it
 
 | stage | what lands | proven by |
 |---|---|---|
-| **WD-a** | **One rule at every door (B323):** the `takes` key; the devices plugin's declaration; the core's rule, the tab's index and the agent door's free cells reading it | the four doors agree on a host panel and a label (test 1); production's 38 diagrams measured under the new rule, before deploy, with no violation; every corpus unchanged or each difference shown and traced to WD2 |
-| **WD-b** | **The layout plugin (WD4):** `layout/` with the anchor's place and grid, its deploy plumbing; a place's size asked of the composing part; the product's part reduced to composition | the K8 DOM's grid identical; every corpus unchanged; the product's canvas part reads no device field and the layout plugin imports no plugin |
-| **WD-c** | **Closed:** the ratchet that no module of the core or the network's rung reads a device field; B323 closed; B282's O4 half closed, its pack half held | the gate; production deployed with nothing changed for a user but the refusal WD2 rules |
+| **WD-a** | **One rule at every door (B323), and the pointer (WD5):** the index keys an anchor by its own cell; the placing gestures and the ghost ask what is under the pointer; the width exception ends | tests 1 and 3; the two tests asserting a span's covered cells occupied rewritten (`tests/rules-acceptance.test.js`, the step's geometry, and `tests/span.test.js`, the index), asserting the footprint by the parts' covers instead; every corpus unchanged, or each difference shown and traced to a row of section 5.1's table |
+| **WD-b** | **The layout plugin (WD4) and the size contract:** `anchor-grid/` with the anchor's place and grid and its deploy plumbing; `sizes`, the devices plugin's for a device; the product's part reduced to composition | tests 4 and 6; the K8 DOM's grids identical; `tests/browser.test.js` and `tests/lab-browser.test.js`, which load the canvas through both servers' mounts; every corpus unchanged |
+| **WD-c** | **Closed:** B323 closed; B282's O4 half closed, its pack half held with WD1's trigger added; KINDS-AS-PLUGINS section 16.3's exception recorded as ended, and the comments that record it retired (`devices/device-fields.mjs`, `product/canvas.mjs`, `engine/relations.mjs`, `tests/core-names-no-plugin.test.js`) | the gate; the user-visible changes exactly section 5.1's table; production deployed, its boot reporting no invariant violation |
 
-**Size, by judgement:** WD-a moderate (the contract key, three readers, about four test files); WD-b small, most of it the new folder's plumbing; WD-c small.
+**Size, by judgement:** WD-a moderate (the index, one pointer predicate read by four gestures and the ghost, two tests rewritten); WD-b small to moderate, much of it the new folder's plumbing; WD-c small.
 
 ---
 
 ## 6. Invariants and acceptance tests
 
-1. **The doors agree** -- for a 3x1 host panel and a 3x1 text label: an anchor on the panel's second cell is refused by the planner (the server's door), refused by the tab (a stamp, a `w`), and not offered by the agent door (the free anchors, `place`); an anchor on the label's second cell is accepted by all four.
-2. **Production stays valid** -- the new rule finds no violation in any of production's diagrams, measured on a private copy before WD-a deploys, and the deployed server's boot reports none.
-3. **Nothing below the plugins reads a device field** -- no module of the core or the network's rung reads `span` (`engine/relations.mjs` today); the core's rule reads the composed `takes` alone.
-4. **The layout plugin is the anchor grid's** -- `product/canvas.mjs` reads no device field; `layout/` imports no plugin; the K8 DOM's grids identical.
-5. **The corpora** -- the planner, gesture, matrix and K8 DOM corpora unchanged, or each difference shown, and traced to WD2 (an anchor on a label's covered cell now admitted, or on a panel's now refused at a door that admitted it).
-6. **Without the devices plugin** -- a composition without it declares nothing taken; a malformed `takes` is refused when the composition is built, naming its plugin.
+1. **The doors agree, and the pointer decides** -- a 3x1 host panel with its anchor at (0,0) and a 3x1 text label with its anchor at (0,240), each in its own test:
+   - an anchor put on a covered cell, (60,0) or (60,240), by an op, is admitted by the planner (the server's door), and the agent API lists the cell free (`?free=1`);
+   - an anchor put on either device's own anchor cell is refused by the planner and not listed free;
+   - with the pointer at a covered cell's centre (over the frame), an idle `w`, Enter with a type held, `input.stampAt(pos, item)` (what a palette drop calls) and a digit key mid-drag each place nothing, and the ghost reads blocked;
+   - with the pointer 26 px below that centre (outside the frame and the pick, snapping to the same cell), each of the four places its anchor on the covered cell, and the ghost reads clear;
+   - a click with a type held at the covered cell's centre lands on the device -- a retype for the label, whose type no hand holds; for the host, a select with `host` held and a retype with another type.
+2. **Production and the templates stay valid** -- the rule does not change; `violations()` finds nothing in any template in `templates/`, held by a test, and the deployed server's boot reports no invariant violation for production's diagrams.
+3. **The index keys anchors alone** -- a wide device in the index-and-scan parity test (`tests/engine.test.js`), the two agreeing, and `occupiedAnyAt` false on a covered cell; and no `.span` read in `engine/relations.mjs`, `model/*.mjs` or `planner/*`.
+4. **The layout plugin is the anchor grid's** -- `product/canvas.mjs` reads no device field (`span`, `type`, `shape`, `content`); `anchor-grid/` imports no plugin; the K8 DOM's grids identical.
+5. **The corpora** -- the planner corpus unchanged; the gesture, matrix and K8 DOM corpora unchanged, or each difference shown and traced to a row of section 5.1's table.
+6. **The size contract** -- a device's place size is its span's extent and a waypoint's one cell; a zone's place keeps its own size; a placed kind with no source, or with two, is refused when the canvas is composed, naming the parts.
 
 ---
 
@@ -142,20 +164,21 @@ AMENDED 2026-10-10 -- **WD4 ruled: a layout plugin now** (`dev/DECISIONS.md` WD4
 
 | axiom | weight | how it holds -- or the tension |
 |---|---|---|
-| A2 Isomorphic Specification | load-bearing | one declaration of what an entity takes, read by the planner, the tab and the agent door -- the drift B323 measured cannot recur by construction |
-| A3 Sovereign Composition | load-bearing | the footprint and the taking are the devices plugin's; the core's rule reads a composed key and names no plugin; the width exception ends. **Tension:** the layout plugin is a surface with one consumer, which A3's "earned by real consumers" would wait on -- the proposer recommended waiting; the director ruled it now (WD4), the cost named; recorded as the director's choice, carried as a guardrail rather than a fail |
-| A8 Gated Recursive Integrity | load-bearing | each stage gated; the stricter rule measured against production before it deploys, and the corpora's differences shown and traced |
-| A13 Director Intent Amplification | load-bearing | O4's literal reading amended by the director on measured evidence (WD1); the director's question answered by a decision, not assumed (WD4) |
+| A2 Isomorphic Specification | load-bearing | REWRITTEN after WD2 was revisited: one rule, one anchor to a point, at every door -- the tab's index brought to what the planner, the server, the agent door and every scan already hold; B323's drift ends because only one rule remains |
+| A3 Sovereign Composition | load-bearing | the footprint is the devices plugin's and a place's size is asked of the part that sizes the entity; the width exception ends. **Tension:** the layout plugin is a surface with one consumer, which A3's "earned by real consumers" would wait on -- the proposer recommended waiting; the director ruled it now (WD4), the cost named; recorded as the director's choice, carried as a guardrail rather than a fail |
+| A8 Gated Recursive Integrity | load-bearing | each stage gated; no rule is made stricter (WD2 revisited); the corpora's differences shown and traced to section 5.1's table |
+| A13 Director Intent Amplification | load-bearing | O4's literal reading amended by the director on measured evidence (WD1); WD2 put back to the director when the review found its cost understated, not quietly reshaped; the director's question answered by a decision, not assumed (WD4); a pointer's meaning ruled, not assumed (WD5) |
 | A1 Sovereign State Transparency | supporting | no stored change; the boot reports any violation and `/health` shows it (B83) |
-| A9 Chaos-Validated Deployment | supporting | no data migration; a stricter rule is reported on load, never refused, so a mis-measure degrades rather than bricks |
+| A9 Chaos-Validated Deployment | supporting | no data migration and no stricter rule; the boot still reports any violation (B83) |
 | A4 Zero-Loss Knowledge | supporting | the director's words, the measurements and the screenshots' findings recorded whole |
 | A10, A14 | supporting | B323 registered from the measurement; WD1's revival trigger recorded (RU3) |
+| A5 Perceptual Parity | supporting | added after the review (finding 1): an agent and the tab now perceive one occupancy rule; nothing an agent reads changes |
 | the rest | not materially implicated | no agent seam, context assembly or LLM path changes |
 
-**Layered:** the format layer is untouched; the rule layer gains one key and one rule read three ways; the canvas layer gains one plugin and loses its last device-field read below the devices plugin.\
-**Verdict: pass, with guardrails** --
-1. production measured under the new rule on a private copy before WD-a deploys; the boot line checked after for no invariant violation;
-2. every corpus difference shown and traced to WD2, or the stage stops;
+**Layered:** the format and the rules are untouched; the tab's index is brought to the one rule and its placing gestures to what is under the pointer (WD5); the canvas gains one plugin and loses its last device-field read below the devices plugin.\
+**Verdict: pass, with guardrails** (REWRITTEN after WD2 was revisited) --
+1. the user-visible changes are exactly section 5.1's table, recorded with WD-a; the boot line checked after deploy for no invariant violation;
+2. every corpus difference shown and traced to a row of that table, or the stage stops;
 3. the new folder's plumbing done by the checklist (the image, both server mounts, the layer manifest's lists, the copy lists in two tests);
 4. WD1's revival trigger kept on B282's row.
 
@@ -193,3 +216,38 @@ And measured on production's private copy: no two wide host panels overlap; none
 
 CORRECTED (finding 7; section 2, "That it covers its other cells is enforced in the browser tab alone"): the tab refuses only the gestures that create an anchor -- a stamp (`devices/occupancy.mjs` `occupiedAt`, devices only), a waypoint and a drag's stop (`occupiedAnyAt`), the run-mode tower; moving, nudging, resizing, cloning and duplicating a panel over anchors are admitted at every door, the tab included.\
 The rule enforced at no door is "a wide device's cells are its own"; the tab enforces only "do not create an anchor there".
+
+---
+
+## 10. WD2 revisited, and the review's dispositions settled
+
+The director, shown the review's costs and the measures, chose "free for every device" (`dev/DECISIONS.md`, WD2 revisited): one anchor to a point at every door.\
+CORRECTED by the second pass (section 11): findings 1, 2, 4, 5, 11 and 13 fall away with it -- finding 3 does not, a device under any wide device being ruled ("a stamp"), and finding 16 now applies to every wide device.\
+As first written: findings 1, 2, 3, 4, 5, 11 and 13 fall away with it -- no cell is taken beyond its anchor, so there is no word to choose for one, nothing for undo to restore, no discriminator, no panel-on-panel rule and no `takes` key.\
+Finding 6: test 1 is rewritten by gesture and door (section 6); the step geometry test is extended to a text label in WD-a, `w` mid-drag over a label still threading the label, as it does today.\
+Finding 8: the index keys anchors alone, as every scan does.\
+Finding 9: the size contract is specified (section 5.1) and the folder proposed as `anchor-grid/`.\
+Finding 10: the WD-c ratchet is test 3's `span` pattern over named modules, and the user-visible change is listed.\
+Finding 17: the fence's open items fall away with WD2 or are named above; templates are in test 2.
+
+---
+
+## 11. The second adversarial pass, after WD2 was revisited
+
+**Reviewer:** the same independent agent, given the revised sections 5, 6, 8 and 10 and told to break them against the code; read only.\
+**Its verdict:** "ratifiable once the listed changes are made" -- one blocker and four major findings, none reopening WD1, WD2 as revisited or WD4; one choice put to the director, which became WD5.
+
+| # | sev | finding | disposition |
+|---|---|---|---|
+| 1 | blocker | four more tab paths change on a covered cell -- a digit key mid-drag anywhere, and a click, a tower and a drag's stop in the strip outside a frame -- and section 5.1 contradicted the ruling on stops and the tower | **WD5 ruled** (the pointer decides); every path listed with what changes (section 5.1's table), aligned with the ruling |
+| 2 | major | the hand's ghost and the readout would say "stamp" where a click retypes | accepted -- WD5: the ghost reads blocked exactly where the gestures place nothing |
+| 3 | major | two tests assert a span's covered cells occupied and will fail; "extended" was the wrong word | accepted -- named as rewritten in WD-a, asserting the footprint by the parts' covers |
+| 4 | major | the `sizes` contract collided with `placesOf`'s refusal, the zones place's own size, the per-kind meaning of a size, and a third reader (the readout) | accepted -- section 5.1: exactly one source, the refusal kept, a silent default only for an entity its sizer leaves unsized, the meaning the place's |
+| 5 | major | test 1 was neither binary nor complete | accepted -- rewritten with positions, gestures and outcomes, a palette drop named as `input.stampAt` |
+| 6 | minor | the templates clause could never fail (templates load without the rules) | accepted -- a test calls `violations()` on `templates/` |
+| 7 | minor | a text pattern does not prove the index keys anchors alone | accepted -- a wide device in the index-and-scan parity test, and `occupiedAnyAt` on a covered cell |
+| 8 | minor | the M7 audit still spoke of a stricter rule and a new key | accepted -- A8, A9, the layered line and guardrail 1 rewritten |
+| 9 | minor | corpus differences traced to an incomplete list; WD-b's plumbing proven by nothing named | accepted -- traced to section 5.1's table; the two browser suites named |
+| 10 | minor | section 10 marked finding 3 moot and missed finding 16's reach; the fence was unchanged | accepted -- section 10 CORRECTED; the fence AMENDED |
+| 11 | minor | `w` and `g` mid-drag thread a bend already on the snapped cell before the device | accepted -- in section 5.1's table, as it is today for the 7 under labels |
+| 12 | minor | comments still record the width exception | accepted -- retired in WD-c, the four files named |
