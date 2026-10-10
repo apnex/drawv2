@@ -386,3 +386,7 @@ AMENDED 2026-10-10 -- **WD-b1 built, not deployed** (H19.45; commits `1d5b420`, 
 
 AMENDED 2026-10-10 -- **WD9 ruled: WD-b1 deploys full-forward** (`dev/DECISIONS.md` WD9): production's documents are migrated once during the freeze, by the migration as tested at `9643c99`, run from history; the deployed version carries neither the migration nor the way back (section 13, finding 6, superseded), reads schema 3 alone and keeps the always-held completion on every path.\
 WD-c's deletion of the migration therefore lands in WD-b1, and section 12.7's guardrail 3 is met there; the frozen backup is the restore point.
+
+AMENDED 2026-10-10 -- **WD-b1 done and deployed** (H19.45; `accab1b`, revision `draw-00205-25k`), frozen and full-forward by WD9: the bucket frozen, backed up, its 38 diagrams migrated once from that backup by the migration as tested at `9643c99` and verified by the deployed version's own store -- 38 of 38 loaded clean, 2,539 entities otherwise equal, every log kept -- then written to the bucket and read back equal; the deployed version booted 38 diagrams with no error, skipping or invariant line, rewrote nothing, and was reopened after 204 seconds.
+**Held by:** `tests/layouts.test.js` (the kind, the always-held contract, the offline count), `tests/schema-3.test.js` (completion and refusal on every store door, no migration carried), `tests/layouts-api.test.js` (test 11), the `draw layouts` test.\
+**Measured live:** the lab's board on the deployed image holds both layouts with the product's values.
