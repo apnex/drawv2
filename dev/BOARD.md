@@ -1349,6 +1349,24 @@ H19.47 was H19's last open item, so H19 closes, its exit measured 2026-10-10: pr
 
 ---
 
+## H20 -- after unification: a gate that is binary, then paths and flows - `WIP`
+
+Opened 2026-10-10 by the director, re-triaging the board once H19 closed: "continue", on the order below.\
+The order, by the board's rule (the higher of impact and principle breach): first the gate -- three flaky tests, each retried past, breach A8's "There is no 'mostly verified' state", and every later stage leans on the gate; then H15's paths and flows, designed for approval before any code, with links side by side over one pipe (B256) weighed in the same design; then two small door and record fixes, which may ride alongside.\
+Found by the re-triage and corrected first: H10.30 was done (the throttle live since 2026-08-27; B159 closed, H10 with it); B164's trigger had fired twice unnoticed; the lab plan's statuses lagged.\
+Elsewhere: H17.3's remainder (the CLI's device list and help) finishes in its own milestone; H15.5 is re-scoped by H20.3's design; PD-3 stays the director's call.
+
+| # | Item | Cites | Sev | State |
+|---|---|---|---|---|
+| H20.1 | Re-triage the board after H19, the order agreed and recorded here | feature | S3 | `DONE` |
+| H20.2 | The gate made binary again: the DELETE test's race with its own teardown (B164), the hub liveness test under load (B320), the palette drop test's reload (B324) -- each cause found and fixed, proven under load, no retry wrapper | **B164**, **B320**, **B324** | S3 | `TODO` |
+| H20.3 | Design, for approval: paths and flows -- H15's exit re-scoped against the network model ("an author declares flow once on a path and sees it end to end"), and whether links run side by side over one pipe (B256) | feature | S3 | `TODO` |
+| H20.4 | One surface edge at every door: a zone, a panel and a panel's content regions refused past the extent at the planner, as the browser's drag already holds them (B27) | **B27** | S4 | `TODO` |
+
+**Exit:** a gate run passes or fails on what it tests, not on the machine's load; paths and flows have a ruled design; every door holds the surface's edge.
+
+---
+
 ## Held -- on the record, not on the board
 
 Open `BACKLOG` rows whose trigger has not fired.\
@@ -1357,21 +1375,18 @@ Scored so the comparison is a judgement, not an omission.\
 
 | Row | Sev | Held item | Revival trigger |
 |---|---|---|---|
-| **B7** | **S2** | Preview writes to the shared Model (the *fix*; the *mitigation* is H3.2) | the renderer-overlay arc (N7) |
-| **B27** | S4 | Bounds validated per field, never per derived extent | a document renders off-surface, or the first non-browser authoring client |
+| **B7** | **S2** | Preview writes to the shared Model (the *fix*; the *mitigation* is H3.2, inbound changes deferred during a gesture) | a remote change is seen fighting a drag, or the next change to how a drag previews |
 | **B33** | S3 | The residue after H9.28: authentication and read-gating exist, the row's remaining half does not | stated in the row; part-closed, not open |
 | **B178** | S3 | Authority at N instances -- the IDLE case, where nobody writes so no conflict proves who owns a diagram. The collision half shipped (H13.11) | deliberately scaling past one instance. Ruled 2026-09-04: today's failure is a brief ambiguity during a deploy, the designed lease's failure is a healthy instance locked out of a document nobody can write -- worse than what it fixes. The SHAPE is open too, so the question to re-open is how ownership should work at N, not whether to build the lease |
 | **B289** | S4 | Unload what is out of view on an infinite canvas: elements leave the page off-screen and return on-screen, the model untouched | the infinite canvas is designed, or element count measurably slows the page |
 | **B274** | S4 | The gesture system as a shared component: its neutral core, draw as its first tenant, narrow `exports` entry points | a second app needs gesture input |
 | **B127** | S4 | Parallel connections between two containers: superseded by the network model, designed with B256 | B256 is opened |
-| **B320** | S4 | B54's liveness test can evict its healthy peer under machine load (40 ms pings, one shared event loop) -- seen once, on a pre-push run at load 13.5 | a second B54 failure in any gate or pre-push run |
 | **B282** | S3 | A device type as a composition of packs (B282's pack half), and anchors along a wide device | the second pack that composes; or the first wide device needing links at more than one point (WD1) |
 | **B326** | S4 | The agent door's throttle refuses with no log an operator reads (no load-balancer logging on its backend) | an agent reports a 429, a flood is suspected, or the threshold is next changed |
 | **B325** | S4 | A diagram varies its grids -- its own extent, then its own pitch and offset (WD7) | the infinite canvas and scrolling are designed, or a diagram needs a grid unlike the others |
-| **B324** | S4 | The palette drop test found its page reloaded mid-test, once, on a pre-push run; the cause unseen, and 9 of 9 reruns passed | a second failure of this test in any gate or pre-push run |
 | **B79** | S3 | The connection walk's apparatus is outside the repository; the false record is corrected, the rest held with B127 | B127 revives, or a decision rests on the walk again |
 | **B108** | S3 | Detecting a test wired to a copy of its subject: undecidable as stated; mutation is the technique that works | mutation testing is automated, or the defect recurs |
-| **B248** | S4 | SD12's stored plugin list; the refusal it would make is held since B307 by the composition | a second plugin, or a peer composed without one |
+| **B248** | S4 | SD12's stored plugin list; the refusal it would make is held since B307 by the composition | a client that lacks a plugin a document uses is put to use outside the tests |
 | **B310** | S4 | the REST API's "anchor" means a grid point, the word the core's entity owns since O4 | an agent misreading the word, or the next change to `/layouts/<name>/anchors` or `nearest` (B282's design held it) |
 | **B253** | S4 | Two same-origin tabs share one outbox key; no divergence in 600 two-tab runs since the re-fetch (H19.16) | two-tab divergence is reported, or the outbox's storage is next changed |
 | **B254** | S4 | The answer to the tab's own undo can land mid-drag; 6 runs in 600 undo-heavy (H19.16) | a user reports a node jumping during a drag |
@@ -1381,7 +1396,6 @@ Scored so the comparison is a judgement, not an omission.\
 | **B265** | S3 | The context panel (a fixed panel following the situation) is not designed; gesture system stage 7 parked | the director opens the context panel's design |
 | **B188** | S3 | Perception symmetric with authoring: `draft show` exists, `--draft` on a READ does not, so an agent cannot ask what the document would look like after its draft applies | an agent stages enough that it cannot hold the result in its head -- the fabric was five beats and never needed it. `WRITES.md` W5 owes the flag name first: `--draft` reads oddly on a read |
 | **B194** | S3 | `draw event <condition>` -- an agent BLOCKS on a described condition rather than asking a person to confirm one. Viewer-opened, lock-freed, commit-landed all become one verb | spectator mode (B196) closed the case that raised it, by having the VIEWER follow the agent instead. Revive when an agent must wait on something a viewer cannot supply -- a lock freeing, or a commit from another agent |
-| **B164** | S3 | A gate test races its own teardown, so a sound commit is occasionally refused on a socket error | a SECOND flake appears, or this one fails twice in a week -- either makes it a habit rather than an incident, and a gate dismissed by habit has stopped being a gate |
 | **B175** | S3 | A second armed endpoint appeared not to animate in one tab; resolved with no change and no cause found | a SECOND report of an armed endpoint not animating, or this one recurring -- `draw movers --at <t>` now bisects it in one command |
 | **B180** | S3 | Sampling the derived world stopped being uniform when combat made health accumulate: position is still a closed form of `t`, health must be folded | wanting to SCRUB BACKWARDS -- replay a wave, review a death, audit a disputed kill. Not slowness: the present costs 4ms | a cached fold at tick N restores O(1) sampling after N |
 | **B88** | S3 | Prose can assert that finished work is blocked, and no rule reads a sentence | a second blocked entry appears on the board, or any `Decisions required` entry returns |
