@@ -362,3 +362,9 @@ AMENDED 2026-10-10 -- **WD7 ruled: nothing varies yet** (`dev/DECISIONS.md` WD7)
 | 12 | minor | A1 overclaims while records equal code; test 10 is tautological where the table is built from the constants; WD7's check belongs in the layout row's cross-field rule | accepted -- A1 restated (the grids recorded in each diagram, most readers on the table until WD7's trigger); test 10 kept for the parts not built from the constants; WD7's check the row's rule |
 
 CORRECTED (finding 11; section 12.1): "the doors refuse an unknown collection" holds of the server; the tab's Model drops one silently on load -- which is why a tab from before the change survives a schema 3 snapshot.
+
+AMENDED 2026-10-10 -- **WD8 ruled: `/layouts` serves the stored records** (`dev/DECISIONS.md` WD8).\
+`GET /diagrams/<id>/layouts` answers with the diagram's two records, each with its id, name, pitch, offset and extent; `/layouts/<name>/nearest` and `/layouts/<name>/anchors` keep their answers; a write to a layout through the API is refused while WD7 holds.
+**Into WD-b1:** the agent API's list served from the records; `draw layouts` (`cli/verbs.mjs`) reading records; the routes' manifest (`tools/routes.mjs`) and its test kept in step.
+**Test 11 -- the agent API's layouts:** `GET /diagrams/<id>/layouts` returns exactly the two records with their names and the product's values; `/layouts/node/nearest` and `/layouts/zone/anchors` answer as before; a write to a layout is refused, naming it.
+**The M7 audit, A5:** an agent reads the diagram's grids at the address it already uses, now with their settings -- perceptual parity improved, its one cost the list's richer answer, named.

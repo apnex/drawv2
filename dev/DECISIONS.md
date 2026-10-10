@@ -1884,3 +1884,11 @@ Shown both readings -- the two grids as settings configured in a layout plugin's
 Asked what a stored layout may vary from one diagram to the next in this delta -- nothing yet, its extent, or everything, spacing included -- the director chose "continue as recommended" (nothing yet: each record holds its spec, and the planner refuses any value but the product's own): "We will chase full programmability of layouts when we go after infinite canvas and scrolling".
 - **Each diagram stores its two layouts with today's values;** every reader keeps today's values, and the grids are drawn from the records.
 - **REVIVAL TRIGGER (RU3) for varying a layout per diagram:** the infinite canvas and scrolling, in the director's words.
+
+**WD8 -- the agent API's `/layouts` serves the stored layout records -- 2026-10-10 (H19.8; B310).**\
+The design's third adversarial pass found the stored `layouts` collection colliding with the agent API's `/layouts` addresses, which list the grids' names from code and serve a grid's nearest and free points by name.
+Asked how to resolve it -- `/layouts` serving the records, naming the stored kind something else ("grid"), or leaving the clash -- the director chose "Agree with recommendation" (`/layouts` serves the records) and asked: "Retrieving /layouts does show the name of them also right?" -- confirmed: each record carries its name.
+- **`GET /diagrams/<id>/layouts` answers with the diagram's two layout records,** each with its id, `name`, `pitch`, `offset` and `ext`, where it answered the names alone.
+- **The addresses by name keep their answers:** `/layouts/<name>/nearest` and `/layouts/<name>/anchors`.
+- **A write to a layout through the API is refused while WD7 holds.**
+- "Layouts" then means one thing at every door: the diagram's grids.
