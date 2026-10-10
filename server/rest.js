@@ -7,6 +7,7 @@ browsers viewing that diagram. The browser path (websocket) is refused while a d
 exactly one side writes at a time.
 */
 
+import { layoutRecords } from '../layouts/layout-records.mjs';   // WD8 (H19.45): the list the agent API serves
 import { linksOf, linksAt, makeLink } from '../network/link-queries.mjs';   // which links meet an anchor: the network's (K13d)
 import { snapshotBody, changeBody, reversalBody } from './protocol.js';
 import { LAYOUTS, nearestAnchor, anchorAt } from '../kernel/geometry.mjs';
@@ -590,8 +591,17 @@ export function handleRest(req, res, store, locks, hub, principal = null, sessio
 	projected rather than a computation: an anchor is taken when a node or waypoint resolves to it,
 	which is exactly the rule `violations()` enforces.
 	*/
+	/*
+	WD8 (H19.45) -- the list is the diagram's own layout records, id, name, pitch, offset and extent, where it was the kernel's
+	two names; the routes below keep their answers. Read loudly: a diagram lacking a record is an error naming it.
+	*/
 	if (parts[4] === 'layouts' && parts.length === 5) {
-		return json(res, 200, { layouts: Object.keys(LAYOUTS) }), true;
+		try {
+			return json(res, 200, { layouts: layoutRecords(model) }), true;
+		} catch (e) {
+			console.error(`[ rest ] ${parts[3]}: ${e.message}`);
+			return json(res, 500, { error: e.message, code: 'layout-missing' }), true;
+		}
 	}
 	if (parts[4] === 'layouts' && parts.length >= 6) {
 		const L = LAYOUTS[parts[5]];

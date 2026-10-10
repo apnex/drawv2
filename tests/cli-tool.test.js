@@ -387,6 +387,20 @@ test('anchor nearest converts a pixel to the cell add will accept', async () => 
 	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
 });
 
+// WD-b1 (H19.45; WD8): `draw layouts` lists the diagram's two layout records, where it listed the kernel's names
+test('WD-b1: draw layouts lists the diagram\'s two grids -- name, id, pitch, offset and extent', async () => {
+	await boot();
+	try {
+		const id = (await run('create', 'layouts-test')).trim();
+		const text = await run('layouts', '--diagram', id);
+		assert.match(text, /LAYOUT\s+ID\s+PITCH\s+OFFSET\s+EXTENT/, 'the columns');
+		assert.match(text, /node\s+layout-000001\s+60\s+0\s+900 x 480/, 'the node grid');
+		assert.match(text, /zone\s+layout-000002\s+60\s+30\s+930 x 510/, 'the zone grid');
+		const json = JSON.parse(await run('layouts', '--diagram', id, '--json'));
+		assert.deepEqual(json.layouts.map((l) => [l.id, l.name]), [['layout-000001', 'node'], ['layout-000002', 'zone']], 'and the records, as the API serves them');
+	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
+});
+
 /*
 B119 -- a verb's declared method is the method it issues.
 

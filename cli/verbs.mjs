@@ -1817,12 +1817,13 @@ because `anchor nearest` reaches a path under it, and counted `workspace` covere
 VERBS.push(
 	{
 		name: 'layouts', group: 'Placement', usage: 'draw layouts', route: '/diagrams/<id>/layouts', method: 'GET',
-		summary: 'the named grids and their offsets', example: 'draw layouts',
+		summary: 'the diagram\'s two grids: name, id, pitch, offset and extent', example: 'draw layouts',
 		flags: [{ name: '--diagram', about: 'target by id or name' }],
 		async run(ctx) {
 			const id = await activeId(ctx, ctx.flags);
 			const b = ok(await request(ctx, `/diagrams/${id}/layouts`), 'layouts');
-			return { json: b, text: table(b.layouts.map((l) => [l]), ['LAYOUT']) };
+			// WD8 (H19.45): the diagram's layout records, where the list was the kernel's names
+			return { json: b, text: table(b.layouts.map((l) => [l.name, l.id, l.pitch, l.offset, `${l.ext.x} x ${l.ext.y}`]), ['LAYOUT', 'ID', 'PITCH', 'OFFSET', 'EXTENT']) };
 		},
 	},
 	{

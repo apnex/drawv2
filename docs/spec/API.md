@@ -301,6 +301,8 @@ curl -s "localhost:8080/api/v1/diagrams/<id>/layouts/node/nearest?x=270&y=-150"
 curl -s "localhost:8080/api/v1/diagrams/<id>/layouts/node/anchors?free=1"
 ```
 
+AMENDED 2026-10-10 (WD8, H19.45): `layouts` answers with the diagram's two layout records -- `{layouts: [{id, name, pitch, offset, ext}, ...]}`, the `node` grid and the `zone` grid -- where it answered with their names alone; the two routes below are unchanged, and a write to a layout is refused while a diagram may not vary its grids (WD7).
+
 `nearest` answers *somewhere legal near here* and returns `{layout, cx, cy, x, y, occupant}`.\
 The pixels are there so you never multiply and the cell is there so you never divide, which are the two steps that produce an off-grid entity.
 

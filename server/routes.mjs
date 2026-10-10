@@ -47,7 +47,7 @@ export const ROUTES = [
 	{ path: 'diagrams/:id/near',               methods: ['GET'],            about: 'what is around a point' },
 	{ path: 'diagrams/:id/zones/:zone/contents', methods: ['GET'],          about: 'what falls inside a zone' },
 	{ path: 'diagrams/:id/links/:link/path',   methods: ['GET'],            about: 'a route resolved to coordinates' },
-	{ path: 'diagrams/:id/layouts',            methods: ['GET'],            about: 'the named grids' },
+	{ path: 'diagrams/:id/layouts',            methods: ['GET'],            about: 'the diagram\'s two grids, as its layout records' },
 	{ path: 'diagrams/:id/layouts/:name/nearest', methods: ['GET'],         about: 'the legal anchor nearest a pixel' },
 	{ path: 'diagrams/:id/layouts/:name/anchors', methods: ['GET'],         about: 'every anchor, or every free one' },
 

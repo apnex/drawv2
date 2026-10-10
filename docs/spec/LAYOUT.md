@@ -88,6 +88,8 @@ GET  /api/v1/diagrams/<id>/layouts/<name>/anchors?free=1
 GET  /api/v1/diagrams/<id>/layouts/<name>/nearest?x=<px>&y=<px>
 ```
 
+AMENDED 2026-10-10 (WD8, H19.45): the first route answers with the diagram's two layout records, each with its id, name, pitch, offset and extent (`layouts/layout-records.mjs`); every diagram stores them (`dev/design/unification/WIDE-DEVICES.md` section 12).
+
 `nearest` answers the question that started this: give me somewhere legal near here.\
 `anchors?free=1` answers the other half -- where may I put something that is not already taken -- and it is the R13 occupancy index projected, not a new computation.
 

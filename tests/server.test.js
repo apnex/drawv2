@@ -807,7 +807,8 @@ test('B105: it is STATE, so a session that connects late still sees it', async (
 test('B111/B112: an agent asks for an anchor instead of computing one', async () => {
 	const id = (await get('/api/v1/diagrams')).body[0].id;
 
-	assert.deepEqual((await get(`/api/v1/diagrams/${id}/layouts`)).body.layouts, ['node', 'zone']);
+	// RESTATED at WD-b1 (H19.45; WD8): the list is the diagram's layout records, named as the grid routes name them (tests/layouts-api.test.js)
+	assert.deepEqual((await get(`/api/v1/diagrams/${id}/layouts`)).body.layouts.map((l) => l.name), ['node', 'zone']);
 
 	// the exact off-grid coordinate the agent wrote live, answered with a legal one
 	const n = (await get(`/api/v1/diagrams/${id}/layouts/node/nearest?x=270&y=-150`)).body;
