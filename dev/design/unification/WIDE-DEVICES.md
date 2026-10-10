@@ -3,6 +3,7 @@
 > **Tier 3 -- a design of record, proposed.** Written 2026-10-10 against `6b8bac5`.
 > Facts about production and the code are measured and cited; judgements are marked as such.
 > Proposes; decides nothing. Section 7 holds the decisions for the director, to be asked one at a time.
+> AMENDED 2026-10-10: **APPROVED** by the director -- "approved. continue" -- after three adversarial passes (sections 9, 11, 13) and the rulings WD1, WD2 revisited, WD4 to WD8; built at H19.44 to H19.47.
 
 ## 1. Status
 
@@ -368,3 +369,9 @@ AMENDED 2026-10-10 -- **WD8 ruled: `/layouts` serves the stored records** (`dev/
 **Into WD-b1:** the agent API's list served from the records; `draw layouts` (`cli/verbs.mjs`) reading records; the routes' manifest (`tools/routes.mjs`) and its test kept in step.
 **Test 11 -- the agent API's layouts:** `GET /diagrams/<id>/layouts` returns exactly the two records with their names and the product's values; `/layouts/node/nearest` and `/layouts/zone/anchors` answer as before; a write to a layout is refused, naming it.
 **The M7 audit, A5:** an agent reads the diagram's grids at the address it already uses, now with their settings -- perceptual parity improved, its one cost the list's richer answer, named.
+
+AMENDED 2026-10-10 -- **WD-a done** (H19.44): the occupancy index keys an anchor by its own cell (`engine/relations.mjs`), so every door holds one anchor to a point and the width exception ends; a gesture placing at the pointer -- an idle `w`, a stamp by Enter, a palette drop, a digit mid-drag -- and the hand's ghost and readout ask one question, `placeRefused`: no item under the pointer (the parts' `under` covers), and one anchor to a point (`app/src/input.js`); the hand's own `blocked` rule went to it (`devices/device-hand.mjs`).
+**Measured:** the gesture, matrix and K8 DOM corpora unchanged -- no recorded scenario places on a covered cell -- so the user-visible change is section 5.1's table alone.\
+**Held by:** `tests/wide-devices.test.js` -- the doors agreeing on a host panel's and a label's covered cell (the planner, the agent door); over a frame the four gestures placing nothing and the ghost blocked, and 26 px below it each placing on the covered cell and the ghost clear; a click there landing on the device; the index keying anchors alone, the index and the scan agreeing; no `span` read below the plugins; the ghost the same after a refresh as after a move (the pointer ignored, B112 ignored in the tab, the width exception back, and the ghost never blocked on a refresh each fail -- four mutants killed, the last once its test was added); the index test (`tests/span.test.js`) and the step's geometry (`tests/rules-acceptance.test.js`) RESTATED; two comments that recorded the exception amended.
+
+AMENDED 2026-10-10 -- **B323 closed at WD-a, not WD-c:** its whole fix -- one anchor to a point at every door -- landed in WD-a, so WD-c's row no longer carries it.

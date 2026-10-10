@@ -16,16 +16,15 @@ import { LINK_KEYS } from '../network/link-keys.mjs';
 import { makeLink } from '../network/link-queries.mjs';   // K13d: the network's link queries
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { makeInput, key, seedNodes } from './fixtures/client-harness.mjs';
+import { makeInput, key, pointer, seedNodes } from './fixtures/client-harness.mjs';
 import { KEYMAP } from '../app/src/keymap.js';
 import { Input } from '../app/src/input.js';
 // RESTATED at C-e step three (H19.33): a device under the pointer is what the devices plugin says a device covers, asked as the
 // canvas asks it; a device on a cell is the devices plugin's question
 import { pointsOf, grabbedAt } from '../app/src/pick.js';
-import { occupiedAt } from '../devices/occupancy.mjs';
 import { PRODUCT_CANVAS as PARTS_FOR_POINTS } from '../product/canvas.mjs';
 const nodeAt = (model, pos) => grabbedAt(pointsOf(PARTS_FOR_POINTS), model, pos, ['node']);
-import { snapNode, GAP, NODE_EXT } from '../app/src/snap.js';
+import { GAP, NODE_EXT } from '../app/src/snap.js';
 import { makeNode, makeWaypoint } from '../devices/make-node.mjs';   // O-e1: the devices plugin's factories
 
 function board(bends) {
@@ -85,13 +84,15 @@ test('the two meanings are two ROWS, and the handlers they name ask nothing', ()
 });
 
 /*
-THE STEP'S GEOMETRY -- what `Input#stepUnderPointer` relies on to call a step 'node' without changing production.
+THE STEP'S GEOMETRY -- what `Input#stepUnderPointer` relies on to call a step 'node'.
 
-Production's `w` mid-drag threads a waypoint at the snapped cell, else refuses a cell a node occupies, else places a
-bend. The step says 'node' when the pointer is over a node's footprint. That is safe only if a pointer over a node
-always snaps to a cell the node occupies: a footprint runs between grid points, and its margin is under half a pitch.
+RESTATED at WD-a (H19.44; WD2 revisited): it held that a pointer over a node always snaps to a cell the node occupies, so
+calling the step 'node' changed nothing production did. A wide device's covered cells are no longer its own, so that is
+no longer true -- and the step is now what decides: wherever a device is under the pointer the step is 'node', and the
+product's `w` yields to the network's stop, which threads the device (WD5). Probed over every span, the step read through
+the situation the key rows read.
 */
-test('a pointer anywhere over a node snaps to a cell that node occupies, whatever its span', () => {
+test('a pointer anywhere over a node makes the step \'node\', whatever its span', () => {
 	const h = makeInput();
 	try {
 		// on the canvas, where a node can be -- snapping clamps to it -- and one against its far corner, so the clamp is probed too
@@ -108,7 +109,8 @@ test('a pointer anywhere over a node snaps to a cell that node occupies, whateve
 				const pos = { x: n.x + dx, y: n.y + dy };
 				if (nodeAt(h.model, pos)?.id !== n.id) continue;
 				probed++;
-				assert.ok(occupiedAt(h.model, snapNode(pos)), `pointer at ${pos.x},${pos.y} over ${n.id} snaps to a cell it does not occupy`);
+				h.capture.onMove(pointer(pos.x, pos.y, { buttons: 0 }));
+				assert.equal(h.input.situation(null, 'link').step, 'node', `pointer at ${pos.x},${pos.y} over ${n.id}: the step`);
 			}
 		}
 		assert.ok(probed > 100, 'the probe actually covered the footprints');

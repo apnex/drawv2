@@ -1174,13 +1174,17 @@ Elsewhere and unchanged: H10.30 and PD-3 are the director's calls; H15.5 and H17
 | H19.41 | `z` wraps a wide device whole -- the bounds from each placed kind's size | **B319** | S4 | `DONE` |
 | H19.42 | F2 with a pipe selected opens no name editor -- F2 renames only the kinds a part says are named | **B321** | S4 | `DONE` |
 | H19.43 | A pipe put again keeps its drawn line -- the renderer removes only what it draws | **B322** | S3 | `DONE` |
+| H19.44 | WD-a: one rule at every door -- the occupancy index keys an anchor by its own cell, the width exception ends; a placing gesture acts on the item under the pointer (WD2 revisited, WD5) | **B323** | S3 | `DONE` |
+| H19.45 | WD-b1: the layouts plugin and stored layouts -- the `layout` kind, two per diagram, schema 3 by one migration on every store path, `/layouts` serving the records (WD6, WD7, WD8) | feature | S3 | `TODO` |
+| H19.46 | WD-b2: the canvas reads the layouts -- the grids drawn from the records, a place's size from one source | feature | S4 | `TODO` |
+| H19.47 | WD-c: closed -- the migration deleted after the soft-delete window, B282's O4 half closed, WD7's trigger kept | **B282** | S4 | `TODO` |
 | H19.29 | C-a: drawing -- a painter per kind brought by its plugin, the renderer a dispatcher, layers ranked; zones first, then groups, devices and links | feature | S4 | `DONE` |
 | H19.30 | C-b: picking -- one id attribute on every drawn entity; a kind's pick modifier (the zone's Shift) | feature | S4 | `DONE` |
 | H19.31 | C-c: placing -- layout and extent as row facts; moving, cloning, nudging and snapping read them | feature | S4 | `DONE` |
 | H19.32 | C-d: handles, presses, gestures, releases -- rows a plugin brings for the shared gestures (D2) | feature | S4 | `DONE` |
 | H19.33 | C-e: keys, commands, readout, labels, grids -- each moved to its plugin; opening with the devices plugin's hand (palette, digit keys, stamping, pipette, retype, chaining), moved from C-d by the director | feature | S4 | `DONE` |
 | H19.34 | C-f: closed -- the canvas names no plugin's kind beyond a record that may only fall; B308 closed | **B308** | S4 | `DONE` |
-| H19.8 | Design, for approval: a type as a composition of packs | **B282**, **B323** | S3 | `TODO` |
+| H19.8 | Design, for approval: a type as a composition of packs -- AMENDED: B282's O4 half instead, a wide device's anchors and the grids as stored layouts, `dev/design/unification/WIDE-DEVICES.md`; built at H19.44 to H19.47, where B323 and B282's O4 half close | feature | S3 | `DONE` |
 | H19.9 | Transit off at a ring's pin opens the ring there, as ruled, and its pieces rejoin when transit returns -- the director's reports from production | **B299** | S2 | `DONE` |
 | H19.10 | Build the ruled model (`dev/design/unification/DEVICE-JUNCTIONS.md`): a link may be pinned through a device whose transit is on; transit off there cuts it; a ring through one opens like any other; and a link written pinned where transit is off is cut, from any door | **B301**, **B303** | S3 | `DONE` |
 | H19.11 | Guard the planner so no reaction commits a document a requested write could not -- B301's class of loss | **B302** | S2 | `DONE` |
@@ -1328,6 +1332,10 @@ AMENDED 2026-10-10: C-f done, B308 closed -- the canvas names no plugin's kind a
 Next H19.8: B282's design -- multi-anchor devices, the migration, which anchor a link ends at; and the director's question, whether the anchor's canvas part becomes a layout plugin.
 AMENDED 2026-10-10: H19.8 drafted -- `dev/design/unification/WIDE-DEVICES.md`, B282's O4 half (a wide device's anchors, which anchor a link ends at, the migration) with B323, the door disagreement measured on the way; its pack half stays held. Production's 118 wide devices are all panels, which shapes the first decision.
 AMENDED 2026-10-10: H19.8's title names B282's held half; the design is B282's O4 half -- a wide device's anchors -- with B323. Ruled WD1, WD2 and WD4; its adversarial review found WD2's "taken under host panels" costlier than shown, so WD2 is put to the director again.
+AMENDED 2026-10-10: H19.8 approved by the director ("approved. continue") after three adversarial passes; WD1, WD2 revisited, WD4 to WD8 ruled. Its build is H19.44 to H19.47.\
+Next H19.44, WD-a.
+AMENDED 2026-10-10: WD-a done -- one anchor to a point at every door, the width exception ended, and a placing gesture acts on the item under the pointer; B323 closed with it, its whole fix having landed (the design's WD-c named it; AMENDED there).\
+Next H19.45, WD-b1.
 
 **Exit:** nothing stored needs a migration and none is kept; production's sync holds the network under the GR6 battery; the core holds no kind.
 

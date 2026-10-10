@@ -13,6 +13,8 @@ What still names a plugin's kind in a core module is recorded below, each with i
     canvas's half of B280, which B308 designs (O3).
 And one plugin field is read below the plugins, the occupancy index's `span` (engine/relations.mjs `cellsOf`), the network's
 rung, not the core's: a wide device's footprint until B282 makes it several anchors (O4; section 16.3, corrected).
+AMENDED WD-a (H19.44; WD1, WD2 revisited): ended -- a wide device is one anchor and the index keys it by its own cell, so no
+module below the plugins reads `span` (held by tests/wide-devices.test.js).
 */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';

@@ -792,7 +792,7 @@ export class Input {
 		const spec = this.handSpec;
 		if (!item || !spec) return false;
 		const cell = snapIn(this.places.get(spec.place), pos);
-		if (spec.blocked(this.model, cell)) return false;
+		if (this.placeRefused(pos, cell)) return false;   // WD5: not under an item; one anchor to a point
 		const { kind, entity } = spec.stamp(this.model, item, cell);
 		this.history.commit(commands.createEntity(kind, entity));
 		this.selection.set([entity.id]); // the hand stays armed; selection follows
@@ -807,16 +807,30 @@ export class Input {
 	// a valid link endpoint under the cursor: a node, or a FREE waypoint (occupied ones can't take a link)
 
 	// the held item cannot stamp on this cell -- the hand's own rule (a device stands there)
-	handBlocked(snapped) {
+	handBlocked(pos) {
 		if (!this.tools.hand || !this.handSpec) return false;
-		return this.handSpec.blocked(this.model, snapped);
+		return this.placeRefused(pos, snapNode(pos));
+	}
+
+	/*
+	WD5 (H19.44; dev/design/unification/WIDE-DEVICES.md) -- WHAT A GESTURE PLACING AT THE POINTER MAY NOT DO: place while an item
+	is under the pointer -- what the parts say they cover under a hover (`under`: a device's frame, a waypoint's radius) -- as a
+	click landing on it already does; elsewhere one anchor to a point decides (B112, the rule every door holds). An idle `w`,
+	a stamp by Enter, a palette drop and a digit mid-drag ask it, and the hand's ghost and the readout say what it says.
+	*/
+	placeRefused(pos, cell) {
+		return this.underPointer(pos) || occupiedAnyAt(this.model, cell);
+	}
+
+	underPointer(pos) {
+		return this.points.some((a) => a.under && a.of(this.model).some((x) => a.under(x, pos)));
 	}
 
 	// 'w' when idle: drop a standalone waypoint at the snapped cursor cell (empty cells only)
 	placeWaypoint() {
 		if (!this.state.pointer.at) return false;
 		const snapped = snapNode(this.state.pointer.at);
-		if (occupiedAnyAt(this.model, snapped)) return false;
+		if (this.placeRefused(this.state.pointer.at, snapped)) return false;   // WD5
 		// a waypoint with no link: the sweep takes only what an edit orphaned, so it stays until deleted (`pinned`, B162, is
 		// retired -- S-d, H18.14)
 		const wp = makeWaypoint(this.model, snapped);
@@ -929,7 +943,7 @@ export class Input {
 		if (!this.mode) {
 			// idle: the stamp ghost rides the snapped cell and the readout states the landing
 			const snapped = snapNode(pos);
-			const blocked = this.handBlocked(snapped);
+			const blocked = this.handBlocked(pos);
 			this.tools.trackHand(snapped, blocked);
 			this.readout.setCursor(snapped, this.tools.hand, blocked);
 			return this.idleAffordance(evt);
@@ -1236,7 +1250,7 @@ export class Input {
 	refreshHand() {
 		if (this.mode || !this.state.pointer.at) return;
 		const snapped = snapNode(this.state.pointer.at);
-		const blocked = this.handBlocked(snapped);
+		const blocked = this.handBlocked(this.state.pointer.at);
 		if (this.tools.hand) this.tools.trackHand(snapped, blocked);
 		this.readout.setCursor(snapped, this.tools.hand, blocked);
 	}
@@ -1301,9 +1315,10 @@ export class Input {
 	What the pointer is over during a gesture, as the situation's `step` -- a word, never an element.
 
 	The order is production's own for a `w` mid-drag (`addStop`): a waypoint at the snapped cell first, then a
-	node under the pointer. A node's footprint runs between grid points with a margin under half the pitch, so a pointer
-	over a node always snaps to a cell that node occupies -- the cell where production's `w` already refuses -- and
-	calling that step 'node' changes nothing production does (tests/rules-acceptance.test.js holds the geometry).
+	node under the pointer. AMENDED WD-a (H19.44): a wide device's covered cells are no longer its own (WD2 revisited), so over
+	a device the 'node' step suppresses the product's `w` -- the network's stop threads the device instead -- where the
+	pointer, outside the device, would place a bend; tests/rules-acceptance.test.js holds that the step is 'node' wherever the
+	device is under the pointer.
 	*/
 	stepUnderPointer() {
 		if (!this.state.pointer.at) return null;
@@ -1420,8 +1435,8 @@ export class Input {
 	chainThroughNode(type) {
 		if (!this.state.pointer.at) return;
 		const snapped = snapNode(this.state.pointer.at);
-		// the same refusal `addStop` makes, for the same reason: a taken cell is taken
-		if (!this.handSpec || this.handSpec.blocked(this.model, snapped)) return;   // the hand's rule (C-e)
+		// WD5: not under an item, and one anchor to a point -- the same as any gesture placing at the pointer
+		if (!this.handSpec || this.placeRefused(this.state.pointer.at, snapped)) return;
 		// the source can die mid-gesture (a peer deleting it), and committing onto a corpse would
 		// write a link to nothing
 		if (!this.model.endpointOf(this.ctx.src.id)) return;

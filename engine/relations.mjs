@@ -30,17 +30,10 @@ export function makeRelations(model, { cellOf } = {}) {   // cellOf injected (co
 
 	// ---- draw's KEYING (the injected config the generic maintainIndex is parameterized by) ----
 	const keyOf = (e) => cellOf(e.x) + ',' + cellOf(e.y);   // a single px POINT → its cell key (query points)
-	// the cell key(s) an ENTITY occupies: a 1-cell node/waypoint → [its cell]; a multi-cell node (span =
-	// {cols,rows} counts) → every covered cell (the anchor +x/+y). Span counts are plain data on the entity
-	// and cellOf is the only spatial primitive used, so engine sovereignty holds (no kernel import). (W1)
-	const cellsOf = (e) => {
-		const c0 = cellOf(e.x), r0 = cellOf(e.y);
-		const nc = (e.span && e.span.cols) || 1, nr = (e.span && e.span.rows) || 1;
-		if (nc <= 1 && nr <= 1) return [c0 + ',' + r0];
-		const keys = [];
-		for (let i = 0; i < nc; i++) for (let j = 0; j < nr; j++) keys.push((c0 + i) + ',' + (r0 + j));
-		return keys;
-	};
+	// the cell an anchor occupies: its own (B112, one anchor to a point). AMENDED WD-a (H19.44; WD2 revisited, B323): a wide
+	// device was keyed by every cell its span covers -- the width exception, the one plugin field read below the plugins, and a
+	// rule held in the browser tab alone; the planner, the server and the agent door held this one, which every door now holds
+	const cellsOf = (e) => [cellOf(e.x) + ',' + cellOf(e.y)];
 
 	// ---- the maintained views (engine/ivm.mjs) — one per relation, keyed by the config above ----
 	const incident = maintainIndex({ refsOf: linkRefs, kind: 'set' });            // entityId → Set<linkId>

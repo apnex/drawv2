@@ -82,25 +82,23 @@ test('docToSchema/schemaToDoc round-trip span as cell counts; 1×1 stays span-fr
 });
 
 // ---- span-aware occupancy (R13 index) ----
-test('a span node occupies every covered cell; move/resize/del maintain the index', () => {
+// RESTATED at WD-a (H19.44; WD2 revisited, B323): a wide device occupies its anchor's cell alone -- the index keyed every
+// cell its span covers, a rule only the browser tab held; every door now holds one anchor to a point
+test('a span node occupies its anchor\'s cell alone; move/resize/del maintain the index', () => {
 	const m = new Model(); attachRelations(m, { cellOf });
 	const n = makeNode(m, 'host', { x: 2 * P, y: 0 }); n.span = { cols: 3, rows: 2 }; m.put('node', n);
-	for (let c = 2; c <= 4; c++) for (let r = 0; r <= 1; r++) assert.equal(occupiedAt(m, { x: c * P, y: r * P }), true, `covers ${c},${r}`);
-	assert.equal(occupiedAt(m, { x: 1 * P, y: 0 }), false, 'left neighbour free');
-	assert.equal(occupiedAt(m, { x: 5 * P, y: 0 }), false, 'right neighbour free');
-	assert.equal(occupiedAt(m, { x: 2 * P, y: 2 * P }), false, 'below the footprint free');
+	assert.equal(occupiedAt(m, { x: 2 * P, y: 0 }), true, 'its anchor');
+	for (const [c, r] of [[3, 0], [4, 0], [2, 1], [3, 1], [4, 1]]) assert.equal(occupiedAt(m, { x: c * P, y: r * P }), false, `covered ${c},${r} free`);
 
-	m.set('node', n.id, { x: 0, y: 0 });                                    // move anchor → footprint follows
-	assert.equal(occupiedAt(m, { x: 4 * P, y: 1 * P }), false, 'old far cell freed');
-	assert.equal(occupiedAt(m, { x: 0, y: 0 }), true);
-	assert.equal(occupiedAt(m, { x: 2 * P, y: 1 * P }), true, 'new footprint occupied');
+	m.set('node', n.id, { x: 0, y: 0 });                                    // move -> the anchor's cell follows
+	assert.equal(occupiedAt(m, { x: 2 * P, y: 0 }), false, 'old anchor cell freed');
+	assert.equal(occupiedAt(m, { x: 0, y: 0 }), true, 'new anchor cell occupied');
 
-	m.set('node', n.id, { span: { cols: 1, rows: 1 } });                    // shrink to 1×1
-	assert.equal(occupiedAt(m, { x: 1 * P, y: 0 }), false, 'shrink frees grown cells');
+	m.set('node', n.id, { span: { cols: 1, rows: 1 } });                    // a resize leaves the anchor where it is
 	assert.equal(occupiedAt(m, { x: 0, y: 0 }), true, 'anchor still occupied');
 
 	m.del('node', n.id);
-	assert.equal(occupiedAt(m, { x: 0, y: 0 }), false, 'del frees the footprint');
+	assert.equal(occupiedAt(m, { x: 0, y: 0 }), false, 'del frees it');
 });
 
 // ---- server gate ----

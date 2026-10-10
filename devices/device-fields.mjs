@@ -1,8 +1,8 @@
 /*
 A DEVICE'S FIELDS, COMPOSED ONTO AN ANCHOR -- the devices plugin's (O-e2, H19.21; dev/design/unification/KINDS-AS-PLUGINS.md
 section 16; O4). The director: "The core holds only the anchor", and an anchor carries no type. A device is what this plugin
-composes onto one: its `type` (what it is), its `shape` (the outer frame), its `span` (a footprint of several cells -- until
-B282 makes a wide device several anchors, the occupancy index reads it, the one recorded exception) and its `content`
+composes onto one: its `type` (what it is), its `shape` (the outer frame), its `span` (a footprint of several cells -- read by
+this plugin alone since WD-a, H19.44: a wide device is one anchor, and the occupancy index no longer reads it) and its `content`
 regions. Added to the anchor's kind as the network adds `transit` (S-a): an EXTENSION, every field optional, since an anchor
 with none of them is a waypoint. Moved from planner/kinds.mjs unchanged, checks and messages alike.
 
