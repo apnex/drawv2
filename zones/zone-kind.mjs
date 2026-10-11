@@ -46,6 +46,12 @@ const ZONE_ROW = {
 		order: (v) => int(v, 1, ORDER_MAX),   // the drawing order (F-d)
 	},
 	// B113: one zone to an anchor cell of its extent -- a backstop against a pathological document, occupancy speaking first
+	/*
+	B27 (H20.4) -- THE BOX WITHIN THE SURFACE: each field was checked alone, so a zone at x 870, w 1800 reached 2670 against an edge of
+	930; the browser's drag held it inside (app/src/snap.js `clampDelta`), and now every door does. Judged on the zone as it would stand.
+	*/
+	refers: (z) => (z.x + z.w > ZONE_EXT.x || z.y + z.h > ZONE_EXT.y
+		? `${z.id} reaches ${z.x + z.w},${z.y + z.h}, past the surface's edge at ${ZONE_EXT.x},${ZONE_EXT.y}` : null),
 	cap: anchorCellsWithin(ZONE_EXT, PITCH),
 };
 

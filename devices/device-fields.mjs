@@ -11,6 +11,9 @@ rule (engine/spawn-field.mjs) build on it.
 */
 
 import { CONTENT_VALUE_MAX, SPAN_MAX, FONT_MIN, FONT_MAX } from '../model/limits.mjs';
+import { NODE_EXT } from '../model/surface.mjs';   // B27: the surface a device's span stays within
+import { STD } from '../kernel/spec.mjs';
+const PITCH = STD.pitch;
 
 // whether a device is composed on an anchor: it carries a type, which a bare anchor -- a waypoint -- never does
 export const hasDevice = (entity) => !!entity && !!entity.type;
@@ -51,6 +54,23 @@ const region = (r) => !!r && typeof r === 'object' && !Array.isArray(r)
 	&& Object.keys(r).every((k) => Object.hasOwn(REGION, k) && REGION[k](r[k]));
 const content = (v) => Array.isArray(v) && v.length <= 200 && v.every(region);
 
+/*
+B27 (H20.4) -- A DEVICE WITHIN THE SURFACE, AND ITS CONTENT WITHIN IT. Its span runs right and down from its anchor's cell, so its far
+cell must sit within the node extent -- a 64 x 64 panel at the edge reached 4680 against 900 -- and each content region must sit within
+the span, as the renderer lays it out (kernel/renderer.mjs: `at` defaults to the first cell, `cols` and `rows` to one). The browser's
+drag held the first; nothing held the second.
+*/
+function withinSurface(n) {
+	const { cols, rows } = n.span ?? { cols: 1, rows: 1 };
+	const far = { x: n.x + (cols - 1) * PITCH, y: n.y + (rows - 1) * PITCH };
+	if (far.x > NODE_EXT.x || far.y > NODE_EXT.y) return `${n.id}'s ${cols}x${rows} span reaches ${far.x},${far.y}, past the surface's edge at ${NODE_EXT.x},${NODE_EXT.y}`;
+	for (const r of n.content ?? []) {
+		const [c, w, h, rw] = [(r.at ?? [0, 0])[0], r.cols ?? 1, r.rows ?? 1, (r.at ?? [0, 0])[1]];
+		if (c + w > cols || rw + h > rows) return `${n.id}'s content region at [${c},${rw}], ${w}x${h}, falls outside its ${cols}x${rows} span`;
+	}
+	return null;
+}
+
 // the fields only a device carries: on a waypoint, each is refused by name
 const DEVICE_ONLY = ['shape', 'span', 'content'];
 
@@ -75,7 +95,7 @@ export const DEVICE_FIELDS = {
 	*/
 	refers: (entity, access, patch, before) => {
 		if (before && hasDevice(before) !== hasDevice(entity)) return `a node's type is fixed when it is made -- a waypoint stays a waypoint, and a typed node keeps a type: ${entity.id}`;
-		if (hasDevice(entity)) return null;
+		if (hasDevice(entity)) return withinSurface(entity);
 		const wrong = DEVICE_ONLY.filter((f) => f in entity);
 		if (wrong.length) return `a waypoint (a node with no type) has no ${wrong.join(', ')}: ${entity.id}`;
 		return null;

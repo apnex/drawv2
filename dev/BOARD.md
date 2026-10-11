@@ -1361,10 +1361,12 @@ Elsewhere: H17.3's remainder (the CLI's device list and help) finishes in its ow
 | H20.1 | Re-triage the board after H19, the order agreed and recorded here | feature | S3 | `DONE` |
 | H20.2 | The gate made binary again: the DELETE test's race with its own teardown (B164), the hub liveness test under load (B320), the palette drop test's reload (B324) -- each cause found and fixed, proven under load, no retry wrapper | **B164**, **B320**, **B324** | S3 | `DONE` |
 | H20.3 | Design, for approval: paths and flows -- H15's exit re-scoped against the network model ("an author declares flow once on a path and sees it end to end"), and whether links run side by side over one pipe (B256) | feature | S3 | `TODO` |
-| H20.4 | One surface edge at every door: a zone, a panel and a panel's content regions refused past the extent at the planner, as the browser's drag already holds them (B27) | **B27** | S4 | `TODO` |
+| H20.4 | One surface edge at every door: a zone, a panel and a panel's content regions refused past the extent at the planner, as the browser's drag already holds them (B27) | **B27** | S4 | `DONE` |
 
 AMENDED 2026-10-10: H20.2 done -- B164 and B320 each reproduced at will and fixed by ordering, not retrying: a test server holds idle connections past any stall a test survives, and the liveness rounds run in order; B324's leftover tabs closed and its trace added, the reload itself not caught, its remainder held.\
 Next H20.3, the design of paths and flows.
+AMENDED 2026-10-10: the director chose the small items first. H20.4 done -- B27 closed: a zone, a panel and its content regions refused past the surface's edge at every door; the panel resize key stops at the edge and at its content; nothing stored refused, a production copy booted clean.\
+Next H17.3's remainder, then H20.3.
 
 **Exit:** a gate run passes or fails on what it tests, not on the machine's load; paths and flows have a ruled design; every door holds the surface's edge.
 

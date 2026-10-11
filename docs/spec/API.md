@@ -370,6 +370,10 @@ The per-collection limit is the anchor count for a positioned kind and 2000 for 
 A node reaches to 900 by 480 and a zone half a cell further, to 930 by 510.\
 These are what the editor has always clamped to; the server now refuses the same set rather than a wider one.
 
+AMENDED 2026-10-10 (B27, H20.4): the extent is the whole thing's, not only its anchor's.\
+A zone's far corner, `x + w` and `y + h`, stays within 930 by 510; a panel's far cell, its anchor plus `(cols - 1) * 60` and `(rows - 1) * 60`, within 900 by 480; and each content region within its panel's span.\
+Each was admitted past the edge until then, while the editor held it inside; a `422` names the entity and the edge it passed.
+
 ### Where the rule lives
 
 This is enforced at the server rather than in the editor, which is where it used to live.\
