@@ -163,7 +163,7 @@ Production sits behind IAP, which a headless browser cannot sign into, so an ent
 | PU13 | CHECKED, pre-deploy, AMENDED | templates and examples unchanged since `2814d8d`. New since it was written: the planner's join writes `into` on a delete op into the change log (TG-1b). `2814d8d`'s log reader checks a record only for `seq`, `from` and arrays of ops and inverses (`server/log.mjs` `#readable`), and its apply ignores an unknown op field, so a rollback still reads every document and log written after the upgrade |
 | PU14 | CHECKED, pre-deploy | the image is the lab's, which serves `/planner/` (H17 C5's test holds the Dockerfile) |
 | PU15 | CHECKED | CI run on `d58816c`: success |
-| PU16 | CARRIED | the director's call, H10.30, independent of this upgrade |
+| PU16 | CARRIED | the director's call, H10.30, independent of this upgrade -- CORRECTED 2026-10-11: no director's call existed; the throttle was live from 2026-08-27 (B159) |
 | PU17 to PU23 | CARRIED | deferred to promotion's cutover by ruling; not in this deploy |
 
 **Found while auditing, not caused by this deploy:** production logs "internal error handling resume: Cannot read properties of undefined (reading 'version')" every five minutes -- a tab resuming against a template, whose model the store holds and whose log it does not (`server/protocol.js` `resume`, `server/store.js` `log`). The code is unchanged since `2814d8d`, so the deploy carries it as it was; registered B290.
@@ -191,7 +191,7 @@ Production sits behind IAP, which a headless browser cannot sign into, so what i
 | # | Verdict | Evidence |
 |---|---|---|
 | PU11, PU12, PU24 | DIRECTOR'S EYE, still owed | owed since the 2026-10-02 deploy: the page's colours, its network panel, the undelete card, seen on `draw.apnex.io`; the page's matrix and the palette gate hold them by test |
-| PU16 | CARRIED | the director's call, H10.30, independent of any upgrade |
+| PU16 | CARRIED | the director's call, H10.30, independent of any upgrade -- CORRECTED 2026-10-11: no director's call existed; the throttle was live from 2026-08-27 (B159) |
 | PU17 | CHECKED, live | tests/drawing-order.test.js; draw-00156-l5n, the cutover (`9ac031a`) |
 | PU18 | CHECKED, live | tests/server-network.test.js S-b round trip; tests/consumer-parity.test.js criterion 3; draw-00156-l5n, the cutover (`9ac031a`) |
 | PU19 | CHECKED, live | tests/kinds.test.js; draw-00156-l5n, the cutover (`9ac031a`) |

@@ -3,6 +3,7 @@
 The vocabulary an agent uses to say WHERE, and the rule that makes an invalid where impossible to express.
 
 This is a design of record for a slice that is not built yet.\
+AMENDED 2026-10-11 (H21, U0): built -- see "Built" below; and since WD-b1 every diagram stores its two grids as layout records (`dev/design/unification/WIDE-DEVICES.md` section 12).\
 It exists because the alternative was deciding a kernel change and a naming collision inside a commit message.
 
 ---

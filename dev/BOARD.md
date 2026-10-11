@@ -228,6 +228,7 @@ AMENDED 2026-10-02: re-triaged at the director's word ("revisit our unification 
 2 -- production on current `main` (promotion's P0), the director's call, before promotion begins, so the upgrade audit stops growing (`dev/PRODUCTION-UPGRADE.md`, 28 entries).\
 3 -- promotion started (B266): P-3 to P-9 ruled at its start, then P2.\
 4 -- features alongside or after: H15.5; H15.7 dropped from the board and held under B282. H17.3's remaining cuts all travel with promotion; H10.30 is the director's call.\
+CORRECTED 2026-10-11 (H21, U0): H10.30 was never the director's call -- no statement of the director's says so, and the throttle it asked for had been live since 2026-08-27 (B159).\
 AMENDED 2026-10-02: TG-D1 to TG-D4 ruled as recommended; B287 is built now, in the lab, as H17.28.\
 AMENDED 2026-10-02: TG-1 done -- the planner keeps one change set per transaction, handed to every phase; nothing reads it yet, every corpus unchanged. Next TG-1b, succession.\
 AMENDED 2026-10-02: TG-1b done -- the join says what it absorbed a link into, the answer carries it, and the selection hand-off reads it; the op-shape recogniser deleted. Next TG-2, declared triggers for the per-op reactions.\
@@ -1385,10 +1386,19 @@ The re-audit is `dev/design/unification/UNIFICATION-AUDIT.md`: the decoupling is
 | # | Item | Cites | Sev | State |
 |---|---|---|---|---|
 | H21.1 | Re-audit the unification and the activity around it: the code against the ruled target, the exceptions and held rows, the record-against-truth incidents mined to root cause | feature | S3 | `DONE` |
-| H21.2 | The director rules the approach: the audit's stages U0 to U5, their order and their exits | feature | S3 | `TODO` |
-| H21.3 | A type is a composition (B282's pack half): each device type declared once, every plugin reading its own part -- staged as H21.2 rules | **B282** | S3 | `TODO` |
+| H21.2 | The director rules the approach: the audit's stages U0 to U5, their order and their exits | feature | S3 | `DONE` |
+| H21.4 | U0, the records made true: every still-wrong line the audit found corrected at its source, every stale reason and missing trigger fixed or recorded | feature | S3 | `DONE` |
+| H21.5 | U1, guards against the drift classes: triggers a check evaluates or a cadence re-reads, reasons citing closed rows failed, the director's words quoted and agent prose marked, status on the board alone, infrastructure claims probed, a flake ledger | **B88** | S3 | `TODO` |
+| H21.6 | U2, the target architecture: the whole system at the target instant, present tense, for the director to ratify; the current instant derived from the code | feature | S3 | `TODO` |
+| H21.7 | U3, the measurement widened: the name ratchets over every product layer, every quoting form, cross-plugin reads and device type names | feature | S3 | `TODO` |
+| H21.3 | U4, a type is a composition (B282's pack half): each device type declared once, every plugin reading its own part, a type declaring the roles it permits | **B282** | S3 | `TODO` |
+| H21.8 | U5, the rest of the target: the network's privileged slots made a generic seam (B332), a device's junction drawn (B331), roles served to REST and the CLI, the core's colour roles to their owners, `name` in the core ruled | **B331**, **B332** | S3 | `TODO` |
 
-**Exit:** set when H21.2 is ruled.
+AMENDED 2026-10-11: H21.2 ruled -- the director approved the audit's order, U0 to U5 ("continue"; `dev/DECISIONS.md` H21).
+AMENDED 2026-10-11: H21.4 (U0) done -- every still-wrong line the audit found is corrected where it stands; every stale reason re-pointed or given a trigger; the carried and deferred items without rows are rows now (B328 to B330 held, B331 and B332 planned at H21.8), B126 held with a trigger, B88 planned at H21.5; the design index lists every member.\
+Next H21.5 (U1), the guards.
+
+**Exit:** the records true and guarded against each drift class; the target architecture ratified and the current state derived from the code; every product layer measured; a device type declared once; the rest of the target built or ruled.
 
 ---
 
@@ -1409,6 +1419,10 @@ Scored so the comparison is a judgement, not an omission.\
 | **B326** | S4 | The agent door's throttle refuses with no log an operator reads (no load-balancer logging on its backend) | an agent reports a 429, a flood is suspected, or the threshold is next changed |
 | **B324** | S4 | The palette drop test's page reloaded once, cause not caught; its leftover tabs are closed and its failure now names how the page was loaded and why | a browser test fails again on a reloaded page |
 | **B327** | S3 | Paths and flows: a flow declared once along a path and seen end to end (H15's exit), propagation along a run of bends, links side by side over one pipe (with B256) | the director reopens it; an author or agent needs a direction across more than one link; or B256's trigger fires |
+| **B328** | S4 | The draw-a-link gesture is the canvas's (D2): its names and imports recorded in the canvas ratchet | a second plugin must judge or extend a link drag |
+| **B329** | S4 | The simulation's page pieces -- the movers and the reveal -- live in the canvas folder | the simulation brings its canvas part whole |
+| **B330** | S4 | The export door draws a document by naming its kinds, a second renderer beside the plugins' painters | a plugin's kind must reach a download without the export naming it, or the painters serve a headless scene |
+| **B126** | S4 | Straight-link capacity as a per-kind property (H10.11 built its seam; the capacity stays one) | parallel links are designed (B256), or an operator must configure a capacity |
 | **B325** | S4 | A diagram varies its grids -- its own extent, then its own pitch and offset (WD7) | the infinite canvas and scrolling are designed, or a diagram needs a grid unlike the others |
 | **B79** | S3 | The connection walk's apparatus is outside the repository; the false record is corrected, the rest held with B127 | B127 revives, or a decision rests on the walk again |
 | **B108** | S3 | Detecting a test wired to a copy of its subject: undecidable as stated; mutation is the technique that works | mutation testing is automated, or the defect recurs |
@@ -1424,7 +1438,6 @@ Scored so the comparison is a judgement, not an omission.\
 | **B194** | S3 | `draw event <condition>` -- an agent BLOCKS on a described condition rather than asking a person to confirm one. Viewer-opened, lock-freed, commit-landed all become one verb | spectator mode (B196) closed the case that raised it, by having the VIEWER follow the agent instead. Revive when an agent must wait on something a viewer cannot supply -- a lock freeing, or a commit from another agent |
 | **B175** | S3 | A second armed endpoint appeared not to animate in one tab; resolved with no change and no cause found | a SECOND report of an armed endpoint not animating, or this one recurring -- `draw movers --at <t>` now bisects it in one command |
 | **B180** | S3 | Sampling the derived world stopped being uniform when combat made health accumulate: position is still a closed form of `t`, health must be folded | wanting to SCRUB BACKWARDS -- replay a wave, review a death, audit a disputed kill. Not slowness: the present costs 4ms | a cached fold at tick N restores O(1) sampling after N |
-| **B88** | S3 | Prose can assert that finished work is blocked, and no rule reads a sentence | a second blocked entry appears on the board, or any `Decisions required` entry returns |
 
 **Cleared 2026-08-26**, because the trigger fired and was answered, or the ruling landed:
 

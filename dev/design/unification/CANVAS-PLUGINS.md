@@ -107,6 +107,7 @@ Zones go first at every stage, as the smallest self-contained kind; the link goe
   - the device hand's `'waypoint'` branches look unreachable, since no tool offers that hand (`app/src/tools.js:17`; `app/src/palette.js:194-197`) -- C-e;
   - `syncZoneGrid` has no caller (`app/src/input.js:1615`) -- C-e.
 - **Deferred, with its trigger (RU3):** the export door's reading of kinds by name -- revived when a plugin's kind must reach a downloaded file without the export naming it, or when C-a's painters prove they can serve a headless scene.
+  AMENDED 2026-10-11 (H21, U0): held on a row of its own, B330, with this trigger.
 
 ---
 
@@ -397,6 +398,7 @@ Planting a kind word or a plugin import where none is recorded, and one more whe
 **The arc, start to close:** six stages, C-a to C-f, built 2026-10-08 to 2026-10-10 and deployed at every step (`draw-00174` to `draw-00203`; the ratchet's own commit is tests and documents, and deploys nothing); four rulings beyond D1 and D2 (D3 composition, D4 press facts, D5 edits as data, and device placing moved to C-e); defects B311 to B322 found and fixed on the way, B316 and B317 my own regressions within it.
 Acceptance (section 6): a page composed without the zones plugin draws, picks, gestures, keys, handles and grids no zone, held stage by stage; the record above; the gesture and matrix corpora and the K8 DOM unchanged at every step; a malformed part refused when the page is built, naming the plugin.
 **Carried, with their triggers (RU3):** the draw-a-link gesture's names -- revived if a second plugin must judge or extend a link drag; the simulation's page pieces -- revived when the simulation brings its canvas part whole; the anchor's own canvas part (`product/canvas.mjs` `ANCHOR_ORDER`), which the director asked whether it becomes a layout plugin -- put to the director with B282's design (H19.8), which rewrites it; the export door -- as section 7 records.
+AMENDED 2026-10-11 (H21, U0): each carried item is on a row of its own now, with its trigger -- the draw-a-link gesture's names B328, the simulation's page pieces B329, the export door B330; the anchor's own canvas part was answered (WD4, WD6; WD-b2 moved it to the layouts plugin), so its clause is spent.
 
 AMENDED 2026-10-10 -- **WD-b2 (H19.46) changed two part keys this design defined** (`dev/design/unification/WIDE-DEVICES.md` section 5.1 and its WD-b2 record): a place declares its size's source -- its own `size(entity)`, or `sizedBy: 'parts'`, its kind's parts sizing it through a part's `sizes` -- and a grid names its `layout` and reads its `points(model)` from the open diagram.\
 The anchor's place and both grids are the layouts plugin's (`layouts/layout-canvas.mjs`); the product's part keeps the anchor's drawing order and delete rank alone.

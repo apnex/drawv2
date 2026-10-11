@@ -949,7 +949,8 @@ The director chose "Ship each cut as it lands" (the proposer's recommendation) o
 Production gets lighter step by step, each step behind its own tests. 23 of the 26 planned cuts land on main as they are made.\
 The exceptions are the lab itself (K10, never deployed) and the two cuts that wait for the rebuild (K13d, K18b).\
 The five that change what a user sees are each a registered defect or a ruling: K1 (B242), K14a (B244), K14b (B245), K15 (B246) and K18a (B243, SD2).
-> **CORRECTED 2026-09-27 (second M7 pass, C10).** K10, the lab, also lands on main, because H17-D1 puts `lab/` in this repository; it is the one cut never deployed. So 24 of the 26 cuts land on main as they are made, and 23 of them reach production. Only K13d and K18b wait for the rebuild.
+> **CORRECTED 2026-09-27 (second M7 pass, C10).** K10, the lab, also lands on main, because H17-D1 puts `lab/` in this repository; it is the one cut never deployed.
+> **CORRECTED 2026-10-11 (H21, U0):** the lab is deployed -- `lab.apnex.io` went live on 2026-09-29 (`cd98bec`), and `draw-lab` has been deployed beside production at every deploy since; "never deployed" above is false from that day. So 24 of the 26 cuts land on main as they are made, and 23 of them reach production. Only K13d and K18b wait for the rebuild.
 
 **H17-D3: the tab takes the server's full answer, then replays its own unanswered edits on top (the fix for B242).**\
 The director chose "Take answer, replay yours" (the proposer's recommendation) over "Take additions except your fields" and "Take additions as they arrive" (the fix `dev/BACKLOG.md` first named for B242).\
@@ -1909,3 +1910,8 @@ Told the change as built -- a place declares where its size comes from, its own 
 - **A device's footprint is the devices plugin's to answer** (`devices/device-footprint.mjs` `DEVICE_SIZES`, from its span); the grid's spacing is the diagram's layouts', and neither reads the other.
 - **A place declares its size's source** (`app/src/snap.js` `placesOf`); neither, both, or two answering is refused when the canvas is composed, naming the parts.
 - **Amends WIDE-DEVICES.md section 5.1's size rule** as its WD-b2 build finding records.
+
+**H21 -- the approach to the unification, stages U0 to U5 -- 2026-10-11 (H21.2).**\
+Shown the re-audit (`dev/design/unification/UNIFICATION-AUDIT.md`) -- the decoupling built and the unification not, the measurement of done narrower than the target, thirty-one record-against-truth incidents with no scanner catching one -- and its proposed order, the director answered "continue":
+- **U0** the records made true; **U1** guards against the drift classes; **U2** the target architecture written and ratified, the current state derived from the code; **U3** the measurement widened to every product layer; **U4** a type is a composition (B282); **U5** the rest of the target.
+- Each stage's exit is the audit's section 7; each decision it names is asked when its stage reaches it.

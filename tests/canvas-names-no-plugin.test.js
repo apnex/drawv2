@@ -6,14 +6,14 @@ A plugin brings its kind onto the page as a canvas part (C-a to C-e): what it dr
 presses, keys and edits, how it reads and what a selection lights. What a canvas module still names is recorded here, by file,
 each with its reason, and a count may only fall:
   - the draw-a-link gesture -- the product's shared gesture, the network its judge (D2): its name, its stops and route, the
-    facts its judge reads, and the builders of its commit;
-  - the clone's naming of a copy -- a device by its type (B187);
+    facts its judge reads, and the builders of its commit (held as B328);
+  - the drawn word of what the canvas creates -- a device by its type, for the create label and a clone's name (B187);
   - the composition roots, which compose plugins by design: the page (app/src/main.js), its run-mode list (app/src/run-mode.js),
     and the canvas's own, which attaches the relations index (the occupancy index, the network's rung; R3);
-  - two of the simulation's page pieces that live in the canvas folder: the movers and the reveal;
+  - two of the simulation's page pieces that live in the canvas folder: the movers and the reveal (held as B329);
   - the label of the edit a refused drag keeps -- its pipes (`withJudged`).
 "Names a kind" is a quoted plugin kind word, or a class selector for one written in a string; "imports a plugin" is an import of
-a module a plugin owns -- its folder (devices, network, zones, groups) or, for engine/, the layer manifest's simulation and
+a module a plugin owns -- its folder (devices, network, zones, groups, layouts) or, for engine/, the layer manifest's simulation and
 network lists. The core's anchor (`node`, `ANCHOR_KINDS`, `BARE_KIND`) is the core's to name; the drawn word `waypoint` has its
 own ratchet (tests/bare-anchor.test.js).
 */
@@ -42,10 +42,11 @@ const KIND_RECORD = {
 };
 const IMPORT_RECORD = {
 	'app/src/input.js': [8, 'the draw-a-link gesture (D2): its route, its stops and the facts its judge reads -- the network\'s queries and rules, the situation it reads, the waypoint a stop places'],
-	'app/src/commands.js': [2, 'the clone\'s naming of a copy -- a device by its type, a waypoint by its drawn word (B187)'],
-	'app/src/main.js': [2, 'the page\'s composition root: it composes the network into the page, as product/ composes the kinds'],
-	'app/src/run-mode.js': [2, 'the product page\'s run-mode list: the simulation\'s spawner and tower, the devices plugin\'s panel rows (H17-D7)'],
-	'app/src/compose-canvas.js': [1, 'the relations index -- the occupancy index, on the network\'s rung -- attached at the composition root (R3)'],
+	// AMENDED 2026-10-11 (H21, U0): B187 is closed and gave the rule, not a trigger; the import names what the canvas creates, for the create label too
+	'app/src/commands.js': [2, 'the drawn word of what the canvas creates -- a device by its type, a waypoint by its word (B187, F4) -- for the create label and a clone\'s name; revived when the canvas names what it creates through its parts, as it names what it edits (`labels.wordOf`)'],
+	'app/src/main.js': [2, 'the page\'s composition root: it composes the network into the page, as product/ composes the kinds -- permanent, a composition root composes plugins by design'],
+	'app/src/run-mode.js': [2, 'the product page\'s run-mode list: the simulation\'s spawner and tower, the devices plugin\'s panel rows (H17-D7) -- permanent, the product\'s composition'],
+	'app/src/compose-canvas.js': [1, 'the relations index -- the occupancy index, on the network\'s rung -- attached at the composition root (R3); its `network` slot is B332\'s, planned at H21.8'],
 	'app/src/movers.js': [3, 'the simulation\'s movers, a page piece of the simulation living in the canvas folder'],
 	'app/src/reveal.js': [1, 'the simulation\'s reveal, likewise'],
 };

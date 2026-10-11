@@ -150,6 +150,7 @@ Each stage is one gate and one lab deploy; production deploys at Z-d.
 **Layered application:** at the format layer, invariant 1; at the planner layer, the cut, the rejoin and the ring read one predicate and the guard holds their results; at the canvas, nothing changes but where a link may be pinned.\
 **Guardrails for the build:** no rule asks "is it bare?" where the question is whether a node passes routes; no stored document changes; a link ending at a device keeps ending there unless Z1 rules otherwise.\
 **Closeout hooks:** acceptance tests 1 to 8; the deferred role drawing recorded with a revival trigger (RU3).
+AMENDED 2026-10-11 (H21, U0): no trigger was recorded for the deferred role drawing; it is B331 now, planned at H21.8 -- a device that is a junction is drawn as one.
 
 **Verdict: pass-with-guardrails** -- Z1 ruled before Z-a; the drawing tension recorded, not hidden.
 

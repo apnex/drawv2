@@ -188,3 +188,8 @@ Sizes are judgement.
 | **U5. The rest of the target** | the network's privileged slots made a generic plugin seam (the planner's `links`, the canvas's `network`); the core's colour roles to their owners; a device's junction drawn (per-state appearance); roles served to REST and the CLI (SD1); the export door through the painters, or recorded; `name` in the core ruled | each to its own exit, under U2's target | large, several arcs |
 
 **Decisions owed, each when its stage reaches it:** whether `name` belongs in the core (U2); SD5, refuse or cut (U4); who owns the type declarations, the devices plugin or the product (U4); how the CLI learns the types (U4); SD12's plugin list, held as B248 (U5).
+
+AMENDED 2026-10-11 -- **the approach ruled, and U0 done** (`dev/DECISIONS.md` H21; H21.4).\
+Every line section 5 lists as still wrong, and every fault in section 4.1, is corrected where it stands or recorded with a trigger: the carried and deferred items gained rows (B328, B329 and B330 held; B331 and B332 planned at H21.8), B126 is held with a trigger, B88's fired trigger is recorded and the row planned at H21.5, and the design index lists all twenty-seven of its members (twenty-six documents and the matrix's data file).\
+Left for U1 by design: the lab plan's status cells (`dev/design/h17/PLAN.md`), which U1's rule -- status on the board alone -- retires rather than edits.
+

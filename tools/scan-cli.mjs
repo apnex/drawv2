@@ -41,13 +41,13 @@ const PENDING = {
 	'diagrams/:id/nodes': 'superseded by `draw add <type> at <cell>` and `draw place near|inside|between` (B110: a wrapper would take pixels)',
 	// keyed by PATH, so one reason has to cover POST, PATCH and DELETE together. Where they differ,
 	// the reason says so rather than letting the strongest case speak for all three.
-	'diagrams/:id/nodes/:entity': 'PATCH superseded by `draw move` and `draw rename`; DELETE has NO verb -- removing an entity is still `commit --ops` with `{op:"del"}` (B133 remainder)',
+	'diagrams/:id/nodes/:entity': 'PATCH superseded by `draw move` and `draw rename`; DELETE by `draw rm` (B133; CORRECTED 2026-10-11, H21 U0: this read "DELETE has NO verb" after `draw rm` existed)',
 	'diagrams/:id/links': 'superseded by `draw link <src> <dst> --via <cell>`, which mints the waypoints a bend needs (B133)',
 	'diagrams/:id/links/:entity': 'no verb yet: re-routing an existing link. `draw link` replaces it; `commit --ops` edits it',
 	'diagrams/:id/zones': 'superseded by `draw zone <name> from <cell> to <cell>`, which owns the half-pitch offset (B133)',
-	'diagrams/:id/zones/:entity': 'PATCH partly superseded by `draw rename`; resizing and DELETE have no verb (B133 remainder)',
+	'diagrams/:id/zones/:entity': 'PATCH partly superseded by `draw rename`; DELETE by `draw rm`; resizing has no verb',
 	'diagrams/:id/groups': 'superseded by `draw group <name> <ref> <ref>` (B133)',
-	'diagrams/:id/groups/:entity': 'PATCH partly superseded by `draw rename`; membership changes and DELETE have no verb (B133 remainder)',
+	'diagrams/:id/groups/:entity': 'PATCH partly superseded by `draw rename`; DELETE by `draw rm`; membership changes have no verb',
 };
 
 

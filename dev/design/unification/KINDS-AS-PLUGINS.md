@@ -178,7 +178,8 @@ AMENDED 2026-10-08 -- **O2 RULED: built now, staged** (`dev/DECISIONS.md`, "O2")
 AMENDED 2026-10-08 -- **O-a done** (H19.18).
 **How a tenant reaches the planner, chosen in the build:** a row may carry its tenant, as it carries its checks and its invariants (`model/shape.mjs` `tenant`); the composition lists its rows' tenants, and the planner runs the link tenant it is passed, then those, and appends none of its own.
 The other way, a `tenants` option each caller passes, was not taken: 66 call sites would carry it, and one that forgot would compose groups without their rules and say nothing.\
-The network's tenant stays passed as `links`, since it is made with each network; whether it rides its row too is O-e's or O-d's to settle.
+The network's tenant stays passed as `links`, since it is made with each network; whether it rides its row too is O-e's or O-d's to settle.\
+AMENDED 2026-10-11 (H21, U0): neither O-e nor O-d settled it -- the planner still takes the link tenant as its own `links` option (`planner/txn.mjs:251-252`); held with the canvas's `network` slot as B332, planned at H21.8.
 **What moved:** the group's tenant, from the planner's own list (`planner/txn.mjs`) to the group row; its two invariants, B82 and B85, from `model/invariants.mjs` to the group row, asking `planner/policy.mjs` itself rather than having each caller inject it -- a caller still passing the policy is refused, not ignored.
 `model/invariants.mjs` keeps the anchor capability's own rule, one occupant to an anchor (B112).
 **Held by:** `tests/tenant-from-row.test.js` -- a group row stripped of its rules runs none, and a planner appending the group tenant itself, or ignoring the rows' tenants, fails it (both mutants killed); the planner, gesture and matrix corpora and the generated reaction table are unchanged; one test restated (`tests/txn.test.js`, B85's policy).
@@ -365,6 +366,7 @@ The planner composes nothing and imports no plugin, and its layer may import the
 B282's measure is corrected with it: none, 242 or 1,337 anchors to add, as one per device, one per corner or one per cell.
 
 **Deferred, each with its trigger (RU3):** the canvas plugin contract (B308, H19.23, next after this arc); the multi-anchor device and its migration (B282, H19.8); the Model's link methods (K13d, at the rebuild); the API's word "anchor" (B310, held for B282's design); the Model's questions to the network (`MODEL_READS`, recorded in B280's history).
+AMENDED 2026-10-11 (H21, U0): every trigger in the paragraph above is spent -- B308 closed at H19.34, B282's multi-anchor half at WD-c, K13d at H19.25 and Q-a, the Model's questions at Q-a; B310's trigger was replaced at WD-c (`dev/design/unification/UNIFICATION-AUDIT.md` section 4.1).
 
 AMENDED 2026-10-08 -- **K13d's mechanical half done** (H19.25), the first deferred item after the arc.\
 The Model's five link methods are the network's functions, `network/link-queries.mjs`, answering from the relations index or by a scan, as the Model did; in a composition without the network the scan answers no links.\

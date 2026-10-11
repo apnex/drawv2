@@ -13,8 +13,8 @@ connection (SD11b), the planner knows nothing of the page, and nothing imports a
 
   core         anchors in space: the grid, spec, theme, path geometry, render primitives, the
                document store and its taxonomy
-  network      the plugin of connection: link rules and references, the relation index. It lives
-               in kernel/, model/ and engine/ today and gets its own folder at K13
+  network      the plugin of connection: link rules and references, the relation index. Its own folder,
+               network/, since K13 (S-e); the relation index stays in engine/
   planner      the one write: plan, commit, undo, redo, the log, validation, group policy
   canvas       the gesture machine and everything a canvas needs to draw and edit
   chrome       the production page around the canvas: sync, network status, palette, readouts,
@@ -25,7 +25,7 @@ connection (SD11b), the planner knows nothing of the page, and nothing imports a
   serve        K9: the one static responder (server/static.mjs) -- Node-side, never served to a browser, and the one
                layer both servers may import, the product's (server-only) and the lab's
   cli          the command-line tool
-  lab          the lab composition root (K10); `lab/` does not exist yet
+  lab          the lab composition root (K10), `lab/`, served at lab.apnex.io since 2026-09-29
   tools, tests may import any layer, and no product layer imports them
 */
 
@@ -103,11 +103,11 @@ object keyed by module keeps the last of two entries silently (the attack's A23)
 export const LAYER = {
 	core: [
 		'kernel/spec.mjs', 'kernel/theme.mjs',
-		'kernel/router.mjs',     // path geometry on the grid (rounded turns, snap); its `routeGeometry` name is L5p debt
+		'kernel/router.mjs',     // path geometry on the grid (rounded turns, snap); its `routeGeometry` name is in RATCHETS.L5p, with its reason
 		'kernel/input-rules.mjs', // the Rules engine: tenants' rows, uniform guards, one match or none (dev/RULES.md section 11); names no tenant
 		'kernel/geometry.mjs',   // the grid and cell arithmetic; its link roles and appearance left for the network layer at K13a
 		'kernel/renderer.mjs',   // frame and selection primitives the canvas draws with; the SVG scene half left at K11
-		'model/model.mjs',       // the document store; its link methods are network debt that K13d moves at the rebuild
+		'model/model.mjs',       // the document store; its link methods moved to the network at K13d (H19.25, Q-a)
 		'model/anchors.mjs',     // the bare anchor: how it is stored, asked in one place (F-b, H18.4; F-c, H18.5)
 		// the drawn word for an anchor -- waypoint or node (F4); apart, because the planner reads none
 		'model/ops.mjs', 'model/shape.mjs', 'model/limits.mjs', 'model/surface.mjs',
@@ -141,7 +141,7 @@ export const LAYER = {
 		'app/src/clock.js', 'app/src/net.js', 'app/src/spectate.js', 'app/src/sync.js', 'app/src/watchdog.js',
 		'app/src/help.js',       // the generated help overlay (gesture system stage 6): draws what the bindings document
 		'app/src/run-mode.js',   // K5: run mode's press rows, the product's feature, handed to Input by main.js
-		'app/src/palette.js',    // the device palette widget; input.js reaching into it is L2 debt that K6 removes
+		'app/src/palette.js',    // the device palette widget; input.js's reach into it went at K7 (`RATCHETS.L2` is empty)
 		'app/src/movers.js', 'app/src/reveal.js', 'app/src/paintloop.js',   // the simulation's painters: production-only, outside the lab
 	],
 	simulation: [
@@ -353,7 +353,7 @@ export const RULES = {
 			'linksOf', 'linksAt', 'linkBetween', 'linksBetween', 'endpointOf', 'pathOf', 'makeLink', 'makeWaypoint', 'junction', 'port', 'path'],
 		pattern: 'link|waypoint|route|facing|marker|plane|pipe|flow|junction|via',
 	},
-	// no module listed in `batch` is reachable from a product root. Empty until the stored-format batch (K17)
+	// no module listed in `batch` is reachable from a product root. Empty: the stored-format batch (K17, F-a to F-f) left nothing to list
 	L7: { roots: ['app/src/main.js', 'server/server.js', 'cli/draw.mjs'], batch: [] },
 	/*
 	The product's kind lists: every top-level `KINDS = [...]` in a product module must equal `kinds`
@@ -443,8 +443,8 @@ When a rule's record empties, delete its keys; the rule stays.
        lines; 2 of them are kernel/README.md:29 and a comment in kernel/index.mjs:4, so 123 are code:
        81 static and 42 dynamic. K2a-K2c empty it
   L5   `module:name` from RULES.L5.names; L5p from its pattern. Every L5 name and 14 of the 15 L5p
-       names are exports of kernel/geometry.mjs, which K13a splits; the fifteenth is routeGeometry
-       in kernel/router.mjs. Model's link methods are not exports, so L5 does not see them (K13d)
+       names were exports of kernel/geometry.mjs, which K13a split (done); the one left is routeGeometry
+       in kernel/router.mjs. Model's link methods were not exports, and moved at K13d
   L7k  consumer lines per file (see RULES.L7k)
   L9   `module:primitive`: none since V-d -- the browser previews with the planner (PL-6)
   L11  window/globalThis reads per canvas module: the label editor's three
@@ -459,12 +459,17 @@ export const RATCHETS = {
 	L5: {
 	},
 	L5p: {
+		// a generic polyline's geometry -- rounded turns, the one path the movers and the renderer walk -- named for one consumer,
+		// the route; renamed when kernel/router.mjs is next changed (recorded at H21, U0, where it had no reason and no trigger)
 		'kernel/router.mjs:routeGeometry': 1,
 	},
 	L7k: {
 		// PL-5 lowered model/model.mjs, server/rest.js, server/store.js and planner/validate.js to 0: they read model/shape.mjs
 		// F-c (H18.5) lowered cli/verbs.mjs from 11: the waypoint collection left the lists that named all the kinds
+		// cli/verbs.mjs: the CLI is installed standalone and imports nothing outside cli/ (B138), so its verbs list the kinds
+		// themselves; revived when the CLI learns the kinds from the server (H21, U4 or U5)
 		'cli/verbs.mjs': 7,
+		// kernel/adapt.mjs: the export door converts a document to the kernel's scene by kind name (B330, held with its trigger)
 		'kernel/adapt.mjs': 2,
 	},
 	// L9 is empty: V-c (H18.27) lowered app/src/input.js:splitAtBend, V-d (H18.28) app/src/commands.js:groupAfterRemoval --
@@ -666,6 +671,8 @@ L10, export-level minimality (H17-D9), as condition C2 specifies it. For each na
     that only shares a baseline spelling (`check`, `render`) claims a place nobody left;
   - each listed name is tagged `rebuild-debt` (paid by the splits and the rebuild, K13d) or
     `serves-a-server-door` (a server-only module imports it, which the scan checks).
+    AMENDED 2026-10-11 (H21, U0): K13d is done; what is still tagged `rebuild-debt` is the kernel geometry the export door
+    draws by kind (`group`, `zone`, `node`, `groupHull`, `spanExtent`), held with the door as B330.
 
 The entries are the planner entry and, from K10, the lab root. The production page and the server
 are not L10 entries (C2a). `baseline` is frozen: tests/scan-layers.test.js pins its hash, so

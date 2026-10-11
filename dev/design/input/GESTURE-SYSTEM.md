@@ -1,4 +1,4 @@
-# The gesture system -- a layered, context-aware, programmable mapping from input to action (DESIGN, awaiting approval)
+# The gesture system -- a layered, context-aware, programmable mapping from input to action (DESIGN, approved 2026-09-30; stages 1 to 6 built, H17.14)
 
 > **Tier 3 -- a design of record, proposed.** Written 2026-09-30 against `6be0bb5`.
 > Facts about today's code are measured and cited by file and line; judgements are marked as such.
