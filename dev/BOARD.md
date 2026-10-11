@@ -1388,7 +1388,7 @@ The re-audit is `dev/design/unification/UNIFICATION-AUDIT.md`: the decoupling is
 | H21.1 | Re-audit the unification and the activity around it: the code against the ruled target, the exceptions and held rows, the record-against-truth incidents mined to root cause | feature | S3 | `DONE` |
 | H21.2 | The director rules the approach: the audit's stages U0 to U5, their order and their exits | feature | S3 | `DONE` |
 | H21.4 | U0, the records made true: every still-wrong line the audit found corrected at its source, every stale reason and missing trigger fixed or recorded | feature | S3 | `DONE` |
-| H21.5 | U1, guards against the drift classes: triggers a check evaluates or a cadence re-reads, reasons citing closed rows failed, the director's words quoted and agent prose marked, status on the board alone, infrastructure claims probed, a flake ledger | feature | S3 | `WIP` |
+| H21.5 | U1, guards against the drift classes: triggers a check evaluates or a cadence re-reads, reasons citing closed rows failed, the director's words quoted and agent prose marked, status on the board alone, infrastructure claims probed, a flake ledger | feature | S3 | `DONE` |
 | H21.6 | U2, the target architecture: the whole system at the target instant, present tense, for the director to ratify; the current instant derived from the code | feature | S3 | `TODO` |
 | H21.7 | U3, the measurement widened: the name ratchets over every product layer, every quoting form, cross-plugin reads and device type names | feature | S3 | `TODO` |
 | H21.3 | U4, a type is a composition (B282's pack half): each device type declared once, every plugin reading its own part, a type declaring the roles it permits | **B282** | S3 | `TODO` |
@@ -1399,6 +1399,8 @@ AMENDED 2026-10-11: H21.4 (U0) done -- every still-wrong line the audit found is
 Next H21.5 (U1), the guards.
 AMENDED 2026-10-11: H21.5's design approved (`dev/DECISIONS.md` H21.5, the first structured ruling) -- `dev/design/unification/RECORD-GUARDS.md`, built in stages R-a to R-d.
 AMENDED 2026-10-11: H21.5 cites `feature`, not B88 -- B88 is held again under the trigger evaluator rather than closed (`dev/design/unification/RECORD-GUARDS.md` section 3.5), and a `DONE` item may not cite an open row.
+AMENDED 2026-10-11: H21.5 (U1) done -- the guards built as designed: a held row's trigger read one way, its decidable half evaluated, fired triggers printed every run and blocking a milestone's close (`tools/scan-triggers.mjs`, 8 of 34 held rows with a WHEN); the Held trigger column generated from the rows; the decoupling exceptions structured, their citations resolved (`tools/exceptions.mjs`); design indexes complete, status titles bannered, the Standing column typed, rulings after the marker structured (`tools/scan-designs.mjs`); the practices written in `dev/README.md`; five deferrals held as B333 to B337; B88 held again under the evaluator.\
+Next H21.6 (U2), the target architecture.
 
 **Exit:** the records true and guarded against each drift class; the target architecture ratified and the current state derived from the code; every product layer measured; a device type declared once; the rest of the target built or ruled.
 
@@ -1426,6 +1428,11 @@ Scored so the comparison is a judgement, not an omission.\
 | **B330** | S4 | The export door draws a document by naming its kinds, a second renderer beside the plugins' painters | a plugin's kind must reach a downloaded file without the export naming it, or the painters prove they can serve a headless scene. |
 | **B126** | S4 | Straight-link capacity as a per-kind property (H10.11 built its seam; the capacity stays one) | parallel links are designed (B256), or an operator must configure a capacity. |
 | **B88** | S3 | Prose can say finished work is blocked, and no rule reads a sentence | an item on the board is marked `BLOCKED`. |
+| **B333** | S4 | No ledger records a flaky test; naming a flake on a row before a retry is a practice | a flake is filed after H20.2. |
+| **B334** | S4 | No tool reads the cloud configuration a record asserts; reading before asserting is a practice | an infrastructure claim in the records is found false again. |
+| **B335** | S4 | The other allow lists' reasons (scan-dead, scan-cli, rebuild-debt) cite nothing a check reads | a reason in one of those lists is found citing finished work. |
+| **B336** | S4 | Four specifications' status banners below their titles are unchecked | one of those specifications' status lines is found false. |
+| **B337** | S5 | The Held table's severity is typed on the board, not read from the register (AR3) | the triage scale is next changed, or a Held severity is found disagreeing with its row's finding. |
 | **B325** | S4 | A diagram varies its grids -- its own extent, then its own pitch and offset (WD7) | the infinite canvas and scrolling are designed (B289's trigger), or a diagram needs a grid unlike the others. |
 | **B79** | S3 | The connection walk's apparatus is outside the repository; the false record is corrected, the rest held with B127 | B127 revives, or another decision is taken on the walk's findings. |
 | **B108** | S3 | Detecting a test wired to a copy of its subject: undecidable as stated; mutation is the technique that works | mutation testing is automated in the gate, or a test wired to a copy of its subject is found again. |

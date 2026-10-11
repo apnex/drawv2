@@ -59,3 +59,15 @@ Each states what is true of the running system or what is designed and not yet b
 
 `VISION.md` and `README.md` stay at the repository root.\
 The vision is ratified and names what the project must never become, which a consumer has standing to read.
+
+## Keeping the records true -- the practices no check decides
+
+The records drifted from the truth thirty-one times in six weeks and no scanner caught one (`dev/design/unification/UNIFICATION-AUDIT.md`).\
+What a machine can decide, the gate checks (`tools/scan-triggers.mjs`, `tools/scan-designs.mjs`, `tools/exceptions.mjs`); these are the rest, named as judgement so no one mistakes them for checks (`dev/design/unification/RECORD-GUARDS.md` section 3.6):
+- **At a milestone's close, re-read every judgement trigger the gate prints**, and re-triage any that has fired: plan the row, or hold it again with a trigger not yet true.
+- **A trigger the director set is held again only with the director's words**, and a row says who set its trigger.
+- **Read before asserting.** A claim about code, a landing or a record carries `[V, file:line]` or is marked INFERRED -- in a row, an amendment, a design or a re-triage alike.
+- **A correction finds its copies.** Whoever corrects a false phrase searches the records for it and corrects each copy, or says why a copy stands.
+- **An infrastructure claim cites the date it was read** from the cloud, `[read YYYY-MM-DD]`; the reading's configuration stays in the private `deploy/`.
+- **A retry past a red gate names the failing test on a row first**, an existing flake row or a new one.
+

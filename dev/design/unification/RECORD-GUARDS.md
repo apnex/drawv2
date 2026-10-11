@@ -474,3 +474,10 @@ Of these, only N1 would visibly break the closing commit, and only N2 undercuts 
 | N5 | minor | the Standing check undefined, so exit 8 not binary | a positive grammar with a closed list of types; the four checks named and run in the gate, the lab plan's line an edit (section 3.4) |
 | N6 | minor | labels' case and parentheticals unspecified; sixteen rows need an appended clause, not five; notes after a trigger would join it; H6's state at a cell's start | labels matched without case, with an optional parenthetical; the trigger ends at the next `AMENDED` or `Was:`; the sixteen named; H6's form read as `scan-board` reads it (section 3.1) |
 | N7 | minor | "four" was three; "each with a user" false; the yield about three counting B88, whose first firing the record misdates | corrected; the vocabulary cut to the three predicates the eight rows use; yield about three; B88's row and the audit corrected for the date |
+
+---
+
+AMENDED 2026-10-11 -- **built** (H21.5; `69543bb` R-a, `84398e6` R-b, `57b999b` R-c, and the closing commit R-d): `tools/records.mjs` (the shared reading of the board and the register), `tools/scan-triggers.mjs`, `tools/exceptions.mjs` and `tools/scan-designs.mjs`, each in the gate, each proven by planted instances -- twelve, seven and seven mutants killed, one after a sharper case.
+**Measured at the close:** 34 held rows, each with one current trigger last in its row; 8 with a `WHEN`, none fired; the Held trigger column equal to the rows; the six decoupling records structured and resolving; 18 status titles bannered; the Standing column typed; the first structured ruling (H21.5's) passing.\
+**One deviation from section 3.3 as written:** the layer manifest's L5p and L7k counts stay where they are, shaped as the frozen ceiling whose hash a test pins, and their reasons, citations and triggers sit beside them in `RATCHET_REASONS`, held key for key by the layer scanner -- the design's structured shape, without disturbing the ceiling's guard.
+
