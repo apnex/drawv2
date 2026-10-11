@@ -193,3 +193,5 @@ AMENDED 2026-10-11 -- **the approach ruled, and U0 done** (`dev/DECISIONS.md` H2
 Every line section 5 lists as still wrong, and every fault in section 4.1, is corrected where it stands or recorded with a trigger: the carried and deferred items gained rows (B328, B329 and B330 held; B331 and B332 planned at H21.8), B126 is held with a trigger, B88's fired trigger is recorded and the row planned at H21.5, and the design index lists all twenty-seven of its members (twenty-six documents and the matrix's data file).\
 Left for U1 by design: the lab plan's status cells (`dev/design/h17/PLAN.md`), which U1's rule -- status on the board alone -- retires rather than edits.
 
+CORRECTED 2026-10-11 (H21.5, the guards' second review): "B88 (fired 2026-10-02 when B279 entered Decisions required" -- B88's trigger fired first on 2026-09-08 (`7440cc9`, two items `BLOCKED`) and again on 2026-09-22 (`27c7eb2`), MEASURED; 2026-10-02 was its third firing, on its second clause.
+

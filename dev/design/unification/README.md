@@ -31,6 +31,7 @@ Nothing here is decided: these documents carry the problem space into the design
 | `CANVAS-PLUGINS.md` | H19.23: a plugin brings its kind onto the page -- the canvas names no plugin's kind beyond a record. | Delta, approved; built (C-a to C-f); its carried items are B328 to B330. |
 | `WIDE-DEVICES.md` | H19.8: a wide device is one anchor; the grids stored as layout records; schema 3. | Delta, approved 2026-10-10; built (WD-a to WD-c). |
 | `UNIFICATION-AUDIT.md` | The re-audit of 2026-10-11: the code against the ruled target ontology, the exceptions and held rows, the record-against-truth incidents mined to root cause, and the approach proposed (stages U0 to U5). | Evidence and a proposal; the director rules the approach (H21.2). |
+| `RECORD-GUARDS.md` | H21.5 (U1): the guards that keep the records true -- trigger evaluation, a generated Held column, structured decoupling exceptions and rulings -- with two adversarial reviews. | Delta; H21.5. |
 
 The survey envelope that captures intent is `dev/surveys/unification-survey.md`.\
 Rulings stay in `dev/DECISIONS.md`; nothing here amends a ruling.\
