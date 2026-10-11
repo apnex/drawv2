@@ -1,5 +1,7 @@
 # Guide anchors -- routing through a point without connecting to it (PROPOSED)
 
+AMENDED 2026-10-11: this title's status is as written; the standing is its board item's.
+
 ## 1. Status
 
 - **Written:** 2026-09-28, against drawv2 at `ecf06e2` (branch `main`), from a live design conversation with the director on the same day.

@@ -124,6 +124,7 @@ AMENDED 2026-10-08 -- K13d done (H19.27): the Model's questions to the network a
 AMENDED 2026-10-10 (the re-triage after H19): the table's statuses lag what landed -- K13b at S-e (H18.15; the link's rules are `network/link-references.mjs` and `network/pair-capacity.mjs`), K13d at H19.25 and H19.27, K18a at H18.27 (B243 closed: the junction cut is a planner reaction at every door), K18b at V-d (H18.28; the page previews each commit with the server's planner).\
 K6 is half done: the browser's device list is the devices plugin's (`devices/device-hand.mjs`, C-e), while the CLI keeps its own copy (`cli/verbs.mjs` `NODE_TYPES`) and its help still calls a waypoint "a kind of its own"; that is H17.3's remainder.\
 CORRECTED 2026-10-10: the CLI's copy is not a remainder of K6 -- `cli/` is installed standalone and imports nothing outside it (B138), so its list is a deliberate second declaration that B167's test holds equal to the kernel's glyphs. K6 was done when the browser's list became the devices plugin's; the one real remainder was `draw add` calling a waypoint "a kind of its own", now a node with no type. Every cut is landed, and H17.3 is closed.
+AMENDED 2026-10-11 (H21.5): the status column of the cut table above is frozen as written -- its cells are not edited and may lag; a cut's standing is its board item's (`dev/BOARD.md` H17).
 
 ## 5. Conditions of the second M7 pass, with their gates
 

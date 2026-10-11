@@ -1,5 +1,7 @@
 # Promoting the network plugin into production -- a full cutover, planned (DESIGN, held)
 
+AMENDED 2026-10-11: this title's status is as written; the standing is its board item's.
+
 > **Tier 3 -- a plan of record, not started.** Written 2026-09-30 against `fca7828`.
 > Facts about today's code are measured and cited by file and line; judgements are marked as such.
 > Held as B266: no work starts until the director says so, and then one approved stage at a time.

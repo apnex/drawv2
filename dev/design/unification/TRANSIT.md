@@ -1,5 +1,7 @@
 # Transit -- what an anchor does with what passes through it (PROPOSED)
 
+AMENDED 2026-10-11: this title's status is as written; the standing is its board item's.
+
 ---
 
 ## 1. Status

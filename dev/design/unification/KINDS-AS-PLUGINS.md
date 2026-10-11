@@ -1,5 +1,7 @@
 # Every kind becomes a plugin's -- zones, groups, then the node -- H19.7 (DELTA, proposed)
 
+AMENDED 2026-10-11: this title's status is as written; the standing is its board item's.
+
 > **Tier 3 -- a design of record, proposed.** Written 2026-10-08 against `aa91ba0`.
 > Facts about today's code are measured and cited by file and line; judgements are marked as such.
 > Proposes; decides nothing. Section 9 lists what only the director can settle, one at a time.

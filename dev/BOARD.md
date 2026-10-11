@@ -1388,7 +1388,7 @@ The re-audit is `dev/design/unification/UNIFICATION-AUDIT.md`: the decoupling is
 | H21.1 | Re-audit the unification and the activity around it: the code against the ruled target, the exceptions and held rows, the record-against-truth incidents mined to root cause | feature | S3 | `DONE` |
 | H21.2 | The director rules the approach: the audit's stages U0 to U5, their order and their exits | feature | S3 | `DONE` |
 | H21.4 | U0, the records made true: every still-wrong line the audit found corrected at its source, every stale reason and missing trigger fixed or recorded | feature | S3 | `DONE` |
-| H21.5 | U1, guards against the drift classes: triggers a check evaluates or a cadence re-reads, reasons citing closed rows failed, the director's words quoted and agent prose marked, status on the board alone, infrastructure claims probed, a flake ledger | **B88** | S3 | `WIP` |
+| H21.5 | U1, guards against the drift classes: triggers a check evaluates or a cadence re-reads, reasons citing closed rows failed, the director's words quoted and agent prose marked, status on the board alone, infrastructure claims probed, a flake ledger | feature | S3 | `WIP` |
 | H21.6 | U2, the target architecture: the whole system at the target instant, present tense, for the director to ratify; the current instant derived from the code | feature | S3 | `TODO` |
 | H21.7 | U3, the measurement widened: the name ratchets over every product layer, every quoting form, cross-plugin reads and device type names | feature | S3 | `TODO` |
 | H21.3 | U4, a type is a composition (B282's pack half): each device type declared once, every plugin reading its own part, a type declaring the roles it permits | **B282** | S3 | `TODO` |
@@ -1398,6 +1398,7 @@ AMENDED 2026-10-11: H21.2 ruled -- the director approved the audit's order, U0 t
 AMENDED 2026-10-11: H21.4 (U0) done -- every still-wrong line the audit found is corrected where it stands; every stale reason re-pointed or given a trigger; the carried and deferred items without rows are rows now (B328 to B330 held, B331 and B332 planned at H21.8), B126 held with a trigger, B88 planned at H21.5; the design index lists every member.\
 Next H21.5 (U1), the guards.
 AMENDED 2026-10-11: H21.5's design approved (`dev/DECISIONS.md` H21.5, the first structured ruling) -- `dev/design/unification/RECORD-GUARDS.md`, built in stages R-a to R-d.
+AMENDED 2026-10-11: H21.5 cites `feature`, not B88 -- B88 is held again under the trigger evaluator rather than closed (`dev/design/unification/RECORD-GUARDS.md` section 3.5), and a `DONE` item may not cite an open row.
 
 **Exit:** the records true and guarded against each drift class; the target architecture ratified and the current state derived from the code; every product layer measured; a device type declared once; the rest of the target built or ruled.
 
@@ -1424,6 +1425,7 @@ Scored so the comparison is a judgement, not an omission.\
 | **B329** | S4 | The simulation's page pieces -- the movers and the reveal -- live in the canvas folder | the simulation brings its canvas part whole. |
 | **B330** | S4 | The export door draws a document by naming its kinds, a second renderer beside the plugins' painters | a plugin's kind must reach a downloaded file without the export naming it, or the painters prove they can serve a headless scene. |
 | **B126** | S4 | Straight-link capacity as a per-kind property (H10.11 built its seam; the capacity stays one) | parallel links are designed (B256), or an operator must configure a capacity. |
+| **B88** | S3 | Prose can say finished work is blocked, and no rule reads a sentence | an item on the board is marked `BLOCKED`. |
 | **B325** | S4 | A diagram varies its grids -- its own extent, then its own pitch and offset (WD7) | the infinite canvas and scrolling are designed (B289's trigger), or a diagram needs a grid unlike the others. |
 | **B79** | S3 | The connection walk's apparatus is outside the repository; the false record is corrected, the rest held with B127 | B127 revives, or another decision is taken on the walk's findings. |
 | **B108** | S3 | Detecting a test wired to a copy of its subject: undecidable as stated; mutation is the technique that works | mutation testing is automated in the gate, or a test wired to a copy of its subject is found again. |

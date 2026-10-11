@@ -1,5 +1,7 @@
 # Sync hardening after the cutover -- H19.5 (DELTA, proposed)
 
+AMENDED 2026-10-11: this title's status is as written; the standing is its board item's.
+
 > **Tier 3 -- a plan of record, proposed.** Written 2026-10-07 against `5387bb5`.
 > Facts are measured and cited; a number carried from an earlier measurement says when it was taken; judgements are marked.
 > Proposes; decides nothing. Section 9 says which decisions come after the first measurement, and why not before.

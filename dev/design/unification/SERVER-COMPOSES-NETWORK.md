@@ -1,5 +1,7 @@
 # The server composes the network -- promotion's P3 (DELTA, proposed)
 
+AMENDED 2026-10-11: this title's status is as written; the standing is its board item's.
+
 > **Tier 3 -- a design of record, proposed.** Written 2026-10-03 against `d5abf1f`.
 > Facts about today's code are measured and cited by file and line; judgements are marked as such.
 > Proposes; decides nothing. Section 9 lists what only the director can settle, one at a time.

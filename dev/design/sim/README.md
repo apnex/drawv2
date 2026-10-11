@@ -66,3 +66,5 @@ Clover signature reproduced as the routing acceptance fixture; obstacle rule + c
 - **Walk history retained** in `dev/design/walk/` (the stylexrung science, `FINDINGS.md`) -- unchanged.
 - **Next:** richer routing rungs (offset / pass-through / fan-out at scale) and side/port assignment;
 horizontal-facing `specBetween`; the deferred `cell-align` (+/-29 vs +/-30) consideration; then Phase 2 -- graduate `schema + engine` into drawv2's doc model.
+
+AMENDED 2026-10-11 (H21.5): `explore/` holds this folder's exploration files; named here so the index lists every member.

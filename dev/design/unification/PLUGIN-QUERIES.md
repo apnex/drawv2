@@ -1,5 +1,7 @@
 # The Model's questions to the network become the network's -- H19.26 (DELTA, proposed)
 
+AMENDED 2026-10-11: this title's status is as written; the standing is its board item's.
+
 > **Tier 3 -- a design of record, proposed.** Written 2026-10-08 against `ab5500f`.
 > Facts about today's code are measured and cited by file; judgements are marked as such.
 > Proposes; decides nothing. Section 6 holds the one decision for the director.

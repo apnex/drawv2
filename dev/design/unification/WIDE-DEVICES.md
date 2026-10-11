@@ -1,5 +1,7 @@
 # A wide device and its anchors -- H19.8 (DELTA, proposed)
 
+AMENDED 2026-10-11: this title's status is as written; the standing is its board item's.
+
 > **Tier 3 -- a design of record, proposed.** Written 2026-10-10 against `6b8bac5`.
 > Facts about production and the code are measured and cited; judgements are marked as such.
 > Proposes; decides nothing. Section 7 holds the decisions for the director, to be asked one at a time.
