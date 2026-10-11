@@ -1663,7 +1663,7 @@ VERBS.push({
 	route: '/diagrams/<id>/commit', method: 'POST', also: ['GET /diagrams', 'GET /diagrams/<id>', 'GET /diagrams/<id>/layouts/<layout>/anchors'],
 	summary: 'put a node on a named anchor -- a cell, never a pixel',
 	example: 'draw add server at 5,-2 --name web-1',
-	args: [{ name: 'type', about: `node type: ${NODE_TYPES.join(', ')} -- or \`waypoint\`, a kind of its own` },
+	args: [{ name: 'type', about: `node type: ${NODE_TYPES.join(', ')} -- or \`waypoint\`, a node with no type` },
 		{ name: 'at', about: "the literal word 'at'" },
 		{ name: 'cx,cy', about: 'the CELL, not pixels -- `draw anchor nearest` converts if you have pixels' }],
 	flags: [{ name: '--name', about: 'what to call it' },
@@ -1710,7 +1710,7 @@ VERBS.push({
 			}));
 		}
 		if (!NODE_TYPES.includes(type)) {
-			die(`${type} is not a node type. Renderable: ${NODE_TYPES.join(', ')} -- or \`waypoint\`, which is a kind of its own`);
+			die(`${type} is not a node type. Renderable: ${NODE_TYPES.join(', ')} -- or \`waypoint\`, a node with no type`);
 		}
 		const nid = `node-${Math.random().toString(16).slice(2, 8)}`;
 		const entity = { id: nid, name: ctx.flags.name || nid, type, x: spot.x, y: spot.y };

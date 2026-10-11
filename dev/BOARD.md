@@ -971,7 +971,7 @@ Advancing the collapse's projection (H16.3) turns some silent link losses into m
 CORRECTED 2026-09-25: first recorded as met on CI run 36089220400; the next push failed the same teardown (run 36109819709), so B238 and this milestone were reopened. Met on the second fix: five consecutive green CI runs (36e7ecc, run 36110330861, attempts 1-5). The collapse and sweep fixes stand, held by the tests and mutants recorded in B239-B241. The review's one held finding is B242.
 ---
 
-## H17 -- the lab canvas: a minimal client composition over real code - `WIP`
+## H17 -- the lab canvas: a minimal client composition over real code - `DONE`
 
 Opened 2026-09-27 by the director (DECISIONS.md, "The lab canvas").\
 A single fixed canvas built from the real modules, with no storage, sync, menus or sign-in. It is for visual validation of the anchor and link rules with the real gestures (w, f, k, l), and for cutting the module seams so that nothing loads that is not needed.\
@@ -983,7 +983,7 @@ CORRECTED 2026-09-27 (second M7 pass, C10): the gestures are the whole key table
 |---|---|---|---|---|
 | H17.1 | Measure what the browser loads today, map the module seams, and audit them against the axioms (M7) | feature | S3 | `DONE` |
 | H17.2 | Design the minimal composition, its enforced boundaries and an ordered cut plan, and put its decisions to the director | feature | S3 | `DONE` |
-| H17.3 | Build the lab entry on the real modules, cut by cut (K0-K18a in `dev/design/h17/PLAN.md`), each with its test (rows registered before code) | feature | S3 | `WIP` |
+| H17.3 | Build the lab entry on the real modules, cut by cut (K0-K18a in `dev/design/h17/PLAN.md`), each with its test (rows registered before code) | feature | S3 | `DONE` |
 | H17.4 | Deleting a closed ring sweeps its end waypoints too, by reading the role derivation rather than a restated rule | **B244** | S3 | `DONE` |
 | H17.5 | Threading a pinned waypoint clears the pin at the server, not in the tab only | **B245** | S3 | `DONE` |
 | H17.6 | Every peer lists links in one order that does not depend on history | **B246** | S3 | `DONE` |
@@ -1012,7 +1012,8 @@ CORRECTED 2026-09-27 (second M7 pass, C10): the gestures are the whole key table
 | H17.29 | A tab resuming against a template is answered as for any template, instead of the server throwing on its missing log | **B290** | S3 | `DONE` |
 
 **Exit:** the lab runs the real link gestures on one fixed canvas, with the real planner in the page. Its import graph holds only core, plugin, planner and canvas modules, and a scanner enforces that. Its load is measured against today's app.\
-AMENDED 2026-09-27 (H17-D8): "planner" added to the exit, because the director ruled that the lab runs the real planner in the page from its first version.
+AMENDED 2026-09-27 (H17-D8): "planner" added to the exit, because the director ruled that the lab runs the real planner in the page from its first version.\
+AMENDED 2026-10-10: H17.3 done with its last cut, K6 -- the browser's one device table is the devices plugin's (C-e); the CLI keeps its own copy on purpose, installed standalone (B138) and held equal to the kernel's glyphs (B167), and the re-triage was wrong to call that copy a remainder; what remained was `draw add` calling a waypoint "a kind of its own", corrected to a node with no type -- and H17 closes, its exit measured: the lab runs the real link gestures and the real planner (`tests/lab-browser.test.js`, the matrix); `scan-layers` holds each page's import graph to its declared list (L6); the lab loads 113 modules and 774,016 bytes against the product page's 131 and 946,463, 18% fewer bytes (both grew since the plan's projection as the plugins split into files).
 
 ## H18 -- promotion: the network plugin into production - `DONE`
 
@@ -1367,6 +1368,8 @@ AMENDED 2026-10-10: H20.2 done -- B164 and B320 each reproduced at will and fixe
 Next H20.3, the design of paths and flows.
 AMENDED 2026-10-10: the director chose the small items first. H20.4 done -- B27 closed: a zone, a panel and its content regions refused past the surface's edge at every door; the panel resize key stops at the edge and at its content; nothing stored refused, a production copy booted clean.\
 Next H17.3's remainder, then H20.3.
+AMENDED 2026-10-10: H17.3's remainder done, and H17 closed with it.\
+Next H20.3, the design of paths and flows.
 
 **Exit:** a gate run passes or fails on what it tests, not on the machine's load; paths and flows have a ruled design; every door holds the surface's edge.
 

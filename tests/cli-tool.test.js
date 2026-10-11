@@ -2079,3 +2079,24 @@ test('B237: the settable table matches the taxonomy for every kind, not just lin
 	}
 	assert.ok(checked >= 3, `the sweep must actually find fields -- it checked ${checked}`);
 });
+
+/*
+H17.3's last cut -- THE CLI CALLS A WAYPOINT WHAT IT IS. `draw add` still offered a waypoint as "a kind of its own" in its help and in
+its refusal, which it stopped being at the format batch (F-c): a waypoint is a node with no type. The CLI's own list of the types it
+offers stays a copy, on purpose -- it is installed standalone and imports nothing outside cli/ (B138), and B167 holds the copy to the
+kernel's glyphs.
+*/
+test('H17.3: draw add calls a waypoint a node with no type, in its help and in its refusal', async () => {
+	const add = VERBS.find((v) => v.name === 'add');
+	assert.match(add.args[0].about, /-- or `waypoint`, a node with no type$/);
+	await boot();
+	try {
+		const id = (await run('create', 'types-test')).trim();
+		await run('lock', '--diagram', id);
+		const err = await captureExit(() => run('add', 'printer', 'at', '1,1', '--diagram', id));
+		assert.match(err, /printer is not a node type\. Renderable: [a-z, ]+ -- or `waypoint`, a node with no type/);
+		assert.doesNotMatch(fs.readFileSync(new URL('../cli/verbs.mjs', import.meta.url), 'utf8'), /a kind of its own/, 'no waypoint kind left in the CLI');
+		const made = JSON.parse(await run('add', 'waypoint', 'at', '2,1', '--diagram', id, '--json'));
+		assert.equal(made.id.startsWith('node-'), true, 'and a waypoint it adds is a node -- the state under test');
+	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
+});
