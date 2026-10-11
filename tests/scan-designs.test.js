@@ -49,6 +49,9 @@ test('R-c STANDING: a Standing cell carrying a state fails; a type and items pas
 	assert.match(r.stdout, /A\.md: Standing "Delta, approved 2026-10-04; built\." is not/);
 	assert.equal(scan(tree({ index: '| `A.md` | a | Evidence. |' })).status, 0);
 	assert.equal(scan(tree({ index: '| `A.md` | a | Proposed. |' })).status, 1, 'a state is not a type');
+	assert.equal(scan(tree({ index: '| `A.md` | a | Delta; proposed, awaiting approval. |' })).status, 1, 'nor rides in behind the semicolon (the exit check\'s finding 1)');
+	assert.equal(scan(tree({ index: '| A.md | a | Proposed. |' })).status, 1, 'a row without backticks is still a row');
+	assert.equal(scan(tree({ index: '| `A.md` | a | Delta; H18.2, H18.10. |' })).status, 0, 'board items after the type');
 });
 
 test('R-c RULINGS: after the marker, a bold paragraph is a ruling block with its three fields, or an amendment', () => {
@@ -59,7 +62,8 @@ test('R-c RULINGS: after the marker, a bold paragraph is a ruling block with its
 	r = scan(tree({ decisions: `${MARKER}\n\n**Scope discipline.**\\\nA caution an agent wrote.\n` }));
 	assert.equal(r.status, 1, 'a bold paragraph with no id -- where B282\'s trigger was born');
 	assert.match(r.stdout, /"\*\*Scope discipline\.\*\*\\" opens in bold after the marker/);
-	assert.equal(scan(tree({ decisions: `${MARKER}\n\n${RULING}\n\n**AMENDED 2026-10-12:** H9.9 amended.\n` })).status, 0, 'an amendment is allowed');
+	assert.equal(scan(tree({ decisions: `${MARKER}\n\n${RULING}\n\n**AMENDED 2026-10-12:** H9.9 amended.\n` })).status, 0, 'an amendment naming its ruling is allowed');
+	assert.equal(scan(tree({ decisions: `${MARKER}\n\n${RULING}\n\n**AMENDED 2026-10-12:** something changed.\n` })).status, 1, 'an amendment naming no ruling is not');
 	assert.equal(scan(tree({ decisions: `**Scope discipline.**\\\nbefore the marker\n\n${MARKER}\n\n${RULING}\n` })).status, 0, 'before the marker, nothing is bound (RU2)');
 	r = scan(tree({ decisions: 'no marker here\n' }));
 	assert.equal(r.status, 1);

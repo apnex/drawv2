@@ -499,7 +499,7 @@ in front of a reviewer.
 */
 /*
 H21.5 (R-b; dev/design/unification/RECORD-GUARDS.md section 3.3) -- WHY EACH DECOUPLING RATCHET STILL HOLDS, AND WHEN IT ENDS.
-RATCHETS keeps the counts, shaped as the frozen ceiling below is shaped, so its hash still pins them; this keeps, per key of the
+RATCHETS keeps the counts, shaped as the frozen ceiling below is shaped -- the ceiling's hash is pinned by a test, and each count is held at or below its ceiling --; this keeps, per key of the
 decoupling ratchets L5p and L7k, the reason, the ids it cites and its trigger. The scanner holds the keys equal to RATCHETS', and
 every cited id must resolve (tools/exceptions.mjs).
 */

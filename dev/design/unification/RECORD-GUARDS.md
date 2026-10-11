@@ -481,3 +481,15 @@ AMENDED 2026-10-11 -- **built** (H21.5; `69543bb` R-a, `84398e6` R-b, `57b999b` 
 **Measured at the close:** 34 held rows, each with one current trigger last in its row; 8 with a `WHEN`, none fired; the Held trigger column equal to the rows; the six decoupling records structured and resolving; 18 status titles bannered; the Standing column typed; the first structured ruling (H21.5's) passing.\
 **One deviation from section 3.3 as written:** the layer manifest's L5p and L7k counts stay where they are, shaped as the frozen ceiling whose hash a test pins, and their reasons, citations and triggers sit beside them in `RATCHET_REASONS`, held key for key by the layer scanner -- the design's structured shape, without disturbing the ceiling's guard.
 
+AMENDED 2026-10-11 -- **the independent exit check** (an agent other than the builder, on a fresh clone at `b445532`): **all ten exit criteria of section 6 met**, each guard bitten by a planted fault.\
+Two of its findings fixed at once: the Standing check let a state ride in behind the semicolon, and skipped a row without backticks -- it now admits board item ids alone after the type; and an `AMENDED` or `CORRECTED` line after the marker must name the ruling it amends.\
+The rest recorded, each a known limit rather than a defect:
+- a ruling head with no digit passes the ruling check, and only bold paragraphs are checked after the marker;
+- B328's `WHEN` sees only `network/keys.mjs`, and B108's `/mutate/` would miss some names a mutation tool might use -- both triggers are partial by design, their judgement halves standing;
+- B336 watches four specifications, not five (recorded on its row);
+- the `RATCHET_REASONS` key check has no committed fixture of its own -- it runs on the real manifest, and planted faults bit it;
+- a `WHEN` inside an exception entry is read as prose, not evaluated -- the ratchet's own "remove it" assertion acts when the file goes;
+- the milestone block applies to a milestone that existed at the base; one added already `DONE` is not blocked;
+- the index check matches by substring, so a new file whose name is inside an existing one's passes;
+- the trigger's prose also ends at `CORRECTED`, which section 3.1 did not list; and section 7 still names `exists`, a predicate cut from the vocabulary.
+

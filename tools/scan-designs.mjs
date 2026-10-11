@@ -53,11 +53,12 @@ for (const f of [...walk('dev/design'), ...walk('docs/spec')]) {
 
 // ---- STANDING
 const TYPES = ['Delta', 'Plan', 'Design', 'Register', 'Evidence', 'Descriptive', 'Generated', 'Audit'];
-const STANDING = new RegExp(`^(${TYPES.join('|')})(; [A-Za-z0-9 .,'-]+)?\\.$`);
+// after the type, board item ids only -- `H21.5`, `H18.2, H18.10` -- so no state can ride in behind the semicolon
+const STANDING = new RegExp(`^(${TYPES.join('|')})(; H\\d+\\.\\d+[a-z]?(, H\\d+\\.\\d+[a-z]?)*)?\\.$`);
 if (exists('dev/design/unification/README.md')) {
 	for (const line of read('dev/design/unification/README.md').split('\n')) {
-		const m = /^\| `([^`]+)` \|.*\| ([^|]*) \|$/.exec(line);
-		if (!m) continue;
+		const m = /^\| `?([^`|]+?)`? \|.*\| ([^|]*) \|$/.exec(line);
+		if (!m || /^(File|-+)$/.test(m[1].trim())) continue;
 		if (!STANDING.test(m[2].trim())) fail(`dev/design/unification/README.md ${m[1]}: Standing "${m[2].trim()}" is not \`<type>[; <board items>].\` with a type of ${TYPES.join(', ')} -- a state there drifts from the board`);
 	}
 }
@@ -74,7 +75,10 @@ if (exists('dev/DECISIONS.md')) {
 		for (const p of paras) {
 			const first = p.split('\n')[0].replace(/^>\s*/, '');
 			if (!first.startsWith('**')) continue;
-			if (/^\*\*(AMENDED|CORRECTED)\b/.test(first)) continue;
+			if (/^\*\*(AMENDED|CORRECTED)\b/.test(first)) {
+				if (!/\b(H\d+(\.\d+)?|[A-Z][A-Z-]*\d+)\b/.test(p)) fail(`dev/DECISIONS.md: "${first.slice(0, 70)}" amends after the marker without naming the ruling it amends`);
+				continue;
+			}
 			const head = /^\*\*([A-Z][A-Za-z0-9.-]*(?:,\s*[A-Z][A-Za-z0-9.-]*)*)\s+--\s/.exec(first);
 			const label = first.slice(0, 70);
 			if (!head) { fail(`dev/DECISIONS.md: "${label}" opens in bold after the marker and is neither a ruling block (a bold id head) nor an AMENDED or CORRECTED line`); continue; }
