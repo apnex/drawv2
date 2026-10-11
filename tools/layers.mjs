@@ -671,8 +671,11 @@ L10, export-level minimality (H17-D9), as condition C2 specifies it. For each na
     that only shares a baseline spelling (`check`, `render`) claims a place nobody left;
   - each listed name is tagged `rebuild-debt` (paid by the splits and the rebuild, K13d) or
     `serves-a-server-door` (a server-only module imports it, which the scan checks).
-    AMENDED 2026-10-11 (H21, U0): K13d is done; what is still tagged `rebuild-debt` is the kernel geometry the export door
-    draws by kind (`group`, `zone`, `node`, `groupHull`, `spanExtent`), held with the door as B330.
+    AMENDED 2026-10-11 (H21, U0), CORRECTED the same day by U1's adversarial review: K13d is done, and what is still tagged
+    `rebuild-debt` is not the export door's alone -- it is every export of a module the planner entry loads whole and uses
+    in part: the kernel's grid arithmetic and drawing elements (`kernel/geometry.mjs`), `derive` and `BEND_R`, `kindOf`,
+    `SURFACE`, the planner's limits (`LOG_MAX`, `LOG_HARD_MAX`, `MAX_OPS`) and `validateEntity`. Paid if a listed module
+    splits along its consumers; revived when the planner entry's load is next measured or a listed module is next split.
 
 The entries are the planner entry and, from K10, the lab root. The production page and the server
 are not L10 entries (C2a). `baseline` is frozen: tests/scan-layers.test.js pins its hash, so
