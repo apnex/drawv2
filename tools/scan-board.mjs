@@ -42,6 +42,7 @@ Usage: node tools/scan-board.mjs
 
 import fs from 'node:fs';
 import { execSync } from 'node:child_process';
+import { splitCells, VERDICTS, verdictOf, itemStateOf } from './records.mjs';
 
 // `--root <dir>` so the rules can be driven over fixtures. Without it the only way to prove R5
 // and R6 FAIL correctly is to corrupt the real board, and a check whose failure path is untested
@@ -71,7 +72,7 @@ Tracking code spans was the first attempt and it is worse: it cannot survive a d
 (B13's `` $` ``) or a stray backtick (B119 wrote ``verb`s`` for *verb's*), and both of those made
 whole rows silently unreadable. Escapes are the rule; anything else is a guess about intent.
 */
-const splitCells = (line) => line.split(/(?<!\\)\|/).map((c) => c.trim());
+// H21.5 (R-a): the cell splitter, the verdict list and item-state reading are tools/records.mjs's, shared with scan-triggers
 
 /*
 The verdict vocabulary, as a CLOSED SET.
@@ -90,19 +91,6 @@ DONE      the matter is settled; the row is a record, not a plan
 REMAINDER settled in part, with the rest stated in the row — still owed a place on the board
 LIVE      not settled; must appear on the board or under Held (R8)
 */
-const VERDICTS = new Map([
-	['CLOSED', 'DONE'], ['FIXED', 'DONE'], ['RULED', 'DONE'], ['WITHDRAWN', 'DONE'],
-	["WON'T DO", 'DONE'], ['DROPPED', 'DONE'],
-	['PART-CLOSED', 'REMAINDER'],
-	['OPEN', 'LIVE'], ['DEFERRED', 'LIVE'], ['HELD', 'LIVE'],
-	// B153 — a row waiting on a ruling is LIVE. It is not deferred, because nothing about it is
-	// postponed: the work is ready and the authority is not this agent's. R13 holds it to being
-	// declared where the director looks for it.
-	['RULING-OWED', 'LIVE'],
-	// DROPPED is settled, not open: contract rule 4 permits dropping an item so long as the row
-	// carries the reason as a revival trigger, which is a record and not a plan.
-	['DROPPED', 'DONE'],
-]);
 
 const rows = new Map();   // id -> { closes: 'H1' | null, closed: bool, live: bool, verdict }
 const unparsed = [];
@@ -130,13 +118,7 @@ for (const line of backlog.split('\n')) {
 	*/
 	// Longest-prefix match, not a word match: the vocabulary contains a hyphen (`PART-CLOSED`) and a
 	// space (`WON'T DO`), and any rule that stops at a word boundary reads those as `PART` and `WON`.
-	const opener = disposition.replace(/^[\s*]+/, '').toUpperCase();
-	let verdict = null;
-	for (const key of VERDICTS.keys()) {
-		if (!opener.startsWith(key)) continue;
-		if (/[A-Z']/.test(opener[key.length] || ' ')) continue;   // OPENED must not match OPEN
-		if (!verdict || key.length > verdict.length) verdict = key;
-	}
+	const verdict = verdictOf(disposition);
 	/*
 	A bare `**H1**` opener is a PROMISE, not a verdict: it says where the row will close, and says
 	nothing about whether it has. That is the semantic R3 was built on and `tests/gate.test.js`
@@ -172,8 +154,7 @@ for (const line of board.split('\n')) {
 		// Stage cell instead. Requiring the last cell would have forced a rewrite of a milestone
 		// that closed months ago, so the rule is that a row DECLARES a state, and the last token
 		// wins where a row somehow carries two.
-		const tokens = [...line.matchAll(/`(DONE|TODO|WIP|BLOCKED|DROPPED)`/g)].map((x) => x[1]);
-		allRows.push({ h: m[1], state: tokens.length ? tokens[tokens.length - 1] : null, line, cells: splitCells(line) });
+		allRows.push({ h: m[1], state: itemStateOf(line), line, cells: splitCells(line) });
 		if (ids.length) items.push({ h: m[1], ids, done: /`(DONE|DROPPED)`/.test(line) });
 	}
 }

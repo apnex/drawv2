@@ -1388,7 +1388,7 @@ The re-audit is `dev/design/unification/UNIFICATION-AUDIT.md`: the decoupling is
 | H21.1 | Re-audit the unification and the activity around it: the code against the ruled target, the exceptions and held rows, the record-against-truth incidents mined to root cause | feature | S3 | `DONE` |
 | H21.2 | The director rules the approach: the audit's stages U0 to U5, their order and their exits | feature | S3 | `DONE` |
 | H21.4 | U0, the records made true: every still-wrong line the audit found corrected at its source, every stale reason and missing trigger fixed or recorded | feature | S3 | `DONE` |
-| H21.5 | U1, guards against the drift classes: triggers a check evaluates or a cadence re-reads, reasons citing closed rows failed, the director's words quoted and agent prose marked, status on the board alone, infrastructure claims probed, a flake ledger | **B88** | S3 | `TODO` |
+| H21.5 | U1, guards against the drift classes: triggers a check evaluates or a cadence re-reads, reasons citing closed rows failed, the director's words quoted and agent prose marked, status on the board alone, infrastructure claims probed, a flake ledger | **B88** | S3 | `WIP` |
 | H21.6 | U2, the target architecture: the whole system at the target instant, present tense, for the director to ratify; the current instant derived from the code | feature | S3 | `TODO` |
 | H21.7 | U3, the measurement widened: the name ratchets over every product layer, every quoting form, cross-plugin reads and device type names | feature | S3 | `TODO` |
 | H21.3 | U4, a type is a composition (B282's pack half): each device type declared once, every plugin reading its own part, a type declaring the roles it permits | **B282** | S3 | `TODO` |
@@ -1397,6 +1397,7 @@ The re-audit is `dev/design/unification/UNIFICATION-AUDIT.md`: the decoupling is
 AMENDED 2026-10-11: H21.2 ruled -- the director approved the audit's order, U0 to U5 ("continue"; `dev/DECISIONS.md` H21).
 AMENDED 2026-10-11: H21.4 (U0) done -- every still-wrong line the audit found is corrected where it stands; every stale reason re-pointed or given a trigger; the carried and deferred items without rows are rows now (B328 to B330 held, B331 and B332 planned at H21.8), B126 held with a trigger, B88 planned at H21.5; the design index lists every member.\
 Next H21.5 (U1), the guards.
+AMENDED 2026-10-11: H21.5's design approved (`dev/DECISIONS.md` H21.5, the first structured ruling) -- `dev/design/unification/RECORD-GUARDS.md`, built in stages R-a to R-d.
 
 **Exit:** the records true and guarded against each drift class; the target architecture ratified and the current state derived from the code; every product layer measured; a device type declared once; the rest of the target built or ruled.
 
@@ -1410,34 +1411,34 @@ Scored so the comparison is a judgement, not an omission.\
 
 | Row | Sev | Held item | Revival trigger |
 |---|---|---|---|
-| **B7** | **S2** | Preview writes to the shared Model (the *fix*; the *mitigation* is H3.2, inbound changes deferred during a gesture) | a remote change is seen fighting a drag, or the next change to how a drag previews |
-| **B33** | S3 | The residue after H9.28: authentication and read-gating exist, the row's remaining half does not | stated in the row; part-closed, not open |
-| **B178** | S3 | Authority at N instances -- the IDLE case, where nobody writes so no conflict proves who owns a diagram. The collision half shipped (H13.11) | deliberately scaling past one instance. Ruled 2026-09-04: today's failure is a brief ambiguity during a deploy, the designed lease's failure is a healthy instance locked out of a document nobody can write -- worse than what it fixes. The SHAPE is open too, so the question to re-open is how ownership should work at N, not whether to build the lease |
-| **B289** | S4 | Unload what is out of view on an infinite canvas: elements leave the page off-screen and return on-screen, the model untouched | the infinite canvas is designed, or element count measurably slows the page |
-| **B274** | S4 | The gesture system as a shared component: its neutral core, draw as its first tenant, narrow `exports` entry points | a second app needs gesture input |
-| **B127** | S4 | Parallel connections between two containers: superseded by the network model, designed with B256 | B256 is opened |
-| **B326** | S4 | The agent door's throttle refuses with no log an operator reads (no load-balancer logging on its backend) | an agent reports a 429, a flood is suspected, or the threshold is next changed |
-| **B324** | S4 | The palette drop test's page reloaded once, cause not caught; its leftover tabs are closed and its failure now names how the page was loaded and why | a browser test fails again on a reloaded page |
-| **B327** | S3 | Paths and flows: a flow declared once along a path and seen end to end (H15's exit), propagation along a run of bends, links side by side over one pipe (with B256) | the director reopens it; an author or agent needs a direction across more than one link; or B256's trigger fires |
-| **B328** | S4 | The draw-a-link gesture is the canvas's (D2): its names and imports recorded in the canvas ratchet | a second plugin must judge or extend a link drag |
-| **B329** | S4 | The simulation's page pieces -- the movers and the reveal -- live in the canvas folder | the simulation brings its canvas part whole |
-| **B330** | S4 | The export door draws a document by naming its kinds, a second renderer beside the plugins' painters | a plugin's kind must reach a download without the export naming it, or the painters serve a headless scene |
-| **B126** | S4 | Straight-link capacity as a per-kind property (H10.11 built its seam; the capacity stays one) | parallel links are designed (B256), or an operator must configure a capacity |
-| **B325** | S4 | A diagram varies its grids -- its own extent, then its own pitch and offset (WD7) | the infinite canvas and scrolling are designed, or a diagram needs a grid unlike the others |
-| **B79** | S3 | The connection walk's apparatus is outside the repository; the false record is corrected, the rest held with B127 | B127 revives, or a decision rests on the walk again |
-| **B108** | S3 | Detecting a test wired to a copy of its subject: undecidable as stated; mutation is the technique that works | mutation testing is automated, or the defect recurs |
-| **B248** | S4 | SD12's stored plugin list; the refusal it would make is held since B307 by the composition | a client that lacks a plugin a document uses is put to use outside the tests |
-| **B310** | S4 | the REST API's "anchor" means a grid point, the word the core's entity owns since O4 | an agent misreading the word, or the next change to `/layouts/<name>/anchors` or `nearest` (B282's design held it) |
+| **B7** | **S2** | Preview writes to the shared Model (the *fix*; the *mitigation* is H3.2, inbound changes deferred during a gesture) | a remote change is seen fighting a drag, or the next change to how a drag previews. |
+| **B33** | S3 | The residue after H9.28: authentication and read-gating exist, the row's remaining half does not | any requirement for a second human writer on one diagram. |
+| **B178** | S3 | Authority at N instances -- the IDLE case, where nobody writes so no conflict proves who owns a diagram. The collision half shipped (H13.11) | deliberately scaling past one instance -- the director's ruling of 2026-09-04. |
+| **B289** | S4 | Unload what is out of view on an infinite canvas: elements leave the page off-screen and return on-screen, the model untouched | the infinite canvas is designed, or a board's element count measurably slows the page. |
+| **B274** | S4 | The gesture system as a shared component: its neutral core, draw as its first tenant, narrow `exports` entry points | a second app needs gesture input. |
+| **B127** | S4 | Parallel connections between two containers: superseded by the network model, designed with B256 | B256 is opened -- concurrent links on one pipe are designed. |
+| **B326** | S4 | The agent door's throttle refuses with no log an operator reads (no load-balancer logging on its backend) | an agent reports a 429 from the agent door, or a flood is suspected, or the throttle's threshold is next changed. |
+| **B324** | S4 | The palette drop test's page reloaded once, cause not caught; its leftover tabs are closed and its failure now names how the page was loaded and why | the drop test, or any browser test, fails again on a reloaded page. |
+| **B327** | S3 | Paths and flows: a flow declared once along a path and seen end to end (H15's exit), propagation along a run of bends, links side by side over one pipe (with B256) | the director reopens paths and flows; or an author or agent needs a direction declared across more than one link; or B256's own trigger fires. |
+| **B328** | S4 | The draw-a-link gesture is the canvas's (D2): its names and imports recorded in the canvas ratchet | a second plugin must judge or extend a link drag. |
+| **B329** | S4 | The simulation's page pieces -- the movers and the reveal -- live in the canvas folder | the simulation brings its canvas part whole. |
+| **B330** | S4 | The export door draws a document by naming its kinds, a second renderer beside the plugins' painters | a plugin's kind must reach a downloaded file without the export naming it, or the painters prove they can serve a headless scene. |
+| **B126** | S4 | Straight-link capacity as a per-kind property (H10.11 built its seam; the capacity stays one) | parallel links are designed (B256), or an operator must configure a capacity. |
+| **B325** | S4 | A diagram varies its grids -- its own extent, then its own pitch and offset (WD7) | the infinite canvas and scrolling are designed (B289's trigger), or a diagram needs a grid unlike the others. |
+| **B79** | S3 | The connection walk's apparatus is outside the repository; the false record is corrected, the rest held with B127 | B127 revives, or another decision is taken on the walk's findings. |
+| **B108** | S3 | Detecting a test wired to a copy of its subject: undecidable as stated; mutation is the technique that works | mutation testing is automated in the gate, or a test wired to a copy of its subject is found again. |
+| **B248** | S4 | SD12's stored plugin list; the refusal it would make is held since B307 by the composition | a client that lacks a plugin a document uses is put to use outside the tests. |
+| **B310** | S4 | the REST API's "anchor" means a grid point, the word the core's entity owns since O4 | an agent misreading the word, or the next change to `/layouts/<name>/anchors` or `/layouts/<name>/nearest`. |
 | **B253** | S4 | Two same-origin tabs share one outbox key; no divergence in 600 two-tab runs since the re-fetch (H19.16) | two-tab divergence is reported, or the outbox's storage is next changed |
 | **B254** | S4 | The answer to the tab's own undo can land mid-drag; 6 runs in 600 undo-heavy (H19.16) | a user reports a node jumping during a drag |
-| **B256** | S4 | Pipes carry one link each, and a link may not run a pipe twice (hairpins) | concurrent links on one pipe are designed -- a parallel renderer or sub-anchors |
-| **B262** | S4 | Bindings cannot override one another (Q3, held for now, DG2) | a binding must shadow another and disjoint conditions are measurably worse, or a plugin must replace a product binding |
-| **B264** | S4 | A double click finds a zone without Shift; a press needs Shift (kept for now) | the director re-evaluates it in the lab, or an author double-clicks a zone meaning the node beneath |
-| **B265** | S3 | The context panel (a fixed panel following the situation) is not designed; gesture system stage 7 parked | the director opens the context panel's design |
-| **B188** | S3 | Perception symmetric with authoring: `draft show` exists, `--draft` on a READ does not, so an agent cannot ask what the document would look like after its draft applies | an agent stages enough that it cannot hold the result in its head -- the fabric was five beats and never needed it. `WRITES.md` W5 owes the flag name first: `--draft` reads oddly on a read |
-| **B194** | S3 | `draw event <condition>` -- an agent BLOCKS on a described condition rather than asking a person to confirm one. Viewer-opened, lock-freed, commit-landed all become one verb | spectator mode (B196) closed the case that raised it, by having the VIEWER follow the agent instead. Revive when an agent must wait on something a viewer cannot supply -- a lock freeing, or a commit from another agent |
-| **B175** | S3 | A second armed endpoint appeared not to animate in one tab; resolved with no change and no cause found | a SECOND report of an armed endpoint not animating, or this one recurring -- `draw movers --at <t>` now bisects it in one command |
-| **B180** | S3 | Sampling the derived world stopped being uniform when combat made health accumulate: position is still a closed form of `t`, health must be folded | wanting to SCRUB BACKWARDS -- replay a wave, review a death, audit a disputed kill. Not slowness: the present costs 4ms | a cached fold at tick N restores O(1) sampling after N |
+| **B256** | S4 | Pipes carry one link each, and a link may not run a pipe twice (hairpins) | concurrent links on one pipe are designed -- a parallel renderer or sub-anchors -- at which point `pipeCapacity` rises above one and a hairpin becomes two runs a pipe can carry. |
+| **B262** | S4 | Bindings cannot override one another (Q3, held for now, DG2) | a binding whose meaning must shadow another's, where writing the two as disjoint conditions is measurably worse -- longer, duplicated, or unreadable -- or a plugin needs to replace a product binding rather than add beside it. |
+| **B264** | S4 | A double click finds a zone without Shift; a press needs Shift (kept for now) | the director re-evaluates double-click on zones in the lab, or an author double-clicks a zone meaning the node beneath it. |
+| **B265** | S3 | The context panel (a fixed panel following the situation) is not designed; gesture system stage 7 parked | the director opens the context panel's design. |
+| **B188** | S3 | Perception symmetric with authoring: `draft show` exists, `--draft` on a READ does not, so an agent cannot ask what the document would look like after its draft applies | an agent stages enough that it cannot hold the result in its head. |
+| **B194** | S3 | `draw event <condition>` -- an agent BLOCKS on a described condition rather than asking a person to confirm one. Viewer-opened, lock-freed, commit-landed all become one verb | an agent must wait on something a viewer cannot supply -- a lock freeing, or a commit from another agent. |
+| **B175** | S3 | A second armed endpoint appeared not to animate in one tab; resolved with no change and no cause found | a second report of a spawner that is armed and not animating, or the same one recurring. |
+| **B180** | S3 | Sampling the derived world stopped being uniform when combat made health accumulate: position is still a closed form of `t`, health must be folded | wanting to scrub backwards -- replay a wave, review a death, audit a disputed kill; not slowness. |
 
 **Cleared 2026-08-26**, because the trigger fired and was answered, or the ruling landed:
 

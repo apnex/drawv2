@@ -1915,3 +1915,16 @@ Told the change as built -- a place declares where its size comes from, its own 
 Shown the re-audit (`dev/design/unification/UNIFICATION-AUDIT.md`) -- the decoupling built and the unification not, the measurement of done narrower than the target, thirty-one record-against-truth incidents with no scanner catching one -- and its proposed order, the director answered "continue":
 - **U0** the records made true; **U1** guards against the drift classes; **U2** the target architecture written and ratified, the current state derived from the code; **U3** the measurement widened to every product layer; **U4** a type is a composition (B282); **U5** the rest of the target.
 - Each stage's exit is the audit's section 7; each decision it names is asked when its stage reaches it.
+
+---
+
+## Rulings recorded from 2026-10-11 -- each a structured block
+
+From here every paragraph is a ruling block -- a bold id head, then `Director:` with the director's words verbatim, `Shown:` naming what the director was shown, and `Recorder:` holding the proposer's account -- or an `AMENDED` or `CORRECTED` line naming the ruling it amends (`dev/design/unification/RECORD-GUARDS.md` section 3.4).\
+An amendment to an earlier ruling is written here, citing it, not inserted beside it.
+
+**H21.5 -- the guards that keep the records true, built as designed -- 2026-10-11.**\
+Director: "continue"\
+Shown: dev/design/unification/RECORD-GUARDS.md@6a6a86c\
+Recorder: the director was shown the third version, measured against all 28 held triggers and found "ratifiable after small changes" by its second reviewer, with three decisions recommended; the answer builds it with all three as recommended -- a fired trigger blocks a milestone's close and is printed every run; the ruling structure binds rulings from this marker, past ones untouched; the deferred pieces are filed as held rows with triggers.
+
