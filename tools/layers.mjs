@@ -459,17 +459,13 @@ export const RATCHETS = {
 	L5: {
 	},
 	L5p: {
-		// a generic polyline's geometry -- rounded turns, the one path the movers and the renderer walk -- named for one consumer,
-		// the route; renamed when kernel/router.mjs is next changed (recorded at H21, U0, where it had no reason and no trigger)
-		'kernel/router.mjs:routeGeometry': 1,
+		'kernel/router.mjs:routeGeometry': 1,   // its reason and trigger: RATCHET_REASONS.L5p
 	},
 	L7k: {
 		// PL-5 lowered model/model.mjs, server/rest.js, server/store.js and planner/validate.js to 0: they read model/shape.mjs
 		// F-c (H18.5) lowered cli/verbs.mjs from 11: the waypoint collection left the lists that named all the kinds
-		// cli/verbs.mjs: the CLI is installed standalone and imports nothing outside cli/ (B138), so its verbs list the kinds
-		// themselves; revived when the CLI learns the kinds from the server (H21, U4 or U5)
+		// each key's reason and trigger: RATCHET_REASONS.L7k
 		'cli/verbs.mjs': 7,
-		// kernel/adapt.mjs: the export door converts a document to the kernel's scene by kind name (B330, held with its trigger)
 		'kernel/adapt.mjs': 2,
 	},
 	// L9 is empty: V-c (H18.27) lowered app/src/input.js:splitAtBend, V-d (H18.28) app/src/commands.js:groupAfterRemoval --
@@ -501,6 +497,28 @@ cannot reach anything the layer direction forbids because L2 still judges every 
 sha256 in tests/scan-layers.test.js is updated in this same commit, which is what puts the change
 in front of a reviewer.
 */
+/*
+H21.5 (R-b; dev/design/unification/RECORD-GUARDS.md section 3.3) -- WHY EACH DECOUPLING RATCHET STILL HOLDS, AND WHEN IT ENDS.
+RATCHETS keeps the counts, shaped as the frozen ceiling below is shaped, so its hash still pins them; this keeps, per key of the
+decoupling ratchets L5p and L7k, the reason, the ids it cites and its trigger. The scanner holds the keys equal to RATCHETS', and
+every cited id must resolve (tools/exceptions.mjs).
+*/
+export const RATCHET_REASONS = {
+	L5p: {
+		'kernel/router.mjs:routeGeometry': { cites: [],
+			reason: 'a generic polyline\'s geometry -- rounded turns, the one path the movers and the renderer walk -- named for one consumer, the route',
+			trigger: 'kernel/router.mjs is next changed: rename it then' },
+	},
+	L7k: {
+		'cli/verbs.mjs': { cites: ['from B138', 'H21.3'],
+			reason: 'the CLI is installed standalone and imports nothing outside cli/ (the rule B138 gave), so its verbs list the kinds themselves',
+			trigger: 'the CLI learns the kinds from the server (H21.3, U4)' },
+		'kernel/adapt.mjs': { cites: ['B330'],
+			reason: 'the export door converts a document to the kernel\'s scene by kind name',
+			trigger: 'the export door draws through the painters (B330)' },
+	},
+};
+
 export const RATCHET_CEILING = {
 	L2: {
 		'app/src/input.js -> app/src/palette.js': 1,

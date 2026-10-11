@@ -33,22 +33,38 @@ const pluginImports = (file, text) => [...text.matchAll(/^import [^;]*? from '([
 	.map((m) => path.normalize(path.join(path.dirname(file), m[1]))).filter((p) => pluginOf(p));
 const canvasModules = () => fs.readdirSync(path.join(root, 'app/src')).filter((f) => f.endsWith('.js')).map((f) => `app/src/${f}`).sort();
 
-// file -> [count, reason]; a count may only fall, and a file not here holds none
+/*
+file -> { count, reason, cites, trigger }; a count may only fall, and a file not here holds none.
+AMENDED H21.5 (R-b; dev/design/unification/RECORD-GUARDS.md section 3.3): each entry names the ids its reason cites and when it
+ends -- `permanent`, a WHEN expression, or the condition in words -- and every cited id must resolve (tools/exceptions.mjs).
+*/
+const D2_LINK = 'a second plugin must judge or extend a link drag (B328)';
 const KIND_RECORD = {
-	'app/src/commands.js': [8, 'the draw-a-link gesture\'s commit builders -- `routeLink`, `routeLinks`, `chainHop` (D2) -- and the label of the pipes a refused drag keeps'],
-	'app/src/input.js': [7, 'the draw-a-link gesture\'s name, the product\'s shared gesture with the network as its judge (D2)'],
-	'app/src/recognize.js': [2, 'the press row that opens the draw-a-link gesture, and its gesture name (D2)'],
-	'app/src/keymap.js': [1, 'the product\'s `w`, a stop of the draw-a-link gesture (D2)'],
+	'app/src/commands.js': { count: 8, cites: ['D2', 'B328'], trigger: D2_LINK,
+		reason: 'the draw-a-link gesture\'s commit builders -- `routeLink`, `routeLinks`, `chainHop` -- and the label of the pipes a refused drag keeps' },
+	'app/src/input.js': { count: 7, cites: ['D2', 'B328'], trigger: D2_LINK,
+		reason: 'the draw-a-link gesture\'s name, the product\'s shared gesture with the network as its judge' },
+	'app/src/recognize.js': { count: 2, cites: ['D2', 'B328'], trigger: D2_LINK,
+		reason: 'the press row that opens the draw-a-link gesture, and its gesture name' },
+	'app/src/keymap.js': { count: 1, cites: ['D2', 'B328'], trigger: D2_LINK,
+		reason: 'the product\'s `w`, a stop of the draw-a-link gesture' },
 };
 const IMPORT_RECORD = {
-	'app/src/input.js': [8, 'the draw-a-link gesture (D2): its route, its stops and the facts its judge reads -- the network\'s queries and rules, the situation it reads, the waypoint a stop places'],
-	// AMENDED 2026-10-11 (H21, U0): B187 is closed and gave the rule, not a trigger; the import names what the canvas creates, for the create label too
-	'app/src/commands.js': [2, 'the drawn word of what the canvas creates -- a device by its type, a waypoint by its word (B187, F4) -- for the create label and a clone\'s name; revived when the canvas names what it creates through its parts, as it names what it edits (`labels.wordOf`)'],
-	'app/src/main.js': [2, 'the page\'s composition root: it composes the network into the page, as product/ composes the kinds -- permanent, a composition root composes plugins by design'],
-	'app/src/run-mode.js': [2, 'the product page\'s run-mode list: the simulation\'s spawner and tower, the devices plugin\'s panel rows (H17-D7) -- permanent, the product\'s composition'],
-	'app/src/compose-canvas.js': [1, 'the relations index -- the occupancy index, on the network\'s rung -- attached at the composition root (R3); its `network` slot is B332\'s, planned at H21.8'],
-	'app/src/movers.js': [3, 'the simulation\'s movers, a page piece of the simulation living in the canvas folder'],
-	'app/src/reveal.js': [1, 'the simulation\'s reveal, likewise'],
+	'app/src/input.js': { count: 8, cites: ['D2', 'B328'], trigger: D2_LINK,
+		reason: 'the draw-a-link gesture: its route, its stops and the facts its judge reads -- the network\'s queries and rules, the situation it reads, the waypoint a stop places' },
+	'app/src/commands.js': { count: 2, cites: ['from B187'],
+		reason: 'the drawn word of what the canvas creates -- a device by its type, a waypoint by its word (the rule B187 gave) -- for the create label and a clone\'s name',
+		trigger: 'the canvas names what it creates through its parts, as it names what it edits (`labels.wordOf`)' },
+	'app/src/main.js': { count: 2, cites: [], trigger: 'permanent',
+		reason: 'the page\'s composition root: it composes the network into the page, as product/ composes the kinds -- a composition root composes plugins by design' },
+	'app/src/run-mode.js': { count: 2, cites: ['H17-D7'], trigger: 'permanent',
+		reason: 'the product page\'s run-mode list: the simulation\'s spawner and tower, the devices plugin\'s panel rows -- the product\'s composition' },
+	'app/src/compose-canvas.js': { count: 1, cites: ['B332'], trigger: 'the canvas takes the network as a generic plugin, not a slot of its own (B332, H21.8)',
+		reason: 'the relations index -- the occupancy index, on the network\'s rung -- attached at the composition root' },
+	'app/src/movers.js': { count: 3, cites: ['B329'], trigger: 'WHEN: `absent app/src/movers.js and absent app/src/reveal.js`',
+		reason: 'the simulation\'s movers, a page piece of the simulation living in the canvas folder' },
+	'app/src/reveal.js': { count: 1, cites: ['B329'], trigger: 'WHEN: `absent app/src/movers.js and absent app/src/reveal.js`',
+		reason: 'the simulation\'s reveal, likewise' },
 };
 
 test('C-f: no canvas module names a plugin\'s kind or imports a plugin, beyond the record', () => {
@@ -58,8 +74,8 @@ test('C-f: no canvas module names a plugin\'s kind or imports a plugin, beyond t
 		for (const f of canvasModules()) { const n = measure(f, code(f)); if (n) seen[f] = n; }
 		for (const [f, n] of Object.entries(seen)) {
 			assert.ok(record[f], `${f} ${what} ${n} time(s) and is not recorded -- a plugin brings it as a canvas part instead`);
-			assert.ok(n <= record[f][0], `${f}: ${n}, recorded ${record[f][0]} -- RISE`);
-			assert.equal(n, record[f][0], `${f}: ${n}, recorded ${record[f][0]} -- FALL: lower the record in this commit, so the progress is written down`);
+			assert.ok(n <= record[f].count, `${f}: ${n}, recorded ${record[f].count} -- RISE`);
+			assert.equal(n, record[f].count, `${f}: ${n}, recorded ${record[f].count} -- FALL: lower the record in this commit, so the progress is written down`);
 		}
 		for (const f of Object.keys(record)) assert.ok(seen[f], `${f} is recorded but ${what} no more -- remove it`);
 	}
@@ -71,3 +87,12 @@ test('C-f: the measures see what they are for -- a kind word, a selector string,
 	assert.deepEqual(pluginImports('app/src/x.js', "import { a } from '../../zones/zone-keys.mjs';\nimport { b } from '../../engine/spawn-runs.mjs';\nimport { c } from '../../model/model.mjs';\nimport { d } from './snap.js';"),
 		['zones/zone-keys.mjs', 'engine/spawn-runs.mjs']);
 });
+
+// H21.5 (R-b): every entry's cited ids resolve and every entry says when it ends (tools/exceptions.mjs)
+test('H21.5: the canvas ratchet\'s exceptions cite live work and say when they end', async () => {
+	const { exceptionFaults } = await import('../tools/exceptions.mjs');
+	const entries = [...Object.entries(KIND_RECORD).map(([f, e]) => ({ where: `KIND_RECORD ${f}`, ...e })),
+		...Object.entries(IMPORT_RECORD).map(([f, e]) => ({ where: `IMPORT_RECORD ${f}`, ...e }))];
+	assert.deepEqual(exceptionFaults(entries, root), []);
+});
+

@@ -32,16 +32,18 @@ const DEVICE_FIELD = /\.(type|shape|span|content|spawn)\b/g;
 const coreModules = () => LAYER.core;
 const plannerModules = () => fs.readdirSync(path.join(root, 'planner')).filter((f) => /\.m?js$/.test(f)).map((f) => `planner/${f}`);
 
-// file -> [count, reason]; a count may only fall, and a file not here holds none
+// file -> { count, reason, cites, trigger }; a count may only fall (AMENDED H21.5, R-b: cites resolve, a trigger says when it ends)
 const RECORD = {
 	// model/model.mjs's 7 -- its link methods -- went to the network at K13d (H19.25, network/link-queries.mjs)
-	// AMENDED 2026-10-10 (re-triage): B308 closed with the canvas arc; these are the export door's, deferred with its trigger (CANVAS-PLUGINS.md
-	// section 7), and the zone lattice's name in `LAYOUTS`, whose copy of the layout records B325 holds
-	'kernel/geometry.mjs': [5, 'the zone lattice\'s name (`LAYOUTS`, B325) and the zone and group elements the export door draws by kind (B330, held)'],
+	'kernel/geometry.mjs': { count: 5, cites: ['B325', 'B330'],
+		reason: 'the zone lattice\'s name in `LAYOUTS`, a copy of the layout records (B325), and the zone and group elements the export door draws by kind (B330)',
+		trigger: 'the export door draws through the painters (B330), and the grids read the layout records (B325)' },
 };
 // and the device fields a core module reads, the same way
 const DEVICE_RECORD = {
-	'kernel/renderer.mjs': [3, 'the frame and content-region primitives the export door and the devices plugin\'s painter share (`shape`, `content`); revived when the export door draws through the painters (B330) and the devices plugin owns its frame and content drawing (H21.3)'],
+	'kernel/renderer.mjs': { count: 3, cites: ['B330', 'H21.3'],
+		reason: 'the frame and content-region primitives the export door and the devices plugin\'s painter share (`shape`, `content`)',
+		trigger: 'the export door draws through the painters (B330), and the devices plugin owns its frame and content drawing (H21.3)' },
 };
 
 test('O-d: the product composes layout, node, zone, group, link, pipe from the core\'s anchor and the plugins, in product/kinds.mjs', async () => {
@@ -79,9 +81,18 @@ test('O-d: no core or planner module names a plugin\'s kind or reads a device\'s
 		}
 		for (const [f, n] of Object.entries(seen)) {
 			assert.ok(record[f], `${f} ${what} ${n} time(s) and is not recorded`);
-			assert.ok(n <= record[f][0], `${f}: ${n}, recorded ${record[f][0]} -- RISE`);
-			assert.equal(n, record[f][0], `${f}: ${n}, recorded ${record[f][0]} -- FALL: lower the record in this commit`);
+			assert.ok(n <= record[f].count, `${f}: ${n}, recorded ${record[f].count} -- RISE`);
+			assert.equal(n, record[f].count, `${f}: ${n}, recorded ${record[f].count} -- FALL: lower the record in this commit`);
 		}
 		for (const f of Object.keys(record)) assert.ok(seen[f], `${f} is recorded but ${what} no more -- remove it`);
 	}
 });
+
+// H21.5 (R-b): every entry's cited ids resolve and every entry says when it ends (tools/exceptions.mjs)
+test('H21.5: the core ratchet\'s exceptions cite live work and say when they end', async () => {
+	const { exceptionFaults } = await import('../tools/exceptions.mjs');
+	const entries = [...Object.entries(RECORD).map(([f, e]) => ({ where: `RECORD ${f}`, ...e })),
+		...Object.entries(DEVICE_RECORD).map(([f, e]) => ({ where: `DEVICE_RECORD ${f}`, ...e }))];
+	assert.deepEqual(exceptionFaults(entries, root), []);
+});
+

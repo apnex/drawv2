@@ -71,7 +71,9 @@ import path from 'node:path';
 import { builtinModules } from 'node:module';
 import {
 	ALLOWED, FOLDERS, UNSCANNED, LAYER, ENTRIES, PAGES, PRODUCT_LAYERS, RULES, RATCHETS, RATCHET_CEILING, UNUSED_EXPORTS, SCANNER_ROOTS,
+	RATCHET_REASONS,
 } from './layers.mjs';
+import { exceptionFaults } from './exceptions.mjs';
 
 const argOf = (flag) => { const i = process.argv.indexOf(flag); return i > -1 ? process.argv[i + 1] : null; };
 const verbose = process.argv.includes('--verbose');
@@ -1022,6 +1024,20 @@ for (const rule of RATCHETED) {
 			if (c === undefined) fail(rule, `${key}: recorded ${r}, a key the frozen K0 ceiling does not hold -- RAISED: a ratchet may only fall (RATCHET_CEILING)`);
 			else if (r > c) fail(rule, `${key}: recorded ${r}, above its frozen K0 ceiling of ${c} -- RAISED: a ratchet may only fall (RATCHET_CEILING)`);
 		}
+	}
+}
+
+/*
+H21.5 (R-b) -- the decoupling ratchets' reasons: a key of RATCHETS.L5p or L7k has one in RATCHET_REASONS and a reason has one in
+RATCHETS, and every cited id resolves (tools/exceptions.mjs). Read for the real manifest over a tree holding the records; a fixture
+manifest states counts, and a copy of the code without dev/ has no records to resolve against.
+*/
+if (!J && fs.existsSync(path.join(ROOT, 'dev/BACKLOG.md'))) {
+	for (const rule of ['L5p', 'L7k']) {
+		const counts = Object.keys(M.RATCHETS[rule] ?? {}), reasons = Object.keys(RATCHET_REASONS[rule] ?? {});
+		for (const k of counts) if (!reasons.includes(k)) fail(rule, `${k}: recorded in RATCHETS.${rule} with no reason in RATCHET_REASONS -- say why it holds and when it ends`);
+		for (const k of reasons) if (!counts.includes(k)) fail(rule, `${k}: a reason in RATCHET_REASONS.${rule} for a key RATCHETS no longer records -- remove it`);
+		for (const f of exceptionFaults(Object.entries(RATCHET_REASONS[rule] ?? {}).map(([k, e]) => ({ where: `RATCHET_REASONS.${rule} ${k}`, ...e })), ROOT)) fail(rule, f);
 	}
 }
 
