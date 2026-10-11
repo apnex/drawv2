@@ -39,9 +39,23 @@ fixture that pinned one principal for the lifetime of the app could not express 
 A websocket resolves its principal once, at the upgrade, so `as()` before connecting is also how a
 test gets two sockets with two different identities.
 */
+/*
+B164 (H20.2) -- A TEST'S SERVER HOLDS AN IDLE CONNECTION FOR A MINUTE. A test's server and its client share one process, and the
+client reuses an idle connection: when the process stalls after the client sends on one and before the server reads it, the
+server's idle timer -- Node's 5 s, closing at 6 -- fires first and closes a connection holding a request, which the client reads as
+"other side closed" (B164's failure, reproduced at will in tests/keep-alive.test.js). A minute puts the stall that could do it past
+any test's patience. Production keeps Node's default: no client shares its process.
+*/
+export const TEST_KEEP_ALIVE_MS = 60_000;
+export async function testApp(opts) {
+	const app = await createApp(opts);
+	app.server.keepAliveTimeout = TEST_KEEP_ALIVE_MS;
+	return app;
+}
+
 export async function makeApp({ principal = OWNER, owner = principal, ...opts } = {}) {
 	let who = principal;
-	const app = await createApp({
+	const app = await testApp({
 		owner,
 		principalOf: async () => who,
 		...opts,

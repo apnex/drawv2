@@ -131,6 +131,8 @@ export class Watchdog {
 	#fire() {
 		this.#to('stale', this.reason);
 		this.stop();
+		// B324 (H20.2): said where a console or a test's browser reads it -- a tab replacing itself left no trace of why
+		globalThis.console?.warn?.(`[ watchdog ] reloading this tab: ${this.reason}`);
 		this.reload();
 		return this.rung;
 	}

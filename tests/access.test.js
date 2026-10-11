@@ -15,7 +15,7 @@ import path from 'node:path';
 import { Store } from '../server/store.js';
 import { validateMetaPatch } from '../planner/validate.js';
 import { validateDoc, heldLayouts } from './fixtures/composed.mjs';   // the network's kinds, as the store validates (S-e)
-import { createApp } from '../server/app.js';
+import { testApp } from './fixtures/app.mjs';   // B164: createApp, its idle connections held as every test server's are
 import { Session, snapshotBody } from '../server/protocol.js';
 import { Locks } from '../server/locks.js';
 import { Model } from './fixtures/composed.mjs';   // the network's kinds, the link among them (S-e)
@@ -272,7 +272,7 @@ test('H9.2b: createApp turns authorization on and adopts, so the operator is not
 	// against a deployment where every request resolved to nobody, which is the exact state that
 	// then shipped. "Not locked out" has to be observed through a request or it means nothing.
 	let who = OWNER;
-	const app = await createApp({
+	const app = await testApp({
 		dataDir, secretsDir: dataDir, port: 0, authz: true, owner: OWNER,
 		principalOf: async () => who,
 	});
@@ -292,7 +292,7 @@ test('H9.2b: createApp turns authorization on and adopts, so the operator is not
 test('B70: authz with no identity source refuses to start, rather than refusing everyone', async () => {
 	const dataDir = path.join(os.tmpdir(), `draw-b70-${Math.random().toString(36).slice(2)}`);
 	await assert.rejects(
-		() => createApp({ dataDir, secretsDir: dataDir, port: 0, authz: true, owner: OWNER }),
+		() => testApp({ dataDir, secretsDir: dataDir, port: 0, authz: true, owner: OWNER }),
 		/no way to identify anyone/,
 		'the combination that shipped is now unconstructable',
 	);
@@ -356,7 +356,7 @@ Injecting keeps this test about whether the identity actually arrives at REST an
 test('H9.2c: REST GET /diagrams returns only what the caller holds', async () => {
 	const dataDir = path.join(os.tmpdir(), `draw-rest-authz-${Math.random().toString(36).slice(2)}`);
 	let who = OWNER;
-	const app = await createApp({
+	const app = await testApp({
 		dataDir, secretsDir: dataDir, port: 0,
 		authz: true, owner: OWNER, principalOf: async () => who,
 	});
@@ -381,7 +381,7 @@ test('H9.2c: REST GET /diagrams returns only what the caller holds', async () =>
 
 test('H9.2c: /health reports the true total, deliberately unfiltered', async () => {
 	const dataDir = path.join(os.tmpdir(), `draw-health-${Math.random().toString(36).slice(2)}`);
-	const app = await createApp({
+	const app = await testApp({
 		dataDir, secretsDir: dataDir, port: 0,
 		authz: true, owner: OWNER, principalOf: async () => GUEST,
 	});
@@ -397,7 +397,7 @@ test('H9.2c: /health reports the true total, deliberately unfiltered', async () 
 
 test('H9.2c: with authz off the principal is ignored, so nothing changes', async () => {
 	const dataDir = path.join(os.tmpdir(), `draw-off-${Math.random().toString(36).slice(2)}`);
-	const app = await createApp({
+	const app = await testApp({
 		dataDir, secretsDir: dataDir, port: 0, authz: false, principalOf: async () => null,
 	});
 	try {
@@ -512,7 +512,7 @@ app would have refused its own owner. This asserts the whole chain: identity in,
 */
 async function live(who) {
 	const dataDir = path.join(os.tmpdir(), `draw-403-${Math.random().toString(36).slice(2)}`);
-	const app = await createApp({
+	const app = await testApp({
 		dataDir, secretsDir: dataDir, port: 0,
 		authz: true, owner: OWNER, principalOf: async () => who(),
 	});
@@ -775,7 +775,7 @@ test('H9.8: the allowlist overrides an explicit grant, because it runs first', a
 	const INTRUDER = 'user:someone@notapnex.com.au';
 	let who = OWNER;
 	const dataDir = path.join(os.tmpdir(), `draw-dom-${Math.random().toString(36).slice(2)}`);
-	const app = await createApp({
+	const app = await testApp({
 		dataDir, secretsDir: dataDir, port: 0,
 		authz: true, owner: OWNER, principalOf: async () => who,
 		domains: ['apnex.com.au'],
@@ -867,7 +867,7 @@ test('B67: snapshotBody refuses outright, so a future caller cannot reintroduce 
 test('B67: REST document, history and the SVG rendering are all gated', async () => {
 	let who = OWNER;
 	const dataDir = path.join(os.tmpdir(), `draw-b67-${Math.random().toString(36).slice(2)}`);
-	const app = await createApp({
+	const app = await testApp({
 		dataDir, secretsDir: dataDir, port: 0,
 		authz: true, owner: OWNER, principalOf: async () => who,
 	});
@@ -975,7 +975,7 @@ HTTP, because a store-level test is what let the gap survive an entire milestone
 async function grantable() {
 	let who = OWNER;
 	const dataDir = path.join(os.tmpdir(), `draw-grants-${Math.random().toString(36).slice(2)}`);
-	const app = await createApp({
+	const app = await testApp({
 		dataDir, secretsDir: dataDir, port: 0,
 		authz: true, owner: OWNER, principalOf: async () => who,
 	});
@@ -1353,7 +1353,7 @@ const dialWs = (port, origin) => new Promise((resolve) => {
 
 test('H9.28: the websocket refuses an origin it does not know, and admits the one that served it', async () => {
 	const dataDir = path.join(os.tmpdir(), `draw-origin-${Math.random().toString(36).slice(2)}`);
-	const app = await createApp({ dataDir, secretsDir: dataDir, port: 0, authz: true, owner: OWNER,
+	const app = await testApp({ dataDir, secretsDir: dataDir, port: 0, authz: true, owner: OWNER,
 		principalOf: async () => OWNER });
 	try {
 		const host = `127.0.0.1:${app.port}`;
@@ -1383,7 +1383,7 @@ test('H9.28: ALLOW_ORIGINS admits a named origin, and nothing else', async () =>
 
 test('H9.28: no response advertises a wildcard CORS origin', async () => {
 	const dataDir = path.join(os.tmpdir(), `draw-cors-${Math.random().toString(36).slice(2)}`);
-	const app = await createApp({ dataDir, secretsDir: dataDir, port: 0, authz: true, owner: OWNER,
+	const app = await testApp({ dataDir, secretsDir: dataDir, port: 0, authz: true, owner: OWNER,
 		principalOf: async () => OWNER });
 	try {
 		const id = [...app.store.diagrams.keys()][0];
@@ -1509,7 +1509,7 @@ become a capability when a request carrying a code resolves to the agent the gra
 async function connected() {
 	let who = OWNER;
 	const dataDir = path.join(os.tmpdir(), `draw-connect-${Math.random().toString(36).slice(2)}`);
-	const app = await createApp({ dataDir, secretsDir: dataDir, port: 0, authz: true, owner: OWNER,
+	const app = await testApp({ dataDir, secretsDir: dataDir, port: 0, authz: true, owner: OWNER,
 		// IAP resolves the human; the bearer source is composed in by createApp itself
 		principalOf: async (h) => (h.authorization ? null : who) });
 	const id = [...app.store.diagrams.keys()][0];

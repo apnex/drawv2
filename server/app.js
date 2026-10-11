@@ -341,14 +341,17 @@ export async function createApp({ dataDir, secretsDir, port = 8080, clientDir, h
 
 	// ONE sweep for every client, not a timer per socket. `terminate()` is deliberate: it produces
 	// the `close` event the session FSM already handles, so liveness adds no second eviction path.
-	const pingTimer = setInterval(() => {
+	const sweepLiveness = () => {
 		wss.clients.forEach((ws) => {
 			if (ws.isAlive === false) return ws.terminate();
 			ws.isAlive = false;
 			ws.ping();
 		});
-	}, pingMs);
-	pingTimer.unref();
+	};
+	// B320 (H20.2): `pingMs` 0 starts no timer -- a test drives the rounds itself (`liveness` below) and starts the next only once
+	// the last one's pongs are read, since in one process a stall longer than a round runs the next before a waiting pong is read
+	const pingTimer = pingMs ? setInterval(sweepLiveness, pingMs) : null;
+	pingTimer?.unref();
 
 	// liveness: a crashed controller's lock frees itself by TTL; sweep so the
 	// freed diagram's viewers are told it's editable again (lazy TTL alone is silent)
@@ -364,6 +367,8 @@ export async function createApp({ dataDir, secretsDir, port = 8080, clientDir, h
 				store,
 				locks,
 				port: server.address().port,
+				// one liveness round, and what it is waiting on -- the timer's work, for a test to drive in order (B320)
+				liveness: { sweep: sweepLiveness, clients: () => wss.clients.size, unanswered: () => [...wss.clients].filter((ws) => ws.isAlive === false).length },
 				async close() {
 					clearInterval(sweepTimer);
 					clearInterval(pingTimer);

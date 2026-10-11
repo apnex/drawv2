@@ -107,20 +107,53 @@ async function attach(url) {
 	const { default: WebSocket } = await import('ws');
 	const ws = new WebSocket(t.webSocketDebuggerUrl);
 	let id = 0; const pending = new Map();
+	/*
+	B324 (H20.2) -- WHAT HAPPENED TO THE PAGE, told when an evaluation fails: how the page now showing was loaded -- the first load,
+	a reload, a navigation -- how long ago and at what address, and every reason its watchdog gave for reloading (app/src/watchdog.js).
+	The drop test once found `draw` undefined -- its page had reloaded or navigated mid-test -- and nothing said which, or why.
+	*/
+	const happened = [];
 	ws.on('message', (raw) => {
 		const m = JSON.parse(raw.toString());
 		if (pending.has(m.id)) { pending.get(m.id)(m); pending.delete(m.id); }
+		if (m.method === 'Runtime.consoleAPICalled' && m.params.type === 'warning') {
+			const text = m.params.args.map((a) => a.value ?? '').join(' ');
+			if (text.startsWith('[ watchdog ]')) happened.push(text);
+		}
 	});
 	await new Promise((r) => ws.on('open', r));
 	const send = (method, params = {}) => new Promise((r) => {
 		const n = ++id; pending.set(n, r); ws.send(JSON.stringify({ id: n, method, params }));
 	});
+	await send('Runtime.enable');
+	const loaded = async () => {
+		const res = await send('Runtime.evaluate', { returnByValue: true,
+			expression: `JSON.stringify({ how: performance.getEntriesByType('navigation')[0]?.type, ago: Math.round(performance.now()), at: location.pathname })` });
+		const p = JSON.parse(res.result?.result?.value ?? '{}');
+		return { ...p, said: [...happened] };
+	};
 	return {
-		ws, send,
+		ws, send, happened, id: t.id, loaded,
 		async eval(expression) {
 			const res = await send('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true });
-			if (res.result?.exceptionDetails) throw new Error(String(res.result.exceptionDetails.exception?.description).slice(0, 200));
+			if (res.result?.exceptionDetails) {
+				const said = String(res.result.exceptionDetails.exception?.description).slice(0, 200);
+				const p = await loaded().catch(() => null);
+				throw new Error(p ? `${said} -- the page was loaded by ${p.how} ${p.ago} ms ago at ${p.at}${p.said.length ? `; ${p.said.join('; ')}` : ''}` : said);
+			}
 			return res.result?.result?.value;
+		},
+		// B324 (H20.2): the tab itself, not only this socket -- a tab left open stays a live editor of its diagram for every test after it
+		// and only once Chrome has closed it -- `/json/close` answers "closing", and the next test must not start beside it
+		async close() {
+			ws.close();
+			await fetch(`http://127.0.0.1:${cdp}/json/close/${t.id}`).catch(() => {});
+			for (let i = 0; i < 100; i++) {
+				const list = await (await fetch(`http://127.0.0.1:${cdp}/json/list`)).json().catch(() => []);
+				if (!list.some((p) => p.id === t.id)) return;
+				await sleep(20);
+			}
+			throw new Error(`the tab at ${url} did not close within 2 s`);
 		},
 		async key(k) {
 			// a NAMED key (Escape) has its own code and no text; a printable one is its character (K7 added the named case)
@@ -1263,7 +1296,7 @@ test('K8: the page boots into the same DOM -- layers, defs, grid, palette and en
 		if (process.env.K8_WRITE) fs.writeFileSync(GOLDEN, `${JSON.stringify(snapshot, null, '\t')}\n`);
 		assert.deepEqual(snapshot, JSON.parse(fs.readFileSync(GOLDEN, 'utf8')));
 		assert.ok(snapshot.entities.flat().length > 3 && snapshot.grid[0][0] > 100, 'the snapshot holds a booted page, not an empty one');
-	} finally { t.ws.close(); }
+	} finally { await t.close(); }
 });
 
 test('K8: Escape during a sidebar drag cancels the drag and is spent there -- the held hand stays', { skip: SKIP }, async () => {
@@ -1281,7 +1314,7 @@ test('K8: Escape during a sidebar drag cancels the drag and is spent there -- th
 		assert.equal(await t.eval(`window.draw.palette.drag`), null, 'Escape cancelled the sidebar drag');
 		assert.equal(await t.eval(`window.draw.tools.hand`), 'server', 'and was spent there: the held hand is still held');
 		await t.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: cx, y: cy, button: 'left', clickCount: 1 });
-	} finally { t.ws.close(); }
+	} finally { await t.close(); }
 });
 
 
@@ -1310,7 +1343,7 @@ test('B318: the stamp ghost draws each device\'s glyph the size the device draws
 			return JSON.stringify(out);
 		})()`));
 		for (const [type, [dw, dh]] of Object.entries(got)) assert.ok(Math.abs(dw) < 0.5 && Math.abs(dh) < 0.5, `${type}: the ghost's glyph is off the device's by ${dw} x ${dh} px`);
-	} finally { t.ws.close(); }
+	} finally { await t.close(); }
 });
 
 /*
@@ -1339,7 +1372,7 @@ test('C-e: a tile dropped on a free cell stamps that device there, selected; dro
 		const made = JSON.parse(await t.eval(`JSON.stringify((() => { const id = draw.selection.list()[0]; const n = draw.model.get('node', id); return n ? [n.type, n.x - draw.model.get('node', 'node-ba0004').x] : null; })())`));
 		assert.deepEqual(made, ['host', 0], 'the host, selected, in the load balancer\'s column');
 		await t.eval(`draw.history.undo(), 1`);   // the K8 board is shared: leave it as it booted
-	} finally { t.ws.close(); }
+	} finally { await t.close(); }
 });
 
 
@@ -1362,7 +1395,7 @@ test('C-e: a device\'s name editor opens centred under the device', { skip: SKIP
 		})()`));
 		assert.ok(Math.abs(got.dx) <= 2, `its styled width centred under the device, off by ${got.dx} px`);
 		assert.ok(got.below >= 0 && got.below <= 12, `just below its frame, ${got.below} px`);
-	} finally { t.ws.close(); }
+	} finally { await t.close(); }
 });
 
 /*
@@ -1385,7 +1418,7 @@ test('H15.23: the colours the page draws come from the registry, generated from 
 		assert.equal(got.link, rgb(TOKENS.link), 'a link draws the link token');
 		assert.equal(got.label, rgb(TOKENS.label), 'a label draws the label token');
 		assert.equal(got.page, rgb(CHROME.page), 'the page draws the page token');
-	} finally { t.ws.close(); }
+	} finally { await t.close(); }
 });
 
 /*
@@ -1444,7 +1477,7 @@ test('V-b: the product page draws routes and pipes, says why a link is down, and
 		assert.equal(s.fTransit, false, 'x turned f\'s transit off, through the server');
 		assert.deepEqual(s.downs, ['link-ab0001'], 'and the link that ran through f is down');
 		assert.equal(s.routedMark, true, 'drawn down on the page');
-	} finally { t.ws.close(); }
+	} finally { await t.close(); }
 });
 
 /*
@@ -1475,5 +1508,24 @@ test('V-d: on the product page a deleted pin takes its link before the server an
 		assert.deepEqual(now.sent.map((o) => `${o.op}/${o.kind}`), ['del/node'], 'the request is the delete alone');
 		await until(t, `window.draw.sync.outbox.every((m) => m.answered) ? 1 : 0`, 6000);
 		assert.equal(await t.eval(`!!window.draw.model.get('link', '${pinned}')`), false, 'and the answer leaves it gone');
-	} finally { t.ws.close(); }
+	} finally { await t.close(); }
+});
+
+/*
+B324 (H20.2) -- A TEST LEAVES NO TAB BEHIND. `t.ws.close()` closed the debugging socket and left the tab open and connected, so by
+the palette drop test four tabs were live editors of its diagram; each test's tab is closed now (`close`, above).
+*/
+test('B324: a tab a test opens is closed when the test ends -- none of this file\'s tabs is left on the diagrams it edits', { skip: SKIP }, async () => {
+	// the file's shared tab (`before`) is kept for its tests on purpose and closed with Chrome; every other tab is a test's own
+	const open = async () => (await (await fetch(`http://127.0.0.1:${cdp}/json/list`)).json()).filter((p) => p.type === 'page' && p.id !== tab.id && p.url.includes(`127.0.0.1:${port}/`));
+	assert.deepEqual((await open()).map((p) => p.url), [], 'no tab from an earlier test is still open');
+	const t = await freshTab();
+	assert.equal((await open()).length, 1, 'the tab under test is open -- the state under test');
+	// how a page was loaded is named when an evaluation fails -- the trace B324 lacked
+	assert.equal((await t.loaded()).how, 'navigate', 'a fresh tab was loaded by a navigation -- the state under test');
+	await t.eval('location.reload(), 1');
+	await until(t, `document.getElementById('node-ba0002') ? 1 : 0`, 8000);
+	await assert.rejects(t.eval('undefinedEverywhere.length'), new RegExp(`undefinedEverywhere is not defined[\\s\\S]* -- the page was loaded by reload \\d+ ms ago at /d/${K8_DIAGRAM}`));
+	await t.close();
+	assert.equal((await open()).length, 0, 'and gone once closed');
 });

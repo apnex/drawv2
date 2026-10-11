@@ -141,3 +141,28 @@ test('H13.10: only reload is a side effect -- the watchdog owns no state it did 
 		assert.equal(src.includes(banned), false, `the watchdog reaches for ${banned}; it should be injected`);
 	}
 });
+
+// B324 (H20.2): a tab replacing itself says why, where a console -- or a test's browser -- reads it; it reloaded without a trace
+test('B324: every reload is said, with its reason, before it happens -- a gap, a retirement, a replaced revision', async () => {
+	const said = [];
+	const warn = console.warn;
+	console.warn = (...a) => said.push(a.join(' '));
+	try {
+		const gap = dog();
+		await gap.w.gap();
+		const retired = dog();
+		await retired.w.retire('a newer revision is live');
+		const replaced = dog();
+		replaced.set('rev-2');
+		await replaced.w.check();
+		const offline = dog();
+		offline.w.noteClosed();
+		await offline.w.check();
+		assert.deepEqual(said, [
+			'[ watchdog ] reloading this tab: this tab is out of step with the document',
+			'[ watchdog ] reloading this tab: a newer revision is live',
+			'[ watchdog ] reloading this tab: this tab is running a replaced version',
+		], 'one line per reload, naming its reason; a dropped connection reloads nothing and says nothing');
+		assert.equal(gap.reloads() + retired.reloads() + replaced.reloads() + offline.reloads(), 3, 'three reloads -- the state under test');
+	} finally { console.warn = warn; }
+});
