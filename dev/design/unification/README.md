@@ -17,6 +17,7 @@ Nothing here is decided: these documents carry the problem space into the design
 | `GESTURES.md` | The network plugin's keys and drag grammar -- what a finished drag makes and which pipe each hop lays -- generated from the rows the Rules engine reads. | Living. Generated; records, rules nothing. |
 | `PROMOTION.md` | The plan for promoting the network plugin into production as a full cutover of every existing diagram: ten stages, risks, and the decisions to rule at the start. | Plan of record, held (B266). |
 | `NETWORK-READS-MODEL.md` | Promotion's stage P1 run in the lab: pipes become entities the network plugin brings, every pipe change an op, so undo restores pipes; four decisions before any code. | Delta, proposed. |
+| `UNIFICATION-AUDIT.md` | The re-audit of 2026-10-11: the code against the ruled target ontology, the exceptions and held rows, the record-against-truth incidents mined to root cause, and the approach proposed (stages U0 to U5). | Evidence and a proposal; the director rules the approach (H21.2). |
 
 The survey envelope that captures intent is `dev/surveys/unification-survey.md`.\
 Rulings stay in `dev/DECISIONS.md`; nothing here amends a ruling.\

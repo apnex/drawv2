@@ -1377,6 +1377,21 @@ AMENDED 2026-10-10: closed without its middle clause -- the director parked path
 
 ---
 
+## H21 -- unification: a type is a composition, the target written down, and records that stay true - `WIP`
+
+Opened 2026-10-11 by the director: "continue - let's make this unification. I'd like to re-audit the approach and any surrounding activity (compound learning) such that we are actually reaching for hardened, target state modular sovereign decoupling and perfect unification".\
+The re-audit is `dev/design/unification/UNIFICATION-AUDIT.md`: the decoupling is built and the unification is not; the measurement of done reached less than the target; the records drifted thirty-one times in six weeks and no scanner caught one. Its section 7 proposes the approach, stages U0 to U5, for the director to rule.
+
+| # | Item | Cites | Sev | State |
+|---|---|---|---|---|
+| H21.1 | Re-audit the unification and the activity around it: the code against the ruled target, the exceptions and held rows, the record-against-truth incidents mined to root cause | feature | S3 | `DONE` |
+| H21.2 | The director rules the approach: the audit's stages U0 to U5, their order and their exits | feature | S3 | `TODO` |
+| H21.3 | A type is a composition (B282's pack half): each device type declared once, every plugin reading its own part -- staged as H21.2 rules | **B282** | S3 | `TODO` |
+
+**Exit:** set when H21.2 is ruled.
+
+---
+
 ## Held -- on the record, not on the board
 
 Open `BACKLOG` rows whose trigger has not fired.\
@@ -1391,7 +1406,6 @@ Scored so the comparison is a judgement, not an omission.\
 | **B289** | S4 | Unload what is out of view on an infinite canvas: elements leave the page off-screen and return on-screen, the model untouched | the infinite canvas is designed, or element count measurably slows the page |
 | **B274** | S4 | The gesture system as a shared component: its neutral core, draw as its first tenant, narrow `exports` entry points | a second app needs gesture input |
 | **B127** | S4 | Parallel connections between two containers: superseded by the network model, designed with B256 | B256 is opened |
-| **B282** | S3 | A device type as a composition of packs (B282's pack half), and anchors along a wide device | the second pack that composes; or the first wide device needing links at more than one point (WD1) |
 | **B326** | S4 | The agent door's throttle refuses with no log an operator reads (no load-balancer logging on its backend) | an agent reports a 429, a flood is suspected, or the threshold is next changed |
 | **B324** | S4 | The palette drop test's page reloaded once, cause not caught; its leftover tabs are closed and its failure now names how the page was loaded and why | a browser test fails again on a reloaded page |
 | **B327** | S3 | Paths and flows: a flow declared once along a path and seen end to end (H15's exit), propagation along a run of bends, links side by side over one pipe (with B256) | the director reopens it; an author or agent needs a direction across more than one link; or B256's trigger fires |
