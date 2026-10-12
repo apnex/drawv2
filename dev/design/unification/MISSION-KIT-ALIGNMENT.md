@@ -165,3 +165,32 @@ What drawv2 values in A2 and A11 -- one declaration every door reads; few kinds 
 | A-5 | Are drawv2's records moved to mission-kit's paths (`docs/`)? | **Hold as a divergence:** no migration (H21.9). **Move now:** a records change, not code | hold -- the direction is not to migrate yet, and the move touches every tool that reads `dev/` |
 
 The minority positions of section 2.2 stay open in the target's register.
+
+---
+
+## 8. Review 1 -- 2026-10-12, of the draft at `1e3524d` -- findings open
+
+An agent that did not write the draft, asked to break it against mission-kit, the components' contracts, zorg's records and drawv2's rulings.
+**Verdict:** "not ready" -- 1 blocker, 10 majors, 4 minors.\
+It confirmed the standings, the duty quotes, the synthesis's judge counts, the trait reading (T1, T3, T4; not T2, not T5), the axioms in force, the checker's result on today's target, and the pattern citations.\
+Every finding below is open; the design is revised against them, and reviewed again, before any decision reaches the director.
+
+| # | Severity | Finding |
+|---|---|---|
+| 1 | blocker | sections 3 and 4 reverse rulings no decision asks about: the CLI over operation-call, not plain HTTP (SD1; the ratified section 4.3); connection codes exchanged at credential-issuer for admission keys (D38, D39) against the bearer code at the REST door (`docs/spec/ACCESS.md`); a diagram as an entity-store change log, durable before it is answered, replacing schema 3 and the websocket protocol -- an AX6 door, unnamed; selection stored but not a change, where every entity-store write takes a position |
+| 2 | major | zorg's checker knows only zorg's set: a candidate in a consumes line fails it unless restated in drawv2's own table; candidates have no contract and no agreed names; the checker needs exact, unnumbered headings |
+| 3 | major | A-1 argues from D35's "40 to 50", which D36 superseded ("a guess", "perhaps 70 to 80"), and from a count at all (C0); minority positions 5 (undo, outbox, lease, hosting kept in drawv2 -- the counter to option c) and 6 are missing |
+| 4 | major | `document` to entity-store misses entity-store's required name on every entity, unique per kind (N5 rejected naming pipes; it would decide 9.1's name question) and selection not being a change; no drawv2 part is named to keep the anchor capability, the cross-kind names and the drawing order |
+| 5 | major | entity-store's storage port is synchronous, durable before `append` returns -- unsatisfiable over GCS (B59); the GCS adapter stays drawv2's; an asynchronous port, or the record-storage minority, is owed |
+| 6 | major | entity-api's follow rows are deferred (zorg's D15); selection, the lock handoff and presence are not store changes, and no component carries them (agp "not a bus"; entity-api "not a keeper of watchers") |
+| 7 | major | undo and redo are mapped to nothing; change-undo is in A-1(c) but in no section 3 row, and the claude seat changes undo's meaning |
+| 8 | major | `access`: zorg's BL20 makes access grants a candidate; identity across the REST hop is lost through a relay (CI3, BL21; INFERRED); `server/origin.mjs` unmapped; "word for word, built twice" is wrong -- the duties differ, and `verified-principal` is unbuilt |
+| 9 | major | a decision is missing: how TypeScript components with a build reach a no-build browser page and an installed CLI (H17-D12; agp's shared packages fail `script-src 'self'`; `file:` dependencies; production runs Node 22) |
+| 10 | minor | A2 and A11 are claimed in force in the target's section 2, not its section 3; M7 says nothing on traits; A12 omitted; removing A2 re-weighs two 9.1 questions |
+| 11 | minor | entity-api, operation-proxy and operation-command each failed first verification (zorg DELTA-1); shape-check's README is stale |
+| 12 | minor | attributions: B84 is the contract table's form; D32's step 2 is a union of duties; the synthesis was written by the convening agent; T4 is from step 2's traits file; a truncated quote |
+| 13 | minor | D35's "input capture is a component" is met only for resolution; drawv2's B274 not reconciled |
+| 14 | minor | D35's question not run over every drawv2 part (`engine/ivm.mjs` is a generic skeleton; B274's input modules) |
+| 15 | minor | section 4 states the recommendations as chosen; one held row for some fifteen substitutions, where the target carries each divergence on its own row |
+
+**To resume:** revise sections 2 to 7 against these findings -- the rulings each mapping would change named, with decisions added for the CLI's transport, the agent credential at the REST door, the stored format and acknowledgement timing, where selection and status live, and how components are delivered to the browser and the CLI; then a second adversarial review; then the decisions to the director one at a time.
