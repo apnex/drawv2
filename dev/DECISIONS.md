@@ -1934,3 +1934,9 @@ Director: "continue. Doe this mean our architecture's 28 components are aligned 
 Shown: docs/ARCHITECTURE-TARGET.md@22b7537\
 Affects: docs/ARCHITECTURE-TARGET.md\
 Recorder: shown the target after three adversarial reviews (`dev/design/unification/ARCHITECTURE-REVIEW.md`) and asked to approve sections 1 to 8, section 9 a register only and no 9.1 question ruled, the director chose "Continue" (the proposer's recommendation); the question asked with it -- whether the 28 parts are aligned to plausible components with a dedicated duty, and to the components drafted for mission-kit -- is answered in the proposer's report after this record: each part has one duty at architecture altitude (AR1), and none was compared with mission-kit's registry (`C1`, `C2`) or the components proposed beside it, so the document claims no such alignment.
+
+**H21.9 -- the target architecture aligns with mission-kit; the code is not migrated yet -- 2026-10-12.**\
+Director: "explore. goal is to have a target state that aligns with mission-kit - however we are not going to migrate just yet"\
+Shown: docs/ARCHITECTURE-TARGET.md@98c6f5b\
+Affects: dev/design/unification/MISSION-KIT-ALIGNMENT.md\
+Recorder: offered "Explore: compare the 28 parts with mission-kit's components properly" (the proposer's recommendation) over the anchor's-name question and pausing, the director chose it and set its goal -- the target states drawv2 aligned with mission-kit, and the code is not migrated; which part aligns with which component, and each fit gap, is the proposer's analysis, put to the director with the revised target.

@@ -34,6 +34,7 @@ Nothing here is decided: these documents carry the problem space into the design
 | `UNIFICATION-AUDIT.md` | The re-audit of 2026-10-11: the code against the ruled target ontology, the exceptions and held rows, the record-against-truth incidents mined to root cause, and the approach proposed (stages U0 to U5). | Audit; H21.1. |
 | `RECORD-GUARDS.md` | H21.5 (U1): the guards that keep the records true -- trigger evaluation, a generated Held column, structured decoupling exceptions and rulings -- with two adversarial reviews. | Delta; H21.5. |
 | `ARCHITECTURE-REVIEW.md` | H21.6 (U2): the reviews of the architecture record -- `docs/ARCHITECTURE-TARGET.md` and the generated `docs/ARCHITECTURE.md` -- each finding with its disposition. | Audit; H21.6. |
+| `MISSION-KIT-ALIGNMENT.md` | H21.9: the target aligned with mission-kit -- each part compared with mission-kit's registered and proposed components, the code not migrated. | Design; H21.9. |
 
 The survey envelope that captures intent is `dev/surveys/unification-survey.md`.\
 Rulings stay in `dev/DECISIONS.md`; nothing here amends a ruling.\
