@@ -3,22 +3,27 @@
 The director's direction (H21.9, `dev/DECISIONS.md`): "goal is to have a target state that aligns with mission-kit - however we are not going to migrate just yet".\
 This design compares each part of drawv2's anchored core (`tools/layers.mjs` `PARTS`, rendered in `docs/ARCHITECTURE-TARGET.md` section 4) with mission-kit's registered components, the components proposed beside them, and the candidates zorg's investigation found, and states what the target becomes when aligned.\
 The code does not move; each difference the alignment opens is a divergence the target lists, held until the director starts a migration.\
-Nothing here changes the target until the director rules the decisions in section 7 and ratifies the revised target.
+Nothing here changes the target until the director rules the decisions in section 7, one at a time, and ratifies the revised target.
+
+**Revision 2,** after Review 1 found the first draft not ready (section 8): every mapping now names the rulings it would change, and each such change is a decision of its own.
 
 ---
 
 ## 1. What mission-kit asks of a system's target architecture
 
 Read from mission-kit's own text on 2026-10-12; each item cited there.
-- **One-duty components, each with what it exposes and what it consumes** -- the load-bearing section, no duty needing "and" (AR1, "The anchored core"; E6).
+- **One-duty components, each with what it exposes and what it consumes** -- the load-bearing section, no duty needing "and" (AR1, "Required sections"; E6).
   mission-kit prescribes no column set, no kind vocabulary and no format for consumes lines, and holds no tool that checks them.
-- **The peer's convention:** zorg's target names each part's kind -- `registered component (C1)`, `proposed component`, or a system part -- writes its consumes at capability level as `- \`consumer\` from \`provider\`: \`capability\``, and checks them with zorg's capability checker, which also runs the fit census: per component, which offered capabilities the system uses and which it leaves unused.
-  mission-kit records this convention only as an open row (its B84).
+- **The peer's convention, which is zorg's:** a kind per part -- `registered component (C1)`, `proposed component`, or a system part; consumes written at capability level as `- \`consumer\` from \`provider\`: \`capability\``, under the exact headings `### Parts`, `### What the application's own parts expose` and `### Consumes`; checked by zorg's capability checker, which also runs the fit census -- per component, which offered capabilities the system uses and which it leaves unused.
+  The checker knows zorg's set unless given another directory of contracts.
+  mission-kit records only the components' own contract-table form, as its open row B84; the architecture-side convention is held nowhere in mission-kit.
   Run against drawv2's target today, zorg's checker finds "no parts table" and "no consumes lines".
-- **Use before build:** assemble from the registry; a component that almost fits is adjusted, not forked; a miss is a finding about the index (C0, "Use before build", "Adjustment over replacement").
+- **Use before build:** assemble from the registry; a component that almost fits is adjusted, not forked, the adjustment ruled in the component's own record; a miss is a finding about the index (C0, "Use before build", "Adjustment over replacement", "Internal and external").
   No mission-kit method holds the comparison yet (C0, "Neighbours").
+- **A component entry is admitted once it is usable** (mission-kit ruling 0087), and "the count alone never admits ... a member" (C0, "Vision").
 - **Cite, do not restate:** an architecture cites a component and links its contract (mission-kit style S3, rule 2).
-- **Axioms by traits:** an axiom binds a system only if the system has a trait its `applies-to` names, or it is on the floor; claiming one otherwise is "the ungated adoption" (mission-kit's axioms charter, "Faults", and its traits charter).
+- **Axioms by traits:** an axiom binds a system only if the system has a trait its `applies-to` names, or the axiom is on the floor; claiming one otherwise is "the ungated adoption" (mission-kit's axioms charter, "Faults", and its traits charter).
+  M7 then weighs the axioms in force -- load-bearing, supporting, or not materially implicated; it does not decide which are in force.
 - **The target tracks the ratified rulings** (AR1, "Purpose": the target is "the current architecture plus every ratified decision not yet built"), so a component enters drawv2's target by the director's ruling, not by this design.
 - **Instance paths:** mission-kit's ruling 0076 puts a system's board, backlog, decisions and deltas in its `docs/` folder; drawv2 keeps the first three under `dev/`.
 - **Patterns that already describe drawv2:** P4, a domain-neutral core programmed by tenants -- drawv2's core and plugins; P5, every surface driven from one manifest -- drawv2's CLI and REST; P3, a master representation with the other generated and a parity gate -- drawv2's generated architecture.
@@ -27,170 +32,212 @@ Read from mission-kit's own text on 2026-10-12; each item cited there.
 
 ## 2. The evidence
 
-### 2.1 Components with standing
+### 2.1 Components with a contract
 
-Read from each component's `CONTRACT.md`, `README.md` and `package.json`, and from mission-kit's registry, on 2026-10-12.
+Read from each component's `CONTRACT.md`, `README.md` and `package.json`, from mission-kit's registry, and from zorg's Delta 1 record (its `DELTA-1.md`, the record of certification) on 2026-10-12.
 
 | Component | Standing | Duty, verbatim | State |
 |---|---|---|---|
-| `agp` | registered, `C1` | Route messages between named application endpoints across a topology no one centrally administers | ratified v1, tested; Node only as built -- the browser not established (its B50) |
-| `context-lab` | registered, `C2` | Run experiments on the context language-model agents are given, and report what each experiment showed | first slice built; a tool, not a library |
-| `operation-call` | proposed, zorg | Give every invocation of a named operation exactly one honest ending, within a bound its caller chose | certified at zorg's Delta 1 |
-| `entity-store` | proposed, zorg | Keep typed, tagged entities in a single order of changes that every read can be dated against | certified at zorg's Delta 1 |
-| `shape-check` | proposed, zorg | Judge whether a value fits a shape declared as data | certified at zorg's Delta 1 |
-| `caller-identity` | proposed, zorg | Establish the principal each request comes from, from the evidence its caller presented and the host's rules | certified at zorg's Delta 1; `verified-principal`, which drawv2's sign-in and codes need, deferred |
-| `entity-api` | proposed, zorg | Make an entity store reachable by name, so a remote caller can rely on exactly what a local one can | built, awaiting verification |
-| `operation-proxy` | proposed, zorg | Let short-lived processes invoke named operations through one long-lived caller they share, each invocation still ending honestly | built, awaiting verification; Linux only |
-| `operation-command` | proposed, zorg | Run one declared invocation from a command line, reporting its ending through the exit status | built, awaiting verification; `command-reference`, which drawv2's generated help needs, deferred |
-| `credential-issuer` | proposed, zorg (D38, D39) | Issue the credentials a caller presents to reach a hub, from authority the host accepts | no code; D39 moves drawv2's connection codes into it |
+| `agp` | registered, `C1` | Route messages between named application endpoints across a topology no one centrally administers | ratified v1, tested; Node only as built -- the browser not established (agp's B50) |
+| `context-lab` | registered, `C2` | Run experiments on the context language-model agents are given, and report what each experiment showed | first slice built; a tool run over a pack, not a library |
+| `operation-call` | proposed, zorg | Give every invocation of a named operation exactly one honest ending, within a bound its caller chose | certified, Delta 1 stage 4, attempt 3 |
+| `entity-store` | proposed, zorg | Keep typed, tagged entities in a single order of changes that every read can be dated against | certified, stage 2, attempt 3; `changes-since-position` and `follow-narrowed-set` deferred under zorg's D15, "Subscriptions are parked" |
+| `shape-check` | proposed, zorg | Judge whether a value fits a shape declared as data | certified, stage 1, attempt 1 (its README still says awaiting) |
+| `caller-identity` | proposed, zorg | Establish the principal each request comes from, from the evidence its caller presented and the host's rules | certified, stage 4b, attempt 6; its evidence is an agp session (its CI3); `verified-principal`, which drawv2's sign-in and codes need, deferred (zorg's D37) |
+| `entity-api` | proposed, zorg | Make an entity store reachable by name, so a remote caller can rely on exactly what a local one can | failed its first verification, stage 5; revision pending; its follow rows deferred under D15 |
+| `operation-proxy` | proposed, zorg | Let short-lived processes invoke named operations through one long-lived caller they share, each invocation still ending honestly | failed its first verification, stage 4a -- among the findings, a short-lived command that never exited by itself; Linux only; its browser adapter deferred |
+| `operation-command` | proposed, zorg | Run one declared invocation from a command line, reporting its ending through the exit status | failed its first verification, stage 4c; `command-reference`, which drawv2's generated help needs, deferred |
+| `credential-issuer` | proposed, zorg (D38, D39) | Issue the credentials a caller presents to reach a hub, from authority the host accepts | no code; D39 moves the minting, storing and revoking of drawv2's connection codes into it |
 
-Every proposed component is TypeScript, ESM, Node 24 or later, `private`, unpublished, and depended on by `file:` links to a checkout beside the consumer.
+Every proposed component is TypeScript compiled to ESM, Node 24 or later, `private`, unpublished, and depended on by `file:` links to a checkout beside the consumer; zorg records that they "cannot be published as packages while AGP ... is not".
+
+The ruling D38 in zorg's record says: "Every client of a hub - a signed-in person in a browser, a person's command line, an unattended agent, and drawv2's agent door - reaches it through one peer model", each connection admitted with a key that "lasts about a minute, works once and names one hub", fetched by the identity's proxy -- on a machine a local process, in a browser a shared worker.\
+It names drawv2's agent door in zorg's record; whether it binds drawv2 is the director's to say, and A-2 asks it.
 
 ### 2.2 Candidates
 
-zorg's D32 investigated the component set against zorg and drawv2: three model families each proposed a set and composed drawv2 from it at `2eae703`, and judges from other families synthesised the proposals (the investigation's record is kept outside both repositories, as `component-set-investigation-2026-10-10`).\
-D32's ruling names drawv2 "the future refactor target the shared components are designed against, and the second consumer".\
-D35 rules that "a mechanism that holds nothing particular to one application is a sovereign component even while only one application needs it", with the director's steers: "a change planner is a modular, sovereign, decoupled component"; "input capture is a component"; "identity is a component, unifying what drawv2 does, what AGP's evidence supplies and what zorg's hub needs"; "a vector scene is a component".
+The ruling D32 in zorg's record names drawv2 "the future refactor target the shared components are designed against, and the second consumer their visions' reuse dimension asks for", and investigates the component set in six steps: drawv2 described from its source; a union of the duties of zorg's command line, zorg's canvas case and drawv2; three model families each proposing a set and composing all three applications from it (drawv2 at `2eae703`); the checker measuring each; judges from other families; and each change reaching the director as a proposal.\
+The step 5 synthesis was written by the convening agent, reconciling three judges, each of whom judged only other families' proposals; the record is kept outside both repositories, as `component-set-investigation-2026-10-10`.\
+The ruling D35 there says that "a mechanism that holds nothing particular to one application is a sovereign component even while only one application needs it", with the director's steers: "a change planner is a modular, sovereign, decoupled component"; "input capture is a component"; "identity is a component, unifying what drawv2 does, what AGP's evidence supplies and what zorg's hub needs"; "a vector scene is a component".\
+Its D36 then rules the registry's size "a bound, not a target": "tens of them, perhaps 70 to 80", because "a number taken as a target invites splitting".
 
 | Candidate | Duty, as the synthesis words it | Judges | Standing |
 |---|---|---|---|
-| change planner | Derive the complete change a requested intent implies against a snapshot of a store | three | D35 steer |
-| input binding | Resolve each input to the one declared action it means in its context | three | D35 steer ("input capture") |
-| vector scene | Draw supplied visual descriptions as a vector scene | three | D35 steer |
+| change planner | Derive the complete change a requested intent implies against a snapshot of a store | three | D35 steer; no contract, no agreed name |
+| input binding | Resolve each input to the one declared action it means in its context | three | D35 steer ("input capture"); no contract |
+| vector scene | Draw supplied visual descriptions as a vector scene | three | D35 steer; no contract |
 | entity view | Keep a local view of a remote store current, dated by the position it reflects | three | proposal, unruled |
 | change undo | Reverse a store's most recent retained changes, last in first out | two | proposal, unruled |
 | write outbox | Retain each sent write whose outcome is unconfirmed until its outcome is known | two | proposal, unruled |
 | resource lease | Grant one holder at a time temporary exclusive control of a named resource | two | proposal, unruled |
 | static host | Serve files only from declared folders, or dispatch HTTP through declared mounts | two | proposal, unruled |
+| access grants | A principal granted a level of access -- owner, write, read -- to one resource or to all of an owner's resources | -- | zorg's BL20, a candidate under D35, holding "no drawv2 content" |
 
-The synthesis keeps minority positions -- durable storage apart from entity-store, input capture apart from binding, an estimate of the authority's time (drawv2's `app/src/clock.js`), an HTTP door for named operations -- and decides no names and no timing.\
-All three seats compose drawv2's live channel over `agp`, a diagram as an `entity-store`, served by `entity-api`, checked by `shape-check`, its operations through `operation-call`; all three keep REST as drawv2's own door.
+**The synthesis's six minority positions, each kept:**
+1. durable storage as its own component, behind entity-store's storage port (`record-storage`);
+2. input capture apart from input binding;
+3. an estimate of the authority's time, packaging drawv2's clock (`app/src/clock.js`);
+4. an HTTP door for named operations (`operation-http`), for drawv2's REST;
+5. undo, outbox, lease and web hosting kept as drawv2's own -- one consumer with no second in sight is not yet a shared duty, "the strictest view of the set";
+6. entity-api re-asking the application's policy on each part of a follow, so a revoked grant ends it.
+
+The synthesis decides no names and no timing.\
+All three proposals compose drawv2's diagram as an `entity-store` served by `entity-api` over `agp`, checked by `shape-check`; all three keep REST as drawv2's own door; two of three move the command line onto `operation-command` and `operation-proxy`, and one keeps it a REST consumer.
+
+### 2.3 drawv2's own mechanisms, against D35's question
+
+D35's question -- "what would it take to make this free of project-specific content?" -- asked of drawv2's modules that look generic.\
+A screen, MEASURED on 2026-10-12: each module's relative imports, and how many times its code, comments removed, names a thing of drawv2's own (node, link, zone, group, pipe, waypoint, device, diagram, anchor, glyph, router, svg).
+
+| Module | Imports | drawv2's words | Reading |
+|---|---|---|---|
+| `kernel/input-rules.mjs` | none | 0 | free of content: input-binding's resolution |
+| `app/src/input-state.js`, `app/src/triggers.js` | none | 0 | free of content: input-binding |
+| `app/src/recognize.js` | the core's anchor kinds | 12 | carries drawv2's content -- B274's measurement of 2026-10-01, which found it free, is stale |
+| `app/src/releases.js` | none | 18 | carries drawv2's content (links, nodes, zones) -- stale in B274 likewise |
+| `app/src/capture.js` | drawv2's hit testing and painter | 15 | carries drawv2's content: "input capture" in D35's steer |
+| `engine/ivm.mjs` | none | 0 | free of content: a maintained reverse index; no component or candidate holds one |
+| `app/src/clock.js` | none | 0 | free of content: minority 3's estimate of the authority's time |
+| `app/src/paintloop.js`, `app/src/watchdog.js`, `app/src/net.js` | none | 0 | free of content; no candidate holds a timer floor, a reload watchdog or a connection status |
+| `planner/log.mjs` | none | 0 | free of content: change undo's ring |
+| `server/locks.js`, `server/static.mjs`, `server/codes.mjs`, `server/identity.mjs`, `server/origin.mjs`, `server/sessionlog.mjs`, `server/files.mjs` | none | 1 to 4, read by eye as `node:` modules and messages | near free of content: resource lease, static host, credential-issuer, caller-identity, the storage port |
+
+The screen is a word count, not a proof; a module it reads as free is a candidate for D35's question, not an answer to it.
 
 ---
 
 ## 3. Each part, aligned
 
-Every part of the ratified target (H21.6), with what it becomes when aligned, the standing of what it aligns to, and the work D35's question names -- "what would it take to make this free of project-specific content?".
+Every part of the ratified target (H21.6), with what it aligns to, the standing of that, the rulings the alignment would change, and the work D35's question names.\
+"--" in the rulings column means the alignment changes no ruling.
 
-| Part | Aligned as | Standing | Fit gap, or the work named |
-|---|---|---|---|
-| `lattice` | drawv2 part | -- | grid semantics are drawv2's content |
-| `kind-contract` | drawv2 part, consuming `shape-check` for field shapes | proposed | shape-check's dialect 2 (`minimum`, `maximum`, `multipleOf`), per the synthesis |
-| `document` | `entity-store`, adjusted | proposed | a store per document, identities a writer chooses, a check against the whole store's position, the application's rules inside the single order, before-images (synthesis); names unique across every named kind (N5), where entity-store keeps them unique per kind |
-| `relations` | drawv2 part | -- | derivation over drawv2's kinds |
-| `colours` | drawv2 part | -- | the palette is drawv2's |
-| `primitives` | within `vector-scene` | candidate, D35 steer | the shapes painters compose, free of drawv2's kinds once B338 moves the device art out |
-| `rules` | `input-binding` | candidate, D35 steer | none for resolution: `kernel/input-rules.mjs` is already free of drawv2's content (synthesis) |
-| `planner` | `change-planner`, drawv2's invariants and tenants supplied to it | candidate, D35 steer | the planner names the network's tenant and its kinds (`planner/txn.mjs`) -- B332's work |
-| `layouts`, `devices`, `network`, `zones`, `groups`, `simulation` | drawv2 parts | -- | the plugins are drawv2's domain; the unification's later stages act inside them |
-| `product` | drawv2 part | -- | drawv2's composition |
-| `canvas` | drawv2 part, consuming `input-binding` | candidate | the gesture rows are drawv2's; their resolution is the component's |
-| `renderer` | `vector-scene` | candidate, D35 steer | the renderer imports grid geometry (`app/src/renderer.js`); the painters stay in drawv2's plugins |
-| `sync` | `entity-view` and `write-outbox` | candidates, unruled | the view and the outbox are drawv2's websocket protocol today; the clock is a minority candidate |
-| `product-page`, `lab`, `server` | drawv2 composition roots | -- | the static responder within `server` aligns to `static-host`, a candidate, unruled |
-| `access` | `caller-identity`, with drawv2's access ruling a drawv2 part and its codes `credential-issuer`'s | proposed | `verified-principal` and credential-issuer are unbuilt; the ruling -- owners, grants -- stays drawv2's |
-| `placement` | drawv2 part | -- | choosing a free anchor is drawv2's geometry |
-| `store` | `entity-store`'s storage port, with a drawv2 catalog of diagrams | proposed | templates, retention and the diagram caps stay drawv2's |
-| `hub` | `entity-api` over `agp`; locks to `resource-lease` | proposed; `C1`; candidate | entity-api serving a set of stores (synthesis); agp in the browser, unestablished |
-| `rest` | drawv2 part, invoking operations through `operation-call` | proposed | the HTTP door is drawv2's in every seat; an HTTP-door component is a minority candidate |
-| `cli` | drawv2 part over `operation-command` and `operation-proxy` | proposed | `command-reference` for drawv2's generated help, deferred; operation-proxy is Linux only |
-| `export` | drawv2 part drawing through `vector-scene` | candidate | H2's one rendering |
+| Part | Aligned as | Standing | Rulings it changes | Fit gap, or the work named |
+|---|---|---|---|---|
+| `lattice` | drawv2 part | -- | -- | grid semantics are drawv2's content |
+| `kind-contract` | drawv2 part, consuming `shape-check` for the shapes of fields | certified | -- | shape-check judges a value against a shape declared as data, a subset of JSON Schema; drawv2's field checks are functions, and its cross-field rules (G3) and invariants stay drawv2's; dialect 2 (`minimum`, `maximum`, `multipleOf`) per the synthesis |
+| `document` | drawv2 part keeping the anchor capability (O1, O4), the one name namespace across named kinds (N5) and the drawing order, over `entity-store` for the diagram's changes -- A-3 | certified | WD9's schema-3 document; when a write is acknowledged; what an undo is; where selection lives -- A-3, A-3a, A-3b | entity-store requires a name on every entity, unique within its kind, where N5 leaves pipes unnamed and keeps names unique across kinds -- adjustment owed: a kind declares whether it is named, cross-kind uniqueness held by the application's rules inside the single order; and the synthesis's: a store per document, identities a writer chooses, a check against the whole store's position, before-images; entity-store is "not a graph", so relations stay drawv2's; the target's owed question on whether the anchor is named stays open either way |
+| `relations` | drawv2 part | -- | -- | `engine/ivm.mjs` is free of content (section 2.3); no component holds a maintained index -- a finding for the registry |
+| `colours` | drawv2 part | -- | -- | the palette is drawv2's |
+| `primitives` | within `vector-scene` | candidate, D35 steer | -- | free of drawv2's kinds once B338 moves the device art out |
+| `rules` | `input-binding`, its resolution | candidate, D35 steer | -- | none for resolution (section 2.3); D35's steer names capture, which carries drawv2's hit testing; B274's trigger, "a second app needs gesture input", is the reading D35 set aside in zorg's record -- A-1 reconciles it |
+| `planner` | `change-planner` for deriving a change; the log and undo per A-3b | candidate, D35 steer | -- for deriving | the planner names the network's tenant and its kinds (`planner/txn.mjs`) -- B332's work |
+| `layouts`, `devices`, `network`, `zones`, `groups`, `simulation` | drawv2 parts | -- | -- | the plugins are drawv2's domain; the unification's later stages act inside them |
+| `product` | drawv2 part | -- | -- | drawv2's composition |
+| `canvas` | drawv2 part, consuming `input-binding` | candidate | -- | the gesture rows are drawv2's; `app/src/recognize.js` and `app/src/releases.js` carry drawv2's content |
+| `renderer` | `vector-scene` | candidate, D35 steer | -- (H2's one rendering holds) | the renderer imports grid geometry (`app/src/renderer.js`); the painters stay in the plugins |
+| `sync` | `entity-view` and `write-outbox` -- A-2 | candidates | the websocket protocol of `docs/spec/API.md` -- A-2 | entity-view needs entity-api's follow rows, parked under D15 until "the first time an agent must react to a change without listing again"; the clock is minority 3 |
+| `product-page`, `lab`, `server` | composition roots; the static responder within `server` (`server/static.mjs`) aligns to `static-host` | candidate; minority 5 keeps it drawv2's | -- | -- |
+| `access` | drawv2's access ruling -- owners and grants, the grants aligning to the access-grants candidate (BL20); a principal established by `caller-identity` for a request that arrives over agp; connection codes issued by `credential-issuer` -- A-2 | certified; no code; candidate | the bearer connection code at the REST door (`docs/spec/ACCESS.md`, "Code transport") -- A-2 option (a) | caller-identity establishes a principal from an agp session (CI3), so nobody for an IAP-signed request or a bearer code over HTTP; `verified-principal` unbuilt (D37); a REST door relaying to operations through operation-call would lose its caller (CI3; zorg's BL21; INFERRED); the websocket origin check (`server/origin.mjs`) stays with drawv2's hub; the duties are close, not identical, and the overlapping capability exists today only in drawv2 |
+| `placement` | drawv2 part | -- | -- | choosing a free anchor is drawv2's geometry |
+| `store` | drawv2 part -- the catalog of diagrams (templates, retention, caps) and the GCS adapter -- supplying `entity-store`'s storage port -- A-3 | certified | as `document` | the port is synchronous, `append` durable before it returns, and GCS has no synchronous call (B59) -- adjustment owed: an asynchronous durable port, or minority 1's record-storage |
+| `hub` | `entity-api` over `agp` for the diagram's changes -- A-2; the locks to `resource-lease`; selection, the lock handoff and presence -- A-3a | failed first verification; `C1`; candidate | the websocket protocol -- A-2 | follows parked (D15); agp in a browser not established; under D38 a tab's connection is admitted with a key from credential-issuer through a browser shared worker, both unbuilt; selection, the lock handoff and presence are not store changes, and no component carries them -- agp is "not a bus", entity-api "not a keeper of watchers" |
+| `rest` | drawv2 part, calling the planner as today; `operation-http` is minority 4 | -- | -- | -- |
+| `cli` | drawv2 part -- A-2: a plain HTTP client (SD1), its verbs and exit statuses through `operation-command` over a client drawv2 supplies; or over `operation-command` and `operation-proxy` on agp | failed first verification, both | over agp: SD1's "The CLI stays a plain HTTP client" and the ratified target's section 4.3 -- A-2 option (a) | operation-command runs through "an object the application supplies", its endings operation-call's four, so an HTTP client mapping its answers onto them could serve (INFERRED); `command-reference` deferred; an installed copy needs its components installed with it (B138) -- A-4 |
+| `export` | drawv2 part drawing through `vector-scene` | candidate | -- (H2) | -- |
 
 **Findings for mission-kit's registry** (C0: one duty duplicated across projects with no component is a finding):
-- drawv2's `access` duty is caller-identity's, word for word, built twice.
-- `kernel/input-rules.mjs` is a content-free mechanism held in one application -- D35's test passes today.
-- drawv2 is in zorg's D32 union of anchored cores but in no mission-kit record; C0's territory, "the union of anchored cores across the architectures this organisation holds", is not computed anywhere (mission-kit's B57).
+- drawv2's `access` and caller-identity hold close duties, and the overlapping capability -- a verified principal from a credential -- exists today only in drawv2.
+- drawv2 holds content-free mechanisms no component or candidate covers: a maintained reverse index (`engine/ivm.mjs`), a timer floor, a reload watchdog (section 2.3).
+- drawv2 is in zorg's D32 union of duties but in no mission-kit record; C0's territory, "the union of anchored cores across the architectures this organisation holds", is not computed anywhere (mission-kit's B57).
 
 ---
 
-## 4. What the target becomes
+## 4. What the target states, by decision
 
-Stated as the target would state it, present tense; no build order.
-- **The anchored core is written in the peer's form,** so zorg's checker and fit census read it: a parts table whose kind is `registered component (C1)`, `proposed component`, `candidate component` or `drawv2 part`; what drawv2's own parts expose, as capabilities; and the consumes, one line per use at capability level, each component's capabilities cited from its contract, not restated.
-- **drawv2 is assembled from the components** of section 3, drawv2's own parts the last mile: its grid, its plugins and their kinds, its rules and painters, its doors' wording, its catalog of diagrams.
-- **The live channel runs over `agp`:** a tab reaches the server through `entity-api`, keeps its diagram in an `entity-view` and its unconfirmed edits in a `write-outbox`; REST is drawv2's own door, invoking the same named operations through `operation-call`, as every seat composes it.
-- **A diagram is an `entity-store`,** adjusted as section 3 names, its durability through the store's port; drawv2's catalog holds which diagrams exist.
-- **The unification inside drawv2's parts is unchanged:** the anchor core, the plugins, a type as a composition, the ratchets.
-- **The divergence is one held row:** every component the target composes is implemented today by drawv2's own modules, listed by the generator part by part, and carried by one backlog row whose trigger is the director starting the migration (H21.9).
+Each decision of section 7 changes the target as below; nothing is stated until it is ruled.
+- **A-1:** the components composed appear in the parts table with their kind and in the consumes lines, each capability cited from its contract; the candidates appear in the register against the part each would take.
+- **A-2:** the target's doors and its section 7, run time, state the transport ruled; section 4.3's CLI rule is restated if the CLI moves onto agp.
+- **A-3, A-3a, A-3b:** the target's section 6, the stored document, states a diagram's changes and its status as ruled; its run time states when a write is answered and what an undo appends.
+- **A-4:** the parts table's "runs in" states how each component reaches the server, the page and the installed CLI.
+- **A-5:** the target's sections 2 and 3 name the axioms in force by traits, weighed by M7.
+- **A-6:** section 4 is written under zorg's headings, generated from `tools/layers.mjs`.
+- **A-7:** the records' paths stay a divergence.
+
+**The divergence:** each part that aligns to a component is its own row in the target's divergence table, carried by its own held backlog row, filed when the target is revised, its trigger the director starting a migration (H21.9); the generator renders each part's alignment from its declaration.
 
 ---
 
-## 5. Axiom alignment, by traits (M7)
+## 5. Axiom alignment, by traits
 
-**Traits** (mission-kit `traits/`): stateful (T1) -- the server owns the diagrams; multi-agent (T3) -- people and agents write one diagram; autonomous (T4, INFERRED) -- the server sweeps expired locks and runs unattended, as the D32 seats read it.\
+**Traits** (mission-kit `traits/`): stateful (T1) -- the server owns the diagrams; multi-agent (T3) -- people and agents write one diagram; autonomous (T4, INFERRED) -- the server sweeps expired locks and runs unattended, as step 2 of D32 read drawv2's traits.\
 Not declarative (T2): nothing reconciles toward a declared end state; derivation is not reconciliation.\
 Not llm-in-the-loop (T5): no model is on drawv2's critical path.
 
-**In force:** the floor -- A3, A4, A8, A9, A14 -- with A1 (T1), A5, A6, A7, A10, A13 (T3, T4).\
+**In force:** the floor -- A3, A4, A8, A9, A14 -- with A1 (T1), and A5, A6, A7, A10, A13 (T3, T4).\
 **Not in force:** A2 (declarative), A11 and A12 (llm-in-the-loop).
 
-**A correction to the ratified target:** its section 3 (H21.6) names A2 and A11 load-bearing and A4, A6, A9 and A10 "supporting or not materially implicated" -- weights, not traits; by mission-kit's rule that is the ungated adoption.
-What drawv2 values in A2 and A11 -- one declaration every door reads; few kinds to learn -- is held already by the outcome axes AX2 and AX5, which stay.
+**A correction to the ratified target:** its section 2 lists A2 and A11 among the axioms in force and leaves out A4, A6, A9 and A10; its section 3 weighs A2 and A11 load-bearing -- by mission-kit's rule, the ungated adoption.\
+What drawv2 values in them is partly held by the outcome axes: AX5, conceptual economy, holds A11's "few kinds to learn"; AX2, parity at every door, holds less than A2 -- a copy kept equal by a test satisfies parity, where A2 counts two lists of one fact as drift.
+**Two owed questions re-weigh:** the target's section 9.1 costs the CLI's copy of the types and a type declared in several tables partly by A2; with A2 not in force, those costs are restated against AX2 and A3.
 
 | Axiom | Weight for the aligned target | How the alignment stands |
 |---|---|---|
 | A3 Sovereign Composition | load-bearing | the alignment is A3's mandate: capability assembled from sovereign components, drawv2 the last mile |
-| A1 Sovereign State Transparency | load-bearing | a diagram's changes in one dated order (entity-store) |
-| A5 Perceptual Parity | load-bearing | agents and tabs read one store's view, dated by the position it reflects |
-| A7 Resilient Agentic Operations | load-bearing | honest call endings (operation-call); the outbox replays unconfirmed writes |
+| A1 Sovereign State Transparency | load-bearing | a diagram's changes in one dated order, if A-3 is yes |
+| A5 Perceptual Parity | load-bearing | tabs and agents read one store's view, dated by the position it reflects, if A-2 and A-3 are yes |
+| A7 Resilient Agentic Operations | load-bearing | honest call endings where operation-call is composed; the outbox replays unconfirmed writes |
 | A8 Gated Recursive Integrity | load-bearing | each component carries its contract tests; drawv2's gate holds its own parts |
 | A14 Compounding Learning | load-bearing | the fit census measures what drawv2 uses of each component |
-| A6 Frictionless Agentic Collaboration | supporting | the CLI over one shared caller per identity (operation-proxy) |
+| A6 Frictionless Agentic Collaboration | supporting | agents reach the same operations as tabs |
 | A13 Director Intent Amplification | supporting | rulings recorded with the director's words |
 | A4, A9, A10 | supporting | records append-only; deploys gated and rehearsed; the system revises itself only through rulings |
-
-**Tensions, left open:** the components need a build step (TypeScript), where drawv2 has none by H17-D12, "revisited at the rebuild"; agp's browser use is unestablished, and the live channel needs it.
 
 ---
 
 ## 6. Costs
 
-- **A build step:** the components are TypeScript compiled to `dist/`; drawv2 serves its source as written (H17-D12) and declares Node 18 or later, the components Node 24 or later.
-- **Packaging:** the components are unpublished and linked as sibling checkouts; drawv2's image is built in Cloud Build from its own repository alone.
-- **Unbuilt and uncertified pieces:** agp in the browser; entity-api, operation-proxy and operation-command awaiting verification; credential-issuer and every candidate unbuilt.
-- **Adjustments upstream:** entity-store, shape-check, entity-api, caller-identity and operation-command each owe the adjustment section 3 names; under C0 each is pressure on the component, ruled in its own record.
-- **The target's section 4 is rewritten** in the peer's form, and the generator renders the capability lines from a declaration; the axiom section is rewritten by traits.
+- **Delivery:** the components are TypeScript compiled to `dist/`, uncommitted; drawv2 serves its source as written (H17-D12) and installs its CLI standalone (B138); they need Node 24 or later, where production runs Node 22 (`Dockerfile`) and `package.json` declares 18 -- A-4.
+- **Publication:** the components are unpublished and linked as sibling checkouts; drawv2's image is built in Cloud Build from its own repository alone.
+- **A browser constraint:** drawv2 sets no Content-Security-Policy today; were it to set `script-src 'self'`, agp's shared packages fail to load (agp's verification record).
+- **Unbuilt and uncertified pieces:** agp in a browser; entity-api, operation-proxy and operation-command failed their first verification; follows parked (D15); credential-issuer and every candidate unbuilt.
+- **Adjustments upstream,** each pressure on the component, ruled in its own record (C0): entity-store -- names optional per kind, cross-kind uniqueness through the application's rules, an asynchronous durable storage port, a store per document, identities a writer chooses, a whole-store position check, before-images; shape-check -- dialect 2; entity-api -- a set of stores; caller-identity -- `verified-principal`; operation-command -- `command-reference`.
+- **Rulings changed, if the options that change them are chosen:** SD1's transport clause and the target's section 4.3 (A-2 a); the bearer code at the REST door (A-2 a); the websocket protocol (A-2 a, b); WD9's schema-3 document and its acknowledgement timing, an AX6 one-way door (A-3); what an undo appends (A-3b); H17-D12's no build step (A-4 b).
+- **The target's sections 2, 3, 4, 6 and 7 are revised,** and the generator renders the parts in zorg's form.
 - **Nothing in production changes,** and nothing is deployed.
 
 ---
 
 ## 7. Decisions owed -- one at a time, each with a recommendation
 
-| # | Question | Options | Recommendation |
+Asked in this order; A-3a and A-3b only if A-3 is yes.
+
+| # | Question | Options and their costs | Recommendation |
 |---|---|---|---|
-| A-1 | Which components does the aligned target compose? | **(a)** those with standing only -- agp and zorg's proposed set; **(b)** and the three candidates the director steered in D35 -- change planner, input binding, vector scene; **(c)** and every candidate all or two of the judges admitted -- entity view, write outbox, change undo, resource lease, static host -- each marked a candidate | **(c)** -- D35 rules a content-free mechanism a component with one consumer, and the director's intent there is a registry of 40 to 50; each stays marked a candidate until the director rules it in zorg's record |
-| A-2 | Does the target's live channel run over agp, through entity-api and an entity view, or keep drawv2's websocket hub as a drawv2 part? | **agp:** every D32 seat composes it; it is what aligns the hub, the sync and access with components; it needs agp in the browser, unestablished. **drawv2's hub:** no browser dependency on agp; the hub, the sync and the outbox stay drawv2's | agp -- the alignment is otherwise partial at exactly the seams drawv2's specification records as having lost guarantees (D32's "Why") |
-| A-3 | Is the target's axiom section rewritten by traits, A2 and A11 leaving it? | **Yes:** mission-kit's rule; AX2 and AX5 keep what drawv2 values in them. **No:** keep the weights, a recorded deviation from mission-kit | yes -- the director's goal is alignment, and this is mission-kit's own rule |
-| A-4 | Is the anchored core written in zorg's checkable form? | **Yes:** zorg's checker and fit census measure drawv2 as they measure zorg. **No:** keep drawv2's own form, which mission-kit permits | yes -- it is the peer form (PC1), and the census is the measure C0's territory needs |
-| A-5 | Are drawv2's records moved to mission-kit's paths (`docs/`)? | **Hold as a divergence:** no migration (H21.9). **Move now:** a records change, not code | hold -- the direction is not to migrate yet, and the move touches every tool that reads `dev/` |
+| A-1 | Which components does the target compose? | **(a) Those with a contract,** cited by capability; every candidate, steered or not, named in the register against the part it would take, entering when it has a contract; B274 amended to point at the input-binding candidate. Cost: the mechanisms the director steered in D35 -- planner, input, scene -- show in the register, not in the consumes lines. **(b) And the three D35-steered candidates.** Cost: with no contract and no agreed name, their capabilities would be written by drawv2, restated (S3), and zorg's checker rejects them unless drawv2's own exposes table lists them, the census then counting them as drawv2's demand. **(c) And every judged candidate.** Cost: as (b), and minority 5 -- undo, outbox, lease and hosting kept in drawv2, one consumer with no second in sight | (a) -- a contract is what lets the target cite a component rather than restate it, and mission-kit admits a component once it is usable (its 0087) |
+| A-2 | How do clients reach the server? | **(a) Every client over agp** -- tabs, agents, the CLI -- D38's one peer model, which names drawv2's agent door. Changes SD1's transport clause, the target's section 4.3, the bearer code at the REST door and the websocket protocol. Needs agp in a browser, follows unparked, credential-issuer and operation-proxy's browser adapter -- all unbuilt; and a REST caller's identity across the hop has no answer (BL21). **(b) Tabs over agp, agents and the CLI over HTTP as today.** Changes the websocket protocol only. Needs agp in a browser and follows unparked; a tab admitted either by D38's keys -- credential-issuer and the browser proxy, unbuilt -- or by drawv2 from the IAP session, a deviation from D38; two transports, against D38's one peer model. **(c) drawv2's transport stays** -- websocket hub, REST, plain-HTTP CLI -- the components consumed inside the server and the page. Changes nothing. Cost: the hub, the sync and access stay drawv2's, the seams D32's "Why" names as having lost guarantees | (b) -- it aligns the live channel, where D32 names the lost guarantees, changes no ruling the director made in drawv2, and leaves the agent door to when credential-issuer exists and a REST caller's identity can cross the hop |
+| A-3 | Is a diagram kept in an entity-store? | **(a) Yes:** the diagram's changes are entity-store's single order; drawv2's `document` part keeps the anchor, the names across kinds and the drawing order. An AX6 one-way door: every stored diagram becomes a change log, migrated once as WD9 migrated schema 3; every write durable before it is answered, where a tab's write is answered before a 200 ms flush today (`README.md`); undo and selection change (A-3a, A-3b); entity-store owes seven adjustments, each ruled in its own record, and a refused one -- names optional per kind, an asynchronous port -- reopens this question. **(b) No:** drawv2's `document` and `store` stay drawv2's parts. Changes nothing. Cost: the guarantees D32 says drawv2's seams lost stay drawv2's to keep, and the target's centre stays unaligned | (a), the one-way door named here and taken last in any migration (AX6) -- every D32 proposal composes the diagram so, and the director's goal is the alignment |
+| A-3a | Where do a diagram's selection and status live? | **(i) A second store per diagram,** holding selection, controllers, owner and grants: selection keeps its standing -- no diagram version bump, not undoable, a first-class event (`docs/spec/API.md`). **(ii) Broadcast only, not stored:** a reloaded tab loses the selection an agent set, which the document holds today | (i) -- it keeps selection as ruled |
+| A-3b | What is an undo? | **(i) A change appended to the single order, writing the inverse:** positioned, durable and atomic with the change it reverses; changes `docs/spec/TRANSACTIONS.md`'s "cursor moves, no record appended". **(ii) The change-undo candidate over entity-store's before-images:** no contract; minority 5 keeps it drawv2's. **(iii) drawv2's ring kept beside the store:** the log and the store two records of one history, the split drawv2's store was built to avoid -- its document and log are one file (`README.md`) | (i) -- one order holds the history, and an undo is visible to every reader as a change |
+| A-4 | How do components reach the browser and the installed CLI? | **(a) Published packages:** the page loads their compiled files through an import map, the CLI installs them as dependencies, drawv2 keeps no build step. Needs zorg to publish them, which it holds until agp is published; Node 24. INFERRED: compiled ESM free of runtime-specific modules loads in a browser so -- operation-call and entity-store import none outside named adapters; agp's node package imports `node:crypto`, so its browser use waits on agp. **(b) A build step in drawv2:** reverses H17-D12, whose reason was A2's parity over built code -- not in force if A-5 is yes, and P3's generated-and-gated covers it. **(c) Compiled components vendored as generated source,** pinned and held equal by a gate: no build step; a copy of each in drawv2 | (a) -- nothing copied and no build step; the dependency on publication is a cost the target names |
+| A-5 | Are the target's axioms named by traits? | **Yes:** A2 and A11 leave sections 2 and 3, A4, A6, A9 and A10 join; the two owed questions are re-costed. **No:** keep them, a recorded deviation from mission-kit's rule | yes -- it is mission-kit's own rule, and the goal is alignment |
+| A-6 | Is the anchored core written in zorg's checkable form? | **(a) Yes, and the checker gated:** run from drawv2's gate over the contracts drawv2 cites, as the doc-style scan runs mission-kit's tools -- a gate another repository's working tree can turn red. **(b) Yes, the checker run at each revision of the target,** its census recorded, not gated. **(c) No:** drawv2's numbered form, which mission-kit permits | (b) -- the form is the peer's and the census the measure C0's territory needs; gating on zorg's tool waits until mission-kit holds the convention (its B84) |
+| A-7 | Do drawv2's records move to mission-kit's paths? | **Hold as a divergence:** no migration (H21.9). **Move now:** a records change, not code, touching every tool that reads `dev/` | hold |
 
 The minority positions of section 2.2 stay open in the target's register.
 
 ---
 
-## 8. Review 1 -- 2026-10-12, of the draft at `1e3524d` -- findings open
+## 8. Review 1 -- 2026-10-12, of the draft at `1e3524d`
 
 An agent that did not write the draft, asked to break it against mission-kit, the components' contracts, zorg's records and drawv2's rulings.
 **Verdict:** "not ready" -- 1 blocker, 10 majors, 4 minors.\
 It confirmed the standings, the duty quotes, the synthesis's judge counts, the trait reading (T1, T3, T4; not T2, not T5), the axioms in force, the checker's result on today's target, and the pattern citations.\
-Every finding below is open; the design is revised against them, and reviewed again, before any decision reaches the director.
+Each fact it cited was read again at its source before this revision; one was softened -- drawv2 sets no Content-Security-Policy, so agp's failure under `script-src 'self'` is a constraint on adding one, not a fault today.
 
-| # | Severity | Finding |
-|---|---|---|
-| 1 | blocker | sections 3 and 4 reverse rulings no decision asks about: the CLI over operation-call, not plain HTTP (SD1; the ratified section 4.3); connection codes exchanged at credential-issuer for admission keys (D38, D39) against the bearer code at the REST door (`docs/spec/ACCESS.md`); a diagram as an entity-store change log, durable before it is answered, replacing schema 3 and the websocket protocol -- an AX6 door, unnamed; selection stored but not a change, where every entity-store write takes a position |
-| 2 | major | zorg's checker knows only zorg's set: a candidate in a consumes line fails it unless restated in drawv2's own table; candidates have no contract and no agreed names; the checker needs exact, unnumbered headings |
-| 3 | major | A-1 argues from D35's "40 to 50", which D36 superseded ("a guess", "perhaps 70 to 80"), and from a count at all (C0); minority positions 5 (undo, outbox, lease, hosting kept in drawv2 -- the counter to option c) and 6 are missing |
-| 4 | major | `document` to entity-store misses entity-store's required name on every entity, unique per kind (N5 rejected naming pipes; it would decide 9.1's name question) and selection not being a change; no drawv2 part is named to keep the anchor capability, the cross-kind names and the drawing order |
-| 5 | major | entity-store's storage port is synchronous, durable before `append` returns -- unsatisfiable over GCS (B59); the GCS adapter stays drawv2's; an asynchronous port, or the record-storage minority, is owed |
-| 6 | major | entity-api's follow rows are deferred (zorg's D15); selection, the lock handoff and presence are not store changes, and no component carries them (agp "not a bus"; entity-api "not a keeper of watchers") |
-| 7 | major | undo and redo are mapped to nothing; change-undo is in A-1(c) but in no section 3 row, and the claude seat changes undo's meaning |
-| 8 | major | `access`: zorg's BL20 makes access grants a candidate; identity across the REST hop is lost through a relay (CI3, BL21; INFERRED); `server/origin.mjs` unmapped; "word for word, built twice" is wrong -- the duties differ, and `verified-principal` is unbuilt |
-| 9 | major | a decision is missing: how TypeScript components with a build reach a no-build browser page and an installed CLI (H17-D12; agp's shared packages fail `script-src 'self'`; `file:` dependencies; production runs Node 22) |
-| 10 | minor | A2 and A11 are claimed in force in the target's section 2, not its section 3; M7 says nothing on traits; A12 omitted; removing A2 re-weighs two 9.1 questions |
-| 11 | minor | entity-api, operation-proxy and operation-command each failed first verification (zorg DELTA-1); shape-check's README is stale |
-| 12 | minor | attributions: B84 is the contract table's form; D32's step 2 is a union of duties; the synthesis was written by the convening agent; T4 is from step 2's traits file; a truncated quote |
-| 13 | minor | D35's "input capture is a component" is met only for resolution; drawv2's B274 not reconciled |
-| 14 | minor | D35's question not run over every drawv2 part (`engine/ivm.mjs` is a generic skeleton; B274's input modules) |
-| 15 | minor | section 4 states the recommendations as chosen; one held row for some fifteen substitutions, where the target carries each divergence on its own row |
-
-**To resume:** revise sections 2 to 7 against these findings -- the rulings each mapping would change named, with decisions added for the CLI's transport, the agent credential at the REST door, the stored format and acknowledgement timing, where selection and status live, and how components are delivered to the browser and the CLI; then a second adversarial review; then the decisions to the director one at a time.
+| # | Severity | Finding | Disposition |
+|---|---|---|---|
+| 1 | blocker | sections 3 and 4 reversed rulings no decision asked about: the CLI's transport (SD1; the target's 4.3), the bearer code (D38, D39 against `docs/spec/ACCESS.md`), the schema-3 store and its acknowledgement timing (an AX6 door), selection's standing | **Fixed.** Section 3 has a column naming the rulings each alignment changes; each change is a decision with its options and costs: the transport (A-2), the stored format and acknowledgement timing as an AX6 door (A-3), selection and status (A-3a); section 6 lists every ruling changed and by which option |
+| 2 | major | zorg's checker cannot read candidates; candidates have no contract or names; exact headings | **Fixed.** A-1 recommends composing only components with a contract, candidates held in the register; A-6 names the exact headings and offers the checker gated, run per revision, or not adopted |
+| 3 | major | A-1 argued from D35's superseded figure and from a count; minorities 5 and 6 missing | **Fixed.** The count argument is gone, D36 and C0 cited; all six minority positions listed; minority 5 is the cost of option (c) |
+| 4 | major | `document` to entity-store missed required names and selection; no part named to keep the anchor, names across kinds and drawing order | **Fixed.** `document` stays a drawv2 part keeping them, over entity-store; the name adjustment is owed and named; selection is A-3a; the anchor's owed name question stays open either way |
+| 5 | major | entity-store's storage port is synchronous; GCS is not (B59) | **Fixed.** `store` stays a drawv2 part supplying the port; an asynchronous durable port, or minority 1, is owed, and a refusal reopens A-3 |
+| 6 | major | entity-api's follows are parked; selection, lock handoff and presence have no component | **Fixed.** Both named in the `hub` and `sync` rows and in A-2's costs; A-3a gives selection and status a home |
+| 7 | major | undo mapped to nothing; its meaning changes | **Fixed.** A-3b, with the change to `docs/spec/TRANSACTIONS.md` named |
+| 8 | major | `access`: BL20, identity across the REST hop, `server/origin.mjs`, "word for word" wrong | **Fixed.** All four in the `access` row; the registry finding corrected; REST calls the planner as today, so no hop loses its caller unless A-2 (a) is chosen |
+| 9 | major | how TypeScript components reach a no-build page and an installed CLI was not a decision | **Fixed.** A-4, with the runtime (Node 22 in production) and the browser constraint in section 6 |
+| 10 | minor | A2 and A11 are claimed in force in the target's section 2; M7 says nothing on traits; A12; the re-weighing | **Fixed.** Section 5 cites the axioms charter for the gate and M7 for the weights, names A12, and says which two owed questions re-weigh |
+| 11 | minor | three components failed first verification; shape-check's README stale | **Fixed** in section 2.1, from zorg's Delta 1 record |
+| 12 | minor | attributions | **Fixed:** B84 is the contract table's form; D32's step 2 a union of duties; the synthesis by the convening agent; T4 from step 2; D32 quoted whole |
+| 13 | minor | D35's capture steer met only for resolution; B274 not reconciled | **Fixed.** The `rules` row says so; A-1 (a) amends B274; section 2.3 finds B274's own measurement stale for two modules |
+| 14 | minor | D35's question not run over drawv2's parts | **Fixed** by the screen of section 2.3, MEASURED and labelled a screen |
+| 15 | minor | section 4 stated the recommendations as chosen; one held row for many substitutions | **Fixed.** Section 4 states what each decision changes; each alignment is its own divergence row, carried by its own held row |
