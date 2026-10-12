@@ -7,24 +7,25 @@ system: drawv2
 
 **Instant: target.**\
 The system drawv2 is going to be, stated as though it exists.\
-It is the current architecture (`docs/ARCHITECTURE.md`, derived from the code) plus every ratified decision not yet built, and it moves when a ruling does; why drawv2 exists is `VISION.md`, and no build order appears here (mission-kit AR1).
+It is the current architecture (`docs/ARCHITECTURE.md`, derived from the code) with every ratified decision not yet built absorbed; why drawv2 exists is `VISION.md`, and no build order appears here (mission-kit AR1).
 
-**What fixes it:** the rulings in `dev/DECISIONS.md`, cited by id.\
-A question no ruling settles is not answered here; it is in the owed-and-open register (section 9), with the recommendation the director is asked to rule on.
+**What fixes it:** the rulings in `dev/DECISIONS.md`, cited by id or heading.\
+A question no ruling settles is not answered here; it is in section 9, with the recommendation the director is asked to rule on.
+**What is generated:** the parts of the anchored core -- each part's duty, kind, fixing rulings and what it consumes -- are declared once in `tools/layers.mjs` and rendered into both documents by `tools/generate-architecture.mjs`, so the two instants carry the same components; the imports in the code that the target does not allow are measured into the current document.
 
 | Section | Maturity | Reopens on |
 |---|---|---|
 | 1. Identity, scope and non-goals | provisional | `VISION.md` changing |
 | 2. Justification chain | provisional | a ruling changing the model |
 | 3. Axiom alignment | provisional | a ruling, or a tension resolved |
-| 4. Anchored core | provisional | a part's duty changing |
-| 5. A type is a composition | provisional | a ruling on packs or types; the decisions owed in section 9 |
+| 4. Anchored core | provisional | a part's duty or its consumes changing |
+| 5. A type is a composition | provisional; the behaviour family not yet designed | the decisions owed in section 9 |
 | 6. Entity model and interfaces | provisional | a format change |
 | 7. Run time | provisional | a door's lifecycle changing |
 | 8. Verification and divergence | provisional | a check added, or a divergence closed |
 | 9. Owed and open | provisional | each entry's ruling |
 
-Approval is aggregate, by the director; each section stays open to reopen on its trigger.
+Approval is aggregate, by the director; each section reopens on its trigger.
 
 ---
 
@@ -33,15 +34,15 @@ Approval is aggregate, by the director; each section stays open to reopen on its
 **Maturity: provisional.**
 
 drawv2 is a programmable geometric engine.\
-A document declares geometry -- anchors placed on a grid, and the connections between them -- and everything else is a consequence of that geometry, derived identically by everyone watching (`VISION.md`).
+A document declares geometry -- anchors on a grid, and the connections between them -- and everything else is a consequence of that geometry, derived identically by everyone watching (`VISION.md`).
 
-**In scope:** a document of anchors on stored grids; plugins that compose capability onto an anchor -- what a device is and how it looks, how anchors connect, regions, named sets, derived motion; a type as the name of a composition of packs; one write, planned once, applied at every door; the doors -- a browser page, a lab page, a REST and websocket server, a CLI, a headless export.
+**In scope:** a document of anchors on stored grids; plugins that compose onto an anchor -- what a device is and how it looks, how anchors connect, derived motion; plugins of their own kinds over the grid -- regions of cells, named sets of anchors; a type as the name of a composition; one write, planned once and applied at every door; the doors -- a browser page, a lab page, a REST and websocket server, a CLI, a headless export.
 
 **Non-goals, from the vision:**
 - **Not a drawing tool:** a position is a statement about where a thing is, never where it was dropped.
 - **No rule lives at one door:** what the browser computes, the server, the CLI and an agent compute the same.
 - **No stored state a derivation can supply:** roles, routes, whether a link is down and motion are derived, never stored.
-- **No policy over packets yet:** permit or deny over flows is named so nothing excludes it, and is not designed (`dev/DECISIONS.md`, "The universal node, staged", amended 2026-09-22).
+- **Not policy over packets:** permit or deny over flows is named so nothing excludes it, and is undesigned (`dev/DECISIONS.md`, "The universal node, staged", amended 2026-09-22).
 
 ---
 
@@ -54,38 +55,35 @@ Each layer cites only the layers above it.
 **Domain.**\
 Diagrams of systems, made into worlds with physics: a diagram stops being a picture of a system and becomes a world computed identically by every viewer (`VISION.md`).
 
-**Axioms in force** (mission-kit, `axioms/`): A3 Sovereign Composition, A2 Isomorphic Specification, A1 Sovereign State Transparency, A5 Perceptual Parity, A11 Cognitive Minimalism, A8 Gated Recursive Integrity, A14 Compounding Learning, A13 Director Intent Amplification; the others bear lightly (section 3).
+**Axioms in force** (mission-kit, `axioms/`): A3 Sovereign Composition, A2 Isomorphic Specification, A1 Sovereign State Transparency, A5 Perceptual Parity, A11 Cognitive Minimalism, A8 Gated Recursive Integrity, A14 Compounding Learning, A7 Resilient Agentic Operations, A13 Director Intent Amplification; the rest bear lightly (section 3).
 
 **North star.**\
-Derived physics that everyone watching computes identically (`VISION.md`; the unification survey's anchor, `dev/surveys/unification-survey.md`).
+Derived physics that everyone watching computes identically (`VISION.md`).\
+Noted for PC1: AR1 asks for the system's north star and this one is the programme's; the mission-kit's own exemplar does the same, a disagreement between the entry and its exemplar recorded rather than resolved here.
 
-**Principles -- the outcome axes the director accepted** (`dev/surveys/unification-survey.md`, S0):
-- **AX1 derived, not stored:** what geometry and a clock can compute is computed; the document states intent.
-- **AX2 parity at every door:** browser, server, CLI and REST compute the same thing.
-- **AX3 expressiveness:** compositions inexpressible before become expressible.
-- **AX4 extensible physics:** a capability arrives without an engine change.
-- **AX5 conceptual economy:** fewer kinds and special cases to learn.
-- **AX6 one-way doors few, named and last:** irreversible changes to stored documents are rare and deliberate.
+**Principles -- the outcome axes the director accepted** (`dev/surveys/unification-survey.md`, S0): AX1 derived, not stored; AX2 parity at every door; AX3 expressiveness; AX4 extensible physics; AX5 conceptual economy; AX6 one-way doors few, named and last.
 
 **Decisions** -- the rulings that fix the structure below:
-- **The universal node, staged** (2026-09-19, amended 2026-09-22): the anchor is the core; endpoint, bend and junction are what the graph makes of an anchor, derived; a type declares which roles it permits, per type; a violation is refused; a named type is a composition of packs, and a per-type permission table and a pack registry are one lookup; appearance and routing are pack families; appearance resolves per state.
-- **SD1 to SD12, the stack interface** (from 2026-09-27): browsers and server derive, the CLI asks (SD1); the planner runs the rules for every door (SD2); a pack is only its table (SD4); one pipe per pair (SD7); a declared flow is part of the document (SD10); the network is a plugin and a world without connections carries no pipes (SD11, SD11b); each document lists the plugins it needs (SD12).
-- **N1, N5:** plugins bring their own kinds, composed at build; the core keeps only what spans kinds (N1); names are a service a kind opts into (N5).
-- **O1, O4:** every kind is a plugin's; the core holds only the anchor, identity and one cell; an anchor carries no type (O4).
+- **The universal node, staged** (2026-09-19, amended 2026-09-22): endpoint, bend and junction are what the graph makes of an anchor, derived; a type declares which roles it permits, per type, and a violation is refused; appearance and routing are pack families; appearance resolves per state.
+- **A type is the name of a composition** (2026-10-02): what survives of "type" is the name an author picks for a composition, and the core does not know what it means.
+- **P-10** (2026-10-03): `type` stays the stored name, and packs are code tables keyed by it, with no format change.
+- **The stack interface:** browsers and server derive, the CLI asks (SD1); the planner runs the rules for every door (SD2); a pack is only its table (SD4); one pipe per pair (SD7); the network is a plugin (SD11); the core is anchors, identity and position, with no notion of connection, and the network contributes pipes, links and the rules that react to edits (SD11b); each document lists the plugins it needs (SD12).
+- **H17-D6:** the one device-type table is imported by its users.
+- **Transit:** a pin is cut where transit goes off (TR-2); `w` on an anchor whose transit is off makes two links ending there (TR-2b); which types offer transit is configuration the network plugin brings (2026-10-07); a device pin follows transit's rules only (Z1).
+- **N1, N5:** plugins bring their own kinds, and the core keeps only what spans kinds (N1); names are a service a kind opts into, the built-in kinds staying named (N5).
+- **O1, O4:** every kind is a plugin's; the core keeps what spans kinds and the anchor capability -- identity, position, occupancy, resolving a reference -- and a plugin depends on another's kind brokered at composition (O1); the core holds one kind, the anchor, which carries no type (O4).
 - **G3:** a plugin contributes fields to a kind it does not own.
-- **Q1:** a plugin's questions are asked of the plugin; the Model holds what is attached and reads none of it.
-- **D1 to D5:** the whole canvas contract; gestures as rows over shared gestures (D2); several plugins draw one kind through the appearance pipeline (D3); a plugin's edits are data (D5).
+- **Q1:** a plugin's questions are asked of the plugin.
+- **D1 to D5:** the canvas contract, the canvas naming no plugin's kind beyond a record that may only fall (D1); draw-a-link the product's shared gesture with the network as its judge (D2); several plugins draw one kind through the appearance pipeline (D3); a plugin's edits are data (D5).
+- **H2:** run mode and the download are one rendering, one place for code.
 - **The palette** (2026-10-01): one core palette, roles per owner.
-- **P-10:** `type` stays the stored name; packs become code tables keyed by it.
-- **WD1, WD6 to WD10:** a wide device is one anchor (WD1); a diagram stores its grids as layout records (WD6), holding today's values until the infinite canvas (WD7); a device owns its size (WD10).
-- **H21** (2026-10-11): the unification's approach, this architecture among it.
+- **WD1, WD6, WD7, WD10:** a wide device is one anchor (WD1); a diagram stores its grids as layout records (WD6) holding today's values (WD7); a device owns its size (WD10).
 
 **Model.**\
-The **anchor** is the core: identity and one cell, reachable by connections.\
-A **pack** is a table a plugin contributes.\
-A **composition** is a named set of packs; a **type** is a composition's name.\
-A **node** is an anchor with what plugins compose onto it; a bare anchor -- a waypoint, by the word people use -- is the composition with the fewest packs.\
-Everything a node shows or does is derived from its composition and the document, and nothing derived is stored.
+The **anchor** is the core: identity and position on one cell (SD11b, O4); connection is the network plugin's.\
+A **pack** is a code table a plugin contributes, keyed by type (SD4, P-10).\
+A **type** is the name of a composition; a **node** is an anchor with what plugins compose onto it, and a node with no type is a bare anchor -- a waypoint, by the word people use (P-10).\
+Everything a node shows or does is derived from its composition and the document.
 
 ---
 
@@ -95,16 +93,18 @@ Everything a node shows or does is derived from its composition and the document
 
 | Axiom | Weight | How the architecture stands -- or the tension, left open |
 |---|---|---|
-| A3 Sovereign Composition | load-bearing | each plugin owns one concern and composes onto the anchor through declared contracts; the product is the only place plugins meet. **Tension:** the network imports the devices plugin to read a device's composition (`tools/layers.mjs` ALLOWED); a type's routing pack makes the network read the composition instead of the device -- section 5 |
-| A2 Isomorphic Specification | load-bearing | a device type is declared once and every door reads it. **Tension:** the CLI is installed alone and imports nothing (B138), so it either asks the server for the types or keeps a copy held equal by a test -- owed, section 9 |
+| A3 Sovereign Composition | load-bearing | each plugin owns one concern and composes onto the anchor through declared contracts; the product composes the plugins. **Tensions:** a node's `type` is the devices plugin's field, yet it names a composition other plugins' packs are keyed by; a plugin depends on another's kind brokered at composition (O1), while the network imports the devices plugin's modules -- measured in the current document's part divergence |
+| A2 Isomorphic Specification | load-bearing | each pack family is one table keyed by type, and the type list one table imported by its users (H17-D6). **Tension:** the CLI's static imports stay inside `cli/` so an installed copy runs, and it holds its own list of types, kept equal to the kernel's by a test (B167) -- owed, section 9 |
 | A1 Sovereign State Transparency | load-bearing | the document states its grids (WD6) and the plugins it needs (SD12); roles and routes are computed, never stored |
 | A5 Perceptual Parity | load-bearing | an agent reads what a viewer sees -- a route, whether a link is down, an anchor's role -- from the server (SD1) |
-| A11 Cognitive Minimalism | load-bearing | a pack is a table, not a mechanism (SD4); a type is a name pointing at tables. **Tension:** the 2026-09-22 record's caution that packs "must be earned by composing two" -- answered: three plugins compose fields onto the anchor (devices, network, simulation) |
-| A8 Gated Recursive Integrity | load-bearing | the planner is the one write; a document a door cannot hold is refused (B307); the gate holds the layers, the kinds and the records |
-| A14 Compounding Learning | load-bearing | the current architecture is generated, so the distance to this target is measured, not reported (section 8) |
+| A11 Cognitive Minimalism | load-bearing | a pack is a table keyed by type, not a mechanism (SD4, P-10). **Open:** the 2026-09-22 record's caution, that packs composing must be earned by composing two -- fields compose onto the anchor (G3), and at the current instant no type is a composition of packs; whether a behaviour family is earned is owed (section 9) |
+| A8 Gated Recursive Integrity | load-bearing | the planner is the one write; a document a door cannot hold is refused; the gate holds the layers, the parts, the kinds and the records |
+| A14 Compounding Learning | load-bearing | the current architecture is generated, and the imports the target does not allow are measured; the semantic divergence is listed by hand, row by row (section 8) |
+| A7 Resilient Agentic Operations | supporting | a link whose way is gone is shown down at every door and heals when a way returns; a refusal is said at the door that made it |
 | A13 Director Intent Amplification | supporting | this document tracks the rulings and asks the director only the questions in section 9 |
-| AX6 (survey) | supporting | `type` stays the stored name, so a type becoming a composition changes no stored document (P-10). **Tension:** SD12's plugin list is a new field in every document -- a format change, named here |
-| A4, A6, A7, A9, A10, A12 | supporting or not materially implicated | records append-only; failures surfaced at the door; deploys gated; no agent context assembly in the product |
+| A4, A6, A9, A10, A12 | supporting or not materially implicated | records append-only; deploys gated; no agent context assembly in the product |
+
+**AX6, a principle rather than an axiom:** `type` staying the stored name keeps a type's composition out of stored documents (P-10); SD12's plugin list is a new field in every document, a format change named here.
 
 ---
 
@@ -114,93 +114,98 @@ Everything a node shows or does is derived from its composition and the document
 
 ### 4.1 Parts
 
-One duty each; where each lives today is in the current architecture's layers (`docs/ARCHITECTURE.md`, section 2).
+Generated from `tools/layers.mjs` `PARTS`; the current document renders the same parts with the modules each is made of today and the parts each imports.
 
-| Part | Duty | Kind |
-|---|---|---|
-| `lattice` | Compute geometry on the grid | core |
-| `kind-contract` | Compose kinds from the rows plugins declare | core |
-| `document` | Hold one document's entities | core |
-| `palette` | Hold the colours every role draws from | core |
-| `primitives` | Draw the shapes painters compose | core |
-| `relations` | Index which entities relate | the network's rung |
-| `planner` | Make the one write every door applies | core service |
-| `layouts` | Declare a diagram's grids | plugin |
-| `devices` | Compose a device onto an anchor | plugin |
-| `network` | Connect anchors | plugin |
-| `zones` | Bound regions of cells | plugin |
-| `groups` | Name sets of anchors | plugin |
-| `simulation` | Derive motion along routes | plugin |
-| `product` | Compose the plugins into the product | composition |
-| `canvas` | Turn input into edits through the parts' declarations | host |
-| `renderer` | Draw a document through the parts' painters | host |
-| `sync` | Keep a tab converged with the server | host |
-| `product-page` | Compose the product page | composition root |
-| `lab` | Compose the canvas over the real modules, without storage | composition root |
-| `store` | Keep documents durable | door |
-| `hub` | Carry each change to the tabs watching a document | door |
-| `rest` | Answer agents over HTTP | door |
-| `cli` | Give an agent one command per verb | door |
-| `export` | Render a document without a browser | door |
+<!-- BEGIN GENERATED: architecture-target-parts. Run tools/generate-architecture.mjs; do not edit by hand. -->
+| Part | Duty | Kind | Fixed by | Consumes |
+|---|---|---|---|---|
+| `lattice` | Compute geometry on the grid | core | O1 | -- |
+| `kind-contract` | Compose kinds from the rows plugins declare | core | N1, G3, WD6 | -- |
+| `document` | Hold one document's entities | core | O1, O4, N5, Q1 | `kind-contract`, `lattice` |
+| `relations` | Index which entities relate | core | O1 | `document`, `kind-contract`, `lattice` |
+| `colours` | Hold the colours every role draws from | core | N1 | -- |
+| `primitives` | Draw the shapes painters compose | core | N1, D3 | `lattice`, `colours` |
+| `rules` | Match an input to one declared row | core | D2 | -- |
+| `planner` | Make the one write every door applies | core | SD2, O1 | `kind-contract`, `document`, `relations`, `lattice` |
+| `layouts` | Declare a diagram's grids | plugin | WD6, WD7 | `lattice`, `kind-contract`, `document` |
+| `devices` | Compose a device onto an anchor | plugin | O4, WD10 | `lattice`, `kind-contract`, `document`, `relations`, `colours`, `primitives`, `rules` |
+| `network` | Connect anchors | plugin | SD11, O1 | `lattice`, `kind-contract`, `document`, `relations`, `colours`, `primitives`, `rules` |
+| `zones` | Bound regions of cells | plugin | O1, O4 | `lattice`, `kind-contract`, `document`, `layouts`, `colours`, `primitives`, `rules` |
+| `groups` | Name sets of anchors | plugin | O1 | `lattice`, `kind-contract`, `document`, `relations`, `colours`, `primitives`, `rules` |
+| `simulation` | Derive motion along routes | plugin | SD11 | `lattice`, `kind-contract`, `document`, `relations`, `colours`, `primitives`, `rules`, `network`, `canvas` |
+| `product` | Compose the plugins into the product | composition | N1, D1 | `kind-contract`, `lattice`, `layouts`, `devices`, `network`, `zones`, `groups`, `simulation` |
+| `canvas` | Turn input into edits through the parts' declarations | host | D1, D2, D4, D5 | `lattice`, `kind-contract`, `document`, `relations`, `rules`, `planner`, `renderer`, `primitives`, `colours`, `network`, `devices` |
+| `renderer` | Draw a document through the parts' painters | host | D1, D3 | `lattice`, `document`, `primitives`, `colours` |
+| `sync` | Keep a tab converged with the server | host | SD2 | `document`, `kind-contract`, `canvas` |
+| `product-page` | Compose the product page | composition root | D1 | any part -- a composition root |
+| `lab` | Compose the canvas over the real modules, without storage | composition root | H17-D1 | any part -- a composition root |
+| `server` | Compose the server | composition root | SD2 | any part -- a composition root |
+| `access` | Establish who a request comes from | door | `docs/spec/ACCESS.md` | -- |
+| `store` | Keep documents durable | door | SD2, WD6 | `document`, `kind-contract`, `lattice`, `planner`, `product`, `relations`, `access`, `devices` |
+| `hub` | Carry each change to the tabs watching a document | door | SD2 | `store`, `planner`, `document`, `kind-contract`, `access`, `rest` |
+| `rest` | Answer agents over HTTP | door | SD1 | `store`, `hub`, `planner`, `document`, `kind-contract`, `product`, `network`, `layouts`, `devices`, `zones`, `groups`, `lattice`, `access` |
+| `cli` | Give an agent one command per verb | door | SD1 | -- |
+| `export` | Render a document without a browser | door | H2 | `lattice`, `document`, `kind-contract`, `primitives`, `colours`, `product`, `network` |
+<!-- END GENERATED: architecture-target-parts -->
 
 ### 4.2 What the parts expose
 
 | Part | Exposes |
 |---|---|
-| `lattice` | the lattices' arithmetic -- cells, snapping, the nearest anchor -- and a path's geometry |
+| `lattice` | the lattices' arithmetic -- cells, snapping, the nearest point -- and a path's geometry |
 | `kind-contract` | the row contract a kind is declared by; extension rows (G3); the entities every document holds (WD6); a composition |
-| `document` | a document's entities by kind, the one name namespace kinds opt into (N5), the anchor |
-| `palette` | the palette's values; each plugin names its own roles over it (the palette ruling) |
-| `primitives` | frames, glyph placement and region layout, the pieces every painter and the export draw with |
-| `relations` | which links meet an anchor, which anchor holds a cell, which group gathers a member |
-| `planner` | plan, commit, undo and redo over a composition's rows and tenants, every plugin a tenant alike; document validation |
+| `document` | a document's entities by kind; the one name namespace kinds opt into (N5); the anchor capability's identity and reference resolution (O1) |
+| `relations` | the anchor capability's occupancy -- which anchor holds a cell (O1) -- and which links meet an anchor, which group gathers a member |
+| `colours` | the one palette's values; each plugin names its own roles over it (the palette ruling) |
+| `primitives` | the shapes every painter composes, none a plugin's own (N1) |
+| `rules` | one match, or none, for an input among declared rows |
+| `planner` | plan, commit, undo and redo over a composition's rows and every tenant it brings, each alike; document validation; the invariants a write keeps |
 | `layouts` | the layout kind, its two records in every diagram, the anchor's place, the grids drawn from the records |
-| `devices` | the device fields (type, shape, span, content); the appearance pack family -- glyph art, glyph box, frame, content -- and the placement packs -- the palette's tiles and digits; a device's footprint and size (WD10) |
-| `network` | the link and pipe kinds; the transit field; the routing pack family -- the roles a composition permits and the transit it offers; the reactions that cut, join and lay legs; the queries a route answers |
-| `zones` | the zone kind, its gestures, its grid's use |
+| `devices` | the device fields -- type, shape, span, content; the type list, in the palette's order (H17-D6); the appearance family -- glyph art and box, frames, content regions; a device's footprint and size (WD10) |
+| `network` | the link and pipe kinds; the transit field; the routing family -- per type, the roles it permits and whether it offers transit (2026-10-07); the reactions that cut, join and lay legs; the queries a route answers |
+| `zones` | the zone kind and its gestures, over the zone grid |
 | `groups` | the group kind, its tenant, gathering by members |
-| `simulation` | the spawn field; the behaviour pack family -- a tower's numbers; movers, run mode and their appearances |
-| `product` | the product's composition of kinds and canvas parts, and its device types, each a composition of packs (section 5) |
+| `simulation` | the spawn field; movers along routes, run mode and their appearances |
+| `product` | the product's composition: every kind, the network's among them, and every canvas part |
 | `canvas` | press rows, gestures, keys and the hand, each a part's declaration over shared gestures (D1, D2) |
 | `renderer` | every kind drawn through its part's painter or appearances, composed per state (D3) |
 | `sync` | an outbox replayed after reconnect; the server's answer applied; a tab reloaded onto a new revision |
-| `store` | documents loaded, completed with what every document holds, validated, written back |
+| `product-page`, `lab`, `server` | the product page, the lab page and the server, each composed from the product |
+| `access` | who a request comes from: a person's identity, an agent's connection code, a websocket's origin |
+| `store` | documents loaded, completed with what every document holds, validated and written back |
 | `hub` | snapshots and changes to every session on a document |
-| `rest` | the routes an agent drives, including an anchor's role, a route and the device types (SD1) |
-| `cli` | verbs for every route, each asking the server for what the server derives (SD1) |
-| `export` | a document drawn to SVG, its kind knowledge in the export layer, none in the core (N1) |
+| `rest` | the routes an agent drives, an anchor's role among what they derive (SD1) |
+| `cli` | a verb for each route, asking the server for what the server derives (SD1) |
+| `export` | a document drawn to a file through the same rendering run mode draws (H2) |
 
-### 4.3 What each part consumes
+### 4.3 How the parts consume one another
 
-- **Every plugin** consumes the `kind-contract` (to declare its rows), the `document` (to read entities) and the `lattice`; none consumes another plugin's internals, and a plugin that reads another's kind reads it through the `product`'s composition or that plugin's exposed queries (O1, Q1).
-- **The `network`** consumes a node's composition -- which routing pack its type includes -- not the devices plugin's fields; whether an anchor may bend, join or pass a route is read from that pack (section 5).
-- **The `planner`** consumes a composition's rows and every tenant the composition brings, the network's among them, with no slot of its own for any plugin (SD11b).
-- **The `canvas` and `renderer`** consume the canvas parts the `product` composes, and name no plugin's kind (D1).
-- **The doors** (`store`, `hub`, `rest`, `cli`, `export`) consume the one composition the `product` makes, so each holds the same rules (SD2).
-- **The `cli`** consumes `rest` alone (SD1).
+The table in 4.1 lists each part's consumes; these are the rules it follows.
+- **A plugin consumes the core, never another plugin's modules:** a plugin that reads another's kind reads it through the composition the product makes, or that plugin's queries (O1, Q1).
+- **The network reads a node's type, and its own routing table keyed by it** (P-10, 2026-10-07) -- not the devices plugin's modules.
+- **The planner consumes a composition's rows and every tenant it brings,** with no part of its own reserved for any plugin (SD2, SD11b).
+- **The canvas and the renderer consume the parts the product composes,** and name no plugin's kind beyond D2's record of the draw-a-link gesture (D1, D2).
+- **The doors consume the one composition the product makes,** the network's kinds within it, so every door holds the same rules (SD2).
+- **The CLI consumes the server over HTTP,** importing no product module, for everything the server derives (SD1).
 
 ---
 
 ## 5. A type is a composition
 
-**Maturity: provisional.**
+**Maturity: provisional; the behaviour family is not yet designed.**
 
-This is the unification's centre: what a device is, said once.
-
-- **A pack is a table** a plugin contributes, and nothing else (SD4): the derivation that reads it is the plugin's, the writes it implies are the planner's tenants'.
-- **The pack families:**
+What a device is, said once per family.
+- **A type is the name an author picks for a composition** (2026-10-02); the core does not know what it means, and a node's `type` is that name, stored as it is (P-10).
+- **A pack is a code table keyed by type** (SD4, P-10): the derivation that reads it is its plugin's, and the writes it implies are the planner's tenants'.
+- **The pack families ruled in scope** (2026-09-22):
   - **appearance** -- the devices plugin's: a glyph's art and box, a frame, how content regions lay out;
-  - **routing** -- the network's: which roles an anchor may take -- endpoint, junction, bend -- and the transit it offers;
-  - **behaviour** -- the simulation's: a tower's numbers, for a type that is one;
-  - **placement** -- the devices plugin's: whether a type is a palette tile, and its place there.
-- **A type is a composition:** a name, and the pack it takes from each family it uses.
-  It is declared once; every plugin reads its own family's pack through that one declaration, so adding a type is one declaration, and no type name appears outside it.
-- **A per-type permission table and a pack registry are one lookup** (2026-09-22): asking what a server permits is asking which routing pack the server composition includes.
-- **A bare anchor** is the composition with the fewest packs: a routing pack permitting every role, no appearance beyond the network's marks; it stops being distinguishable rather than being deleted (2026-09-22).
-- **Roles are derived, per type:** whether an anchor is an endpoint, a bend or a junction is what the graph makes of it, within what its routing pack permits; a join that would make an anchor a bend its pack forbids does not happen.
-- **A violation is refused in the validator** (2026-09-22), where the permission belongs; whether a pin through a stop that offers no passage is refused or cut is owed (SD5, section 9).
-- **Appearance resolves per state** (2026-09-22; D3): a device that the graph makes a junction draws its junction mark composed over its frame.
-- **The stored name does not change** (P-10): a node's `type` is its composition's name, so no stored document migrates when a type becomes a composition.
+  - **routing** -- the network's: per type, the roles an anchor may take -- endpoint, junction, bend -- and whether it offers transit, which is the network's configuration (2026-10-07).
+- **One lookup per family:** each family is one table, and a per-type permission table and a pack registry are the same lookup (2026-09-22); the type list itself is one table, imported by its users (H17-D6), and no other code table keys on a type name.
+- **A node with no type** is a bare anchor (P-10): no appearance pack, and a routing that permits every role.
+- **Transit is a per-anchor input:** the routing table says what a type offers; an anchor's own stored `transit` says whether it is on (H18.7); a role is what the graph makes of an anchor within both -- with transit off an anchor is an endpoint at any link count.
+- **A violation:** a pin through a type that offers no passage is refused in the validator (2026-09-22); a join that would make an anchor a bend its type does not permit is refused (2026-09-28, Z1); a pin where an anchor's transit goes off is cut, and `w` on such an anchor makes two links ending there (TR-2, TR-2b, Z1).
+- **Appearance resolves per state** (2026-09-22, D3): a device that the graph makes a junction draws its junction mark composed over its frame.
+- **No stored document changes when a type is a composition** (P-10).
 
 ---
 
@@ -214,7 +219,7 @@ This is the unification's centre: what a device is, said once.
 |---|---|
 | `meta` | id, name, version, schema, owner, grants, and the plugins the document needs (SD12) |
 | `layouts` | the diagram's two grids, each a record of name, pitch, offset and extent, holding today's values (WD6, WD7) |
-| `nodes` | anchors: id, name, position, order -- and the fields plugins contribute: the devices plugin's type, shape, span, content; the network's transit; the simulation's spawn |
+| `nodes` | anchors -- id, name, position, order -- and the fields plugins contribute: the devices plugin's type, shape, span, content; the network's transit; the simulation's spawn |
 | `links` | connections: their stops, closure, direction and plane (the network's) |
 | `pipes` | adjacencies between two anchors, keyed by the pair, and how each was laid (SD7) |
 | `zones` | regions of cells (the zones plugin's) |
@@ -222,7 +227,7 @@ This is the unification's centre: what a device is, said once.
 | `selection`, `reveal` | the authoritative selection; a reveal's beats |
 
 A peer lacking a plugin the document lists refuses the document (SD12).\
-A name is a service the anchor opts into, unique across every named kind (N5; confirmation owed, section 9).
+A node is named, unique across every named kind (N5).
 
 ### 6.2 The interfaces between parts
 
@@ -230,9 +235,9 @@ A name is a service the anchor opts into, unique across every named kind (N5; co
 - **Extension rows** (G3): a plugin's fields on a kind it does not own, each with its check and its cross-field rule.
 - **Tenants:** a plugin's reactions to an edit, declared triggers over the change set, run by the planner for every plugin alike.
 - **Canvas parts:** what a plugin brings to the page -- painters and appearances, picks, places, press rows, handles, the hand, keys, labels, size steps, grids, descriptions, tallies -- composed by the canvas without naming the plugin (D1 to D5).
-- **Queries** (Q1): a plugin's own functions over a document -- a link's path and route, whether it is down, what blocks it.
-- **Pack tables** (SD4): each family's tables, keyed by pack name; a type's composition names one per family (section 5).
-- **The doors:** REST routes, the websocket's commands, the CLI's verbs -- each listed, derived, in the current architecture, section 6.
+- **Queries** (Q1): a plugin's own functions over a document -- a link's path and route, whether it is down, what blocks it, an anchor's role.
+- **Pack tables** (SD4, P-10): each family's one table, keyed by type.
+- **The doors:** REST routes, the websocket's commands, the CLI's verbs -- listed, derived, in the current document.
 
 ---
 
@@ -241,11 +246,12 @@ A name is a service the anchor opts into, unique across every named kind (N5; co
 **Maturity: provisional.**
 
 - **An edit, at any door:** the door states intent as ops; the planner checks each op against its kind's row and the contributed rows, runs every tenant's reactions on the change set, checks every invariant, and answers with the one write; the store applies it, logs its inverse and broadcasts it; every tab applies the answer.
-- **In a tab, before the answer:** the tab plans the same edit with the same planner and shows the result at once (SD2), then takes the server's answer and replays its own unanswered edits over it.
+- **In a tab, before the answer:** the tab plans the same edit with the same planner and shows it at once (SD2), then takes the server's answer and replays its own unanswered edits over it.
 - **Loading a document:** the store reads it, completes the entities every document holds, refuses one in a format it does not read or listing a plugin it lacks, validates it, and reports any invariant it breaks.
 - **Reading:** a route, an anchor's role, whether a link is down and where a mover is are derived on demand, identically in a tab, on the server and for an agent.
+- **Downloading:** a document is drawn to a file by the rendering run mode draws (H2).
 - **A new revision:** a tab detects it, says why, and reloads onto it.
-- **The lab:** the canvas composed over the real modules with one authority in the page and no storage.
+- **The lab:** the canvas composed over the real modules, with one authority in the page and no storage.
 
 ---
 
@@ -255,25 +261,30 @@ A name is a service the anchor opts into, unique across every named kind (N5; co
 
 ### 8.1 How a claim is proved
 
-- **The gate** proves the layers, the kinds' composition, the records, every test, and that the current architecture says what the code declares (its steps are listed, derived, in `docs/ARCHITECTURE.md`, section 8).
+- **The gate** proves the layers, the parts, the kinds' composition, the records, every test, and that both architecture documents say what the code declares.
 - **The ratchets** hold what shared code may name of a plugin, each exception with its reason and its trigger.
 - **The corpora and the behaviour matrix** hold behaviour equal across changes and across both pages.
 - **The sync fuzz** holds a tab converged with the server under reorder and disconnect.
 
 ### 8.2 Divergence -- what this states and the current instant does not
 
-The distance between this document and `docs/ARCHITECTURE.md`, each row carried by a backlog row; the table shrinks as rows close.
+**Measured:** every import in the code between two parts that the target's consumes do not allow is listed, generated, in the current document's section "Part divergence".\
+**Listed by hand,** each row named by the backlog row that carries it:
 
 | This target states | The current instant | Carried by |
 |---|---|---|
-| a device type is declared once, as a composition of packs; no type name appears outside it | eight tables in five files key on a type's name (`dev/design/unification/UNIFICATION-AUDIT.md`, section 3.1) | B282 |
-| a type's routing pack decides whether an anchor may bend, join or pass a route | whether a node has a type decides it | B282 |
+| each pack family is one table keyed by type, the type list one table, and no other code table keys on a type name | eight tables in five files key on a type's name, two of them copies (`dev/design/unification/UNIFICATION-AUDIT.md`, section 3.1) | B282 |
+| a type's routing table decides which roles an anchor may take | whether a node has a type decides whether it may bend or join | B282 |
 | a device the graph makes a junction draws its junction mark over its frame | nothing draws it | B331 |
-| the planner and the canvas compose the network as any plugin | the planner takes a `links` option and the canvas a `network` slot | B332 |
-| the core holds the palette; each plugin holds its colour roles and its glyph art | `kernel/theme.mjs` holds the zone, group, link and waypoint roles and the device glyph art | B338 |
-| an agent reads an anchor's role; the CLI asks the server what the server derives | no door serves a role; the CLI derives combat and movers and restates a rule | B339 |
+| the planner and the canvas take the network as any plugin, and the doors take it within the product's composition | the planner takes a `links` option and imports the network's layer; the canvas takes a `network` slot; each door composes the network's rows itself | B332 |
+| the core holds the palette and primitives no plugin owns; each plugin holds its colour roles, its glyph art and its frame and content drawing | the core's theme holds the zone, group, link and waypoint roles and the device glyph art; its primitives draw a device's frame and content | B338 |
+| an agent reads an anchor's role; the CLI imports no product module | no door serves a role; the CLI imports product modules to derive combat and movers, and restates a rule | B339 |
 | each document lists the plugins it needs | no document does | B248 |
-| the export door's knowledge of kinds lives in the export layer, none in the core | the core's geometry module holds the zone and group elements the export draws | B330 |
+| the download is drawn by the rendering run mode draws | the export door is a second renderer, naming kinds | B330 |
+| a part reads another plugin's kind only through the composition | the canvas reads the devices plugin's drawn word for a create label; the groups painter reads a device's span | B340 |
+| occupancy is the core's anchor capability | the occupancy index and the one-anchor-to-a-point invariant are the network layer's | B341 |
+| the simulation's page pieces are the simulation's | the movers and the reveal live in the canvas folder | B329 |
+| the canvas names no plugin's kind beyond D2's record of the draw-a-link gesture | the canvas names plugin kinds and imports plugin modules, each recorded in its ratchet's record (`tests/canvas-names-no-plugin.test.js`) | B328 |
 
 ---
 
@@ -281,23 +292,30 @@ The distance between this document and `docs/ARCHITECTURE.md`, each row carried 
 
 **Maturity: provisional.**
 
-### 9.1 Decisions owed -- each with the recommendation the director is asked to rule on
+### 9.1 Decisions owed
 
-| Question | Recommendation, and why |
+| Question | The options and their costs | Recommendation |
+|---|---|---|
+| How does the CLI learn the device types? | **From the server** (SD1): one list, no copy; `draw help` offline cannot name the types, and `draw map`'s letter per type comes from the server too. **A copy held equal by a test** (B167): help works offline; two lists of one fact, the drift A2 warns of, held only by the test | from the server -- the CLI already needs the server for every verb but help |
+| Is a type's behaviour a pack family -- a tower's numbers a table the simulation keys by type? | **Yes:** the director's own description of a composition names behaviours (2026-10-02), and the simulation's tower table is keyed by type already (`engine/kinds.mjs`); the ruled families are only appearance and routing, and how behaviour joins was left open (`dev/surveys/unification-survey.md`; SD4's cost). **Not yet:** a tower stays the simulation's rule over a type name, outside the families | yes, as a third family keyed by type, with nothing beyond the table it already is |
+
+### 9.2 Settled by rulings -- read so, for the director to correct if wrong (INFERRED)
+
+| Question the record held open | The reading |
 |---|---|
-| Does the anchor keep its `name`? The 2026-09-22 record lists name among what is not universal; N5 later made names a service each kind opts into | **Keep it, as the anchor opting into the naming service** -- N5 is the later and more specific ruling, every entity is addressable by name for agents (B187), and nothing stored changes |
-| A pin through a stop that offers no passage: refused or cut? (SD5, never asked) | **Refused, at every door** -- the 2026-09-22 ruling puts a violation in the validator, and a cut rewrites what the author drew |
-| Who holds a type's composition: the product or the devices plugin? | **The product** -- a type draws packs from three plugins' families, and composing plugins is the product's one duty; each plugin keeps its own pack tables |
-| How does the CLI learn the types? | **From the server** (SD1) -- the CLI asks for what the server holds, and its copy and the test that holds it equal (B167) retire |
+| Does the anchor keep its name? | yes: N5 keeps the built-in kinds named, the node among them |
+| Who holds a type's tables? | each family's owner (P-10; the transit configuration, 2026-10-07), and the type list the devices plugin, imported by its users (H17-D6; O4) |
+| SD5, refuse or cut a forbidden role | a type that offers no passage refuses a pin (2026-09-22); a stop whose transit is off cuts (TR-2, TR-2b, Z1); SD5's hold, until a pin may name a device, ended when Z1 let a pin name one |
+| SD12, the plugin list | ratified; its building held with the director's approval (B248); the "one named batch, last" ruling it was bound to is spent |
 
-### 9.2 Open -- ratified but undesigned, or held with a trigger
+### 9.3 Open -- ratified but undesigned, or held with a trigger
 
 | Topic | Standing |
 |---|---|
-| Flows: a flow declared once along a path, seen end to end | ratified in principle (SD10, SD6); undesigned; parked by the director (B327) |
+| Flows: a flow declared once along a path, seen end to end | ratified in principle (SD10, SD6), undesigned, parked by the director (B327); no flow is in the document of section 6 |
 | Links side by side over one pipe | held until designed (B256) |
-| The export door drawing through the painters | held (B330) |
 | Anchors along a wide device, and which one a link ends at | held until a wide device needs links at more than one point (B282; WD1) |
 | A diagram varying its grids | held until the infinite canvas is designed (B325; WD7) |
 | Unloading what is out of view | held until the infinite canvas is designed (B289) |
 | Policy over packets and flows | out of scope; named so nothing excludes it (2026-09-22) |
+| Absorption of rulings recorded before 2026-10-11 | a ruling from then on names the documents it affects, and the gate checks each cites it; an older ruling's absorption is read by review, not checked |

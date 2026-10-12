@@ -11,8 +11,10 @@ decision record, each decidable from the text; status lives on the board, and pr
   STANDING  the unification index's Standing column follows `<type>[; <board items>].`, the type one of Delta, Plan, Design,
             Register, Evidence, Descriptive, Generated, Audit -- so no cell carries a state
   RULINGS   after the marker heading in dev/DECISIONS.md, every paragraph opening in bold is a ruling block -- a bold id head,
-            then `Director: "<words>"`, `Shown: <document>@<commit>`, `Recorder: <account>` -- or an `AMENDED` or `CORRECTED`
-            line; a bold paragraph of any other kind there fails
+            then `Director: "<words>"`, `Shown: <document>@<commit>`, `Recorder: <account>`, `Affects: <path>[, <path>]` -- or an
+            `AMENDED` or `CORRECTED` line naming the ruling it amends; a bold paragraph of any other kind there fails
+  ABSORBED  each path a ruling block's `Affects:` names exists and cites the ruling's id (H21.6; mission-kit AR4's `affects`,
+            the walk AR1 asks for so a target architecture is living rather than a shape)
 
 Usage: node tools/scan-designs.mjs [--root <dir>]
 */
@@ -82,8 +84,13 @@ if (exists('dev/DECISIONS.md')) {
 			const head = /^\*\*([A-Z][A-Za-z0-9.-]*(?:,\s*[A-Z][A-Za-z0-9.-]*)*)\s+--\s/.exec(first);
 			const label = first.slice(0, 70);
 			if (!head) { fail(`dev/DECISIONS.md: "${label}" opens in bold after the marker and is neither a ruling block (a bold id head) nor an AMENDED or CORRECTED line`); continue; }
-			for (const [field, re] of [['Director', /^Director: ".+"\\?$/m], ['Shown', /^Shown: \S+@[0-9a-f]{7,}\\?$/m], ['Recorder', /^Recorder: .+$/m]]) {
-				if (!re.test(p)) fail(`dev/DECISIONS.md ${head[1]}: no \`${field}:\` line -- a ruling block carries Director: "<words>", Shown: <document>@<commit> and Recorder: <account>`);
+			for (const [field, re] of [['Director', /^Director: ".+"\\?$/m], ['Shown', /^Shown: \S+@[0-9a-f]{7,}\\?$/m], ['Recorder', /^Recorder: .+$/m], ['Affects', /^Affects: .+$/m]]) {
+				if (!re.test(p)) fail(`dev/DECISIONS.md ${head[1]}: no \`${field}:\` line -- a ruling block carries Director: "<words>", Shown: <document>@<commit>, Recorder: <account> and Affects: <paths>`);
+			}
+			const affects = /^Affects: (.+?)\\?$/m.exec(p);
+			for (const f of affects ? affects[1].split(',').map((x) => x.trim().replace(/^`|`$/g, '')).filter(Boolean) : []) {
+				if (!exists(f)) fail(`dev/DECISIONS.md ${head[1]}: Affects names ${f}, which does not exist`);
+				else if (!new RegExp(`\\b${head[1].split(',')[0].trim().replace(/[.]/g, '\\.')}\\b`).test(read(f))) fail(`dev/DECISIONS.md ${head[1]}: Affects names ${f}, which does not cite ${head[1]} -- a ruling a document must absorb is cited there`);
 			}
 		}
 	}

@@ -1926,5 +1926,6 @@ An amendment to an earlier ruling is written here, citing it, not inserted besid
 **H21.5 -- the guards that keep the records true, built as designed -- 2026-10-11.**\
 Director: "continue"\
 Shown: dev/design/unification/RECORD-GUARDS.md@6a6a86c\
+Affects: dev/design/unification/RECORD-GUARDS.md\
 Recorder: the director was shown the third version, measured against all 28 held triggers and found "ratifiable after small changes" by its second reviewer, with three decisions recommended; the answer builds it with all three as recommended -- a fired trigger blocks a milestone's close and is printed every run; the ruling structure binds rulings from this marker, past ones untouched; the deferred pieces are filed as held rows with triggers.
 

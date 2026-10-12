@@ -6,7 +6,9 @@ AR1 forbids a hand-authored current projection: a hand-written statement of wher
 measured how far (`dev/design/unification/UNIFICATION-AUDIT.md`). So the structural sections of docs/ARCHITECTURE.md are read from
 what the code declares about itself, and the gate fails when the document no longer says what the code does:
 
-  layers         tools/layers.mjs -- each layer's duty (LAYER_DUTY), what it may import (ALLOWED), how many modules it holds
+  layers         tools/layers.mjs -- each layer's duty (LAYER_DUTY) and what it may import (ALLOWED)
+  parts          tools/layers.mjs PARTS -- the anchored core's parts, the modules each is made of, the imports between them read
+                 from the code, and each import the target's consumes do not allow with the backlog row carrying it
   kinds          product/kinds.mjs composed with the network's rows, as the store composes them -- each kind's owner, its
                  collection, what it opts into, the fields other plugins contribute to it, the entities every document holds
   canvas         product/canvas.mjs -- each part, and the part keys it brings to the page
@@ -22,11 +24,14 @@ structure does, not with every commit.
 Usage: node tools/generate-architecture.mjs [--check] [--doc <path>]
   --check  exit non-zero, naming each region, when a region differs from what the code declares
   --doc    the document to write or check (default docs/ARCHITECTURE.md)
+  --target-doc  the target document holding the parts table (default docs/ARCHITECTURE-TARGET.md)
+  --parts  a JSON parts declaration in place of tools/layers.mjs PARTS (tests)
 */
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { LAYER_DUTY, ALLOWED, FOLDERS, LAYER, RATCHETS, RATCHET_REASONS } from './layers.mjs';
+import { LAYER_DUTY, ALLOWED, LAYER, RATCHETS, RATCHET_REASONS, PARTS as DECLARED_PARTS } from './layers.mjs';
+import { exceptionFaults } from './exceptions.mjs';
 import { productKinds } from '../product/kinds.mjs';
 import { NETWORK_ROWS } from '../network/kinds.mjs';
 import { PRODUCT_CANVAS } from '../product/canvas.mjs';
@@ -36,25 +41,26 @@ import { VERBS } from '../cli/verbs.mjs';
 const ROOT = path.resolve(import.meta.dirname, '..');
 const arg = (name) => { const i = process.argv.indexOf(name); return i > -1 ? process.argv[i + 1] : null; };
 const DOC = path.resolve(arg('--doc') ?? path.join(ROOT, 'docs/ARCHITECTURE.md'));
+const TARGET = path.resolve(arg('--target-doc') ?? path.join(ROOT, 'docs/ARCHITECTURE-TARGET.md'));
 const CHECK = process.argv.includes('--check');
+// --parts <json>: a parts declaration in place of tools/layers.mjs's, so a test can drive the part rules
+const PARTS = arg('--parts') ? JSON.parse(fs.readFileSync(arg('--parts'), 'utf8')) : DECLARED_PARTS;
 const read = (f) => fs.readFileSync(path.join(ROOT, f), 'utf8');
 const code = (f) => read(f).replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
 const cell = (v) => String(v).replace(/\|/g, '\\|');
 const table = (head, rows) => [`| ${head.join(' | ')} |`, `|${head.map(() => '---').join('|')}|`, ...rows.map((r) => `| ${r.map(cell).join(' | ')} |`)].join('\n');
 const list = (xs) => (xs.length ? xs.map((x) => `\`${x}\``).join(', ') : '--');
 
-// ---- layers: modules per layer, from the folders that name a layer and the lists that place a file
+// ---- a folder's modules, for the parts and the lab
 const walk = (dir, skip = []) => fs.readdirSync(path.join(ROOT, dir), { withFileTypes: true }).flatMap((d) => {
 	const p = `${dir}/${d.name}`;
 	if (skip.some((s) => p.startsWith(s))) return [];
 	return d.isDirectory() ? walk(p, skip) : /\.m?js$/.test(d.name) ? [p] : [];
 });
-const modules = Object.fromEntries(Object.keys(ALLOWED).map((l) => [l, LAYER[l]?.length ?? 0]));
-for (const f of FOLDERS) if (f.layer && fs.existsSync(path.join(ROOT, f.dir))) modules[f.layer] += walk(f.dir, f.skip ?? []).length;
 const missingDuty = Object.keys(ALLOWED).filter((l) => !LAYER_DUTY[l]);
-const layers = table(['Layer', 'Duty', 'Modules', 'May import'],
-	// tools and tests grow with every check and every test, so their counts would stale the document on most commits
-	Object.keys(ALLOWED).map((l) => [`\`${l}\``, LAYER_DUTY[l] ?? '(none declared)', ['tools', 'tests'].includes(l) ? 'not counted' : modules[l], ['tools', 'tests'].includes(l) ? 'any layer' : list(ALLOWED[l].filter((x) => x !== l))]));
+const layers = table(['Layer', 'Duty', 'May import'],
+	// no module counts: they move whenever a module is added, and the parts table already names every module
+	Object.keys(ALLOWED).map((l) => [`\`${l}\``, LAYER_DUTY[l] ?? '(none declared)', ['tools', 'tests'].includes(l) ? 'any layer' : list(ALLOWED[l].filter((x) => x !== l))]));
 
 // ---- kinds: the server's composition
 const K = productKinds(...NETWORK_ROWS);
@@ -96,30 +102,92 @@ const exceptions = table(['Ratchet', 'Where', 'Count', 'Why it holds', 'Ends whe
 const steps = JSON.parse(read('package.json')).scripts.gate.split(/\s*&&\s*/).map((s) => (s === 'npm test' ? 'node --test tests/*.test.js' : s));
 const gate = table(['#', 'Step'], steps.map((s, i) => [i + 1, `\`${s}\``]));
 
-const REGIONS = { layers, kinds, canvas, compositions, doors, exceptions, gate };
+// ---- parts: every product module in exactly one part; the imports between parts, derived; those the target does not allow
+const PRODUCT_DIRS = ['kernel', 'engine', 'model', 'app/src', 'server', 'cli', 'planner', 'network', 'layouts', 'zones', 'groups', 'devices', 'product', 'lab'];
+const productModules = PRODUCT_DIRS.flatMap((d) => walk(d)).sort();
+const partOf = new Map();
+const partFaults = [];
+for (const [name, p] of Object.entries(PARTS)) {
+	for (const spec of p.modules) {
+		const hit = spec.endsWith('/') ? productModules.filter((m) => m.startsWith(spec)) : productModules.filter((m) => m === spec);
+		if (!hit.length) partFaults.push(`part ${name} names ${spec}, which is no product module`);
+		for (const m of hit) {
+			if (partOf.has(m)) partFaults.push(`${m} is in two parts, ${partOf.get(m)} and ${name}`);
+			else partOf.set(m, name);
+		}
+	}
+}
+for (const m of productModules) if (!partOf.has(m)) partFaults.push(`${m} is in no part -- add it to PARTS in tools/layers.mjs`);
+const importsOf = (f) => [...code(f).matchAll(/(?:\bfrom\s*|\bimport\s*\(\s*)'(\.{1,2}\/[^']+)'/g)].map((m) => path.normalize(path.join(path.dirname(f), m[1])));
+const edges = new Map();   // "a -> b" -> Set(importing module)
+for (const m of productModules) {
+	for (const t of importsOf(m)) {
+		const a = partOf.get(m), b = partOf.get(t);
+		if (!a || !b || a === b) continue;
+		const k = `${a} -> ${b}`;
+		if (!edges.has(k)) edges.set(k, new Set());
+		edges.get(k).add(m);
+	}
+}
+const importsBy = (name) => [...new Set([...edges.keys()].filter((k) => k.startsWith(`${name} -> `)).map((k) => k.split(' -> ')[1]))].sort();
+const parts = table(['Part', 'Duty', 'Kind', 'Made of', 'Imports today'],
+	Object.entries(PARTS).map(([name, p]) => [`\`${name}\``, p.duty, p.kind, p.modules.map((m) => `\`${m}\``).join(', '), list(importsBy(name))]));
+const outside = [...edges.entries()].filter(([k]) => { const [a, b] = k.split(' -> '); const c = PARTS[a].consumes; return c !== '*' && !c.includes(b); }).sort(([a], [b]) => a.localeCompare(b));
+// each import outside the consumes is carried by a live backlog row, or the gate fails (tools/exceptions.mjs resolves the row)
+for (const [k] of outside) {
+	const [a, b] = k.split(' -> ');
+	const row = PARTS[a].carried?.[b];
+	if (!row) partFaults.push(`part ${a} imports ${b}, which the target's consumes do not allow, and no backlog row carries it -- allow it in PARTS.${a}.consumes, or name the row carrying the divergence in PARTS.${a}.carried`);
+	else for (const f of exceptionFaults([{ where: `PARTS.${a}.carried.${b}`, cites: [row], trigger: 'carried' }], ROOT)) partFaults.push(f);
+}
+for (const [a, p] of Object.entries(PARTS)) for (const b of Object.keys(p.carried ?? {})) if (!edges.has(`${a} -> ${b}`) || (p.consumes !== '*' && p.consumes.includes(b))) partFaults.push(`PARTS.${a}.carried names ${b}, but ${a} imports it no more outside its consumes -- remove it`);
+const divergence = outside.length
+	? table(['Part', 'Imports', 'Carried by', 'Which the target does not allow, from'], outside.map(([k, ms]) => { const [a, b] = k.split(' -> '); return [`\`${a}\``, `\`${b}\``, PARTS[a].carried?.[b] ?? '--', [...ms].sort().map((m) => `\`${m}\``).join(', ')]; }))
+	: 'None: every import between parts is one the target allows.';
+const targetParts = table(['Part', 'Duty', 'Kind', 'Fixed by', 'Consumes'],
+	Object.entries(PARTS).map(([name, p]) => [`\`${name}\``, p.duty, p.kind, p.by.map((b) => (b.includes('/') ? `\`${b}\`` : b)).join(', '), p.consumes === '*' ? 'any part -- a composition root' : list(p.consumes)]));
+
+// ---- the reasoning both instants share, copied from the target so it cannot drift
+const targetText = fs.existsSync(TARGET) ? fs.readFileSync(TARGET, 'utf8') : '';
+const sectionOf = (title) => {
+	const a = targetText.indexOf(`\n## ${title}\n`);
+	if (a < 0) return `(the target has no section "${title}")`;
+	const rest = targetText.slice(a + 1);
+	const end = rest.search(/\n---\n|\n## /);
+	return rest.slice(rest.indexOf('\n') + 1, end < 0 ? undefined : end).replace(/^\*\*Maturity:[^\n]*\n\n?/m, '').trim();
+};
+const justification = sectionOf('2. Justification chain');
+const alignment = sectionOf('3. Axiom alignment');
+
+const REGIONS = { layers, kinds, canvas, compositions, doors, exceptions, gate, parts, 'part-divergence': divergence, justification, alignment };
+const TARGET_REGIONS = { 'target-parts': targetParts };
 
 // ---- write or check
 if (missingDuty.length) { console.log(`  \u2717 tools/layers.mjs LAYER_DUTY declares no duty for ${missingDuty.join(', ')}`); process.exit(1); }
-if (!fs.existsSync(DOC)) { console.log(`  \u2717 ${path.relative(ROOT, DOC)} does not exist -- its authored frame holds the generated regions`); process.exit(1); }
-let doc = fs.readFileSync(DOC, 'utf8');
+if (partFaults.length) { for (const f of partFaults) console.log(`  \u2717 ${f}`); process.exit(1); }
 const stale = [];
-for (const [name, body] of Object.entries(REGIONS)) {
-	const begin = `<!-- BEGIN GENERATED: architecture-${name}. Run tools/generate-architecture.mjs; do not edit by hand. -->`;
-	const end = `<!-- END GENERATED: architecture-${name} -->`;
-	const a = doc.indexOf(begin), b = doc.indexOf(end);
-	if (a < 0 || b < a) { console.log(`  \u2717 ${path.relative(ROOT, DOC)} has no region architecture-${name}`); process.exit(1); }
-	const now = doc.slice(a + begin.length, b);
-	const want = `\n${body}\n`;
-	if (now !== want) { stale.push(name); doc = doc.slice(0, a + begin.length) + want + doc.slice(b); }
+function render(file, regions) {
+	if (!fs.existsSync(file)) { console.log(`  \u2717 ${path.relative(ROOT, file)} does not exist -- its authored frame holds the generated regions`); process.exit(1); }
+	let doc = fs.readFileSync(file, 'utf8');
+	for (const [name, body] of Object.entries(regions)) {
+		const begin = `<!-- BEGIN GENERATED: architecture-${name}. Run tools/generate-architecture.mjs; do not edit by hand. -->`;
+		const end = `<!-- END GENERATED: architecture-${name} -->`;
+		const a = doc.indexOf(begin), b = doc.indexOf(end);
+		if (a < 0 || b < a) { console.log(`  \u2717 ${path.relative(ROOT, file)} has no region architecture-${name}`); process.exit(1); }
+		const want = `\n${body}\n`;
+		if (doc.slice(a + begin.length, b) !== want) { stale.push(`${path.relative(ROOT, file)} ${name}`); doc = doc.slice(0, a + begin.length) + want + doc.slice(b); }
+	}
+	return doc;
 }
+const docs = [[TARGET, render(TARGET, TARGET_REGIONS)], [DOC, render(DOC, REGIONS)]];
 if (CHECK) {
 	if (stale.length) {
-		console.log(`  \u2717 ${path.relative(ROOT, DOC)} no longer says what the code declares: ${stale.join(', ')} -- run node tools/generate-architecture.mjs`);
+		console.log(`  \u2717 the architecture no longer says what the code declares: ${stale.join(', ')} -- run node tools/generate-architecture.mjs`);
 		process.exit(1);
 	}
-	console.log(`  PASS -- ${path.relative(ROOT, DOC)}'s ${Object.keys(REGIONS).length} generated regions say what the code declares`);
+	console.log(`  PASS -- both architecture documents' generated regions say what the code declares; ${outside.length} import(s) between parts the target does not allow, listed`);
 } else {
-	if (stale.length) fs.writeFileSync(DOC, doc);
-	console.log(`  ${stale.length ? `regenerated ${stale.join(', ')}` : 'nothing stale'} in ${path.relative(ROOT, DOC)}`);
+	for (const [file, text] of docs) if (text !== fs.readFileSync(file, 'utf8')) fs.writeFileSync(file, text);
+	console.log(`  ${stale.length ? `regenerated ${stale.join(', ')}` : 'nothing stale'}`);
 }
 process.exit(0);

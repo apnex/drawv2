@@ -11,14 +11,14 @@ import { spawnSync } from 'node:child_process';
 
 const SCANNER = path.resolve(import.meta.dirname, '../tools/scan-designs.mjs');
 const MARKER = '## Rulings recorded from 2026-10-11 -- each a structured block';
-const RULING = ['**H9.9 -- a thing ruled -- 2026-10-11.**\\', 'Director: "yes, build it"\\', 'Shown: dev/design/X.md@abc1234\\', 'Recorder: the proposer recommended it.'].join('\n');
+const RULING = ['**H9.9 -- a thing ruled -- 2026-10-11.**\\', 'Director: "yes, build it"\\', 'Shown: dev/design/X.md@abc1234\\', 'Recorder: the proposer recommended it.\\', 'Affects: dev/design/unification/A.md'].join('\n');
 
 function tree({ index = '| `A.md` | a | Delta; H1.1. |', files = ['A.md'], title = '# A thing (DELTA, proposed)', banner = true, decisions = `old text\n\n${MARKER}\n\n${RULING}\n` } = {}) {
 	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-designs-'));
 	const u = path.join(dir, 'dev/design/unification');
 	fs.mkdirSync(u, { recursive: true });
 	fs.writeFileSync(path.join(u, 'README.md'), `| File | What it is | Standing |\n|---|---|---|\n${index}\n`);
-	for (const f of files) fs.writeFileSync(path.join(u, f), `${title}\n\n${banner ? "AMENDED 2026-10-11: this title's status is as written; the standing is its board item's.\n" : ''}\nbody\n`);
+	for (const f of files) fs.writeFileSync(path.join(u, f), `${title}\n\n${banner ? "AMENDED 2026-10-11: this title's status is as written; the standing is its board item's.\n" : ''}\nbody, absorbing H9.9\n`);
 	fs.writeFileSync(path.join(dir, 'dev/DECISIONS.md'), decisions);
 	return dir;
 }
@@ -69,3 +69,17 @@ test('R-c RULINGS: after the marker, a bold paragraph is a ruling block with its
 	assert.equal(r.status, 1);
 	assert.match(r.stdout, /has no marker heading/);
 });
+
+test('H21.6 ABSORBED: a ruling block names what it affects; each named document exists and cites the ruling', () => {
+	assert.equal(scan(tree()).status, 0, 'A.md cites H9.9 -- the control');
+	let r = scan(tree({ decisions: `${MARKER}\n\n${RULING.replace(/\\\nAffects: .*/, '')}\n` }));
+	assert.equal(r.status, 1);
+	assert.match(r.stdout, /H9\.9: no `Affects:` line/);
+	r = scan(tree({ decisions: `${MARKER}\n\n${RULING.replace('A.md', 'Missing.md')}\n` }));
+	assert.equal(r.status, 1);
+	assert.match(r.stdout, /Affects names dev\/design\/unification\/Missing\.md, which does not exist/);
+	r = scan(tree({ decisions: `${MARKER}\n\n${RULING.replace('H9.9 --', 'H9.8 --')}\n` }));
+	assert.equal(r.status, 1, 'the affected document does not cite the ruling');
+	assert.match(r.stdout, /which does not cite H9\.8/);
+});
+

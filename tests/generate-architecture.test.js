@@ -11,7 +11,10 @@ import { spawnSync } from 'node:child_process';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const TOOL = path.join(ROOT, 'tools/generate-architecture.mjs');
-const run = (...a) => spawnSync(process.execPath, [TOOL, ...a], { encoding: 'utf8' });
+// the target document copied too, so no test ever writes the real one
+const TARGET_COPY = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'draw-arch-target-')), 'ARCHITECTURE-TARGET.md');
+fs.copyFileSync(path.join(ROOT, 'docs/ARCHITECTURE-TARGET.md'), TARGET_COPY);
+const run = (...a) => spawnSync(process.execPath, [TOOL, '--target-doc', TARGET_COPY, ...a], { encoding: 'utf8' });
 const copy = (edit) => {
 	const f = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'draw-arch-')), 'ARCHITECTURE.md');
 	fs.writeFileSync(f, edit(fs.readFileSync(path.join(ROOT, 'docs/ARCHITECTURE.md'), 'utf8')));
@@ -23,7 +26,7 @@ test('H21.6: docs/ARCHITECTURE.md says what the code declares -- the control', (
 	assert.equal(r.status, 0, r.stdout);
 	const doc = fs.readFileSync(path.join(ROOT, 'docs/ARCHITECTURE.md'), 'utf8');
 	assert.match(doc, /^---\ninstant: current\n/, 'the current instant, declared');
-	for (const name of ['layers', 'kinds', 'canvas', 'compositions', 'doors', 'exceptions', 'gate']) assert.ok(doc.includes(`BEGIN GENERATED: architecture-${name}.`), name);
+	for (const name of ['layers', 'kinds', 'canvas', 'compositions', 'doors', 'exceptions', 'gate', 'parts', 'part-divergence', 'justification', 'alignment']) assert.ok(doc.includes(`BEGIN GENERATED: architecture-${name}.`), name);
 	assert.match(doc, /\| `link` \| the network \|/, 'the link is the network\'s kind, read from its row');
 });
 
@@ -31,7 +34,7 @@ test('H21.6: a hand edit inside a generated region fails the check, naming the r
 	const f = copy((d) => d.replace('| `link` | the network |', '| `link` | the core |'));
 	const r = run('--check', '--doc', f);
 	assert.equal(r.status, 1);
-	assert.match(r.stdout, /no longer says what the code declares: kinds/);
+	assert.match(r.stdout, /no longer says what the code declares: \S+ kinds/);
 	assert.equal(run('--doc', f).status, 0);
 	assert.equal(run('--check', '--doc', f).status, 0, 'regenerated');
 	assert.match(fs.readFileSync(f, 'utf8'), /\| `link` \| the network \|/);
@@ -45,3 +48,34 @@ test('H21.6: a document missing a region fails; the authored frame outside the r
 	const framed = copy((d) => d.replace('## 1. Identity', '## 1. Identity, as authored'));
 	assert.equal(run('--check', '--doc', framed).status, 0, 'prose outside a region is the author\'s');
 });
+
+// the part rules, driven over a parts declaration of the test's own, written from the real one with one fault planted
+const partsWith = (edit) => {
+	const f = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'draw-parts-')), 'parts.json');
+	return import('../tools/layers.mjs').then(({ PARTS }) => { const p = structuredClone(PARTS); edit(p); fs.writeFileSync(f, JSON.stringify(p)); return f; });
+};
+
+test('H21.6: every product module is in exactly one part -- one left out, or in two, fails', async () => {
+	let r = run('--check', '--parts', await partsWith((p) => { p.cli.modules = []; }));
+	assert.equal(r.status, 1);
+	assert.match(r.stdout, /cli\/draw\.mjs is in no part/);
+	r = run('--check', '--parts', await partsWith((p) => { p.lattice.modules.push('kernel/theme.mjs'); }));
+	assert.equal(r.status, 1);
+	assert.match(r.stdout, /kernel\/theme\.mjs is in two parts/);
+	r = run('--check', '--parts', await partsWith((p) => { p.lattice.modules.push('kernel/nowhere.mjs'); }));
+	assert.match(r.stdout, /part lattice names kernel\/nowhere\.mjs, which is no product module/);
+});
+
+test('H21.6: an import the target does not allow must be carried by a live row -- uncarried, carried by a closed row, or carried stale, it fails', async () => {
+	let r = run('--check', '--parts', await partsWith((p) => { delete p.network.carried; }));
+	assert.equal(r.status, 1);
+	assert.match(r.stdout, /part network imports devices, which the target's consumes do not allow, and no backlog row carries it/);
+	r = run('--check', '--parts', await partsWith((p) => { p.network.carried.devices = 'B282x'; }));
+	assert.equal(r.status, 1, 'a carrier that is no row');
+	r = run('--check', '--parts', await partsWith((p) => { p.network.carried.devices = 'B323'; }));
+	assert.match(r.stdout, /cites B323, which is CLOSED/, 'a carrier that is closed');
+	r = run('--check', '--parts', await partsWith((p) => { p.network.consumes.push('devices'); }));
+	assert.equal(r.status, 1);
+	assert.match(r.stdout, /PARTS\.network\.carried names devices, but network imports it no more outside its consumes/, 'a carrier left after the import is allowed');
+});
+

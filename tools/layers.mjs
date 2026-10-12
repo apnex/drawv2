@@ -54,6 +54,82 @@ export const LAYER_DUTY = {
 	tests: 'the tests the gate runs',
 };
 
+/*
+H21.6 (U2) -- THE PARTS OF THE ANCHORED CORE, declared once: each part's duty, its kind, the rulings that fix it, the modules it is
+made of today, and the parts it consumes at the target (docs/ARCHITECTURE-TARGET.md). Both architecture documents render their
+parts from this, so the current instant and the target carry the same components and can be diffed; the generator holds every
+product module to exactly one part, and lists each import in the code that the target's `consumes` does not allow
+(tools/generate-architecture.mjs). A module path ending in `/` names every module under it. `consumes: '*'` is a composition root.
+`carried` names, for each part this one imports outside its consumes today, the live backlog row carrying that divergence; an
+import outside the consumes that no row carries fails the gate.
+*/
+export const PARTS = {
+	lattice: { duty: 'Compute geometry on the grid', kind: 'core', by: ['O1'],
+		modules: ['kernel/geometry.mjs', 'kernel/spec.mjs', 'kernel/router.mjs', 'model/surface.mjs'], consumes: [] },
+	'kind-contract': { duty: 'Compose kinds from the rows plugins declare', kind: 'core', by: ['N1', 'G3', 'WD6'],
+		modules: ['model/shape.mjs', 'model/limits.mjs'], consumes: [] },
+	document: { duty: 'Hold one document\'s entities', kind: 'core', by: ['O1', 'O4', 'N5', 'Q1'],
+		modules: ['model/model.mjs', 'model/anchors.mjs', 'model/ops.mjs', 'model/order.mjs', 'model/stacking.mjs'], consumes: ['kind-contract', 'lattice'] },
+	relations: { duty: 'Index which entities relate', kind: 'core', by: ['O1'],
+		modules: ['engine/relations.mjs', 'engine/ivm.mjs', 'engine/store.mjs'], consumes: ['document', 'kind-contract', 'lattice'], carried: { devices: 'B341' } },
+	colours: { duty: 'Hold the colours every role draws from', kind: 'core', by: ['N1'],
+		modules: ['kernel/palette.mjs', 'kernel/theme.mjs'], consumes: [], carried: { lattice: 'B338' } },
+	primitives: { duty: 'Draw the shapes painters compose', kind: 'core', by: ['N1', 'D3'],
+		modules: ['kernel/renderer.mjs'], consumes: ['lattice', 'colours'] },
+	rules: { duty: 'Match an input to one declared row', kind: 'core', by: ['D2'],
+		modules: ['kernel/input-rules.mjs'], consumes: [] },
+	planner: { duty: 'Make the one write every door applies', kind: 'core', by: ['SD2', 'O1'],
+		modules: ['planner/', 'model/invariants.mjs'], consumes: ['kind-contract', 'document', 'relations', 'lattice'] },
+	layouts: { duty: 'Declare a diagram\'s grids', kind: 'plugin', by: ['WD6', 'WD7'],
+		modules: ['layouts/'], consumes: ['lattice', 'kind-contract', 'document'] },
+	devices: { duty: 'Compose a device onto an anchor', kind: 'plugin', by: ['O4', 'WD10'],
+		modules: ['devices/'], consumes: ['lattice', 'kind-contract', 'document', 'relations', 'colours', 'primitives', 'rules'] },
+	network: { duty: 'Connect anchors', kind: 'plugin', by: ['SD11', 'O1'],
+		modules: ['network/'], consumes: ['lattice', 'kind-contract', 'document', 'relations', 'colours', 'primitives', 'rules'], carried: { devices: 'B282' } },
+	zones: { duty: 'Bound regions of cells', kind: 'plugin', by: ['O1', 'O4'],
+		modules: ['zones/'], consumes: ['lattice', 'kind-contract', 'document', 'layouts', 'colours', 'primitives', 'rules'] },
+	groups: { duty: 'Name sets of anchors', kind: 'plugin', by: ['O1'],
+		modules: ['groups/'], consumes: ['lattice', 'kind-contract', 'document', 'relations', 'colours', 'primitives', 'rules'] },
+	simulation: { duty: 'Derive motion along routes', kind: 'plugin', by: ['SD11'],
+		modules: ['engine/kinds.mjs', 'engine/movers.mjs', 'engine/rules.mjs', 'engine/spawn-appearance.mjs', 'engine/spawners.mjs', 'engine/spawn-field.mjs',
+			'engine/spawn-runs.mjs', 'model/reveal.mjs', 'app/src/movers.js', 'app/src/reveal.js', 'app/src/paintloop.js'],
+		// `canvas`: the run-mode rows read what is under the pointer, which the canvas provides (engine/situation.mjs)
+		consumes: ['lattice', 'kind-contract', 'document', 'relations', 'colours', 'primitives', 'rules', 'network', 'canvas'], carried: { devices: 'B282', renderer: 'B329' } },
+	product: { duty: 'Compose the plugins into the product', kind: 'composition', by: ['N1', 'D1'],
+		modules: ['product/'], consumes: ['kind-contract', 'lattice', 'layouts', 'devices', 'network', 'zones', 'groups', 'simulation'] },
+	canvas: { duty: 'Turn input into edits through the parts\' declarations', kind: 'host', by: ['D1', 'D2', 'D4', 'D5'],
+		modules: ['app/src/actions.js', 'app/src/capture.js', 'app/src/changes.js', 'app/src/commands.js', 'app/src/compose-canvas.js', 'app/src/help.js',
+			'app/src/input.js', 'app/src/input-state.js', 'app/src/keymap.js', 'app/src/labeledit.js', 'app/src/overlay.js', 'app/src/pick.js',
+			'app/src/readout.js', 'app/src/recognize.js', 'app/src/releases.js', 'app/src/selection.js', 'app/src/snap.js', 'app/src/tools.js',
+			'app/src/triggers.js', 'app/src/grids.js', 'engine/situation.mjs'],
+		consumes: ['lattice', 'kind-contract', 'document', 'relations', 'rules', 'planner', 'renderer', 'primitives', 'colours', 'network', 'devices'] },
+	renderer: { duty: 'Draw a document through the parts\' painters', kind: 'host', by: ['D1', 'D3'],
+		modules: ['app/src/renderer.js', 'app/src/painter.js'], consumes: ['lattice', 'document', 'primitives', 'colours'] },
+	sync: { duty: 'Keep a tab converged with the server', kind: 'host', by: ['SD2'],
+		modules: ['app/src/sync.js', 'app/src/net.js', 'app/src/watchdog.js', 'app/src/clock.js'], consumes: ['document', 'kind-contract', 'canvas'] },
+	'product-page': { duty: 'Compose the product page', kind: 'composition root', by: ['D1'],
+		modules: ['app/src/main.js', 'app/src/palette.js', 'app/src/run-mode.js', 'app/src/spectate.js'], consumes: '*' },
+	lab: { duty: 'Compose the canvas over the real modules, without storage', kind: 'composition root', by: ['H17-D1'],
+		modules: ['lab/'], consumes: '*' },
+	server: { duty: 'Compose the server', kind: 'composition root', by: ['SD2'],
+		modules: ['server/server.js', 'server/app.js', 'server/static.mjs'], consumes: '*' },
+	access: { duty: 'Establish who a request comes from', kind: 'door', by: ['docs/spec/ACCESS.md'],
+		modules: ['server/identity.mjs', 'server/codes.mjs', 'server/origin.mjs'], consumes: [] },
+	store: { duty: 'Keep documents durable', kind: 'door', by: ['SD2', 'WD6'],
+		modules: ['server/store.js', 'server/files.mjs', 'server/docfile.mjs', 'server/seed.js', 'server/anchor.mjs'],
+		consumes: ['document', 'kind-contract', 'lattice', 'planner', 'product', 'relations', 'access', 'devices'], carried: { network: 'B332' } },
+	hub: { duty: 'Carry each change to the tabs watching a document', kind: 'door', by: ['SD2'],
+		modules: ['server/hub.js', 'server/protocol.js', 'server/locks.js', 'server/sessionlog.mjs'], consumes: ['store', 'planner', 'document', 'kind-contract', 'access', 'rest'] },
+	rest: { duty: 'Answer agents over HTTP', kind: 'door', by: ['SD1'],
+		modules: ['server/rest.js', 'server/routes.mjs'],
+		consumes: ['store', 'hub', 'planner', 'document', 'kind-contract', 'product', 'network', 'layouts', 'devices', 'zones', 'groups', 'lattice', 'access'] },
+	cli: { duty: 'Give an agent one command per verb', kind: 'door', by: ['SD1'],
+		modules: ['cli/'], consumes: [], carried: { network: 'B339', product: 'B339', simulation: 'B339' } },
+	export: { duty: 'Render a document without a browser', kind: 'door', by: ['H2'],
+		modules: ['kernel/adapt.mjs', 'kernel/engine.mjs', 'kernel/svg-scene.mjs', 'kernel/fixtures.mjs', 'server/svg.mjs'],
+		consumes: ['lattice', 'document', 'kind-contract', 'primitives', 'colours', 'product', 'network'] },
+};
+
 export const ALLOWED = {
 	core: ['core'],
 	network: ['core', 'devices', 'network'],
@@ -537,7 +613,7 @@ export const RATCHET_REASONS = {
 	L7k: {
 		'cli/verbs.mjs': { cites: ['from B138', 'H21.3'],
 			reason: 'the CLI is installed standalone and imports nothing outside cli/ (the rule B138 gave), so its verbs list the kinds themselves',
-			trigger: 'the CLI learns the kinds from the server (H21.3, U4)' },
+			trigger: 'the CLI learns the kinds from the server' },
 		'kernel/adapt.mjs': { cites: ['B330'],
 			reason: 'the export door converts a document to the kernel\'s scene by kind name',
 			trigger: 'the export door draws through the painters (B330)' },
