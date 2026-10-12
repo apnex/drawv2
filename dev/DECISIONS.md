@@ -1929,3 +1929,8 @@ Shown: dev/design/unification/RECORD-GUARDS.md@6a6a86c\
 Affects: dev/design/unification/RECORD-GUARDS.md\
 Recorder: the director was shown the third version, measured against all 28 held triggers and found "ratifiable after small changes" by its second reviewer, with three decisions recommended; the answer builds it with all three as recommended -- a fired trigger blocks a milestone's close and is printed every run; the ruling structure binds rulings from this marker, past ones untouched; the deferred pieces are filed as held rows with triggers.
 
+**H21.6 -- the target architecture ratified, sections 1 to 8 -- 2026-10-12.**\
+Director: "continue. Doe this mean our architecture's 28 components are aligned to "possible / plausible" components with a dedicated duty, and perhaps aligned to draft components we know are being added to mission-kit in future ?"\
+Shown: docs/ARCHITECTURE-TARGET.md@22b7537\
+Affects: docs/ARCHITECTURE-TARGET.md\
+Recorder: shown the target after three adversarial reviews (`dev/design/unification/ARCHITECTURE-REVIEW.md`) and asked to approve sections 1 to 8, section 9 a register only and no 9.1 question ruled, the director chose "Continue" (the proposer's recommendation); the question asked with it -- whether the 28 parts are aligned to plausible components with a dedicated duty, and to the components drafted for mission-kit -- is answered in the proposer's report after this record: each part has one duty at architecture altitude (AR1), and none was compared with mission-kit's registry (`C1`, `C2`) or the components proposed beside it, so the document claims no such alignment.

@@ -17,24 +17,24 @@ Ratifying rules no question in section 9.1 and adopts none of its recommendation
 
 | Section | Maturity | Reopens on |
 |---|---|---|
-| 1. Identity, scope and non-goals | provisional | `VISION.md` changing |
-| 2. Justification chain | provisional | a ruling changing the model |
-| 3. Axiom alignment | provisional | a ruling, or a tension resolved |
-| 4. Anchored core | provisional; which table names a type's routing is owed | a part's duty or its consumes changing; section 9.1 |
-| 5. A type is a composition | provisional; where the tables live, and the behaviour family, owed | the decisions owed in section 9 |
-| 6. Entity model and interfaces | provisional | a format change |
-| 7. Run time | provisional | a door's lifecycle changing |
-| 8. Verification and divergence | provisional | a check added, or a divergence closed |
+| 1. Identity, scope and non-goals | approved (H21.6) | `VISION.md` changing |
+| 2. Justification chain | approved (H21.6) | a ruling changing the model |
+| 3. Axiom alignment | approved (H21.6) | a ruling, or a tension resolved |
+| 4. Anchored core | approved (H21.6); which table names a type's routing is owed | a part's duty or its consumes changing; section 9.1 |
+| 5. A type is a composition | approved (H21.6); whether a type is one declaration, and the behaviour family, owed | the decisions owed in section 9 |
+| 6. Entity model and interfaces | approved (H21.6) | a format change |
+| 7. Run time | approved (H21.6) | a door's lifecycle changing |
+| 8. Verification and divergence | approved (H21.6) | a check added, or a divergence closed |
 | 9.1 Decisions owed | owed -- not approved by ratifying this document | each question's ruling |
 | 9.2 Open | provisional | each entry's ruling |
 
-Approval is aggregate, by the director; each section reopens on its trigger.
+Approval is aggregate, by the director, recorded as H21.6 in `dev/DECISIONS.md`; each section reopens on its trigger.
 
 ---
 
 ## 1. Identity, scope and non-goals
 
-**Maturity: provisional.**
+**Maturity: approved (H21.6).**
 
 drawv2 is a programmable geometric engine.\
 A document declares geometry -- anchors on a grid, and the connections between them -- and everything else is a consequence of that geometry, derived identically by everyone watching (`VISION.md`).
@@ -51,7 +51,7 @@ A document declares geometry -- anchors on a grid, and the connections between t
 
 ## 2. Justification chain
 
-**Maturity: provisional.**
+**Maturity: approved (H21.6).**
 
 Each layer cites only the layers above it.
 
@@ -94,7 +94,7 @@ Everything a node shows or does is derived from its composition and the document
 
 ## 3. Axiom alignment
 
-**Maturity: provisional.**
+**Maturity: approved (H21.6).**
 
 | Axiom | Weight | How the architecture stands -- or the tension, left open |
 |---|---|---|
@@ -115,7 +115,7 @@ Everything a node shows or does is derived from its composition and the document
 
 ## 4. Anchored core
 
-**Maturity: provisional.**
+**Maturity: approved (H21.6).**
 
 ### 4.1 Parts
 
@@ -202,7 +202,7 @@ The table in 4.1 lists each part's consumes; these rules bound them.\
 
 ## 5. A type is a composition
 
-**Maturity: provisional; where the tables live, and the behaviour family, are owed (section 9.1).**
+**Maturity: approved (H21.6); whether a type is one declaration across the families, and the behaviour family, are owed (section 9.1).**
 
 What a device is, said once per family.
 - **A type is the name an author picks for a composition** (2026-10-02); the core does not know what it means, and a node's `type` is that name, stored as it is (P-10).
@@ -221,7 +221,7 @@ What a device is, said once per family.
 
 ## 6. Entity model and interfaces
 
-**Maturity: provisional.**
+**Maturity: approved (H21.6).**
 
 ### 6.1 The stored document
 
@@ -253,7 +253,7 @@ A named entity's name is unique across every named kind (N5).
 
 ## 7. Run time
 
-**Maturity: provisional.**
+**Maturity: approved (H21.6).**
 
 - **An edit, at any door:** the door states intent as ops; the planner checks each op against its kind's row and the contributed rows, runs every tenant's reactions on the change set, checks every invariant, and answers with the one write; the store applies it, logs its inverse and broadcasts it; every tab applies the answer.
 - **In a tab, before the answer:** the tab plans the same edit with the same planner and shows it at once (SD2), then takes the server's answer and replays its own unanswered edits over it.
@@ -267,7 +267,7 @@ A named entity's name is unique across every named kind (N5).
 
 ## 8. Verification and divergence
 
-**Maturity: provisional.**
+**Maturity: approved (H21.6).**
 
 ### 8.1 How a claim is proved
 
