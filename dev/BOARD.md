@@ -1434,6 +1434,7 @@ Scored so the comparison is a judgement, not an omission.\
 | **B335** | S4 | The other allow lists' reasons (scan-dead, scan-cli, rebuild-debt) cite nothing a check reads | a reason in one of those lists is found citing finished work. |
 | **B336** | S4 | Four specifications' status banners below their titles are unchecked | one of those specifications' status lines is found false. |
 | **B337** | S5 | The Held table's severity is typed on the board, not read from the register (AR3) | the triage scale is next changed, or a Held severity is found disagreeing with its row's finding. |
+| **B343** | S3 | Which of drawv2's parts become mission-kit components, reasoned with agp's and zorg's own | the director starts it. |
 | **B325** | S4 | A diagram varies its grids -- its own extent, then its own pitch and offset (WD7) | the infinite canvas and scrolling are designed (B289's trigger), or a diagram needs a grid unlike the others. |
 | **B79** | S3 | The connection walk's apparatus is outside the repository; the false record is corrected, the rest held with B127 | B127 revives, or another decision is taken on the walk's findings. |
 | **B108** | S3 | Detecting a test wired to a copy of its subject: undecidable as stated; mutation is the technique that works | mutation testing is automated in the gate, or a test wired to a copy of its subject is found again. |

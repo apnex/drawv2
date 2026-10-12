@@ -140,6 +140,7 @@ Every part of the ratified target (H21.6), with what it aligns to, the standing 
 - drawv2's `access` and caller-identity hold close duties, and the overlapping capability -- a verified principal from a credential -- exists today only in drawv2.
 - drawv2 holds content-free mechanisms no component or candidate covers: a maintained reverse index (`engine/ivm.mjs`), a timer floor, a reload watchdog (section 2.3).
 - drawv2 is in zorg's D32 union of duties but in no mission-kit record; C0's territory, "the union of anchored cores across the architectures this organisation holds", is not computed anywhere (mission-kit's B57).
+- Which of drawv2's parts become shared components, reasoned together with agp's and zorg's own, is held by the director's word as B343; this mapping is its input, not its answer.
 
 ---
 
