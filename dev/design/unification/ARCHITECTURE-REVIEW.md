@@ -9,7 +9,8 @@ The documents reviewed are `docs/ARCHITECTURE-TARGET.md` (the target instant, au
 
 An agent that did not write the draft, asked to break it against the rulings, the code and AR1.
 **Verdict:** "ratifiable after the changes above" -- 2 blockers, 12 majors, 4 minors.\
-Its reasoning, in its words: "ratifying it would make agent design decisions into director-ruled architecture. That covers the two unruled pack families, the pack keying, and the answers to three questions the document itself says are owed."
+Its reasoning, in its words: "ratifying it would make agent design decisions into director-ruled architecture.\
+That covers the two unruled pack families, the pack keying, and the answers to three questions the document itself says are owed."
 
 | # | Severity | Finding | Disposition |
 |---|---|---|---|
@@ -33,3 +34,29 @@ Its reasoning, in its words: "ratifying it would make agent design decisions int
 | 18 | minor | every section "provisional"; the north star the programme's; AX6 listed as an axiom; A7 marked not implicated | **Fixed.** Section 5 carries "the behaviour family is not yet designed"; the north-star disagreement between AR1 and its exemplar is flagged per PC1; AX6 moved below the table; A7 added |
 
 New backlog rows from this review: B340 and B341, planned with H21.8; B330, B332 and B338 amended.
+
+---
+
+## Review 2 -- 2026-10-11, of the revision at `62475b0`
+
+A second agent, fresh, asked to verify Review 1's dispositions and attack sections 4, 5 and 9 and the new machinery.
+**Verdict:** "ratifiable after the changes above" -- 1 blocker, 7 majors, 3 minors; it found Review 1's findings 1, 5 and 6 not fixed, and 4, 7 to 11, 14, 15 and 16 fixed in part.\
+Its reasoning, in its words: "the revision repeats Review 1's blocker in a new form."
+
+| # | Severity | Finding | Disposition |
+|---|---|---|---|
+| 1 | blocker | section 9.2's "settled readings" overrule H21 -- each owed decision "is asked when its stage reaches it" -- and aggregate ratification would turn an uncorrected reading into ruled architecture; the name reading omits O4 and the 2026-09-22 ontology; H17-D6 put the type table in the network folder and SD11b gave the network the device tables; SD5's hold was opened by the device-junctions ruling (B301), not Z1, and an ended hold makes a question live, not answered; "spent" is recorded nowhere | **Fixed.** Section 9.2 is gone. The anchor's name, where a type's tables live, and SD5 are in 9.1 as owed, each with its options, their costs and the rulings on each side, H17-D6 and SD11b quoted; SD12 is in 9.2 (open), held on B248's trigger, "spent" dropped. The body no longer answers them: the devices row no longer holds the type list, the document's `nodes` row and the model mark the name owed |
+| 2 | major | section 5 settled owed questions by construction -- "no other code table keys on a type name"; "one lookup per family" against U4's "adding a type is one declaration" | **Fixed.** "One lookup, no per-type row free to drift" (2026-09-22), "beyond what section 9.1 leaves owed"; the tension with one declaration is stated inside the 9.1 question on where the tables live |
+| 3 | major | 9.1's costs uneven; H21's U4 evidence missing for behaviour; no types route exists | **Fixed.** Each option carries its cost; H21/U4 cited for behaviour; the CLI row says a route is added and where `draw map`'s letters would live |
+| 4 | major | the join rule misstated as "refused"; three citation slips | **Fixed.** "the join does not happen, and links that end at a device keep ending there (2026-09-28, Z1)"; endpoint-at-any-count cited to 2026-10-02; every role to 2026-09-22; a bare anchor "drawn by the network's marks per state, with no device appearance (D3)" |
+| 5 | major | the consumes were widened against section 4.3, hiding divergences | **Fixed by machinery.** Section 4.3 is now a ceiling per kind, `KIND_MAY_CONSUME` in `tools/layers.mjs`, and the generator fails a consumes outside it or naming no part, and any cycle. The canvas consumes no plugin (its imports carried by B328 and B340, the latter amended for `engine/situation.mjs` and `app/src/input.js`); the export consumes the renderer, its network imports carried by B330; the anchor resolver is its own part, `placement`; the hub's call into REST is carried by B342, new. Measured: 13 imports outside the consumes, each carried. Rule 5 is stated as what SD2 and Q1 fix -- the doors consume a plugin's queries and factories -- with the limit that module-level measurement cannot tell a query from a factory written in section 8.1 |
+| 6 | major | the simulation's duty narrowed to hide combat and the reveal; `lab` and `access` cited nothing in the chain; `grids.js` and `fixtures.mjs` misplaced | **Fixed in part.** The simulation's duty is "Derive what the clock drives" -- movers, towers, the reveal -- one concern; `by` must appear in the target's section 2, checked, and H17-D1 is added there; `access` cites A1 (every write records who made it, added to A1's row) -- INFERRED that A1 fixes it, for the director to correct; `fixtures.mjs` is in `NOT_PARTS` with its reason, and the generator fails if a product module imports it. **Kept:** `grids.js` stays in the canvas -- it draws the grids placement snaps to from the canvas's places, and in the renderer the two would consume each other |
+| 7 | major | the parts check accepted `from B323`, rulings and board items as carriers; a bare `import '...'` and double quotes were invisible; consumes names and `by` unvalidated | **Fixed.** A carrier must be a bare `B<n>` whose row is OPEN, held or PART-CLOSED; the import reader takes `from`, a bare `import '...'`, re-exports and `import(...)`, either quote -- each probed by planting it in `app/src/help.js` and restoring it; consumes names and `by` validated |
+| 8 | major | the current document copied target-tense alignment and model as current; its run time hand-written | **Fixed.** The current document copies only the chain's layers above the model; its model and axiom alignment are its own, as built, each shortfall named by its row; each run-time step cites the test that proves it, and the generator fails a step citing none or a missing file -- the prose stays authored, its proof checked |
+| 9 | minor | ABSORBED checked only the first id of a head, and `H21.5` matched `H21.5.1`; it is a citation check | **Fixed.** Every id in the head, matched whole; the target's sections 8.1 and 9.2 call it a citation check |
+| 10 | minor | the current document still said the CLI "imports nothing outside cli/" | **Fixed** at its source, `RATCHET_REASONS.L7k`'s reason: "the CLI's static imports stay inside cli/ so an installed copy runs (B138)" |
+| 11 | minor | `relations` exposed "which links meet an anchor", against SD11b | **Fixed.** "which entities refer to an anchor, by the references their rows declare" |
+
+New rows: B342.\
+Amended: B329, B340.\
+Mutation proofs for the new rules -- the kind ceiling, the cycle, `by` in the chain, a bare-B carrier, a live carrier, the run time's citations, a whole-id match, every id in a ruling head -- each killed.

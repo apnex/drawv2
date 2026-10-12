@@ -30,8 +30,8 @@ Usage: node tools/generate-architecture.mjs [--check] [--doc <path>]
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { LAYER_DUTY, ALLOWED, LAYER, RATCHETS, RATCHET_REASONS, PARTS as DECLARED_PARTS } from './layers.mjs';
-import { exceptionFaults } from './exceptions.mjs';
+import { LAYER_DUTY, ALLOWED, LAYER, RATCHETS, RATCHET_REASONS, PARTS as DECLARED_PARTS, KIND_MAY_CONSUME, NOT_PARTS } from './layers.mjs';
+import { readRows } from './records.mjs';
 import { productKinds } from '../product/kinds.mjs';
 import { NETWORK_ROWS } from '../network/kinds.mjs';
 import { PRODUCT_CANVAS } from '../product/canvas.mjs';
@@ -102,6 +102,7 @@ const exceptions = table(['Ratchet', 'Where', 'Count', 'Why it holds', 'Ends whe
 const steps = JSON.parse(read('package.json')).scripts.gate.split(/\s*&&\s*/).map((s) => (s === 'npm test' ? 'node --test tests/*.test.js' : s));
 const gate = table(['#', 'Step'], steps.map((s, i) => [i + 1, `\`${s}\``]));
 
+const ROWS = readRows(read('dev/BACKLOG.md'));
 // ---- parts: every product module in exactly one part; the imports between parts, derived; those the target does not allow
 const PRODUCT_DIRS = ['kernel', 'engine', 'model', 'app/src', 'server', 'cli', 'planner', 'network', 'layouts', 'zones', 'groups', 'devices', 'product', 'lab'];
 const productModules = PRODUCT_DIRS.flatMap((d) => walk(d)).sort();
@@ -117,8 +118,11 @@ for (const [name, p] of Object.entries(PARTS)) {
 		}
 	}
 }
-for (const m of productModules) if (!partOf.has(m)) partFaults.push(`${m} is in no part -- add it to PARTS in tools/layers.mjs`);
-const importsOf = (f) => [...code(f).matchAll(/(?:\bfrom\s*|\bimport\s*\(\s*)'(\.{1,2}\/[^']+)'/g)].map((m) => path.normalize(path.join(path.dirname(f), m[1])));
+for (const m of productModules) if (!partOf.has(m) && !NOT_PARTS[m]) partFaults.push(`${m} is in no part -- add it to PARTS in tools/layers.mjs`);
+for (const m of Object.keys(NOT_PARTS)) if (partOf.has(m)) partFaults.push(`${m} is in NOT_PARTS and in part ${partOf.get(m)}`);
+// every relative specifier: `import ... from`, `export ... from`, a bare `import '...'`, `import(...)`; either quote
+const importsOf = (f) => [...code(f).matchAll(/(?:\bfrom\s*|\bimport\s*\(?\s*)(['"])(\.{1,2}\/[^'"]+)\1/g)].map((m) => path.normalize(path.join(path.dirname(f), m[2])));
+for (const m of productModules) for (const t of importsOf(m)) if (NOT_PARTS[t]) partFaults.push(`${m} imports ${t}, which NOT_PARTS says no product module imports`);
 const edges = new Map();   // "a -> b" -> Set(importing module)
 for (const m of productModules) {
 	for (const t of importsOf(m)) {
@@ -132,13 +136,37 @@ for (const m of productModules) {
 const importsBy = (name) => [...new Set([...edges.keys()].filter((k) => k.startsWith(`${name} -> `)).map((k) => k.split(' -> ')[1]))].sort();
 const parts = table(['Part', 'Duty', 'Kind', 'Made of', 'Imports today'],
 	Object.entries(PARTS).map(([name, p]) => [`\`${name}\``, p.duty, p.kind, p.modules.map((m) => `\`${m}\``).join(', '), list(importsBy(name))]));
+// the consumes: parts that exist, within the kind's ceiling (the target's section 4.3), and no cycle
+for (const [a, p] of Object.entries(PARTS)) {
+	const may = KIND_MAY_CONSUME[p.kind];
+	if (!may) { partFaults.push(`part ${a} has kind ${p.kind}, which KIND_MAY_CONSUME does not know`); continue; }
+	if (p.consumes === '*') { if (may !== '*') partFaults.push(`part ${a} consumes any part, which only a composition root may`); continue; }
+	for (const b of p.consumes) {
+		if (!PARTS[b]) partFaults.push(`part ${a} consumes ${b}, which is no part`);
+		else if (may !== '*' && !may.includes(PARTS[b].kind)) partFaults.push(`part ${a} (${p.kind}) consumes ${b} (${PARTS[b].kind}), which a ${p.kind} may not -- the target's section 4.3`);
+	}
+}
+const cycle = (() => {
+	const state = {}, stack = [];
+	const visit = (a) => {
+		if (state[a] === 1) return [...stack.slice(stack.indexOf(a)), a];
+		if (state[a] === 2 || PARTS[a]?.consumes === '*' || !PARTS[a]) return null;
+		state[a] = 1; stack.push(a);
+		for (const b of PARTS[a].consumes) { const c = visit(b); if (c) return c; }
+		stack.pop(); state[a] = 2; return null;
+	};
+	for (const a of Object.keys(PARTS)) { const c = visit(a); if (c) return c; }
+	return null;
+})();
+if (cycle) partFaults.push(`the consumes form a cycle: ${cycle.join(' -> ')}`);
 const outside = [...edges.entries()].filter(([k]) => { const [a, b] = k.split(' -> '); const c = PARTS[a].consumes; return c !== '*' && !c.includes(b); }).sort(([a], [b]) => a.localeCompare(b));
 // each import outside the consumes is carried by a live backlog row, or the gate fails (tools/exceptions.mjs resolves the row)
 for (const [k] of outside) {
 	const [a, b] = k.split(' -> ');
 	const row = PARTS[a].carried?.[b];
 	if (!row) partFaults.push(`part ${a} imports ${b}, which the target's consumes do not allow, and no backlog row carries it -- allow it in PARTS.${a}.consumes, or name the row carrying the divergence in PARTS.${a}.carried`);
-	else for (const f of exceptionFaults([{ where: `PARTS.${a}.carried.${b}`, cites: [row], trigger: 'carried' }], ROOT)) partFaults.push(f);
+	else if (!/^B\d+$/.test(row)) partFaults.push(`PARTS.${a}.carried.${b} is ${row}: a divergence is carried by a backlog row, written B<n>`);
+	else if (!['LIVE', 'REMAINDER'].includes(ROWS.get(row)?.kind)) partFaults.push(`PARTS.${a}.carried.${b} cites ${row}, which is ${ROWS.get(row)?.verdict ?? 'no row'} -- a divergence is carried by a live row`);
 }
 for (const [a, p] of Object.entries(PARTS)) for (const b of Object.keys(p.carried ?? {})) if (!edges.has(`${a} -> ${b}`) || (p.consumes !== '*' && p.consumes.includes(b))) partFaults.push(`PARTS.${a}.carried names ${b}, but ${a} imports it no more outside its consumes -- remove it`);
 const divergence = outside.length
@@ -157,9 +185,24 @@ const sectionOf = (title) => {
 	return rest.slice(rest.indexOf('\n') + 1, end < 0 ? undefined : end).replace(/^\*\*Maturity:[^\n]*\n\n?/m, '').trim();
 };
 const justification = sectionOf('2. Justification chain');
+// the current instance copies the chain's layers above the model; its model and its alignment are its own, authored
+const chainAboveModel = justification.split('\n**Model.**')[0].trim();
 const alignment = sectionOf('3. Axiom alignment');
+// each part's boundary cites a layer of the justification chain (AR1): every `by` id appears in the target's section 2
+for (const [a, p] of Object.entries(PARTS)) {
+	if (!p.by?.length) partFaults.push(`part ${a} cites nothing in the justification chain`);
+	for (const id of p.by ?? []) if (!new RegExp(`(^|[^\\w.-])${id.replace(/[.]/g, '\\.')}(?![\\w-]|\\.\\d)`).test(justification)) partFaults.push(`part ${a} is fixed by ${id}, which the target's justification chain (section 2) does not cite`);
+}
+// the current document's run time is evidenced: each bullet cites a test the gate runs that exists
+const currentText = fs.existsSync(DOC) ? fs.readFileSync(DOC, 'utf8') : '';
+const runTime = (/\n## \d+\. Run time\n([\s\S]*?)(\n---\n|$)/.exec(currentText) || [])[1] ?? '';
+for (const line of runTime.split('\n').filter((l) => l.startsWith('- **'))) {
+	const tests = [...line.matchAll(/`(tests\/[\w.-]+\.test\.js)`/g)].map((m) => m[1]);
+	if (!tests.length) partFaults.push(`the current run time's bullet "${line.slice(0, 50)}..." cites no test proving it`);
+	for (const t of tests) if (!fs.existsSync(path.join(ROOT, t))) partFaults.push(`the current run time cites ${t}, which does not exist`);
+}
 
-const REGIONS = { layers, kinds, canvas, compositions, doors, exceptions, gate, parts, 'part-divergence': divergence, justification, alignment };
+const REGIONS = { layers, kinds, canvas, compositions, doors, exceptions, gate, parts, 'part-divergence': divergence, justification: chainAboveModel };
 const TARGET_REGIONS = { 'target-parts': targetParts };
 
 // ---- write or check

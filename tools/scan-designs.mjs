@@ -90,7 +90,10 @@ if (exists('dev/DECISIONS.md')) {
 			const affects = /^Affects: (.+?)\\?$/m.exec(p);
 			for (const f of affects ? affects[1].split(',').map((x) => x.trim().replace(/^`|`$/g, '')).filter(Boolean) : []) {
 				if (!exists(f)) fail(`dev/DECISIONS.md ${head[1]}: Affects names ${f}, which does not exist`);
-				else if (!new RegExp(`\\b${head[1].split(',')[0].trim().replace(/[.]/g, '\\.')}\\b`).test(read(f))) fail(`dev/DECISIONS.md ${head[1]}: Affects names ${f}, which does not cite ${head[1]} -- a ruling a document must absorb is cited there`);
+				else for (const id of head[1].split(',').map((x) => x.trim())) {
+					// every id in the head, as a whole id: H21.5 is not cited by H21.5.1, and a sentence's full stop still ends it
+					if (!new RegExp(`(^|[^\\w.-])${id.replace(/[.]/g, '\\.')}(?![\\w-]|\\.\\d)`).test(read(f))) fail(`dev/DECISIONS.md ${head[1]}: Affects names ${f}, which does not cite ${id} -- a ruling a document must absorb is cited there`);
+				}
 			}
 		}
 	}

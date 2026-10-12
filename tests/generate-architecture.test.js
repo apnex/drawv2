@@ -26,7 +26,7 @@ test('H21.6: docs/ARCHITECTURE.md says what the code declares -- the control', (
 	assert.equal(r.status, 0, r.stdout);
 	const doc = fs.readFileSync(path.join(ROOT, 'docs/ARCHITECTURE.md'), 'utf8');
 	assert.match(doc, /^---\ninstant: current\n/, 'the current instant, declared');
-	for (const name of ['layers', 'kinds', 'canvas', 'compositions', 'doors', 'exceptions', 'gate', 'parts', 'part-divergence', 'justification', 'alignment']) assert.ok(doc.includes(`BEGIN GENERATED: architecture-${name}.`), name);
+	for (const name of ['layers', 'kinds', 'canvas', 'compositions', 'doors', 'exceptions', 'gate', 'parts', 'part-divergence', 'justification']) assert.ok(doc.includes(`BEGIN GENERATED: architecture-${name}.`), name);
 	assert.match(doc, /\| `link` \| the network \|/, 'the link is the network\'s kind, read from its row');
 });
 
@@ -72,10 +72,49 @@ test('H21.6: an import the target does not allow must be carried by a live row -
 	assert.match(r.stdout, /part network imports devices, which the target's consumes do not allow, and no backlog row carries it/);
 	r = run('--check', '--parts', await partsWith((p) => { p.network.carried.devices = 'B282x'; }));
 	assert.equal(r.status, 1, 'a carrier that is no row');
+	// REVIEW 2: a carrier is a bare B<n> -- not a frozen `from B<n>`, a ruling or a board item
+	for (const bad of ['from B323', 'O1', 'H1.1']) {
+		r = run('--check', '--parts', await partsWith((p) => { p.network.carried.devices = bad; }));
+		assert.match(r.stdout, /is carried by a backlog row, written B<n>/, bad);
+	}
 	r = run('--check', '--parts', await partsWith((p) => { p.network.carried.devices = 'B323'; }));
 	assert.match(r.stdout, /cites B323, which is CLOSED/, 'a carrier that is closed');
 	r = run('--check', '--parts', await partsWith((p) => { p.network.consumes.push('devices'); }));
 	assert.equal(r.status, 1);
 	assert.match(r.stdout, /PARTS\.network\.carried names devices, but network imports it no more outside its consumes/, 'a carrier left after the import is allowed');
+});
+
+test("H21.6 review 2: the consumes are held to the target's section 4.3 -- a kind's ceiling, parts that exist, no cycle", async () => {
+	let r = run('--check', '--parts', await partsWith((p) => { p.canvas.consumes.push('network'); delete p.canvas.carried.network; }));
+	assert.equal(r.status, 1);
+	assert.match(r.stdout, /part canvas \(host\) consumes network \(plugin\), which a host may not/, 'D1: the canvas names no plugin');
+	r = run('--check', '--parts', await partsWith((p) => { p.lattice.consumes.push('devices'); }));
+	assert.match(r.stdout, /part lattice \(core\) consumes devices \(plugin\), which a core may not/, 'N1: the core names no plugin');
+	r = run('--check', '--parts', await partsWith((p) => { p.zones.consumes.push('nowhere'); }));
+	assert.match(r.stdout, /part zones consumes nowhere, which is no part/);
+	r = run('--check', '--parts', await partsWith((p) => { p.lattice.consumes.push('document'); }));
+	assert.match(r.stdout, /the consumes form a cycle: (lattice -> document -> lattice|document -> lattice -> document)/);
+	r = run('--check', '--parts', await partsWith((p) => { p.zones.consumes = '*'; }));
+	assert.match(r.stdout, /part zones consumes any part, which only a composition root may/);
+});
+
+test("H21.6 review 2: a part's boundary cites the justification chain -- a `by` the target's section 2 does not cite fails", async () => {
+	let r = run('--check', '--parts', await partsWith((p) => { p.zones.by = ['ZZ9']; }));
+	assert.equal(r.status, 1);
+	assert.match(r.stdout, /part zones is fixed by ZZ9, which the target's justification chain \(section 2\) does not cite/);
+	r = run('--check', '--parts', await partsWith((p) => { p.zones.by = []; }));
+	assert.match(r.stdout, /part zones cites nothing in the justification chain/);
+	r = run('--check', '--parts', await partsWith((p) => { p.zones.by = ['O']; }));
+	assert.match(r.stdout, /fixed by O,/, 'an id matches whole, not as the start of O1');
+});
+
+test('H21.6 review 2: each step of the current run time cites a test that exists', () => {
+	let f = copy((d) => d.replace(/ \(`tests\/watchdog\.test\.js`\)/, ''));
+	let r = run('--check', '--doc', f);
+	assert.equal(r.status, 1);
+	assert.match(r.stdout, /bullet "- \*\*A new revision:\*\*.*cites no test proving it/);
+	f = copy((d) => d.replace('`tests/watchdog.test.js`', '`tests/no-such.test.js`'));
+	r = run('--check', '--doc', f);
+	assert.match(r.stdout, /cites tests\/no-such\.test\.js, which does not exist/);
 });
 

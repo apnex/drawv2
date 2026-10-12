@@ -81,5 +81,12 @@ test('H21.6 ABSORBED: a ruling block names what it affects; each named document 
 	r = scan(tree({ decisions: `${MARKER}\n\n${RULING.replace('H9.9 --', 'H9.8 --')}\n` }));
 	assert.equal(r.status, 1, 'the affected document does not cite the ruling');
 	assert.match(r.stdout, /which does not cite H9\.8/);
+	// REVIEW 2: every id in a head is checked, and a longer id does not stand in for a shorter one
+	r = scan(tree({ decisions: `${MARKER}\n\n${RULING.replace('H9.9 --', 'H9.9, X7 --')}\n` }));
+	assert.equal(r.status, 1, 'the second id in the head is cited nowhere');
+	assert.match(r.stdout, /which does not cite X7/);
+	r = scan(tree({ decisions: `${MARKER}\n\n${RULING.replace('H9.9 --', 'H9.9.1 --')}\n` }));
+	assert.equal(r.status, 1, 'H9.9 in the document is not H9.9.1');
+	assert.match(r.stdout, /which does not cite H9\.9\.1/);
 });
 
