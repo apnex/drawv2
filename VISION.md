@@ -160,6 +160,8 @@ Where each of those lives, so a reader who wants them does not mistake this for 
 The specs above each describe one concern; none states the system's shape at an instant, so nothing can be diffed against a target.\
 That is a known gap rather than an oversight, and it is the work that follows from having a vision at last.
 
+AMENDED 2026-10-11 (H21.6): the architecture record exists -- `docs/ARCHITECTURE.md` at the current instant, its structure generated from the code and checked by the gate, and `docs/ARCHITECTURE-TARGET.md` at the target instant, authored, tracking the rulings and awaiting the director's ratification.
+
 ---
 
 ## Boundary with the architecture

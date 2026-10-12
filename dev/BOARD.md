@@ -1389,10 +1389,10 @@ The re-audit is `dev/design/unification/UNIFICATION-AUDIT.md`: the decoupling is
 | H21.2 | The director rules the approach: the audit's stages U0 to U5, their order and their exits | feature | S3 | `DONE` |
 | H21.4 | U0, the records made true: every still-wrong line the audit found corrected at its source, every stale reason and missing trigger fixed or recorded | feature | S3 | `DONE` |
 | H21.5 | U1, guards against the drift classes: triggers a check evaluates or a cadence re-reads, reasons citing closed rows failed, the director's words quoted and agent prose marked, status on the board alone, infrastructure claims probed, a flake ledger | feature | S3 | `DONE` |
-| H21.6 | U2, the target architecture: the whole system at the target instant, present tense, for the director to ratify; the current instant derived from the code | feature | S3 | `TODO` |
+| H21.6 | U2, the target architecture: the whole system at the target instant, present tense, for the director to ratify; the current instant derived from the code | feature | S3 | `WIP` |
 | H21.7 | U3, the measurement widened: the name ratchets over every product layer, every quoting form, cross-plugin reads and device type names | feature | S3 | `TODO` |
 | H21.3 | U4, a type is a composition (B282's pack half): each device type declared once, every plugin reading its own part, a type declaring the roles it permits | **B282** | S3 | `TODO` |
-| H21.8 | U5, the rest of the target: the network's privileged slots made a generic seam (B332), a device's junction drawn (B331), roles served to REST and the CLI, the core's colour roles to their owners, `name` in the core ruled | **B331**, **B332** | S3 | `TODO` |
+| H21.8 | U5, the rest of the target: the network's privileged slots made a generic seam (B332), a device's junction drawn (B331), roles served to REST and the CLI, the core's colour roles to their owners, `name` in the core ruled | **B331**, **B332**, **B338**, **B339** | S3 | `TODO` |
 
 AMENDED 2026-10-11: H21.2 ruled -- the director approved the audit's order, U0 to U5 ("continue"; `dev/DECISIONS.md` H21).
 AMENDED 2026-10-11: H21.4 (U0) done -- every still-wrong line the audit found is corrected where it stands; every stale reason re-pointed or given a trigger; the carried and deferred items without rows are rows now (B328 to B330 held, B331 and B332 planned at H21.8), B126 held with a trigger, B88 planned at H21.5; the design index lists every member.\

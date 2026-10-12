@@ -58,7 +58,8 @@ test('R-a: no module outside the network composes the network but the store, the
 	// W-a (H18.31): the route inventory reads the collections the server composes, which REST serves
 	// RESTATED at O-b1 (H19.19): the reader composes no kinds of its own, so the CLI hands it the product's composition, as the
 	// store hands it its own -- `productKinds(...NETWORK_ROWS)`, the one way, imported when combat or movers run (B138)
-	const ALLOWED = ['server/store.js', 'lab/src/root.js', 'app/src/main.js', 'tools/reaction-table.mjs', 'tools/routes.mjs', 'cli/verbs.mjs'];
+	// RESTATED at H21.6 (U2): the architecture generator reads the store's composition to state it, as the route inventory does
+	const ALLOWED = ['server/store.js', 'lab/src/root.js', 'app/src/main.js', 'tools/reaction-table.mjs', 'tools/routes.mjs', 'cli/verbs.mjs', 'tools/generate-architecture.mjs'];
 	const found = [];
 	const walk = (dir) => {
 		for (const e of fs.readdirSync(path.join(root, dir), { withFileTypes: true })) {

@@ -29,6 +29,31 @@ connection (SD11b), the planner knows nothing of the page, and nothing imports a
   tools, tests may import any layer, and no product layer imports them
 */
 
+/*
+H21.6 (U2) -- EACH LAYER'S DUTY, declared once, so the current architecture (docs/ARCHITECTURE.md) is generated from it rather
+than restated (tools/generate-architecture.mjs). The list in the comment above predates the plugin folders; this is the record.
+*/
+export const LAYER_DUTY = {
+	core: 'the anchor on the grid: the lattice\'s arithmetic, the kind contract, the document store and the drawing primitives',
+	network: 'connection: links, pipes, routes, junctions and transit',
+	layouts: 'the diagram\'s grids, as stored layout records',
+	zones: 'regions of cells',
+	groups: 'named sets of anchors',
+	devices: 'what a device composed onto an anchor is, and how it looks',
+	planner: 'the one write: plan, commit, undo, redo, the log and validation',
+	product: 'the product\'s composition of the plugins: its kinds and its canvas parts',
+	canvas: 'turning input into edits, and a document into a drawing, through the plugins\' parts',
+	chrome: 'the production page around the canvas: sync, status, palette, readouts and its composition root',
+	simulation: 'derived motion: spawners, movers, towers and run mode',
+	export: 'the headless SVG path',
+	'server-only': 'the server\'s doors and storage, never served to a browser',
+	serve: 'the one static responder both servers share',
+	cli: 'the command-line tool agents drive',
+	lab: 'the lab page\'s composition over the real modules',
+	tools: 'the gate\'s scanners and generators',
+	tests: 'the tests the gate runs',
+};
+
 export const ALLOWED = {
 	core: ['core'],
 	network: ['core', 'devices', 'network'],
