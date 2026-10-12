@@ -102,6 +102,18 @@ const exceptions = table(['Ratchet', 'Where', 'Count', 'Why it holds', 'Ends whe
 const steps = JSON.parse(read('package.json')).scripts.gate.split(/\s*&&\s*/).map((s) => (s === 'npm test' ? 'node --test tests/*.test.js' : s));
 const gate = table(['#', 'Step'], steps.map((s, i) => [i + 1, `\`${s}\``]));
 
+// ---- the reasoning both instants share, copied from the target so it cannot drift
+const targetText = fs.existsSync(TARGET) ? fs.readFileSync(TARGET, 'utf8') : '';
+const sectionOf = (title) => {
+	const a = targetText.indexOf(`\n## ${title}\n`);
+	if (a < 0) return `(the target has no section "${title}")`;
+	const rest = targetText.slice(a + 1);
+	const end = rest.search(/\n---\n|\n## /);
+	return rest.slice(rest.indexOf('\n') + 1, end < 0 ? undefined : end).replace(/^\*\*Maturity:[^\n]*\n\n?/m, '').trim();
+};
+const justification = sectionOf('2. Justification chain');
+// the current instance copies the chain's layers above the model; its model and its alignment are its own, authored
+const chainAboveModel = justification.split('\n**Model.**')[0].trim();
 const ROWS = readRows(read('dev/BACKLOG.md'));
 // ---- parts: every product module in exactly one part; the imports between parts, derived; those the target does not allow
 const PRODUCT_DIRS = ['kernel', 'engine', 'model', 'app/src', 'server', 'cli', 'planner', 'network', 'layouts', 'zones', 'groups', 'devices', 'product', 'lab'];
@@ -136,6 +148,7 @@ for (const m of productModules) {
 const importsBy = (name) => [...new Set([...edges.keys()].filter((k) => k.startsWith(`${name} -> `)).map((k) => k.split(' -> ')[1]))].sort();
 const parts = table(['Part', 'Duty', 'Kind', 'Made of', 'Imports today'],
 	Object.entries(PARTS).map(([name, p]) => [`\`${name}\``, p.duty, p.kind, p.modules.map((m) => `\`${m}\``).join(', '), list(importsBy(name))]));
+const citedInChain = (id) => new RegExp(`(^|[^\\w.-])${id.replace(/[.]/g, '\\.')}(?![\\w-]|\\.\\d)`).test(justification);
 // the consumes: parts that exist, within the kind's ceiling (the target's section 4.3), and no cycle
 for (const [a, p] of Object.entries(PARTS)) {
 	const may = KIND_MAY_CONSUME[p.kind];
@@ -143,7 +156,12 @@ for (const [a, p] of Object.entries(PARTS)) {
 	if (p.consumes === '*') { if (may !== '*') partFaults.push(`part ${a} consumes any part, which only a composition root may`); continue; }
 	for (const b of p.consumes) {
 		if (!PARTS[b]) partFaults.push(`part ${a} consumes ${b}, which is no part`);
-		else if (may !== '*' && !may.includes(PARTS[b].kind)) partFaults.push(`part ${a} (${p.kind}) consumes ${b} (${PARTS[b].kind}), which a ${p.kind} may not -- the target's section 4.3`);
+		else if (may !== '*' && !may.includes(PARTS[b].kind) && !p.beyondKind?.[b]) partFaults.push(`part ${a} (${p.kind}) consumes ${b} (${PARTS[b].kind}), which a ${p.kind} may not -- the target's section 4.3`);
+	}
+	for (const [b, id] of Object.entries(p.beyondKind ?? {})) {
+		if (!p.consumes.includes(b)) partFaults.push(`PARTS.${a}.beyondKind names ${b}, which ${a} does not consume`);
+		else if (may.includes(PARTS[b]?.kind)) partFaults.push(`PARTS.${a}.beyondKind names ${b}, which its kind already allows -- remove it`);
+		else if (!citedInChain(id)) partFaults.push(`PARTS.${a}.beyondKind lets ${a} consume ${b} by ${id}, which the target's justification chain (section 2) does not cite`);
 	}
 }
 const cycle = (() => {
@@ -175,23 +193,11 @@ const divergence = outside.length
 const targetParts = table(['Part', 'Duty', 'Kind', 'Fixed by', 'Consumes'],
 	Object.entries(PARTS).map(([name, p]) => [`\`${name}\``, p.duty, p.kind, p.by.map((b) => (b.includes('/') ? `\`${b}\`` : b)).join(', '), p.consumes === '*' ? 'any part -- a composition root' : list(p.consumes)]));
 
-// ---- the reasoning both instants share, copied from the target so it cannot drift
-const targetText = fs.existsSync(TARGET) ? fs.readFileSync(TARGET, 'utf8') : '';
-const sectionOf = (title) => {
-	const a = targetText.indexOf(`\n## ${title}\n`);
-	if (a < 0) return `(the target has no section "${title}")`;
-	const rest = targetText.slice(a + 1);
-	const end = rest.search(/\n---\n|\n## /);
-	return rest.slice(rest.indexOf('\n') + 1, end < 0 ? undefined : end).replace(/^\*\*Maturity:[^\n]*\n\n?/m, '').trim();
-};
-const justification = sectionOf('2. Justification chain');
-// the current instance copies the chain's layers above the model; its model and its alignment are its own, authored
-const chainAboveModel = justification.split('\n**Model.**')[0].trim();
 const alignment = sectionOf('3. Axiom alignment');
 // each part's boundary cites a layer of the justification chain (AR1): every `by` id appears in the target's section 2
 for (const [a, p] of Object.entries(PARTS)) {
 	if (!p.by?.length) partFaults.push(`part ${a} cites nothing in the justification chain`);
-	for (const id of p.by ?? []) if (!new RegExp(`(^|[^\\w.-])${id.replace(/[.]/g, '\\.')}(?![\\w-]|\\.\\d)`).test(justification)) partFaults.push(`part ${a} is fixed by ${id}, which the target's justification chain (section 2) does not cite`);
+	for (const id of p.by ?? []) if (!citedInChain(id)) partFaults.push(`part ${a} is fixed by ${id}, which the target's justification chain (section 2) does not cite`);
 }
 // the current document's run time is evidenced: each bullet cites a test the gate runs that exists
 const currentText = fs.existsSync(DOC) ? fs.readFileSync(DOC, 'utf8') : '';

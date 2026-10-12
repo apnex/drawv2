@@ -49,7 +49,7 @@ Noted for PC1: AR1 asks for the system's north star and this one is the programm
 **Principles -- the outcome axes the director accepted** (`dev/surveys/unification-survey.md`, S0): AX1 derived, not stored; AX2 parity at every door; AX3 expressiveness; AX4 extensible physics; AX5 conceptual economy; AX6 one-way doors few, named and last.
 
 **Decisions** -- the rulings that fix the structure below:
-- **The universal node, staged** (2026-09-19, amended 2026-09-22): endpoint, bend and junction are what the graph makes of an anchor, derived; a type declares which roles it permits, per type, and a violation is refused; appearance and routing are pack families; appearance resolves per state.
+- **The universal node, staged** (2026-09-19, amended 2026-09-22): endpoint, bend and junction are what the graph makes of an anchor, derived; a type declares which roles it permits, per type, the table living with the type definition, and a violation is refused; a bare anchor is the table's unrestricted row; appearance and routing are pack families; appearance resolves per state.
 - **A type is the name of a composition** (2026-10-02): what survives of "type" is the name an author picks for a composition, and the core does not know what it means.
 - **P-10** (2026-10-03): `type` stays the stored name, and packs are code tables keyed by it, with no format change.
 - **The stack interface:** browsers and server derive, the CLI asks (SD1); the planner runs the rules for every door (SD2); a pack is only its table (SD4); one pipe per pair (SD7); the network is a plugin (SD11); the core is anchors, identity and position, with no notion of connection, and the network contributes pipes, links and the rules that react to edits (SD11b); each document lists the plugins it needs (SD12).
@@ -61,6 +61,7 @@ Noted for PC1: AR1 asks for the system's north star and this one is the programm
 - **Q1:** a plugin's questions are asked of the plugin.
 - **D1 to D5:** the canvas contract, the canvas naming no plugin's kind beyond a record that may only fall (D1); draw-a-link the product's shared gesture with the network as its judge (D2); several plugins draw one kind through the appearance pipeline (D3); a plugin's edits are data (D5).
 - **H2:** run mode and the download are one rendering, one place for code.
+- **H9, access** (amended 2026-08-20; `docs/spec/ACCESS.md`, "Decided"): access is per diagram and per owner, a principal is a person's identity or an agent's, and a connection code is an agent's credential.
 - **The palette** (2026-10-01): one core palette, roles per owner.
 - **WD1, WD6, WD7, WD10:** a wide device is one anchor (WD1); a diagram stores its grids as layout records (WD6) holding today's values (WD7); a device owns its size (WD10).
 <!-- END GENERATED: architecture-justification -->

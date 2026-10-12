@@ -60,8 +60,8 @@ chain (`by`), the modules it is made of today, and the parts it consumes at the 
 Both architecture documents render their parts from this, so the two instants carry the same components and can be diffed.
 tools/generate-architecture.mjs holds, failing the gate:
   - every product module in exactly one part, or in NOT_PARTS with its reason;
-  - each part's consumes within what its kind may consume (KIND_MAY_CONSUME -- the target's section 4.3 as a rule), naming parts
-    that exist, and the consumes forming no cycle;
+  - each part's consumes within what its kind may consume (KIND_MAY_CONSUME -- the target's section 4.3 as a rule), or named in
+    its `beyondKind` with the ruling that allows it, itself cited in the justification chain; naming parts that exist; no cycle;
   - each `by` id cited in the target's justification chain (section 2);
   - each import in the code between two parts that the consumes do not allow carried by a live backlog row (`carried`, a bare
     `B<n>` that is OPEN or held), and no `carried` entry left once its import is gone or allowed.
@@ -72,8 +72,7 @@ export const KIND_MAY_CONSUME = {
 	plugin: ['core', 'plugin'],                       // another plugin through its queries and factories (O1, Q1)
 	composition: ['core', 'plugin'],                  // the product composes the plugins (N1)
 	host: ['core', 'host'],                           // the canvas and the renderer name no plugin (D1)
-	door: ['core', 'composition', 'plugin', 'door', 'host'],  // the product's composition; a plugin's queries and factories (SD2, Q1); the
-	                                                  // renderer, which the download draws through (H2)
+	door: ['core', 'composition', 'plugin', 'door'],  // the product's composition, one another, a plugin's queries and factories (SD2, Q1)
 	'composition root': '*',
 };
 export const NOT_PARTS = {
@@ -130,7 +129,7 @@ export const PARTS = {
 		modules: ['lab/'], consumes: '*' },
 	server: { duty: 'Compose the server', kind: 'composition root', by: ['SD2'],
 		modules: ['server/server.js', 'server/app.js', 'server/static.mjs'], consumes: '*' },
-	access: { duty: 'Establish who a request comes from', kind: 'door', by: ['A1'],
+	access: { duty: 'Establish who a request comes from', kind: 'door', by: ['H9'],
 		modules: ['server/identity.mjs', 'server/codes.mjs', 'server/origin.mjs'], consumes: [] },
 	placement: { duty: 'Choose the free anchor a relationship names', kind: 'door', by: ['SD1'],
 		modules: ['server/anchor.mjs'], consumes: ['lattice', 'document', 'relations', 'devices'] },
@@ -146,7 +145,7 @@ export const PARTS = {
 		modules: ['cli/'], consumes: [], carried: { network: 'B339', product: 'B339', simulation: 'B339' } },
 	export: { duty: 'Render a document without a browser', kind: 'door', by: ['H2'],
 		modules: ['kernel/adapt.mjs', 'kernel/engine.mjs', 'kernel/svg-scene.mjs', 'server/svg.mjs'],
-		consumes: ['lattice', 'document', 'kind-contract', 'primitives', 'colours', 'product', 'renderer'], carried: { network: 'B330' } },
+		consumes: ['lattice', 'document', 'kind-contract', 'primitives', 'colours', 'product', 'renderer'], beyondKind: { renderer: 'H2' }, carried: { network: 'B330' } },
 };
 
 export const ALLOWED = {

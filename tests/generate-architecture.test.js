@@ -118,3 +118,17 @@ test('H21.6 review 2: each step of the current run time cites a test that exists
 	assert.match(r.stdout, /cites tests\/no-such\.test\.js, which does not exist/);
 });
 
+test("H21.6 review 3: a door consumes no host, but for a consume a ruling in the chain names (`beyondKind`) -- the export's renderer, by H2", async () => {
+	let r = run('--check', '--parts', await partsWith((p) => { p.hub.consumes.push('canvas'); }));
+	assert.equal(r.status, 1, 'review 3 planted this: a server part consuming a browser part');
+	assert.match(r.stdout, /part hub \(door\) consumes canvas \(host\), which a door may not/);
+	r = run('--check', '--parts', await partsWith((p) => { delete p.export.beyondKind; }));
+	assert.match(r.stdout, /part export \(door\) consumes renderer \(host\), which a door may not/);
+	r = run('--check', '--parts', await partsWith((p) => { p.export.beyondKind.renderer = 'ZZ9'; }));
+	assert.match(r.stdout, /beyondKind lets export consume renderer by ZZ9, which the target's justification chain \(section 2\) does not cite/);
+	r = run('--check', '--parts', await partsWith((p) => { p.export.beyondKind.product = 'H2'; }));
+	assert.match(r.stdout, /beyondKind names product, which its kind already allows/);
+	r = run('--check', '--parts', await partsWith((p) => { p.rest.beyondKind = { canvas: 'H2' }; }));
+	assert.match(r.stdout, /beyondKind names canvas, which rest does not consume/);
+});
+

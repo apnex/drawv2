@@ -60,3 +60,21 @@ Its reasoning, in its words: "the revision repeats Review 1's blocker in a new f
 New rows: B342.\
 Amended: B329, B340.\
 Mutation proofs for the new rules -- the kind ceiling, the cycle, `by` in the chain, a bare-B carrier, a live carrier, the run time's citations, a whole-id match, every id in a ruling head -- each killed.
+
+---
+
+## Review 3 -- 2026-10-11, of sections 4, 5 and 9 at `c0a4366`
+
+A third agent, fresh, asked one question: whether ratifying the target as it stood would make ruled architecture of a statement no ruling fixes and section 9.1 does not list as owed.
+**Verdict:** "ratifiable after the changes above" -- 1 blocker, 3 majors, 3 minors.\
+Its reasoning, in its words: "Ratifying would put the director's approval on both of two contradicting statements, which is this programme's incident class in its third form."
+
+| # | Severity | Finding | Disposition |
+|---|---|---|---|
+| 1 | blocker | the body stated the network's per-type routing table as ruled while 9.1 called where the tables live owed, and the recommendation reversed 2026-10-07 and SD11b without naming them; it was not "the only option" | **Fixed.** The question is narrowed to what is owed, whether a type is one declaration across the families, with 2026-10-07, SD11b, P-10, 2026-09-22's "the table lives with the type definition", H17-D6 and U4's exit all cited; each one-declaration option names the amendment of 2026-10-07 and SD11b and the reversal of H17-D6; "only" is dropped. **The recommendation changed:** from the product holding the declaration to the devices plugin holding it, handed in at composition -- where 2026-09-22 and O4 put the type. The body's routing statements say which table names a type's pack is owed, and section 4's maturity row says so |
+| 2 | major | 4.3 rule 3's "not the devices plugin's modules" was fixed by no ruling once rule 2 let a plugin use another's queries | **Fixed.** Rule 3 now states what 2026-09-22, P-10 and 2026-10-07 fix: the network decides roles from its routing table, a bare anchor its unrestricted row, not by asking the devices plugin whether a device is composed; the A3 row agrees. The network's imports of the devices plugin stay carried by B282, which builds that |
+| 3 | major | the document never said what ratifying it covers | **Fixed.** The preamble: ratifying approves sections 1 to 8 and section 9 only as a register, rules no 9.1 question and adopts no recommendation, each ruled by its own block when its stage reaches it -- the anchor's name with this document. Section 9.1 has its own maturity, "owed -- not approved by ratifying this document"; the costs are labelled the author's reading of the record |
+| 4 | major | Review 2's finding 2 was marked Fixed, but "no other code table keys on a type name" survived in section 8.2 | **Fixed.** The row states what 2026-09-22 and P-10 fix, "beyond what section 9.1 leaves owed". Review 2's disposition of its finding 2 was wrong to say Fixed; this corrects it |
+| 5 | minor | `access` citing A1 was not honest; the access rulings exist | **Fixed.** H9 and `docs/spec/ACCESS.md`'s "Decided" are in section 2; `access` cites H9; A1's row no longer carries the phrase added for it |
+| 6 | minor | the door ceiling allowed any host, wider than H2 | **Fixed.** A door may consume the core, the composition, a plugin and another door; the export consumes the renderer through `beyondKind`, naming H2, which the generator requires to be cited in section 2 -- the reviewer's planted fault, the hub consuming the canvas, now fails, and is a test |
+| 7 | minor | two options' costs incomplete | **Fixed.** "Refused everywhere" reverses TR-2, TR-2b, TR-4, Z1 and B303's build; "Not yet" fails U4's exit |
