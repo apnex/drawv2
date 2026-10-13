@@ -59,7 +59,7 @@ Noted for PC1: AR1 asks for the system's north star and this one is the programm
 - **The stack interface:** browsers and server derive, the CLI asks (SD1); the planner runs the rules for every door (SD2); a pack is only its table (SD4); one pipe per pair (SD7); the network is a plugin (SD11); the core is anchors, identity and position, with no notion of connection, and the network contributes pipes, links and the rules that react to edits (SD11b); each document lists the plugins it needs (SD12).
 - **H17-D1, H17-D6:** the lab lives in this repository, in its own folder (H17-D1); the one device-type table is imported by its users (H17-D6).
 - **Transit:** a pin is cut where transit goes off (TR-2); `w` on an anchor whose transit is off makes two links ending there (TR-2b); which types offer transit is configuration the network plugin brings (2026-10-07); a device pin follows transit's rules only (Z1).
-- **N1, N5:** plugins bring their own kinds, and the core keeps only what spans kinds (N1); names are a service a kind opts into (N5).
+- **N1, N5, N5a:** plugins bring their own kinds, and the core keeps only what spans kinds (N1); names are a service a kind opts into (N5), and the anchor kind opts into it (N5a).
 - **O1, O4:** every kind is a plugin's; the core keeps what spans kinds and the anchor capability -- identity, position, occupancy, resolving a reference -- and a plugin depends on another's kind brokered at composition (O1); the core holds one kind, the anchor, which carries no type (O4).
 - **G3:** a plugin contributes fields to a kind it does not own.
 - **Q1:** a plugin's questions are asked of the plugin.

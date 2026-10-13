@@ -22,7 +22,7 @@ Ratifying rules no question in section 9.1 and adopts none of its recommendation
 | 3. Axiom alignment | approved (H21.6); its axioms amended by A-5 | a ruling, or a tension resolved |
 | 4. Anchored core | approved (H21.6); which table names a type's routing is owed | a part's duty or its consumes changing; section 9.1 |
 | 5. A type is a composition | approved (H21.6); whether a type is one declaration, and the behaviour family, owed | the decisions owed in section 9 |
-| 6. Entity model and interfaces | approved (H21.6) | a format change |
+| 6. Entity model and interfaces | approved (H21.6); the anchor's name settled by N5a | a format change |
 | 7. Run time | approved (H21.6) | a door's lifecycle changing |
 | 8. Verification and divergence | approved (H21.6) | a check added, or a divergence closed |
 | 9.1 Decisions owed | owed -- not approved by ratifying this document | each question's ruling |
@@ -78,7 +78,7 @@ Noted for PC1: AR1 asks for the system's north star and this one is the programm
 - **The stack interface:** browsers and server derive, the CLI asks (SD1); the planner runs the rules for every door (SD2); a pack is only its table (SD4); one pipe per pair (SD7); the network is a plugin (SD11); the core is anchors, identity and position, with no notion of connection, and the network contributes pipes, links and the rules that react to edits (SD11b); each document lists the plugins it needs (SD12).
 - **H17-D1, H17-D6:** the lab lives in this repository, in its own folder (H17-D1); the one device-type table is imported by its users (H17-D6).
 - **Transit:** a pin is cut where transit goes off (TR-2); `w` on an anchor whose transit is off makes two links ending there (TR-2b); which types offer transit is configuration the network plugin brings (2026-10-07); a device pin follows transit's rules only (Z1).
-- **N1, N5:** plugins bring their own kinds, and the core keeps only what spans kinds (N1); names are a service a kind opts into (N5).
+- **N1, N5, N5a:** plugins bring their own kinds, and the core keeps only what spans kinds (N1); names are a service a kind opts into (N5), and the anchor kind opts into it (N5a).
 - **O1, O4:** every kind is a plugin's; the core keeps what spans kinds and the anchor capability -- identity, position, occupancy, resolving a reference -- and a plugin depends on another's kind brokered at composition (O1); the core holds one kind, the anchor, which carries no type (O4).
 - **G3:** a plugin contributes fields to a kind it does not own.
 - **Q1:** a plugin's questions are asked of the plugin.
@@ -92,7 +92,7 @@ Noted for PC1: AR1 asks for the system's north star and this one is the programm
 The **anchor** is the core: identity and position on one cell (SD11b, O4); connection is the network plugin's.\
 A **pack** is a code table a plugin contributes, keyed by type (SD4, P-10).\
 A **type** is the name of a composition; a **node** is an anchor with what plugins compose onto it, and a node with no type is a bare anchor -- a waypoint, by the word people use (P-10).\
-Whether the anchor itself is named is owed (section 9.1).\
+The anchor kind opts into the naming service, so every anchor -- device or waypoint -- is named (N5, N5a).\
 Everything a node shows or does is derived from its composition and the document.
 
 ---
@@ -235,7 +235,7 @@ What a device is, said once per family.
 
 ## 6. Entity model and interfaces
 
-**Maturity: approved (H21.6).**
+**Maturity: approved (H21.6); the anchor's name settled by N5a.**
 
 ### 6.1 The stored document
 
@@ -243,7 +243,7 @@ What a device is, said once per family.
 |---|---|
 | `meta` | id, name, version, schema, owner, grants, and the plugins the document needs (SD12) |
 | `layouts` | the diagram's two grids, each a record of name, pitch, offset and extent, holding today's values (WD6, WD7) |
-| `nodes` | anchors -- id, position, order, and a name if the anchor is named (owed, section 9.1) -- and the fields plugins contribute: the devices plugin's type, shape, span, content; the network's transit; the simulation's spawn |
+| `nodes` | anchors -- id, name, position, order (N5a) -- and the fields plugins contribute: the devices plugin's type, shape, span, content; the network's transit; the simulation's spawn |
 | `links` | connections: their stops, closure, direction and plane (the network's) |
 | `pipes` | adjacencies between two anchors, keyed by the pair, and how each was laid (SD7) |
 | `zones` | regions of cells (the zones plugin's) |
@@ -323,7 +323,6 @@ Each is asked when its stage reaches it (H21); the options and their costs are t
 
 | Question | The options and their costs | Recommendation |
 |---|---|---|
-| Is the anchor named? The 2026-09-22 ontology lists name among what is not universal, and O4 defines the anchor as identity and one cell; N5 (2026-10-02, when a node was the device kind beside a separate waypoint kind) keeps the five built-in kinds named | **The anchor kind opts into names** (N5, B187): every anchor addressable by name for agents, nothing stored changes; the core's one kind carries a service O4's definition leaves out. **Name is a field a plugin contributes** (2026-09-22, O4): the anchor stays exactly identity and one cell; a bare anchor has no name to address it by, and the naming plugin becomes a dependency of every door that resolves names | the anchor kind opts into names -- names are already a service a kind opts into, not a core field, and agents address anchors by name |
 | Is a type one declaration across the families? Each family's table is its owner's: the network's routing configuration (2026-10-07; SD11b gives the network "the device tables"), the devices plugin's appearance (O4); packs are keyed by type (P-10); 2026-09-22 puts the table "with the type definition"; H17-D6 has the type table "imported by its users"; H21's U4 exit is "adding a type is one declaration" | **No -- each family's table names the types itself:** every ruling stands as written; adding a type touches each family's table, so U4's exit is not met, and a missed routing row defaults silently (`dev/design/unification/UNIFICATION-AUDIT.md`, section 3.1). **One type table with the type definition, in the devices plugin, naming each type's pack per family, handed to the other plugins at composition** (O1 brokers it): one declaration, where 2026-09-22 and O4 put the type; it amends 2026-10-07 and SD11b -- the network keeps its packs' contents, but which type takes which routing pack moves to the declaration -- and reverses H17-D6's "imported by its users". **The same declaration held by the product, handed in:** one declaration, composing being the product's duty (N1); the same amendments and reversal, and the type moves away from the devices plugin O4 gives it | one type table with the type definition, in the devices plugin, handed in at composition -- it meets U4's exit where 2026-09-22 and O4 put the type; the amendment of 2026-10-07 and SD11b and the reversal of H17-D6 are to be asked as such |
 | SD5: an act that would make a device take a role its type forbids -- refused, or cut? Held "until that door" (a pin naming a device), which the device-junctions ruling of 2026-10-07 (B301) opened; never put to the director | **The split as built:** a type offering no passage refuses a pin (2026-09-22); a stop whose transit is off is cut (TR-2, TR-2b, Z1; B303 built the cut at every door) -- one rule per input, the same at every door. **Refused everywhere:** simpler to state; reverses TR-2, TR-2b, TR-4 and Z1, and B303's build, and a drag and REST would disagree until both change (AX2) | the split as built -- it is what the rulings already make the code do at every door |
 | How does the CLI learn the device types? | **From the server** (SD1): one list, no copy; no route serves the types today, so one is added; `draw help` offline cannot name them; `draw map`'s letter per type needs a home in a family (section 5). **A copy held equal by a test** (B167): help works offline; two lists of one fact, held equal only by the test -- parity (AX2) holds, A2 being not in force (A-5), and a type keeps a second owner (A3) | from the server -- the CLI needs the server for every verb but help |

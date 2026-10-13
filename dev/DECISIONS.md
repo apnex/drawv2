@@ -1952,3 +1952,9 @@ Director: "yes"\
 Shown: dev/design/unification/MISSION-KIT-ALIGNMENT.md@86e3c73\
 Affects: docs/ARCHITECTURE-TARGET.md, dev/design/unification/MISSION-KIT-ALIGNMENT.md\
 Recorder: asked whether the target names its axioms by mission-kit's rule -- an axiom in force only through a trait it names, or on the floor -- the director answered "yes" (the proposer's recommendation) over keeping the list as a recorded departure. drawv2 is read stateful, multi-agent and autonomous (INFERRED), not declarative and not llm-in-the-loop; A2 and A11 leave the target's sections 2 and 3, A4, A6, A9 and A10 join, what the target took from A2 and A11 is held under the outcome axes AX2 and AX5, and two owed questions -- the CLI's types and the behaviour family -- are re-costed without A2. This amends sections 2 and 3, ratified at H21.6; the M7 weights of the axioms that join are the proposer's.
+
+**N5a -- the anchor kind opts into the naming service, so every anchor keeps its name -- 2026-10-14 (H21.6).**\
+Director: "Yes, continue"\
+Shown: docs/ARCHITECTURE-TARGET.md@96d494d\
+Affects: docs/ARCHITECTURE-TARGET.md\
+Recorder: asked whether the anchor keeps its name -- the conflict between B187 and N5 (names a service each kind opts into, the five built-in kinds named) and O4 with the 2026-09-22 ontology (the anchor is identity and one cell; name not universal) -- the director answered "Yes, continue" (the proposer's recommendation). The anchor kind opts into the naming service (N5), so every anchor, device or bare waypoint, has a name agents address it by, and nothing stored changes; the question leaves the target's section 9.1.
