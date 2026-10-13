@@ -27,6 +27,7 @@ Ratifying rules no question in section 9.1 and adopts none of its recommendation
 | 8. Verification and divergence | approved (H21.6) | a check added, or a divergence closed |
 | 9.1 Decisions owed | owed -- not approved by ratifying this document | each question's ruling |
 | 9.2 Open | provisional | each entry's ruling |
+| 9.3 Alignment with mission-kit | provisional; a register, not structure (A-0) | each owed design's trigger; B343 |
 
 Approval is aggregate, by the director, recorded as H21.6 in `dev/DECISIONS.md`; each section reopens on its trigger.
 
@@ -327,3 +328,43 @@ Each is asked when its stage reaches it (H21); the options and their costs are t
 | Policy over packets and flows | out of scope; named so nothing excludes it (2026-09-22) |
 | Each document lists the plugins it needs | ratified (SD12); its building held with the director's approval, on B248's trigger |
 | Absorption of rulings recorded before 2026-10-11 | a ruling from then on names the documents it affects, and the gate checks each cites it -- a citation check, not proof that the section absorbs it; an older ruling's absorption is read by review |
+
+### 9.3 Alignment with mission-kit -- a register (A-0)
+
+**Maturity: provisional; a register, not structure.**\
+The anchored core composes no mission-kit component (A-0).\
+Each part below is mapped to the component or candidate it would take, declared in `tools/layers.mjs` `ALIGNMENT` and generated; the other parts are drawv2's own.\
+Why each mapping fits, and the rulings composing it would change, are `dev/design/unification/MISSION-KIT-ALIGNMENT.md`, sections 3 and 7.2.
+
+<!-- BEGIN GENERATED: architecture-target-alignment. Run tools/generate-architecture.mjs; do not edit by hand. -->
+| Part | Aligns to | Standing, read 2026-10-12 | Composing it waits on |
+|---|---|---|---|
+| `kind-contract` | `shape-check` | shape-check: proposed in zorg, certified | OD-3; the target's section 4.3 |
+| `document` | `entity-store` | entity-store: proposed in zorg, certified | OD-1 |
+| `store` | `entity-store` | entity-store: proposed in zorg, certified | OD-1 |
+| `primitives` | `vector-scene` | vector-scene: candidate, zorg D32, steered in D35 | a contract; OD-3 |
+| `rules` | `input-binding` | input-binding: candidate, zorg D32, steered in D35 | a contract; OD-3 |
+| `planner` | `change-planner` | change-planner: candidate, zorg D32, steered in D35 | a contract; OD-3 |
+| `canvas` | `input-binding` | input-binding: candidate, zorg D32, steered in D35 | a contract; OD-3 |
+| `renderer` | `vector-scene` | vector-scene: candidate, zorg D32, steered in D35 | a contract; OD-3 |
+| `sync` | `entity-view`, `write-outbox` | entity-view: candidate, zorg D32; write-outbox: candidate, zorg D32 | OD-2; OD-3 |
+| `server` | `static-host` | static-host: candidate, zorg D32 | a contract |
+| `access` | `caller-identity`, `credential-issuer`, `access-grants` | caller-identity: proposed in zorg, certified; credential-issuer: proposed in zorg, no code; access-grants: candidate, zorg BL20 | OD-2 |
+| `hub` | `entity-api`, `agp`, `resource-lease` | entity-api: proposed in zorg, failed two verifications; agp: registered in mission-kit, C1; resource-lease: candidate, zorg D32 | OD-2 |
+| `cli` | `operation-command` | operation-command: proposed in zorg, failed two verifications | OD-3 |
+| `export` | `vector-scene` | vector-scene: candidate, zorg D32, steered in D35 | a contract |
+<!-- END GENERATED: architecture-target-alignment -->
+
+**The owed designs,** each designed and asked on its own when its trigger fires:
+
+| Owed design | Carried by | Trigger |
+|---|---|---|
+| OD-1, a diagram kept in an entity-store | B344 | the director selecting it, or a ruling in entity-store's record on the adjustments it needs |
+| OD-2, clients reaching the server over agp | B345 | OD-1 ruled, entity-api certified, and its follows unparked (zorg's D15) |
+| OD-3, how components reach the page and the installed CLI | B346 | the first ruling that puts a component in the page, the lab or the CLI |
+
+**Held with them:**
+- zorg's D38 and D39, where they name drawv2's agent door and its connection codes, open until OD-2;
+- the anchored core in zorg's checkable form, until the first component composes;
+- drawv2's board, backlog and decisions at mission-kit's paths (its ruling 0076), a divergence;
+- which of drawv2's parts become shared components, reasoned with agp's and zorg's own, when the director starts it (B343).

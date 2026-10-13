@@ -1940,3 +1940,9 @@ Director: "explore. goal is to have a target state that aligns with mission-kit 
 Shown: docs/ARCHITECTURE-TARGET.md@98c6f5b\
 Affects: dev/design/unification/MISSION-KIT-ALIGNMENT.md\
 Recorder: offered "Explore: compare the 28 parts with mission-kit's components properly" (the proposer's recommendation) over the anchor's-name question and pausing, the director chose it and set its goal -- the target states drawv2 aligned with mission-kit, and the code is not migrated; which part aligns with which component, and each fit gap, is the proposer's analysis, put to the director with the revised target.
+
+**A-0 -- the aligned target maps every part and composes no mission-kit component yet; the owed designs wait on their triggers -- 2026-10-12 (H21.9).**\
+Director: "B"\
+Shown: dev/design/unification/MISSION-KIT-ALIGNMENT.md@a2e7c19\
+Affects: dev/design/unification/MISSION-KIT-ALIGNMENT.md, docs/ARCHITECTURE-TARGET.md\
+Recorder: offered "A: design the diagram-storage swap next" and "B: let the designs wait. The cross-project reasoning comes first, when you start it, and we go back to drawv2's own unification stages, U3 to U5", the director chose B -- the design's A-0 option (a); the reply's letters ran opposite to the design's. The proposer had recommended designing OD-1 next, then, the director having raised the cross-project question (held as B343), said waiting was the consistent choice if that reasoning comes first. The target's register holds each part's mapping and the three owed designs -- OD-1 to OD-3, carried by B344 to B346 -- each on its trigger; A-5 is asked next, then drawv2's own unification resumes at U3.

@@ -148,6 +148,49 @@ export const PARTS = {
 		consumes: ['lattice', 'document', 'kind-contract', 'primitives', 'colours', 'product', 'renderer'], beyondKind: { renderer: 'H2' }, carried: { network: 'B330' } },
 };
 
+/*
+H21.9 (A-0) -- EACH PART'S ALIGNMENT WITH MISSION-KIT, a register, not structure: the anchored core composes no mission-kit
+component yet, and each part below is mapped to the component or candidate it would take
+(dev/design/unification/MISSION-KIT-ALIGNMENT.md, section 3, says why each fits and which rulings composing it would change).
+MISSION_KIT holds each component's or candidate's standing as read on MISSION_KIT_READ -- standings move, and are read again before
+a design that composes one is asked. tools/generate-architecture.mjs renders the register into the target's section 9.3 and fails
+on a part that is no part, a name MISSION_KIT does not hold, or an entry of MISSION_KIT no part aligns to.
+*/
+export const MISSION_KIT_READ = '2026-10-12';
+export const MISSION_KIT = {
+	agp: 'registered in mission-kit, C1',
+	'shape-check': 'proposed in zorg, certified',
+	'entity-store': 'proposed in zorg, certified',
+	'caller-identity': 'proposed in zorg, certified',
+	'entity-api': 'proposed in zorg, failed two verifications',
+	'operation-command': 'proposed in zorg, failed two verifications',
+	'credential-issuer': 'proposed in zorg, no code',
+	'change-planner': 'candidate, zorg D32, steered in D35',
+	'input-binding': 'candidate, zorg D32, steered in D35',
+	'vector-scene': 'candidate, zorg D32, steered in D35',
+	'entity-view': 'candidate, zorg D32',
+	'write-outbox': 'candidate, zorg D32',
+	'resource-lease': 'candidate, zorg D32',
+	'static-host': 'candidate, zorg D32',
+	'access-grants': 'candidate, zorg BL20',
+};
+export const ALIGNMENT = {
+	'kind-contract': { to: ['shape-check'], waits: 'OD-3; the target\'s section 4.3' },
+	document: { to: ['entity-store'], waits: 'OD-1' },
+	store: { to: ['entity-store'], waits: 'OD-1' },
+	primitives: { to: ['vector-scene'], waits: 'a contract; OD-3' },
+	rules: { to: ['input-binding'], waits: 'a contract; OD-3' },
+	planner: { to: ['change-planner'], waits: 'a contract; OD-3' },
+	canvas: { to: ['input-binding'], waits: 'a contract; OD-3' },
+	renderer: { to: ['vector-scene'], waits: 'a contract; OD-3' },
+	sync: { to: ['entity-view', 'write-outbox'], waits: 'OD-2; OD-3' },
+	server: { to: ['static-host'], waits: 'a contract' },
+	access: { to: ['caller-identity', 'credential-issuer', 'access-grants'], waits: 'OD-2' },
+	hub: { to: ['entity-api', 'agp', 'resource-lease'], waits: 'OD-2' },
+	cli: { to: ['operation-command'], waits: 'OD-3' },
+	export: { to: ['vector-scene'], waits: 'a contract' },
+};
+
 export const ALLOWED = {
 	core: ['core'],
 	network: ['core', 'devices', 'network'],

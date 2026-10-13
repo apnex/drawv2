@@ -132,3 +132,27 @@ test("H21.6 review 3: a door consumes no host, but for a consume a ruling in the
 	assert.match(r.stdout, /beyondKind names canvas, which rest does not consume/);
 });
 
+// the alignment register (H21.9, A-0), driven over a register of the test's own, written from the real one with one fault planted
+const alignmentWith = (edit) => {
+	const f = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'draw-align-')), 'alignment.json');
+	return import('../tools/layers.mjs').then(({ ALIGNMENT }) => { const a = structuredClone(ALIGNMENT); edit(a); fs.writeFileSync(f, JSON.stringify(a)); return f; });
+};
+
+test('H21.9 A-0: the target renders each part\'s alignment from tools/layers.mjs -- the control', () => {
+	const doc = fs.readFileSync(path.join(ROOT, 'docs/ARCHITECTURE-TARGET.md'), 'utf8');
+	assert.match(doc, /\| `document` \| `entity-store` \| entity-store: proposed in zorg, certified \| OD-1 \|/);
+	assert.equal(run('--check').status, 0);
+});
+
+test('H21.9 A-0: an alignment naming no part, or a name MISSION_KIT does not hold, fails; an entry of MISSION_KIT no part aligns to fails', async () => {
+	let r = run('--check', '--alignment', await alignmentWith((a) => { a.nowhere = { to: ['agp'], waits: 'OD-2' }; }));
+	assert.equal(r.status, 1);
+	assert.match(r.stdout, /ALIGNMENT names nowhere, which is no part/);
+	r = run('--check', '--alignment', await alignmentWith((a) => { a.store.to = ['entity-stor']; }));
+	assert.match(r.stdout, /ALIGNMENT\.store aligns to entity-stor, which MISSION_KIT does not hold/);
+	r = run('--check', '--alignment', await alignmentWith((a) => { delete a.hub; }));
+	assert.match(r.stdout, /MISSION_KIT holds agp, which no part aligns to/, 'agp is the hub\'s alone');
+	r = run('--check', '--alignment', await alignmentWith((a) => { a.cli.to = []; }));
+	assert.match(r.stdout, /ALIGNMENT\.cli aligns to nothing/);
+});
+

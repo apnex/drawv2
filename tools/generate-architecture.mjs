@@ -16,6 +16,8 @@ what the code declares about itself, and the gate fails when the document no lon
   doors          server/routes.mjs (REST), server/protocol.js (the websocket's commands), cli/verbs.mjs (the CLI's verbs)
   exceptions     tools/layers.mjs RATCHET_REASONS -- each decoupling ratchet still held, its reason and its trigger
   gate           package.json -- the steps `npm run gate` runs
+  alignment      tools/layers.mjs ALIGNMENT and MISSION_KIT -- each part mapped to the mission-kit component or candidate it
+                 would take, with its standing as read, rendered into the target's register (H21.9, A-0)
 
 Regions are delimited `<!-- BEGIN GENERATED: architecture-<name> ... -->` and `<!-- END GENERATED: architecture-<name> -->`; the
 prose around them is authored. No line numbers and no counts that move with every test, so the document changes when the
@@ -26,11 +28,13 @@ Usage: node tools/generate-architecture.mjs [--check] [--doc <path>]
   --doc    the document to write or check (default docs/ARCHITECTURE.md)
   --target-doc  the target document holding the parts table (default docs/ARCHITECTURE-TARGET.md)
   --parts  a JSON parts declaration in place of tools/layers.mjs PARTS (tests)
+  --alignment  a JSON alignment register in place of tools/layers.mjs ALIGNMENT (tests)
 */
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { LAYER_DUTY, ALLOWED, LAYER, RATCHETS, RATCHET_REASONS, PARTS as DECLARED_PARTS, KIND_MAY_CONSUME, NOT_PARTS } from './layers.mjs';
+import { LAYER_DUTY, ALLOWED, LAYER, RATCHETS, RATCHET_REASONS, PARTS as DECLARED_PARTS, KIND_MAY_CONSUME, NOT_PARTS,
+	ALIGNMENT as DECLARED_ALIGNMENT, MISSION_KIT, MISSION_KIT_READ } from './layers.mjs';
 import { readRows } from './records.mjs';
 import { productKinds } from '../product/kinds.mjs';
 import { NETWORK_ROWS } from '../network/kinds.mjs';
@@ -45,6 +49,8 @@ const TARGET = path.resolve(arg('--target-doc') ?? path.join(ROOT, 'docs/ARCHITE
 const CHECK = process.argv.includes('--check');
 // --parts <json>: a parts declaration in place of tools/layers.mjs's, so a test can drive the part rules
 const PARTS = arg('--parts') ? JSON.parse(fs.readFileSync(arg('--parts'), 'utf8')) : DECLARED_PARTS;
+// --alignment <json>: an alignment register in place of tools/layers.mjs's, so a test can drive its rules
+const ALIGNMENT = arg('--alignment') ? JSON.parse(fs.readFileSync(arg('--alignment'), 'utf8')) : DECLARED_ALIGNMENT;
 const read = (f) => fs.readFileSync(path.join(ROOT, f), 'utf8');
 const code = (f) => read(f).replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
 const cell = (v) => String(v).replace(/\|/g, '\\|');
@@ -193,7 +199,6 @@ const divergence = outside.length
 const targetParts = table(['Part', 'Duty', 'Kind', 'Fixed by', 'Consumes'],
 	Object.entries(PARTS).map(([name, p]) => [`\`${name}\``, p.duty, p.kind, p.by.map((b) => (b.includes('/') ? `\`${b}\`` : b)).join(', '), p.consumes === '*' ? 'any part -- a composition root' : list(p.consumes)]));
 
-const alignment = sectionOf('3. Axiom alignment');
 // each part's boundary cites a layer of the justification chain (AR1): every `by` id appears in the target's section 2
 for (const [a, p] of Object.entries(PARTS)) {
 	if (!p.by?.length) partFaults.push(`part ${a} cites nothing in the justification chain`);
@@ -209,7 +214,18 @@ for (const line of runTime.split('\n').filter((l) => l.startsWith('- **'))) {
 }
 
 const REGIONS = { layers, kinds, canvas, compositions, doors, exceptions, gate, parts, 'part-divergence': divergence, justification: chainAboveModel };
-const TARGET_REGIONS = { 'target-parts': targetParts };
+// ---- the alignment register (A-0): parts that exist, names MISSION_KIT holds, no entry of MISSION_KIT left unreferenced
+for (const [part, a] of Object.entries(ALIGNMENT)) {
+	if (!PARTS[part]) partFaults.push(`ALIGNMENT names ${part}, which is no part`);
+	for (const c of a.to ?? []) if (!MISSION_KIT[c]) partFaults.push(`ALIGNMENT.${part} aligns to ${c}, which MISSION_KIT does not hold -- add its standing, read, or correct the name`);
+	if (!a.to?.length) partFaults.push(`ALIGNMENT.${part} aligns to nothing`);
+}
+const referenced = new Set(Object.values(ALIGNMENT).flatMap((a) => a.to ?? []));
+for (const c of Object.keys(MISSION_KIT)) if (!referenced.has(c)) partFaults.push(`MISSION_KIT holds ${c}, which no part aligns to -- remove it`);
+const alignmentRegister = table(['Part', 'Aligns to', `Standing, read ${MISSION_KIT_READ}`, 'Composing it waits on'],
+	Object.entries(ALIGNMENT).map(([part, a]) => [`\`${part}\``, list(a.to ?? []), (a.to ?? []).map((c) => `${c}: ${MISSION_KIT[c] ?? '?'}`).join('; '), a.waits ?? '--']));
+
+const TARGET_REGIONS = { 'target-parts': targetParts, 'target-alignment': alignmentRegister };
 
 // ---- write or check
 if (missingDuty.length) { console.log(`  \u2717 tools/layers.mjs LAYER_DUTY declares no duty for ${missingDuty.join(', ')}`); process.exit(1); }
