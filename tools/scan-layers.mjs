@@ -796,7 +796,7 @@ const rules = {
 		const five = R.L7k?.kinds ?? [];
 		const checked = new Set();
 		for (const file of modules) {
-			if (!M.PRODUCT_LAYERS.includes(layerOf[file])) continue;
+			if (!M.PRODUCT_LAYERS.includes(layerOf[file]) && layerOf[file] !== 'lab') continue;
 			for (const k of A[file].kinds) {
 				checked.add(`${file}:${k.line}`);
 				if (JSON.stringify(k.list) !== JSON.stringify(five)) fail('L7k', `${file}:${k.line} KINDS = ${JSON.stringify(k.list)}, not exactly ${JSON.stringify(five)}`);
@@ -819,8 +819,9 @@ const rules = {
 			}
 			if (JSON.stringify(words) !== JSON.stringify(want)) fail('L7k', `${g.file}:${re.line} ${g.name} accepts ${JSON.stringify(words)}, not exactly the kinds plus ${JSON.stringify(g.others ?? [])}`);
 		}
+		// U3 (H21.7): the lab's composition is scanned by L7k too, not only PRODUCT_LAYERS
 		for (const file of modules) {
-			if (!M.PRODUCT_LAYERS.includes(layerOf[file])) continue;
+			if (!M.PRODUCT_LAYERS.includes(layerOf[file]) && layerOf[file] !== 'lab') continue;
 			for (const l of A[file].kindSites) if (!checked.has(`${file}:${l}`)) note('L7k', file, `${file}:${l}`);
 		}
 	},

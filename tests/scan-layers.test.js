@@ -355,6 +355,8 @@ const MUTANTS = [
 	// a module listed under a second layer, where its window read would go uncounted
 	{ id: 'A23', rule: 'L1', edits: [{ file: MAN, replace: ["'app/src/main.js',       // the production composition root", "'app/src/selection.js', 'app/src/main.js',       // the production composition root"] },
 		{ file: 'app/src/selection.js', append: '\nconst __h = () => window.draw;\n' }] },
+	// U3 (H21.7): L7k scans the lab too, not only PRODUCT_LAYERS
+	{ id: 'U3', rule: 'L7k', edits: [{ file: 'lab/src/root.js', append: "\nconst __u3 = ['nodes', 'waypoints', 'links', 'zones', 'groups'];\n" }] },
 ];
 
 const scanOwn = (dir) => new Promise((done) => {

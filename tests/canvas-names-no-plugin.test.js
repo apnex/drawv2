@@ -26,11 +26,14 @@ import { LAYER } from '../tools/layers.mjs';
 const root = path.resolve(import.meta.dirname, '..');
 const code = (file) => fs.readFileSync(path.join(root, file), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
 // AMENDED WD-b2 (H19.46): the layouts plugin's kind and folder too -- the canvas draws its grids through a part, naming neither
-const KIND_WORD = /'(zones?|groups?|links?|pipes?|layouts?)'|'[^'\n]*\.(zone|group|link|pipe|layout)\b[^'\n]*'/g;
+// AMENDED U3 (H21.7): every quoting form ('...', "...", `...`), class selectors, collection properties (.zones, ...), and object
+// keys (zone:, ...); and the fields plugins contribute onto the anchor (.type, .shape, .span, .content, .spawn, .transit, .glyph)
+const KIND_WORD = /(['"`])(zones?|groups?|links?|pipes?|layouts?)\1|(['"`])[^'"`$\n]*\.(zone|group|link|pipe|layout)\b[^'"`$\n]*\3|\.(zones|groups|links|pipes|layouts)\b(?!\s*\()|(?:^|[{,])\s*(zones?|groups?|links?|pipes?|layouts?)\s*:/gm;
+const PLUGIN_FIELD = /(?<!\b(?:evt|event|labels\??))\.(type|shape|span|content|spawn|transit|glyph)\b(?!\s*\(|\s*===\s*['"`](?:up|move|down|double|cancel)['"`])/g;
 const PLUGIN_FOLDERS = ['devices', 'network', 'zones', 'groups', 'layouts'];
 const pluginOf = (p) => (PLUGIN_FOLDERS.includes(p.split('/')[0]) ? p.split('/')[0] : ['simulation', 'network'].find((l) => (LAYER[l] ?? []).includes(p)) ?? null);
-const pluginImports = (file, text) => [...text.matchAll(/^import [^;]*? from '([^']+)'/gm)]
-	.map((m) => path.normalize(path.join(path.dirname(file), m[1]))).filter((p) => pluginOf(p));
+const pluginImports = (file, text) => [...text.matchAll(/(?:\bfrom\s*|\bimport\s*\(\s*)(['"`])([^'"`]+)\1/g)]
+	.map((m) => path.normalize(path.join(path.dirname(file), m[2]))).filter((p) => pluginOf(p));
 const canvasModules = () => fs.readdirSync(path.join(root, 'app/src')).filter((f) => f.endsWith('.js')).map((f) => `app/src/${f}`).sort();
 
 /*
@@ -40,14 +43,25 @@ ends -- `permanent`, a WHEN expression, or the condition in words -- and every c
 */
 const D2_LINK = 'a second plugin must judge or extend a link drag (B328)';
 const KIND_RECORD = {
-	'app/src/commands.js': { count: 8, cites: ['D2', 'B328'], trigger: D2_LINK,
-		reason: 'the draw-a-link gesture\'s commit builders -- `routeLink`, `routeLinks`, `chainHop` -- and the label of the pipes a refused drag keeps' },
-	'app/src/input.js': { count: 7, cites: ['D2', 'B328'], trigger: D2_LINK,
-		reason: 'the draw-a-link gesture\'s name, the product\'s shared gesture with the network as its judge' },
+	'app/src/commands.js': { count: 9, cites: ['D2', 'B328'], trigger: D2_LINK,
+		reason: 'the draw-a-link gesture\'s commit builders -- `routeLink`, `routeLinks`, `chainHop` -- its `.links` list, and the label of the pipes a refused drag keeps' },
+	'app/src/compose-canvas.js': { count: 2, cites: ['B332'], trigger: 'the canvas takes the network as a generic plugin, not a slot of its own (B332, H21.8)',
+		reason: 'the canvas preview passing `{ links: network.links }` to the planner' },
+	'app/src/help.js': { count: 2, cites: ['B328'], trigger: 'each plugin brings its own help word through its canvas part',
+		reason: 'the help overlay\'s `zone:` and `link:` entries in `KIND_WORDS`' },
+	'app/src/input.js': { count: 9, cites: ['D2', 'B328'], trigger: D2_LINK,
+		reason: 'the draw-a-link gesture\'s name and its `link:` release-rule keys, the product\'s shared gesture with the network as its judge' },
 	'app/src/recognize.js': { count: 2, cites: ['D2', 'B328'], trigger: D2_LINK,
 		reason: 'the press row that opens the draw-a-link gesture, and its gesture name' },
 	'app/src/keymap.js': { count: 1, cites: ['D2', 'B328'], trigger: D2_LINK,
 		reason: 'the product\'s `w`, a stop of the draw-a-link gesture' },
+};
+const FIELD_RECORD = {
+	'app/src/commands.js': { count: 1, cites: ['B340', 'from B187'],
+		reason: 'a clone\'s name reads `src.type` to name a cloned device for its type (B187, B340)',
+		trigger: 'the canvas names what it creates and clones through its parts (`labels.wordOf`, B340)' },
+	'app/src/palette.js': { count: 2, cites: ['H17-D6'], trigger: 'permanent',
+		reason: 'the palette widget\'s own DOM dataset (`item.dataset.type`) and drag state (`this.drag.type`) for the tile being dragged' },
 };
 const IMPORT_RECORD = {
 	'app/src/input.js': { count: 8, cites: ['D2', 'B328'], trigger: D2_LINK,
@@ -69,6 +83,7 @@ const IMPORT_RECORD = {
 
 test('C-f: no canvas module names a plugin\'s kind or imports a plugin, beyond the record', () => {
 	for (const [measure, record, what] of [[(f, t) => (t.match(KIND_WORD) ?? []).length, KIND_RECORD, 'names a plugin\'s kind'],
+		[(f, t) => (t.match(PLUGIN_FIELD) ?? []).length, FIELD_RECORD, 'reads a plugin\'s field'],
 		[(f, t) => pluginImports(f, t).length, IMPORT_RECORD, 'imports a plugin']]) {
 		const seen = {};
 		for (const f of canvasModules()) { const n = measure(f, code(f)); if (n) seen[f] = n; }
@@ -81,10 +96,14 @@ test('C-f: no canvas module names a plugin\'s kind or imports a plugin, beyond t
 	}
 });
 
-test('C-f: the measures see what they are for -- a kind word, a selector string, an import from a plugin\'s folder or the simulation', () => {
+test('C-f: the measures see what they are for -- every quoting form, object keys, collection properties, plugin fields, and plugin imports', () => {
 	const words = (t) => (t.match(KIND_WORD) ?? []).length;
-	assert.equal(words("const k = 'zone'; const s = 'g.link-hit'; const n = 'node'; const w = 'waypoint';"), 2, 'zone and the link selector; the core\'s node and the drawn word are not');
-	assert.deepEqual(pluginImports('app/src/x.js', "import { a } from '../../zones/zone-keys.mjs';\nimport { b } from '../../engine/spawn-runs.mjs';\nimport { c } from '../../model/model.mjs';\nimport { d } from './snap.js';"),
+	assert.equal(words("const k = 'zone'; const q = \"groups\"; const t = `pipe`; const s = 'g.link-hit'; const c = doc.layouts; const o = { zones: 1 }; const n = 'node'; const w = 'waypoint'; const tpl = `\${g.layout}`;"), 6,
+		'single, double and template quotes, a selector, a collection property and an object key; node, waypoint and an interpolation are not');
+	const fields = (t) => (t.match(PLUGIN_FIELD) ?? []).length;
+	assert.equal(fields("const a = e.type; const b = e.shape; const c = e.span; const d = e.content; const s = e.spawn; const tr = e.transit; const g = e.glyph; const ok = event.type === 'up' || e.type === 'move' || ctx.shape(p1, p2) || p.labels?.content;"), 7,
+		'all seven plugin-contributed fields; pointer events, shape() calls and part labels are not');
+	assert.deepEqual(pluginImports('app/src/x.js', "import { a } from '../../zones/zone-keys.mjs';\nconst m = await import(\"../../engine/spawn-runs.mjs\");\nimport { c } from '../../model/model.mjs';\nimport { d } from './snap.js';"),
 		['zones/zone-keys.mjs', 'engine/spawn-runs.mjs']);
 });
 
@@ -92,6 +111,7 @@ test('C-f: the measures see what they are for -- a kind word, a selector string,
 test('H21.5: the canvas ratchet\'s exceptions cite live work and say when they end', async () => {
 	const { exceptionFaults } = await import('../tools/exceptions.mjs');
 	const entries = [...Object.entries(KIND_RECORD).map(([f, e]) => ({ where: `KIND_RECORD ${f}`, ...e })),
+		...Object.entries(FIELD_RECORD).map(([f, e]) => ({ where: `FIELD_RECORD ${f}`, ...e })),
 		...Object.entries(IMPORT_RECORD).map(([f, e]) => ({ where: `IMPORT_RECORD ${f}`, ...e }))];
 	assert.deepEqual(exceptionFaults(entries, root), []);
 });

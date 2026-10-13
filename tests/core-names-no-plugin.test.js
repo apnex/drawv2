@@ -23,27 +23,212 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { CORE_KINDS } from '../model/shape.mjs';
-import { ALLOWED, LAYER } from '../tools/layers.mjs';
+import { ALLOWED, FOLDERS, LAYER, PRODUCT_LAYERS } from '../tools/layers.mjs';
 
 const root = path.resolve(import.meta.dirname, '..');
 const code = (file) => fs.readFileSync(path.join(root, file), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
-const PLUGIN_KIND = /'(zones?|groups?|links?|pipes?)'/g;
-const DEVICE_FIELD = /\.(type|shape|span|content|spawn)\b/g;
+// AMENDED U3 (H21.7): every quoting form ('...', "...", `...`), object keys, collection properties (.zones, ...), layout(s),
+// and .transit and .glyph; and the remaining product layers, cross-plugin reads, and device type names outside a type's declaration
+const PLUGIN_KIND = /(['"`])(zones?|groups?|links?|pipes?|layouts?)\1|\.(zones|groups|links|pipes|layouts)\b(?!\s*\()|(?:^|[{,])\s*(zones?|groups?|links?|pipes?|layouts?)\s*:(?!\s*(?:v\.group|['"`](?:Context|Lifecycle|Writing|Placement|Awareness|Access)['"`]))/gm;
+const DEVICE_FIELD = /(?<!\b(?:evt|event|labels\??))\.(type|shape|span|content|spawn|transit|glyph)\b(?!\s*\(|\s*===\s*['"`](?:up|move|down|double|cancel)['"`])/g;
+const UNAMBIG_TYPE = /(['"`])(loadbalancer|firewall|vxlan|router)\1|\b(loadbalancer|firewall|vxlan|router)\s*:|\.(loadbalancer|firewall|vxlan|router)\b|glyph-(loadbalancer|firewall|vxlan|router|host|server)\b|GLYPH_BB\.(host|server)\b/g;
+const HOST_SERVER_TYPE = /(['"`])(host|server)\1|\b(host|server)\s*:/g;
+const deviceTypesIn = (text) => text.split('\n').flatMap((line) => {
+	const u = [...line.matchAll(UNAMBIG_TYPE)].map((m) => m[0]);
+	const hs = (u.length > 0 || /\b(?:type|glyph)\b[^;\n]*?(?:[:=]|\|\|)|\bmakeNode\s*\(/.test(line))
+		? [...line.matchAll(HOST_SERVER_TYPE)].map((m) => m[0]) : [];
+	return [...u, ...hs];
+});
+
+const walk = (d, skip = []) => fs.readdirSync(path.join(root, d), { withFileTypes: true }).flatMap((e) => {
+	const p = path.posix.join(d, e.name);
+	if (skip.some((s) => p.startsWith(s))) return [];
+	return e.isDirectory() ? walk(p, skip) : /\.m?js$/.test(e.name) ? [p] : [];
+});
+const allLayerOf = () => {
+	const map = {};
+	for (const [l, files] of Object.entries(LAYER)) for (const f of files) map[f] = l;
+	for (const f of FOLDERS) if (f.layer && !['tools', 'tests'].includes(f.layer)) for (const m of walk(f.dir, f.skip ?? [])) map[m] = f.layer;
+	return map;
+};
+const PLUGIN_FOLDERS = ['layouts', 'devices', 'network', 'zones', 'groups'];
+const ownerPlugin = (f) => (PLUGIN_FOLDERS.includes(f.split('/')[0]) ? f.split('/')[0] : (LAYER.simulation ?? []).includes(f) ? 'simulation' : null);
+const KIND_OWNER = { layout: 'layouts', layouts: 'layouts', zone: 'zones', zones: 'zones', group: 'groups', groups: 'groups', link: 'network', links: 'network', pipe: 'network', pipes: 'network' };
+const FIELD_OWNER = { type: 'devices', shape: 'devices', span: 'devices', content: 'devices', glyph: 'devices', transit: 'network', spawn: 'simulation' };
+const foreignKindsIn = (f, text) => {
+	const own = ownerPlugin(f);
+	return [...text.matchAll(PLUGIN_KIND)].map((m) => m[2] || m[3] || m[4]).filter((k) => KIND_OWNER[k] !== own);
+};
+const foreignFieldsIn = (f, text) => {
+	const own = ownerPlugin(f);
+	return [...text.matchAll(DEVICE_FIELD)].map((m) => m[1]).filter((k) => FIELD_OWNER[k] !== own);
+};
+
 const coreModules = () => LAYER.core;
 const plannerModules = () => fs.readdirSync(path.join(root, 'planner')).filter((f) => /\.m?js$/.test(f)).map((f) => `planner/${f}`);
 
 // file -> { count, reason, cites, trigger }; a count may only fall (AMENDED H21.5, R-b: cites resolve, a trigger says when it ends)
 const RECORD = {
 	// model/model.mjs's 7 -- its link methods -- went to the network at K13d (H19.25, network/link-queries.mjs)
-	'kernel/geometry.mjs': { count: 5, cites: ['B325', 'B330'],
-		reason: 'the zone lattice\'s name in `LAYOUTS`, a copy of the layout records (B325), and the zone and group elements the export door draws by kind (B330)',
+	'kernel/geometry.mjs': { count: 8, cites: ['B325', 'B330'],
+		reason: 'the zone lattice\'s name in `LAYOUTS` and `layout:` in `anchorAt`/`nearestAnchor` (B325), and the zone and group elements the export door draws by kind (B330)',
 		trigger: 'the export door draws through the painters (B330), and the grids read the layout records (B325)' },
+	'kernel/spec.mjs': { count: 2, cites: ['B330', 'B338'],
+		reason: 'the `group:` and `zone:` layout constants in `STD` that the export door and the plugins read',
+		trigger: 'the export door draws through the painters (B330), and each plugin holds its own look (B338)' },
+	'kernel/theme.mjs': { count: 2, cites: ['B338'],
+		reason: 'the `link:` and `group:` colour roles in `CANVAS_ROLES`, held in the core theme instead of their plugins (B338)',
+		trigger: 'each plugin holds its own colour roles over the core palette (B338)' },
+	'planner/txn.mjs': { count: 4, cites: ['B332'],
+		reason: 'the planner\'s privileged `links` option for the network\'s tenant (`{ links: network.links }`, B332)',
+		trigger: 'the planner takes the network as any plugin, with no links option of its own (B332)' },
 };
-// and the device fields a core module reads, the same way
+// and the plugin fields a core or planner module reads, the same way
 const DEVICE_RECORD = {
-	'kernel/renderer.mjs': { count: 3, cites: ['B330', 'H21.3'],
+	'kernel/geometry.mjs': { count: 1, cites: ['B330'],
+		reason: 'the export scene helper `node()` reading `o.glyph` (B330)',
+		trigger: 'the export door draws through the painters (B330)' },
+	'kernel/renderer.mjs': { count: 3, cites: ['B330', 'B338', 'H21.3'],
 		reason: 'the frame and content-region primitives the export door and the devices plugin\'s painter share (`shape`, `content`)',
-		trigger: 'the export door draws through the painters (B330), and the devices plugin owns its frame and content drawing (H21.3)' },
+		trigger: 'the export door draws through the painters (B330), and the devices plugin owns its frame and content drawing (B338, H21.3)' },
+};
+
+// U3 (H21.7): every remaining non-canvas product module (`export`, `server-only`, `serve`, `cli`, `lab`, `simulation`, `product`,
+// and cross-plugin kind/field reads across `layouts`, `devices`, `network`, `zones`, `groups`, plus `LAYER.network` outside `network/`)
+const PRODUCT_KIND_RECORD = {
+	'cli/verbs.mjs': { count: 139, cites: ['from B138', 'B282', 'B339'],
+		reason: 'the CLI\'s standalone verbs and local derivations over every collection and kind (B138, B339)',
+		trigger: 'the CLI asks the server for what the server derives (B339) and dispatches per-kind verbs from one table (B282)' },
+	'engine/relations.mjs': { count: 6, cites: ['B341'],
+		reason: 'the link-incidence view living beside the core\'s occupancy index in the network layer (B341)',
+		trigger: 'occupancy is the core\'s anchor capability, apart from the network\'s link incidence (B341)' },
+	'engine/situation.mjs': { count: 2, cites: ['D2', 'B328'],
+		reason: 'the pointer situation naming `link` for the draw-a-link gesture and a selected link (D2, B328)',
+		trigger: 'a second plugin must judge or extend a link drag, or the situation reads what a part exposes (B328)' },
+	'engine/spawners.mjs': { count: 1, cites: ['SD11b'],
+		reason: 'a spawner record naming the `link` its movers ride along (SD11b)',
+		trigger: 'permanent' },
+	'kernel/adapt.mjs': { count: 8, cites: ['B330'],
+		reason: 'the export door converting a document\'s zones, groups and links to the kernel\'s scene by kind name (B330)',
+		trigger: 'the export door draws through the painters (B330)' },
+	'kernel/engine.mjs': { count: 5, cites: ['B330'],
+		reason: 'the export door resolving zones, groups and links by kind name (B330)',
+		trigger: 'the export door draws through the painters (B330)' },
+	'kernel/fixtures.mjs': { count: 11, cites: ['B330'],
+		reason: 'the reference scenes in the export kernel\'s vocabulary (B330)',
+		trigger: 'permanent' },
+	'kernel/svg-scene.mjs': { count: 5, cites: ['B330'],
+		reason: 'the export door rendering zones, groups and links to SVG by kind name (B330)',
+		trigger: 'the export door draws through the painters (B330)' },
+	'lab/server.mjs': { count: 3, cites: ['O1', 'WD6'],
+		reason: 'the lab static server mounting `/layouts/`, `/zones/` and `/groups/` for the browser',
+		trigger: 'permanent' },
+	'lab/src/root.js': { count: 10, cites: ['B332', 'H17-D1'],
+		reason: 'the lab composition root\'s SVG layer ids (`NEEDED`), `{ links: network.links }`, and its seed pipe count',
+		trigger: 'the lab takes the network as any plugin, and its SVG layers from the canvas parts (B332)' },
+	'layouts/layout-canvas.mjs': { count: 1, cites: ['WD6', 'B325'],
+		reason: 'the layouts plugin\'s canvas part naming the `zone` grid record (`layout-000002`, WD6)',
+		trigger: 'a diagram varies its grids (B325)' },
+	'layouts/layout-table.mjs': { count: 1, cites: ['WD6', 'B325'],
+		reason: 'the default `zone` layout record (`layout-000002`) every diagram holds (WD6)',
+		trigger: 'a diagram varies its grids (B325)' },
+	'server/anchor.mjs': { count: 1, cites: ['SD1'],
+		reason: 'server-side placement resolving `at.inside` against the diagram\'s zones (SD1)',
+		trigger: 'permanent' },
+	'server/app.js': { count: 3, cites: ['O1', 'WD6'],
+		reason: 'the product server mounting `/layouts`, `/zones` and `/groups` for the browser',
+		trigger: 'permanent' },
+	'server/rest.js': { count: 23, cites: ['SD1', 'B339'],
+		reason: 'the REST door\'s per-kind routes, entity summaries, and creation shortcuts',
+		trigger: 'the REST door dispatches per-kind routes and summaries through the composition\'s rows' },
+	'server/seed.js': { count: 9, cites: ['SD2'],
+		reason: 'the seed diagram\'s initial zones, groups, links and pipes',
+		trigger: 'permanent' },
+	'server/store.js': { count: 2, cites: ['B332'],
+		reason: 'the store passing `{ links: NETWORK.links }` to the planner (B332)',
+		trigger: 'the planner takes the network as any plugin, and the store takes it within the product\'s composition (B332)' },
+	'zones/zone-painter.mjs': { count: 1, cites: ['WD6'],
+		reason: 'the zone place row\'s `layout: \'zone\'` key, naming which layout record a zone snaps to (WD6)',
+		trigger: 'permanent' },
+};
+
+const PRODUCT_FIELD_RECORD = {
+	'cli/verbs.mjs': { count: 36, cites: ['from B138', 'B282', 'B339'],
+		reason: 'the CLI\'s standalone verbs reading `.type`, `.shape`, `.span`, `.content`, `.transit`, `.spawn` and `.glyph` (B138, B339)',
+		trigger: 'the CLI asks the server for what the server derives (B339) and learns the types from one declaration (B282)' },
+	'engine/kinds.mjs': { count: 1, cites: ['B282', 'H21.3'],
+		reason: '`towerFor` reading `node.type` to look up a tower\'s behaviour stats (B282)',
+		trigger: 'a type is a composition, and the simulation reads its behaviour pack through it (B282)' },
+	'engine/situation.mjs': { count: 1, cites: ['B329'],
+		reason: 'the pointer situation reading `entity.spawn` for run-mode spawner rows (B329)',
+		trigger: 'the simulation brings its canvas part whole (B329)' },
+	'groups/group-painter.mjs': { count: 1, cites: ['B340', 'WD10'],
+		reason: 'the groups painter reading a member\'s `m.span` directly to hull a wide device (B340, WD10)',
+		trigger: 'the groups painter asks a member\'s size through the composition rather than reading span (B340)' },
+	'kernel/adapt.mjs': { count: 27, cites: ['B330'],
+		reason: 'the export adapter reading `.type`, `.shape`, `.span`, `.content`, `.transit` and `.glyph` to build the kernel scene (B330)',
+		trigger: 'the export door draws through the painters (B330)' },
+	'kernel/engine.mjs': { count: 16, cites: ['B330'],
+		reason: 'the export engine reading `.glyph`, `.span`, `.content` and `.transit` on scene entities (B330)',
+		trigger: 'the export door draws through the painters (B330)' },
+	'kernel/svg-scene.mjs': { count: 7, cites: ['B330'],
+		reason: 'the export SVG renderer reading `.content`, `.glyph` and `.transit` on resolved scene elements (B330)',
+		trigger: 'the export door draws through the painters (B330)' },
+	'network/link-references.mjs': { count: 1, cites: ['B282', 'P-10'],
+		reason: 'the link reference check naming `n.type` in its refusal when a pin cannot pass routes (B282)',
+		trigger: 'a type is a composition, and the network reads its routing pack through the one lookup (B282)' },
+	'network/resolve.mjs': { count: 1, cites: ['B282', 'P-10'],
+		reason: 'the down-link reason naming `endpointOf(id)?.type` (B282)',
+		trigger: 'a type is a composition, and the network reads its routing pack through the one lookup (B282)' },
+	'network/session.mjs': { count: 1, cites: ['B282', 'P-10'],
+		reason: 'the transit toggle refusal naming `e.type` (B282)',
+		trigger: 'a type is a composition, and the network reads its routing pack through the one lookup (B282)' },
+	'network/transit-offers.mjs': { count: 1, cites: ['B282', 'P-10'],
+		reason: '`transitOffersOf` indexing `OFFERS[entity.type]` (B282)',
+		trigger: 'a type is a composition, and the network reads its routing pack through the one lookup (B282)' },
+	'network/transit.mjs': { count: 1, cites: ['B282', 'P-10'],
+		reason: 'the transit validator naming `after.type` in its refusal (B282)',
+		trigger: 'a type is a composition, and the network reads its routing pack through the one lookup (B282)' },
+	'server/rest.js': { count: 2, cites: ['SD1', 'B282'],
+		reason: 'the REST `POST /nodes` shortcut passing `d.type` and `d.shape` to `makeNode`',
+		trigger: 'a type is a composition, and REST dispatches creation through the composition\'s rows (B282)' },
+};
+
+// U3 (H21.7): device type names (`host`, `server`, `loadbalancer`, `firewall`, `vxlan`, `router`) across every product layer
+const TYPE_NAME_RECORD = {
+	'cli/verbs.mjs': { count: 19, cites: ['B282', 'from B138', 'from B167'],
+		reason: 'the CLI\'s `NODE_TYPES` (T5, 6), its default `\'host\'` (1), `GLYPH` (T6, 6) and `LEGEND` (T7, 6)',
+		trigger: 'each device type is declared once, and the CLI learns the types as U4 rules (B282)' },
+	'devices/device-appearance.mjs': { count: 1, cites: ['B282'],
+		reason: 'the fallback fit box `GLYPH_BB.host` for an unknown glyph (B282)',
+		trigger: 'each device type is declared once, with its glyph box on its appearance pack (B282)' },
+	'devices/device-hand.mjs': { count: 7, cites: ['B282', 'H17-D6'],
+		reason: '`DEVICE_HAND.items` (T3, 6) and the preview\'s fallback fit box `GLYPH_BB.host` (1)',
+		trigger: 'each device type is declared once, and the palette hand reads the type declaration (B282)' },
+	'engine/kinds.mjs': { count: 1, cites: ['B282', 'H21.3'],
+		reason: '`TOWERS` (T8) keying on `loadbalancer:` for run-mode tower stats (B282)',
+		trigger: 'each device type is declared once, with its behaviour pack (B282)' },
+	'engine/spawn-runs.mjs': { count: 1, cites: ['B282', 'H21.3'],
+		reason: 'run mode\'s tower row placing a `\'loadbalancer\'` on open ground (B282)',
+		trigger: 'each device type is declared once, and run mode places a tower by its behaviour capability (B282)' },
+	'kernel/fixtures.mjs': { count: 23, cites: ['B330'],
+		reason: 'the spec viewer\'s reference scenes naming the device glyphs they draw',
+		trigger: 'permanent' },
+	'kernel/geometry.mjs': { count: 1, cites: ['B330', 'B338'],
+		reason: 'the export scene helper `node()` defaulting `o.glyph` to `\'router\'` (B330, B338)',
+		trigger: 'the export door draws through the painters (B330)' },
+	'kernel/svg-scene.mjs': { count: 2, cites: ['B330', 'B338'],
+		reason: 'the export SVG renderer\'s fallback fit box `GLYPH_BB.host` in two places (B330, B338)',
+		trigger: 'the export door draws through the painters (B330)' },
+	'kernel/theme.mjs': { count: 14, cites: ['B282', 'B338'],
+		reason: '`GLYPH_BB` (T1, 6), `GLYPH_DEFS` (T2, 6), and `faviconSvg` using `GLYPH_BB.router` and `glyph-router` (2)',
+		trigger: 'each device type is declared once, and the glyph art and boxes move to the devices plugin (B282, B338)' },
+	'network/transit-offers.mjs': { count: 6, cites: ['B282'],
+		reason: '`OFFERS` (T4, 6) keying on each device type name for routing transit permission (B282)',
+		trigger: 'each device type is declared once, with its routing pack (B282)' },
+	'server/seed.js': { count: 8, cites: ['SD2'],
+		reason: 'the seed diagram\'s eight devices (`host`, `router`, `firewall`, `loadbalancer`, three `server`, `vxlan`)',
+		trigger: 'permanent' },
 };
 
 test('O-d: the product composes layout, node, zone, group, link, pipe from the core\'s anchor and the plugins, in product/kinds.mjs', async () => {
@@ -88,11 +273,64 @@ test('O-d: no core or planner module names a plugin\'s kind or reads a device\'s
 	}
 });
 
-// H21.5 (R-b): every entry's cited ids resolve and every entry says when it ends (tools/exceptions.mjs)
-test('H21.5: the core ratchet\'s exceptions cite live work and say when they end', async () => {
+// U3 (H21.7): every remaining product layer, cross-plugin reads, and device type names outside a type's declaration
+test('U3 (H21.7): no product layer goes unscanned -- foreign kinds, foreign fields and device type names equal their records across every product layer', () => {
+	const layerMap = allLayerOf();
+	const allProductModules = Object.keys(layerMap).sort();
+	const coreAndPlanner = new Set([...coreModules(), ...plannerModules()]);
+	const canvasAndChrome = new Set(fs.readdirSync(path.join(root, 'app/src')).filter((f) => f.endsWith('.js')).map((f) => `app/src/${f}`));
+	const remainingModules = allProductModules.filter((f) => !coreAndPlanner.has(f) && !canvasAndChrome.has(f));
+
+	// 1. Completeness: the union of core+planner, canvas+chrome, and remainingModules is 100% of product modules across all product layers + lab
+	const coveredLayers = new Set([...coreAndPlanner, ...canvasAndChrome, ...remainingModules].map((f) => layerMap[f]));
+	for (const l of [...PRODUCT_LAYERS, 'lab']) assert.ok(coveredLayers.has(l), `product layer ${l} is unscanned`);
+	assert.equal(coreAndPlanner.size + canvasAndChrome.size + remainingModules.length, allProductModules.length, 'every product module is scanned');
+
+	// 2. Foreign kind words and foreign plugin fields across all remaining product modules (including cross-plugin reads)
+	for (const [measure, record, what] of [
+		[(f, t) => foreignKindsIn(f, t).length, PRODUCT_KIND_RECORD, 'names a foreign plugin\'s kind'],
+		[(f, t) => foreignFieldsIn(f, t).length, PRODUCT_FIELD_RECORD, 'reads a foreign plugin\'s field'],
+	]) {
+		const seen = {};
+		for (const f of remainingModules) { const n = measure(f, code(f)); if (n) seen[f] = n; }
+		for (const [f, n] of Object.entries(seen)) {
+			assert.ok(record[f], `${f} ${what} ${n} time(s) and is not recorded`);
+			assert.ok(n <= record[f].count, `${f}: ${n}, recorded ${record[f].count} -- RISE`);
+			assert.equal(n, record[f].count, `${f}: ${n}, recorded ${record[f].count} -- FALL: lower the record in this commit`);
+		}
+		for (const f of Object.keys(record)) assert.ok(seen[f], `${f} is recorded but ${what} no more -- remove it`);
+	}
+
+	// 3. Device type names across EVERY product module (all 16 product layers including lab)
+	const seenTypes = {};
+	for (const f of allProductModules) { const n = deviceTypesIn(code(f)).length; if (n) seenTypes[f] = n; }
+	for (const [f, n] of Object.entries(seenTypes)) {
+		assert.ok(TYPE_NAME_RECORD[f], `${f} names a device type ${n} time(s) and is not recorded`);
+		assert.ok(n <= TYPE_NAME_RECORD[f].count, `${f}: ${n}, recorded ${TYPE_NAME_RECORD[f].count} -- RISE`);
+		assert.equal(n, TYPE_NAME_RECORD[f].count, `${f}: ${n}, recorded ${TYPE_NAME_RECORD[f].count} -- FALL: lower the record in this commit`);
+	}
+	for (const f of Object.keys(TYPE_NAME_RECORD)) assert.ok(seenTypes[f], `${f} is recorded in TYPE_NAME_RECORD but names no device type -- remove it`);
+});
+
+test('U3 (H21.7): the widened measures see every quoting form, object keys, collection properties, cross-plugin reads, and device type names', () => {
+	assert.deepEqual(foreignKindsIn('server/x.js', "const a = 'zone'; const b = \"groups\"; const c = `pipe`; const d = doc.layouts; const o = { links: 1 };"),
+		['zone', 'groups', 'pipe', 'layouts', 'links']);
+	assert.deepEqual(foreignKindsIn('zones/x.mjs', "const own = 'zone'; const foreign = 'link';"), ['link'], 'a plugin may name its own kind, not another\'s');
+	assert.deepEqual(foreignFieldsIn('network/x.mjs', "const own = e.transit; const foreign = e.type + e.span;"), ['type', 'span'], 'a plugin may read its own field, not another\'s');
+	assert.deepEqual(deviceTypesIn("const a = 'router'; const b = \"firewall\"; const c = `vxlan`; const o = { loadbalancer: 1 }; const g = GLYPH_BB.host; const id = 'glyph-server';\nconst t = { type: 'host', glyph: \"server\" };\nconst ok = { host: window, by: 'server' };"),
+		["'router'", '"firewall"', '`vxlan`', 'loadbalancer:', 'GLYPH_BB.host', 'glyph-server', "'host'", '"server"']);
+});
+
+// H21.5 (R-b) + U3 (H21.7): every entry's cited ids resolve and every entry says when it ends (tools/exceptions.mjs)
+test('H21.5: the core and product ratchets\' exceptions cite live work and say when they end', async () => {
 	const { exceptionFaults } = await import('../tools/exceptions.mjs');
-	const entries = [...Object.entries(RECORD).map(([f, e]) => ({ where: `RECORD ${f}`, ...e })),
-		...Object.entries(DEVICE_RECORD).map(([f, e]) => ({ where: `DEVICE_RECORD ${f}`, ...e }))];
+	const entries = [
+		...Object.entries(RECORD).map(([f, e]) => ({ where: `RECORD ${f}`, ...e })),
+		...Object.entries(DEVICE_RECORD).map(([f, e]) => ({ where: `DEVICE_RECORD ${f}`, ...e })),
+		...Object.entries(PRODUCT_KIND_RECORD).map(([f, e]) => ({ where: `PRODUCT_KIND_RECORD ${f}`, ...e })),
+		...Object.entries(PRODUCT_FIELD_RECORD).map(([f, e]) => ({ where: `PRODUCT_FIELD_RECORD ${f}`, ...e })),
+		...Object.entries(TYPE_NAME_RECORD).map(([f, e]) => ({ where: `TYPE_NAME_RECORD ${f}`, ...e })),
+	];
 	assert.deepEqual(exceptionFaults(entries, root), []);
 });
 

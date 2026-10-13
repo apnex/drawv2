@@ -24,7 +24,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { readRows, readItems } from './records.mjs';
 
-const RULING_ID = /^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*$/;
+const RULING_ID = /^[A-Z][A-Za-z0-9]*(?:-[A-Za-z0-9]+)*$/;
 
 // every ruling id the decision record holds, in the head form or the tail form
 function rulingIds(decisions) {

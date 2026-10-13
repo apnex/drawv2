@@ -24,6 +24,8 @@ function records() {
 	fs.writeFileSync(path.join(dir, 'dev/DECISIONS.md'), [
 		'**D1, D2 -- the canvas contract -- 2026-10-08 (B9; H1.1).**\\', 'The director chose.', '',
 		'**One batch, last -- ruled 2026-09-27, answering a flag (SD2).**\\', 'Text.', '',
+		'**Pipes belong to the network -- ruled 2026-09-27 (SD11b), amending in place.**\\', '',
+		'**N5a -- the anchor keeps its name -- 2026-10-14 (H21.6).**\\', '',
 		'**The planner on triggers: TG-D1 to TG-D3 ruled as recommended -- 2026-10-02 (B9).**\\', '',
 		'- **SD5, whether a role is refused or cut** -- held, not asked yet.', '',
 		'> **CORRECTED 2026-10-11 (H21, U0):** a fix.', '',
@@ -35,7 +37,7 @@ const one = (cites, trigger = 'permanent') => [{ where: 'X', cites, trigger }];
 test('R-b: ruling ids are read from a ruling\'s head or tail, ranges expanded; held questions and corrections are not rulings', () => {
 	const dir = records();
 	const resolves = (id) => exceptionFaults(one([id]), dir).length === 0;
-	assert.deepEqual(['D1', 'D2', 'SD2', 'TG-D1', 'TG-D2', 'TG-D3', 'TG-D4', 'SD5', 'U0', 'H21'].filter(resolves), ['D1', 'D2', 'SD2', 'TG-D1', 'TG-D2', 'TG-D3']);
+	assert.deepEqual(['D1', 'D2', 'SD2', 'SD11b', 'N5a', 'TG-D1', 'TG-D2', 'TG-D3', 'TG-D4', 'SD5', 'U0', 'H21'].filter(resolves), ['D1', 'D2', 'SD2', 'SD11b', 'N5a', 'TG-D1', 'TG-D2', 'TG-D3']);
 });
 
 test('R-b: a live row, a board item, a ruling and a closed row cited `from` resolve -- the control', () => {

@@ -195,3 +195,8 @@ Left for U1 by design: the lab plan's status cells (`dev/design/h17/PLAN.md`), w
 
 CORRECTED 2026-10-11 (H21.5, the guards' second review): "B88 (fired 2026-10-02 when B279 entered Decisions required" -- B88's trigger fired first on 2026-09-08 (`7440cc9`, two items `BLOCKED`) and again on 2026-09-22 (`27c7eb2`), MEASURED; 2026-10-02 was its third firing, on its second clause.
 
+AMENDED 2026-10-14 -- **U1, U2 and U3 done** (`H21.5`, `H21.6`, `H21.9`, `N5a`, `H21.7`).\
+U1 (`H21.5`): the record guards run in the gate (`tools/scan-triggers.mjs`, `tools/exceptions.mjs`, `tools/scan-designs.mjs`).\
+U2 (`H21.6`, `H21.9`, `N5a`): `docs/ARCHITECTURE-TARGET.md` ratified (`H21.6`), aligned with mission-kit (`A-0`, `A-5`), the anchor's name settled (`N5a`), and `docs/ARCHITECTURE.md` generated from the code (`tools/generate-architecture.mjs`).\
+U3 (`H21.7`): every product layer (`PRODUCT_LAYERS` and `lab`) is scanned by `L7k` (`tools/scan-layers.mjs`), `tests/canvas-names-no-plugin.test.js` (`KIND_RECORD`, `FIELD_RECORD`, `IMPORT_RECORD`), and `tests/core-names-no-plugin.test.js` (`RECORD`, `DEVICE_RECORD`, `PRODUCT_KIND_RECORD`, `PRODUCT_FIELD_RECORD`, `TYPE_NAME_RECORD`) across every quoting form, object keys, collection properties, cross-plugin reads and device type names, each entry checked by `tools/exceptions.mjs`.
+
