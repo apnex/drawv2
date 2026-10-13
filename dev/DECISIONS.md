@@ -1946,3 +1946,9 @@ Director: "B"\
 Shown: dev/design/unification/MISSION-KIT-ALIGNMENT.md@a2e7c19\
 Affects: dev/design/unification/MISSION-KIT-ALIGNMENT.md, docs/ARCHITECTURE-TARGET.md\
 Recorder: offered "A: design the diagram-storage swap next" and "B: let the designs wait. The cross-project reasoning comes first, when you start it, and we go back to drawv2's own unification stages, U3 to U5", the director chose B -- the design's A-0 option (a); the reply's letters ran opposite to the design's. The proposer had recommended designing OD-1 next, then, the director having raised the cross-project question (held as B343), said waiting was the consistent choice if that reasoning comes first. The target's register holds each part's mapping and the three owed designs -- OD-1 to OD-3, carried by B344 to B346 -- each on its trigger; A-5 is asked next, then drawv2's own unification resumes at U3.
+
+**A-5 -- the target names its axioms by mission-kit's traits; A2 and A11 leave it -- 2026-10-12 (H21.9).**\
+Director: "yes"\
+Shown: dev/design/unification/MISSION-KIT-ALIGNMENT.md@86e3c73\
+Affects: docs/ARCHITECTURE-TARGET.md, dev/design/unification/MISSION-KIT-ALIGNMENT.md\
+Recorder: asked whether the target names its axioms by mission-kit's rule -- an axiom in force only through a trait it names, or on the floor -- the director answered "yes" (the proposer's recommendation) over keeping the list as a recorded departure. drawv2 is read stateful, multi-agent and autonomous (INFERRED), not declarative and not llm-in-the-loop; A2 and A11 leave the target's sections 2 and 3, A4, A6, A9 and A10 join, what the target took from A2 and A11 is held under the outcome axes AX2 and AX5, and two owed questions -- the CLI's types and the behaviour family -- are re-costed without A2. This amends sections 2 and 3, ratified at H21.6; the M7 weights of the axioms that join are the proposer's.

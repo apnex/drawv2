@@ -18,8 +18,8 @@ Ratifying rules no question in section 9.1 and adopts none of its recommendation
 | Section | Maturity | Reopens on |
 |---|---|---|
 | 1. Identity, scope and non-goals | approved (H21.6) | `VISION.md` changing |
-| 2. Justification chain | approved (H21.6) | a ruling changing the model |
-| 3. Axiom alignment | approved (H21.6) | a ruling, or a tension resolved |
+| 2. Justification chain | approved (H21.6); its axioms amended by A-5 | a ruling changing the model |
+| 3. Axiom alignment | approved (H21.6); its axioms amended by A-5 | a ruling, or a tension resolved |
 | 4. Anchored core | approved (H21.6); which table names a type's routing is owed | a part's duty or its consumes changing; section 9.1 |
 | 5. A type is a composition | approved (H21.6); whether a type is one declaration, and the behaviour family, owed | the decisions owed in section 9 |
 | 6. Entity model and interfaces | approved (H21.6) | a format change |
@@ -52,14 +52,18 @@ A document declares geometry -- anchors on a grid, and the connections between t
 
 ## 2. Justification chain
 
-**Maturity: approved (H21.6).**
+**Maturity: approved (H21.6); its axioms amended by A-5.**
 
 Each layer cites only the layers above it.
 
 **Domain.**\
 Diagrams of systems, made into worlds with physics: a diagram stops being a picture of a system and becomes a world computed identically by every viewer (`VISION.md`).
 
-**Axioms in force** (mission-kit, `axioms/`): A3 Sovereign Composition, A2 Isomorphic Specification, A1 Sovereign State Transparency, A5 Perceptual Parity, A11 Cognitive Minimalism, A8 Gated Recursive Integrity, A14 Compounding Learning, A7 Resilient Agentic Operations, A13 Director Intent Amplification; the rest bear lightly (section 3).
+**Traits** (mission-kit, `traits/`): drawv2 is stateful (T1) -- the server owns the diagrams; multi-agent (T3) -- people and agents write one diagram; autonomous (T4, INFERRED) -- the server sweeps expired locks and runs unattended.\
+It is not declarative (T2) -- derivation is not reconciliation toward a declared end state -- and not llm-in-the-loop (T5).
+
+**Axioms in force,** by those traits and the floor (mission-kit, `axioms/`; A-5): A3 Sovereign Composition, A4 Zero-Loss Knowledge, A8 Gated Recursive Integrity, A9 Chaos-Validated Deployment and A14 Compounding Learning, the floor; A1 Sovereign State Transparency, by T1; A5 Perceptual Parity, A6 Frictionless Agentic Collaboration, A7 Resilient Agentic Operations, A10 Autopoietic Evolution and A13 Director Intent Amplification, by T3 and T4.\
+Not in force: A2 Isomorphic Specification, which binds declarative systems, and A11 Cognitive Minimalism and A12 Precision Context Engineering, which bind systems with a language model in the loop; what this architecture took from A2 and A11 is held, in part, by the outcome axes AX2 and AX5 (section 3).
 
 **North star.**\
 Derived physics that everyone watching computes identically (`VISION.md`).\
@@ -95,20 +99,29 @@ Everything a node shows or does is derived from its composition and the document
 
 ## 3. Axiom alignment
 
-**Maturity: approved (H21.6).**
+**Maturity: approved (H21.6); amended by A-5.**
+
+Weighed by M7 -- load-bearing, supporting, or not materially implicated -- over the axioms in force (section 2; A-5).
 
 | Axiom | Weight | How the architecture stands -- or the tension, left open |
 |---|---|---|
 | A3 Sovereign Composition | load-bearing | each plugin owns one concern and composes onto the anchor through declared contracts; the product composes the plugins. **Tensions:** a node's `type` is the devices plugin's field, yet it names a composition other plugins' packs are keyed by; the network asks the devices plugin whether a device is composed on an anchor to decide its roles, where the routing table's unrestricted row answers it (2026-09-22) -- measured in the current document's part divergence |
-| A2 Isomorphic Specification | load-bearing | each pack family is one table keyed by type, and the type list one table imported by its users (H17-D6); where the tables live, and whether a type is one declaration across them, is owed (section 9.1). **Tension:** the CLI's static imports stay inside `cli/` so an installed copy runs, and it holds its own list of types, kept equal to the kernel's by a test (B167) -- owed, section 9 |
 | A1 Sovereign State Transparency | load-bearing | the document states its grids (WD6) and the plugins it needs (SD12); roles and routes are computed, never stored |
 | A5 Perceptual Parity | load-bearing | an agent reads what a viewer sees -- a route, whether a link is down, an anchor's role -- from the server (SD1) |
-| A11 Cognitive Minimalism | load-bearing | a pack is a table keyed by type, not a mechanism (SD4, P-10). **Open:** the 2026-09-22 record's caution, that packs composing must be earned by composing two -- fields compose onto the anchor (G3), and at the current instant no type is a composition of packs; whether a behaviour family is earned is owed (section 9) |
 | A8 Gated Recursive Integrity | load-bearing | the planner is the one write; a document a door cannot hold is refused; the gate holds the layers, the parts, the kinds and the records |
 | A14 Compounding Learning | load-bearing | the current architecture is generated, and the imports the target does not allow are measured; the semantic divergence is listed by hand, row by row (section 8) |
 | A7 Resilient Agentic Operations | supporting | a link whose way is gone is shown down at every door and heals when a way returns; a refusal is said at the door that made it |
+| A6 Frictionless Agentic Collaboration | supporting | people and agents write one diagram through the same planner, and the selection each makes is seen by the others |
+| A4 Zero-Loss Knowledge | supporting | each change carries its inverse in the diagram's log, and a deleted diagram stays restorable through its retention window |
+| A9 Chaos-Validated Deployment | supporting | a deploy passes the gate, and a format change is rehearsed on a copy of production before it lands (WD9) |
 | A13 Director Intent Amplification | supporting | this document tracks the rulings and asks the director only the questions in section 9 |
-| A4, A6, A9, A10, A12 | supporting or not materially implicated | records append-only; deploys gated; no agent context assembly in the product |
+| A10 Autopoietic Evolution | not materially implicated | nothing in the product revises itself; the system changes only through rulings and gated work |
+
+**AX2, parity at every door, holds what this architecture took from A2:** each pack family is one table keyed by type, and the type list one table imported by its users (H17-D6); where the tables live, and whether a type is one declaration across them, is owed (section 9.1).\
+**Tension:** the CLI's static imports stay inside `cli/` so an installed copy runs, and it holds its own list of types, kept equal to the kernel's by a test (B167) -- parity, which AX2 asks, holds; a second list of one fact, which A2 counted as drift, is weighed in section 9.1.
+
+**AX5, conceptual economy, holds what it took from A11:** a pack is a table keyed by type, not a mechanism (SD4, P-10).\
+**Open:** the 2026-09-22 record's caution, that packs composing must be earned by composing two -- fields compose onto the anchor (G3), and at the current instant no type is a composition of packs; whether a behaviour family is earned is owed (section 9.1).
 
 **AX6, a principle rather than an axiom:** `type` staying the stored name keeps a type's composition out of stored documents (P-10); SD12's plugin list is a new field in every document, a format change named here.
 
@@ -313,8 +326,8 @@ Each is asked when its stage reaches it (H21); the options and their costs are t
 | Is the anchor named? The 2026-09-22 ontology lists name among what is not universal, and O4 defines the anchor as identity and one cell; N5 (2026-10-02, when a node was the device kind beside a separate waypoint kind) keeps the five built-in kinds named | **The anchor kind opts into names** (N5, B187): every anchor addressable by name for agents, nothing stored changes; the core's one kind carries a service O4's definition leaves out. **Name is a field a plugin contributes** (2026-09-22, O4): the anchor stays exactly identity and one cell; a bare anchor has no name to address it by, and the naming plugin becomes a dependency of every door that resolves names | the anchor kind opts into names -- names are already a service a kind opts into, not a core field, and agents address anchors by name |
 | Is a type one declaration across the families? Each family's table is its owner's: the network's routing configuration (2026-10-07; SD11b gives the network "the device tables"), the devices plugin's appearance (O4); packs are keyed by type (P-10); 2026-09-22 puts the table "with the type definition"; H17-D6 has the type table "imported by its users"; H21's U4 exit is "adding a type is one declaration" | **No -- each family's table names the types itself:** every ruling stands as written; adding a type touches each family's table, so U4's exit is not met, and a missed routing row defaults silently (`dev/design/unification/UNIFICATION-AUDIT.md`, section 3.1). **One type table with the type definition, in the devices plugin, naming each type's pack per family, handed to the other plugins at composition** (O1 brokers it): one declaration, where 2026-09-22 and O4 put the type; it amends 2026-10-07 and SD11b -- the network keeps its packs' contents, but which type takes which routing pack moves to the declaration -- and reverses H17-D6's "imported by its users". **The same declaration held by the product, handed in:** one declaration, composing being the product's duty (N1); the same amendments and reversal, and the type moves away from the devices plugin O4 gives it | one type table with the type definition, in the devices plugin, handed in at composition -- it meets U4's exit where 2026-09-22 and O4 put the type; the amendment of 2026-10-07 and SD11b and the reversal of H17-D6 are to be asked as such |
 | SD5: an act that would make a device take a role its type forbids -- refused, or cut? Held "until that door" (a pin naming a device), which the device-junctions ruling of 2026-10-07 (B301) opened; never put to the director | **The split as built:** a type offering no passage refuses a pin (2026-09-22); a stop whose transit is off is cut (TR-2, TR-2b, Z1; B303 built the cut at every door) -- one rule per input, the same at every door. **Refused everywhere:** simpler to state; reverses TR-2, TR-2b, TR-4 and Z1, and B303's build, and a drag and REST would disagree until both change (AX2) | the split as built -- it is what the rulings already make the code do at every door |
-| How does the CLI learn the device types? | **From the server** (SD1): one list, no copy; no route serves the types today, so one is added; `draw help` offline cannot name them; `draw map`'s letter per type needs a home in a family (section 5). **A copy held equal by a test** (B167): help works offline; two lists of one fact, the drift A2 warns of, held only by the test | from the server -- the CLI needs the server for every verb but help |
-| Is a type's behaviour a pack family -- a tower's numbers a table the simulation keys by type? | **Yes:** the director's description of a composition names behaviours (2026-10-02), the approach H21 ratified puts "behaviour (a tower)" in U4's composition (`dev/design/unification/UNIFICATION-AUDIT.md`, section 7), and the tower table is keyed by type already (`engine/kinds.mjs`); it adds a third family to learn (AX5). **Not yet:** a tower stays the simulation's rule over a type name, outside the families; nothing new to learn; a type's facts are then not in one place (A2), and U4's exit, no type name outside the declarations, is not met | yes, as a third family, nothing beyond the table it already is |
+| How does the CLI learn the device types? | **From the server** (SD1): one list, no copy; no route serves the types today, so one is added; `draw help` offline cannot name them; `draw map`'s letter per type needs a home in a family (section 5). **A copy held equal by a test** (B167): help works offline; two lists of one fact, held equal only by the test -- parity (AX2) holds, A2 being not in force (A-5), and a type keeps a second owner (A3) | from the server -- the CLI needs the server for every verb but help |
+| Is a type's behaviour a pack family -- a tower's numbers a table the simulation keys by type? | **Yes:** the director's description of a composition names behaviours (2026-10-02), the approach H21 ratified puts "behaviour (a tower)" in U4's composition (`dev/design/unification/UNIFICATION-AUDIT.md`, section 7), and the tower table is keyed by type already (`engine/kinds.mjs`); it adds a third family to learn (AX5). **Not yet:** a tower stays the simulation's rule over a type name, outside the families; nothing new to learn; a type's facts are then not in one place, which parity (AX2) does not require and U4's exit, no type name outside the declarations, does | yes, as a third family, nothing beyond the table it already is |
 
 ### 9.2 Open -- ratified but undesigned, or held with a trigger
 

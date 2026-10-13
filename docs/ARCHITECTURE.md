@@ -40,7 +40,11 @@ Each layer cites only the layers above it.
 **Domain.**\
 Diagrams of systems, made into worlds with physics: a diagram stops being a picture of a system and becomes a world computed identically by every viewer (`VISION.md`).
 
-**Axioms in force** (mission-kit, `axioms/`): A3 Sovereign Composition, A2 Isomorphic Specification, A1 Sovereign State Transparency, A5 Perceptual Parity, A11 Cognitive Minimalism, A8 Gated Recursive Integrity, A14 Compounding Learning, A7 Resilient Agentic Operations, A13 Director Intent Amplification; the rest bear lightly (section 3).
+**Traits** (mission-kit, `traits/`): drawv2 is stateful (T1) -- the server owns the diagrams; multi-agent (T3) -- people and agents write one diagram; autonomous (T4, INFERRED) -- the server sweeps expired locks and runs unattended.\
+It is not declarative (T2) -- derivation is not reconciliation toward a declared end state -- and not llm-in-the-loop (T5).
+
+**Axioms in force,** by those traits and the floor (mission-kit, `axioms/`; A-5): A3 Sovereign Composition, A4 Zero-Loss Knowledge, A8 Gated Recursive Integrity, A9 Chaos-Validated Deployment and A14 Compounding Learning, the floor; A1 Sovereign State Transparency, by T1; A5 Perceptual Parity, A6 Frictionless Agentic Collaboration, A7 Resilient Agentic Operations, A10 Autopoietic Evolution and A13 Director Intent Amplification, by T3 and T4.\
+Not in force: A2 Isomorphic Specification, which binds declarative systems, and A11 Cognitive Minimalism and A12 Precision Context Engineering, which bind systems with a language model in the loop; what this architecture took from A2 and A11 is held, in part, by the outcome axes AX2 and AX5 (section 3).
 
 **North star.**\
 Derived physics that everyone watching computes identically (`VISION.md`).\
@@ -77,19 +81,23 @@ No pack and no composition exists in the code: eight code tables in five files k
 ## 3. Axiom alignment
 
 **Maturity: provisional.**\
-How the current instant stands against the axioms the target names; each shortfall is a divergence the target lists, by its row.
+How the current instant stands against the axioms in force, as the target names them (A-5); each shortfall is a divergence the target lists, by its row.
 
 | Axiom | How the current instant stands |
 |---|---|
 | A3 Sovereign Composition | every kind is a plugin's, composed by the product; the parts import one another outside the target's consumes, each import carried by a row (section 5) |
-| A2 Isomorphic Specification | a device type's facts live in eight tables in five files, two of them copies held equal by tests (B282, B167) |
 | A1 Sovereign State Transparency | the document states its grids (WD6); every write records who made it; no document lists its plugins (B248) |
 | A5 Perceptual Parity | an agent reads a link's route and whether it is down from the server; no door serves an anchor's role (B339) |
-| A11 Cognitive Minimalism | no packs: a type is a name the tables key on; fields compose onto the anchor (G3) |
 | A8 Gated Recursive Integrity | the planner is the one write; the gate holds the layers, the parts, the kinds and the records |
 | A14 Compounding Learning | this document is generated, and the imports outside the target's consumes are measured |
 | A7 Resilient Agentic Operations | a link whose way is gone is shown down at every door and heals when a way returns |
+| A6 Frictionless Agentic Collaboration | people and agents write one diagram through the same planner; a selection is broadcast, so a person watches an agent work |
+| A4 Zero-Loss Knowledge | each change's inverse is logged in a ring of 100 records; a deleted diagram is restorable through the bucket's seven-day soft-delete window |
+| A9 Chaos-Validated Deployment | a deploy passes the gate, and the last format change was rehearsed on a copy of production (WD9); no deployment is validated by injected failure |
 | A13 Director Intent Amplification | rulings from 2026-10-11 record the director's words, what was shown, and what they affect |
+| A10 Autopoietic Evolution | not materially implicated: nothing in the product revises itself |
+
+**The outcome axes AX2 and AX5,** which hold what the target took from A2 and A11 (A-5): a device type's facts live in eight tables in five files, two of them copies held equal by tests (B282, B167); there are no packs -- a type is a name the tables key on, and fields compose onto the anchor (G3).
 
 ---
 
