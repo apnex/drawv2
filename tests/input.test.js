@@ -1155,6 +1155,7 @@ test('B46: cloneSubgraph names siblings uniquely and touches nothing real', () =
 		const { clones } = commands.cloneSubgraph(h.model, ns.map((n) => n.id), PLACES, FOLLOWERS);
 		const names = clones.map((c) => c.entity.name);
 		assert.equal(new Set(names).size, 3, `siblings must not collide, got ${JSON.stringify(names)}`);
+		assert.ok(names.every((n) => n.startsWith('host-')), `a cloned device is named from its type via clonePrefixOf (B187, B340): ${JSON.stringify(names)}`);
 		assert.equal(new Set(clones.map((c) => c.entity.id)).size, 3, 'nor may their ids');
 		assert.equal(h.model.all('node').length, before, 'and the live model is untouched');
 	} finally { h.restore(); }

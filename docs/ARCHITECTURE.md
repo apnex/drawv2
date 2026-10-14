@@ -87,7 +87,7 @@ How the current instant stands against the axioms in force, as the target names 
 |---|---|
 | A3 Sovereign Composition | every kind is a plugin's, composed by the product; the parts import one another outside the target's consumes, each import carried by a row (section 5) |
 | A1 Sovereign State Transparency | the document states its grids (WD6); every write records who made it; no document lists its plugins (B248) |
-| A5 Perceptual Parity | an agent reads a link's route and whether it is down from the server; no door serves an anchor's role (B339) |
+| A5 Perceptual Parity | an agent reads a link's route, whether it is down, an anchor's role, and derived combat and movers from the server (SD1, B339) |
 | A8 Gated Recursive Integrity | the planner is the one write; the gate holds the layers, the parts, the kinds and the records |
 | A14 Compounding Learning | this document is generated, and the imports outside the target's consumes are measured |
 | A7 Resilient Agentic Operations | a link whose way is gone is shown down at every door and heals when a way returns |
@@ -123,7 +123,7 @@ The anchored core's parts, declared once in `tools/layers.mjs` `PARTS` and rende
 | `groups` | Name sets of anchors | plugin | `groups/` | `colours`, `document`, `kind-contract`, `lattice` |
 | `simulation` | Derive what the clock drives | plugin | `engine/kinds.mjs`, `engine/movers.mjs`, `engine/rules.mjs`, `engine/spawn-appearance.mjs`, `engine/spawners.mjs`, `engine/spawn-field.mjs`, `engine/spawn-runs.mjs`, `model/reveal.mjs`, `app/src/movers.js`, `app/src/reveal.js`, `app/src/paintloop.js` | `canvas`, `devices`, `document`, `kind-contract`, `lattice`, `network`, `renderer` |
 | `product` | Compose the plugins into the product | composition | `product/` | `devices`, `groups`, `kind-contract`, `lattice`, `layouts`, `network`, `simulation`, `zones` |
-| `canvas` | Turn input into edits through the parts' declarations | host | `app/src/actions.js`, `app/src/capture.js`, `app/src/changes.js`, `app/src/commands.js`, `app/src/compose-canvas.js`, `app/src/help.js`, `app/src/input.js`, `app/src/input-state.js`, `app/src/keymap.js`, `app/src/labeledit.js`, `app/src/overlay.js`, `app/src/pick.js`, `app/src/readout.js`, `app/src/recognize.js`, `app/src/releases.js`, `app/src/selection.js`, `app/src/snap.js`, `app/src/tools.js`, `app/src/triggers.js`, `app/src/grids.js`, `engine/situation.mjs` | `devices`, `document`, `kind-contract`, `lattice`, `network`, `planner`, `primitives`, `relations`, `renderer`, `rules` |
+| `canvas` | Turn input into edits through the parts' declarations | host | `app/src/actions.js`, `app/src/capture.js`, `app/src/changes.js`, `app/src/commands.js`, `app/src/compose-canvas.js`, `app/src/help.js`, `app/src/input.js`, `app/src/input-state.js`, `app/src/keymap.js`, `app/src/labeledit.js`, `app/src/overlay.js`, `app/src/pick.js`, `app/src/readout.js`, `app/src/recognize.js`, `app/src/releases.js`, `app/src/selection.js`, `app/src/snap.js`, `app/src/tools.js`, `app/src/triggers.js`, `app/src/grids.js`, `engine/situation.mjs` | `document`, `kind-contract`, `lattice`, `network`, `planner`, `primitives`, `relations`, `renderer`, `rules` |
 | `renderer` | Draw a document through the parts' painters | host | `app/src/renderer.js`, `app/src/painter.js` | `document`, `lattice`, `primitives` |
 | `sync` | Keep a tab converged with the server | host | `app/src/sync.js`, `app/src/net.js`, `app/src/watchdog.js`, `app/src/clock.js` | `canvas`, `document`, `kind-contract` |
 | `product-page` | Compose the product page | composition root | `app/src/main.js`, `app/src/palette.js`, `app/src/run-mode.js`, `app/src/spectate.js` | `canvas`, `devices`, `network`, `product`, `renderer`, `simulation`, `sync` |
@@ -133,8 +133,8 @@ The anchored core's parts, declared once in `tools/layers.mjs` `PARTS` and rende
 | `placement` | Choose the free anchor a relationship names | door | `server/anchor.mjs` | `devices`, `document`, `lattice` |
 | `store` | Keep documents durable | door | `server/store.js`, `server/files.mjs`, `server/docfile.mjs`, `server/seed.js` | `access`, `document`, `kind-contract`, `lattice`, `network`, `placement`, `planner`, `product` |
 | `hub` | Carry each change to the tabs watching a document | door | `server/hub.js`, `server/protocol.js`, `server/locks.js`, `server/sessionlog.mjs` | `kind-contract` |
-| `rest` | Answer agents over HTTP | door | `server/rest.js`, `server/routes.mjs` | `devices`, `document`, `groups`, `hub`, `kind-contract`, `lattice`, `layouts`, `network`, `zones` |
-| `cli` | Give an agent one command per verb | door | `cli/` | `network`, `product`, `simulation` |
+| `rest` | Answer agents over HTTP | door | `server/rest.js`, `server/routes.mjs` | `devices`, `document`, `groups`, `hub`, `kind-contract`, `lattice`, `layouts`, `network`, `simulation`, `zones` |
+| `cli` | Give an agent one command per verb | door | `cli/` | -- |
 | `export` | Render a document without a browser | door | `kernel/adapt.mjs`, `kernel/engine.mjs`, `kernel/svg-scene.mjs`, `server/svg.mjs` | `colours`, `devices`, `lattice`, `network`, `primitives` |
 <!-- END GENERATED: architecture-parts -->
 
@@ -147,11 +147,7 @@ Each import between two parts that the target's consumes do not allow, read from
 <!-- BEGIN GENERATED: architecture-part-divergence. Run tools/generate-architecture.mjs; do not edit by hand. -->
 | Part | Imports | Carried by | Which the target does not allow, from |
 |---|---|---|---|
-| `canvas` | `devices` | B340 | `app/src/commands.js`, `app/src/input.js`, `engine/situation.mjs` |
 | `canvas` | `network` | B328 | `app/src/input.js` |
-| `cli` | `network` | B339 | `cli/verbs.mjs` |
-| `cli` | `product` | B339 | `cli/verbs.mjs` |
-| `cli` | `simulation` | B339 | `cli/verbs.mjs` |
 | `export` | `devices` | B330 | `kernel/svg-scene.mjs`, `server/svg.mjs` |
 | `export` | `network` | B330 | `kernel/engine.mjs`, `kernel/svg-scene.mjs`, `server/svg.mjs` |
 | `network` | `devices` | B282 | `network/anchor-appearance.mjs`, `network/anchor-points.mjs`, `network/keys.mjs`, `network/link-clone.mjs`, `network/link-keys.mjs`, `network/link-reactions.mjs`, `network/link-references.mjs`, `network/selection-reflects.mjs`, `network/transit-offers.mjs`, `network/transit.mjs` |
@@ -183,7 +179,7 @@ A module belongs to one layer, and a layer imports only what it may (`tools/laye
 | `export` | the headless SVG path | `core`, `devices`, `network` |
 | `server-only` | the server's doors and storage, never served to a browser | `core`, `devices`, `network`, `layouts`, `zones`, `groups`, `planner`, `product`, `simulation`, `export`, `serve` |
 | `serve` | the one static responder both servers share | -- |
-| `cli` | the command-line tool agents drive | `core`, `devices`, `network`, `layouts`, `zones`, `groups`, `simulation`, `product` |
+| `cli` | the command-line tool agents drive | -- |
 | `lab` | the lab page's composition over the real modules | `core`, `devices`, `network`, `layouts`, `zones`, `groups`, `planner`, `product`, `canvas`, `serve` |
 | `tools` | the gate's scanners and generators | any layer |
 | `tests` | the tests the gate runs | any layer |
@@ -219,7 +215,7 @@ What each plugin brings to the page (`product/canvas.mjs`).
 | layouts | `places`, `grids` |
 | zones | `painters`, `places`, `presses`, `handles`, `keys`, `sizeStep`, `deleteRanks`, `describe`, `selectAll`, `labels`, `drawn`, `tally` |
 | groups | `painters`, `keys`, `deleteRanks`, `follows`, `drawn` |
-| devices | `defs`, `appearances`, `presses`, `hand`, `at`, `sizeStep`, `sizes`, `keys`, `describe`, `selectAll`, `labels`, `drawn`, `tally` |
+| devices | `defs`, `bare`, `appearances`, `presses`, `hand`, `at`, `sizeStep`, `sizes`, `keys`, `describe`, `selectAll`, `labels`, `drawn`, `tally` |
 | network | `painters`, `appearances`, `presses`, `handles`, `at`, `deleteRanks`, `follows`, `describe`, `selectAll`, `reflects`, `drawn`, `runTargets`, `tally` |
 | the simulation | `appearances` |
 <!-- END GENERATED: architecture-canvas -->
@@ -234,7 +230,6 @@ The product modules that compose the kinds or the canvas parts.
 | Module | Composes |
 |---|---|
 | `app/src/main.js` | the kinds, with the network's; the canvas parts |
-| `cli/verbs.mjs` | the kinds, with the network's |
 | `lab/src/root.js` | the kinds, with the network's; the canvas parts |
 | `server/seed.js` | the product's kinds alone |
 | `server/store.js` | the kinds, with the network's |
@@ -247,7 +242,7 @@ The product modules that compose the kinds or the canvas parts.
 Every way something outside the engine reaches it.
 
 <!-- BEGIN GENERATED: architecture-doors. Run tools/generate-architecture.mjs; do not edit by hand. -->
-**REST** -- 38 routes (`server/routes.mjs`):
+**REST** -- 40 routes (`server/routes.mjs`):
 
 | Route | Methods | What it answers |
 |---|---|---|
@@ -270,6 +265,8 @@ Every way something outside the engine reaches it.
 | `/api/v1/diagrams/:id/near` | GET | what is around a point |
 | `/api/v1/diagrams/:id/zones/:zone/contents` | GET | what falls inside a zone |
 | `/api/v1/diagrams/:id/links/:link/path` | GET | a route resolved to coordinates |
+| `/api/v1/diagrams/:id/combat` | GET | towers, what each is burning, and which movers are alive or dead at an instant (B339, SD1) |
+| `/api/v1/diagrams/:id/movers` | GET | what is in flight right now along each armed spawner's route (B339, SD1) |
 | `/api/v1/diagrams/:id/layouts` | GET | the diagram's two grids, as its layout records |
 | `/api/v1/diagrams/:id/layouts/:name/nearest` | GET | the legal anchor nearest a pixel |
 | `/api/v1/diagrams/:id/layouts/:name/anchors` | GET | every anchor, or every free one |
@@ -358,7 +355,7 @@ Each step cites the test that proves it.
 - **An edit, at any door:** the door states intent as ops; the planner checks each op against its kind's row and the contributed rows, runs the network's link tenant and every tenant the rows bring, checks every invariant, and answers with the one write; the store applies it, logs its inverse and broadcasts it; every tab applies the answer (`tests/txn.test.js`, `tests/planner-corpus.test.js`).
 - **In a tab, before the answer:** the tab plans the same edit with the same planner and shows it at once, then takes the server's answer and replays its own unanswered edits over it (`tests/sync.test.js`, `tests/sync-fuzz.test.js`).
 - **Loading a document:** the store reads it, completes the entities every document holds, refuses one in a format it does not read, validates it, and reports any invariant it breaks (`tests/schema-3.test.js`, `tests/store-atomicity.test.js`).
-- **Reading:** a route and whether a link is down are derived on demand at every door; the CLI derives combat and movers itself (`tests/read-model.test.js`, `tests/consumer-parity.test.js`, `tests/cli-tool.test.js`).
+- **Reading:** a route, an anchor's role, whether a link is down, and derived combat and movers are answered on demand by the server, and the CLI asks the server for them (`tests/read-model.test.js`, `tests/consumer-parity.test.js`, `tests/cli-tool.test.js`).
 - **Downloading:** a document is drawn to SVG by the export door, a renderer of its own that shares run mode's choice of what is shown (`tests/svgexport.test.js`).
 - **A new revision:** a tab detects it, says why, and reloads onto it (`tests/watchdog.test.js`).
 - **The lab:** the canvas composed over the real modules, with one authority in the page and no storage (`tests/lab-browser.test.js`).

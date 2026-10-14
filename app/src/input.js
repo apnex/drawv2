@@ -53,9 +53,6 @@ import * as commands from './commands.js';
 import { situationOf } from '../../engine/situation.mjs';
 import { waypointRolesIn } from '../../network/roles.mjs';
 import { BARE_KIND, ANCHOR_KINDS } from '../../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
-import { bareAnchor } from '../../devices/device-shapes.mjs';
-import { makeWaypoint } from '../../devices/make-node.mjs';   // the devices plugin's factories (O-e1)
-import { waypointAt } from '../../devices/occupancy.mjs';   // which waypoint is on a cell: the devices plugin's (O-e1)
 
 
 const ARROW = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
@@ -346,6 +343,7 @@ export class Input {
 	constructor({ svg, model, history, selection, renderer, labels, readout, tools, host, help, snap, now, plugins = [], runRules = [], parts = [] }) {
 		// C-c: the kinds placed on the grid, and how -- the canvas parts' (snap.js placesOf); C-d: their press rows and handles, below
 		this.places = placesOf(parts);
+		this.bare = parts.find((p) => p.bare)?.bare ?? null;
 		this.svg = svg;
 		/*
 		The route hook -- how the incubating network plugin (ruled 2026-09-28) sees a finished link drag
@@ -398,7 +396,7 @@ export class Input {
 			// each selected entity as the model holds it, with its kind (a plugin reads the fields it owns -- the network, transit)
 			selected: () => this.selection.list().map((id) => { const e = this.model.get(kindOf(id), id); return { ...(e ?? {}), id, kind: kindOf(id) }; }),
 			// C-d: make an entity of a kind -- `make(model)` mints it -- commit its creation, and select it
-			create: (kind, make) => { const e = make(this.model); this.history.commit(commands.createEntity(kind, e)); this.selection.set([e.id]); return e.id; },
+			create: (kind, make) => { const e = make(this.model); this.history.commit(commands.createEntity(kind, e, this.places.wordOf(kind, e))); this.selection.set([e.id]); return e.id; },
 			// C-d: set an entity's fields -- a handle's release: a zone's box, a link's ends -- as one labelled edit
 			set: (label, kind, id, after) => this.history.commit(commands.setFields(label, kind, id, after)),
 			// C-d: release the held tool -- the text tool, the one a press can hold -- and open the editor on a text box's frame
@@ -418,7 +416,7 @@ export class Input {
 			// C-e: the agreed instant; a point snapped to a place's grid; an entity made and committed, the selection untouched
 			now: () => this.now(),
 			snap: (place, pos) => snapIn(this.places.get(place), pos),
-			add: (kind, make) => this.history.commit(commands.createEntity(kind, make(this.model))),
+			add: (kind, make) => { const e = make(this.model); this.history.commit(commands.createEntity(kind, e, this.places.wordOf(kind, e))); },
 			// C-e: an event handed to the host page (a panel button, W5), and the inline editor opened on an entity's region
 			emit: (type, detail) => emitToHost(this.host, type, detail),
 			editRegion: (id, idx) => this.labels.openRegion(id, idx),
@@ -626,6 +624,7 @@ export class Input {
 	situation(targetId = null, gesture = null) {
 		return situationOf({
 			get: (kind, id) => this.model.get(kind, id),
+			wordOf: (kind, e) => this.places.wordOf(kind, e),
 			rolesOf: (id) => waypointRolesIn(this.model, id),   // the one role derivation (K5), its transit included (B277)
 		}, {
 			mode: this.renderer.mode,
@@ -794,7 +793,7 @@ export class Input {
 		const cell = snapIn(this.places.get(spec.place), pos);
 		if (this.placeRefused(pos, cell)) return false;   // WD5: not under an item; one anchor to a point
 		const { kind, entity } = spec.stamp(this.model, item, cell);
-		this.history.commit(commands.createEntity(kind, entity));
+		this.history.commit(commands.createEntity(kind, entity, this.places.wordOf(kind, entity)));
 		this.selection.set([entity.id]); // the hand stays armed; selection follows
 		this.labels.setFocus(entity.id);
 		return true;
@@ -833,8 +832,9 @@ export class Input {
 		if (this.placeRefused(this.state.pointer.at, snapped)) return false;   // WD5
 		// a waypoint with no link: the sweep takes only what an edit orphaned, so it stays until deleted (`pinned`, B162, is
 		// retired -- S-d, H18.14)
-		const wp = makeWaypoint(this.model, snapped);
-		this.history.commit(commands.createEntity(BARE_KIND, wp));
+		if (!this.bare) return false;
+		const wp = this.bare.make(this.model, snapped);
+		this.history.commit(commands.createEntity(BARE_KIND, wp, this.places.wordOf(BARE_KIND, wp)));
 		this.state = track(this.state, { type: 'armed', id: wp.id });   // may count as the next drag's first key (see press)
 		this.selection.set([wp.id]);
 		this.labels.setFocus(wp.id);
@@ -871,7 +871,7 @@ export class Input {
 		if (!this.state.pointer.at) return;
 		const ctx = this.ctx;
 		const snapped = snapNode(this.state.pointer.at);
-		const existing = waypointAt(this.model, snapped) ?? (nodes ? this.anchorAt(this.state.pointer.at) : null);   // occupancy index (R13)
+		const existing = this.bare?.at(this.model, snapped) ?? (nodes ? this.anchorAt(this.state.pointer.at) : null);   // occupancy index (R13)
 		if (existing && pin) {
 			if (existing.id === ctx.src.id) return;        // don't thread the source itself
 			/*
@@ -886,7 +886,8 @@ export class Input {
 			ctx.route.push(existing.id);
 		} else {
 			if (occupiedAnyAt(this.model, snapped)) return;     // a taken cell -- refuse (no waypoint is on it, above: a device's)
-			const wp = makeWaypoint(this.model, snapped);
+			if (!this.bare) return;
+			const wp = this.bare.make(this.model, snapped);
 			this.model.put(BARE_KIND, wp);            // live (visible); committed on release
 			if (pin) ctx.via.push(wp.id);
 			ctx.route.push(wp.id);
@@ -1106,7 +1107,7 @@ export class Input {
 				const keep = new Set(verdict?.keep ?? []);
 				const kept = ctx.placed.filter((w) => keep.has(w.id));
 				this.cleanupRoute({ placed: ctx.placed.filter((w) => !keep.has(w.id)) });
-				const command = commands.withJudged(kept.length ? commands.keepAnchors(kept.map((w) => bareAnchor(this.model, w.id) ?? w)) : null, verdict?.entries);
+				const command = commands.withJudged(kept.length ? commands.keepAnchors(kept.map((w) => this.bare?.of(this.model, w.id) ?? w)) : null, verdict?.entries);
 				if (command) this.history.commit(command);
 				return false;
 			}
@@ -1322,7 +1323,7 @@ export class Input {
 	*/
 	stepUnderPointer() {
 		if (!this.state.pointer.at) return null;
-		if (waypointAt(this.model, snapNode(this.state.pointer.at))) return 'waypoint';
+		if (this.bare?.at(this.model, snapNode(this.state.pointer.at))) return 'waypoint';
 		return this.anchorAt(this.state.pointer.at) ? 'node' : 'ground';   // no waypoint on the cell, above: a device's
 	}
 

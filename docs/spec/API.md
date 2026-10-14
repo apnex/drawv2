@@ -49,6 +49,8 @@ The store never goes empty: removing the last diagram reseeds the examples.
 
 A removed diagram is recoverable while the backend's delete window lasts, and two routes reach it.
 
+`GET /api/v1/diagrams/<id>/combat?at=<epoch-ms>` and `GET /api/v1/diagrams/<id>/movers?at=<epoch-ms>&spawner=<id>` answer the simulation's derived combat and movers at an instant (`B339`, `SD1`), and `GET /api/v1/diagrams/<id>/context/<entity>` includes `role` and `roles` for every anchor.
+
 `GET /api/v1/types` answers `{ types: [{ name, map, routing, behaviour }, ...] }` -- the declared device types in palette order (`U4-2`, `H21.3`), so the CLI and agents ask the server rather than keeping a copy.
 
 `GET /api/v1/sessions` answers `{ sessions[] }` -- what each client DID, not what the document became.\

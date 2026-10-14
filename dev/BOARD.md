@@ -1393,7 +1393,8 @@ The re-audit is `dev/design/unification/UNIFICATION-AUDIT.md`: the decoupling is
 | H21.7 | U3, the measurement widened: the name ratchets over every product layer, every quoting form, cross-plugin reads and device type names | feature | S3 | `DONE` |
 | H21.3 | U4, a type is a composition (B282's pack half): each device type declared once, every plugin reading its own part, a type declaring the roles it permits | **B282** | S3 | `DONE` |
 | H21.8a | U5 slice 1: a device's junction mark composed over its frame (B331), occupancy and reference incidence as the core's generic capability (B341), `announceActivity` in the hub (B342), and the transit-notice FIFO queue (B348) | **B331**, **B341**, **B342**, **B348** | S3 | `DONE` |
-| H21.8 | U5, the rest of the target: the network's privileged slots made a generic seam (B332), roles served to REST and the CLI (B339), the core's colour roles and device primitives to their owners (B338), cross-plugin reads brokered (B340) (`name` ruled as N5a) | **B332**, **B338**, **B339**, **B340** | S3 | `WIP` |
+| H21.8b | U5 slice 2: anchor roles, combat and movers served over REST so the CLI imports no product module (B339), and cross-plugin reads brokered through the composition (B340) | **B339**, **B340** | S3 | `DONE` |
+| H21.8 | U5, the rest of the target: the network's privileged slots made a generic seam (B332), and the core's colour roles and device primitives to their owners (B338) (`name` ruled as N5a) | **B332**, **B338** | S3 | `WIP` |
 | H21.9 | The target aligned with mission-kit: each part compared with mission-kit's registered and proposed components, the target stating the alignment, the code not migrated (H21.9) | feature | S3 | `DONE` |
 
 AMENDED 2026-10-11: H21.2 ruled -- the director approved the audit's order, U0 to U5 ("continue"; `dev/DECISIONS.md` H21).

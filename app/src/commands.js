@@ -23,16 +23,14 @@ import { clone } from '../../model/ops.mjs';
 import { kindOf, projection } from '../../model/model.mjs';
 import { GAP, clampDelta } from './snap.js';
 import { BARE_KIND } from '../../model/anchors.mjs';
-import { isTypedEntity } from '../../devices/device-shapes.mjs';
-import { drawnKind } from '../../devices/anchor-words.mjs';   // the drawn word (F4)   // the bare anchor, asked in one place (F-b)
 
 // entities are cloned at every command boundary: the live store object must never
 // alias a history entry, or later in-place model.set mutations rewrite history
 // ---- command builders ----
 
-export function createEntity(kind, entity) {
-	// named for what is drawn: a node with no type is a waypoint (F-c, F4)
-	return { label: `create ${drawnKind(kind, entity)}`, entries: [{ op: 'put', kind, entity: clone(kind, entity) }] };
+export function createEntity(kind, entity, word = kind) {
+	// named for what the part says is drawn (`places.wordOf`, B340)
+	return { label: `create ${word}`, entries: [{ op: 'put', kind, entity: clone(kind, entity) }] };
 }
 
 /*
@@ -290,7 +288,7 @@ export function cloneSubgraph(model, seedIds, places, followers = []) {
 		A node is renamed from its TYPE -- `host-4`, not `node-4` -- which is the convention
 		`nextName` was built for and the only reason this is not a one-liner.
 		*/
-		copy.name = scratch.nextName(isTypedEntity(kind, src) ? src.type : drawnKind(kind, src));
+		copy.name = scratch.nextName(places.clonePrefixOf ? places.clonePrefixOf(kind, src) : kind);
 		idMap.set(src.id, copy.id);
 		scratch.put(kind, copy);             // the THROWAWAY, so sibling k+1 can see it
 		clones.push({ kind, entity: copy });

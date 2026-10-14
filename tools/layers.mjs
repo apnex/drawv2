@@ -118,7 +118,7 @@ export const PARTS = {
 			// app/src/grids.js draws the grids placement snaps to, from the canvas's places (app/src/snap.js gridsOf); in the renderer
 			// it would make the renderer and the canvas consume each other
 			'app/src/triggers.js', 'app/src/grids.js', 'engine/situation.mjs'],
-		consumes: ['lattice', 'kind-contract', 'document', 'relations', 'rules', 'planner', 'renderer', 'primitives', 'colours'], carried: { network: 'B328', devices: 'B340' } },
+		consumes: ['lattice', 'kind-contract', 'document', 'relations', 'rules', 'planner', 'renderer', 'primitives', 'colours'], carried: { network: 'B328' } },
 	renderer: { duty: 'Draw a document through the parts\' painters', kind: 'host', by: ['D1', 'D3'],
 		modules: ['app/src/renderer.js', 'app/src/painter.js'], consumes: ['lattice', 'document', 'primitives', 'colours'] },
 	sync: { duty: 'Keep a tab converged with the server', kind: 'host', by: ['SD2'],
@@ -140,9 +140,9 @@ export const PARTS = {
 		modules: ['server/hub.js', 'server/protocol.js', 'server/locks.js', 'server/sessionlog.mjs'], consumes: ['store', 'planner', 'document', 'kind-contract', 'access'] },
 	rest: { duty: 'Answer agents over HTTP', kind: 'door', by: ['SD1', 'Q1'],
 		modules: ['server/rest.js', 'server/routes.mjs'],
-		consumes: ['store', 'hub', 'planner', 'document', 'kind-contract', 'product', 'lattice', 'access', 'layouts', 'network', 'devices', 'zones', 'groups'] },
+		consumes: ['store', 'hub', 'planner', 'document', 'kind-contract', 'product', 'lattice', 'access', 'layouts', 'network', 'devices', 'zones', 'groups', 'simulation'] },
 	cli: { duty: 'Give an agent one command per verb', kind: 'door', by: ['SD1'],
-		modules: ['cli/'], consumes: [], carried: { network: 'B339', product: 'B339', simulation: 'B339' } },
+		modules: ['cli/'], consumes: [] },
 	export: { duty: 'Render a document without a browser', kind: 'door', by: ['H2'],
 		modules: ['kernel/adapt.mjs', 'kernel/engine.mjs', 'kernel/svg-scene.mjs', 'server/svg.mjs'],
 		consumes: ['lattice', 'document', 'kind-contract', 'primitives', 'colours', 'product', 'renderer'], beyondKind: { renderer: 'H2' }, carried: { network: 'B330', devices: 'B330' } },
@@ -208,7 +208,7 @@ export const ALLOWED = {
 	serve: [],   // K9: it imports nothing but Node's own modules
 	// O-d (H19.22): the CLI's reader takes the product's composition (cli/verbs.mjs `modelOf`) from product/, so the interim
 	// `planner` allowance O-b1 gave it is gone
-	cli: ['core', 'devices', 'network', 'layouts', 'zones', 'groups', 'simulation', 'product', 'cli'],
+	cli: ['cli'],
 	lab: ['core', 'devices', 'network', 'layouts', 'zones', 'groups', 'planner', 'product', 'canvas', 'lab', 'serve'],
 	tools: ['core', 'devices', 'network', 'layouts', 'zones', 'groups', 'planner', 'product', 'canvas', 'chrome', 'simulation', 'export', 'server-only', 'serve', 'cli', 'tools'],
 	tests: ['core', 'devices', 'network', 'layouts', 'zones', 'groups', 'planner', 'product', 'canvas', 'chrome', 'simulation', 'export', 'server-only', 'serve', 'cli', 'tools', 'tests'],

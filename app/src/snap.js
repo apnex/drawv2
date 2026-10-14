@@ -131,6 +131,8 @@ export function placesOf(parts) {
 		const size = sources[0]?.size ?? (() => undefined);
 		places.set(kind, { ...p, size: (entity) => size(entity) ?? { w: 0, h: 0 } });
 	}
+	places.wordOf = (kind, e) => parts.map((p) => p.labels?.wordOf?.(kind, e)).find(Boolean) ?? kind;
+	places.clonePrefixOf = (kind, e) => parts.map((p) => p.labels?.clonePrefixOf?.(kind, e)).find(Boolean) ?? places.wordOf(kind, e);
 	return places;
 }
 

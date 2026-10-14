@@ -414,13 +414,6 @@ along each link's route -- and the CLI composes nothing by hand.
 */
 // O-b1 (H19.19): with the product's kinds, since the reader composes none; O-d (H19.22): the product's composition is its
 // own (product/kinds.mjs), so the CLI imports no planner
-async function modelOf(doc) {
-	const { readModel } = await import('../network/read-model.mjs');
-	const { productKinds } = await import('../product/kinds.mjs');
-	const { NETWORK_ROWS } = await import('../network/kinds.mjs');
-	return readModel(doc, productKinds(...NETWORK_ROWS));
-}
-
 export const VERBS = [
 	{
 		name: 'health', group: 'Context', usage: 'draw health', route: '/health', method: 'GET',
@@ -1040,6 +1033,7 @@ VERBS.push(
 			const nm = naming(doc);
 			const rows = [];
 			if (b.at) rows.push(['at', `${b.at.x},${b.at.y}`]);
+			if (b.role) rows.push(['role', b.role]);
 			if (b.group) rows.push(['group', nm(b.group)]);
 			if (b.zones?.length) rows.push(['zones', b.zones.map(nm).join(' ')]);
 			if (b.neighbours?.length) rows.push(['neighbours', b.neighbours.map(nm).join(' ')]);
@@ -1514,7 +1508,7 @@ VERBS.push({
 	this disagreed with a tab, one of them would be wrong, and the parity claim says neither can be.
 	*/
 	name: 'combat', group: 'Context', usage: 'draw combat [--at epoch-ms] [--diagram ref]',
-	route: '/diagrams/<id>', method: 'GET',
+	route: '/diagrams/<id>/combat', method: 'GET', also: ['GET /diagrams'],
 	summary: 'towers, what each is burning, and which movers are alive or dead at an instant',
 	example: 'draw combat --at 1788256200000',
 	args: [],
@@ -1522,67 +1516,41 @@ VERBS.push({
 		{ name: '--diagram', about: 'target by id or name' }],
 	async run(ctx) {
 		const id = await activeId(ctx, ctx.flags);
-		const doc = ok(await request(ctx, `/diagrams/${id}`), 'combat');
-		const { worldOf, combatAt } = await import('../engine/rules.mjs');
-		const model = await modelOf(doc);
 		const at = ctx.flags.at && ctx.flags.at !== true ? Number(ctx.flags.at) : Date.now();
 		if (!Number.isFinite(at)) die(`--at takes epoch milliseconds, not ${ctx.flags.at}`);
-
-		const world = worldOf(model);
-		if (!world.towers.length && !world.spawners.length) {
-			return { json: { at, towers: [], alive: 0, destroyed: 0 }, text: 'no towers and no armed spawners' };
-		}
-		const c = combatAt(world, at);
-		const burning = new Map(c.hits.map((h) => [h.tower, h.target]));
-		const towers = world.towers.map((t) => ({ id: t.id, x: t.x, y: t.y, range: t.range,
-			beam: t.beam, cooldown: t.cooldown, damage: t.damage, burning: burning.get(t.id) || null }));
-		const summary = `tick ${c.tick}   alive ${c.alive.length}   destroyed ${c.dead.size}   beams this tick ${c.hits.length}`;
+		const b = ok(await request(ctx, `/diagrams/${id}/combat?at=${at}`), 'combat');
+		if (b.tick === undefined) return { json: b, text: 'no towers and no armed spawners' };
+		const summary = `tick ${b.tick}   alive ${b.alive}   destroyed ${b.destroyed}   beams this tick ${b.beams}`;
 		return {
-			json: { at, tick: c.tick, towers, alive: c.alive.length, destroyed: c.dead.size, beams: c.hits.length },
-			text: `${table(towers.map((t) => [t.id, `${t.x},${t.y}`, `${t.range} cells`,
+			json: b,
+			text: `${table(b.towers.map((t) => [t.id, `${t.x},${t.y}`, `${t.range} cells`,
 				`${t.beam}/${t.cooldown} ticks`, String(t.damage), t.burning || '-']),
 			['TOWER', 'AT', 'RANGE', 'BEAM/COOL', 'DMG', 'BURNING'])}\n\n${summary}`,
 		};
 	},
 }, {
 	name: 'movers', group: 'Context', usage: 'draw movers [--at epoch-ms] [--spawner ref]',
-	route: '/diagrams/<id>', method: 'GET',
+	route: '/diagrams/<id>/movers', method: 'GET', also: ['GET /diagrams', 'GET /diagrams/<id>'],
 	summary: 'what is in flight right now -- the movers a correct client must be drawing',
 	example: 'draw movers --at 1788256200000',
 	args: [],
 	flags: [{ name: '--at', about: 'the instant to report, epoch ms. Default now -- pass one to make a reading reproducible' },
 		{ name: '--spawner', about: 'only this endpoint' },
 		{ name: '--diagram', about: 'target by id or name' }],
-	async run(ctx, args) {
+	async run(ctx) {
 		const id = await activeId(ctx, ctx.flags);
-		const doc = ok(await request(ctx, `/diagrams/${id}`), 'movers');
-		const { spawnersOf } = await import('../engine/spawners.mjs');
-		const { moversAt } = await import('../engine/movers.mjs');
-		const model = await modelOf(doc);
-		let prepared = spawnersOf(model);
-		if (ctx.flags.spawner && ctx.flags.spawner !== true) {
-			const want = await resolveId(ctx, id, ctx.flags.spawner, doc);
-			prepared = prepared.filter((s) => s.id === want);
-		}
 		const at = ctx.flags.at && ctx.flags.at !== true ? Number(ctx.flags.at) : Date.now();
 		if (!Number.isFinite(at)) die(`--at takes epoch milliseconds, not ${ctx.flags.at}`);
-		const live = moversAt(prepared, at);
-
-		const rows = prepared.map((s) => {
-			const mine = live.filter((m) => m.spawnerId === s.id);
-			return {
-				spawner: s.id, link: s.link,
-				cells: Math.round((s.length / 60) * 100) / 100,
-				speed: s.speed, interval: s.interval,
-				transit: Math.round((s.length / s.pxSpeed) * 10) / 10,
-				inFlight: mine.length,
-				at: mine.map((m) => `${Math.round(m.progress * 100)}%`).join(' '),
-			};
-		});
-		if (!rows.length) return { json: { at, spawners: [], movers: 0 }, text: 'no armed endpoints in this diagram' };
+		let want = '';
+		if (ctx.flags.spawner && ctx.flags.spawner !== true) {
+			const doc = viewOf(ok(await request(ctx, `/diagrams/${id}`), 'movers'));
+			want = `&spawner=${await resolveId(ctx, id, ctx.flags.spawner, doc)}`;
+		}
+		const b = ok(await request(ctx, `/diagrams/${id}/movers?at=${at}${want}`), 'movers');
+		if (!b.spawners.length) return { json: b, text: 'no armed endpoints in this diagram' };
 		return {
-			json: { at, spawners: rows, movers: live.length },
-			text: table(rows.map((r) => [r.spawner, r.link, String(r.cells), String(r.speed),
+			json: b,
+			text: table(b.spawners.map((r) => [r.spawner, r.link, String(r.cells), String(r.speed),
 				`${r.interval}ms`, `${r.transit}s`, String(r.inFlight), r.at]),
 				['SPAWNER', 'LINK', 'CELLS', 'CELLS/S', 'EVERY', 'TRANSIT', 'IN FLIGHT', 'PROGRESS']),
 		};
@@ -1602,7 +1570,7 @@ wrong the first time a route was reversed.
 */
 VERBS.push({
 	name: 'spawn', group: 'Writing', usage: 'draw spawn <waypoint> [--interval ms] [--speed cells] [--kind k] [--off]',
-	route: '/diagrams/<id>/commit', method: 'POST', also: ['GET /diagrams/<id>'],
+	route: '/diagrams/<id>/commit', method: 'POST', also: ['GET /diagrams/<id>', 'GET /diagrams/<id>/context/<entity>'],
 	summary: 'arm an endpoint waypoint to emit movers along its path, or stop it',
 	example: 'draw spawn waypoint-aa0001 --interval 700 --speed 2',
 	args: [{ name: 'waypoint', about: 'the ENDPOINT waypoint to arm, by id or name' }],
@@ -1627,15 +1595,16 @@ VERBS.push({
 		and a ring has no ends -- both are legitimate waypoints that simply cannot emit, and a
 		caller who picked one deserves to know which mistake they made rather than a flat no.
 		*/
+		const ctxInfo = ok(await request(ctx, `/diagrams/${id}/context/${wid}`), 'spawn');
 		const touching = (doc.links || []).filter((l) => l.src === wid || l.dst === wid || (l.via || []).includes(wid));
 		const bend = touching.find((l) => (l.via || []).includes(wid));
 		if (bend) die(`${wid} is a BEND on ${bend.id}, not an endpoint -- it turns the path rather than ending it`);
-		const link = touching.find((l) => (l.src === wid || l.dst === wid) && !l.closed);
-		if (!link) {
+		if (!(ctxInfo.roles || []).includes('endpoint')) {
 			const ring = touching.find((l) => l.closed);
 			die(ring ? `${wid} is on the closed route ${ring.id} -- a ring has no ends, so nothing can emit from it`
 				: `${wid} ends no link -- link it to something first, then arm it`);
 		}
+		const link = touching.find((l) => l.src === wid || l.dst === wid);
 
 		if (ctx.flags.off) {
 			if (!wp.spawn) die(`${wid} is not spawning`);

@@ -33,6 +33,7 @@ export const DEVICE_LABELS = {
 	named: ['node'],
 	// the word a Tab rename run groups by: a device runs to the next device, a waypoint to the next waypoint (F4)
 	wordOf: (kind, e) => (kind === 'node' ? drawnKind(kind, e) : null),
+	clonePrefixOf: (kind, e) => (kind === 'node' ? (isTypedEntity(kind, e) ? e.type : drawnKind(kind, e)) : null),
 	labelAt: (n) => (isTypedEntity('node', n) ? { x: n.x, y: n.y + NODE_R + 6, centred: true } : null),
 	content: {
 		valueOf: (n, idx) => { const r = regions(n)?.[idx]; return r ? { value: r.value || '', align: r.align || 'left' } : null; },

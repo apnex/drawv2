@@ -162,7 +162,7 @@ Generated from `tools/layers.mjs` `PARTS`; the current document renders the same
 | `placement` | Choose the free anchor a relationship names | door | SD1 | `lattice`, `document`, `relations`, `devices` |
 | `store` | Keep documents durable | door | SD2, WD6 | `document`, `kind-contract`, `lattice`, `planner`, `product`, `relations`, `access`, `placement` |
 | `hub` | Carry each change to the tabs watching a document | door | SD2 | `store`, `planner`, `document`, `kind-contract`, `access` |
-| `rest` | Answer agents over HTTP | door | SD1, Q1 | `store`, `hub`, `planner`, `document`, `kind-contract`, `product`, `lattice`, `access`, `layouts`, `network`, `devices`, `zones`, `groups` |
+| `rest` | Answer agents over HTTP | door | SD1, Q1 | `store`, `hub`, `planner`, `document`, `kind-contract`, `product`, `lattice`, `access`, `layouts`, `network`, `devices`, `zones`, `groups`, `simulation` |
 | `cli` | Give an agent one command per verb | door | SD1 | -- |
 | `export` | Render a document without a browser | door | H2 | `lattice`, `document`, `kind-contract`, `primitives`, `colours`, `product`, `renderer` |
 <!-- END GENERATED: architecture-target-parts -->
@@ -299,10 +299,8 @@ A named entity's name is unique across every named kind (N5).
 |---|---|---|
 | the planner and the canvas take the network as any plugin, and the doors take it within the product's composition | the planner takes a `links` option and imports the network's layer; the canvas takes a `network` slot; each door composes the network's rows itself | B332 |
 | the core holds the palette and primitives no plugin owns; each plugin holds its colour roles and its frame and content drawing | the core's theme holds the zone, group, link and waypoint roles; its primitives draw a device's frame and content | B338 |
-| an agent reads an anchor's role; the CLI imports no product module | no door serves a role; the CLI imports product modules to derive combat and movers, and restates a rule | B339 |
 | each document lists the plugins it needs | no document does | B248 |
 | the download is drawn by the rendering run mode draws | the export door is a second renderer, naming kinds | B330 |
-| a part reads another plugin's kind only through the composition | the canvas reads the devices plugin's drawn word for a create label; the groups painter reads a device's span | B340 |
 | the simulation's page pieces are the simulation's | the movers and the reveal live in the canvas folder | B329 |
 | the canvas names no plugin's kind beyond D2's record of the draw-a-link gesture | the canvas names plugin kinds and imports plugin modules, each recorded in its ratchet's record (`tests/canvas-names-no-plugin.test.js`) | B328 |
 

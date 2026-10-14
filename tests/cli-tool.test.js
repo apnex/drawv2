@@ -2107,3 +2107,30 @@ test('H17.3: draw add calls a waypoint a node with no type, in its help and in i
 		assert.equal(made.id.startsWith('node-'), true, 'and a waypoint it adds is a node -- the state under test');
 	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
 });
+
+// B339 (H21.8, SD1): the server serves an anchor's derived role (`role`, `roles`) on `/context/:entity` (`draw about`), and
+// serves `/combat` and `/movers` so `cli/verbs.mjs` imports no product module
+test('B339 / SD1: REST and draw about serve an anchor\'s derived role, and the CLI imports no product module', async () => {
+	const src = fs.readFileSync(path.join(root, 'cli/verbs.mjs'), 'utf8');
+	assert.doesNotMatch(src, /\.\.\/(network|product|engine|devices|zones|groups|layouts|planner|kernel|model)\//,
+		'the CLI imports no product module (SD1, B339)');
+	await boot();
+	try {
+		const id = (await run('create', 'roles-test')).trim();
+		await run('lock', '--diagram', id);
+		await run('add', 'router', 'at', '0,0', '--name', 'r1', '--diagram', id);
+		await run('add', 'host', 'at', '-4,0', '--name', 'h1', '--diagram', id);
+		await run('add', 'host', 'at', '4,0', '--name', 'h2', '--diagram', id);
+		await run('link', 'h1', 'h2', '--via', '0,-2', '--diagram', id, '--lay');
+		const endAbout = JSON.parse(await run('about', 'h1', '--diagram', id, '--json'));
+		assert.deepEqual(endAbout.roles, ['endpoint'], 'an endpoint anchor reports its endpoint role');
+		assert.equal(endAbout.role, 'endpoint');
+		const bendId = (JSON.parse(await run('get', 'links', '--diagram', id, '--json'))[0].via)[0];
+		const bendAbout = JSON.parse(await run('about', bendId, '--diagram', id, '--json'));
+		assert.deepEqual(bendAbout.roles, [], 'a bend waypoint has empty sub-type roles');
+		assert.equal(bendAbout.role, 'bend', 'and role: bend');
+		const txt = await run('about', 'h1', '--diagram', id);
+		assert.match(txt, /role\s+endpoint/, 'draw about prints the role row');
+	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
+});
+

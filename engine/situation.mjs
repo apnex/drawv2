@@ -26,8 +26,7 @@ everything is a second model rather than a description.
 */
 
 import { kindOf } from '../model/model.mjs';
-import { isBareEntity } from '../devices/device-shapes.mjs';   // whether a device is composed: the devices plugin's (O-e1)
-import { drawnKind } from '../devices/anchor-words.mjs';   // the drawn word (F4)   // the bare anchor, asked in one place (F-b)
+const defaultWord = (kind, e) => (kind === 'node' && e && !Object.keys(e).some((k) => !['id', 'name', 'x', 'y', 'order', 'transit', 'spawn'].includes(k)) ? 'waypoint' : kind);
 
 /*
 K5 (dev/design/h17/PLAN.md) -- CORE, so every layer that decides what an input means may read it: the canvas (Input),
@@ -77,7 +76,8 @@ function describeTarget(access, id) {
 	const entity = access.get ? access.get(stored, id) : null;
 	if (!entity) return null;
 	// a bare anchor is a `waypoint` to every rule that reads a situation -- the word F4 keeps, whatever kind stores it
-	const kind = isBareEntity(stored, entity) ? 'waypoint' : stored;
+	const wordOf = access.wordOf ?? defaultWord;
+	const kind = wordOf(stored, entity);
 	const t = { kind, id };
 	if (kind === 'waypoint') {
 		/*
@@ -116,7 +116,8 @@ function describeSelection(access, ids) {
 	const list = Array.isArray(ids) ? ids.filter(Boolean) : [];
 	const one = list.length === 1 && kindOf(list[0]) === 'link' && access.get ? access.get('link', list[0]) : null;
 	// what each selected entity is DRAWN as -- a waypoint is a node with no type (F-c), and the situation says waypoint (F4)
-	const drawn = (id) => (access.get ? drawnKind(kindOf(id), access.get(kindOf(id), id)) : kindOf(id));
+	const wordOf = access.wordOf ?? defaultWord;
+	const drawn = (id) => (access.get ? wordOf(kindOf(id), access.get(kindOf(id), id)) : kindOf(id));
 	return { size: list.length, ids: [...list], kinds: [...new Set(list.map(drawn))].sort(),
 		bends: one ? (Array.isArray(one.via) ? one.via.length : 0) : null };
 }

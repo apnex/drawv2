@@ -57,18 +57,12 @@ const KIND_RECORD = {
 		reason: 'the product\'s `w`, a stop of the draw-a-link gesture' },
 };
 const FIELD_RECORD = {
-	'app/src/commands.js': { count: 1, cites: ['B340', 'from B187'],
-		reason: 'a clone\'s name reads `src.type` to name a cloned device for its type (B187, B340)',
-		trigger: 'the canvas names what it creates and clones through its parts (`labels.wordOf`, B340)' },
 	'app/src/palette.js': { count: 2, cites: ['H17-D6'], trigger: 'permanent',
 		reason: 'the palette widget\'s own DOM dataset (`item.dataset.type`) and drag state (`this.drag.type`) for the tile being dragged' },
 };
 const IMPORT_RECORD = {
-	'app/src/input.js': { count: 8, cites: ['D2', 'B328'], trigger: D2_LINK,
-		reason: 'the draw-a-link gesture: its route, its stops and the facts its judge reads -- the network\'s queries and rules, the situation it reads, the waypoint a stop places' },
-	'app/src/commands.js': { count: 2, cites: ['from B187'],
-		reason: 'the drawn word of what the canvas creates -- a device by its type, a waypoint by its word (the rule B187 gave) -- for the create label and a clone\'s name',
-		trigger: 'the canvas names what it creates through its parts, as it names what it edits (`labels.wordOf`)' },
+	'app/src/input.js': { count: 5, cites: ['D2', 'B328'], trigger: D2_LINK,
+		reason: 'the draw-a-link gesture: its route, its stops and the facts its judge reads -- the network\'s queries and rules, and the situation it reads' },
 	'app/src/main.js': { count: 2, cites: [], trigger: 'permanent',
 		reason: 'the page\'s composition root: it composes the network into the page, as product/ composes the kinds -- a composition root composes plugins by design' },
 	'app/src/run-mode.js': { count: 2, cites: ['H17-D7'], trigger: 'permanent',

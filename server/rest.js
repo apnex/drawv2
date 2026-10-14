@@ -23,6 +23,10 @@ import { linkReading } from '../network/read-model.mjs';   // a link's path, rou
 import { pipeEntity } from '../network/pipe-kind.mjs';   // a pipe from its two ends, by the network's own rule (W-a)
 import { makeNode } from '../devices/make-node.mjs';   // the devices plugin's factories (O-e1)
 import { deviceTypeRecords } from '../devices/device-types.mjs';   // U4-2 (H21.3): the declared device types the server serves
+import { waypointRolesIn } from '../network/roles.mjs';   // B339 (H21.8, SD1): an anchor's derived roles
+import { combatReport } from '../engine/rules.mjs';   // B339 (H21.8, SD1): combat and movers derived on the server
+import { moversReport } from '../engine/spawners.mjs';
+import { moversAt } from '../engine/movers.mjs';
 
 /*
 P6 W-a (H18.31) -- THE COLLECTIONS ARE THE MODEL'S COMPOSITION, read rather than listed. This was a hand-kept list of the
@@ -96,7 +100,10 @@ function contextOf(model, kind, e) {
 	if (Object.keys(fields).length) out.fields = fields;
 	if (ANCHOR_KINDS.includes(kind)) {
 		out.at = { x: e.x, y: e.y };
-		const links = isBareEntity(kind, e) ? linksAt(model, e.id) : linksOf(model, e.id);
+		const roles = waypointRolesIn(model, e.id), touching = linksAt(model, e.id);
+		out.roles = roles;
+		out.role = roles.length ? roles.join(' ') : (touching.length ? 'bend' : null);
+		const links = isBareEntity(kind, e) ? touching : linksOf(model, e.id);
 		out.links = links.map((l) => ({ id: l.id, src: l.src, dst: l.dst, routed: !!(l.via && l.via.length) }));
 		out.neighbours = [...new Set(links.flatMap((l) => [l.src, l.dst]).filter((n) => n !== e.id))];
 		out.group = isBareEntity(kind, e) ? null : (groupOf(model, e.id)?.id ?? null);
@@ -595,6 +602,20 @@ export function handleRest(req, res, store, locks, hub, principal = null, sessio
 	WD8 (H19.45) -- the list is the diagram's own layout records, id, name, pitch, offset and extent, where it was the kernel's
 	two names; the routes below keep their answers. Read loudly: a diagram lacking a record is an error naming it.
 	*/
+	if (parts[4] === 'combat' && parts.length === 5) {
+		if (req.method !== 'GET') return json(res, 405, { error: 'combat: GET' }), true;
+		const rawAt = url.searchParams.get('at');
+		const at = rawAt !== null && rawAt !== '' ? Number(rawAt) : Date.now();
+		if (!Number.isFinite(at)) return json(res, 422, { error: `combat requires numeric at, not ${rawAt}`, code: 'bad-query' }), true;
+		return json(res, 200, combatReport(model, at)), true;
+	}
+	if (parts[4] === 'movers' && parts.length === 5) {
+		if (req.method !== 'GET') return json(res, 405, { error: 'movers: GET' }), true;
+		const rawAt = url.searchParams.get('at');
+		const at = rawAt !== null && rawAt !== '' ? Number(rawAt) : Date.now();
+		if (!Number.isFinite(at)) return json(res, 422, { error: `movers requires numeric at, not ${rawAt}`, code: 'bad-query' }), true;
+		return json(res, 200, moversReport(model, at, url.searchParams.get('spawner'), moversAt)), true;
+	}
 	if (parts[4] === 'layouts' && parts.length === 5) {
 		try {
 			return json(res, 200, { layouts: layoutRecords(model) }), true;

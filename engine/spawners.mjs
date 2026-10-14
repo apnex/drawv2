@@ -58,3 +58,23 @@ export function spawnersOf(model) {
 	}
 	return out;
 }
+
+// B339 (H21.8, SD1): the movers report REST serves at GET /api/v1/diagrams/:id/movers (`draw movers`)
+export function moversReport(model, at, spawner = null, moversAtFn) {
+	let prepared = spawnersOf(model);
+	if (spawner) prepared = prepared.filter((s) => s.id === spawner);
+	const live = moversAtFn(prepared, at);
+	const rows = prepared.map((s) => {
+		const mine = live.filter((m) => m.spawnerId === s.id);
+		return {
+			spawner: s.id, link: s.link,
+			cells: Math.round((s.length / 60) * 100) / 100,
+			speed: s.speed, interval: s.interval,
+			transit: Math.round((s.length / s.pxSpeed) * 10) / 10,
+			inFlight: mine.length,
+			at: mine.map((m) => `${Math.round(m.progress * 100)}%`).join(' '),
+		};
+	});
+	return { at, spawners: rows, movers: rows.length ? live.length : 0 };
+}
+

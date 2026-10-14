@@ -91,7 +91,9 @@ function composeParts(parts, svg) {
 			appearances.get(a.kind).push({ ...a, owner: part.owner, layerEl: a.composes === true ? null : svg.querySelector(`#${a.root.layer}`) });
 		}
 	}
-	return { painters: composePainters(parts, svg), appearances, orders };
+	const sizes = new Map();
+	for (const part of parts) for (const [k, fn] of Object.entries(part.sizes ?? {})) if (typeof fn === 'function') sizes.set(k, fn);
+	return { painters: composePainters(parts, svg), appearances, orders, sizes };
 }
 function composePainters(parts, svg) {
 	const painters = new Map();
@@ -111,7 +113,7 @@ function composePainters(parts, svg) {
 export class Renderer {
 	constructor(model, svg, { parts = [] } = {}) {
 		// C-a: the kinds a plugin paints, and those several plugins draw by appearances (D3), from the page's canvas parts
-		({ painters: this.painters, appearances: this.appearances, orders: this.orders } = composeParts(parts, svg));
+		({ painters: this.painters, appearances: this.appearances, orders: this.orders, sizes: this.sizes } = composeParts(parts, svg));
 		this.drawnSig = new Map();     // id -> the composition it was drawn by (D3), so an update knows when to render afresh
 		this.drawnLayer = new Map();   // id -> the page layer its winning appearance drew it into
 		this.stackedAt = new Map();   // id -> the drawing order it was stacked by (F-d)
@@ -371,7 +373,7 @@ export class Renderer {
 	// C-a: what a painter or an appearance is handed -- the canvas's element builder and look applier, the label pill's width, its
 	// layer, the model, and the session the drawing may read (the mode, and the render options it implies)
 	kit(painter = null) {
-		return { el, setAttrs, applyLook, pillWidth, layer: painter?.layerEl ?? null, model: this.model, mode: this.mode, renderOpts: () => this.renderOpts() };
+		return { el, setAttrs, applyLook, pillWidth, layer: painter?.layerEl ?? null, model: this.model, mode: this.mode, renderOpts: () => this.renderOpts(), sizeOf: (kind, entity) => this.sizes.get(kind)?.(entity) ?? { w: 0, h: 0 } };
 	}
 
 	/*

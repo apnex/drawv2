@@ -12,13 +12,13 @@ import { GROUP_KEYS } from './group-keys.mjs';
 import { GROUP_FOLLOWER } from './group-clone.mjs';
 import { L_STD } from '../kernel/spec.mjs';
 import { TOKENS } from '../kernel/theme.mjs';
-import { groupHull, spanExtent } from '../kernel/geometry.mjs';
+import { groupHull } from '../kernel/geometry.mjs';
 
 // the hull: the box around its members' span-aware footprints, padded to the group's extent -- null when no member resolves,
 // matching the kernel's empty-group guard; one authority shared with the export (kernel/geometry.mjs `groupHull`)
-function groupBox(entity, model) {
+function groupBox(entity, model, sizeOf) {
 	const members = entity.members.map((id) => model.endpointOf(id)).filter(Boolean)
-		.map((m) => { const { sw, sh } = spanExtent(m.span); return { x: m.x, y: m.y, w: sw, h: sh }; });
+		.map((m) => { const { w, h } = sizeOf ? sizeOf('node', m) : { w: 0, h: 0 }; return { x: m.x, y: m.y, w, h }; });
 	return groupHull(members, L_STD.group.ext);
 }
 const groupLook = (box) => ({ hull: { x: box.x, y: box.y, width: box.w, height: box.h } });
@@ -28,16 +28,16 @@ const GROUP_PAINTER = {
 	kind: 'group',
 	layer: 'groups',
 	stacked: false,
-	create(entity, { el, applyLook, layer, model }) {
-		const box = groupBox(entity, model);
+	create(entity, { el, applyLook, layer, model, sizeOf }) {
+		const box = groupBox(entity, model, sizeOf);
 		if (!box) return null;   // no resolvable members, no hull
 		const g = el('g', { id: entity.id, class: 'group' }, layer);
 		el('rect', { class: 'group-hull', rx: L_STD.group.r, fill: 'none', stroke: TOKENS.group, 'stroke-width': 1.1 }, g);
 		applyLook(g, groupLook(box), GROUP_PARTS);
 		return g;
 	},
-	update(entity, dom, { applyLook, model }) {
-		const box = groupBox(entity, model);
+	update(entity, dom, { applyLook, model, sizeOf }) {
+		const box = groupBox(entity, model, sizeOf);
 		if (!box) return 'remove';   // shrank below a member: drop the hull
 		if (!dom.querySelector('.group-hull')) return 'rerender';
 		applyLook(dom, groupLook(box), GROUP_PARTS);

@@ -197,3 +197,15 @@ export function combatAt(world, t) {
 	const alive = moversAt(world.spawners, now * TICK_MS).filter((m) => !dead.has(m.id));
 	return { tick: now, alive, dead, hp, hits: hits.filter((h) => h.tick === now) };
 }
+
+// B339 (H21.8, SD1): the combat report REST serves at GET /api/v1/diagrams/:id/combat (`draw combat`)
+export function combatReport(model, at) {
+	const world = worldOf(model);
+	if (!world.towers.length && !world.spawners.length) return { at, towers: [], alive: 0, destroyed: 0 };
+	const c = combatAt(world, at);
+	const burning = new Map(c.hits.map((h) => [h.tower, h.target]));
+	const towers = world.towers.map((t) => ({ id: t.id, x: t.x, y: t.y, range: t.range,
+		beam: t.beam, cooldown: t.cooldown, damage: t.damage, burning: burning.get(t.id) || null }));
+	return { at, tick: c.tick, towers, alive: c.alive.length, destroyed: c.dead.size, beams: c.hits.length };
+}
+

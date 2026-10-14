@@ -9,7 +9,9 @@ a branch. The network's transit ring composes over it. It was the renderer's own
 corpus and tests/appearance.test.js hold that.
 */
 
-import { typedNodes } from './device-shapes.mjs';
+import { bareAnchor, typedNodes } from './device-shapes.mjs';
+import { makeWaypoint } from './make-node.mjs';
+import { waypointAt } from './occupancy.mjs';
 import { STD, L_STD } from '../kernel/spec.mjs';
 import { selBox, contentLayout, hexColor, isPanel, frameRadius, frameWidth, showsSockets } from '../kernel/renderer.mjs';
 import { spanExtent } from '../kernel/geometry.mjs';
@@ -135,6 +137,6 @@ const DEVICE = {
 
 // the devices plugin's canvas part (C-a: the device's appearance on the anchor)
 // C-d: the text box's row; C-e: its hand, what a device covers, its size step under the canvas's Shift+arrow
-export const DEVICES_CANVAS = { owner: 'devices', defs: GLYPH_DEFS, appearances: [DEVICE], presses: DEVICE_PRESSES, hand: DEVICE_HAND, at: DEVICE_POINTS, sizeStep: DEVICE_SIZE_STEP, sizes: DEVICE_SIZES,
+export const DEVICES_CANVAS = { owner: 'devices', defs: GLYPH_DEFS, bare: { make: makeWaypoint, at: waypointAt, of: bareAnchor }, appearances: [DEVICE], presses: DEVICE_PRESSES, hand: DEVICE_HAND, at: DEVICE_POINTS, sizeStep: DEVICE_SIZE_STEP, sizes: DEVICE_SIZES,
 	keys: DEVICE_KEYS, describe: DEVICE_DESCRIBE, selectAll: DEVICE_SELECT_ALL, labels: DEVICE_LABELS,
 	drawn: ['.node'], tally: { rank: 0, word: 'nodes', of: (model) => typedNodes(model).length } };   // C-f: what it draws; its count   // C-e: its key, `s`; how it reads, Ctrl+A; where its label edits
