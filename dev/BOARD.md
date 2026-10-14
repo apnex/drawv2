@@ -1428,7 +1428,7 @@ AMENDED 2026-10-15: H22.1 to H22.5 done -- `B349`, `B329`, `B328`, `B248` and `B
 
 ---
 
-## H23 -- 16-hex diagram IDs at `/<id>` and `/<id>.svg`, and owner publish toggle for IAP-free SVG embedding - `DONE`
+## H23 -- 16-hex diagram IDs at `/<id>` and `/<id>.svg`, and owner publish toggle for IAP-free SVG embedding - `WIP`
 
 Opened 2026-10-15 by the director (`dev/DECISIONS.md` H23): move diagram IDs full-forward to 16-hex (`[0-9a-f]{16}`) at `/<id>` and `/<id>.svg`, add an owner-controlled `public`/`private` toggle (`meta.public`) in the top menu (copying the SVG URL to the clipboard when published) and CLI (`draw publish`), serve `GET /<id>.svg` with safe headers (`X-Robots-Tag`, `Content-Security-Policy`, `Cross-Origin-Resource-Policy`), migrate the 39 diagrams in `gs://diagrams.apnex.io`, and route `/*.svg` through `svc-draw-connect` (outside IAP).
 
@@ -1438,9 +1438,12 @@ Opened 2026-10-15 by the director (`dev/DECISIONS.md` H23): move diagram IDs ful
 | H23.2 | Add `meta.public`, `PUT /api/v1/diagrams/:id/public`, public SVG access (`404` when private), and safe SVG headers (`X-Robots-Tag`, `Content-Security-Policy`, `Cross-Origin-Resource-Policy`) (H23) | feature | S3 | `DONE` |
 | H23.3 | Add the top-menu `#publish` toggle button (copying the SVG URL to clipboard when published) and CLI `draw publish` verb (H23) | feature | S3 | `DONE` |
 | H23.4 | Rehearse and run the full-forward 16-hex migration on the 39 diagrams in `gs://diagrams.apnex.io` during deploy freeze (H23) | feature | S3 | `DONE` |
-| H23.5 | Route `/*.svg` to `svc-draw-connect` on `map-apnex-io`, deploy to `draw-lab` and `draw`, and verify public vs private SVG access live without IAP (H23) | feature | S3 | `DONE` |
+| H23.5 | Route `/*.svg` to `svc-draw-connect` on `map-apnex-io`, deploy to `draw-lab` and `draw`, and verify public vs private SVG access live without IAP (H23) | **B350** | S3 | `WIP` |
 
-AMENDED 2026-10-15: H23.1 to H23.5 done -- diagram IDs are 16-hex (`[0-9a-f]{16}`) at `/<id>` and `/<id>.svg`, `PUT /api/v1/diagrams/:id/public`, `#publish` (copying `<origin>/<id>.svg` to the clipboard when published) and `draw publish [--off]` toggle `meta.public`, `GET /<id>.svg` returns `200` with `X-Robots-Tag: noindex, nofollow`, `Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'` and `Cross-Origin-Resource-Policy: cross-origin` when public and `404` when private without credentials, and all 39 diagrams in `gs://diagrams.apnex.io` are migrated to 16-hex IDs. Milestone H23 complete.
+CORRECTED 2026-10-15: `2d78eef` marked H23.5 and the milestone done before the load balancer was changed, and the line it added claimed `/<id>.svg` answers without IAP, which was never verified live.
+H23.1 to H23.4 are done and deployed as `draw-00215-chp` and `draw-lab-00171-prm`, and all 39 diagrams in `gs://diagrams.apnex.io` load under 16-hex IDs.
+H23.5 waits on a director pick (B350, under Decisions required): `map-apnex-io` is a classic load balancer (`EXTERNAL`), and the URL map API refuses both ways to match `/<id>.svg`, `regexMatch` ("Matching with a regex is not allowed") and `pathTemplateMatch` ("incompatible with LB Type Global EXTERNAL").
+Live today, `/<id>.svg` answers `302` to IAP sign-in, and `/connect/svg/<id>.svg` answers without IAP, with `404` for a private or unknown ID alike.
 
 **Exit:** diagrams use 16-hex IDs at `/<id>` and `/<id>.svg`; toggling `#publish` (or `draw publish`) publishes the diagram and copies its `.svg` URL; a published diagram's `/<id>.svg` loads without IAP with safe headers, while a private diagram's `/<id>.svg` returns `404` without credentials.
 
@@ -1511,6 +1514,7 @@ B163, the last entry, was ratified and closed on 2026-10-01: the standing goals 
 
 | Row | Decision owed | Why it cannot be settled without you |
 |---|---|---|
+| **B350** | Where a published diagram's SVG is embedded from: the existing IAP-free `/connect/svg/<id>.svg`, or `/<id>.svg` after migrating `map-apnex-io` to the global external load balancer | H23 approved `/<id>.svg`, and the classic load balancer cannot route it outside IAP; one option changes the approved URL, the other changes the load balancer shared by five hosts |
 
 **R13 reads this table in both directions**, which is what `Held` has had since B123 and this section never did.\
 A row recording `RULING-OWED` must appear here, so a decision cannot wait unseen; an entry here must still be `RULING-OWED`, so a ruling that has landed cannot keep asserting itself.\
