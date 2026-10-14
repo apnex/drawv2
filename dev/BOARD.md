@@ -1391,7 +1391,7 @@ The re-audit is `dev/design/unification/UNIFICATION-AUDIT.md`: the decoupling is
 | H21.5 | U1, guards against the drift classes: triggers a check evaluates or a cadence re-reads, reasons citing closed rows failed, the director's words quoted and agent prose marked, status on the board alone, infrastructure claims probed, a flake ledger | feature | S3 | `DONE` |
 | H21.6 | U2, the target architecture: the whole system at the target instant, present tense, for the director to ratify; the current instant derived from the code | feature | S3 | `DONE` |
 | H21.7 | U3, the measurement widened: the name ratchets over every product layer, every quoting form, cross-plugin reads and device type names | feature | S3 | `DONE` |
-| H21.3 | U4, a type is a composition (B282's pack half): each device type declared once, every plugin reading its own part, a type declaring the roles it permits | **B282** | S3 | `TODO` |
+| H21.3 | U4, a type is a composition (B282's pack half): each device type declared once, every plugin reading its own part, a type declaring the roles it permits | **B282** | S3 | `WIP` |
 | H21.8 | U5, the rest of the target: the network's privileged slots made a generic seam (B332), a device's junction drawn (B331), roles served to REST and the CLI, the core's colour roles to their owners (`name` ruled as N5a) | **B331**, **B332**, **B338**, **B339**, **B340**, **B341**, **B342**, **B348** | S3 | `TODO` |
 | H21.9 | The target aligned with mission-kit: each part compared with mission-kit's registered and proposed components, the target stating the alignment, the code not migrated (H21.9) | feature | S3 | `DONE` |
 

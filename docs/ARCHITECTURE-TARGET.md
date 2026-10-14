@@ -21,7 +21,7 @@ Ratifying rules no question in section 9.1 and adopts none of its recommendation
 | 2. Justification chain | approved (H21.6); its axioms amended by A-5 | a ruling changing the model |
 | 3. Axiom alignment | approved (H21.6); its axioms amended by A-5 | a ruling, or a tension resolved |
 | 4. Anchored core | approved (H21.6); a type's one declaration settled by U4-1 | a part's duty or its consumes changing |
-| 5. A type is a composition | approved (H21.6); one declaration settled by U4-1; the behaviour family owed | the decisions owed in section 9 |
+| 5. A type is a composition | approved (H21.6); settled by U4-1, U4-2, U4-3 | a ruling on packs or types |
 | 6. Entity model and interfaces | approved (H21.6); the anchor's name settled by N5a | a format change |
 | 7. Run time | approved (H21.6) | a door's lifecycle changing |
 | 8. Verification and divergence | approved (H21.6) | a check added, or a divergence closed |
@@ -76,7 +76,7 @@ Noted for PC1: AR1 asks for the system's north star and this one is the programm
 - **A type is the name of a composition** (2026-10-02): what survives of "type" is the name an author picks for a composition, and the core does not know what it means.
 - **P-10** (2026-10-03): `type` stays the stored name, and packs are code tables keyed by it, with no format change.
 - **The stack interface:** browsers and server derive, the CLI asks (SD1); the planner runs the rules for every door (SD2); a pack is only its table (SD4); a pin through a type offering no passage is refused while a stop whose transit is off cuts (SD5); one pipe per pair (SD7); the network is a plugin (SD11); the core is anchors, identity and position, with no notion of connection, and the network contributes pipes, links and the rules that react to edits (SD11b); each document lists the plugins it needs (SD12).
-- **H17-D1, H17-D6, U4-1, U4-2:** the lab lives in this repository, in its own folder (H17-D1); one type table in the devices plugin names each type's pack in each family and its map letter, and is handed to the other plugins at composition (U4-1, reversing H17-D6's "imported by its users" and amending SD11b and 2026-10-07); the server serves the device types, and the CLI asks the server for them rather than keeping a copy (U4-2).
+- **H17-D1, H17-D6, U4-1, U4-2, U4-3:** the lab lives in this repository, in its own folder (H17-D1); one type table in the devices plugin names each type's pack in each family -- appearance, routing and run-mode behaviour (U4-3) -- and its map letter, and is handed to the other plugins at composition (U4-1, reversing H17-D6's "imported by its users" and amending SD11b and 2026-10-07); the server serves the device types, and the CLI asks the server for them rather than keeping a copy (U4-2).
 - **Transit:** a pin is cut where transit goes off (TR-2); `w` on an anchor whose transit is off makes two links ending there (TR-2b); which types offer transit is configuration the network plugin brings (2026-10-07); a device pin follows transit's rules only (Z1).
 - **N1, N5, N5a:** plugins bring their own kinds, and the core keeps only what spans kinds (N1); names are a service a kind opts into (N5), and the anchor kind opts into it (N5a).
 - **O1, O4:** every kind is a plugin's; the core keeps what spans kinds and the anchor capability -- identity, position, occupancy, resolving a reference -- and a plugin depends on another's kind brokered at composition (O1); the core holds one kind, the anchor, which carries no type (O4).
@@ -120,7 +120,7 @@ Weighed by M7 -- load-bearing, supporting, or not materially implicated -- over 
 **AX2, parity at every door, holds what this architecture took from A2:** each device type is declared once in the devices plugin, naming its pack in each family and its map letter, handed to the other plugins at composition (U4-1), and served by the server so the CLI asks for the types rather than keeping a copy (U4-2).
 
 **AX5, conceptual economy, holds what it took from A11:** a pack is a table keyed by type, not a mechanism (SD4, P-10).\
-**Open:** the 2026-09-22 record's caution, that packs composing must be earned by composing two -- fields compose onto the anchor (G3), and at the current instant no type is a composition of packs; whether a behaviour family is earned is owed (section 9.1).
+Three families compose onto a type -- appearance, routing and run-mode behaviour (U4-3) -- answering the 2026-09-22 record's caution that packs composing must be earned by composing at least two.
 
 **AX6, a principle rather than an axiom:** `type` staying the stored name keeps a type's composition out of stored documents (P-10); SD12's plugin list is a new field in every document, a format change named here.
 
@@ -184,7 +184,7 @@ Generated from `tools/layers.mjs` `PARTS`; the current document renders the same
 | `network` | the link and pipe kinds; the transit field; the routing family -- the roles a pack permits and whether it offers transit (2026-10-07), handed each type's routing pack at composition (U4-1); the reactions that cut, join and lay legs; the queries a route answers |
 | `zones` | the zone kind and its gestures, over the zone grid |
 | `groups` | the group kind, its tenant, gathering by members |
-| `simulation` | the spawn field; what the clock drives -- movers along routes, towers, the reveal -- and their appearances |
+| `simulation` | the spawn field; the behaviour family -- a run-mode behaviour pack's stats, such as a tower's, handed each type's pack at composition (U4-1, U4-3); what the clock drives -- movers along routes, towers, the reveal -- and their appearances |
 | `product` | the product's composition: every kind, the network's among them, every canvas part, and handing each plugin its slice of the type declarations (U4-1) |
 | `canvas` | press rows, gestures, keys and the hand, each a part's declaration over shared gestures (D1, D2) |
 | `renderer` | every kind drawn through its part's painter or appearances, composed per state (D3) |
@@ -215,15 +215,16 @@ The table in 4.1 lists each part's consumes; these rules bound them.\
 
 ## 5. A type is a composition
 
-**Maturity: approved (H21.6); one declaration per type settled by U4-1; the behaviour family is owed (section 9.1).**
+**Maturity: approved (H21.6); settled by U4-1, U4-2 and U4-3.**
 
 What a device is, said once per family.
 - **A type is the name an author picks for a composition** (2026-10-02); the core does not know what it means, and a node's `type` is that name, stored as it is (P-10).
 - **A pack is a code table keyed by type** (SD4, P-10): the derivation that reads it is its plugin's, and the writes it implies are the planner's tenants'.
-- **The pack families ruled in scope** (2026-09-22):
+- **The pack families ruled in scope** (2026-09-22, U4-3):
   - **appearance** -- the devices plugin's: a glyph's art, box and map letter (U4-2), a frame, how content regions lay out;
-  - **routing** -- the network's: the roles an anchor may take -- endpoint, junction, bend -- and whether it offers transit, which is the network's pack configuration (2026-10-07), each type's routing pack named in the devices plugin's one type declaration and handed to the network at composition (U4-1).
-- **One lookup, no per-type row free to drift** (2026-09-22): a per-type permission table and a pack registry are the same lookup, and a type's facts are not restated beside it -- beyond what section 9.1 leaves owed.
+  - **routing** -- the network's: the roles an anchor may take -- endpoint, junction, bend -- and whether it offers transit, which is the network's pack configuration (2026-10-07), each type's routing pack named in the devices plugin's one type declaration and handed to the network at composition (U4-1);
+  - **behaviour** -- the simulation's: a run-mode behaviour pack's parameters, such as a tower's range, beam, cooldown and damage, each type's behaviour pack named in the devices plugin's one type declaration and handed to the simulation at composition (U4-1, U4-3).
+- **One lookup, no per-type row free to drift** (2026-09-22, U4-1, U4-2, U4-3): a per-type permission table and a pack registry are the same lookup, and a type's facts are not restated beside it.
 - **A node with no type** is a bare anchor (P-10): it permits every role (2026-09-22), and is drawn by the network's marks per state, with no device appearance (D3).
 - **Transit is a per-anchor input:** the routing table says what a type offers; an anchor's own stored `transit` says whether it is on; with transit off an anchor is an endpoint for every link that ends there, at any count (2026-10-02).
 - **A violation:** a pin through a type that offers no passage is refused in the validator (2026-09-22, SD5); where a delete leaves two links that a join would make a bend at a type that does not permit one, the join does not happen, and links that end at a device keep ending there (2026-09-28, Z1); a pin where an anchor's transit goes off is cut, and `w` on such an anchor makes two links ending there (TR-2, TR-2b, Z1, SD5).
@@ -296,7 +297,7 @@ A named entity's name is unique across every named kind (N5).
 
 | This target states | The current instant | Carried by |
 |---|---|---|
-| each pack family is one table keyed by type, no per-type row free to drift (2026-09-22, P-10), beyond what section 9.1 leaves owed | eight tables in five files key on a type's name, two of them copies (`dev/design/unification/UNIFICATION-AUDIT.md`, section 3.1) | B282 |
+| each device type is declared once in the devices plugin across appearance, routing and behaviour, handed to the plugins at composition and served to the CLI (U4-1, U4-2, U4-3) | eight tables in five files key on a type's name, two of them copies (`dev/design/unification/UNIFICATION-AUDIT.md`, section 3.1) | B282 |
 | a type's routing table decides which roles an anchor may take | whether a node has a type decides whether it may bend or join | B282 |
 | a device the graph makes a junction draws its junction mark over its frame | nothing draws it | B331 |
 | the planner and the canvas take the network as any plugin, and the doors take it within the product's composition | the planner takes a `links` option and imports the network's layer; the canvas takes a `network` slot; each door composes the network's rows itself | B332 |
@@ -317,12 +318,8 @@ A named entity's name is unique across every named kind (N5).
 
 ### 9.1 Decisions owed
 
-**Maturity: owed -- not approved by ratifying this document.**\
-Each is asked when its stage reaches it (H21); the options and their costs are the author's reading of the record, each ruling cited so the director can check it.
-
-| Question | The options and their costs | Recommendation |
-|---|---|---|
-| Is a type's behaviour a pack family -- a tower's numbers a table the simulation keys by type? | **Yes:** the director's description of a composition names behaviours (2026-10-02), the approach H21 ratified puts "behaviour (a tower)" in U4's composition (`dev/design/unification/UNIFICATION-AUDIT.md`, section 7), and the tower table is keyed by type already (`engine/kinds.mjs`); it adds a third family to learn (AX5). **Not yet:** a tower stays the simulation's rule over a type name, outside the families; nothing new to learn; a type's facts are then not in one place, which parity (AX2) does not require and U4's exit, no type name outside the declarations, does | yes, as a third family, nothing beyond the table it already is |
+**Maturity: settled.**\
+All five questions recorded here at ratification (H21.6) have been ruled: the anchor's name (`N5a`), one declaration per type in the devices plugin handed in at composition (`U4-1`), refusing a pin through a type offering no passage while cutting at a transit-off stop (`SD5`), the CLI learning the device types from the server (`U4-2`), and run-mode behaviour as a third pack family (`U4-3`).
 
 ### 9.2 Open -- ratified but undesigned, or held with a trigger
 

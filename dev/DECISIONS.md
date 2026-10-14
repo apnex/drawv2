@@ -1979,3 +1979,9 @@ Shown: docs/ARCHITECTURE-TARGET.md@4bcde50\
 Affects: docs/ARCHITECTURE-TARGET.md\
 Recorder: asked how the CLI learns the device types and their single-letter map symbols -- asking the server for the types with each type's map letter on its declaration in the devices plugin (recommended) versus keeping a standalone copy in `cli/verbs.mjs` held equal by a gate test (`B167`) -- the director chose "continue" (the recommended option). The server serves the declared device types and their map letters, the CLI reads them from the server (`SD1`), and the CLI's three per-type tables (`NODE_TYPES`, `GLYPH`, `LEGEND`) and `B167`'s copy check retire when `H21.3` builds this; `U4-2` leaves the target's section 9.1.
 
+**U4-3 -- run-mode behaviour is a third pack family in each device type's declaration -- 2026-10-14 (H21.3, B282).**\
+Director: "yes, simulation behaviour needs to be decoupled. The current \"tower\" concept was just a temporary test, however it is entirely likely we'll develop multiple run behaviours, and it makes sense to separate the current tower behaviour cleanly now"\
+Shown: docs/ARCHITECTURE-TARGET.md@54cb27b\
+Affects: docs/ARCHITECTURE-TARGET.md\
+Recorder: asked whether a device type's run-mode behaviour is a third pack family alongside appearance and routing -- yes (recommended) versus keeping tower behaviour outside the type declaration -- the director ruled yes: simulation behaviour is decoupled as a third pack family, the simulation defines its behaviour packs (starting with the current tower pack, with room for future run behaviours), each device type's declaration in the devices plugin names its behaviour pack if any, and the simulation receives its slice at composition (`U4-1`). All five questions in the target's section 9.1 are now settled.
+
