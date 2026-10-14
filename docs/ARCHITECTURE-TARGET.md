@@ -160,7 +160,7 @@ Generated from `tools/layers.mjs` `PARTS`; the current document renders the same
 | `server` | Compose the server | composition root | SD2 | any part -- a composition root |
 | `access` | Establish who a request comes from | door | H9 | -- |
 | `placement` | Choose the free anchor a relationship names | door | SD1 | `lattice`, `document`, `relations`, `devices` |
-| `store` | Keep documents durable | door | SD2, WD6 | `document`, `kind-contract`, `lattice`, `planner`, `product`, `relations`, `access`, `placement` |
+| `store` | Keep documents durable | door | SD2, WD6 | `document`, `kind-contract`, `lattice`, `planner`, `product`, `relations`, `access`, `placement`, `network` |
 | `hub` | Carry each change to the tabs watching a document | door | SD2 | `store`, `planner`, `document`, `kind-contract`, `access` |
 | `rest` | Answer agents over HTTP | door | SD1, Q1 | `store`, `hub`, `planner`, `document`, `kind-contract`, `product`, `lattice`, `access`, `layouts`, `network`, `devices`, `zones`, `groups`, `simulation` |
 | `cli` | Give an agent one command per verb | door | SD1 | -- |
@@ -297,8 +297,6 @@ A named entity's name is unique across every named kind (N5).
 
 | This target states | The current instant | Carried by |
 |---|---|---|
-| the planner and the canvas take the network as any plugin, and the doors take it within the product's composition | the planner takes a `links` option and imports the network's layer; the canvas takes a `network` slot; each door composes the network's rows itself | B332 |
-| the core holds the palette and primitives no plugin owns; each plugin holds its colour roles and its frame and content drawing | the core's theme holds the zone, group, link and waypoint roles; its primitives draw a device's frame and content | B338 |
 | each document lists the plugins it needs | no document does | B248 |
 | the download is drawn by the rendering run mode draws | the export door is a second renderer, naming kinds | B330 |
 | the simulation's page pieces are the simulation's | the movers and the reveal live in the canvas folder | B329 |

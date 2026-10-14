@@ -14,6 +14,8 @@ back from `dst` to `src` (a ring, F-f). `direction` and `control` are what the a
 import { NAME_MAX } from '../model/limits.mjs';
 import { linkReferential, linkAccess } from './link-references.mjs';
 import { straightCapacity, isStraight, pairKey } from './pair-capacity.mjs';
+import { createNetwork } from './network.mjs';
+import { createTransit } from './transit.mjs';
 
 const ORDER_MAX = Number.MAX_SAFE_INTEGER;
 // the checks are LOCAL, as every row's are: the trust boundary is never delegated (planner/kinds.mjs)
@@ -78,6 +80,8 @@ export const LINK_ROW = {
 	// judged on the `src`, `dst` and `via` it keeps -- a `set` merged over what is stored (the planner's mutation path)
 	refers: (entity, access) => linkReferential({ id: entity.id, src: entity.src, dst: entity.dst, via: entity.via ?? [], closed: !!entity.closed }, linkAccess(access)),
 	invariants: straightPairs,
+	// B332 (H21.8, O-a): the network's link tenant rides its kind row, ranked before gathering tenants
+	tenant: { ...createNetwork(createTransit()).links, rank: 0 },
 	// where a link is drawn, and whether it is down, are the network's answers: a Model holding links is given one (V-e, J2)
 	needs: ['network'],   // only the network draws a link (V-e, J2): a Model holding links has it attached (Q-a)
 	cap: LINK_CAP,

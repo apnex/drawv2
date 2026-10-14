@@ -62,7 +62,7 @@ export function composeCanvas({ svg, defs, host, network = null, kinds = undefin
 	with the planner composed as the page is -- the network's link tenant and the page's kinds -- so the tab shows the whole
 	answer at once, and applies it carrying a selection across a join (B288)
 	*/
-	const preview = network && kinds ? (m, ops) => plan(m, ops, { links: network.links, kinds }) : null;
+	const preview = kinds ? (m, ops) => plan(m, ops, { kinds }) : null;
 	const history = new Changes(model, { preview, apply: (ops) => applyAnswer(model, selection, ops) });
 	const renderer = new Renderer(model, svg, { parts });   // C-a: the plugins' canvas parts, their painters among them
 	selection.subscribe(() => renderer.reflectSelection(selection.list()));   // the renderer owns the selected look

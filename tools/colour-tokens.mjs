@@ -25,7 +25,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { resolveRole } from '../kernel/palette.mjs';
 import { CANVAS_ROLES, CHROME_ROLES } from '../kernel/theme.mjs';
-import { NETWORK_COLOURS } from '../network/appearance.mjs';
+import { NETWORK_COLOURS, NETWORK_ROLE_COLOURS } from '../network/appearance.mjs';
+import { ZONE_COLOURS } from '../zones/zone-painter.mjs';
+import { GROUP_COLOURS } from '../groups/group-painter.mjs';
 
 const root = path.resolve(import.meta.dirname, '..');
 const COLOUR = /#[0-9a-fA-F]{3,8}\b|rgba?\([^)]*\)/g;
@@ -33,7 +35,7 @@ const kebab = (k) => k.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`);
 
 // each owner: its roles, the token prefix it writes under, and the file it writes
 const OWNERS = {
-	product: { roles: { ...CANVAS_ROLES, ...CHROME_ROLES }, prefix: '--tok-', file: 'app/tokens.css' },
+	product: { roles: { ...CANVAS_ROLES, ...ZONE_COLOURS, ...GROUP_COLOURS, ...NETWORK_ROLE_COLOURS, ...CHROME_ROLES }, prefix: '--tok-', file: 'app/tokens.css' },
 	network: { roles: NETWORK_COLOURS, prefix: '--tok-network-', file: 'network/tokens.css' },
 };
 // which owners' tokens each stylesheet may read

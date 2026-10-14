@@ -58,7 +58,8 @@ test('O-a: a group row that brings no rules runs none -- the planner appends no 
 test('O-a: the group row carries its tenant and its invariants; the planner and the core\'s invariants name neither', () => {
 	assert.equal(KINDS.row('group').tenant?.owner, 'groups');
 	assert.equal(typeof KINDS.row('group').invariants, 'function');
-	assert.deepEqual(KINDS.tenants.map((t) => t.owner), ['groups'], 'the composition\'s tenants, from its rows');
+	// RESTATED at H21.8 (B332): LINK_ROW carries its tenant too, ranked before groups
+	assert.deepEqual(KINDS.tenants.map((t) => t.owner), ['network links', 'groups'], 'the composition\'s tenants, from its rows');
 	const txn = code('planner/txn.mjs'), inv = code('model/invariants.mjs');
 	assert.doesNotMatch(txn, /tenants\.mjs|\bGROUPS\b|groupAfterRemoval/, 'the planner imports no tenant and no group policy');
 	assert.doesNotMatch(inv, /'group'|groupAfterRemoval/, 'the core\'s invariants name no group');

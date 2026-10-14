@@ -45,8 +45,6 @@ const D2_LINK = 'a second plugin must judge or extend a link drag (B328)';
 const KIND_RECORD = {
 	'app/src/commands.js': { count: 9, cites: ['D2', 'B328'], trigger: D2_LINK,
 		reason: 'the draw-a-link gesture\'s commit builders -- `routeLink`, `routeLinks`, `chainHop` -- its `.links` list, and the label of the pipes a refused drag keeps' },
-	'app/src/compose-canvas.js': { count: 2, cites: ['B332'], trigger: 'the canvas takes the network as a generic plugin, not a slot of its own (B332, H21.8)',
-		reason: 'the canvas preview passing `{ links: network.links }` to the planner' },
 	'app/src/help.js': { count: 2, cites: ['B328'], trigger: 'each plugin brings its own help word through its canvas part',
 		reason: 'the help overlay\'s `zone:` and `link:` entries in `KIND_WORDS`' },
 	'app/src/input.js': { count: 9, cites: ['D2', 'B328'], trigger: D2_LINK,

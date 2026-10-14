@@ -60,7 +60,8 @@ test('R-a: no module outside the network composes the network but the store, the
 	// store hands it its own -- `productKinds(...NETWORK_ROWS)`, the one way, imported when combat or movers run (B138)
 	// RESTATED at H21.6 (U2): the architecture generator reads the store's composition to state it, as the route inventory does
 	// RESTATED at H21.8 (B339, SD1): the CLI asks the server for combat and movers over REST, so it composes no network
-	const ALLOWED = ['server/store.js', 'lab/src/root.js', 'app/src/main.js', 'tools/reaction-table.mjs', 'tools/routes.mjs', 'tools/generate-architecture.mjs'];
+	// RESTATED at H21.8 (B332): the store imports COMPOSED_KINDS from product/types.mjs rather than composing NETWORK_ROWS itself
+	const ALLOWED = ['product/types.mjs', 'lab/src/root.js', 'app/src/main.js', 'tools/reaction-table.mjs', 'tools/routes.mjs', 'tools/generate-architecture.mjs'];
 	const found = [];
 	const walk = (dir) => {
 		for (const e of fs.readdirSync(path.join(root, dir), { withFileTypes: true })) {
@@ -72,7 +73,7 @@ test('R-a: no module outside the network composes the network but the store, the
 			if (/\{[^}]*\b(NETWORK_ROWS|createNetwork)\b[^}]*\}\s*(from|=\s*await\s+import)/.test(src)) found.push(rel);
 		}
 	};
-	for (const dir of ['app', 'server', 'cli', 'lab', 'tools', 'kernel', 'engine', 'model', 'planner']) walk(dir);
+	for (const dir of ['app', 'server', 'cli', 'lab', 'tools', 'kernel', 'engine', 'model', 'planner', 'product']) walk(dir);
 	assert.deepEqual(found.sort(), [...ALLOWED].sort());
 });
 

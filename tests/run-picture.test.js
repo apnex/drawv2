@@ -15,7 +15,7 @@ import { svgDocument } from '../server/svg.mjs';
 import { readModel } from '../network/read-model.mjs';
 import { attachNetwork } from '../network/host.mjs';
 import { pipeEntity } from '../network/pipe-kind.mjs';
-import { RUN_PICTURE, waypointLayers, downStroke } from '../network/appearance.mjs';
+import { RUN_PICTURE, waypointLayers, downStroke, NETWORK_TOKENS } from '../network/appearance.mjs';
 import { TOKENS } from '../kernel/theme.mjs';
 
 /*
@@ -126,7 +126,7 @@ test('R-c: the download draws each link along its route over pipes, and a down l
 	const [routed, attrs] = pathOf('link-000005');
 	assert.match(routed, /^M-360 0 L.* Q0 -240 .* L360 0$/, 'l5 is drawn up through f, its route, turning at f -- not straight from a to c');
 	assert.doesNotMatch(attrs, /stroke-dasharray/, 'an up link is solid');
-	assert.match(attrs, new RegExp(`stroke="${TOKENS.link}"`));
+	assert.match(attrs, new RegExp(`stroke="${NETWORK_TOKENS.link}"`));
 	// take f's pipes away: l5 has no way, so it is down -- drawn straight through its stops, dotted and orange
 	d.pipes = d.pipes.filter((p) => !p.id.includes('0000f1'));
 	const [down, downAttrs] = svgDocument(d, KINDS).match(/<g id="link-000005"><path d="([^"]*)"([^>]*)\/>/).slice(1);

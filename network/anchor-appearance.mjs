@@ -12,9 +12,8 @@ the K8 DOM corpus holds that. The layer list itself is the network's, shared wit
 */
 
 import { L_STD } from '../kernel/spec.mjs';
-import { TOKENS } from '../kernel/theme.mjs';
 import { hasDevice } from '../devices/device-fields.mjs';
-import { waypointLayers } from './appearance.mjs';
+import { waypointLayers, NETWORK_TOKENS } from './appearance.mjs';
 import { waypointRolesIn } from './roles.mjs';
 import { declaresNoTransit, linksRoutedThrough } from './network-queries.mjs';
 import { linksAt } from './link-queries.mjs';
@@ -25,8 +24,8 @@ const FE = L_STD.frame.ext;   // the frame's half-extent (20), which the rings a
 // does, and is drawn as it says; the canvas and the export draw the same list the same way
 function layerCircle(l, g, el) {
 	el('circle', l.fill === 'solid'
-		? { class: l.cls, r: l.radius, fill: TOKENS.waypoint }
-		: { class: l.cls, r: l.radius, fill: l.fill, stroke: l.stroke ?? TOKENS.waypoint, 'stroke-width': l.width, 'stroke-opacity': l.opacity, ...(l.dash ? { 'stroke-dasharray': l.dash } : {}), ...(l.pathLength ? { pathLength: l.pathLength } : {}) }, g);   // a fitted dash (evenDash)
+		? { class: l.cls, r: l.radius, fill: NETWORK_TOKENS.waypoint }
+		: { class: l.cls, r: l.radius, fill: l.fill, stroke: l.stroke ?? NETWORK_TOKENS.waypoint, 'stroke-width': l.width, 'stroke-opacity': l.opacity, ...(l.dash ? { 'stroke-dasharray': l.dash } : {}), ...(l.pathLength ? { pathLength: l.pathLength } : {}) }, g);   // a fitted dash (evenDash)
 }
 
 const MARKS = {

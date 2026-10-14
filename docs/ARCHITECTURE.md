@@ -119,7 +119,7 @@ The anchored core's parts, declared once in `tools/layers.mjs` `PARTS` and rende
 | `layouts` | Declare a diagram's grids | plugin | `layouts/` | `lattice` |
 | `devices` | Compose a device onto an anchor | plugin | `devices/` | `colours`, `document`, `kind-contract`, `lattice`, `primitives` |
 | `network` | Connect anchors | plugin | `network/` | `colours`, `devices`, `document`, `kind-contract`, `lattice`, `primitives`, `rules` |
-| `zones` | Bound regions of cells | plugin | `zones/` | `kind-contract`, `lattice`, `layouts` |
+| `zones` | Bound regions of cells | plugin | `zones/` | `colours`, `kind-contract`, `lattice`, `layouts` |
 | `groups` | Name sets of anchors | plugin | `groups/` | `colours`, `document`, `kind-contract`, `lattice` |
 | `simulation` | Derive what the clock drives | plugin | `engine/kinds.mjs`, `engine/movers.mjs`, `engine/rules.mjs`, `engine/spawn-appearance.mjs`, `engine/spawners.mjs`, `engine/spawn-field.mjs`, `engine/spawn-runs.mjs`, `model/reveal.mjs`, `app/src/movers.js`, `app/src/reveal.js`, `app/src/paintloop.js` | `canvas`, `devices`, `document`, `kind-contract`, `lattice`, `network`, `renderer` |
 | `product` | Compose the plugins into the product | composition | `product/` | `devices`, `groups`, `kind-contract`, `lattice`, `layouts`, `network`, `simulation`, `zones` |
@@ -135,7 +135,7 @@ The anchored core's parts, declared once in `tools/layers.mjs` `PARTS` and rende
 | `hub` | Carry each change to the tabs watching a document | door | `server/hub.js`, `server/protocol.js`, `server/locks.js`, `server/sessionlog.mjs` | `kind-contract` |
 | `rest` | Answer agents over HTTP | door | `server/rest.js`, `server/routes.mjs` | `devices`, `document`, `groups`, `hub`, `kind-contract`, `lattice`, `layouts`, `network`, `simulation`, `zones` |
 | `cli` | Give an agent one command per verb | door | `cli/` | -- |
-| `export` | Render a document without a browser | door | `kernel/adapt.mjs`, `kernel/engine.mjs`, `kernel/svg-scene.mjs`, `server/svg.mjs` | `colours`, `devices`, `lattice`, `network`, `primitives` |
+| `export` | Render a document without a browser | door | `kernel/adapt.mjs`, `kernel/engine.mjs`, `kernel/svg-scene.mjs`, `server/svg.mjs` | `colours`, `devices`, `groups`, `lattice`, `network`, `primitives`, `zones` |
 <!-- END GENERATED: architecture-parts -->
 
 ---
@@ -149,11 +149,12 @@ Each import between two parts that the target's consumes do not allow, read from
 |---|---|---|---|
 | `canvas` | `network` | B328 | `app/src/input.js` |
 | `export` | `devices` | B330 | `kernel/svg-scene.mjs`, `server/svg.mjs` |
+| `export` | `groups` | B330 | `kernel/svg-scene.mjs` |
 | `export` | `network` | B330 | `kernel/engine.mjs`, `kernel/svg-scene.mjs`, `server/svg.mjs` |
+| `export` | `zones` | B330 | `kernel/svg-scene.mjs` |
 | `network` | `devices` | B282 | `network/anchor-appearance.mjs`, `network/anchor-points.mjs`, `network/keys.mjs`, `network/link-clone.mjs`, `network/link-keys.mjs`, `network/link-reactions.mjs`, `network/link-references.mjs`, `network/selection-reflects.mjs`, `network/transit-offers.mjs`, `network/transit.mjs` |
 | `simulation` | `canvas` | B329 | `engine/spawn-runs.mjs` |
 | `simulation` | `renderer` | B329 | `app/src/movers.js` |
-| `store` | `network` | B332 | `server/seed.js`, `server/store.js` |
 <!-- END GENERATED: architecture-part-divergence -->
 
 ---
@@ -176,7 +177,7 @@ A module belongs to one layer, and a layer imports only what it may (`tools/laye
 | `canvas` | turning input into edits, and a document into a drawing, through the plugins' parts | `core`, `devices`, `network`, `layouts`, `zones`, `groups`, `planner` |
 | `chrome` | the production page around the canvas: sync, status, palette, readouts and its composition root | `core`, `devices`, `network`, `layouts`, `zones`, `groups`, `planner`, `product`, `canvas`, `simulation`, `export` |
 | `simulation` | derived motion: spawners, movers, towers and run mode | `core`, `devices`, `network` |
-| `export` | the headless SVG path | `core`, `devices`, `network` |
+| `export` | the headless SVG path | `core`, `devices`, `network`, `zones`, `groups` |
 | `server-only` | the server's doors and storage, never served to a browser | `core`, `devices`, `network`, `layouts`, `zones`, `groups`, `planner`, `product`, `simulation`, `export`, `serve` |
 | `serve` | the one static responder both servers share | -- |
 | `cli` | the command-line tool agents drive | -- |
@@ -198,7 +199,7 @@ What a document can hold, as the server composes it (`product/kinds.mjs`, `model
 | `node` | the core | `nodes` | selection, names, the anchor | -- | devices: `type`, `shape`, `span`, `content`; the simulation: `spawn`; the network: `transit` | -- |
 | `zone` | zones | `zones` | selection, names | -- | -- | -- |
 | `group` | groups | `groups` | names, a planner tenant, gathering by `members` | `node` | -- | -- |
-| `link` | the network | `links` | selection, names | `node` | -- | -- |
+| `link` | the network | `links` | selection, names, a planner tenant | `node` | -- | -- |
 | `pipe` | the network | `pipes` | selection | `node` | -- | -- |
 <!-- END GENERATED: architecture-kinds -->
 
@@ -232,7 +233,6 @@ The product modules that compose the kinds or the canvas parts.
 | `app/src/main.js` | the kinds, with the network's; the canvas parts |
 | `lab/src/root.js` | the kinds, with the network's; the canvas parts |
 | `server/seed.js` | the product's kinds alone |
-| `server/store.js` | the kinds, with the network's |
 <!-- END GENERATED: architecture-compositions -->
 
 ---

@@ -23,15 +23,11 @@ import { serialize, parse } from './docfile.mjs';
 import { fsFiles } from './files.mjs';
 import { NAME_MAX } from '../model/limits.mjs';   // truncates where validate.js rejects (B86)
 import { SCHEMA, completeAlwaysHeld } from '../model/shape.mjs';   // the document generation; WD-b1: the always-held completion
-import { productKinds } from '../product/kinds.mjs';
-import { NETWORK_ROWS } from '../network/kinds.mjs';
-import { composeProductTypes } from '../product/types.mjs';
+import { composeProductTypes, COMPOSED_KINDS } from '../product/types.mjs';
+import { readerNetwork } from '../network/read-model.mjs';   // each Model draws with a network of its own (R-a)
 
 // U4-1, U4-3 (H21.3, B282): hand the server's plugins their slices of the device type declarations at composition
 composeProductTypes();
-import { createNetwork } from '../network/network.mjs';
-import { readerNetwork } from '../network/read-model.mjs';   // each Model draws with a network of its own (R-a)
-import { createTransit } from '../network/transit.mjs';
 
 const FLUSH_MS = 200;
 
@@ -46,9 +42,8 @@ through one shared function (SERVER-COMPOSES-NETWORK.md section 4). Only the pla
 AMENDED 2026-10-04 (P4 R-a, H18.19): each Model draws with a network of its own (`readerNetwork`, network/read-model.mjs), so
 every path the server answers is the route the lab draws. One per Model, as the network caches one derivation per board.
 */
-const KINDS = productKinds(...NETWORK_ROWS);
-const NETWORK = createNetwork(createTransit());
-const PLAN = { links: NETWORK.links, kinds: KINDS };
+const KINDS = COMPOSED_KINDS;
+const PLAN = { kinds: KINDS };
 
 // The store's own filename rule. ONE definition: the boot loader and the example seeder must agree
 // on what counts as a diagram file, or a name one accepts and the other ignores becomes a file that

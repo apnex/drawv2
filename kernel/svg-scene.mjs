@@ -9,11 +9,13 @@ network layer; the core half may not. The live canvas builds addressable DOM ins
 */
 import { STD, L_STD } from './spec.mjs';
 import { bboxOf } from './geometry.mjs';
-import { waypointLayers, linkAppearance, downStroke } from '../network/appearance.mjs';
+import { waypointLayers, linkAppearance, downStroke, NETWORK_TOKENS } from '../network/appearance.mjs';
 import { roundedPath } from './router.mjs';
 import { TOKENS } from './theme.mjs';
-import { GLYPH_BB, DEFAULT_GLYPH_BB } from '../devices/device-types.mjs';
-import { isPanel, frameWidth, frameRadius, showsSockets, selBox, hexColor, contentLayout } from './renderer.mjs';
+import { GLYPH_BB, DEFAULT_GLYPH_BB, isPanel, frameWidth, frameRadius, contentLayout } from '../devices/device-types.mjs';
+import { ZONE_TOKENS } from '../zones/zone-painter.mjs';
+import { GROUP_TOKENS } from '../groups/group-painter.mjs';
+import { showsSockets, selBox, hexColor } from './renderer.mjs';
 
 const escText = (s) => String(s == null ? '' : s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 
@@ -69,18 +71,18 @@ function socketGridSvg(cols, rows, V) {
 
 function renderEl(el, V, L, opts = {}) {
 	if (el.kind === 'zone') {
-		const rect = `<rect x="${el.x}" y="${el.y}" width="${el.w}" height="${el.h}" rx="${L.zone.r}" fill="${TOKENS.zoneFill}" fill-opacity="${TOKENS.zoneFillOp}" stroke="${TOKENS.zoneStroke}" stroke-opacity="${TOKENS.zoneStrokeOp}" stroke-width="1"/>`;
+		const rect = `<rect x="${el.x}" y="${el.y}" width="${el.w}" height="${el.h}" rx="${L.zone.r}" fill="${ZONE_TOKENS.zoneFill}" fill-opacity="${ZONE_TOKENS.zoneFillOp}" stroke="${ZONE_TOKENS.zoneStroke}" stroke-opacity="${ZONE_TOKENS.zoneStrokeOp}" stroke-width="1"/>`;
 		// B234 -- the NAME, at the offsets the canvas uses, so the two pictures agree
 		return rect + label(el.name, el.x + V.zoneDx, el.y + V.zoneDy, { anchor: 'start' });
 	}
-	if (el.kind === 'group') return `<rect x="${el.x}" y="${el.y}" width="${el.w}" height="${el.h}" rx="${L.group.r}" fill="none" stroke="${TOKENS.group}" stroke-width="1.1"/>`;
+	if (el.kind === 'group') return `<rect x="${el.x}" y="${el.y}" width="${el.w}" height="${el.h}" rx="${L.group.r}" fill="none" stroke="${GROUP_TOKENS.group}" stroke-width="1.1"/>`;
 	if (el.kind === 'path') {
 		// H15.9 -- ONE derivation, serialised as given. The export and the canvas read the same
 		// answer, so neither can carry a weight or a head the other does not.
 		// R-c (H18.21; H1): a down link with the canvas's down look -- dotted, and orange, which the canvas's stylesheet gives
 		// it and a standalone file must carry itself
 		const attrs = Object.entries(linkAppearance(el, V.linkW, { down: !!el.down })).filter(([k]) => k !== 'stroke-linecap').map(([k, v]) => ` ${k}="${v}"`).join('');
-		return `<path d="${roundedPath(el.pts, el.radius, el.closed)}" fill="none" stroke="${el.down ? downStroke() : TOKENS.link}" stroke-linecap="round" stroke-linejoin="round"${attrs}/>`;
+		return `<path d="${roundedPath(el.pts, el.radius, el.closed)}" fill="none" stroke="${el.down ? downStroke() : NETWORK_TOKENS.link}" stroke-linecap="round" stroke-linejoin="round"${attrs}/>`;
 	}
 	// a waypoint = a placed routing pivot: a node-sized (r = frame.ext = 20) ring in the link
 	// colour with a centre dot. The rounded path (r=20) bends through its centre, so the bend is
@@ -118,9 +120,9 @@ function renderEl(el, V, L, opts = {}) {
 		const cls = roles.length ? roles.join(' ') : 'bend';
 		// R-c (H18.21; H2, refined): the run picture's layers, always -- the download is what run mode shows (RUN_PICTURE)
 		const circles = waypointLayers(roles, L.frame.ext, el.links, el.transit === false ? { transit: false } : null, { run: true }).map((l) => (l.fill === 'solid'
-			? `<circle cx="${el.cx}" cy="${el.cy}" r="${l.radius}" fill="${TOKENS.waypoint}"/>`
+			? `<circle cx="${el.cx}" cy="${el.cy}" r="${l.radius}" fill="${NETWORK_TOKENS.waypoint}"/>`
 			// a layer may carry its own stroke and dash -- the transit ring does -- and is drawn as it says
-			: `<circle cx="${el.cx}" cy="${el.cy}" r="${l.radius}" fill="${l.fill}" stroke="${l.stroke ?? TOKENS.waypoint}" stroke-width="${l.width}" stroke-opacity="${l.opacity}"${l.dash ? ` stroke-dasharray="${l.dash}"` : ''}${l.pathLength ? ` pathLength="${l.pathLength}"` : ''}/>`)).join('');
+			: `<circle cx="${el.cx}" cy="${el.cy}" r="${l.radius}" fill="${l.fill}" stroke="${l.stroke ?? NETWORK_TOKENS.waypoint}" stroke-width="${l.width}" stroke-opacity="${l.opacity}"${l.dash ? ` stroke-dasharray="${l.dash}"` : ''}${l.pathLength ? ` pathLength="${l.pathLength}"` : ''}/>`)).join('');
 		return `<g class="waypoint ${cls}">${circles}</g>`;
 	}
 	// a junction = a deliberate connection pad (a copper-trace tie point): says "these lines are

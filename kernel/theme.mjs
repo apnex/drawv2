@@ -19,14 +19,9 @@ The network plugin's roles -- pipes, the transit ring, a down link -- are its ow
 */
 export const CANVAS_ROLES = {
 	panel: 'neutral10',          // canvas / opaque-centre fill
-	link: 'lightBlue300',        // links + routed paths
-	group: 'deepPurpleA100',     // group hull stroke
-	zoneFill: 'blueGrey300',     // drawn at zoneFillOp
-	zoneStroke: 'blueGrey200',   // drawn at zoneStrokeOp
 	socket: 'ochre',             // glyph-box guide; a placeholder, and must keep clear of the network's transit ring
 	port: 'lightGreen300',       // port square / entity port
-	junction: 'lightBlue300',    // connection-pad outline
-	waypoint: 'lightBlue300',    // routing-pivot ring (link colour -- it IS the bend)
+	selectBox: 'lightBlue300',   // selection brackets outline
 	accent: 'lightGreen300',     // selection, and the go-ahead accent: what is selected, armed to clone, confirmed
 	danger: 'red300',            // armed to delete, an error, a refusal
 	clone: 'lightBlue200',       // armed to clone
@@ -45,7 +40,6 @@ export const CANVAS_ROLES = {
 };
 export const TOKENS = {
 	...resolveRoles(CANVAS_ROLES),
-	zoneFillOp: 0.13, zoneStrokeOp: 0.55,
 	bendR: 20                    // = spec BEND_R; the locked corner radius
 };
 
@@ -95,6 +89,6 @@ export const KERNEL_CSS = `
 .frame  { fill: var(--fill, ${TOKENS.panel}); fill-opacity: var(--outer-fill-opacity, 1); stroke: var(--outer, ${TOKENS.port}); }
 .icon   { transform: scale(0.3); }
 .node   { --icon:${TOKENS.port}; --fill:${TOKENS.panel}; --outer:${TOKENS.port}; }
-.node .select-box { display:none; fill:none; stroke:${TOKENS.link}; stroke-width:2; pointer-events:none; }
+.node .select-box { display:none; fill:none; stroke:${TOKENS.selectBox}; stroke-width:2; pointer-events:none; }
 .node.selected .select-box { display:block; }
 `;

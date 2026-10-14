@@ -1408,6 +1408,7 @@ test('H15.23: the colours the page draws come from the registry, generated from 
 	const t = await freshTab();
 	try {
 		const { TOKENS, CHROME } = await import('../kernel/theme.mjs');
+		const { NETWORK_TOKENS } = await import('../network/appearance.mjs');
 		const rgb = (hex) => { const h = hex.replace('#', ''); const f = h.length === 3 ? h.split('').map((c) => c + c).join('') : h; return `rgb(${parseInt(f.slice(0, 2), 16)}, ${parseInt(f.slice(2, 4), 16)}, ${parseInt(f.slice(4, 6), 16)})`; };
 		const got = JSON.parse(await t.eval(`JSON.stringify({
 			token: getComputedStyle(document.documentElement).getPropertyValue('--tok-link').trim(),
@@ -1415,8 +1416,8 @@ test('H15.23: the colours the page draws come from the registry, generated from 
 			label: getComputedStyle(document.querySelector('#nodes .label')).fill,
 			page: getComputedStyle(document.body).backgroundColor,
 		})`));
-		assert.equal(got.token, TOKENS.link, 'app/tokens.css is loaded and carries the table');
-		assert.equal(got.link, rgb(TOKENS.link), 'a link draws the link token');
+		assert.equal(got.token, NETWORK_TOKENS.link, 'app/tokens.css is loaded and carries the table');
+		assert.equal(got.link, rgb(NETWORK_TOKENS.link), 'a link draws the link token');
 		assert.equal(got.label, rgb(TOKENS.label), 'a label draws the label token');
 		assert.equal(got.page, rgb(CHROME.page), 'the page draws the page token');
 	} finally { await t.close(); }

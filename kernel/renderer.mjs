@@ -25,26 +25,6 @@ node showed its socket always, in the editor and in every exported SVG.
 was already shared -- `selBox`, `contentLayout`, `spanExtent` are all imported by the client. What
 was duplicated is which element exists and when, which is structure rather than a formula.
 */
-export const isPanel = (e) => !!(e && e.content && e.content.length);
-
-/*
-H15.18 -- how heavily a node's frame is drawn, DERIVED from what it is.
-
-A text panel is a caption on the drawing rather than a component in it, so it carries a lighter
-frame. Derived rather than styled by CSS because the EXPORT must match the canvas: a stylesheet rule
-would thin the panel on screen and leave every saved diagram heavy, which is the disagreement class
-this tree keeps paying for.
-
-Units are the SVG user space the rest of the spec uses, not pixels -- so the weight stays
-proportional to the drawing under zoom.
-*/
-export const frameWidth = (e, V = STD) => (isPanel(e) ? V.panelW : V.frameW);
-
-// a panel's corner follows its shape ('s' swaps it): circle -> the frame extent reads as a pill,
-// square -> the sharp frame radius. A plain node always takes the sharp radius.
-export const frameRadius = (e, L = L_STD) =>
-	(isPanel(e) && (e.frame || e.shape) !== 'square') ? L.frame.ext : L.frame.r;
-
 // sockets are an EDITING AID: absent from a clean export, present when the caller asks. The client
 // asks by being in edit mode, the exporter by passing `sockets` -- one rule, two ways of saying yes.
 export const showsSockets = (opts = {}) => !!opts.sockets;
@@ -74,44 +54,6 @@ contiguous-window duplicate scan finds nothing here and only a set comparison su
 Pure: no DOM, no strings — callers emit. A single-row region returns one line centred on the box, so
 no caller re-implements the `rows <= 1` branch either.
 */
-export function contentLayout(r, V = STD, L = L_STD) {
-	const P = V.pitch, SE = L.socket.ext;
-	const [oc, orow] = r.at || [0, 0], cols = r.cols || 1, rows = r.rows || 1;
-	const x0 = oc * P - SE, y0 = orow * P - SE, w = (cols - 1) * P + 2 * SE, h = (rows - 1) * P + 2 * SE;  // socket-grid union
-	const cx = x0 + w / 2, cy = y0 + h / 2;
-	const al = r.align || 'center', pad = 8;
-	const tx = al === 'left' ? x0 + pad : al === 'right' ? x0 + w - pad : x0 + w / 2;
-	const anchor = al === 'left' ? 'start' : al === 'right' ? 'end' : 'middle';
-	const fill = hexColor(r.fill) || TOKENS.contentText;
-	const value = r.value == null ? '' : String(r.value);
-
-	/*
-	H15.18 -- the size is PER REGION, defaulting to the ruled one, and the WRAPPING follows it.
-
-	The advance-per-character and the line height were literals tuned for size 15. They are ratios
-	of the size now, so a smaller caption wraps at more characters and stacks more tightly rather
-	than wrapping as though it were still 15 -- which would leave short lines and wide gaps.
-
-	0.6 is the advance of ui-monospace as a fraction of its size; 1.2 is ordinary leading.
-	*/
-	const size = typeof r.size === 'number' ? r.size : V.fontSize;
-
-	let lines;
-	if (rows <= 1) lines = [{ text: value, y: cy }];
-	else {
-		const cpl = Math.max(1, Math.floor((w - 2 * pad) / (size * 0.6))), lh = size * 1.2;
-		const wrapped = [];
-		let curr = '';
-		for (const wd of value.split(/\s+/)) {
-			const t = curr ? curr + ' ' + wd : wd;
-			if (t.length > cpl && curr) { wrapped.push(curr); curr = wd; } else curr = t;
-		}
-		if (curr) wrapped.push(curr);
-		const yTop = cy - (wrapped.length - 1) * lh / 2;
-		lines = wrapped.map((text, i) => ({ text, y: yTop + i * lh }));
-	}
-	return { x0, y0, w, h, cx, cy, cols, rows, tx, anchor, fill, lines, size };
-}
 // glyph defs + the variant's frame defs (shared once per page)
 /*
 H15.6 -- the arrowhead, defined once for both renderers.
@@ -132,7 +74,7 @@ the selection colour. That is a small, visible wrongness rather than a total one
 trade until `context-stroke` is available.
 */
 function arrowDefs() {
-	const head = `<path d="M0 0 L6 3 L0 6 z" fill="${TOKENS.link}"/>`;
+	const head = `<path d="M0 0 L6 3 L0 6 z" fill="${TOKENS.selectBox}"/>`;
 	return `<marker id="flow-end" viewBox="0 0 6 6" refX="5.4" refY="3" markerWidth="5" markerHeight="5" markerUnits="strokeWidth" orient="auto">${head}</marker>`
 		+ `<marker id="flow-start" viewBox="0 0 6 6" refX="5.4" refY="3" markerWidth="5" markerHeight="5" markerUnits="strokeWidth" orient="auto-start-reverse">${head}</marker>`;
 }

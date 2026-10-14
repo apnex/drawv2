@@ -124,7 +124,7 @@ test('the retired planner hooks, and the retired network option, are refused by 
 		assert.throws(() => plan(m, request.ops, { [old]: () => null }), /unknown option/);
 	}
 	const { m, log } = board();
-	assert.throws(() => commit(m, log, request, 'lab', 'lab', { network: createNetwork() }), /retired.*links: network\.links/);
+	assert.throws(() => commit(m, log, request, 'lab', 'lab', { network: createNetwork() }), /retired/);
 	assert.throws(() => plan(m, request.ops, { network: createNetwork() }), /retired/);
 });
 

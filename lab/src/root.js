@@ -127,7 +127,7 @@ history.onCommit((request) => {
 		: request.verb === 'redo' ? redo(authority, log, { kinds })
 		// the same network: pipes reference anchors, only links and hand pipes keep one, and a link that loses a pin with no
 		// other way goes whole (2026-09-29) -- all judged over the pipes that survive the edit
-		: commit(authority, log, request, 'lab', 'lab', { links: network.links, kinds });
+		: commit(authority, log, request, 'lab', 'lab', { kinds });
 	/*
 	THE ANSWER, RECONCILED BY THE PRODUCT'S OWN RULE -- pipes included, since they are ops in the edit (N-c), so a link is
 	drawn along its pipes from its first frame (network/session.mjs `answered`).
@@ -196,7 +196,7 @@ if (wanted) {
 	else {
 		// the board's pipes ride in its own commit (N-c), under the network's tenant like every edit -- the one tenant since S-b
 		const answer = net.seed(board.pipes, (pipeOps) => {
-			const a = commit(authority, log, { ops: [...board.ops, ...pipeOps], label: `seed ${wanted}` }, 'lab', 'lab', { links: network.links, kinds });
+			const a = commit(authority, log, { ops: [...board.ops, ...pipeOps], label: `seed ${wanted}` }, 'lab', 'lab', { kinds });
 			if (a.ok) applyOps(model, a.change?.ops ?? []);
 			return a;
 		});

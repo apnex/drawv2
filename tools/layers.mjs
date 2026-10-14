@@ -135,7 +135,7 @@ export const PARTS = {
 		modules: ['server/anchor.mjs'], consumes: ['lattice', 'document', 'relations', 'devices'] },
 	store: { duty: 'Keep documents durable', kind: 'door', by: ['SD2', 'WD6'],
 		modules: ['server/store.js', 'server/files.mjs', 'server/docfile.mjs', 'server/seed.js'],
-		consumes: ['document', 'kind-contract', 'lattice', 'planner', 'product', 'relations', 'access', 'placement'], carried: { network: 'B332' } },
+		consumes: ['document', 'kind-contract', 'lattice', 'planner', 'product', 'relations', 'access', 'placement', 'network'] },
 	hub: { duty: 'Carry each change to the tabs watching a document', kind: 'door', by: ['SD2'],
 		modules: ['server/hub.js', 'server/protocol.js', 'server/locks.js', 'server/sessionlog.mjs'], consumes: ['store', 'planner', 'document', 'kind-contract', 'access'] },
 	rest: { duty: 'Answer agents over HTTP', kind: 'door', by: ['SD1', 'Q1'],
@@ -145,7 +145,7 @@ export const PARTS = {
 		modules: ['cli/'], consumes: [] },
 	export: { duty: 'Render a document without a browser', kind: 'door', by: ['H2'],
 		modules: ['kernel/adapt.mjs', 'kernel/engine.mjs', 'kernel/svg-scene.mjs', 'server/svg.mjs'],
-		consumes: ['lattice', 'document', 'kind-contract', 'primitives', 'colours', 'product', 'renderer'], beyondKind: { renderer: 'H2' }, carried: { network: 'B330', devices: 'B330' } },
+		consumes: ['lattice', 'document', 'kind-contract', 'primitives', 'colours', 'product', 'renderer'], beyondKind: { renderer: 'H2' }, carried: { network: 'B330', devices: 'B330', zones: 'B330', groups: 'B330' } },
 };
 
 /*
@@ -203,7 +203,7 @@ export const ALLOWED = {
 	canvas: ['core', 'devices', 'network', 'layouts', 'zones', 'groups', 'planner', 'canvas'],
 	chrome: ['core', 'devices', 'network', 'layouts', 'zones', 'groups', 'planner', 'product', 'canvas', 'simulation', 'export', 'chrome'],
 	simulation: ['core', 'devices', 'network', 'simulation'],
-	export: ['core', 'devices', 'network', 'export'],
+	export: ['core', 'devices', 'network', 'zones', 'groups', 'export'],
 	'server-only': ['core', 'devices', 'network', 'layouts', 'zones', 'groups', 'planner', 'product', 'simulation', 'export', 'server-only', 'serve'],
 	serve: [],   // K9: it imports nothing but Node's own modules
 	// O-d (H19.22): the CLI's reader takes the product's composition (cli/verbs.mjs `modelOf`) from product/, so the interim

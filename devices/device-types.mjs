@@ -15,7 +15,8 @@ types and their map letters rather than keeping a copy (`U4-2`).
 */
 
 import { STD, L_STD } from '../kernel/spec.mjs';
-import { KERNEL_CSS } from '../kernel/theme.mjs';
+import { KERNEL_CSS, TOKENS } from '../kernel/theme.mjs';
+import { hexColor } from '../kernel/renderer.mjs';
 
 export const DEVICE_TYPES = Object.freeze({
 	host: Object.freeze({
@@ -147,3 +148,38 @@ ${GLYPH_DEFS}
 </svg>
 `;
 }
+
+// B338 (H21.8, N1; 2026-09-22): a device's panel predicate, frame weight, frame corner radius and content-region layout belong
+// to the devices plugin's appearance family, not the core's primitives
+export const isPanel = (e) => !!(e && e.content && e.content.length);
+export const frameWidth = (e, V = STD) => (isPanel(e) ? V.panelW : V.frameW);
+export const frameRadius = (e, L = L_STD) => (isPanel(e) && (e.frame || e.shape) !== 'square') ? L.frame.ext : L.frame.r;
+
+export function contentLayout(r, V = STD, L = L_STD) {
+	const P = V.pitch, SE = L.socket.ext;
+	const [oc, orow] = r.at || [0, 0], cols = r.cols || 1, rows = r.rows || 1;
+	const x0 = oc * P - SE, y0 = orow * P - SE, w = (cols - 1) * P + 2 * SE, h = (rows - 1) * P + 2 * SE;
+	const cx = x0 + w / 2, cy = y0 + h / 2;
+	const al = r.align || 'center', pad = 8;
+	const tx = al === 'left' ? x0 + pad : al === 'right' ? x0 + w - pad : x0 + w / 2;
+	const anchor = al === 'left' ? 'start' : al === 'right' ? 'end' : 'middle';
+	const fill = hexColor(r.fill) || TOKENS.contentText;
+	const value = r.value == null ? '' : String(r.value);
+	const size = typeof r.size === 'number' ? r.size : V.fontSize;
+	let lines;
+	if (rows <= 1) lines = [{ text: value, y: cy }];
+	else {
+		const cpl = Math.max(1, Math.floor((w - 2 * pad) / (size * 0.6))), lh = size * 1.2;
+		const wrapped = [];
+		let curr = '';
+		for (const wd of value.split(/\s+/)) {
+			const t = curr ? curr + ' ' + wd : wd;
+			if (t.length > cpl && curr) { wrapped.push(curr); curr = wd; } else curr = t;
+		}
+		if (curr) wrapped.push(curr);
+		const yTop = cy - (wrapped.length - 1) * lh / 2;
+		lines = wrapped.map((text, i) => ({ text, y: yTop + i * lh }));
+	}
+	return { x0, y0, w, h, cx, cy, cols, rows, tx, anchor, fill, lines, size };
+}
+

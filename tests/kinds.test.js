@@ -110,9 +110,8 @@ test('N-a: the product\'s planner refuses the plugin kind, and a model and plann
 		/plan: the model is composed with kinds layout, node, zone, group, probe and the planner with layout, node, zone, group/);   // WD-b1
 	assert.throws(() => plan(product, [{ op: 'put', kind: 'node', entity: NODE }], { kinds: WITH_PROBE, links: BARE }), /plan: the model is composed with kinds/);
 	assert.throws(() => plan(product, [{ op: 'put', kind: 'node', entity: NODE }], { kinds: CORE_KINDS, links: BARE }), /kinds is a composition whose every row carries its checks/);
-	// S-b: and no plan runs without a link tenant -- none is a default
-	assert.throws(() => plan(product, [{ op: 'put', kind: 'node', entity: NODE }], { kinds: PRODUCT_KINDS }), /plan: no link tenant/);
-	assert.throws(() => commit(product, new Log(), { ops: [{ op: 'put', kind: 'node', entity: NODE }] }, 'x', 'x', { kinds: PRODUCT_KINDS }), /commit: no link tenant/);
+	// RESTATED at H21.8 (B332, SD11b): a world without connections (PRODUCT_KINDS) plans without a link tenant, and the network's link tenant rides LINK_ROW.tenant
+	assert.equal(plan(product, [{ op: 'put', kind: 'node', entity: NODE }], { kinds: PRODUCT_KINDS }).ok, true);
 	// S-f: nor without its kinds -- none is a default either; plan, commit, undo and redo alike
 	const { undo, redo } = await import('../planner/txn.mjs');
 	const log = new Log();

@@ -233,7 +233,7 @@ be composed with the same kinds -- a model holding a kind the planner cannot val
 plugin, refused by name rather than met as an `unknown kind` later.
 */
 function composition({ links = null, place = null, now = wallClock, extensions = [BEATS], kinds = null, network, ...rest } = {}, who) {
-	if (network !== undefined) throw new Error(`${who}: the \`network\` option is retired -- the network plugs in as its link tenant, { links: network.links } (PL-3)`);
+	if (network !== undefined) throw new Error(`${who}: the \`network\` option is retired -- a plugin's tenant rides its kind row (PL-3, B332)`);
 	const stray = Object.keys(rest);
 	if (stray.length) throw new Error(`${who}: unknown option ${stray.join(', ')} -- a composition passes { links, place, now, extensions, kinds } (PL-4, N-a)`);
 	if (!kinds || !Array.isArray(kinds.list) || !kinds.checked) throw new Error(`${who}: kinds is a composition whose every row carries its checks -- productKinds(...NETWORK_ROWS), which production composes (N-a; required since S-f)`);
@@ -248,10 +248,9 @@ function composition({ links = null, place = null, now = wallClock, extensions =
 	tenant was deleted (SERVER-COMPOSES-NETWORK.md). So no path plans links by a rule nobody chose. Undo and redo plan nothing
 	-- they replay stored inverses -- and take none.
 	*/
-	const plans = who === 'plan' || who === 'commit';
-	if (plans && links === null) throw new Error(`${who}: no link tenant -- a composition passes the network's, { links: network.links } (S-b)`);
-	// O-a (H19.18): the link tenant passed, then the tenants the composition's rows bring -- the group's -- and none of the planner's own
-	for (const tenant of [...(links ? [links] : []), ...kinds.tenants]) {
+	// O-a (H19.18), B332 (H21.8): every tenant rides its kind's row (`kinds.tenants`); a test passing `links` overrides the rank-0 link tenant
+	const activeTenants = links ? [links, ...kinds.tenants.filter((t) => (t.rank ?? 1) !== 0)] : kinds.tenants;
+	for (const tenant of activeTenants) {
 		if (!tenant || typeof tenant.owner !== 'string' || !Array.isArray(tenant.reactions)) throw new Error(`${who}: a tenant is { owner, reactions } (PL-3)`);
 		/*
 		F-e (H18.7) -- A TENANT'S REFUSALS: rules the tenant holds on the result, as data like its reactions -- an id, a

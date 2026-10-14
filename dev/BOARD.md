@@ -1378,7 +1378,7 @@ AMENDED 2026-10-10: closed without its middle clause -- the director parked path
 
 ---
 
-## H21 -- unification: a type is a composition, the target written down, and records that stay true - `WIP`
+## H21 -- unification: a type is a composition, the target written down, and records that stay true - `DONE`
 
 Opened 2026-10-11 by the director: "continue - let's make this unification. I'd like to re-audit the approach and any surrounding activity (compound learning) such that we are actually reaching for hardened, target state modular sovereign decoupling and perfect unification".\
 The re-audit is `dev/design/unification/UNIFICATION-AUDIT.md`: the decoupling is built and the unification is not; the measurement of done reached less than the target; the records drifted thirty-one times in six weeks and no scanner caught one. Its section 7 proposes the approach, stages U0 to U5, for the director to rule.
@@ -1394,7 +1394,7 @@ The re-audit is `dev/design/unification/UNIFICATION-AUDIT.md`: the decoupling is
 | H21.3 | U4, a type is a composition (B282's pack half): each device type declared once, every plugin reading its own part, a type declaring the roles it permits | **B282** | S3 | `DONE` |
 | H21.8a | U5 slice 1: a device's junction mark composed over its frame (B331), occupancy and reference incidence as the core's generic capability (B341), `announceActivity` in the hub (B342), and the transit-notice FIFO queue (B348) | **B331**, **B341**, **B342**, **B348** | S3 | `DONE` |
 | H21.8b | U5 slice 2: anchor roles, combat and movers served over REST so the CLI imports no product module (B339), and cross-plugin reads brokered through the composition (B340) | **B339**, **B340** | S3 | `DONE` |
-| H21.8 | U5, the rest of the target: the network's privileged slots made a generic seam (B332), and the core's colour roles and device primitives to their owners (B338) (`name` ruled as N5a) | **B332**, **B338** | S3 | `WIP` |
+| H21.8 | U5, the rest of the target: the network's privileged slots made a generic seam (B332), and the core's colour roles and device primitives to their owners (B338) (`name` ruled as N5a) | **B332**, **B338** | S3 | `DONE` |
 | H21.9 | The target aligned with mission-kit: each part compared with mission-kit's registered and proposed components, the target stating the alignment, the code not migrated (H21.9) | feature | S3 | `DONE` |
 
 AMENDED 2026-10-11: H21.2 ruled -- the director approved the audit's order, U0 to U5 ("continue"; `dev/DECISIONS.md` H21).
@@ -1404,6 +1404,7 @@ AMENDED 2026-10-11: H21.5's design approved (`dev/DECISIONS.md` H21.5, the first
 AMENDED 2026-10-11: H21.5 cites `feature`, not B88 -- B88 is held again under the trigger evaluator rather than closed (`dev/design/unification/RECORD-GUARDS.md` section 3.5), and a `DONE` item may not cite an open row.
 AMENDED 2026-10-11: H21.5 (U1) done -- the guards built as designed: a held row's trigger read one way, its decidable half evaluated, fired triggers printed every run and blocking a milestone's close (`tools/scan-triggers.mjs`, 8 of 34 held rows with a WHEN); the Held trigger column generated from the rows; the decoupling exceptions structured, their citations resolved (`tools/exceptions.mjs`); design indexes complete, status titles bannered, the Standing column typed, rulings after the marker structured (`tools/scan-designs.mjs`); the practices written in `dev/README.md`; five deferrals held as B333 to B337; B88 held again under the evaluator.\
 Next H21.6 (U2), the target architecture.
+AMENDED 2026-10-14: H21.6 (U2), H21.9, H21.7 (U3), H21.3 (U4), H21.8a, H21.8b and H21.8 (U5) done -- the target architecture ratified (`H21.6`), aligned with mission-kit (`A-0`, `A-5`), the anchor's name settled (`N5a`), the measurement widened across all 16 product layers (`H21.7`), each device type declared once across appearance, routing and behaviour (`H21.3`, `U4-1`, `SD5`, `U4-2`, `U4-3`), and U5's eight rows closed (`B331`, `B332`, `B338`, `B339`, `B340`, `B341`, `B342`, `B348`). Milestone H21 complete.
 
 **Exit:** the records true and guarded against each drift class; the target architecture ratified and the current state derived from the code; every product layer measured; a device type declared once; the rest of the target built or ruled.
 
@@ -1441,7 +1442,7 @@ Scored so the comparison is a judgement, not an omission.\
 | **B345** | S4 | OD-2: clients reaching the server over agp | OD-1 is ruled, entity-api is certified, and its follows are unparked (zorg's D15). |
 | **B346** | S4 | OD-3: mission-kit's components reaching the page and the installed CLI | a ruling puts a mission-kit component in the page, the lab or the CLI. |
 | **B347** | S4 | The towerless-combat timing test failed once under machine load | it fails a second time, or B333's flake ledger is built. |
-| **B282** | S3 | Anchors along a wide device, and which one a link ends at (WD1; the pack half closed at H21.3) | a wide device needs links at more than one point (WD1), or H21.8 (U5) closes the remaining plugin-import divergences. |
+| **B282** | S3 | Anchors along a wide device, and which one a link ends at (WD1; the pack half closed at H21.3) | a wide device needs links at more than one point (WD1). |
 | **B325** | S4 | A diagram varies its grids -- its own extent, then its own pitch and offset (WD7) | the infinite canvas and scrolling are designed (B289's trigger), or a diagram needs a grid unlike the others. |
 | **B79** | S3 | The connection walk's apparatus is outside the repository; the false record is corrected, the rest held with B127 | B127 revives, or another decision is taken on the walk's findings. |
 | **B108** | S3 | Detecting a test wired to a copy of its subject: undecidable as stated; mutation is the technique that works | mutation testing is automated in the gate, or a test wired to a copy of its subject is found again. |

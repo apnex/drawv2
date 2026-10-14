@@ -11,7 +11,11 @@ The elements and every attribute are what the renderer built: the K8 DOM corpus 
 import { GROUP_KEYS } from './group-keys.mjs';
 import { GROUP_FOLLOWER } from './group-clone.mjs';
 import { L_STD } from '../kernel/spec.mjs';
-import { TOKENS } from '../kernel/theme.mjs';
+import { resolveRoles } from '../kernel/palette.mjs';
+
+// B338 (H21.8, N1): the groups plugin's colour role over the core palette
+export const GROUP_COLOURS = { group: 'deepPurpleA100' };
+export const GROUP_TOKENS = resolveRoles(GROUP_COLOURS);
 import { groupHull } from '../kernel/geometry.mjs';
 
 // the hull: the box around its members' span-aware footprints, padded to the group's extent -- null when no member resolves,
@@ -32,7 +36,7 @@ const GROUP_PAINTER = {
 		const box = groupBox(entity, model, sizeOf);
 		if (!box) return null;   // no resolvable members, no hull
 		const g = el('g', { id: entity.id, class: 'group' }, layer);
-		el('rect', { class: 'group-hull', rx: L_STD.group.r, fill: 'none', stroke: TOKENS.group, 'stroke-width': 1.1 }, g);
+		el('rect', { class: 'group-hull', rx: L_STD.group.r, fill: 'none', stroke: GROUP_TOKENS.group, 'stroke-width': 1.1 }, g);
 		applyLook(g, groupLook(box), GROUP_PARTS);
 		return g;
 	},

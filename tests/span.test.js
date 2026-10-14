@@ -4,7 +4,8 @@ import fs from 'node:fs';
 import { Model, heldLayouts } from './fixtures/composed.mjs';   // the network's kinds, the link among them (S-e)
 import { attachRelations } from '../engine/store.mjs';
 import { resolve } from '../kernel/engine.mjs';
-import { selBox, isPanel, frameRadius, showsSockets } from '../kernel/renderer.mjs';
+import { selBox, showsSockets } from '../kernel/renderer.mjs';
+import { isPanel, frameRadius } from '../devices/device-types.mjs';
 import { renderElement, renderContentRegion } from '../kernel/svg-scene.mjs';
 import { bboxOf, cellOf } from '../kernel/geometry.mjs';
 import { STD, L_STD } from '../kernel/spec.mjs';
@@ -1231,7 +1232,7 @@ Units are the SVG user space the whole spec uses -- the same unit as `linkW: 6` 
 not pixels or points. A stroke stays proportional to the drawing under zoom, which is correct.
 */
 test('H15.18: a text panel has a 1-unit frame and 13-unit text, from one source', async () => {
-	const { frameWidth } = await import('../kernel/renderer.mjs');
+	const { frameWidth } = await import('../devices/device-types.mjs');
 	const { STD } = await import('../kernel/spec.mjs');
 	const { render } = await import('../server/svg.mjs');
 	const { docToSchema } = await import('../kernel/adapt.mjs');

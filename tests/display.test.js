@@ -79,7 +79,7 @@ The invariant worth pinning is not "the function exists" — it is that both ren
 the SAME coordinates. That is what the copy silently threatened and what a shared owner guarantees.
 */
 
-import { contentLayout } from '../kernel/renderer.mjs';
+import { contentLayout } from '../devices/device-types.mjs';
 import { renderContentRegion } from '../kernel/svg-scene.mjs';
 import { makeNode, makeWaypoint } from '../devices/make-node.mjs';   // O-e1: the devices plugin's factories
 

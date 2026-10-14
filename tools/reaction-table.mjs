@@ -33,7 +33,7 @@ const table = (head, rows) => [`| ${head.join(' | ')} |`, `|${head.map(() => '--
 const listensTo = (trigger) => [].concat(trigger).map((c) => [c.deleted && `${c.deleted.join(', ')} deleted`, c.created && `${c.created.join(', ')} created`,
 	c.changed && `${c.changed.kind} ${c.changed.fields.join(', ')} changed`].filter(Boolean).join('; ')).join('; or ');
 // and after the phases, each tenant's refusals, on the result (F-e)
-const tenantsOf = (links) => [links, ...productKinds(...NETWORK_ROWS).tenants];   // as the planner runs them (O-a)
+const tenantsOf = () => productKinds(...NETWORK_ROWS).tenants;   // as the planner runs them (O-a, B332)
 const composition = (links) => [
 	...PHASES.flatMap((phase) => tenantsOf(links).flatMap((t) => t.reactions.filter((r) => r.phase === phase).map((r) => [phase, `\`${r.id}\``, t.owner, listensTo(r.trigger), r.doc]))),
 	...tenantsOf(links).flatMap((t) => (t.refusals ?? []).map((r) => ['refuse', `\`${r.id}\``, t.owner, listensTo(r.trigger), r.doc])),

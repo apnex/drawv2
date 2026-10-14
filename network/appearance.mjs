@@ -11,13 +11,21 @@ V-a (H18.25; PROMOTION.md P5, PU22): moved from `network/appearance.mjs` into th
 which this module now holds too (section at the end) -- one module for how everything the network draws looks.
 */
 import { TOKENS } from '../kernel/theme.mjs';   // the product's roles it draws beside its own (the canvas panel fill)
-import { colour } from '../kernel/palette.mjs';
+import { colour, resolveRoles } from '../kernel/palette.mjs';
 
 /*
 THE NETWORK PLUGIN'S COLOUR ROLES -- which palette colour each thing it draws uses (ruled 2026-10-01: one core palette,
 kernel/palette.mjs; a plugin declares its roles). Here, beside its appearance; moved into `network/` with the rest of the
 plugin at V-a (dev/PRODUCTION-UPGRADE.md PU22). tools/colour-tokens.mjs writes them to network/tokens.css as `--tok-network-<role>`.
 */
+// B338 (H21.8, N1): the network plugin's canvas roles over the core palette (link, junction, waypoint)
+export const NETWORK_ROLE_COLOURS = {
+	link: 'lightBlue300',
+	junction: 'lightBlue300',
+	waypoint: 'lightBlue300',
+};
+export const NETWORK_TOKENS = resolveRoles(NETWORK_ROLE_COLOURS);
+
 export const NETWORK_COLOURS = {
 	pipe: 'blueGrey400',         // the layer beneath the links (pipeAttributes, below)
 	transitRing: 'red200',       // an anchor whose transit the author turned off (TRANSIT.md section 12; light red, ruled 2026-10-02)

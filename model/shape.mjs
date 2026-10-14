@@ -233,7 +233,7 @@ export function composeKinds(given, who = 'a composition') {
 		// the entities every document holds, by kind (WD-b1: the layouts plugin's two grids)
 		always: Object.fromEntries(rows.filter((r) => r.always).map((r) => [r.kind, r.always])),
 		// the tenants the rows bring, in the composition's order -- what the planner runs after the link tenant (O-a)
-		tenants: rows.filter((r) => r.tenant).map((r) => r.tenant),
+		tenants: rows.filter((r) => r.tenant).map((r) => r.tenant).sort((a, b) => (a.rank ?? 1) - (b.rank ?? 1)),
 		// who brought a field another owner's kind carries (S-a): `kind.field` -> owner
 		contributed: (kind, field) => contributedBy.get(`${kind}.${field}`) ?? null,
 	});
