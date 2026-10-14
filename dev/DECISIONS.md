@@ -1958,3 +1958,12 @@ Director: "Yes, continue"\
 Shown: docs/ARCHITECTURE-TARGET.md@96d494d\
 Affects: docs/ARCHITECTURE-TARGET.md\
 Recorder: asked whether the anchor keeps its name -- the conflict between B187 and N5 (names a service each kind opts into, the five built-in kinds named) and O4 with the 2026-09-22 ontology (the anchor is identity and one cell; name not universal) -- the director answered "Yes, continue" (the proposer's recommendation). The anchor kind opts into the naming service (N5), so every anchor, device or bare waypoint, has a name agents address it by, and nothing stored changes; the question leaves the target's section 9.1.
+
+**U4-1 -- each device type is declared once in the devices plugin, naming its pack in each family, and handed to the other plugins at composition -- 2026-10-14 (H21.3, B282).**\
+Director: "Approved for Option A. Once you complete this step - let's perform a full mission-kit re-ingestion and explain re-interpretation to ensure we are in alignment"\
+Shown: docs/ARCHITECTURE-TARGET.md@3195e34\
+Affects: docs/ARCHITECTURE-TARGET.md\
+Recorder: asked whether a device type is one declaration across the pack families and where it lives -- Option A (one declaration per type in the devices plugin, handed in at composition; recommended), Option B (in `product/`), or Option C (each family keeping its own table keyed by type) -- the director approved Option A. Each plugin still defines its own family's packs; the devices plugin holds the one type table naming each type's pack per family (`2026-09-22`, `O4`), and `product/` hands each plugin its slice at composition (`O1`), so adding a type is one declaration in one file and no plugin imports another.
+
+AMENDED 2026-10-14 by U4-1: H17-D6 ("the one device-type table is imported by its users") is reversed -- the other plugins receive their slice of the type table at composition instead of importing it; SD11b and the 2026-10-07 transit-configuration ruling are amended -- the network still defines its routing packs, while which type takes which routing pack is declared in the devices plugin's type table.
+
