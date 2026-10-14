@@ -1391,7 +1391,7 @@ The re-audit is `dev/design/unification/UNIFICATION-AUDIT.md`: the decoupling is
 | H21.5 | U1, guards against the drift classes: triggers a check evaluates or a cadence re-reads, reasons citing closed rows failed, the director's words quoted and agent prose marked, status on the board alone, infrastructure claims probed, a flake ledger | feature | S3 | `DONE` |
 | H21.6 | U2, the target architecture: the whole system at the target instant, present tense, for the director to ratify; the current instant derived from the code | feature | S3 | `DONE` |
 | H21.7 | U3, the measurement widened: the name ratchets over every product layer, every quoting form, cross-plugin reads and device type names | feature | S3 | `DONE` |
-| H21.3 | U4, a type is a composition (B282's pack half): each device type declared once, every plugin reading its own part, a type declaring the roles it permits | **B282** | S3 | `WIP` |
+| H21.3 | U4, a type is a composition (B282's pack half): each device type declared once, every plugin reading its own part, a type declaring the roles it permits | **B282** | S3 | `DONE` |
 | H21.8 | U5, the rest of the target: the network's privileged slots made a generic seam (B332), a device's junction drawn (B331), roles served to REST and the CLI, the core's colour roles to their owners (`name` ruled as N5a) | **B331**, **B332**, **B338**, **B339**, **B340**, **B341**, **B342**, **B348** | S3 | `TODO` |
 | H21.9 | The target aligned with mission-kit: each part compared with mission-kit's registered and proposed components, the target stating the alignment, the code not migrated (H21.9) | feature | S3 | `DONE` |
 
@@ -1439,6 +1439,7 @@ Scored so the comparison is a judgement, not an omission.\
 | **B345** | S4 | OD-2: clients reaching the server over agp | OD-1 is ruled, entity-api is certified, and its follows are unparked (zorg's D15). |
 | **B346** | S4 | OD-3: mission-kit's components reaching the page and the installed CLI | a ruling puts a mission-kit component in the page, the lab or the CLI. |
 | **B347** | S4 | The towerless-combat timing test failed once under machine load | it fails a second time, or B333's flake ledger is built. |
+| **B282** | S3 | Anchors along a wide device, and which one a link ends at (WD1; the pack half closed at H21.3) | a wide device needs links at more than one point (WD1), or H21.8 (U5) closes the remaining plugin-import divergences. |
 | **B325** | S4 | A diagram varies its grids -- its own extent, then its own pitch and offset (WD7) | the infinite canvas and scrolling are designed (B289's trigger), or a diagram needs a grid unlike the others. |
 | **B79** | S3 | The connection walk's apparatus is outside the repository; the false record is corrected, the rest held with B127 | B127 revives, or another decision is taken on the walk's findings. |
 | **B108** | S3 | Detecting a test wired to a copy of its subject: undecidable as stated; mutation is the technique that works | mutation testing is automated in the gate, or a test wired to a copy of its subject is found again. |

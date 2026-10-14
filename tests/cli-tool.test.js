@@ -1490,14 +1490,21 @@ an outside import breaks a real installation. So the list is declared twice on p
 the check that keeps the two honest. Without it, adding a glyph would leave `draw add` refusing a
 type the editor happily draws.
 */
-test('B167: the CLI\'s node types are exactly the kernel\'s renderable glyphs', async () => {
-	const { GLYPH_BB } = await import('../kernel/theme.mjs');
+// RESTATED at H21.3 (U4-2, B282): the CLI holds no NODE_TYPES, GLYPH or LEGEND copy of its own; it asks GET /api/v1/types
+// (`draw types`), which serves the devices plugin's one type declaration (`devices/device-types.mjs`)
+test('B167 / U4-2: the CLI holds no type copy of its own and reads the declared device types from the server', async () => {
+	const { DEVICE_TYPES } = await import('../devices/device-types.mjs');
 	const src = fs.readFileSync(path.join(root, 'cli/verbs.mjs'), 'utf8');
-	const decl = src.match(/const NODE_TYPES = \[([^\]]*)\]/);
-	assert.ok(decl, 'the declaration moved -- this assertion needs re-pointing');
-	const cli = decl[1].match(/'([a-z0-9-]+)'/g).map((x) => x.slice(1, -1));
-	assert.deepEqual([...cli].sort(), Object.keys(GLYPH_BB).sort(),
-		'cli/verbs.mjs and kernel/theme.mjs disagree about what can be drawn');
+	assert.doesNotMatch(src, /const NODE_TYPES|const GLYPH\b|const LEGEND\b/, 'the three CLI per-type tables are retired (U4-2)');
+	await boot();
+	try {
+		const res = JSON.parse(await run('types', '--json'));
+		assert.deepEqual(res.types.map((t) => t.name), Object.keys(DEVICE_TYPES), 'GET /api/v1/types serves the declared device types in palette order');
+		assert.deepEqual(res.types.map((t) => t.map), Object.values(DEVICE_TYPES).map((t) => t.map), 'and each type\'s map letter from its declaration');
+		const txt = await run('types');
+		assert.match(txt, /TYPE\s+MAP\s+ROUTING\s+BEHAVIOUR/);
+		assert.match(txt, /loadbalancer\s+l\s+endpoint\s+tower/);
+	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
 });
 
 /*

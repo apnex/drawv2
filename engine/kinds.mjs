@@ -24,6 +24,8 @@ disagree about whether a creep was in range -- which is the disagreement that wo
 // the simulation's fixed timestep. Absolute epoch ticks, so there is no origin for peers to agree
 // on: any peer can evaluate any tick from an instant alone. 100ms reads as responsive, and folding
 // a minute of history is 600 steps rather than 60,000.
+import { TYPE_BEHAVIOUR } from '../devices/device-types.mjs';
+
 export const TICK_MS = 100;
 export const tickAt = (t) => Math.floor(t / TICK_MS);
 
@@ -46,9 +48,22 @@ connects to its target instantaneously, so there is no projectile in flight, no 
 lead to predict. A ballistic shot would need its own position derived every tick and would raise the
 question of what happens when its target dies mid-flight. The laser deletes that entire problem.
 */
-export const TOWERS = {
-	loadbalancer: { range: 3, beam: 10, cooldown: 10, damage: 1 },
-};
+// U4-3 (H21.3, B282): the simulation's run-mode behaviour pack family; which device type takes which pack is declared in
+// `devices/device-types.mjs` and handed to `composeBehaviour` at composition (`U4-1`)
+const BEHAVIOUR_PACKS = Object.freeze({
+	tower: Object.freeze({ range: 3, beam: 10, cooldown: 10, damage: 1 }),
+});
+export const TOWERS = {};
+export function composeBehaviour(typeBehaviour = TYPE_BEHAVIOUR) {
+	for (const k of Object.keys(TOWERS)) delete TOWERS[k];
+	for (const [type, pack] of Object.entries(typeBehaviour)) {
+		if (!BEHAVIOUR_PACKS[pack]) throw new Error(`composeBehaviour: ${type} names behaviour pack "${pack}", which the simulation does not have`);
+		TOWERS[type] = { ...BEHAVIOUR_PACKS[pack] };
+	}
+	return TOWERS;
+}
+composeBehaviour(TYPE_BEHAVIOUR);
+export const towerType = () => Object.keys(TOWERS)[0] ?? null;
 
 /*
 The full on-off cycle in ticks, and the only place the two durations are combined.

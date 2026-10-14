@@ -546,7 +546,8 @@ centred on the origin after `.icon`'s own scale -- so a 32-unit viewBox centred 
 one unit of margin, and the ring radius is half the glyph extent.
 */
 test('B197/B204: the favicon composes a node exactly as the canvas does', async () => {
-	const { faviconSvg, GLYPH_BB } = await import('../kernel/theme.mjs');
+	// RESTATED at H21.3 (U4-1, B282): the glyph boxes, art and favicon live with the device type declaration in devices/device-types.mjs
+	const { faviconSvg, GLYPH_BB } = await import('../devices/device-types.mjs');
 	const { STD, L_STD } = await import('../kernel/spec.mjs');
 	const svg = faviconSvg();
 

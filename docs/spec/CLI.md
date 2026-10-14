@@ -147,6 +147,7 @@ Placement
   add <type> at <cx>,<cy> [--name n] [--link ref]  put a node on a named anchor -- a cell, never a pixel
   anchor nearest <x> <y> [--layout node|zone]      the legal anchor closest to a pixel coordinate
   anchor free [--layout node|zone]                 every anchor nothing occupies
+  types                                            the declared device types: name, map letter, routing pack and run-mode behaviour
   layouts                                          the diagram's two grids: name, id, pitch, offset and extent
 
 Awareness

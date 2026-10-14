@@ -16,6 +16,11 @@ import { GROUPS_CANVAS } from '../groups/group-painter.mjs';
 import { DEVICES_CANVAS } from '../devices/device-appearance.mjs';
 import { NETWORK_CANVAS } from '../network/canvas.mjs';
 import { SIMULATION_CANVAS } from '../engine/spawn-appearance.mjs';
+import { TYPE_ROUTING } from '../devices/device-types.mjs';
+import { composeRouting } from '../network/transit-offers.mjs';
+
+// U4-1 (H21.3, B282): hand the network plugin its routing slice of the device type declarations at composition
+composeRouting(TYPE_ROUTING);
 
 /*
 WD-b2 (H19.46): THE PRODUCT'S PART IS COMPOSITION -- the anchor's drawing order among the plugins' appearances and its rank in a

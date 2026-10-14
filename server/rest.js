@@ -21,6 +21,7 @@ import { isBareEntity } from '../devices/device-shapes.mjs';
 import { linkReading } from '../network/read-model.mjs';   // a link's path, route, down and blockers, as one answer (R-b, H1)
 import { pipeEntity } from '../network/pipe-kind.mjs';   // a pipe from its two ends, by the network's own rule (W-a)
 import { makeNode } from '../devices/make-node.mjs';   // the devices plugin's factories (O-e1)
+import { deviceTypeRecords } from '../devices/device-types.mjs';   // U4-2 (H21.3): the declared device types the server serves
 
 /*
 P6 W-a (H18.31) -- THE COLLECTIONS ARE THE MODEL'S COMPOSITION, read rather than listed. This was a hand-kept list of the
@@ -417,6 +418,10 @@ export function handleRest(req, res, store, locks, hub, principal = null, sessio
 	if (parts[1] === 'v1' && parts[2] === 'health' && parts.length === 3) {
 		if (req.method !== 'GET') return json(res, 405, { error: 'health: GET' }), true;
 		return json(res, 200, healthReport()), true;
+	}
+	if (parts[1] === 'v1' && parts[2] === 'types' && parts.length === 3) {
+		if (req.method !== 'GET') return json(res, 405, { error: 'types: GET' }), true;
+		return json(res, 200, { types: deviceTypeRecords() }), true;
 	}
 
 	/*

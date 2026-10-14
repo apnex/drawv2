@@ -74,7 +74,7 @@ Noted for PC1: AR1 asks for the system's north star and this one is the programm
 The anchor is the core's one kind, stored as `node`: identity and position on one cell.\
 A node with a `type` is a device, the type a stored name; a node without one is a bare anchor, a waypoint.\
 Plugins contribute fields onto the node (G3): the devices plugin its type, shape, span and content, the network its transit, the simulation its spawn.\
-No pack and no composition exists in the code: eight code tables in five files key on a type's name, and whether a node has a type decides whether it may bend or join (`dev/design/unification/UNIFICATION-AUDIT.md`, section 3.1).
+Each device type is declared once in `devices/device-types.mjs` across appearance, routing and run-mode behaviour, handed to the plugins at composition (`product/types.mjs`, `U4-1`, `U4-3`), and served by the server at `/api/v1/types` so the CLI asks for the types rather than keeping a copy (`U4-2`); `nodePermitsBend` reads an anchor's routing pack (`H21.3`, `B282`).
 
 ---
 
@@ -97,7 +97,7 @@ How the current instant stands against the axioms in force, as the target names 
 | A13 Director Intent Amplification | rulings from 2026-10-11 record the director's words, what was shown, and what they affect |
 | A10 Autopoietic Evolution | not materially implicated: nothing in the product revises itself |
 
-**The outcome axes AX2 and AX5,** which hold what the target took from A2 and A11 (A-5): a device type's facts live in eight tables in five files, two of them copies held equal by tests (B282, B167); there are no packs -- a type is a name the tables key on, and fields compose onto the anchor (G3).
+**The outcome axes AX2 and AX5,** which hold what the target took from A2 and A11 (A-5): each device type is declared once in `devices/device-types.mjs` across appearance, routing and run-mode behaviour (`U4-1`, `U4-3`), served to the CLI by `/api/v1/types` (`U4-2`), and fields compose onto the anchor (`G3`).
 
 ---
 
@@ -112,7 +112,7 @@ The anchored core's parts, declared once in `tools/layers.mjs` `PARTS` and rende
 | `kind-contract` | Compose kinds from the rows plugins declare | core | `model/shape.mjs`, `model/limits.mjs` | -- |
 | `document` | Hold one document's entities | core | `model/model.mjs`, `model/anchors.mjs`, `model/ops.mjs`, `model/order.mjs`, `model/stacking.mjs` | `kind-contract` |
 | `relations` | Index which entities relate | core | `engine/relations.mjs`, `engine/ivm.mjs`, `engine/store.mjs` | `devices`, `document` |
-| `colours` | Hold the colours every role draws from | core | `kernel/palette.mjs`, `kernel/theme.mjs` | `lattice` |
+| `colours` | Hold the colours every role draws from | core | `kernel/palette.mjs`, `kernel/theme.mjs` | -- |
 | `primitives` | Draw the shapes painters compose | core | `kernel/renderer.mjs` | `colours`, `lattice` |
 | `rules` | Match an input to one declared row | core | `kernel/input-rules.mjs` | -- |
 | `planner` | Make the one write every door applies | core | `planner/`, `model/invariants.mjs` | `document`, `kind-contract` |
@@ -128,14 +128,14 @@ The anchored core's parts, declared once in `tools/layers.mjs` `PARTS` and rende
 | `sync` | Keep a tab converged with the server | host | `app/src/sync.js`, `app/src/net.js`, `app/src/watchdog.js`, `app/src/clock.js` | `canvas`, `document`, `kind-contract` |
 | `product-page` | Compose the product page | composition root | `app/src/main.js`, `app/src/palette.js`, `app/src/run-mode.js`, `app/src/spectate.js` | `canvas`, `devices`, `network`, `product`, `renderer`, `simulation`, `sync` |
 | `lab` | Compose the canvas over the real modules, without storage | composition root | `lab/` | `canvas`, `document`, `lattice`, `network`, `planner`, `product`, `relations`, `renderer`, `server` |
-| `server` | Compose the server | composition root | `server/server.js`, `server/app.js`, `server/static.mjs` | `access`, `colours`, `export`, `hub`, `planner`, `rest`, `store` |
+| `server` | Compose the server | composition root | `server/server.js`, `server/app.js`, `server/static.mjs` | `access`, `devices`, `export`, `hub`, `planner`, `rest`, `store` |
 | `access` | Establish who a request comes from | door | `server/identity.mjs`, `server/codes.mjs`, `server/origin.mjs` | -- |
 | `placement` | Choose the free anchor a relationship names | door | `server/anchor.mjs` | `devices`, `document`, `lattice` |
 | `store` | Keep documents durable | door | `server/store.js`, `server/files.mjs`, `server/docfile.mjs`, `server/seed.js` | `access`, `document`, `kind-contract`, `lattice`, `network`, `placement`, `planner`, `product` |
 | `hub` | Carry each change to the tabs watching a document | door | `server/hub.js`, `server/protocol.js`, `server/locks.js`, `server/sessionlog.mjs` | `kind-contract`, `rest` |
 | `rest` | Answer agents over HTTP | door | `server/rest.js`, `server/routes.mjs` | `devices`, `document`, `groups`, `hub`, `kind-contract`, `lattice`, `layouts`, `network`, `zones` |
 | `cli` | Give an agent one command per verb | door | `cli/` | `network`, `product`, `simulation` |
-| `export` | Render a document without a browser | door | `kernel/adapt.mjs`, `kernel/engine.mjs`, `kernel/svg-scene.mjs`, `server/svg.mjs` | `colours`, `lattice`, `network`, `primitives` |
+| `export` | Render a document without a browser | door | `kernel/adapt.mjs`, `kernel/engine.mjs`, `kernel/svg-scene.mjs`, `server/svg.mjs` | `colours`, `devices`, `lattice`, `network`, `primitives` |
 <!-- END GENERATED: architecture-parts -->
 
 ---
@@ -152,10 +152,10 @@ Each import between two parts that the target's consumes do not allow, read from
 | `cli` | `network` | B339 | `cli/verbs.mjs` |
 | `cli` | `product` | B339 | `cli/verbs.mjs` |
 | `cli` | `simulation` | B339 | `cli/verbs.mjs` |
-| `colours` | `lattice` | B338 | `kernel/theme.mjs` |
+| `export` | `devices` | B330 | `kernel/svg-scene.mjs`, `server/svg.mjs` |
 | `export` | `network` | B330 | `kernel/engine.mjs`, `kernel/svg-scene.mjs`, `server/svg.mjs` |
 | `hub` | `rest` | B342 | `server/protocol.js` |
-| `network` | `devices` | B282 | `network/anchor-appearance.mjs`, `network/anchor-points.mjs`, `network/keys.mjs`, `network/link-clone.mjs`, `network/link-keys.mjs`, `network/link-painter.mjs`, `network/link-reactions.mjs`, `network/link-references.mjs`, `network/network.mjs`, `network/selection-reflects.mjs`, `network/transit-offers.mjs`, `network/transit.mjs` |
+| `network` | `devices` | B282 | `network/anchor-appearance.mjs`, `network/anchor-points.mjs`, `network/keys.mjs`, `network/link-clone.mjs`, `network/link-keys.mjs`, `network/link-painter.mjs`, `network/link-reactions.mjs`, `network/link-references.mjs`, `network/selection-reflects.mjs`, `network/transit-offers.mjs`, `network/transit.mjs` |
 | `relations` | `devices` | B341 | `engine/relations.mjs` |
 | `simulation` | `canvas` | B329 | `engine/spawn-runs.mjs` |
 | `simulation` | `renderer` | B329 | `app/src/movers.js` |
@@ -182,7 +182,7 @@ A module belongs to one layer, and a layer imports only what it may (`tools/laye
 | `canvas` | turning input into edits, and a document into a drawing, through the plugins' parts | `core`, `devices`, `network`, `layouts`, `zones`, `groups`, `planner` |
 | `chrome` | the production page around the canvas: sync, status, palette, readouts and its composition root | `core`, `devices`, `network`, `layouts`, `zones`, `groups`, `planner`, `product`, `canvas`, `simulation`, `export` |
 | `simulation` | derived motion: spawners, movers, towers and run mode | `core`, `devices`, `network` |
-| `export` | the headless SVG path | `core`, `network` |
+| `export` | the headless SVG path | `core`, `devices`, `network` |
 | `server-only` | the server's doors and storage, never served to a browser | `core`, `devices`, `network`, `layouts`, `zones`, `groups`, `planner`, `product`, `simulation`, `export`, `serve` |
 | `serve` | the one static responder both servers share | -- |
 | `cli` | the command-line tool agents drive | `core`, `devices`, `network`, `layouts`, `zones`, `groups`, `simulation`, `product` |
@@ -221,7 +221,7 @@ What each plugin brings to the page (`product/canvas.mjs`).
 | layouts | `places`, `grids` |
 | zones | `painters`, `places`, `presses`, `handles`, `keys`, `sizeStep`, `deleteRanks`, `describe`, `selectAll`, `labels`, `drawn`, `tally` |
 | groups | `painters`, `keys`, `deleteRanks`, `follows`, `drawn` |
-| devices | `appearances`, `presses`, `hand`, `at`, `sizeStep`, `sizes`, `keys`, `describe`, `selectAll`, `labels`, `drawn`, `tally` |
+| devices | `defs`, `appearances`, `presses`, `hand`, `at`, `sizeStep`, `sizes`, `keys`, `describe`, `selectAll`, `labels`, `drawn`, `tally` |
 | network | `painters`, `appearances`, `presses`, `handles`, `at`, `deleteRanks`, `follows`, `describe`, `selectAll`, `reflects`, `drawn`, `runTargets`, `tally` |
 | the simulation | `appearances` |
 <!-- END GENERATED: architecture-canvas -->
@@ -249,12 +249,13 @@ The product modules that compose the kinds or the canvas parts.
 Every way something outside the engine reaches it.
 
 <!-- BEGIN GENERATED: architecture-doors. Run tools/generate-architecture.mjs; do not edit by hand. -->
-**REST** -- 37 routes (`server/routes.mjs`):
+**REST** -- 38 routes (`server/routes.mjs`):
 
 | Route | Methods | What it answers |
 |---|---|---|
 | `/api/v1/sessions` | GET | what each client did -- commits, refusals, reconnects and how fast (B182) |
 | `/api/v1/health` | GET | store health, through the versioned door -- what an agent reads |
+| `/api/v1/types` | GET | the declared device types -- name, map letter, routing pack and run-mode behaviour (U4-2) |
 | `/api/v1/diagrams` | GET, POST | list, and mint a new one |
 | `/api/v1/diagrams/:id` | GET, DELETE | the document, and removing it |
 | `/api/v1/diagrams/deleted` | GET | what is inside the delete window (B109) |
@@ -293,14 +294,14 @@ Every way something outside the engine reaches it.
 
 **The websocket** -- 11 commands a tab sends (`server/protocol.js`): `hello`, `open`, `create`, `commit`, `undo`, `redo`, `resume`, `select`, `reclaim`, `delete`, `list`.
 
-**The CLI** -- 65 verbs (`cli/verbs.mjs`):
+**The CLI** -- 66 verbs (`cli/verbs.mjs`):
 
 | Group | Verbs |
 |---|---|
 | Context | `health`, `use`, `diagrams`, `context`, `status`, `get`, `history`, `about`, `zone contents`, `link path`, `dump`, `combat`, `movers`, `show`, `map`, `focus`, `links`, `holds`, `peers`, `parity` |
 | Lifecycle | `create`, `delete`, `render`, `deleted`, `restore` |
 | Writing | `lock`, `unlock`, `lock status`, `commit`, `draft begin`, `draft show`, `draft discard`, `undo`, `redo`, `select`, `spawn`, `link`, `panel`, `zone`, `group`, `move`, `rename`, `textsize`, `pipe`, `rm`, `set`, `region` |
-| Placement | `near`, `place`, `add`, `anchor nearest`, `anchor free`, `layouts` |
+| Placement | `near`, `place`, `add`, `anchor nearest`, `anchor free`, `types`, `layouts` |
 | Awareness | `who`, `viewers`, `sessions` |
 | Access | `access`, `grant`, `revoke`, `workspace grant`, `code mint`, `code list`, `code revoke`, `workspace grants`, `workspace revoke` |
 <!-- END GENERATED: architecture-doors -->

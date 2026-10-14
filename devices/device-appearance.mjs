@@ -13,7 +13,8 @@ import { typedNodes } from './device-shapes.mjs';
 import { STD, L_STD } from '../kernel/spec.mjs';
 import { selBox, contentLayout, hexColor, isPanel, frameRadius, frameWidth, showsSockets } from '../kernel/renderer.mjs';
 import { spanExtent } from '../kernel/geometry.mjs';
-import { GLYPH_BB, TOKENS } from '../kernel/theme.mjs';
+import { TOKENS } from '../kernel/theme.mjs';
+import { GLYPH_BB, DEFAULT_GLYPH_BB, GLYPH_DEFS } from './device-types.mjs';
 import { hasDevice } from './device-fields.mjs';
 import { DEVICE_PRESSES } from './device-gestures.mjs';
 import { DEVICE_HAND } from './device-hand.mjs';
@@ -27,7 +28,7 @@ const FE = L_STD.frame.ext;            // the frame's half-extent (20)
 const SOCKET = STD.socket;             // the glyph box (26)
 const NODE_LABEL_Y = FE + STD.labelDy; // the label baseline below the frame -- B236, the spec owns the offset
 const SELECT_BOX = selBox(L_STD);      // the kernel's selection brackets (+-23)
-const FIT = (glyph) => GLYPH_BB[glyph] || GLYPH_BB.host;   // an unknown glyph takes the host's fit box (no crash)
+const FIT = (glyph) => GLYPH_BB[glyph] || DEFAULT_GLYPH_BB;   // an unknown glyph takes the default type's fit box (no crash)
 // a multi-cell footprint (W1) and a cheap signature of it; none, or 1x1, gives null, so a 1x1 device draws as one always did
 const spanSig = (e) => (e.span && (e.span.cols > 1 || e.span.rows > 1)) ? `${e.span.cols}x${e.span.rows}` : null;
 // content regions (W2): their signature drives a fresh render on a content change; none, no attribute
@@ -134,6 +135,6 @@ const DEVICE = {
 
 // the devices plugin's canvas part (C-a: the device's appearance on the anchor)
 // C-d: the text box's row; C-e: its hand, what a device covers, its size step under the canvas's Shift+arrow
-export const DEVICES_CANVAS = { owner: 'devices', appearances: [DEVICE], presses: DEVICE_PRESSES, hand: DEVICE_HAND, at: DEVICE_POINTS, sizeStep: DEVICE_SIZE_STEP, sizes: DEVICE_SIZES,
+export const DEVICES_CANVAS = { owner: 'devices', defs: GLYPH_DEFS, appearances: [DEVICE], presses: DEVICE_PRESSES, hand: DEVICE_HAND, at: DEVICE_POINTS, sizeStep: DEVICE_SIZE_STEP, sizes: DEVICE_SIZES,
 	keys: DEVICE_KEYS, describe: DEVICE_DESCRIBE, selectAll: DEVICE_SELECT_ALL, labels: DEVICE_LABELS,
 	drawn: ['.node'], tally: { rank: 0, word: 'nodes', of: (model) => typedNodes(model).length } };   // C-f: what it draws; its count   // C-e: its key, `s`; how it reads, Ctrl+A; where its label edits

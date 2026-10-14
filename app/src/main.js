@@ -17,7 +17,8 @@ import { Reveal } from './reveal.js';
 import { makeSpectator, followTarget } from './spectate.js';
 import { RUN_PRESSES } from './run-mode.js';   // K5: run mode is the product's, handed to Input here
 import { productKinds } from '../../product/kinds.mjs';
-import { PRODUCT_CANVAS } from '../../product/canvas.mjs';   // the plugins' canvas parts (C-a)
+import { PRODUCT_CANVAS } from '../../product/canvas.mjs';
+import '../../product/types.mjs';   // the plugins' canvas parts (C-a)
 import { NETWORK_ROWS } from '../../network/kinds.mjs';   // the network's kind and the field it contributes (S-a)
 import { createPageNetwork } from '../../network/page.mjs';   // the network, composed into this page as into the lab's (V-b)
 import { el } from './painter.js';

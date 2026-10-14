@@ -17,10 +17,10 @@ the palette had built its tiles from the same numbers since B205.
 import { makeNode } from './make-node.mjs';
 import { hasDevice } from './device-fields.mjs';
 import { STD } from '../kernel/spec.mjs';
-import { GLYPH_BB } from '../kernel/theme.mjs';
+import { DEVICE_TYPE_LIST, GLYPH_BB, DEFAULT_GLYPH_BB } from './device-types.mjs';
 
 export const DEVICE_HAND = {
-	items: ['host', 'server', 'loadbalancer', 'firewall', 'vxlan', 'router'],
+	items: DEVICE_TYPE_LIST,
 	place: 'node',   // stamped on the anchor's grid (C-c)
 	stamp: (model, item, cell) => ({ kind: 'node', entity: makeNode(model, item, cell) }),
 	// the item an entity was stamped from -- a device's type; none for a waypoint
@@ -28,7 +28,7 @@ export const DEVICE_HAND = {
 	retype: (item) => ({ label: 'retype', kind: 'node', after: { type: item } }),
 	// what the item looks like, as elements to build: the frame, and the glyph fitted to its box (B205, B318)
 	preview: (item) => {
-		const [bx, by, bw, bh] = GLYPH_BB[item] || GLYPH_BB.host;
+		const [bx, by, bw, bh] = GLYPH_BB[item] || DEFAULT_GLYPH_BB;
 		const S = STD.socket;
 		return [
 			{ tag: 'use', attrs: { 'data-layer': 'frame', href: '#m-circle' } },

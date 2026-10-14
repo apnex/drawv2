@@ -11,6 +11,7 @@ Self-contained is the whole requirement. A download has no page to inherit from,
 artwork and the styles travel inside the file, and every `href="#…"` must resolve within it.
 */
 import { sharedDefs } from '../kernel/renderer.mjs';
+import { GLYPH_DEFS } from '../devices/device-types.mjs';
 import { renderScene } from '../kernel/svg-scene.mjs';
 import { resolve } from '../kernel/engine.mjs';
 import { docToSchema } from '../kernel/adapt.mjs';
@@ -37,5 +38,5 @@ export function svgDocument(doc, kinds) {
 	const body = render(docToSchema(doc, { lines: linesOf(readModel(doc, kinds)) }));
 	// inject styles + defs immediately after the root tag, so the file stands alone
 	const at = body.indexOf('>') + 1;
-	return body.slice(0, at) + `\n<style>${KERNEL_CSS}</style>\n${sharedDefs()}\n` + body.slice(at);
+	return body.slice(0, at) + `\n<style>${KERNEL_CSS}</style>\n${sharedDefs(undefined, undefined, GLYPH_DEFS)}\n` + body.slice(at);
 }

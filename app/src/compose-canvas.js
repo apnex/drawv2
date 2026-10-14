@@ -48,7 +48,7 @@ Returns every part, and `listen()`, which starts event capture and answers the C
 */
 export function composeCanvas({ svg, defs, host, network = null, kinds = undefined, parts = [], readoutEl = null, tools = false, help = null, now, plugins = [], runRules = [] }) {
 	// the kernel's glyph and frame defs: the kernel owns the look
-	defs.innerHTML = sharedDefs();
+	defs.innerHTML = sharedDefs(undefined, undefined, parts.map((p) => p.defs).filter(Boolean).join('\n'));
 
 	const model = new Model({ attached: { network }, kinds });   // the kinds a composition brings -- the core's when none are passed, so no links (S-e) (H17.22 N-a)
 	// R3: the maintained reverse indices, registered before any other subscriber so they see a fresh index; `cellOf` is

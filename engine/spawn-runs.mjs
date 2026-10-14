@@ -18,6 +18,7 @@ import { BARE_KIND } from '../model/anchors.mjs';
 import { inReadView, onEndpoint, onOpenGround } from './situation.mjs';
 import { bareAnchor } from '../devices/device-shapes.mjs';
 import { makeNode } from '../devices/make-node.mjs';
+import { towerType } from './kinds.mjs';
 
 // what arming or disarming a waypoint is, as data: the label, and the field set or the waypoint put without it -- always the
 // defaults (the builder's overrides had no caller but a test, and went with it)
@@ -51,6 +52,6 @@ export const SPAWN_RUNS = [
 			const cell = host.snap('node', evt.at);
 			if (host.ask((model) => model.occupiedAnyAt(cell))) return;   // a taken cell places nothing
 			evt.claimed = true;
-			host.add('node', (model) => makeNode(model, 'loadbalancer', cell));
+			host.add('node', (model) => makeNode(model, towerType(), cell));
 		} },
 ];

@@ -11,7 +11,8 @@ import { STD, L_STD } from './spec.mjs';
 import { bboxOf } from './geometry.mjs';
 import { waypointLayers, linkAppearance, downStroke } from '../network/appearance.mjs';
 import { roundedPath } from './router.mjs';
-import { GLYPH_BB, TOKENS } from './theme.mjs';
+import { TOKENS } from './theme.mjs';
+import { GLYPH_BB, DEFAULT_GLYPH_BB } from '../devices/device-types.mjs';
 import { isPanel, frameWidth, frameRadius, showsSockets, selBox, hexColor, contentLayout } from './renderer.mjs';
 
 const escText = (s) => String(s == null ? '' : s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
@@ -46,7 +47,7 @@ export function renderContentRegion(r, V = STD, L = L_STD, idx = 0) {
 		? `<rect class="clickable" data-action="${r.action}" x="${x0}" y="${y0}" width="${w}" height="${h}" fill="transparent"/>`
 		: r.input ? `<rect class="clickable" data-input="" data-idx="${idx}" x="${x0}" y="${y0}" width="${w}" height="${h}" fill="transparent"/>` : '';
 	if (r.content === 'glyph') {
-		const [bx, by, bw, bh] = GLYPH_BB[r.glyph] || GLYPH_BB.host;
+		const [bx, by, bw, bh] = GLYPH_BB[r.glyph] || DEFAULT_GLYPH_BB;
 		return `<svg x="${cx - S / 2}" y="${cy - S / 2}" width="${S}" height="${S}" viewBox="${bx} ${by} ${bw} ${bh}" preserveAspectRatio="xMidYMid meet"><use href="#glyph-${r.glyph}"/></svg>` + hit;
 	}
 	// text: optional outline (box ON the socket border, never beyond); lines arrive already placed
@@ -131,7 +132,7 @@ function renderEl(el, V, L, opts = {}) {
 		return `<rect x="${el.cx - el.size / 2}" y="${el.cy - el.size / 2}" width="${el.size}" height="${el.size}" rx="1.5" fill="${TOKENS.panel}" stroke="${TOKENS.port}" stroke-width="2.4"/>`;
 	}
 	if (el.kind === 'node') {
-		const [bx, by, bw, bh] = GLYPH_BB[el.glyph] || GLYPH_BB.host, S = V.socket;  // unknown glyph → fit box of `host`; the (missing) <use> renders empty, no crash
+		const [bx, by, bw, bh] = GLYPH_BB[el.glyph] || DEFAULT_GLYPH_BB, S = V.socket;  // unknown glyph → fit box of `host`; the (missing) <use> renders empty, no crash
 		const sw = el.spanW || 0, sh = el.spanH || 0, fe = L.frame.ext;
 		const panel = isPanel(el);
 		// 1×1 plain → the fixed frame def (<use>); a panel or multi-cell footprint → a sized rect (same .frame class).

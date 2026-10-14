@@ -29,6 +29,7 @@ now and the exception is gone.
 export const ROUTES = [
 	{ path: 'sessions',                        methods: ['GET'],            about: 'what each client did -- commits, refusals, reconnects and how fast (B182)' },
 	{ path: 'health',                          methods: ['GET'],            about: 'store health, through the versioned door -- what an agent reads' },
+	{ path: 'types',                           methods: ['GET'],            about: 'the declared device types -- name, map letter, routing pack and run-mode behaviour (U4-2)' },
 
 	{ path: 'diagrams',                        methods: ['GET', 'POST'],    about: 'list, and mint a new one' },
 	{ path: 'diagrams/:id',                    methods: ['GET', 'DELETE'],  about: 'the document, and removing it' },

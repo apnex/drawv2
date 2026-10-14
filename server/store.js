@@ -25,6 +25,10 @@ import { NAME_MAX } from '../model/limits.mjs';   // truncates where validate.js
 import { SCHEMA, completeAlwaysHeld } from '../model/shape.mjs';   // the document generation; WD-b1: the always-held completion
 import { productKinds } from '../product/kinds.mjs';
 import { NETWORK_ROWS } from '../network/kinds.mjs';
+import { composeProductTypes } from '../product/types.mjs';
+
+// U4-1, U4-3 (H21.3, B282): hand the server's plugins their slices of the device type declarations at composition
+composeProductTypes();
 import { createNetwork } from '../network/network.mjs';
 import { readerNetwork } from '../network/read-model.mjs';   // each Model draws with a network of its own (R-a)
 import { createTransit } from '../network/transit.mjs';

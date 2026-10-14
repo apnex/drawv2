@@ -28,7 +28,6 @@ a gate instead: `tests/cli-tool.test.js` asserts this list equals `Object.keys(G
 reasoning as B86 -- one meaning, two enforcers, and a check holding them together, except here the
 two cannot share a module at all.
 */
-const NODE_TYPES = ['host', 'server', 'firewall', 'router', 'loadbalancer', 'vxlan'];
 
 /*
 Both stores take the env from the CALLER -- B135.
@@ -1168,10 +1167,10 @@ export function columnsFor(kind, list) {
 
 VERBS.push({
 	name: 'place', group: 'Placement', usage: 'draw place <type> near|inside|between <ref> [--link]',
-	route: '/diagrams/<id>/commit', method: 'POST', also: ['GET /diagrams', 'GET /diagrams/<id>', 'GET /diagrams/<id>/layouts/<layout>/nearest'],
+	route: '/diagrams/<id>/commit', method: 'POST', also: ['GET /types', 'GET /diagrams', 'GET /diagrams/<id>', 'GET /diagrams/<id>/layouts/<layout>/nearest'],
 	summary: 'put a node beside, inside or between things -- on a free anchor, no coordinates',
 	example: 'draw place server near lb-1 --dir right --link',
-	args: [{ name: 'type', about: `node type: ${NODE_TYPES.join(', ')}` },
+	args: [{ name: 'type', about: 'a declared device type (see `draw types`)' },
 		{ name: 'where', about: 'near | inside | between -- how the position is described' },
 		{ name: 'ref', about: 'a node for near/between, a zone for inside' },
 		{ name: 'ref2', about: 'the second node, for between' }],
@@ -1183,12 +1182,12 @@ VERBS.push({
 		{ name: '--diagram', about: 'target by id or name' }],
 	async run(ctx, args) {
 		const [type, near, ref] = args;
-		// B167 -- `place` takes a type for the same reason `add` does, and checked it just as little
-		if (type && !NODE_TYPES.includes(type)) die(`${type} is not a node type. Renderable: ${NODE_TYPES.join(', ')}`);
 		if (!type || !['near', 'inside', 'between'].includes(near) || !ref) {
 			die('usage: draw place <type> near <ref> | inside <zone> | between <a> <b>');
 		}
 		if (ctx.flags.dir && !DIR_WORD[ctx.flags.dir]) die(`--dir must be one of ${Object.keys(DIR_WORD).join(', ')}`);
+		const types = ok(await request(ctx, '/types'), 'place').types.map((t) => t.name);
+		if (!types.includes(type)) die(`${type} is not a node type. Renderable: ${types.join(', ')}`);
 		const id = await activeId(ctx, ctx.flags);
 
 		const doc = ok(await request(ctx, `/diagrams/${id}`), 'place');
@@ -1660,10 +1659,10 @@ VERBS.push({
 
 VERBS.push({
 	name: 'add', group: 'Placement', usage: 'draw add <type> at <cx>,<cy> [--name n] [--link ref]',
-	route: '/diagrams/<id>/commit', method: 'POST', also: ['GET /diagrams', 'GET /diagrams/<id>', 'GET /diagrams/<id>/layouts/<layout>/anchors'],
+	route: '/diagrams/<id>/commit', method: 'POST', also: ['GET /types', 'GET /diagrams', 'GET /diagrams/<id>', 'GET /diagrams/<id>/layouts/<layout>/anchors'],
 	summary: 'put a node on a named anchor -- a cell, never a pixel',
 	example: 'draw add server at 5,-2 --name web-1',
-	args: [{ name: 'type', about: `node type: ${NODE_TYPES.join(', ')} -- or \`waypoint\`, a node with no type` },
+	args: [{ name: 'type', about: `a declared device type (see \`draw types\`) -- or \`waypoint\`, a node with no type` },
 		{ name: 'at', about: "the literal word 'at'" },
 		{ name: 'cx,cy', about: 'the CELL, not pixels -- `draw anchor nearest` converts if you have pixels' }],
 	flags: [{ name: '--name', about: 'what to call it' },
@@ -1709,8 +1708,9 @@ VERBS.push({
 				text: `${wid} at cell ${cx},${cy} = ${spot.x},${spot.y}  v${wb.version}`,
 			}));
 		}
-		if (!NODE_TYPES.includes(type)) {
-			die(`${type} is not a node type. Renderable: ${NODE_TYPES.join(', ')} -- or \`waypoint\`, a node with no type`);
+		const types = ok(await request(ctx, '/types'), 'add').types.map((t) => t.name);
+		if (!types.includes(type)) {
+			die(`${type} is not a node type. Renderable: ${types.join(', ')} -- or \`waypoint\`, a node with no type`);
 		}
 		const nid = `node-${Math.random().toString(16).slice(2, 8)}`;
 		const entity = { id: nid, name: ctx.flags.name || nid, type, x: spot.x, y: spot.y };
@@ -1815,6 +1815,15 @@ because `anchor nearest` reaches a path under it, and counted `workspace` covere
 `workspace grant` writes to it -- so a missing list and a missing revoke were both invisible.
 */
 VERBS.push(
+	{
+		name: 'types', group: 'Placement', usage: 'draw types', route: '/types', method: 'GET',
+		summary: 'the declared device types: name, map letter, routing pack and run-mode behaviour', example: 'draw types',
+		flags: [],
+		async run(ctx) {
+			const b = ok(await request(ctx, '/types'), 'types');
+			return { json: b, text: table(b.types.map((t) => [t.name, t.map, t.routing, t.behaviour || '-']), ['TYPE', 'MAP', 'ROUTING', 'BEHAVIOUR']) };
+		},
+	},
 	{
 		name: 'layouts', group: 'Placement', usage: 'draw layouts', route: '/diagrams/<id>/layouts', method: 'GET',
 		summary: 'the diagram\'s two grids: name, id, pitch, offset and extent', example: 'draw layouts',
@@ -2018,7 +2027,7 @@ VERBS.push(
 	{
 		name: 'panel', group: 'Writing', usage: 'draw panel <name> at <cx>,<cy> --cols n --rows n [--content f.json]',
 		route: '/diagrams/<id>/commit', method: 'POST',
-		also: ['GET /diagrams', 'GET /diagrams/<id>/layouts/<layout>/anchors'],
+		also: ['GET /types', 'GET /diagrams', 'GET /diagrams/<id>/layouts/<layout>/anchors'],
 		summary: 'a node that spans cells and can carry content regions',
 		example: 'draw panel key at -15,-8 --cols 7 --rows 2 --content legend.json',
 		args: [{ name: 'name', about: 'what to call it' },
@@ -2050,7 +2059,8 @@ VERBS.push(
 			const id = await activeId(ctx, ctx.flags);
 			const spot = await cellToPx(ctx, id, 'node', cell(c, 'at'), 'panel');
 			if (spot.occupant) die(`cell ${c} is taken by ${spot.occupant} -- \`draw anchor free\` lists what is open`);
-			const entity = { id: mint('node'), name, type: ctx.flags.type || 'host',
+			const defaultType = ctx.flags.type || ok(await request(ctx, '/types'), 'panel').types[0].name;
+			const entity = { id: mint('node'), name, type: defaultType,
 				x: spot.x, y: spot.y, span: { cols, rows } };
 			if (ctx.flags.content && ctx.flags.content !== true) {
 				const fs = await import('node:fs');
@@ -2260,11 +2270,7 @@ from what a person would want:
   - The key is one entity per line. Columns are shorter and harder to parse than lines.
 */
 
-const GLYPH = { router: 'r', firewall: 'f', loadbalancer: 'l', server: 's', host: 'h', vxlan: 'v' };
-const LEGEND = {
-	r: 'router', f: 'firewall', l: 'loadbalancer', s: 'server', h: 'host', v: 'vxlan',
-	'+': 'waypoint', '#': 'panel (spans cells)', '?': 'node of an unknown type',
-};
+
 
 // a zone's bounds in CELLS. The zone grid sits half a pitch off, so its edges fall between cells --
 // which is exactly why this is derivable rather than approximate.
@@ -2278,7 +2284,7 @@ VERBS.push({
 	// <layout> is a placeholder, not a literal: --layout picks the grid at call time, so declaring
 	// `node` would name one of the two routes this verb actually reaches
 	route: '/diagrams/<id>/layouts/<layout>/anchors', method: 'GET',
-	also: ['GET /diagrams', 'GET /diagrams/<id>'],
+	also: ['GET /types', 'GET /diagrams', 'GET /diagrams/<id>'],
 	summary: 'look at the canvas -- occupancy as a grid, so placement is seen rather than derived',
 	example: 'draw map --zone site-a',
 	flags: [{ name: '--full', about: 'the whole canvas, not just the part in use' },
@@ -2294,6 +2300,9 @@ VERBS.push({
 		if (!['node', 'zone'].includes(layout)) die(`--layout takes node or zone, not ${layout}`);
 		const doc = viewOf(ok(await request(ctx, `/diagrams/${id}`), 'map'));
 		const anchors = ok(await request(ctx, `/diagrams/${id}/layouts/${layout}/anchors`), 'map').anchors;
+		const typeRows = ok(await request(ctx, '/types'), 'map').types;
+		const glyphMap = Object.fromEntries(typeRows.map((t) => [t.name, t.map]));
+		const legendMap = { ...Object.fromEntries(typeRows.map((t) => [t.map, t.name])), '+': 'waypoint', '#': 'panel (spans cells)', '?': 'node of an unknown type' };
 
 		const byId = new Map();
 		for (const k of ['nodes', 'waypoints', 'zones', 'groups', 'links']) for (const e of doc[k] || []) byId.set(e.id, e);
@@ -2302,7 +2311,7 @@ VERBS.push({
 			if (!e) return '?';
 			if (isWaypoint(byId.get(occ))) return '+';
 			if (e.span) return '#';
-			return GLYPH[e.type] || '?';
+			return glyphMap[e.type] || '?';
 		};
 
 		// ---- the window, from whichever scope the caller named
@@ -2423,7 +2432,7 @@ VERBS.push({
 		const closing = border(win.y1 + 1);
 		if (closing) lines.push(closing);
 
-		const legend = [...seen].sort().map((g) => `${g} ${LEGEND[g]}`).join('   ');
+		const legend = [...seen].sort().map((g) => `${g} ${legendMap[g]}`).join('   ');
 		const inWin = (a) => a.cx >= win.x0 && a.cx <= win.x1 && a.cy >= win.y0 && a.cy <= win.y1;
 		const key = used.filter(inWin)
 			.sort((a, b) => a.cy - b.cy || a.cx - b.cx)

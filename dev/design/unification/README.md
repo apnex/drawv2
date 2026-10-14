@@ -35,6 +35,7 @@ Nothing here is decided: these documents carry the problem space into the design
 | `RECORD-GUARDS.md` | H21.5 (U1): the guards that keep the records true -- trigger evaluation, a generated Held column, structured decoupling exceptions and rulings -- with two adversarial reviews. | Delta; H21.5. |
 | `ARCHITECTURE-REVIEW.md` | H21.6 (U2): the reviews of the architecture record -- `docs/ARCHITECTURE-TARGET.md` and the generated `docs/ARCHITECTURE.md` -- each finding with its disposition. | Audit; H21.6. |
 | `MISSION-KIT-ALIGNMENT.md` | H21.9: the target aligned with mission-kit -- each part compared with mission-kit's registered and proposed components, the code not migrated. | Design; H21.9. |
+| `TYPE-AS-COMPOSITION.md` | H21.3 (U4, B282): one declaration per device type in the devices plugin, handed to the plugins at composition and served to the CLI. | Delta; H21.3. |
 
 The survey envelope that captures intent is `dev/surveys/unification-survey.md`.\
 Rulings stay in `dev/DECISIONS.md`; nothing here amends a ruling.\

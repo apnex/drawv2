@@ -297,11 +297,9 @@ A named entity's name is unique across every named kind (N5).
 
 | This target states | The current instant | Carried by |
 |---|---|---|
-| each device type is declared once in the devices plugin across appearance, routing and behaviour, handed to the plugins at composition and served to the CLI (U4-1, U4-2, U4-3) | eight tables in five files key on a type's name, two of them copies (`dev/design/unification/UNIFICATION-AUDIT.md`, section 3.1) | B282 |
-| a type's routing table decides which roles an anchor may take | whether a node has a type decides whether it may bend or join | B282 |
 | a device the graph makes a junction draws its junction mark over its frame | nothing draws it | B331 |
 | the planner and the canvas take the network as any plugin, and the doors take it within the product's composition | the planner takes a `links` option and imports the network's layer; the canvas takes a `network` slot; each door composes the network's rows itself | B332 |
-| the core holds the palette and primitives no plugin owns; each plugin holds its colour roles, its glyph art and its frame and content drawing | the core's theme holds the zone, group, link and waypoint roles and the device glyph art; its primitives draw a device's frame and content | B338 |
+| the core holds the palette and primitives no plugin owns; each plugin holds its colour roles and its frame and content drawing | the core's theme holds the zone, group, link and waypoint roles; its primitives draw a device's frame and content | B338 |
 | an agent reads an anchor's role; the CLI imports no product module | no door serves a role; the CLI imports product modules to derive combat and movers, and restates a rule | B339 |
 | each document lists the plugins it needs | no document does | B248 |
 | the download is drawn by the rendering run mode draws | the export door is a second renderer, naming kinds | B330 |

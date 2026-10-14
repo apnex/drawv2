@@ -9,6 +9,9 @@ import { Model as RealModel } from '../../model/model.mjs';
 import { plan as realPlan, commit as realCommit, undo as realUndo, redo as realRedo } from '../../planner/txn.mjs';
 import { productKinds } from '../../product/kinds.mjs';
 import { NETWORK_ROWS } from '../../network/kinds.mjs';
+import { composeProductTypes } from '../../product/types.mjs';
+
+composeProductTypes();
 import { createNetwork } from '../../network/network.mjs';
 import { createTransit } from '../../network/transit.mjs';
 

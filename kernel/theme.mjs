@@ -6,7 +6,6 @@
 // faviconSvg composes a node exactly as the renderer does, so it needs the layout numbers. spec.mjs
 // imports nothing, so this cannot cycle -- and the alternative is restating the frame extent here,
 // which is the twin the header warns against by splitting visuals from geometry in the first place.
-import { STD, L_STD } from './spec.mjs';
 import { resolveRoles } from './palette.mjs';   // the colours themselves; this file says which each thing uses
 
 /*
@@ -87,11 +86,6 @@ export const CHROME = resolveRoles(CHROME_ROLES);
 
 // measured glyph bounding boxes at icon scale 0.3: [x, y, w, h] — fits any glyph into the
 // socket regardless of frame shape. Canonical render data (was geometry.mjs).
-export const GLYPH_BB = {
-	host: [-11.6, -11.6, 22.5, 22.5], server: [-11.1, -11.1, 22.2, 22.2], firewall: [-13.5, -10.5, 27.0, 21.0],
-	router: [-15.0, -15.0, 30.0, 30.0], loadbalancer: [-15.0, -13.0, 30.0, 26.0], vxlan: [-12.3, -10.1, 24.6, 20.3]
-};
-
 // minimal scene CSS — vendored from client/style.css (icon primitives + frame + node state).
 // Everything the renderer's SVG output references; nothing app-specific.
 // its colours are the product's roles (a self-contained SVG cannot read app/tokens.css, so the values are written in)
@@ -104,119 +98,3 @@ export const KERNEL_CSS = `
 .node .select-box { display:none; fill:none; stroke:${TOKENS.link}; stroke-width:2; pointer-events:none; }
 .node.selected .select-box { display:block; }
 `;
-
-// glyph artwork + frame templates — vendored verbatim from client/index.html <defs id="defs">.
-// The renderer's sharedDefs() appends the variant-sized #m-circle / #m-square frames.
-export const GLYPH_DEFS = `<defs id="defs">
-	<circle id="frame-circle" class="frame" r="21"/>
-	<rect id="frame-square" class="frame" x="-21" y="-21" width="42" height="42" rx="5"/>
-	<g id="glyph-host" class="icon">
-		<g transform="translate(-38.5,-38.5)" class="solid" style="stroke-width:4">
-			<path d="M3 0 L72 0 Q75 0 75 3 L75 52 Q75 55 72 55 L48 55 Q45 55 45 58 L45 62 Q45 65 48 65 L72 65 Q75 65 75 68 L75 72 Q75 75 72 75 L3 75 Q0 75 0 72 L0 68 Q0 65 3 65 L27 65 Q30 65 30 62 L30 58 Q30 55 27 55 L3 55 Q0 55 0 52 L0 3 Q0 0 3 0 Z"/>
-			<path d="M8 5 L67 5 Q70 5 70 8 L70 47 Q70 50 67 50 L8 50 Q5 50 5 47 L5 8 Q5 5 8 5 Z" class="hollow"/>
-		</g>
-	</g>
-	<g id="glyph-vxlan" class="icon">
-		<g transform="translate(-14,-34.5)" class="solid" style="stroke-width:2">
-			<path id="arrow1" d="M2 8 L38 8 Q40 8 40 6 L40 2 Q40 0 42 1 L54 11 Q56 12 54 13 L42 23 Q40 24 40 22 L40 18 Q40 16 38 16 L2 16 Q0 16 0 14 L0 10 Q0 8 2 8 Z"/>
-			<use href="#arrow1" y="30"/>
-			<use href="#arrow1" transform="rotate(180 0 12)" x="-28" y="-15"/>
-			<use href="#arrow1" transform="rotate(180 0 12)" x="-28" y="-45"/>
-		</g>
-	</g>
-	<g id="glyph-router" class="icon">
-		<g transform="translate(-5,-12)" class="solid" style="stroke-width:2">
-			<path id="arrow2" d="M2 8 L38 8 Q40 8 40 6 L40 2 Q40 0 42 1 L54 11 Q56 12 54 13 L42 23 Q40 24 40 22 L40 18 Q40 16 38 16 L2 16 Q0 16 0 14 L0 10 Q0 8 2 8 Z"/>
-			<use href="#arrow2" transform="rotate(90 5 12)"/>
-			<use href="#arrow2" transform="rotate(180 5 12)"/>
-			<use href="#arrow2" transform="rotate(270 5 12)"/>
-		</g>
-		<g class="hollow" style="stroke-width:5">
-			<ellipse transform="rotate(45 0 0)" rx="35" ry="10"/>
-			<ellipse transform="rotate(-45 0 0)" rx="35" ry="10"/>
-			<circle r="15"/>
-		</g>
-	</g>
-	<g id="glyph-firewall" class="icon">
-		<g transform="translate(-45,-35)" class="solid" style="stroke-width:2">
-			<rect class="solid" style="rx:4px" x="0" y="0" width="20" height="20"/>
-			<rect class="solid" style="rx:4px" x="25" y="0" width="40" height="20"/>
-			<rect class="solid" style="rx:4px" x="70" y="0" width="20" height="20"/>
-			<rect class="solid" style="rx:4px" x="0" y="25" width="42" height="20"/>
-			<rect class="solid" style="rx:4px" x="48" y="25" width="42" height="20"/>
-			<rect class="solid" style="rx:4px" x="0" y="50" width="20" height="20"/>
-			<rect class="solid" style="rx:4px" x="25" y="50" width="40" height="20"/>
-			<rect class="solid" style="rx:4px" x="70" y="50" width="20" height="20"/>
-		</g>
-	</g>
-	<g id="glyph-loadbalancer" class="icon">
-		<g transform="translate(-5,-12)" class="solid" style="stroke-width:2">
-			<path id="arrow" d="M2 8 L38 8 Q40 8 40 6 L40 2 Q40 0 42 1 L54 11 Q56 12 54 13 L42 23 Q40 24 40 22 L40 18 Q40 16 38 16 L2 16 Q0 16 0 14 L0 10 Q0 8 2 8 Z"/>
-			<use href="#arrow" transform="rotate(45 5 12)"/>
-			<use href="#arrow" transform="rotate(-45 5 12)"/>
-		</g>
-		<line class="hollow" style="stroke-width:10" x1="-40" y1="0" x2="0" y2="0"/>
-		<circle class="hollow" style="stroke-width:5" r="15"/>
-		<circle class="solid" style="stroke-width:2" r="10" cx="-40"/>
-	</g>
-	<g id="glyph-server" class="icon">
-		<rect class="hollow" style="stroke-width:7" x="-24" y="-24" width="48" height="48" rx="4px"/>
-		<rect class="solid" x="-12" y="-12" width="24" height="24" rx="4px"/>
-		<g id="legs" transform="translate(0, 0)" class="hollow" style="stroke-width:7">
-			<line x1="24" y1="-12" x2="37" y2="-12"/>
-			<line x1="24" y1="0" x2="37" y2="0"/>
-			<line x1="24" y1="12" x2="37" y2="12"/>
-		</g>
-		<use href="#legs" transform="rotate(90 0 0)"/>
-		<use href="#legs" transform="rotate(180 0 0)"/>
-		<use href="#legs" transform="rotate(270 0 0)"/>
-	</g>
-</defs>`;
-
-/*
-faviconSvg -- the browser tab icon, built from the same `#glyph-router` artwork the canvas draws.
-
-The router was chosen because it is the glyph the product is recognised by, and an earlier version
-of this app shipped it as a hand-maintained `favicon.svg`. That file is in the archive and its
-arrow path is byte-identical to the one in GLYPH_DEFS above, which is the whole argument for not
-copying it back in: two files owning one drawing is the twin problem P3 exists to prevent, and a
-favicon is exactly the kind of asset nobody looks at again, so the drift would be silent.
-
-GLYPH_DEFS is embedded whole rather than excerpted. Slicing one `<g>` out of it would need a parser
-here and would break the moment the glyph gains a `<use>` of something defined beside it, which is
-how every other glyph in that block is already written. The unused defs cost bytes in a file served
-once; naming the glyph by href costs nothing and cannot go stale.
-
-The outline ring and the scale are the favicon's own: a tab icon is 16px of dark chrome and needs a
-boundary the canvas does not, because on the canvas a node sits inside a `.frame` that supplies one.
-*/
-export function faviconSvg() {
-	/*
-	The frame and the glyph are composed EXACTLY as `renderEl` composes a node, because a tab icon
-	that does not match the canvas is a second drawing of the same thing.
-
-	Three things were wrong when this was first written, and all three came from inventing the
-	composition instead of copying it. The frame was a hand-rolled `.ring` class at r=15 with its own
-	stroke weight, where a node uses `.frame` at the layout extent. The glyph was a bare `<use>`
-	relying on `.icon`'s scale, where a node nests it in an `<svg>` with the glyph's own bounding box
-	as the viewBox so it is FITTED rather than scaled by a constant. And the group carried no `.node`
-	class -- which is what supplies `--fill`, so `.hollow` fell back to its `#ffffff` default and the
-	router's centre rendered white on a dark tab.
-
-	viewBox is the frame extent plus half its stroke, so the ring is not clipped by its own weight.
-	*/
-	const ext = L_STD.frame.ext;                     // 20 -- the node frame half-extent
-	const S = STD.socket;                            // 26 -- the glyph box a node fits its art into
-	const [bx, by, bw, bh] = GLYPH_BB.router;
-	const half = ext + 2.1;                          // frame stroke is 2.1; keep its outer edge inside
-
-	return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="32" height="32" viewBox="${-half} ${-half} ${half * 2} ${half * 2}">
-<style>${KERNEL_CSS}</style>
-${GLYPH_DEFS}
-<g class="node">
-	<circle class="frame" r="${ext}"/>
-	<svg x="${-S / 2}" y="${-S / 2}" width="${S}" height="${S}" viewBox="${bx} ${by} ${bw} ${bh}" preserveAspectRatio="xMidYMid meet"><use href="#glyph-router"/></svg>
-</g>
-</svg>
-`;
-}

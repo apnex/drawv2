@@ -21,7 +21,7 @@ import { pipeAnchors, keepsOrphan } from './guide.mjs';
 import { linkTenant } from './link-reactions.mjs';
 import { transitReactions, stopsBlockedOn, stopAtBlockedStop } from './transit.mjs';
 import { ANCHOR_KINDS, anchorOf } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
-import { bareAnchor } from '../devices/device-shapes.mjs';
+import { nodePermitsBend } from './transit-offers.mjs';
 import { cutAtBend } from './link-rules.mjs';   // a cut at a bend, its piece's id derived (V-c)
 import { pipeId, pipeEntity } from './pipe-kind.mjs';
 
@@ -109,7 +109,7 @@ function pipeReactions(view, transit = null) {
 					// the landing cut: a link MADE in this edit -- one that existed before is not landing anywhere (TG-3)
 					if (before || after.closed) continue;
 					for (const end of [after.src, after.dst]) {
-						if (!bareAnchor(doc, end)) continue;
+						if (!nodePermitsBend(doc.get('node', end))) continue;
 						// the links bending there NOW -- a piece an earlier cut made is cut again at the other end
 						for (const other of [...doc.all('link')].sort((a, b) => (a.id < b.id ? -1 : 1))) {
 							if (other.id === after.id) continue;

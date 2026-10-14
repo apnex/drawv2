@@ -35,7 +35,7 @@ const UNAMBIG_TYPE = /(['"`])(loadbalancer|firewall|vxlan|router)\1|\b(loadbalan
 const HOST_SERVER_TYPE = /(['"`])(host|server)\1|\b(host|server)\s*:/g;
 const deviceTypesIn = (text) => text.split('\n').flatMap((line) => {
 	const u = [...line.matchAll(UNAMBIG_TYPE)].map((m) => m[0]);
-	const hs = (u.length > 0 || /\b(?:type|glyph)\b[^;\n]*?(?:[:=]|\|\|)|\bmakeNode\s*\(/.test(line))
+	const hs = (u.length > 0 || /\b(?:type|glyph)\b[^;\n]*?(?:[:=]|\|\|)|\bmakeNode\s*\(|\b(?:host|server)\s*:\s*Object\.freeze\(/.test(line))
 		? [...line.matchAll(HOST_SERVER_TYPE)].map((m) => m[0]) : [];
 	return [...u, ...hs];
 });
@@ -196,36 +196,15 @@ const PRODUCT_FIELD_RECORD = {
 
 // U3 (H21.7): device type names (`host`, `server`, `loadbalancer`, `firewall`, `vxlan`, `router`) across every product layer
 const TYPE_NAME_RECORD = {
-	'cli/verbs.mjs': { count: 19, cites: ['B282', 'from B138', 'from B167'],
-		reason: 'the CLI\'s `NODE_TYPES` (T5, 6), its default `\'host\'` (1), `GLYPH` (T6, 6) and `LEGEND` (T7, 6)',
-		trigger: 'each device type is declared once, and the CLI learns the types as U4 rules (B282)' },
-	'devices/device-appearance.mjs': { count: 1, cites: ['B282'],
-		reason: 'the fallback fit box `GLYPH_BB.host` for an unknown glyph (B282)',
-		trigger: 'each device type is declared once, with its glyph box on its appearance pack (B282)' },
-	'devices/device-hand.mjs': { count: 7, cites: ['B282', 'H17-D6'],
-		reason: '`DEVICE_HAND.items` (T3, 6) and the preview\'s fallback fit box `GLYPH_BB.host` (1)',
-		trigger: 'each device type is declared once, and the palette hand reads the type declaration (B282)' },
-	'engine/kinds.mjs': { count: 1, cites: ['B282', 'H21.3'],
-		reason: '`TOWERS` (T8) keying on `loadbalancer:` for run-mode tower stats (B282)',
-		trigger: 'each device type is declared once, with its behaviour pack (B282)' },
-	'engine/spawn-runs.mjs': { count: 1, cites: ['B282', 'H21.3'],
-		reason: 'run mode\'s tower row placing a `\'loadbalancer\'` on open ground (B282)',
-		trigger: 'each device type is declared once, and run mode places a tower by its behaviour capability (B282)' },
+	'devices/device-types.mjs': { count: 6, cites: ['U4-1', 'U4-2', 'U4-3'],
+		reason: 'the one device-type declaration table (`DEVICE_TYPES`): `host`, `server`, `loadbalancer`, `firewall`, `vxlan`, `router` (U4-1, U4-2, U4-3)',
+		trigger: 'permanent' },
 	'kernel/fixtures.mjs': { count: 23, cites: ['B330'],
 		reason: 'the spec viewer\'s reference scenes naming the device glyphs they draw',
 		trigger: 'permanent' },
 	'kernel/geometry.mjs': { count: 1, cites: ['B330', 'B338'],
 		reason: 'the export scene helper `node()` defaulting `o.glyph` to `\'router\'` (B330, B338)',
 		trigger: 'the export door draws through the painters (B330)' },
-	'kernel/svg-scene.mjs': { count: 2, cites: ['B330', 'B338'],
-		reason: 'the export SVG renderer\'s fallback fit box `GLYPH_BB.host` in two places (B330, B338)',
-		trigger: 'the export door draws through the painters (B330)' },
-	'kernel/theme.mjs': { count: 14, cites: ['B282', 'B338'],
-		reason: '`GLYPH_BB` (T1, 6), `GLYPH_DEFS` (T2, 6), and `faviconSvg` using `GLYPH_BB.router` and `glyph-router` (2)',
-		trigger: 'each device type is declared once, and the glyph art and boxes move to the devices plugin (B282, B338)' },
-	'network/transit-offers.mjs': { count: 6, cites: ['B282'],
-		reason: '`OFFERS` (T4, 6) keying on each device type name for routing transit permission (B282)',
-		trigger: 'each device type is declared once, with its routing pack (B282)' },
 	'server/seed.js': { count: 8, cites: ['SD2'],
 		reason: 'the seed diagram\'s eight devices (`host`, `router`, `firewall`, `loadbalancer`, three `server`, `vxlan`)',
 		trigger: 'permanent' },
@@ -332,5 +311,40 @@ test('H21.5: the core and product ratchets\' exceptions cite live work and say w
 		...Object.entries(TYPE_NAME_RECORD).map(([f, e]) => ({ where: `TYPE_NAME_RECORD ${f}`, ...e })),
 	];
 	assert.deepEqual(exceptionFaults(entries, root), []);
+});
+
+// U4 (H21.3, B282; UNIFICATION-AUDIT.md section 7): adding a seventh device type is one declaration, driving appearance,
+// routing, behaviour and the records `/api/v1/types` serves
+test('U4 (H21.3): adding a seventh device type in one declaration drives appearance, routing, behaviour and /types, and refuses an unknown pack', async () => {
+	const { DEVICE_TYPES } = await import('../devices/device-types.mjs');
+	const { composeProductTypes } = await import('../product/types.mjs');
+	const { nodeOffersTransit, nodePermitsBend, transitOffersOf } = await import('../network/transit-offers.mjs');
+	const { towerFor } = await import('../engine/kinds.mjs');
+	try {
+		const slices = composeProductTypes({
+			...DEVICE_TYPES,
+			sentry: Object.freeze({
+				map: 'y', box: Object.freeze([-10, -10, 20, 20]), routing: 'transit', behaviour: 'tower',
+				svg: '<circle r="8"/>',
+			}),
+		});
+		assert.equal(slices.list.includes('sentry'), true, 'in the palette list');
+		assert.deepEqual(slices.bb.sentry, [-10, -10, 20, 20], 'appearance glyph box');
+		assert.match(slices.defs, /id="glyph-sentry"/, 'appearance glyph art in defs');
+		assert.equal(nodeOffersTransit({ id: 'node-000001', type: 'sentry' }), true, 'routing pack: transit offers junction');
+		assert.equal(nodePermitsBend({ id: 'node-000001', type: 'sentry' }), false, 'routing pack: transit forbids bend');
+		assert.equal(nodePermitsBend({ id: 'node-000002' }), true, 'control: a bare anchor permits bend');
+		assert.deepEqual(transitOffersOf({ id: 'node-000001', type: 'sentry' }), [true, false]);
+		assert.deepEqual(towerFor({ id: 'node-000001', type: 'sentry' }), { range: 3, beam: 10, cooldown: 10, damage: 1 }, 'behaviour pack: tower stats');
+		assert.equal(towerFor({ id: 'node-000001', type: 'router' }), null, 'control: router has no behaviour pack');
+		assert.deepEqual(slices.records().find((r) => r.name === 'sentry'),
+			{ name: 'sentry', map: 'y', routing: 'transit', behaviour: 'tower' }, 'served by /api/v1/types');
+		assert.throws(() => composeProductTypes({ ...DEVICE_TYPES, bad: { map: 'b', box: [0, 0, 1, 1], routing: 'nope', behaviour: null, svg: '' } }),
+			/names routing pack "nope"/, 'an unknown routing pack is refused at composition');
+		assert.throws(() => composeProductTypes({ ...DEVICE_TYPES, bad: { map: 'b', box: [0, 0, 1, 1], routing: 'endpoint', behaviour: 'nope', svg: '' } }),
+			/names behaviour pack "nope"/, 'an unknown behaviour pack is refused at composition');
+	} finally {
+		composeProductTypes(DEVICE_TYPES);
+	}
 });
 

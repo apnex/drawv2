@@ -200,3 +200,6 @@ U1 (`H21.5`): the record guards run in the gate (`tools/scan-triggers.mjs`, `too
 U2 (`H21.6`, `H21.9`, `N5a`): `docs/ARCHITECTURE-TARGET.md` ratified (`H21.6`), aligned with mission-kit (`A-0`, `A-5`), the anchor's name settled (`N5a`), and `docs/ARCHITECTURE.md` generated from the code (`tools/generate-architecture.mjs`).\
 U3 (`H21.7`): every product layer (`PRODUCT_LAYERS` and `lab`) is scanned by `L7k` (`tools/scan-layers.mjs`), `tests/canvas-names-no-plugin.test.js` (`KIND_RECORD`, `FIELD_RECORD`, `IMPORT_RECORD`), and `tests/core-names-no-plugin.test.js` (`RECORD`, `DEVICE_RECORD`, `PRODUCT_KIND_RECORD`, `PRODUCT_FIELD_RECORD`, `TYPE_NAME_RECORD`) across every quoting form, object keys, collection properties, cross-plugin reads and device type names, each entry checked by `tools/exceptions.mjs`.
 
+AMENDED 2026-10-14 -- **U4 done** (`H21.3`, `U4-1`, `SD5`, `U4-2`, `U4-3`; `dev/design/unification/TYPE-AS-COMPOSITION.md`).\
+Each device type is declared once in `devices/device-types.mjs` across appearance, routing and run-mode behaviour, handed to the plugins at composition (`product/types.mjs`), and served at `GET /api/v1/types` (`draw types`); `T1` to `T8` outside `devices/device-types.mjs` are gone, `nodePermitsBend` reads the routing pack's roles, and `TYPE_NAME_RECORD` fell from 11 files (83 hits) to 4 files.
+

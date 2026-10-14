@@ -88,7 +88,7 @@ export const PARTS = {
 	relations: { duty: 'Index which entities relate', kind: 'core', by: ['O1'],
 		modules: ['engine/relations.mjs', 'engine/ivm.mjs', 'engine/store.mjs'], consumes: ['document', 'kind-contract', 'lattice'], carried: { devices: 'B341' } },
 	colours: { duty: 'Hold the colours every role draws from', kind: 'core', by: ['N1'],
-		modules: ['kernel/palette.mjs', 'kernel/theme.mjs'], consumes: [], carried: { lattice: 'B338' } },
+		modules: ['kernel/palette.mjs', 'kernel/theme.mjs'], consumes: [] },
 	primitives: { duty: 'Draw the shapes painters compose', kind: 'core', by: ['N1', 'D3'],
 		modules: ['kernel/renderer.mjs'], consumes: ['lattice', 'colours'] },
 	rules: { duty: 'Match an input to one declared row', kind: 'core', by: ['D2'],
@@ -145,7 +145,7 @@ export const PARTS = {
 		modules: ['cli/'], consumes: [], carried: { network: 'B339', product: 'B339', simulation: 'B339' } },
 	export: { duty: 'Render a document without a browser', kind: 'door', by: ['H2'],
 		modules: ['kernel/adapt.mjs', 'kernel/engine.mjs', 'kernel/svg-scene.mjs', 'server/svg.mjs'],
-		consumes: ['lattice', 'document', 'kind-contract', 'primitives', 'colours', 'product', 'renderer'], beyondKind: { renderer: 'H2' }, carried: { network: 'B330' } },
+		consumes: ['lattice', 'document', 'kind-contract', 'primitives', 'colours', 'product', 'renderer'], beyondKind: { renderer: 'H2' }, carried: { network: 'B330', devices: 'B330' } },
 };
 
 /*
@@ -203,7 +203,7 @@ export const ALLOWED = {
 	canvas: ['core', 'devices', 'network', 'layouts', 'zones', 'groups', 'planner', 'canvas'],
 	chrome: ['core', 'devices', 'network', 'layouts', 'zones', 'groups', 'planner', 'product', 'canvas', 'simulation', 'export', 'chrome'],
 	simulation: ['core', 'devices', 'network', 'simulation'],
-	export: ['core', 'network', 'export'],
+	export: ['core', 'devices', 'network', 'export'],
 	'server-only': ['core', 'devices', 'network', 'layouts', 'zones', 'groups', 'planner', 'product', 'simulation', 'export', 'server-only', 'serve'],
 	serve: [],   // K9: it imports nothing but Node's own modules
 	// O-d (H19.22): the CLI's reader takes the product's composition (cli/verbs.mjs `modelOf`) from product/, so the interim
@@ -366,7 +366,7 @@ export const ENTRIES = {
 			'zones/zone-painter.mjs', 'product/canvas.mjs',   // C-a (H19.29): the zones plugin's painter, and the product's canvas parts
 			'zones/zone-gestures.mjs',   // C-d (H19.32): the zones plugin's press row and handles
 			'devices/device-gestures.mjs',   // C-d (H19.32): the devices plugin's text box row
-			'devices/device-hand.mjs',   // C-e (H19.33): the devices plugin's hand
+			'devices/device-types.mjs', 'product/types.mjs', 'devices/device-hand.mjs',   // C-e (H19.33): the devices plugin's hand
 			'devices/device-footprint.mjs', 'network/anchor-points.mjs',   // C-e (H19.33): what a device, a waypoint and a link cover
 			'zones/zone-keys.mjs', 'devices/device-size.mjs',   // C-e (H19.33): the zone keys, and the size steps
 			'groups/group-keys.mjs',   // C-e (H19.33): the group keys
@@ -431,7 +431,7 @@ export const ENTRIES = {
 			'zones/zone-painter.mjs', 'product/canvas.mjs',   // C-a (H19.29): the zones plugin's painter, and the product's canvas parts
 			'zones/zone-gestures.mjs',   // C-d (H19.32): the zones plugin's press row and handles
 			'devices/device-gestures.mjs',   // C-d (H19.32): the devices plugin's text box row
-			'devices/device-hand.mjs',   // C-e (H19.33): the devices plugin's hand
+			'devices/device-types.mjs', 'devices/device-hand.mjs',   // C-e (H19.33): the devices plugin's hand
 			'devices/device-footprint.mjs', 'network/anchor-points.mjs',   // C-e (H19.33): what a device, a waypoint and a link cover
 			'zones/zone-keys.mjs', 'devices/device-size.mjs',   // C-e (H19.33): the zone keys, and the size steps
 			'groups/group-keys.mjs',   // C-e (H19.33): the group keys

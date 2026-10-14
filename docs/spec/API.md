@@ -49,6 +49,8 @@ The store never goes empty: removing the last diagram reseeds the examples.
 
 A removed diagram is recoverable while the backend's delete window lasts, and two routes reach it.
 
+`GET /api/v1/types` answers `{ types: [{ name, map, routing, behaviour }, ...] }` -- the declared device types in palette order (`U4-2`, `H21.3`), so the CLI and agents ask the server rather than keeping a copy.
+
 `GET /api/v1/sessions` answers `{ sessions[] }` -- what each client DID, not what the document became.\
 Each entry carries the actor, principal, diagram, whether it is still live, its counts of commits and refusals, and a bounded narrative of recent events.\
 The report is whole and unfiltered -- bounded at 40 sessions by construction -- and `draw sessions --hot n` selects a runaway client from it.\

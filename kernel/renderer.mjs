@@ -6,7 +6,7 @@
 // to kernel/svg-scene.mjs, in the export layer. That half draws waypoints and links, which is network appearance; this
 // half is core, and the live canvas (app/src/renderer.js) imports only it.
 import { STD, L_STD } from './spec.mjs';
-import { GLYPH_DEFS, TOKENS } from './theme.mjs';
+import { TOKENS } from './theme.mjs';
 
 // selection corner-brackets (rounded, matching the group radius) — derived per variant.
 // Exported so an interactive host can draw the SAME brackets (CSS-gated) without re-render.
@@ -145,8 +145,8 @@ attribute a panel emitted, so the canvas drew 2.1 where the export drew 1. With 
 the weight, a def that omits it would draw hairline instead -- these are the plain 1x1 frames, and
 they are the THIRD route a frame reaches the screen by, after the panel rect and the span rect.
 */
-export function sharedDefs(V = STD, L = L_STD) {
-	return `<svg width="0" height="0" style="position:absolute">${GLYPH_DEFS}
+export function sharedDefs(V = STD, L = L_STD, extraDefs = '') {
+	return `<svg width="0" height="0" style="position:absolute">${extraDefs}
 	  <defs>
 	    <circle id="m-circle" class="frame" r="${L.frame.ext}" stroke-width="${V.frameW}"/>
 	    <rect id="m-square" class="frame" x="${-L.frame.ext}" y="${-L.frame.ext}" width="${2 * L.frame.ext}" height="${2 * L.frame.ext}" rx="${L.frame.r}" stroke-width="${V.frameW}"/>

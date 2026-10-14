@@ -23,11 +23,11 @@ needs of the planner -- the check a requested write receives -- arrives in `ctx.
 */
 import { linksAt } from './link-queries.mjs';   // which links meet an anchor: the network's (K13d)
 import { collapseAtWaypoint, pairHolders, LINK_DECLARATIONS, closeLoopIntoRing, areCutPieces } from './link-rules.mjs';
-import { nodeOffersTransit } from './transit-offers.mjs';   // whether a node may be passed (H19.10)
+import { nodeOffersTransit, nodePermitsBend } from './transit-offers.mjs';   // whether a node may be passed or bend (H19.10, H21.3)
 import { isLinkLoop } from './link-references.mjs';   // B300: a join may leave a loop
 import { linkEndsAt } from './roles.mjs';   // whether a link ends at a point (B244), one statement with the roles (V-a)
 import { BARE_KIND } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
-import { isBareEntity, bareAnchor, bareAnchors } from '../devices/device-shapes.mjs';
+import { isBareEntity, bareAnchors } from '../devices/device-shapes.mjs';
 
 const touching = (m, w) => m.all('link').filter((l) => l.src === w || l.dst === w || (l.via || []).includes(w));
 
@@ -298,11 +298,11 @@ function linkJoin({ joinsAt = () => true, says, wakesAt = [] }) {
 				if (kind === BARE_KIND) { if (now && nodeOffersTransit(now) && wakesAt.some((f) => fields.has(f))) { touched.add(id); redeclared.add(id); woken.add(id); } continue; }
 				if (kind !== 'link') continue;
 				if (now && LINK_DECLARATIONS.some((k) => fields.has(k))) {
-					for (const end of [now.src, now.dst]) if (bareAnchor(doc, end)) { touched.add(end); redeclared.add(end); }
+					for (const end of [now.src, now.dst]) if (nodePermitsBend(doc.get(BARE_KIND, end))) { touched.add(end); redeclared.add(end); }
 					continue;
 				}
 				if (now) continue;
-				for (const end of [was.src, was.dst]) if (bareAnchor(doc, end)) touched.add(end);
+				for (const end of [was.src, was.dst]) if (nodePermitsBend(doc.get(BARE_KIND, end))) touched.add(end);
 			}
 			/*
 	B269 -- ONLY WHERE A LINK LEFT. A deleted link that is replaced at the same waypoint -- a split puts its half back,
@@ -329,8 +329,8 @@ function linkJoin({ joinsAt = () => true, says, wakesAt = [] }) {
 		*/
 				const src = at.find((l) => l.dst === w) || at[0];
 				const other = at.find((l) => l !== src);
-				// Z1 (H19.10): at a device, only a cut's pieces rejoin -- links that END at a device keep ending there
-				if (!bareAnchor(doc, w) && !areCutPieces(src, other, w)) continue;
+				// Z1 (H19.10), U4 (H21.3): where the anchor's routing pack forbids a bend, only a cut's pieces rejoin
+				if (!nodePermitsBend(doc.get(BARE_KIND, w)) && !areCutPieces(src, other, w)) continue;
 				let merged = other ? collapseAtWaypoint(src, other, w, { loop: woken.has(w) }) : null;
 				if (!merged) continue;
 				/*

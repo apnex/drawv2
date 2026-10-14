@@ -165,7 +165,8 @@ Asserted as AGREEMENT rather than against literals. Checking the palette emits v
 mode that produced the drift. What must hold is that both sides read the same source.
 */
 test('B205: the palette fits each glyph exactly as the kernel does', async () => {
-	const { GLYPH_BB } = await import('../kernel/theme.mjs');
+	// RESTATED at H21.3 (U4-1, B282): the glyph boxes live with the device type declaration in devices/device-types.mjs
+	const { GLYPH_BB } = await import('../devices/device-types.mjs');
 	const { STD } = await import('../kernel/spec.mjs');
 	const src = fs.readFileSync(new URL('../app/src/palette.js', import.meta.url), 'utf8');
 

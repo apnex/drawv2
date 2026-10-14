@@ -7,7 +7,7 @@ Importable for tests (port 0 = random); server.js is the CLI entry.
 */
 
 import { DOCUMENT_ID } from '../planner/validate.js';
-import { faviconSvg } from '../kernel/theme.mjs';
+import { faviconSvg } from '../devices/device-types.mjs';
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
