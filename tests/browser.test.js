@@ -35,12 +35,12 @@ import { pipeEntity } from '../network/pipe-kind.mjs';   // V-b's board lays its
 
 const SKIP = NO_CHROME;
 const PITCH = 60;
-const DIAGRAM = 'diagram-ba0001';
+const DIAGRAM = '0000000000ba0001';
 // K8: the same fixture under its own id, which no other test edits, so its tests see the page as it boots (K7 found the lock;
 // K8's first full run found an earlier test's link)
-const K8_DIAGRAM = 'diagram-c80001';
+const K8_DIAGRAM = '0000000000c80001';
 // V-b (H18.26): the network on the product page, on a board of its own, so no other test sees its pipes or edits
-const NET_DIAGRAM = 'diagram-fe0001';   // sorts after the harness's: the shared tab opens the first diagram
+const NET_DIAGRAM = '0000000000fe0001';   // sorts after the harness's: the shared tab opens the first diagram
 function networkBoard() {
 	const host = (id, x, y) => ({ id, name: id.slice(-2), type: 'host', shape: 'square', x, y });
 	return {
@@ -1277,7 +1277,7 @@ before the move, unchanged after it, each on a FRESH tab so nothing an earlier t
   holds only while the palette's key listener is registered before the canvas's. Construction order is behaviour.
 */
 async function freshTab() {
-	const t = await attach(`http://127.0.0.1:${port}/d/${K8_DIAGRAM}`);   // the deep link: the page reads /d/<id>, not ?diagram=
+	const t = await attach(`http://127.0.0.1:${port}/${K8_DIAGRAM}`);   // the deep link: the page reads /d/<id>, not ?diagram=
 	await until(t, `document.getElementById('node-ba0002') ? 1 : 0`, 8000);
 	await t.eval(`window.draw.input.setReadOnly(false), 1`);   // earlier tests hold the server lock (see K7)
 	return t;
@@ -1430,7 +1430,7 @@ down link (the lab matrix's HEAL-02, on the page), and `x` turning an anchor's t
 server's planner and settled on the page.
 */
 test('V-b: the product page draws routes and pipes, says why a link is down, and g and x work there', { skip: SKIP }, async () => {
-	const t = await attach(`http://127.0.0.1:${port}/d/${NET_DIAGRAM}`);
+	const t = await attach(`http://127.0.0.1:${port}/${NET_DIAGRAM}`);
 	try {
 		await until(t, `document.getElementById('node-ab00a1') ? 1 : 0`, 8000);
 		await t.eval(`window.draw.input.setReadOnly(false), 1`);
@@ -1488,7 +1488,7 @@ committed in, before any answer can arrive over the socket; the request carries 
 leaves the tab where the preview put it.
 */
 test('V-d: on the product page a deleted pin takes its link before the server answers', { skip: SKIP }, async () => {
-	const t = await attach(`http://127.0.0.1:${port}/d/${NET_DIAGRAM}`);
+	const t = await attach(`http://127.0.0.1:${port}/${NET_DIAGRAM}`);
 	try {
 		await until(t, `document.getElementById('node-ab00a1') ? 1 : 0`, 8000);
 		await t.eval(`window.draw.input.setReadOnly(false), 1`);
@@ -1527,7 +1527,7 @@ test('B324: a tab a test opens is closed when the test ends -- none of this file
 	assert.equal((await t.loaded()).how, 'navigate', 'a fresh tab was loaded by a navigation -- the state under test');
 	await t.eval('location.reload(), 1');
 	await until(t, `document.getElementById('node-ba0002') ? 1 : 0`, 8000);
-	await assert.rejects(t.eval('undefinedEverywhere.length'), new RegExp(`undefinedEverywhere is not defined[\\s\\S]* -- the page was loaded by reload \\d+ ms ago at /d/${K8_DIAGRAM}`));
+	await assert.rejects(t.eval('undefinedEverywhere.length'), new RegExp(`undefinedEverywhere is not defined[\\s\\S]* -- the page was loaded by reload \\d+ ms ago at /${K8_DIAGRAM}`));
 	await t.close();
 	assert.equal((await open()).length, 0, 'and gone once closed');
 });

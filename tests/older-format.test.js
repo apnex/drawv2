@@ -29,16 +29,16 @@ const SAID = /written in schema 1, an older format: this version reads schema 3 
 
 test('B291: a stored file from before the cutover is skipped at boot, with the reason said; the rest load', async () => {
 	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-older-'));
-	fs.writeFileSync(path.join(dir, 'diagram-0d0001.json'), JSON.stringify(older('diagram-0d0001')));
-	fs.writeFileSync(path.join(dir, 'diagram-0d0002.json'), JSON.stringify(current('diagram-0d0002')));
+	fs.writeFileSync(path.join(dir, '00000000000d0001.json'), JSON.stringify(older('00000000000d0001')));
+	fs.writeFileSync(path.join(dir, '00000000000d0002.json'), JSON.stringify(current('00000000000d0002')));
 	const said = [], error = console.error, warn = console.warn;
 	console.error = console.warn = (...a) => said.push(a.join(' '));
 	try {
 		const s = await openStore(dir);
-		assert.ok(!s.get('diagram-0d0001'), 'the older document is not loaded');
-		assert.ok(s.get('diagram-0d0002'), 'the current one is');
-		assert.ok(said.some((l) => l.includes('diagram-0d0001') && SAID.test(l)), `the reason is said where an operator reads: ${said.join(' | ')}`);
-		assert.equal(JSON.parse(fs.readFileSync(path.join(dir, 'diagram-0d0001.json'), 'utf8')).meta.schema, 1, 'and its file is left as it was');
+		assert.ok(!s.get('00000000000d0001'), 'the older document is not loaded');
+		assert.ok(s.get('00000000000d0002'), 'the current one is');
+		assert.ok(said.some((l) => l.includes('00000000000d0001') && SAID.test(l)), `the reason is said where an operator reads: ${said.join(' | ')}`);
+		assert.equal(JSON.parse(fs.readFileSync(path.join(dir, '00000000000d0001.json'), 'utf8')).meta.schema, 1, 'and its file is left as it was');
 	} finally { console.error = error; console.warn = warn; fs.rmSync(dir, { recursive: true, force: true }); }
 });
 
@@ -46,10 +46,10 @@ test('B291: create refuses a document in the older format, saying so; a current 
 	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-older-create-'));
 	try {
 		const s = await openStore(dir);
-		const refused = s.create('old', older('diagram-0d0003'), OWNER);
+		const refused = s.create('old', older('00000000000d0003'), OWNER);
 		assert.equal(refused.ok, false, 'refused');
 		assert.match(refused.error, SAID);
-		const made = s.create('new', current('diagram-0d0004'), OWNER);
+		const made = s.create('new', current('00000000000d0004'), OWNER);
 		assert.equal(made.ok, true, `a current document is installed: ${made.error ?? ''}`);
 	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });

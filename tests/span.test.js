@@ -117,7 +117,7 @@ test('validateEntity accepts an optional span; rejects malformed; 1×1 (no span)
 
 test('validateDoc accepts a document containing a span node', () => {
 	// RESTATED at WD-b1 (H19.45): a document holds its two layouts (tests/fixtures/composed.mjs `heldLayouts`)
-	const doc = { meta: { id: 'diagram-000000', name: 'd' }, layouts: heldLayouts(),
+	const doc = { meta: { id: '0000000000000000', name: 'd' }, layouts: heldLayouts(),
 		nodes: [{ id: 'node-000006', name: 'p', type: 'host', shape: 'square', x: 2 * P, y: 0, span: { cols: 3, rows: 2 } }],
 		links: [], zones: [], groups: [] };
 	assert.equal(validateDoc(doc), null);
@@ -465,7 +465,7 @@ test('B162: the kernel derives bend from endpoint, and closing a path flips it',
 	const { render } = await import('../kernel/svg-scene.mjs');
 	const { docToSchema } = await import('../kernel/adapt.mjs');
 	const doc = (closed) => ({
-		meta: { id: 'diagram-aa0001', name: 't' },
+		meta: { id: '0000000000aa0001', name: 't' },
 		nodes: [{ id: 'node-aa0001', type: 'host', x: 0, y: 0, name: 'a' }, { id: 'node-ea0001', name: 'node-ea0001', x: 120, y: 0 }, { id: 'node-ea0002', name: 'node-ea0002', x: 60, y: 60 }],
 		links: [{ id: 'link-aa0001', name: 'link-aa0001', src: 'node-aa0001', dst: 'node-ea0001', via: ['node-ea0002'], closed }],
 		zones: [], groups: [],
@@ -481,7 +481,7 @@ test('B199: every waypoint draws the anchor, and an endpoint adds a pad inside i
 	const { docToSchema } = await import('../kernel/adapt.mjs');
 	const { waypointStyle } = await import('../network/appearance.mjs');
 	const svg = render(docToSchema({
-		meta: { id: 'diagram-aa0001', name: 't' },
+		meta: { id: '0000000000aa0001', name: 't' },
 		nodes: [{ id: 'node-aa0001', type: 'host', x: 0, y: 0, name: 'a' }, { id: 'node-ea0001', name: 'node-ea0001', x: 120, y: 0 }, { id: 'node-ea0002', name: 'node-ea0002', x: 60, y: 60 }],
 		links: [{ id: 'link-aa0001', name: 'link-aa0001', src: 'node-aa0001', dst: 'node-ea0001', via: ['node-ea0002'] }],
 		zones: [], groups: [],
@@ -624,7 +624,7 @@ test('B162: an endpoint is opaque so the path terminates on it, a bend stays hol
 	const { docToSchema } = await import('../kernel/adapt.mjs');
 	const { waypointAnchor, waypointStyle } = await import('../network/appearance.mjs');
 	const svg = render(docToSchema({
-		meta: { id: 'diagram-aa0001', name: 't' },
+		meta: { id: '0000000000aa0001', name: 't' },
 		nodes: [{ id: 'node-aa0001', type: 'host', x: -240, y: 0, name: 'a' }, { id: 'node-ea0001', name: 'node-ea0001', x: 120, y: 0 }, { id: 'node-ea0002', name: 'node-ea0002', x: 0, y: -120 }],
 		links: [{ id: 'link-aa0001', name: 'link-aa0001', src: 'node-aa0001', dst: 'node-ea0001', via: ['node-ea0002'] }],
 		zones: [], groups: [],
@@ -715,7 +715,7 @@ test('B162: the two renderers agree, value for value', async () => {
 	const { waypointAnchor, waypointStyle } = await import('../network/appearance.mjs');
 	// what the export emits, parsed back out of the SVG it produced
 	const svg = render(docToSchema({
-		meta: { id: 'diagram-aa0001', name: 't' },
+		meta: { id: '0000000000aa0001', name: 't' },
 		nodes: [{ id: 'node-aa0001', type: 'host', x: -240, y: 0, name: 'a' }, { id: 'node-ea0001', name: 'node-ea0001', x: 120, y: 0 }, { id: 'node-ea0002', name: 'node-ea0002', x: 0, y: -120 }],
 		links: [{ id: 'link-aa0001', name: 'link-aa0001', src: 'node-aa0001', dst: 'node-ea0001', via: ['node-ea0002'] }],
 		zones: [], groups: [],
@@ -897,7 +897,7 @@ test('B209: each role combination draws its own layers, in both renderers', asyn
 	classes; a cross renders three and has no pad, because nothing terminates there.
 	*/
 	const doc = (links) => ({
-		meta: { id: 'diagram-aa0001', name: 't' },
+		meta: { id: '0000000000aa0001', name: 't' },
 		nodes: [{ id: 'node-aa0001', type: 'host', x: -120, y: 0, name: 'a' }, { id: 'node-aa0002', type: 'host', x: 120, y: 0, name: 'b' },
 			{ id: 'node-aa0003', type: 'host', x: 0, y: 120, name: 'c' }, { id: 'node-aa0004', type: 'host', x: 0, y: -120, name: 'd' },
 			{ id: 'node-ea0001', name: 'w', x: 0, y: 0 }],
@@ -1008,7 +1008,7 @@ test('B212: the junction ring masks what is behind it, as the endpoint pad does'
 
 	// emitted, not just computed
 	const svg = render(docToSchema({
-		meta: { id: 'diagram-aa0001', name: 't' },
+		meta: { id: '0000000000aa0001', name: 't' },
 		nodes: [{ id: 'node-aa0001', type: 'host', x: -120, y: 0, name: 'a' }, { id: 'node-aa0002', type: 'host', x: 120, y: 0, name: 'b' }, { id: 'node-ea0001', name: 'w', x: 0, y: 0 }],
 		links: [{ id: 'link-aa0001', name: 'l', src: 'node-aa0001', dst: 'node-ea0001' },
 			{ id: 'link-aa0002', name: 'm', src: 'node-ea0001', dst: 'node-aa0002' },

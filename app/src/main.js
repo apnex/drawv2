@@ -159,6 +159,7 @@ const menu = {
 	del: document.getElementById('diagram-del'),
 	undelete: document.getElementById('diagram-undelete'),
 	lock: document.getElementById('lockstate'),
+	publish: document.getElementById('publish'),
 	agents: document.getElementById('agents'),
 	whoami: document.getElementById('whoami'),
 	banner: document.getElementById('banner'),
@@ -676,8 +677,46 @@ const sync = new Sync({
 		}
 		// H9.4d: identity and the access it confers are the same question, so the affordance hangs
 		// off the element that already answers "who am I" rather than earning a button of its own.
-		const isOwner = !!principal && !!meta.owner && meta.owner === principal;
+		const isOwner = !principal || (!!meta.owner && meta.owner === principal);
 		accessId = meta.id;
+		if (menu.publish) {
+			const isTemplate = String(meta.id || '').startsWith('template-');
+			const pub = Boolean(meta.public);
+			menu.publish.className = pub ? 'publish-public' : 'publish-private';
+			menu.publish.textContent = pub ? 'public' : 'private';
+			menu.publish.disabled = !isOwner || isTemplate;
+			const svgUrl = `${location.origin}/${meta.id}.svg`;
+			menu.publish.title = isTemplate
+				? 'templates cannot be published -- edit to fork your own diagram first'
+				: !isOwner
+					? (pub ? `public SVG: ${svgUrl} (only the owner may change this)` : 'private diagram (only the owner may publish)')
+					: (pub ? `public SVG: ${svgUrl} -- click to make private` : 'private -- click to publish SVG link and copy URL');
+			menu.publish.onclick = (!isOwner || isTemplate) ? null : async () => {
+				const next = !Boolean(model.state.meta.public);
+				try {
+					const res = await fetch(`/api/v1/diagrams/${meta.id}/public`, {
+						method: 'PUT',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({ public: next }),
+					});
+					const body = await res.json().catch(() => ({}));
+					if (!res.ok) {
+						if (menu.banner) menu.banner.textContent = body.error || `publish refused (${res.status})`;
+						return;
+					}
+					model.state.meta.public = Boolean(body.public);
+					if (body.public) {
+						try { await navigator.clipboard?.writeText(svgUrl); } catch { /* clipboard unavailable */ }
+						networkSaid = { text: `published -- copied ${svgUrl}`, run: foreignKey() };
+					} else {
+						networkSaid = { text: 'private -- SVG link now requires sign-in', run: foreignKey() };
+					}
+					sync.emitState({});
+				} catch (e) {
+					if (menu.banner) menu.banner.textContent = `could not reach the server: ${e.message}`;
+				}
+			};
+		}
 		// H9.4c: the panel opens for anyone signed in, not only the diagram's owner, because the
 		// workspace half is always theirs. The diagram half is hidden by CSS when they do not own
 		// what is on screen — the server would refuse those calls, and offering a door certain not
@@ -693,8 +732,8 @@ const sync = new Sync({
 		menu.whoami.onclick = principal ? () => {
 			access.panel.dataset.owner = meta.owner;
 			access.error.textContent = '';
-			access.card.classList.toggle('not-owner', !isOwner);
-			if (isOwner) renderAccess(meta.owner, meta.grants);
+			access.card.classList.toggle('not-owner', !(!!principal && !!meta.owner && meta.owner === principal));
+			if (!!principal && !!meta.owner && meta.owner === principal) renderAccess(meta.owner, meta.grants);
 			renderWorkspace({});
 			renderCodes([]);
 			access.codeNew.hidden = true;

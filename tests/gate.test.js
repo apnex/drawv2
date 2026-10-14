@@ -712,7 +712,7 @@ test('H9.7/B101: the agent door is stripped at ingress and nothing below can see
 	path, so widening the door stays a deliberate act that shows up in a diff.
 	*/
 	const entries = [...code.matchAll(/\['(\/connect\/[^']+)',\s*'([^']+)'\]/g)].map((m) => [m[1], m[2]]);
-	assert.deepEqual(entries, [['/connect/v1/', '/api/v1/'], ['/connect/d/', '/d/']],
+	assert.deepEqual(entries, [['/connect/v1/', '/api/v1/'], ['/connect/svg/', '/']],
 		'the door opens onto exactly the REST surface and the picture');
 	for (const [from] of entries) {
 		assert.ok(from.length > '/connect/'.length,
@@ -1138,7 +1138,7 @@ test('B157: every single-glyph header button is square', () => {
 /*
 H9.9 -- the picker marks a template, because it is the one surface showing a name and nothing else.
 
-Everywhere else the id disambiguates: `template-3acaca arrow` beside `diagram-c1f6cc arrow` is
+Everywhere else the id disambiguates: `template-3acaca arrow` beside `0000000000c1f6cc arrow` is
 unambiguous in the CLI and in the snapshot payload. In the picker the id is the option's VALUE and
 only the name is drawn, so a forked `arrow` and the template it came from looked identical.
 

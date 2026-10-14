@@ -59,7 +59,7 @@ async function open(board) {
 	t.thrown.length = 0;
 	const id = await diagramOf(board);
 	const n = ++nonce;
-	await t.send('Page.navigate', { url: `http://127.0.0.1:${port}/d/${id}?n=${n}` });
+	await t.send('Page.navigate', { url: `http://127.0.0.1:${port}/${id}?n=${n}` });
 	const ready = `location.search.includes('n=${n}') && !!window.draw && window.draw.sync.hydrated && window.draw.model.state.meta.id === '${id}'`;
 	for (let i = 0; i < 100; i++) { if (await t.run(ready).catch(() => false)) break; await sleep(150); }
 	if (!(await t.run(ready).catch(() => false))) throw new Error(`the product page never opened ${id} (${board}): ${JSON.stringify(t.thrown)}`);

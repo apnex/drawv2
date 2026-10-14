@@ -447,3 +447,5 @@ Whether `/d/<id>.svg` remains reachable without any principal at all is unresolv
 
 The workflow set is assumed to be the two described.\
 If others exist, the grant model is the part most likely to need widening.
+
+AMENDED 2026-10-15 (H23): diagram IDs are 16-hex (`[0-9a-f]{16}`) at `/<id>` and `/<id>.svg`, and the owner may publish a diagram (`meta.public`) so `/<id>.svg` is served outside IAP.

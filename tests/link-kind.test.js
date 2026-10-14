@@ -61,7 +61,7 @@ composed kind owned -- passed unread: a link to nowhere was accepted. Every entr
 */
 test('S-f: the validator takes no default composition -- each entry point refuses to run without one', async () => {
 	const real = await import('../planner/validate.js');
-	const broken = { meta: { id: 'diagram-000001', name: 'd' }, nodes: [node('000001', -4, 0)], links: [straight('000001', '000001', '00000f')] };
+	const broken = { meta: { id: '0000000000000001', name: 'd' }, nodes: [node('000001', -4, 0)], links: [straight('000001', '000001', '00000f')] };
 	assert.throws(() => real.validateDoc(broken), /validateDoc: kinds is the composition to validate against/);
 	assert.throws(() => real.validateEntity('node', node('000001', 0, 0)), /validateEntity: kinds is/);
 	assert.throws(() => real.validateMutation(new Model(), { action: 'put', kind: 'node', entity: node('000001', 0, 0) }), /validateMutation: kinds is/);
@@ -74,7 +74,7 @@ test('S-f: the validator takes no default composition -- each entry point refuse
 // ---- the link row's references and invariant, through the composition ----
 
 test('S-e: the link\'s references are its row\'s, judged through the generic access on both paths', () => {
-	const doc = { meta: { id: 'diagram-000001', name: 'd' }, nodes: [node('000001', -4, 0), node('000002', 4, 0)], links: [straight('000001', '000001', '000003')] };
+	const doc = { meta: { id: '0000000000000001', name: 'd' }, nodes: [node('000001', -4, 0), node('000002', 4, 0)], links: [straight('000001', '000001', '000003')] };
 	assert.equal(validateDoc(doc), 'link dst does not exist: node-000003 (link-000001)', 'a document');
 	const m = new Model(); for (const n of doc.nodes) m.put('node', n);
 	const r = plan(m, [{ op: 'put', kind: 'link', entity: straight('000001', '000001', '000003') }]);
@@ -86,7 +86,7 @@ test('S-e: the link\'s references are its row\'s, judged through the generic acc
 // node whose type offers transit may be passed now, and the generic access still tells the kinds apart, by what each offers
 test('S-e, H19.10: a link bends at a node that passes routes -- the generic access tells a host from a router from a node with no type', () => {
 	// RESTATED at WD-b1 (H19.45): a document holds its two layouts (tests/fixtures/composed.mjs `heldLayouts`)
-	const doc = { meta: { id: 'diagram-000001', name: 'd' }, layouts: heldLayouts(), nodes: [node('000001', -4, 0), node('000002', 4, 0), node('000003', 0, 2)],
+	const doc = { meta: { id: '0000000000000001', name: 'd' }, layouts: heldLayouts(), nodes: [node('000001', -4, 0), node('000002', 4, 0), node('000003', 0, 2)],
 		links: [{ ...straight('000001', '000001', '000002'), via: ['node-000003'] }] };
 	assert.equal(validateDoc(doc), null, 'a router in a via is a junction there');
 	const host = structuredClone(doc); host.nodes[2].type = 'host';

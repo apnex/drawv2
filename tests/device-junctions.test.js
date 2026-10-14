@@ -13,7 +13,7 @@ import { nodeOffersTransit } from '../network/transit-offers.mjs';
 
 const A = 'node-00000a', B = 'node-00000b', R = 'node-0000c1';
 // RESTATED at WD-b1 (H19.45): schema 3 -- a document holds its two layouts (tests/fixtures/composed.mjs `heldLayouts`)
-const pinnedThrough = (type) => ({ meta: { id: 'diagram-0d0001', name: 'd', version: 0, schema: 3 }, layouts: heldLayouts(),
+const pinnedThrough = (type) => ({ meta: { id: '00000000000d0001', name: 'd', version: 0, schema: 3 }, layouts: heldLayouts(),
 	nodes: [{ id: A, name: 'A', type: 'host', shape: 'circle', x: -240, y: 0 }, { id: B, name: 'B', type: 'host', shape: 'circle', x: 240, y: 0 },
 		{ id: R, name: 'R', x: 0, y: -120, ...(type ? { type, shape: 'circle' } : {}) }],
 	links: [{ id: 'link-000001', name: 'l', src: A, via: [R], dst: B }], pipes: [], zones: [], groups: [], selection: [] });

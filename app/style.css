@@ -277,6 +277,16 @@ rather than riding along here, where it was silently governing the agents button
 	background-color: var(--tok-surface-raised); color: var(--tok-ink-faint);
 }
 #menu #whoami.whoami-local { cursor: default; }
+#menu #publish {
+	font: 11px ui-monospace, monospace; padding: 0 1ch; border: 0; border-radius: 3px;
+	width: 9ch; box-sizing: border-box; text-align: center; cursor: pointer;
+	overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+#menu #publish.publish-private { background-color: var(--tok-surface-raised); color: var(--tok-ink-faint); }
+#menu #publish.publish-private:hover:not(:disabled) { background-color: var(--tok-agents-none-hover); color: var(--tok-agents-none-ink-hover); }
+#menu #publish.publish-public { background-color: var(--tok-code-new); color: var(--tok-accent); }
+#menu #publish.publish-public:hover:not(:disabled) { color: var(--tok-ink-bright); }
+#menu #publish:disabled { cursor: default; }
 
 /*
 `no agents` is a BUTTON, and has to look like one.

@@ -152,48 +152,48 @@ const snap = (id, version) => {
 
 test('B71: a snapshot arriving mid-gesture is held, not applied under the preview', () => {
 	const t = deferrable();
-	t.recv(snap('diagram-aaa001', 1));
-	assert.equal(t.sync.diagramId, 'diagram-aaa001', 'the first snapshot hydrates normally');
+	t.recv(snap('0000000000aaa001', 1));
+	assert.equal(t.sync.diagramId, '0000000000aaa001', 'the first snapshot hydrates normally');
 
 	t.gesture(true);
-	t.recv(snap('diagram-bbb002', 2));
-	assert.equal(t.sync.diagramId, 'diagram-aaa001', 'the document did NOT change under the gesture');
+	t.recv(snap('0000000000bbb002', 2));
+	assert.equal(t.sync.diagramId, '0000000000aaa001', 'the document did NOT change under the gesture');
 	assert.deepEqual(t.sync.deferred.map((m) => m.cmd), ['snapshot'], 'it is held');
 
 	t.gesture(false);
 	t.sync.releaseDeferred();
-	assert.equal(t.sync.diagramId, 'diagram-bbb002', 'and lands the moment the gesture ends');
+	assert.equal(t.sync.diagramId, '0000000000bbb002', 'and lands the moment the gesture ends');
 	assert.equal(t.sync.deferred.length, 0, 'the hold is cleared');
 });
 
 test('B71: a held snapshot supersedes held changes, because it is whole state', () => {
 	const t = deferrable();
-	t.recv(snap('diagram-aaa001', 1));
+	t.recv(snap('0000000000aaa001', 1));
 	t.gesture(true);
 	t.recv({ cmd: 'change', body: { version: 2, ops: [] } });
-	t.recv(snap('diagram-ccc003', 9));
+	t.recv(snap('0000000000ccc003', 9));
 	// one queue, in arrival order: the order is what says the change is older than the snapshot
 	assert.deepEqual(t.sync.deferred.map((m) => m.cmd), ['change', 'snapshot'], 'the change queued, and so did the snapshot');
 
 	t.gesture(false);
 	t.sync.releaseDeferred();
-	assert.equal(t.sync.diagramId, 'diagram-ccc003', 'the snapshot won');
+	assert.equal(t.sync.diagramId, '0000000000ccc003', 'the snapshot won');
 	assert.equal(t.sync.deferred.length, 0, 'and the older deltas were dropped, not replayed onto it');
 });
 
 test('B71: a snapshot the user ASKED for is not held — that would feel stuck, not safe', () => {
 	const t = deferrable();
-	t.recv(snap('diagram-aaa001', 1));
+	t.recv(snap('0000000000aaa001', 1));
 	t.gesture(true);
 	t.sync.expectLoad = true;             // set by openDiagram / createDiagram
-	t.recv(snap('diagram-ddd004', 3));
-	assert.equal(t.sync.diagramId, 'diagram-ddd004', 'a deliberate open lands immediately');
+	t.recv(snap('0000000000ddd004', 3));
+	assert.equal(t.sync.diagramId, '0000000000ddd004', 'a deliberate open lands immediately');
 	assert.equal(t.sync.deferred.length, 0, 'nothing was held');
 });
 
 test('B76: the client holds its own principal and hands it to the UI', () => {
 	const t = deferrable();
-	const m = snap('diagram-aaa001', 1);
+	const m = snap('0000000000aaa001', 1);
 	m.body.principal = 'user:someone@apnex.com.au';
 	t.recv(m);
 	assert.equal(t.sync.principal, 'user:someone@apnex.com.au', 'taken from the snapshot');
@@ -203,7 +203,7 @@ test('B76: the client holds its own principal and hands it to the UI', () => {
 	t.sync.emitState({});
 	assert.equal(states[0].principal, 'user:someone@apnex.com.au', 'and reaches onState for rendering');
 
-	t.recv(snap('diagram-bbb002', 2));   // a snapshot with no principal field
+	t.recv(snap('0000000000bbb002', 2));   // a snapshot with no principal field
 	assert.equal(t.sync.principal, null, 'absent means absent — never a stale identity from a prior load');
 });
 
@@ -268,18 +268,18 @@ test('B105: agent activity arrives with a snapshot, so connecting late still sho
 	assert.deepEqual(h.sync.agents, [], 'nothing until told');
 	h.sync.expectLoad = true;
 	h.send({ cmd: 'snapshot', body: { doc: new Model().toJSON(), version: 1, mayWrite: true,
-		agents: [{ principal: 'agent:planner', diagram: 'diagram-aa0001', since: 1, expiresAt: 2 }] } });
+		agents: [{ principal: 'agent:planner', diagram: '0000000000aa0001', since: 1, expiresAt: 2 }] } });
 	assert.equal(h.sync.agents.length, 1);
-	assert.equal(h.sync.agents[0].diagram, 'diagram-aa0001');
+	assert.equal(h.sync.agents[0].diagram, '0000000000aa0001');
 });
 
 test('B105: an announcement REPLACES the list rather than merging into it', () => {
 	const h = inbound();
 	h.send({ cmd: 'agents', body: { agents: [
-		{ principal: 'agent:a', diagram: 'diagram-aa0001' }, { principal: 'agent:b', diagram: 'diagram-aa0002' }] } });
+		{ principal: 'agent:a', diagram: '0000000000aa0001' }, { principal: 'agent:b', diagram: '0000000000aa0002' }] } });
 	assert.equal(h.sync.agents.length, 2);
 
-	h.send({ cmd: 'agents', body: { agents: [{ principal: 'agent:a', diagram: 'diagram-aa0001' }] } });
+	h.send({ cmd: 'agents', body: { agents: [{ principal: 'agent:a', diagram: '0000000000aa0001' }] } });
 	assert.deepEqual(h.sync.agents.map((a) => a.principal), ['agent:a'],
 		'agent:b released its lock -- a merge would keep reporting it forever');
 
@@ -301,7 +301,7 @@ test('B105: agent activity reaches the UI through the same state callback as eve
 	const model = new Model();
 	const sync = new Sync({ model, net, history: { clear() {}, setCounts() {}, state: { version: 0 } },
 		selection: new Selection(model), onState: (s) => { last = s; } });
-	net._fn({ cmd: 'agents', body: { agents: [{ principal: 'agent:planner', diagram: 'diagram-aa0001' }] } });
+	net._fn({ cmd: 'agents', body: { agents: [{ principal: 'agent:planner', diagram: '0000000000aa0001' }] } });
 	assert.ok(last, 'onState fired');
 	assert.equal(last.agents.length, 1, 'and carried the agents, beside locked/mayWrite/principal');
 	assert.equal(sync.agents, last.agents);
@@ -373,12 +373,12 @@ test('B177: the send stamp is consumed by the snapshot it belongs to', () => {
 	const { sync } = harness();
 	sync.expectLoad = true;
 	sync.requestSentAt = Date.now() - 50;
-	sync.applySnapshot({ body: { serverNow: Date.now(), doc: (() => { const m = new Model(); m.state.meta.id = "diagram-aa0001"; return m.toJSON(); })(), version: 1 } });
+	sync.applySnapshot({ body: { serverNow: Date.now(), doc: (() => { const m = new Model(); m.state.meta.id = "0000000000aa0001"; return m.toJSON(); })(), version: 1 } });
 	assert.equal(sync.requestSentAt, null, 'the stamp must not survive the snapshot that used it');
 
 	// and a second, unsolicited snapshot must therefore fall back to arrival rather than reuse it
 	const before = sync.clock.skew().offset;
-	sync.applySnapshot({ body: { serverNow: Date.now(), doc: (() => { const m = new Model(); m.state.meta.id = "diagram-aa0001"; return m.toJSON(); })(), version: 2 } });
+	sync.applySnapshot({ body: { serverNow: Date.now(), doc: (() => { const m = new Model(); m.state.meta.id = "0000000000aa0001"; return m.toJSON(); })(), version: 2 } });
 	assert.ok(Math.abs(sync.clock.skew().offset) < 1000,
 		`an unsolicited snapshot skewed the clock to ${sync.clock.skew().offset}ms (was ${before}ms)`);
 });
@@ -398,7 +398,7 @@ test('B178: the snapshot pins the socket revision on the watchdog', () => {
 	sync.watchdog = { pin: (r) => pinned.push(r), retire: () => {}, gap: () => {} };
 	sync.expectLoad = true;
 	sync.applySnapshot({ body: { serverNow: Date.now(), revision: 'draw-00074-dmh',
-		doc: (() => { const m = new Model(); m.state.meta.id = 'diagram-aa0001'; return m.toJSON(); })(), version: 1 } });
+		doc: (() => { const m = new Model(); m.state.meta.id = '0000000000aa0001'; return m.toJSON(); })(), version: 1 } });
 	assert.deepEqual(pinned, ['draw-00074-dmh'], 'the revision the socket is pinned to must reach the watchdog');
 });
 

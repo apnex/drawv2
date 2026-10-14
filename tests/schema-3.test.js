@@ -38,7 +38,7 @@ const layoutsOf = (model) => model.all('layout').map((l) => ({ ...l, ext: { ...l
 const SAID = (n) => new RegExp(`written in schema ${n}, an older format: this version reads schema 3 only and keeps no migration`);
 
 test('WD-b1: completion is pure -- the two layouts added as copies of their own, the rest equal; a whole document passes as the same object', () => {
-	const src = lacking('diagram-0e0001');
+	const src = lacking('00000000000e0001');
 	const before = structuredClone(src);
 	const done = completeAlwaysHeld(src, KINDS);
 	assert.deepEqual(src, before, 'its input untouched');
@@ -54,7 +54,7 @@ test('WD-b1: completion is pure -- the two layouts added as copies of their own,
 });
 
 test('WD-b1: validateDoc requires the two layouts, and the product\'s values in them', () => {
-	const doc = completeAlwaysHeld(lacking('diagram-0e0001'), KINDS);
+	const doc = completeAlwaysHeld(lacking('00000000000e0001'), KINDS);
 	assert.match(validateDoc({ ...doc, layouts: doc.layouts.slice(1) }), /node layout \(layout-000001\)/, 'one missing, named');
 	assert.match(validateDoc({ ...doc, layouts: [] }), /layout/, 'both missing');
 	const moved = { ...doc, layouts: [{ ...doc.layouts[0], offset: 30 }, doc.layouts[1]] };
@@ -65,25 +65,25 @@ test('WD-b1: validateDoc requires the two layouts, and the product\'s values in 
 
 test('WD-b1: boot completes a file lacking its layouts and writes it back; a schema 2 file is refused, said plainly, and left as it was', async () => {
 	const dir = tmp('boot');
-	fs.writeFileSync(path.join(dir, 'diagram-0e0002.json'), serialize(lacking('diagram-0e0002'), { version: 4, cursor: 0, evicted: 0, records: [] }));
-	fs.writeFileSync(path.join(dir, 'diagram-0e0003.json'), JSON.stringify(lacking('diagram-0e0003', 2)));
+	fs.writeFileSync(path.join(dir, '00000000000e0002.json'), serialize(lacking('00000000000e0002'), { version: 4, cursor: 0, evicted: 0, records: [] }));
+	fs.writeFileSync(path.join(dir, '00000000000e0003.json'), JSON.stringify(lacking('00000000000e0003', 2)));
 	const said = [], error = console.error, warn = console.warn;
 	console.error = console.warn = (...a) => said.push(a.join(' '));
 	try {
 		// no principal: adopting the ownerless diagram would mark it dirty, and the write-back under test with it
 		const s = await openStore(dir, { principal: null });
-		const m = s.get('diagram-0e0002');
+		const m = s.get('00000000000e0002');
 		assert.ok(m, 'the document lacking its layouts is loaded');
 		assert.deepEqual(layoutsOf(m), LAYOUTS, 'holding its two layouts');
 		assert.equal(m.all('node').length, 1, 'and its own entities');
 		await s.flushAll();
-		const { doc, log } = parse(fs.readFileSync(path.join(dir, 'diagram-0e0002.json'), 'utf8'));
+		const { doc, log } = parse(fs.readFileSync(path.join(dir, '00000000000e0002.json'), 'utf8'));
 		assert.deepEqual(doc.layouts, LAYOUTS, 'written back with its layouts');
 		assert.equal(doc.meta.schema, 3);
 		assert.equal(log.version, 4, 'its log kept');
-		assert.ok(!s.get('diagram-0e0003'), 'the schema 2 document is not loaded -- no migration is kept');
-		assert.ok(said.some((l) => l.includes('diagram-0e0003') && SAID(2).test(l)), `the reason said where an operator reads: ${said.join(' | ')}`);
-		assert.equal(JSON.parse(fs.readFileSync(path.join(dir, 'diagram-0e0003.json'), 'utf8')).meta.schema, 2, 'and its file is left as it was');
+		assert.ok(!s.get('00000000000e0003'), 'the schema 2 document is not loaded -- no migration is kept');
+		assert.ok(said.some((l) => l.includes('00000000000e0003') && SAID(2).test(l)), `the reason said where an operator reads: ${said.join(' | ')}`);
+		assert.equal(JSON.parse(fs.readFileSync(path.join(dir, '00000000000e0003.json'), 'utf8')).meta.schema, 2, 'and its file is left as it was');
 	} finally { console.error = error; console.warn = warn; fs.rmSync(dir, { recursive: true, force: true }); }
 });
 
@@ -91,16 +91,16 @@ test('WD-b1: create completes a document lacking its layouts, with or without a 
 	const dir = tmp('create');
 	try {
 		const s = await openStore(dir);
-		const tab = s.create('tab', lacking('diagram-0e0004'), OWNER);
+		const tab = s.create('tab', lacking('00000000000e0004'), OWNER);
 		assert.equal(tab.ok, true, `a schema 3 document without layouts is installed: ${tab.error ?? ''}`);
 		assert.deepEqual(layoutsOf(tab.model), LAYOUTS);
-		const bare = s.create('bare', lacking('diagram-0e0005', null), OWNER);
+		const bare = s.create('bare', lacking('00000000000e0005', null), OWNER);
 		assert.equal(bare.ok, true, `one with no meta.schema is installed: ${bare.error ?? ''}`);
 		assert.deepEqual(layoutsOf(bare.model), LAYOUTS);
 		const fresh = s.create('fresh', null, OWNER);
 		assert.deepEqual(layoutsOf(fresh.model), LAYOUTS, 'a new diagram holds its layouts');
 		assert.equal(fresh.model.toJSON().meta.schema, 3);
-		const two = s.create('two', lacking('diagram-0e0006', 2), OWNER);
+		const two = s.create('two', lacking('00000000000e0006', 2), OWNER);
 		assert.equal(two.ok, false, 'schema 2 is refused');
 		assert.match(two.error, SAID(2));
 	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
@@ -113,11 +113,11 @@ test('WD-b1: create completes a document lacking its layouts, with or without a 
 test('WD-b1: the examples and the templates are completed on their way in', async () => {
 	const dir = tmp('seed'), examples = tmp('examples'), templates = tmp('templates');
 	try {
-		fs.writeFileSync(path.join(examples, 'diagram-0e0007.json'), JSON.stringify(lacking('diagram-0e0007')));
+		fs.writeFileSync(path.join(examples, '00000000000e0007.json'), JSON.stringify(lacking('00000000000e0007')));
 		fs.writeFileSync(path.join(templates, 'template-0e0008.json'), JSON.stringify(lacking('template-0e0008')));
 		// apart: a store seeds its examples only when it holds no template either
 		const s = await openStore(dir, { examplesDir: examples });
-		const ex = s.get('diagram-0e0007');
+		const ex = s.get('00000000000e0007');
 		assert.ok(ex, 'the example is seeded');
 		assert.deepEqual(layoutsOf(ex), LAYOUTS);
 		const t = (await openStore(tmpKept(dir), { templatesDir: templates })).get('template-0e0008');

@@ -56,7 +56,7 @@ test('B299: transit off at a ring\'s pin opens the ring there -- one loop starti
 	assert.deepEqual(points(pathOf(m, l)), points(before), 'drawn through the same points: the ring\'s own legs');
 	assert.deepEqual(waypointRolesIn(m, P), ['endpoint'], 'P is its endpoint, never a junction');
 	const d = m.toJSON();
-	assert.equal(validateDoc({ ...d, meta: { ...d.meta, id: 'diagram-0f0002', name: 'ring' } }), null, 'and the document is valid');
+	assert.equal(validateDoc({ ...d, meta: { ...d.meta, id: '00000000000f0002', name: 'ring' } }), null, 'and the document is valid');
 });
 
 test('B299: turning it back on closes it into a ring again, through P', () => {
@@ -91,7 +91,7 @@ test('B299: two of a ring\'s pins off in one edit -- opened at the first, cut at
 
 test('B299: a loop is valid only open and round two or more other stops; a closed one, or one round a single stop, is a self-link', () => {
 	// RESTATED at WD-b1 (H19.45): schema 3 -- a document holds its two layouts (tests/fixtures/composed.mjs `heldLayouts`)
-	const doc = (link) => ({ meta: { id: 'diagram-0f0001', name: 'l', version: 0, schema: 3 }, layouts: heldLayouts(),
+	const doc = (link) => ({ meta: { id: '00000000000f0001', name: 'l', version: 0, schema: 3 }, layouts: heldLayouts(),
 		nodes: [A, P, Q].map((id, i) => ({ id, name: id, x: i * 120, y: 0 })), links: [{ id: 'link-0f0001', name: 'l', ...link }],
 		pipes: [], zones: [], groups: [], selection: [] });
 	assert.equal(validateDoc(doc({ src: A, via: [P, Q], dst: A })), null, 'open, round two stops: a loop');
@@ -166,5 +166,5 @@ test('B301, H19.10: a ring whose ends are routers opens at its waypoint, the rou
 	const l = m.get('link', 'link-000001');
 	assert.deepEqual([l.src, l.via, l.dst, !!l.closed], [P, [B, A], P, false], 'opened at P, through B and A');
 	const d = m.toJSON();
-	assert.equal(validateDoc({ ...d, meta: { ...d.meta, id: 'diagram-0f0003', name: 'r' } }), null, 'and the document valid');
+	assert.equal(validateDoc({ ...d, meta: { ...d.meta, id: '00000000000f0003', name: 'r' } }), null, 'and the document valid');
 });

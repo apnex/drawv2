@@ -24,7 +24,7 @@ transit is off (t). Links have their pipes, so each is up and drawn along its st
 */
 // RESTATED at WD-b1 (H19.45): schema 3 -- a document holds its two layouts (tests/fixtures/composed.mjs `heldLayouts`)
 const doc = () => ({
-	meta: { id: 'diagram-000001', name: 'd', version: 0, schema: 3 }, layouts: heldLayouts(),
+	meta: { id: '0000000000000001', name: 'd', version: 0, schema: 3 }, layouts: heldLayouts(),
 	nodes: [
 		{ id: 'node-0000a1', name: 'a', type: 'host', shape: 'square', x: -360, y: 0 },
 		{ id: 'node-0000a2', name: 'c', type: 'host', shape: 'square', x: 360, y: 0 },
@@ -139,7 +139,7 @@ test('R-c: a ring is drawn closed once -- its route\'s return to its start is th
 	const { render } = await import('../kernel/svg-scene.mjs');
 	const { docToSchema } = await import('../kernel/adapt.mjs');
 	const ring = {
-		meta: { id: 'diagram-000001', name: 'd' },
+		meta: { id: '0000000000000001', name: 'd' },
 		nodes: [{ id: 'node-0000b1', name: 'p', x: -120, y: 0 }, { id: 'node-0000b2', name: 'q', x: 120, y: 0 }, { id: 'node-0000b3', name: 'r', x: 0, y: -180 }],
 		links: [{ id: 'link-000001', name: 'l', src: 'node-0000b1', dst: 'node-0000b3', via: ['node-0000b2'], closed: true }],
 		pipes: [['node-0000b1', 'node-0000b2'], ['node-0000b2', 'node-0000b3'], ['node-0000b1', 'node-0000b3']].map(([x, y]) => pipeEntity(x, y, 'link')),

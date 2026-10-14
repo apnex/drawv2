@@ -308,7 +308,7 @@ test('GR5: plan() agrees with the frozen planMutation over 1000 seeded random mu
 // door, so the claim is asserted rather than trusted.
 test('GR5/X8: an identical put that ALSO steals group members is NOT narrowed away', () => {
 	const model = new Model();
-	model.load({ meta: { id: 'diagram-aa0001', name: 'd' },
+	model.load({ meta: { id: '0000000000aa0001', name: 'd' },
 		nodes: [1, 2, 3].map((n) => ({ id: `node-aa000${n}`, name: `n${n}`, type: 'host', shape: 'circle', x: n * 60, y: 0 })),
 		links: [], zones: [],
 		groups: [

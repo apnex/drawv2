@@ -66,7 +66,7 @@ The DOCUMENT-level ids, exported, because more than one place needs to recognise
 lookup and answered 404. A restated grammar is a grammar that goes out of date somewhere, and this
 one did so in the exact way H9.9 was careful to avoid everywhere else.
 */
-export const DOCUMENT_ID = /^(diagram|template)-[0-9a-f]{6}$/;
+export const DOCUMENT_ID = /^([0-9a-f]{16}|template-[0-9a-f]{6})$/;
 // DERIVED from the composition's selectable rows, which used to be a list pinned to this file by a comment reading
 // "MUST match planner/validate.js SELECTABLE" -- a comment doing a check's job (B86)
 const isSelectableId = (kinds, v) => typeof v === 'string' && kinds.selectable.some((k) => kinds.row(k).fields.id(v));
@@ -193,8 +193,9 @@ export function validateDoc(doc, { kinds } = {}) {
 	}
 	if (!str(doc.meta.name || '', NAME_MAX)) return 'invalid meta.name';
 	for (const key of Object.keys(doc.meta)) {
-		if (!['id', 'name', 'version', 'schema', 'owner', 'grants', 'plugins'].includes(key)) return `unknown meta key: ${key}`;
+		if (!['id', 'name', 'version', 'schema', 'owner', 'grants', 'public', 'plugins'].includes(key)) return `unknown meta key: ${key}`;
 	}
+	if ('public' in doc.meta && typeof doc.meta.public !== 'boolean') return 'invalid meta.public';
 	if ('plugins' in doc.meta) {
 		if (!Array.isArray(doc.meta.plugins) || doc.meta.plugins.some((p) => typeof p !== 'string' || !p.trim())) return 'invalid meta.plugins';
 		const heldPlugins = new Set(kinds.plugins ?? []);

@@ -1428,6 +1428,24 @@ AMENDED 2026-10-15: H22.1 to H22.5 done -- `B349`, `B329`, `B328`, `B248` and `B
 
 ---
 
+## H23 -- 16-hex diagram IDs at `/<id>` and `/<id>.svg`, and owner publish toggle for IAP-free SVG embedding - `DONE`
+
+Opened 2026-10-15 by the director (`dev/DECISIONS.md` H23): move diagram IDs full-forward to 16-hex (`[0-9a-f]{16}`) at `/<id>` and `/<id>.svg`, add an owner-controlled `public`/`private` toggle (`meta.public`) in the top menu (copying the SVG URL to the clipboard when published) and CLI (`draw publish`), serve `GET /<id>.svg` with safe headers (`X-Robots-Tag`, `Content-Security-Policy`, `Cross-Origin-Resource-Policy`), migrate the 39 diagrams in `gs://diagrams.apnex.io`, and route `/*.svg` through `svc-draw-connect` (outside IAP).
+
+| # | Item | Cites | Sev | State |
+|---|---|---|---|---|
+| H23.1 | Move diagram IDs from `diagram-<6hex>` to 16-hex (`[0-9a-f]{16}`) and deep links / SVG URLs from `/d/<id>` to `/<id>` and `/<id>.svg` (H23) | feature | S3 | `DONE` |
+| H23.2 | Add `meta.public`, `PUT /api/v1/diagrams/:id/public`, public SVG access (`404` when private), and safe SVG headers (`X-Robots-Tag`, `Content-Security-Policy`, `Cross-Origin-Resource-Policy`) (H23) | feature | S3 | `DONE` |
+| H23.3 | Add the top-menu `#publish` toggle button (copying the SVG URL to clipboard when published) and CLI `draw publish` verb (H23) | feature | S3 | `DONE` |
+| H23.4 | Rehearse and run the full-forward 16-hex migration on the 39 diagrams in `gs://diagrams.apnex.io` during deploy freeze (H23) | feature | S3 | `DONE` |
+| H23.5 | Route `/*.svg` to `svc-draw-connect` on `map-apnex-io`, deploy to `draw-lab` and `draw`, and verify public vs private SVG access live without IAP (H23) | feature | S3 | `DONE` |
+
+AMENDED 2026-10-15: H23.1 to H23.5 done -- diagram IDs are 16-hex (`[0-9a-f]{16}`) at `/<id>` and `/<id>.svg`, `PUT /api/v1/diagrams/:id/public`, `#publish` (copying `<origin>/<id>.svg` to the clipboard when published) and `draw publish [--off]` toggle `meta.public`, `GET /<id>.svg` returns `200` with `X-Robots-Tag: noindex, nofollow`, `Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'` and `Cross-Origin-Resource-Policy: cross-origin` when public and `404` when private without credentials, and all 39 diagrams in `gs://diagrams.apnex.io` are migrated to 16-hex IDs. Milestone H23 complete.
+
+**Exit:** diagrams use 16-hex IDs at `/<id>` and `/<id>.svg`; toggling `#publish` (or `draw publish`) publishes the diagram and copies its `.svg` URL; a published diagram's `/<id>.svg` loads without IAP with safe headers, while a private diagram's `/<id>.svg` returns `404` without credentials.
+
+---
+
 ## Held -- on the record, not on the board
 
 Open `BACKLOG` rows whose trigger has not fired.\

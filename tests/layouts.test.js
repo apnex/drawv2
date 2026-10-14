@@ -30,7 +30,7 @@ test('WD-b1: a fresh Model holds the two layouts, each its own copy', () => {
 
 test('WD-b1: a document loaded without its layouts is completed; one loaded with them keeps its own', () => {
 	const m = new Model();
-	m.load({ meta: { id: 'diagram-0c1201', name: 'x' }, nodes: [{ id: 'node-0c1201', name: 'a', x: 0, y: 0 }] });
+	m.load({ meta: { id: '00000000000c1201', name: 'x' }, nodes: [{ id: 'node-0c1201', name: 'a', x: 0, y: 0 }] });
 	assert.deepEqual(layouts(m), WANT);
 	assert.equal(m.all('node').length, 1);
 	const doc = m.toJSON();

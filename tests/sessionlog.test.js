@@ -79,7 +79,7 @@ test('B182: the event narrative is ordered and carries its detail', () => {
 	const log = new SessionLog();
 	let t = 0;
 	log.open('s-a', 'user:a@x', t);
-	log.note('s-a', 'open-diagram', { id: 'diagram-aa0001' }, t += 5);
+	log.note('s-a', 'open-diagram', { id: '0000000000aa0001' }, t += 5);
 	log.note('s-a', 'commit', { label: 'spawn' }, t += 5);
 	log.note('s-a', 'refused', { why: 'rate-limited' }, t += 5);
 	log.close('s-a', t += 5);
@@ -130,14 +130,14 @@ test('B182: the diagram a session is on actually reaches the report', () => {
 	*/
 	const log = new SessionLog();
 	log.open('s-a', 'user:a@x', 0);
-	log.attach('s-a', 'diagram-aa0001');
+	log.attach('s-a', '0000000000aa0001');
 	log.note('s-a', 'commit', null, 10);
 	const [rec] = log.report(1000);
-	assert.equal(rec.diagram, 'diagram-aa0001', 'the diagram never reached the report');
+	assert.equal(rec.diagram, '0000000000aa0001', 'the diagram never reached the report');
 
 	// and it survives the session closing, which is when it is most often read
 	log.close('s-a', 1200);
-	assert.equal(log.report(1300)[0].diagram, 'diagram-aa0001', 'lost on close');
+	assert.equal(log.report(1300)[0].diagram, '0000000000aa0001', 'lost on close');
 });
 
 test('B182: the OPENING of a session survives any flood that follows', () => {
@@ -154,8 +154,8 @@ test('B182: the OPENING of a session survives any flood that follows', () => {
 	const log = new SessionLog();
 	let t = 0;
 	log.open('s-x', 'user:a@x', t);
-	log.attach('s-x', 'diagram-aa0001');
-	log.note('s-x', 'open-diagram', { id: 'diagram-aa0001' }, t += 1);
+	log.attach('s-x', '0000000000aa0001');
+	log.note('s-x', 'open-diagram', { id: '0000000000aa0001' }, t += 1);
 	log.note('s-x', 'commit', { label: 'spawn' }, t += 1);
 	for (let i = 0; i < 900; i++) log.note('s-x', 'refused', { why: 'rate-limited' }, t += 1);
 

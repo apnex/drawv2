@@ -24,7 +24,7 @@ import { makeRenderer } from './fixtures/client-harness.mjs';
 import { makeApp } from './fixtures/app.mjs';
 import { main } from '../cli/draw.mjs';
 
-const ID = 'diagram-0c0001';
+const ID = '00000000000c0001';
 const since = Date.now() - 1000;
 const spawn = { interval: 700, speed: 1.4, kind: 'packet', since };
 /*

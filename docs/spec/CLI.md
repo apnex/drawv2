@@ -157,6 +157,7 @@ Awareness
 Access
   access                                    who can reach this diagram, and at what level
   grant <principal> <read|write>            let a principal reach this diagram
+  publish [--off]                           publish `/<id>.svg` for IAP-free embedding, or make it private with --off (H23)
   revoke <principal>                        withdraw a grant; says what access remains
   workspace grant <principal> <read|write>  grant across everything you own
   code mint <agent>                         mint a connection code; shown once, never again

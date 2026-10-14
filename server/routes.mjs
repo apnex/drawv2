@@ -43,6 +43,7 @@ export const ROUTES = [
 	{ path: 'diagrams/:id/selection',          methods: ['PUT'],            about: 'the authoritative selection' },
 	{ path: 'diagrams/:id/grants',             methods: ['POST'],           about: 'grant access to this diagram' },
 	{ path: 'diagrams/:id/grants/:principal',  methods: ['DELETE'],         about: 'revoke it; answers what remains' },
+	{ path: 'diagrams/:id/public',             methods: ['PUT'],            about: 'publish or unpublish `/<id>.svg` for IAP-free embedding (H23)' },
 
 	{ path: 'diagrams/:id/context/:entity',    methods: ['GET'],            about: 'what surrounds an entity' },
 	{ path: 'diagrams/:id/near',               methods: ['GET'],            about: 'what is around a point' },

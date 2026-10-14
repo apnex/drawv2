@@ -68,7 +68,7 @@ test('the tool drives a diagram end to end, which is the whole of GR18', async (
 	await boot();
 	try {
 		const id = (await run('create', 'cli-test')).trim();
-		assert.match(id, /^diagram-[0-9a-f]{6}$/, 'create answers the minted id and nothing else');
+		assert.match(id, /^[0-9a-f]{16}$/, 'create answers the minted id and nothing else');
 
 		await run('lock', '--diagram', id);
 		const commit = await run('commit', '--diagram', id, '--label', 'from the tool',
@@ -715,7 +715,7 @@ test('B136: a token for a deleted diagram is pruned, unexpired or not', async ()
 		// a perfectly valid token for a diagram that does not exist. readToken cannot catch this --
 		// it is not expired -- which is why pruning is a separate rule and not a stricter read.
 		const dir = path.join(home, '.config/draw/locks');
-		const ghost = path.join(dir, 'diagram-dead01');
+		const ghost = path.join(dir, '0000000000dead01');
 		fs.writeFileSync(ghost, JSON.stringify({ token: 'still-valid', expiresAt: new Date(Date.now() + 600000).toISOString() }));
 		assert.equal(fs.existsSync(ghost), true);
 
@@ -1323,11 +1323,11 @@ test('B109: restore refuses a name, because a deleted diagram has none to resolv
 		picking one silently would be the worst available behaviour on a recovery surface.
 		*/
 		const err = await captureExit(() => run('restore', 'scratch'));
-		assert.match(err, /diagram id like diagram-/, 'it says what shape it wants');
+		assert.match(err, /diagram id like 0000000000a97651/, 'it says what shape it wants');
 		assert.match(err, /two may share one/, 'and why a name will not do');
 		assert.match(err, /draw deleted/, 'and where to find the ids');
 
-		const gone = await captureExit(() => run('restore', 'diagram-aaaaaa'));
+		const gone = await captureExit(() => run('restore', '0000000000aaaaaa'));
 		assert.match(gone, /no delete window|nothing recoverable/, 'a well-formed id still refuses honestly here');
 	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
 });
@@ -1457,7 +1457,7 @@ test('H9.9: a write to a template is announced, and the context follows the fork
 
 		const shouted = err.join('');
 		assert.match(shouted, /\[ fork \]/, 'the caller is TOLD its write moved');
-		const forkId = (shouted.match(/diagram-[0-9a-f]{6}/) || [])[0];
+		const forkId = (shouted.match(/[0-9a-f]{16}/) || [])[0];
 		assert.ok(forkId, 'and told where to');
 
 		// the context is the CLI's session. Without this the next write names the template again
@@ -1510,7 +1510,7 @@ test('B167 / U4-2: the CLI holds no type copy of its own and reads the declared 
 /*
 B161 -- an argument a verb does not understand is refused, not discarded.
 
-`draw show diagram-a97651` used to answer about `diagram-000001` in silence: `show` takes no
+`draw show 0000000000a97651` used to answer about `0000000000000001` in silence: `show` takes no
 positional, the id fell on the floor, and the reply named the diagram it had picked instead. Being
 told something TRUE about the wrong document is worse than an error, because nothing in the answer
 suggests looking again.
@@ -1532,11 +1532,11 @@ test('B161: a verb refuses a positional it never declared', () => {
 		try { return { out: execFileSync(draw, args, { encoding: 'utf8', env: { ...process.env } }), code: 0 }; }
 		catch (e) { return { out: (e.stdout || '') + (e.stderr || ''), code: e.status }; }
 	};
-	const zero = run(['show', 'diagram-a97651']);
+	const zero = run(['show', '0000000000a97651']);
 	assert.notEqual(zero.code, 0, 'it must fail rather than answer about something else');
 	assert.match(zero.out, /takes no arguments/);
 	assert.match(zero.out, /--diagram/, 'and it must say how to target one');
-	assert.match(zero.out, /diagram-a97651/, 'naming what it refused');
+	assert.match(zero.out, /0000000000a97651/, 'naming what it refused');
 
 	const overfull = run(['about', 'thing', 'extra']);
 	assert.notEqual(overfull.code, 0);

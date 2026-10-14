@@ -43,7 +43,7 @@ const _at = (id) => (parseInt(id.slice(-4), 16) % 15 + 1) * 60;
 const node = (id, x = null, y = 0) => ({ id, name: id, type: 'host', shape: 'circle', x: x ?? _at(id), y });
 
 // a document the way the server sends one
-function serverDoc(id = 'diagram-aa0001', nodes = []) {
+function serverDoc(id = '0000000000aa0001', nodes = []) {
 	const m = new Model();
 	m.state.meta.id = id;
 	m.state.meta.name = 'served';
@@ -83,7 +83,7 @@ test('B2: content drawn before the server answers lands in a NEW diagram, not ov
 	t.model.put('node', node('node-aa0002', 120, 60));
 
 	// the server finally answers — with a REAL diagram that has its own content
-	const existing = serverDoc('diagram-bb0002', [node('node-bb0001', 300, 300)]);
+	const existing = serverDoc('0000000000bb0002', [node('node-bb0001', 300, 300)]);
 	t.net.recv({ cmd: 'snapshot', body: { doc: existing, diagrams: [], mayWrite: true, locked: false, version: 7 } });
 
 	assert.equal(only(t.sent, 'push').length, 0, '`push` is gone from the wire entirely');
@@ -97,17 +97,17 @@ test('B2: content drawn before the server answers lands in a NEW diagram, not ov
 	assert.equal(t.model.get('node', 'node-bb0001'), undefined, "and the other diagram's content was not adopted");
 
 	// the server mints an id and answers with the new diagram
-	const minted = serverDoc('diagram-cc0003', [node('node-aa0001', 60, 60), node('node-aa0002', 120, 60)]);
+	const minted = serverDoc('0000000000cc0003', [node('node-aa0001', 60, 60), node('node-aa0002', 120, 60)]);
 	t.net.recv({ cmd: 'snapshot', body: { doc: minted, diagrams: [], mayWrite: true, locked: false, version: 0 } });
-	assert.equal(t.sync.diagramId, 'diagram-cc0003');
-	assert.equal(t.model.state.meta.id, 'diagram-cc0003', 'the browser is on the diagram its work created');
+	assert.equal(t.sync.diagramId, '0000000000cc0003');
+	assert.equal(t.model.state.meta.id, '0000000000cc0003', 'the browser is on the diagram its work created');
 });
 
 test('B2: a Server-LOCKED diagram is loaded read-only, never offered a create', () => {
 	storage.clear();
 	const t = tab();
 	t.model.put('node', node('node-aa0001', 60, 60));
-	const existing = serverDoc('diagram-bb0002', [node('node-bb0001', 300, 300)]);
+	const existing = serverDoc('0000000000bb0002', [node('node-bb0001', 300, 300)]);
 	t.net.recv({ cmd: 'snapshot', body: { doc: existing, diagrams: [], mayWrite: true, locked: true, version: 4 } });
 
 	assert.equal(only(t.sent, 'create').length, 0, 'you cannot author into a controlled diagram');
@@ -127,7 +127,7 @@ test('a reconnect sends `resume` with what it believes, never a document', () =>
 	assert.equal(only(t.sent, 'push').length, 0);
 	const resume = only(t.sent, 'resume');
 	assert.equal(resume.length, 1);
-	assert.deepEqual(resume[0].body, { diagram: 'diagram-aa0001', version: 5 });
+	assert.deepEqual(resume[0].body, { diagram: '0000000000aa0001', version: 5 });
 });
 
 test('`sync` (in step) keeps the local document and replays the outbox', () => {
@@ -209,7 +209,7 @@ test('D30: unsent work survives a TAB CLOSE and drains on the next session', () 
 test('D30: an outbox belonging to ANOTHER diagram is not replayed into this one', () => {
 	storage.clear();
 	const first = tab();
-	first.net.recv({ cmd: 'snapshot', body: { doc: serverDoc('diagram-aa0001'), diagrams: [], mayWrite: true, locked: false, version: 3 } });
+	first.net.recv({ cmd: 'snapshot', body: { doc: serverDoc('0000000000aa0001'), diagrams: [], mayWrite: true, locked: false, version: 3 } });
 	first.net.open = false;
 	first.changes.commit({ label: 'create', entries: [{ op: 'put', kind: 'node', entity: node('node-ff0002') }] });
 
@@ -221,7 +221,7 @@ test('D30: an outbox belonging to ANOTHER diagram is not replayed into this one'
 
 	// control: the SAME record against its own diagram does replay
 	const back = tab();
-	back.net.recv({ cmd: 'snapshot', body: { doc: serverDoc('diagram-aa0001'), diagrams: [], mayWrite: true, locked: false, version: 3 } });
+	back.net.recv({ cmd: 'snapshot', body: { doc: serverDoc('0000000000aa0001'), diagrams: [], mayWrite: true, locked: false, version: 3 } });
 	assert.equal(only(back.sent, 'commit').length, 1, 'and its own diagram gets all of it');
 });
 
@@ -233,14 +233,14 @@ test('D30: a corrupt persisted outbox costs the replay, never the document', asy
 	assert.equal(t.sync.hydrated, true, 'the diagram loaded');
 	assert.equal(only(t.sent, 'commit').length, 0);
 
-	storage.set('draw.outbox', JSON.stringify({ diagram: 'diagram-aa0001', msgs: [{ ops: 'not-an-array' }, null] }));
+	storage.set('draw.outbox', JSON.stringify({ diagram: '0000000000aa0001', msgs: [{ ops: 'not-an-array' }, null] }));
 	const u = tab();
 	u.net.recv({ cmd: 'snapshot', body: { doc: serverDoc(), diagrams: [], mayWrite: true, locked: false, version: 2 } });
 	assert.equal(u.sync.hydrated, true, 'a malformed record is dropped, the document is not');
 	assert.equal(only(u.sent, 'commit').length, 0);
 
 	// control: the same envelope, well-formed, DOES replay — the drop above is the shape check
-	storage.set('draw.outbox', JSON.stringify({ diagram: 'diagram-aa0001', msgs: [
+	storage.set('draw.outbox', JSON.stringify({ diagram: '0000000000aa0001', msgs: [
 		{ ops: [{ op: 'put', kind: 'node', entity: node('node-ff0003') }], label: 'create' },
 	] }));
 	const v = tab();
@@ -316,7 +316,7 @@ test('resume: unknown diagram is a typed refusal, and never binds the session', 
 		const store = await openStore(dir, { flushMs: 3_600_000 });
 		const ws = fakeWs();
 		const session = new Session(ws, store, null, null, OWNER);
-		ws.recv('resume', { diagram: 'diagram-ffffff', version: 0 });
+		ws.recv('resume', { diagram: '0000000000ffffff', version: 0 });
 		assert.equal(ws.last('error').body.code, 'unknown-diagram');
 		assert.equal(session.diagramId, null, 'a refused resume leaves the session unbound');
 	} finally { fs.rmSync(dir, { recursive: true, force: true }); }

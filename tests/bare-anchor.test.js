@@ -141,7 +141,7 @@ test('F-b: the ratchet sees a reader that bypasses the module', () => {
 // F-c: the export draws a waypoint under its node id, as a waypoint -- the shape `draw parity` and `draw render --summary` count
 test('F-c: the export draws a waypoint as a waypoint, under its node id', async () => {
 	const { svgDocument } = await import('../server/svg.mjs');
-	const doc = { meta: { id: 'diagram-000001', name: 'x' }, zones: [], groups: [],
+	const doc = { meta: { id: '0000000000000001', name: 'x' }, zones: [], groups: [],
 		nodes: [{ id: 'node-0000aa', name: 'a', type: 'host', x: 0, y: 0 }, { id: 'node-0000bb', name: 'b', type: 'host', x: 240, y: 0 }, { id: 'node-0000cc', name: 'w', x: 120, y: 60 }],
 		links: [{ id: 'link-0000dd', name: 'l', src: 'node-0000aa', dst: 'node-0000bb', via: ['node-0000cc'] }] };
 	const body = svgDocument(doc, KINDS).split('</defs>').pop();

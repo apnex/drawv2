@@ -901,17 +901,17 @@ export class Sync {
 		if (this.net.isOpen()) this.net.send('reclaim', { id: this.model.state.meta.id });
 	}
 
-	// /next?d=<id> (this thin UI) or legacy /d/<id> in the address bar wins over last-opened
+	// /next?d=<id> or /<id> in the address bar wins over last-opened (H23)
 	urlDiagram() {
 		const q = new URLSearchParams(location.search).get('d');
-		if (q && /^diagram-[0-9a-f]{6}$/.test(q)) return q;
-		const match = location.pathname.match(/^\/d\/(diagram-[0-9a-f]{6})$/);
+		if (q && /^([0-9a-f]{16}|template-[0-9a-f]{6})$/.test(q)) return q;
+		const match = location.pathname.match(/^\/([0-9a-f]{16}|template-[0-9a-f]{6})$/);
 		return match ? match[1] : null;
 	}
 
 	setUrl(id) {
 		try {
-			if (this.urlDiagram() !== id) history.replaceState(null, '', `/d/${id}`);
+			if (this.urlDiagram() !== id) history.replaceState(null, '', `/${id}`);
 		} catch { /* non-http context (file://, sandboxed) — URL stays as-is */ }
 	}
 

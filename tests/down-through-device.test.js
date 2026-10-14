@@ -36,7 +36,7 @@ test('B309: a down link pinned through a device is drawn along its intent, throu
 });
 
 test('B309: and REST and the CLI read it so -- its intent, no route, down', () => {
-	const m = readModel({ meta: { id: 'diagram-0a0000', name: 'd' }, nodes, zones: [], groups: [], links: [viaDevice], pipes: [] }, KINDS);
+	const m = readModel({ meta: { id: '00000000000a0000', name: 'd' }, nodes, zones: [], groups: [], links: [viaDevice], pipes: [] }, KINDS);
 	assert.deepEqual(linkReading(m, m.get('link', viaDevice.id)), { path: [[0, 0], [120, 0], [240, 0]], route: null, down: true, blockers: [] });
 });
 

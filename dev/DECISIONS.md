@@ -1991,4 +1991,11 @@ Shown: docs/ARCHITECTURE-TARGET.md@2ad6a8c\
 Affects: docs/ARCHITECTURE-TARGET.md\
 Recorder: asked after `H21` closed whether to leave the remaining five recorded divergences held on their triggers or open `H22` to drive both `docs/ARCHITECTURE.md` section 5 ("Part divergence") and `docs/ARCHITECTURE-TARGET.md` section 8.2 ("Divergence") to zero, the director directed closing all remaining divergences (`B349`, `B329`, `B328`, `B248`, `B330`).
 
+**H23 -- 16-hex diagram IDs at `/<id>` and `/<id>.svg`, and owner publish toggle bypassing IAP for `/*.svg` -- 2026-10-15.**\
+Director: "Lets make it that the \"publish/share\" toggle button also copies the URL to clipboard ready to go. approved and continue"\
+Shown: docs/spec/ACCESS.md@641c0ea\
+Affects: docs/spec/ACCESS.md, docs/spec/API.md\
+Recorder: after approving Recommendation 1 ("continue with recommendation1") and reviewing the five-slice plan (`H23.1` to `H23.5`), the director approved the plan with the publish/share toggle button also copying the public SVG URL to the clipboard when turned on: (1) diagram IDs move full-forward from `diagram-<6hex>` to 16-hex (`[0-9a-f]{16}`, 64 bits) at `/<id>` and `/<id>.svg` (while entity IDs stay `<kind>-<6hex>` and built-in templates stay `template-<6hex>`); (2) `meta.public` (`false` by default) is toggled by the owner via `PUT /api/v1/diagrams/:id/public`, the top-menu `#publish` button (which copies the `<origin>/<id>.svg` URL to the clipboard when published), and `draw publish`; (3) `/*.svg` routes through `svc-draw-connect` (outside IAP) and serves `GET /<id>.svg` with `Content-Type: image/svg+xml; charset=utf-8`, `X-Robots-Tag: noindex, nofollow`, `Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'`, and `Cross-Origin-Resource-Policy: cross-origin` when `meta.public` is true or the caller can read the diagram, and `404` otherwise.
+
+
 

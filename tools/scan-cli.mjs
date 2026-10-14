@@ -107,7 +107,7 @@ The root `/health` is the liveness contract that Cloud Run and the Dockerfile pr
 uncredentialed for that reason -- B132 gave the agent a prefix-relative `health` beside it rather
 than moving the probe. Listing `/d/<id>.svg` in ROUTES would make that file's own stated rule false.
 */
-const OFF_SURFACE = new Set(['d/*.svg']);
+const OFF_SURFACE = new Set(['*.svg']);
 
 /*
 A verb may reach NO route, and `local` is how it says so.

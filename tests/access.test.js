@@ -155,7 +155,7 @@ test('H9.1: a client cannot grant itself access through a meta patch', () => {
 test('H9.1: the document validator refuses a malformed principal or level', () => {
 	// RESTATED at WD-b1 (H19.45): schema 3 -- a document holds its two layouts (tests/fixtures/composed.mjs `heldLayouts`)
 	const doc = (meta) => ({
-		meta: { id: 'diagram-aa0001', name: 't', version: 0, schema: 3, ...meta },
+		meta: { id: '0000000000aa0001', name: 't', version: 0, schema: 3, ...meta },
 		nodes: [], links: [], zones: [], groups: [], layouts: heldLayouts(),
 	});
 	assert.equal(validateDoc(doc({})), null, 'legacy documents carry neither key and still load');
@@ -875,14 +875,14 @@ test('B67: REST document, history and the SVG rendering are all gated', async ()
 	try {
 		const id = [...app.store.diagrams.keys()][0];
 		assert.equal((await fetch(`${root}/api/v1/diagrams/${id}`)).status, 200, 'the owner reads it');
-		assert.equal((await fetch(`${root}/d/${id}.svg`)).status, 200, 'and renders it');
+		assert.equal((await fetch(`${root}/${id}.svg`)).status, 200, 'and renders it');
 
 		who = GUEST;
 		assert.equal((await fetch(`${root}/api/v1/diagrams/${id}`)).status, 403, 'the document is refused');
 		assert.equal((await fetch(`${root}/api/v1/diagrams/${id}/log`)).status, 403,
 			'and so is its history — a log describes content the caller may not know about');
 		// ACCESS.md: a representation is not a permission. An SVG is the whole document.
-		assert.equal((await fetch(`${root}/d/${id}.svg`)).status, 403, 'and so is the image');
+		assert.equal((await fetch(`${root}/${id}.svg`)).status, 403, 'and so is the image');
 
 		// a read grant is enough to read, which is what distinguishes this from the write gate
 		assert.equal(app.store.grant(id, GUEST, 'read', OWNER), null);
@@ -940,7 +940,7 @@ and will not accept as an identity, and narrowing a grammar later is the change 
 */
 // RESTATED at WD-b1 (H19.45): schema 3 -- a document holds its two layouts (tests/fixtures/composed.mjs `heldLayouts`)
 const principalDoc = (owner) => ({
-	meta: { id: 'diagram-aa0001', name: 't', version: 0, schema: 3, owner },
+	meta: { id: '0000000000aa0001', name: 't', version: 0, schema: 3, owner },
 	nodes: [], links: [], zones: [], groups: [], layouts: heldLayouts(),
 });
 const acceptsPrincipal = (p) => validateDoc(principalDoc(p)) === null;
@@ -1217,7 +1217,7 @@ test('H9.21: a create over REST is owned by the caller, and the caller can write
 			'and can write immediately — B65 was exactly this failing');
 
 		// the response saves a round trip: an agent needs the minted id to do anything next
-		assert.match(id, /^diagram-[0-9a-f]{6}$/, 'the id is minted and returned');
+		assert.match(id, /^[0-9a-f]{16}$/, 'the id is minted and returned');
 		assert.equal(t.app.store.canRead(id, OWNER), false,
 			'and the human does NOT get it for free — a grant is still how access happens');
 	} finally { await t.close(); }
@@ -1387,7 +1387,7 @@ test('H9.28: no response advertises a wildcard CORS origin', async () => {
 		principalOf: async () => OWNER });
 	try {
 		const id = [...app.store.diagrams.keys()][0];
-		for (const p of [`/api/v1/diagrams`, `/api/v1/diagrams/${id}`, `/d/${id}.svg`, '/health']) {
+		for (const p of [`/api/v1/diagrams`, `/api/v1/diagrams/${id}`, `/${id}.svg`, '/health']) {
 			const res = await fetch(`http://127.0.0.1:${app.port}${p}`);
 			assert.equal(res.headers.get('access-control-allow-origin'), null,
 				`${p} must not answer a wildcard origin`);
@@ -1664,7 +1664,7 @@ test('B100: a diagram an agent creates is owned by the human who claimed the age
 		const listed = (await (await fetch(`${t.base}/api/v1/diagrams`)).json()).map((d) => d.id);
 		assert.ok(listed.includes(id), 'it appears in the human listing -- this is the whole defect');
 		assert.equal((await fetch(`${t.base}/api/v1/diagrams/${id}`)).status, 200, 'and reads');
-		assert.equal((await fetch(`${t.base}/d/${id}.svg`)).status, 200, 'and renders');
+		assert.equal((await fetch(`${t.base}/${id}.svg`)).status, 200, 'and renders');
 
 		// and the agent has not been locked out of what it just made
 		assert.equal((await fetch(`${t.base}/connect/v1/diagrams/${id}`, bearer(t.code))).status, 200);
@@ -1765,11 +1765,11 @@ test('B32: a viewer that CAN read the survivor is moved onto it', () => {
 	const hub = new Hub();
 	const ws = fakeWs();
 	const s = new Session(ws, { get: () => null, list: () => [] }, hub, null, OWNER);
-	s.diagramId = 'diagram-aa0001';
-	const moved = hub.retarget('diagram-aa0001', () => ({ doc: { meta: { id: 'diagram-bb0002' } } }));
+	s.diagramId = '0000000000aa0001';
+	const moved = hub.retarget('0000000000aa0001', () => ({ doc: { meta: { id: '0000000000bb0002' } } }));
 	assert.equal(moved, 1);
-	assert.equal(s.diagramId, 'diagram-bb0002', 'the session now points at the survivor');
-	assert.equal(ws.last('snapshot').body.doc.meta.id, 'diagram-bb0002');
+	assert.equal(s.diagramId, '0000000000bb0002', 'the session now points at the survivor');
+	assert.equal(ws.last('snapshot').body.doc.meta.id, '0000000000bb0002');
 });
 
 /*

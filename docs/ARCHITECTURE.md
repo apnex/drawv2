@@ -233,7 +233,7 @@ The product modules that compose the kinds or the canvas parts.
 Every way something outside the engine reaches it.
 
 <!-- BEGIN GENERATED: architecture-doors. Run tools/generate-architecture.mjs; do not edit by hand. -->
-**REST** -- 40 routes (`server/routes.mjs`):
+**REST** -- 41 routes (`server/routes.mjs`):
 
 | Route | Methods | What it answers |
 |---|---|---|
@@ -252,6 +252,7 @@ Every way something outside the engine reaches it.
 | `/api/v1/diagrams/:id/selection` | PUT | the authoritative selection |
 | `/api/v1/diagrams/:id/grants` | POST | grant access to this diagram |
 | `/api/v1/diagrams/:id/grants/:principal` | DELETE | revoke it; answers what remains |
+| `/api/v1/diagrams/:id/public` | PUT | publish or unpublish `/<id>.svg` for IAP-free embedding (H23) |
 | `/api/v1/diagrams/:id/context/:entity` | GET | what surrounds an entity |
 | `/api/v1/diagrams/:id/near` | GET | what is around a point |
 | `/api/v1/diagrams/:id/zones/:zone/contents` | GET | what falls inside a zone |
@@ -280,7 +281,7 @@ Every way something outside the engine reaches it.
 
 **The websocket** -- 11 commands a tab sends (`server/protocol.js`): `hello`, `open`, `create`, `commit`, `undo`, `redo`, `resume`, `select`, `reclaim`, `delete`, `list`.
 
-**The CLI** -- 66 verbs (`cli/verbs.mjs`):
+**The CLI** -- 67 verbs (`cli/verbs.mjs`):
 
 | Group | Verbs |
 |---|---|
@@ -289,7 +290,7 @@ Every way something outside the engine reaches it.
 | Writing | `lock`, `unlock`, `lock status`, `commit`, `draft begin`, `draft show`, `draft discard`, `undo`, `redo`, `select`, `spawn`, `link`, `panel`, `zone`, `group`, `move`, `rename`, `textsize`, `pipe`, `rm`, `set`, `region` |
 | Placement | `near`, `place`, `add`, `anchor nearest`, `anchor free`, `types`, `layouts` |
 | Awareness | `who`, `viewers`, `sessions` |
-| Access | `access`, `grant`, `revoke`, `workspace grant`, `code mint`, `code list`, `code revoke`, `workspace grants`, `workspace revoke` |
+| Access | `access`, `grant`, `publish`, `revoke`, `workspace grant`, `code mint`, `code list`, `code revoke`, `workspace grants`, `workspace revoke` |
 <!-- END GENERATED: architecture-doors -->
 
 ---

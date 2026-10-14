@@ -234,16 +234,16 @@ test('B104: the id grammar in API.md is the one validate.js enforces', async () 
 	const SIX_HEX = KINDS.list.filter((k) => k !== 'pipe');
 	const documented = api.match(/The server enforces `\^\(([a-z|]+)\)-\[0-9a-f\]\{6\}\$`/);
 	assert.ok(documented, 'API.md states the grammar the server enforces');
-	assert.deepEqual(documented[1].split('|').sort(), [...SIX_HEX, 'diagram', 'template'].sort(),
+	assert.deepEqual(documented[1].split('|').sort(), [...SIX_HEX, 'template'].sort(),
 		`API.md does not carry the enforced id grammar. The server composes ${SIX_HEX.join(', ')}, and the documents`);
 	const live = [`^(${documented[1]})-[0-9a-f]{6}$`];
 	for (const k of SIX_HEX) {
 		const check = KINDS.row(k).fields.id;
 		assert.equal(check(`${k}-0a1b2c`), true, `${k}: a lowercase six-hex id`);
 		// another product kind, a plugin's kind, a document id: a row accepts its own prefix and no other
-		for (const bad of [`${k}-0A1B2C`, `${k}-0a1b2`, `${k}-0a1b2c3`, `${k === 'node' ? 'zone' : 'node'}-0a1b2c`, 'pipe-0a1b2c', 'diagram-0a1b2c', `x${k}-0a1b2c`]) assert.equal(check(bad), false, `${k} refuses ${bad}`);
+		for (const bad of [`${k}-0A1B2C`, `${k}-0a1b2`, `${k}-0a1b2c3`, `${k === 'node' ? 'zone' : 'node'}-0a1b2c`, 'pipe-0a1b2c', '00000000000a1b2c', `x${k}-0a1b2c`]) assert.equal(check(bad), false, `${k} refuses ${bad}`);
 	}
-	assert.equal(DOCUMENT_ID.source, '^(diagram|template)-[0-9a-f]{6}$');
+	assert.equal(DOCUMENT_ID.source, '^([0-9a-f]{16}|template-[0-9a-f]{6})$');
 
 	// and the documented examples must actually pass it, which a hand-written sample need not
 	const re = new RegExp(live[0]);

@@ -40,7 +40,7 @@ function serveStatic(req, res, clientDir) {
 	// deep links: /d/<diagram-id> is the editor with that diagram preselected
 	// the grammar is IMPORTED, not restated. This carried its own `diagram-` copy, so a refresh on a
 	// template 404'd -- the deep link fell through to a file lookup for a file that does not exist.
-	const deep = url.pathname.startsWith('/d/') && DOCUMENT_ID.test(url.pathname.slice(3));
+	const deep = url.pathname.length > 1 && DOCUMENT_ID.test(url.pathname.slice(1));
 	const route = (url.pathname === '/' || deep) ? '/index.html' : url.pathname;
 	sendFile(req, res, fileWithin(clientDir, route));
 }
@@ -74,7 +74,7 @@ and the store refuses it exactly as it refuses one that slipped past IAP.
 */
 const AGENT_DOOR = [
 	['/connect/v1/', '/api/v1/'],   // the REST surface (H9.6)
-	['/connect/d/', '/d/'],         // the rendered picture (B101)
+	['/connect/svg/', '/'],         // the rendered picture through the agent door (B101, H23)
 ];
 
 function throughTheAgentDoor(rawUrl) {
@@ -247,27 +247,27 @@ export async function createApp({ dataDir, secretsDir, port = 8080, clientDir, h
 		BEFORE static handling, which owns `/d/` today and would otherwise look for a file on disk.
 		A read, so no lock — the same rule the rest of GET follows.
 		*/
-		const asSvg = url.pathname.match(/^\/d\/(diagram-[0-9a-f]{6})\.svg$/);
+		const asSvg = url.pathname.match(/^\/([0-9a-f]{16})\.svg$/);
 		if (asSvg) {
 			const model = store.get(asSvg[1]);
 			if (!model) {
 				res.writeHead(404, { 'Content-Type': 'application/json' });
 				return res.end(JSON.stringify({ error: `unknown diagram: ${asSvg[1]}` }) + '\n');
 			}
-			// B67: an SVG is a rendering of the document, so it carries the whole document's
-			// content. ACCESS.md already says the representation is not the permission; until
-			// now nothing enforced it.
-			if (!store.canRead(asSvg[1], principal)) {
-				res.writeHead(403, { 'Content-Type': 'application/json' });
-				return res.end(JSON.stringify({ error: 'forbidden: no access to this diagram', code: 'forbidden' }) + '\n');
+			// B67, H23: a published diagram (`meta.public === true`) serves its SVG without IAP or a grant;
+			// a private one requires `canRead` (404 when unauthenticated so private diagram existence does not leak, 403 for a known principal without access)
+			if (!model.state.meta.public && !store.canRead(asSvg[1], principal)) {
+				const code = principal ? 403 : 404;
+				res.writeHead(code, { 'Content-Type': 'application/json' });
+				return res.end(JSON.stringify(principal ? { error: 'forbidden: no access to this diagram', code: 'forbidden' } : { error: `unknown diagram: ${asSvg[1]}` }) + '\n');
 			}
 			const body = svgDocument(model.toJSON(), model.kinds);
 			res.writeHead(200, {
 				'Content-Type': 'image/svg+xml; charset=utf-8',
 				'Cache-Control': 'no-store',
-				// H9.28: the wildcard is gone here too. An <img> embed never needed it -- CORS governs
-				// reading a response with script, and this route is now grant-gated (B67) besides.
-				// a browser navigating here RENDERS it; `curl -O` and a download both name the file
+				'X-Robots-Tag': 'noindex, nofollow',
+				'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'",
+				'Cross-Origin-Resource-Policy': 'cross-origin',
 				'Content-Disposition': `inline; filename="${asSvg[1]}.svg"`
 			});
 			return res.end(body);

@@ -35,7 +35,7 @@ the class the same way `tests/authority.test.js` mirrors `toOp`: it is not expor
 against the real source keeps the copy honest.
 */
 function session(now = () => Date.now()) {
-	const s = { actor: 'a', diagramId: 'diagram-aa0001', logged: 0 };
+	const s = { actor: 'a', diagramId: '0000000000aa0001', logged: 0 };
 	s.tooFast = function tooFast() {
 		const t = now();
 		this.writes = (this.writes || []).filter((x) => t - x < WINDOW);

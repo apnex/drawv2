@@ -42,8 +42,14 @@ export function newId(kind, taken = {}) {
 	const used = typeof taken === 'function' ? taken : (id) => taken[id];
 	let id;
 	do {
-		const hex = Math.floor(Math.random() * 0xffffff).toString(16).padStart(6, '0');
-		id = `${kind}-${hex}`;
+		if (kind === 'diagram') {
+			const hi = Math.floor(Math.random() * 0x100000000).toString(16).padStart(8, '0');
+			const lo = Math.floor(Math.random() * 0x100000000).toString(16).padStart(8, '0');
+			id = `${hi}${lo}`;
+		} else {
+			const hex = Math.floor(Math.random() * 0xffffff).toString(16).padStart(6, '0');
+			id = `${kind}-${hex}`;
+		}
 	} while (used(id));
 	return id;
 }
@@ -97,7 +103,7 @@ export class Model {
 			// `owner` and `grants` are AUTHORIZATION, and are server-recorded status:
 			// written by the store, never by a client commit, so they leave no undo record (ACCESS.md).
 			// An empty owner means unowned, which is what every diagram predating H9 is.
-			meta: { id: '', name: 'untitled', version: 0, schema: SCHEMA, owner: '', grants: {}, plugins: [...(kinds.plugins ?? [])] },
+			meta: { id: '', name: 'untitled', version: 0, schema: SCHEMA, owner: '', grants: {}, public: false, plugins: [...(kinds.plugins ?? [])] },
 			...Object.fromEntries(kinds.list.map((k) => [kinds.collection[k], {}])),   // one collection per kind composed
 			selection: new Set(),  // model-state (status): the authoritative selected-id set (MS1). NOT a KIND — round-trips as doc.selection, never via the KINDS loops.
 			/*
@@ -339,7 +345,7 @@ export class Model {
 			// purge still carries the key, and spreading `doc.meta` would carry it back into a model
 			// the field no longer belongs to -- which is how it survived the first pass of this purge.
 			const { slides: _retired, ...incoming } = doc.meta;
-			this.state.meta = { ...this.state.meta, ...incoming, grants: { ...(doc.meta.grants || {}) }, plugins: Array.isArray(doc.meta.plugins) ? [...doc.meta.plugins] : [...(this.kinds.plugins ?? [])] };
+			this.state.meta = { ...this.state.meta, ...incoming, grants: { ...(doc.meta.grants || {}) }, public: Boolean(doc.meta.public), plugins: Array.isArray(doc.meta.plugins) ? [...doc.meta.plugins] : [...(this.kinds.plugins ?? [])] };
 		}
 		// model-state (status): restore the authoritative selection, reconciled to the config loaded
 		// above (tolerate-stale: drop ids that aren't a live selectable entity). Before emit. (MS1)

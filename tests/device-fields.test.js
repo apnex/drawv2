@@ -65,7 +65,7 @@ test('O-e2: an anchor composed without the devices plugin refuses a device field
 	const both = composeKinds([ANCHOR, DEVICE_FIELDS, SPAWN_FIELDS], 'the anchor, devices and the simulation');
 	assert.equal(validateEntity('node', { ...waypoint, spawn: spawner }, { kinds: both }), null);
 	// RESTATED at WD-b1 (H19.45): schema 3 -- this composition holds no layouts row, so its documents hold none
-	const doc = (nodes) => ({ meta: { id: 'diagram-0d0000', name: 'd', version: 0, schema: 3 }, nodes, selection: [] });
+	const doc = (nodes) => ({ meta: { id: '00000000000d0000', name: 'd', version: 0, schema: 3 }, nodes, selection: [] });
 	assert.match(validateDoc(doc([{ ...device, spawn: spawner }]), { kinds: both }) ?? '', /^a typed node has no spawn: node-0d0001/, 'the simulation\'s rule runs on a document too');
 });
 

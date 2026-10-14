@@ -66,7 +66,7 @@ async function storeWith(opts, files, lost) {
 
 test('H13.11: a write conflict reports the loss exactly once and stops retrying', async () => {
 	const lost = [];
-	const b = backend({ failWith: 'gcs write conflict for diagram-aa0001.json: another writer holds a newer generation (expected 7)' });
+	const b = backend({ failWith: 'gcs write conflict for 0000000000aa0001.json: another writer holds a newer generation (expected 7)' });
 	const { s, dir } = await storeWith({}, b.files, lost);
 	try {
 		const created = await s.create({ name: 'victim' }, null);
@@ -98,7 +98,7 @@ test('H13.11: an ordinary write failure is still retried -- the two are not the 
 	a transient error and turn a recoverable moment into a forced reload for everyone.
 	*/
 	const lost = [];
-	const b = backend({ failWith: 'gcs write failed for diagram-aa0001.json: 503 backend unavailable' });
+	const b = backend({ failWith: 'gcs write failed for 0000000000aa0001.json: 503 backend unavailable' });
 	const { s, dir } = await storeWith({}, b.files, lost);
 	try {
 		await s.create({ name: 'flaky' }, null);
@@ -140,11 +140,11 @@ test('H13.11: the hub retires only the sessions on the affected diagram', async 
 	const hub = new Hub();
 	const got = [];
 	const session = (diagramId, tag) => ({ diagramId, send: (cmd, body) => got.push([tag, cmd, body?.reason]) });
-	hub.sessions.add(session('diagram-aa0001', 'a'));
-	hub.sessions.add(session('diagram-aa0001', 'b'));
-	hub.sessions.add(session('diagram-bb0002', 'elsewhere'));
+	hub.sessions.add(session('0000000000aa0001', 'a'));
+	hub.sessions.add(session('0000000000aa0001', 'b'));
+	hub.sessions.add(session('0000000000bb0002', 'elsewhere'));
 
-	const told = hub.retire('diagram-aa0001', 'another instance is writing this diagram');
+	const told = hub.retire('0000000000aa0001', 'another instance is writing this diagram');
 	assert.equal(told, 2);
 	assert.deepEqual(got.map((g) => g[0]).sort(), ['a', 'b']);
 	assert.deepEqual([...new Set(got.map((g) => g[1]))], ['retire']);
@@ -164,7 +164,7 @@ test('H13.11: a SECOND conflict still stops -- reporting is once, stopping is ev
 	the earlier test never did -- it measured one conflict and concluded the mechanism worked.
 	*/
 	const lost = [];
-	const b = backend({ failWith: 'gcs write conflict for diagram-aa0001.json: another writer holds a newer generation (expected 7)' });
+	const b = backend({ failWith: 'gcs write conflict for 0000000000aa0001.json: another writer holds a newer generation (expected 7)' });
 	const { s, dir } = await storeWith({}, b.files, lost);
 	try {
 		const created = await s.create({ name: 'victim' }, null);
@@ -192,7 +192,7 @@ test('H13.11: a lost diagram refuses writes rather than silently discarding them
 	A refusal a user can see beats an acceptance that loses their work.
 	*/
 	const lost = [];
-	const b = backend({ failWith: 'gcs write conflict for diagram-aa0001.json: another writer holds a newer generation (expected 7)' });
+	const b = backend({ failWith: 'gcs write conflict for 0000000000aa0001.json: another writer holds a newer generation (expected 7)' });
 	const { s, dir } = await storeWith({}, b.files, lost);
 	try {
 		const created = await s.create({ name: 'victim' }, null);

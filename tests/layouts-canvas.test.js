@@ -35,7 +35,7 @@ const page = () => {
 };
 const dots = (svg, layer) => svg.byId[`#${layer}`].children;
 const at = (c) => [Number(c.attrs.cx), Number(c.attrs.cy), Number(c.attrs.r)];
-const docWith = (node) => ({ meta: { id: 'diagram-0e0101', name: 'd' }, layouts: [node, structuredClone(LAYOUT_TABLE[1])], nodes: [] });
+const docWith = (node) => ({ meta: { id: '00000000000e0101', name: 'd' }, layouts: [node, structuredClone(LAYOUT_TABLE[1])], nodes: [] });
 
 test('WD-b2 test 9: the grids are drawn from the open diagram\'s records -- every dot on its lattice, within its extent', () => {
 	const restore = installDom();

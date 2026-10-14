@@ -536,7 +536,7 @@ export function handleRest(req, res, store, locks, hub, principal = null, sessio
 	// ---- writes: lock lifecycle + model mutations (Server-Locked) ----
 	// PUT is a write method ONLY for .../selection; every other PUT keeps the clean 405 below
 	// (it falls to the req.method !== 'GET' branch) rather than being misrouted through the lock gate.
-	if (req.method === 'POST' || (req.method === 'PUT' && parts[4] === 'selection') || req.method === 'PATCH' || req.method === 'DELETE') {
+	if (req.method === 'POST' || (req.method === 'PUT' && (parts[4] === 'selection' || parts[4] === 'public')) || req.method === 'PATCH' || req.method === 'DELETE') {
 		// handleWrite is async + fire-and-forget: a throw must never become an
 		// unhandled rejection (which would crash the whole server)
 		handleWrite(req, res, store, locks, hub, parts, principal).catch((err) => {
@@ -1058,6 +1058,23 @@ async function handleWrite(req, res, store, locks, hub, parts, principal) {
 			return json(res, 200, { grants: { ...store.get(id).state.meta.grants }, effective: store.access(id, target) });
 		}
 		return json(res, 405, { error: 'grants: POST { principal, level } to grant, DELETE .../grants/<principal> to revoke' });
+	}
+
+	// H23: publish/unpublish a diagram for IAP-free SVG embedding (owner-only, above the lock gate alongside grants)
+	if (parts[4] === 'public') {
+		if (req.method === 'PUT' && parts.length === 5) {
+			const body = await readJson(req);
+			if (bodyRejected(req, res, body)) return;
+			if (!body || typeof body.public !== 'boolean') {
+				return json(res, 400, { error: 'expected JSON body { public: boolean }', code: 'public-malformed' });
+			}
+			const err = store.setPublic(id, body.public, principal);
+			if (err) return json(res, /^only the owner/.test(err) ? 403 : 422, { error: err, code: /^only the owner/.test(err) ? 'forbidden' : 'public-rejected' });
+			await store.flush(id);
+			if (hub) hub.announce('access', {});
+			return json(res, 200, { id, public: Boolean(store.get(id).state.meta.public) });
+		}
+		return json(res, 405, { error: 'public: PUT { public: boolean } to publish or unpublish' });
 	}
 
 	// every model write requires holding the lock

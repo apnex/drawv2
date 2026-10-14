@@ -48,7 +48,7 @@ const PLAN = { kinds: KINDS };
 // The store's own filename rule. ONE definition: the boot loader and the example seeder must agree
 // on what counts as a diagram file, or a name one accepts and the other ignores becomes a file that
 // exists but is never loaded.
-const FILE = /^diagram-[0-9a-f]{6}\.json$/;
+const FILE = /^[0-9a-f]{16}\.json$/;
 /*
 H9.4c: workspace grants live in their own object, not in any diagram.
 
@@ -175,6 +175,7 @@ function cleanMeta(id, meta = {}, trusted = false) {
 		schema: SCHEMA,
 		owner: trusted ? str(meta.owner) : '',
 		grants,
+		public: trusted ? Boolean(meta.public) : false,
 		plugins: Array.isArray(meta.plugins) ? meta.plugins.filter((p) => typeof p === 'string').map((p) => str(p)) : [...(KINDS.plugins ?? [])],
 	};
 }
@@ -1345,6 +1346,18 @@ export class Store {
 		const grants = { ...model.state.meta.grants };
 		delete grants[principal];
 		model.state.meta.grants = grants;
+		this.markDirty(id);
+		return null;
+	}
+
+	// H23: publish or unpublish a diagram so `/<id>.svg` can be embedded without IAP; owner-only, outside commit() like grants
+	setPublic(id, isPublic, by) {
+		if (this.templates.has(id)) return 'cannot publish a template: it ships with the image';
+		const model = this.get(id);
+		if (!model) return 'unknown diagram';
+		if (this.authz && this.access(id, by) !== 'owner') return 'only the owner may publish';
+		if (typeof isPublic !== 'boolean') return 'public must be a boolean';
+		model.state.meta.public = isPublic;
 		this.markDirty(id);
 		return null;
 	}

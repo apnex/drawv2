@@ -21,7 +21,7 @@ import path from 'node:path';
 
 const PAGE = productKinds(...NETWORK_ROWS), CORE = productKinds();
 // RESTATED at WD-b1 (H19.45): schema 3 -- a document holds its two layouts (tests/fixtures/composed.mjs `heldLayouts`)
-const doc = (extra = {}) => ({ meta: { id: 'diagram-0e0001', name: 'd', version: 0, schema: 3 }, layouts: heldLayouts(),
+const doc = (extra = {}) => ({ meta: { id: '00000000000e0001', name: 'd', version: 0, schema: 3 }, layouts: heldLayouts(),
 	nodes: [{ id: 'node-0e0001', name: 'a', x: 0, y: 0 }], links: [], pipes: [], zones: [], groups: [], selection: [], ...extra });
 
 test('B307: every collection the composition holds, the selection and a reveal are a valid document', () => {
@@ -56,7 +56,7 @@ test('B248 (SD12): each document lists the plugins its composition needs, a peer
 	const { Model, commit, undo } = await import('./fixtures/composed.mjs');
 	const { Log } = await import('../planner/log.mjs');
 	const m = new Model();
-	m.state.meta.id = 'diagram-0e0001';
+	m.state.meta.id = '00000000000e0001';
 	assert.deepEqual(m.toJSON().meta.plugins, ['layouts', 'zones', 'groups', 'devices', 'the simulation', 'the network'],
 		'a document lists the plugins its composition brings (SD12)');
 	// A peer composed without the network refuses a document that lists 'the network'

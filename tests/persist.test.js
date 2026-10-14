@@ -32,7 +32,7 @@ async function storeWith(dir) {
 // ---- I10: the file round-trips ----
 
 test('I10: parse(serialize(doc, log)) deep-equals the input, including a large record', () => {
-	const doc = { meta: { id: 'diagram-aaaaaa', name: 'x' },
+	const doc = { meta: { id: '0000000000aaaaaa', name: 'x' },
 		nodes: [], links: [], zones: [], groups: [], selection: [] };
 	const log = new Log(0);
 	// a delete-all of a 65-entity diagram is the largest record the design admits
@@ -66,7 +66,7 @@ const ADVERSARIAL = ['a$&b', "a$'b", 'a$`b', 'a$1b', 'a$$b', '$&', '$`'];
 
 test('B13: a replacement-pattern entity name round-trips through the file', () => {
 	for (const name of ADVERSARIAL) {
-		const doc = { meta: { id: 'diagram-aaaaaa', name: 'x' },
+		const doc = { meta: { id: '0000000000aaaaaa', name: 'x' },
 			nodes: [], links: [], zones: [], groups: [], selection: [] };
 		const log = new Log(0);
 		log.version++;
@@ -509,18 +509,18 @@ test('B83: a document with a cross-entity violation LOADS, and is counted', asyn
 	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-inv-'));
 	const doc = {
 		// RESTATED at WD-b1 (H19.45): schema 3 -- a document holds its two layouts (tests/fixtures/composed.mjs `heldLayouts`)
-		meta: { id: 'diagram-ee0001', name: 'broken', version: 0, schema: 3, owner: '', grants: {} }, layouts: heldLayouts(),
+		meta: { id: '0000000000ee0001', name: 'broken', version: 0, schema: 3, owner: '', grants: {} }, layouts: heldLayouts(),
 		nodes: [0, 1].map((i) => ({ id: `node-ee000${i}`, name: `n${i}`, type: 'host', shape: 'circle', x: i * 60, y: 0 })),
 		pipes: [], zones: [], groups: [], selection: [],
 		// two straight links on one pair: writable before the rule existed, uncreatable now
 		links: [{ id: 'link-ee0002', name: 'link-ee0002', src: 'node-ee0000', dst: 'node-ee0001' },
 			{ id: 'link-ee0003', name: 'link-ee0003', src: 'node-ee0000', dst: 'node-ee0001' }],
 	};
-	fs.writeFileSync(path.join(dir, 'diagram-ee0001.json'), JSON.stringify(doc, null, '\t'));
+	fs.writeFileSync(path.join(dir, '0000000000ee0001.json'), JSON.stringify(doc, null, '\t'));
 
 	const s = await openStore(dir, { flushMs: 3_600_000 });
 	try {
-		assert.ok(s.get('diagram-ee0001'), 'the document OPENED — reporting is not refusing');
+		assert.ok(s.get('0000000000ee0001'), 'the document OPENED — reporting is not refusing');
 		assert.equal(s.invariantFailures(), 1, 'and the violation was counted, like a GR9 breach');
 	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
@@ -541,7 +541,7 @@ carries it.
 test('Phase 2: the schema refuses meta.slides', async () => {
 	const { validateDoc } = await import('./fixtures/composed.mjs');
 	// RESTATED at WD-b1 (H19.45): schema 3 -- a document holds its two layouts (tests/fixtures/composed.mjs `heldLayouts`)
-	const doc = { meta: { id: 'diagram-51de52', name: 'legacy', version: 0, schema: 3, owner: '', grants: {},
+	const doc = { meta: { id: '000000000051de52', name: 'legacy', version: 0, schema: 3, owner: '', grants: {},
 		slides: { url: 'https://docs.google.com/x', presentationId: 'p', pageId: 'g' } },
 		nodes: [], pipes: [], links: [], zones: [], groups: [], selection: [] };
 	assert.match(validateDoc(doc), /unknown meta key: slides/, 'the validator no longer knows the name of the deleted feature');
@@ -575,9 +575,9 @@ test('B109: an unreadable entry is withheld under authorization, not shown to ev
 		*/
 		async recoverable() {
 			return [
-				{ name: 'diagram-aa0001.json', generation: '1', tags: null,
+				{ name: '0000000000aa0001.json', generation: '1', tags: null,
 					deletedAt: '2026-01-01T00:00:00Z', purgeAt: '2026-01-08T00:00:00Z' },
-				{ name: 'diagram-bb0002.json', generation: '2', tags: { owner: OTHER, name: 'theirs' },
+				{ name: '0000000000bb0002.json', generation: '2', tags: { owner: OTHER, name: 'theirs' },
 					deletedAt: '2026-01-02T00:00:00Z', purgeAt: '2026-01-09T00:00:00Z' },
 			];
 		},
@@ -591,7 +591,7 @@ test('B109: an unreadable entry is withheld under authorization, not shown to ev
 			'the untagged one is COUNTED, so a surface can say the window holds more than it can show');
 
 		const theirs = await s.recoverable(OTHER);
-		assert.deepEqual(theirs.entries.map((d) => d.id), ['diagram-bb0002'], 'the owner sees their own');
+		assert.deepEqual(theirs.entries.map((d) => d.id), ['0000000000bb0002'], 'the owner sees their own');
 		assert.equal(theirs.entries[0].name, 'theirs', 'named from the tag written at delete time');
 
 		assert.deepEqual((await s.recoverable(null)).entries, [], 'and no principal sees nothing at all');
@@ -604,7 +604,7 @@ test('B109: an unreadable entry is withheld under authorization, not shown to ev
 		*/
 		s.agents.set('agent:helper', { by: OTHER });
 		const asAgent = await s.recoverable('agent:helper');
-		assert.deepEqual(asAgent.entries.map((d) => d.id), ['diagram-bb0002'],
+		assert.deepEqual(asAgent.entries.map((d) => d.id), ['0000000000bb0002'],
 			'an agent sees what its claimant owns, which is what it deleted');
 	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
@@ -617,9 +617,9 @@ test('B109: repeated deletions of one diagram are one row, the newest', async ()
 		// `remove` issues two deletes per diagram, so generations accumulate per id
 		async recoverable() {
 			return [
-				{ name: 'diagram-cc0003.json', generation: '1', tags: { owner: OWNER, name: 'twice' }, deletedAt: '2026-01-01T00:00:00Z', purgeAt: '2026-01-08T00:00:00Z' },
-				{ name: 'diagram-cc0003.json', generation: '2', tags: { owner: OWNER, name: 'twice' }, deletedAt: '2026-01-03T00:00:00Z', purgeAt: '2026-01-10T00:00:00Z' },
-				{ name: 'diagram-cc0003.json', generation: '3', tags: { owner: OWNER, name: 'twice' }, deletedAt: '2026-01-02T00:00:00Z', purgeAt: '2026-01-09T00:00:00Z' },
+				{ name: '0000000000cc0003.json', generation: '1', tags: { owner: OWNER, name: 'twice' }, deletedAt: '2026-01-01T00:00:00Z', purgeAt: '2026-01-08T00:00:00Z' },
+				{ name: '0000000000cc0003.json', generation: '2', tags: { owner: OWNER, name: 'twice' }, deletedAt: '2026-01-03T00:00:00Z', purgeAt: '2026-01-10T00:00:00Z' },
+				{ name: '0000000000cc0003.json', generation: '3', tags: { owner: OWNER, name: 'twice' }, deletedAt: '2026-01-02T00:00:00Z', purgeAt: '2026-01-09T00:00:00Z' },
 			];
 		},
 	};
@@ -638,7 +638,7 @@ test('B109: a filesystem answers null, which is not an empty recycle bin', async
 	try {
 		assert.equal(await s.recoverable(OWNER), null,
 			'null says there is no window; [] would claim there is one and it is empty');
-		assert.match(await s.restore('diagram-aaaaaa', OWNER), /no delete window/);
+		assert.match(await s.restore('0000000000aaaaaa', OWNER), /no delete window/);
 	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
 

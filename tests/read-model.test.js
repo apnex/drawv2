@@ -15,7 +15,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 // a link from A to B whose route, over its pipes, bends up through a waypoint W its stops never name
 // RESTATED at WD-b1 (H19.45): schema 3 -- a document holds its two layouts (tests/fixtures/composed.mjs `heldLayouts`)
 const detour = () => ({
-	meta: { id: 'diagram-000001', name: 'd', version: 0, schema: 3 }, layouts: heldLayouts(),
+	meta: { id: '0000000000000001', name: 'd', version: 0, schema: 3 }, layouts: heldLayouts(),
 	nodes: [
 		{ id: 'node-00000a', name: 'A', type: 'host', shape: 'square', x: 0, y: 0 },
 		{ id: 'node-00000b', name: 'B', type: 'host', shape: 'square', x: 360, y: 0 },
@@ -89,10 +89,10 @@ test('R-a: a diagram the store boots from disk draws with the network, as one it
 	const { serialize } = await import('../server/docfile.mjs');
 	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'read-model-'));
 	try {
-		fs.writeFileSync(path.join(dir, 'diagram-000001.json'), serialize(detour(), null));
+		fs.writeFileSync(path.join(dir, '0000000000000001.json'), serialize(detour(), null));
 		const store = new Store(dir, { flushMs: 3_600_000, authz: false });
 		await store.init();
-		const m = store.diagrams.get('diagram-000001').model;
+		const m = store.diagrams.get('0000000000000001').model;
 		assert.deepEqual(pathOf(m, m.get('link', 'link-00000d')), [[0, 0], [180, 240], [360, 0]]);
 	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });

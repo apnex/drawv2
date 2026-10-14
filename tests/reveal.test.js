@@ -24,7 +24,7 @@ const NODE = (id, name, x, y) => ({ id, name, type: 'server', x, y });
 function doc(nodes = [], extra = {}) {
 	return {
 		// RESTATED at WD-b1 (H19.45): schema 3 -- a document holds its two layouts (tests/fixtures/composed.mjs `heldLayouts`)
-		meta: { id: 'diagram-aa0001', name: 'r', version: 1, schema: 3 }, layouts: heldLayouts(),
+		meta: { id: '0000000000aa0001', name: 'r', version: 1, schema: 3 }, layouts: heldLayouts(),
 		nodes, links: [], zones: [], groups: [], selection: [], ...extra,
 	};
 }

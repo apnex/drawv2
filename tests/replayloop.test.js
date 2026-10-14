@@ -157,10 +157,10 @@ test('B184: a commit keeps its identity across a restore', () => {
 	*/
 	const { sync } = harness();
 	localStorage.setItem('draw.outbox', JSON.stringify({
-		diagram: 'diagram-aa0001',
+		diagram: '0000000000aa0001',
 		msgs: [{ ops: [{ op: 'del', kind: 'node', id: 'node-aa0001' }], label: 'delete', txnId: 'abc123-7', tries: 2 }],
 	}));
-	sync.restoreOutbox('diagram-aa0001');
+	sync.restoreOutbox('0000000000aa0001');
 	assert.equal(sync.outbox.length, 1);
 	assert.equal(sync.outbox[0].txnId, 'abc123-7', 'the id must survive the restore unchanged');
 	assert.equal(sync.outbox[0].tries, 2, 'and so must the attempt count');
@@ -186,10 +186,10 @@ test('B184: a legacy record without an id is adopted, never dropped', () => {
 	*/
 	const { sync } = harness();
 	localStorage.setItem('draw.outbox', JSON.stringify({
-		diagram: 'diagram-aa0001',
+		diagram: '0000000000aa0001',
 		msgs: [{ ops: [{ op: 'del', kind: 'node', id: 'node-aa0001' }], label: 'delete' }],
 	}));
-	sync.restoreOutbox('diagram-aa0001');
+	sync.restoreOutbox('0000000000aa0001');
 	assert.equal(sync.outbox.length, 1, 'a legacy record must still replay');
 	assert.ok(sync.outbox[0].txnId, 'and must be given an identity for every attempt after this one');
 });

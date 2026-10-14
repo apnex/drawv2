@@ -548,19 +548,19 @@ it, which is the only situation this field exists for.
 test('B102: expiresAt reports null for a lapsed lock the sweep has not collected', () => {
 	let now = 1000;
 	const locks = new Locks({ ttlMs: 100, now: () => now });
-	const got = locks.acquire('diagram-aaaaaa');
-	assert.equal(locks.expiresAt('diagram-aaaaaa'), got.expiresAt, 'held: the instant it lapses');
-	assert.equal(locks.expiresAt('diagram-aaaaaa'), 1100);
+	const got = locks.acquire('0000000000aaaaaa');
+	assert.equal(locks.expiresAt('0000000000aaaaaa'), got.expiresAt, 'held: the instant it lapses');
+	assert.equal(locks.expiresAt('0000000000aaaaaa'), 1100);
 
 	now = 1101;                                   // lapsed, and nothing has swept it
-	assert.equal(locks.locked('diagram-aaaaaa'), false, 'no longer held');
-	assert.equal(locks.expiresAt('diagram-aaaaaa'), null,
+	assert.equal(locks.locked('0000000000aaaaaa'), false, 'no longer held');
+	assert.equal(locks.expiresAt('0000000000aaaaaa'), null,
 		'a lapsed lock has no expiry to wait for -- reporting one would strand the waiter');
 });
 
 test('B102: expiresAt is null for a diagram that was never locked', () => {
 	const locks = new Locks();
-	assert.equal(locks.expiresAt('diagram-bbbbbb'), null);
+	assert.equal(locks.expiresAt('0000000000bbbbbb'), null);
 });
 
 /*
@@ -571,11 +571,11 @@ null either way and dropping it changed nothing observable, and nothing exercise
 */
 test('B105: activity names the principal holding each lock', () => {
 	const locks = new Locks();
-	locks.acquire('diagram-aa0001', 'agent:planner');
-	locks.acquire('diagram-aa0002', 'agent:scribe');
+	locks.acquire('0000000000aa0001', 'agent:planner');
+	locks.acquire('0000000000aa0002', 'agent:scribe');
 	const seen = locks.activity();
 	assert.deepEqual(seen.map((a) => [a.principal, a.diagram]).sort(),
-		[['agent:planner', 'diagram-aa0001'], ['agent:scribe', 'diagram-aa0002']]);
+		[['agent:planner', '0000000000aa0001'], ['agent:scribe', '0000000000aa0002']]);
 	assert.ok(seen.every((a) => typeof a.since === 'number' && typeof a.expiresAt === 'number'));
 });
 
@@ -583,14 +583,14 @@ test('B105: an unnamed holder is reported as null, not omitted', () => {
 	// authorization off: there IS no principal, and a blank indicator in the configuration a single
 	// operator runs would be the whole feature missing
 	const locks = new Locks();
-	locks.acquire('diagram-aa0001');
+	locks.acquire('0000000000aa0001');
 	assert.deepEqual(locks.activity().map((a) => a.principal), [null]);
 });
 
 test('B105: a lapsed lock leaves activity without anything noticing the agent died', () => {
 	let now = 1000;
 	const locks = new Locks({ ttlMs: 100, now: () => now });
-	locks.acquire('diagram-aa0001', 'agent:planner');
+	locks.acquire('0000000000aa0001', 'agent:planner');
 	assert.equal(locks.activity().length, 1);
 
 	now = 1101;                                   // lapsed, and no sweep has run
@@ -601,10 +601,10 @@ test('B105: a lapsed lock leaves activity without anything noticing the agent di
 test('B105: activity is ordered by when each lock was taken', () => {
 	let now = 1000;
 	const locks = new Locks({ now: () => now });
-	locks.acquire('diagram-aa0002', 'agent:second');
+	locks.acquire('0000000000aa0002', 'agent:second');
 	now = 2000;
-	locks.acquire('diagram-aa0001', 'agent:first');
-	assert.deepEqual(locks.activity().map((a) => a.diagram), ['diagram-aa0002', 'diagram-aa0001'],
+	locks.acquire('0000000000aa0001', 'agent:first');
+	assert.deepEqual(locks.activity().map((a) => a.diagram), ['0000000000aa0002', '0000000000aa0001'],
 		'oldest first: a stable order beats whichever the Map happens to hold');
 });
 
@@ -627,12 +627,12 @@ test('B115: a lapsed lock announces the agent list, not only the per-diagram loc
 	};
 	const store = { canRead: () => true };
 
-	locks.acquire('diagram-aa0001', 'agent:planner');
+	locks.acquire('0000000000aa0001', 'agent:planner');
 	assert.deepEqual(sweepLocks(locks, hub, store), [], 'nothing lapsed yet');
 	assert.equal(sent.announce.length, 0, 'and a sweep that frees nothing says nothing');
 
 	now = 1101;
-	assert.deepEqual(sweepLocks(locks, hub, store), ['diagram-aa0001']);
+	assert.deepEqual(sweepLocks(locks, hub, store), ['0000000000aa0001']);
 	assert.equal(sent.broadcast.length, 1, 'viewers of that diagram learn it is editable');
 	assert.equal(sent.broadcast[0].cmd, 'lock');
 	const agents = sent.announce.filter((m) => m.cmd === 'agents');
@@ -648,8 +648,8 @@ test('B115: one announcement per sweep, not one per freed diagram', () => {
 	const hub = { broadcast: () => {}, viewers: () => [],
 		announceEach: (cmd, build) => { if (cmd === 'agents') sent.push(build({ principal: null })); } };
 	const store = { canRead: () => true };
-	locks.acquire('diagram-aa0001', 'agent:a');
-	locks.acquire('diagram-aa0002', 'agent:b');
+	locks.acquire('0000000000aa0001', 'agent:a');
+	locks.acquire('0000000000aa0002', 'agent:b');
 	now = 1101;
 	return import('../server/app.js').then(({ sweepLocks }) => {
 		assert.equal(sweepLocks(locks, hub, store).length, 2, 'both lapsed');
@@ -673,12 +673,12 @@ next six failed.
 test('B140: re-acquiring with your own token renews it, and keeps the same token', () => {
 	let t = 1000;
 	const locks = new Locks({ ttlMs: 500, now: () => t });
-	const first = locks.acquire('diagram-aa0001', 'agent:one');
+	const first = locks.acquire('0000000000aa0001', 'agent:one');
 	assert.ok(first.token, 'acquired');
 	assert.equal(first.renewed, undefined, 'a first acquire is not a renewal');
 
 	t += 400;                                        // still live, but close to lapsing
-	const again = locks.acquire('diagram-aa0001', 'agent:one', first.token);
+	const again = locks.acquire('0000000000aa0001', 'agent:one', first.token);
 	assert.ok(again, 'the holder is not refused its own slot');
 	assert.equal(again.renewed, true, 'and it is reported as a renewal');
 	assert.equal(again.token, first.token,
@@ -686,22 +686,22 @@ test('B140: re-acquiring with your own token renews it, and keeps the same token
 	assert.equal(again.expiresAt, t + 500, 'the deadline moved out from now, not from the original');
 
 	t += 400;                                        // past the ORIGINAL deadline, inside the renewed one
-	assert.equal(locks.locked('diagram-aa0001'), true, 'the renewal really extended it');
+	assert.equal(locks.locked('0000000000aa0001'), true, 'the renewal really extended it');
 });
 
 test('B140: renewal is for the holder only -- a wrong token or none still refuses', () => {
 	let t = 1000;
 	const locks = new Locks({ ttlMs: 500, now: () => t });
-	const mine = locks.acquire('diagram-aa0002', 'agent:one');
+	const mine = locks.acquire('0000000000aa0002', 'agent:one');
 
-	assert.equal(locks.acquire('diagram-aa0002', 'agent:two', 'not-the-token'), null,
+	assert.equal(locks.acquire('0000000000aa0002', 'agent:two', 'not-the-token'), null,
 		'a wrong token is refused, so the 409 saying "another controller" is now true when it fires');
-	assert.equal(locks.acquire('diagram-aa0002', 'agent:two'), null, 'and so is no token at all');
-	assert.equal(locks.acquire('diagram-aa0002', 'agent:one'), null,
+	assert.equal(locks.acquire('0000000000aa0002', 'agent:two'), null, 'and so is no token at all');
+	assert.equal(locks.acquire('0000000000aa0002', 'agent:one'), null,
 		'even the same PRINCIPAL without the token -- the token is the capability, not the identity');
 
 	t += 600;                                        // lapsed
-	const next = locks.acquire('diagram-aa0002', 'agent:two');
+	const next = locks.acquire('0000000000aa0002', 'agent:two');
 	assert.ok(next, 'once it lapses anyone may take it');
 	assert.notEqual(next.token, mine.token, 'and that IS a new token, because it is a new lock');
 });
@@ -750,33 +750,33 @@ control is unaffected by the change.
 test('B142: a pause between bursts does not cost the slot', () => {
 	let t = 0;
 	const locks = new Locks({ now: () => t });          // the shipped default, deliberately not overridden
-	const held = locks.acquire('diagram-bb0001', 'agent:one');
+	const held = locks.acquire('0000000000bb0001', 'agent:one');
 
 	t += 90_000;                                        // a minute and a half deciding what to draw
-	assert.equal(locks.locked('diagram-bb0001'), true, 'ninety seconds of thinking used to lose it');
-	assert.equal(locks.verify('diagram-bb0001', held.token), true, 'and the token still writes');
+	assert.equal(locks.locked('0000000000bb0001'), true, 'ninety seconds of thinking used to lose it');
+	assert.equal(locks.verify('0000000000bb0001', held.token), true, 'and the token still writes');
 
-	assert.equal(locks.heartbeat('diagram-bb0001', held.token), true, 'a write slides it again');
+	assert.equal(locks.heartbeat('0000000000bb0001', held.token), true, 'a write slides it again');
 	t += 14 * 60_000;
-	assert.equal(locks.locked('diagram-bb0001'), true, 'still inside the backstop');
+	assert.equal(locks.locked('0000000000bb0001'), true, 'still inside the backstop');
 	t += 2 * 60_000;
-	assert.equal(locks.locked('diagram-bb0001'), false,
+	assert.equal(locks.locked('0000000000bb0001'), false,
 		'and an ABANDONED slot still clears unattended -- the backstop is longer, not absent');
 });
 
 test('B142: reclaim is what protects the human, and the longer backstop does not touch it', () => {
 	let t = 0;
 	const locks = new Locks({ now: () => t });
-	const held = locks.acquire('diagram-bb0002', 'agent:one');
-	assert.equal(locks.locked('diagram-bb0002'), true);
+	const held = locks.acquire('0000000000bb0002', 'agent:one');
+	assert.equal(locks.locked('0000000000bb0002'), true);
 
 	// no token, no waiting for any deadline: that is the whole point of D22
-	locks.reclaim('diagram-bb0002');
-	assert.equal(locks.locked('diagram-bb0002'), false, 'the person has control immediately');
-	assert.equal(locks.verify('diagram-bb0002', held.token), false, 'and the agent no longer writes');
+	locks.reclaim('0000000000bb0002');
+	assert.equal(locks.locked('0000000000bb0002'), false, 'the person has control immediately');
+	assert.equal(locks.verify('0000000000bb0002', held.token), false, 'and the agent no longer writes');
 	// not a bare refusal: the post-reclaim hold answers with how long to wait, so a retry loop backs
 	// off instead of racing the person who just took control
-	const rebuffed = locks.acquire('diagram-bb0002', 'agent:one');
+	const rebuffed = locks.acquire('0000000000bb0002', 'agent:one');
 	assert.equal(rebuffed.held, true, 'nor can it grab the slot straight back');
 	assert.ok(rebuffed.retryAfter > 0, 'and it is told for how long');
 });

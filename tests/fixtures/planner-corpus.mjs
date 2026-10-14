@@ -276,7 +276,7 @@ function compose(c) {
 	attachRelations(model, { cellOf });
 	// a case keeps its waypoints apart to describe the board; the document holds them among the nodes (F-c)
 	const { waypoints = [], ...board } = c.board;
-	model.load({ meta: { id: 'diagram-000001', name: 'corpus' }, zones: [], ...board, nodes: [...(board.nodes || []), ...waypoints], ...(network ? { pipes: pipesOf(c) } : {}) });
+	model.load({ meta: { id: '0000000000000001', name: 'corpus' }, zones: [], ...board, nodes: [...(board.nodes || []), ...waypoints], ...(network ? { pipes: pipesOf(c) } : {}) });
 	// placement is the server door's edge (PL-4): planned as the store plans it
 	const transit = createTransit();
 	// as the session hands them over: an anchor with its kind, which is what the transit table reads

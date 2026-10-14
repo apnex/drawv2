@@ -87,7 +87,7 @@ test('F-d (B259): a link\'s age is its order -- the older keeps a contested pipe
 });
 
 test('F-d: the export stacks by the order the canvas stacks by', () => {
-	const doc = { meta: { id: 'diagram-000001', name: 'd' }, groups: [],
+	const doc = { meta: { id: '0000000000000001', name: 'd' }, groups: [],
 		nodes: [router('node-00000a', 0, { order: 2 }), router('node-00000b', 120, { order: 1 })],
 		links: [], zones: [{ id: 'zone-00000d', name: 'top', x: -90, y: -90, w: 180, h: 180, order: 9 }, { id: 'zone-00000c', name: 'low', x: -90, y: -90, w: 180, h: 180, order: 3 }] };
 	const ids = docToSchema(doc).entities.map((e) => e.id);

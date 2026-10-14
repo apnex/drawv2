@@ -106,9 +106,10 @@ Read it with this amendment in hand: its `beat` is this document's unnamed story
 
 ```json
 {
-  "meta":   { "id": "diagram-x", "name": "demo", "version": 12, "schema": 3,
+  "meta":   { "id": "00000000007bc886", "name": "demo", "version": 12, "schema": 3,
               "owner": "user:someone@example.com",
               "grants": { "user:other@example.com": "read", "agent:planner": "write" },
+              "public": false,
               "plugins": ["layouts", "zones", "groups", "devices", "the simulation", "the network"]
               },
   "nodes":  [ { "id": "node-a1b2c3", "name": "web-1", "type": "host", "shape": "circle", "x": 510, "y": 270 },
@@ -257,16 +258,17 @@ Unchanged and still binding: one websocket per client, `{cmd, body}` both ways, 
 
 ## What an id looks like
 
-Every entity id is its kind, a hyphen, and exactly six lowercase hex digits.
+Every entity id is its kind, a hyphen, and exactly six lowercase hex digits; a diagram id is sixteen lowercase hex digits (`[0-9a-f]{16}`, H23), and a template id is `template-` and six lowercase hex digits.
 
 ```text
 node-0003fc      node-aa0001          link-b09674
-zone-285c5e      group-8582bf         diagram-7bc886
+zone-285c5e      group-8582bf         00000000007bc886
 template-c8d87c
 ```
 
-The server enforces `^(layout|node|link|zone|group|diagram|template)-[0-9a-f]{6}$` and refuses anything else, including uppercase hex, five digits or seven, and a kind outside that list.\
+The server enforces `^(layout|node|link|zone|group|template)-[0-9a-f]{6}$` for entities and templates and `^[0-9a-f]{16}$` for diagrams (H23), and refuses anything else, including uppercase hex, five digits or seven, and a kind outside that list.\
 AMENDED 2026-10-03: `waypoint` left the grammar with the format batch -- a waypoint is a node with no type, and its id says `node` (P-10).\
+AMENDED 2026-10-15 (H23): a diagram id is 16 lowercase hex digits (`[0-9a-f]{16}`) with no `diagram-` prefix, served at `/<id>` and `/<id>.svg`.\
 A refusal here is a `422` naming the op that carried the bad id.
 
 *(Amended 2026-08-27, H9.9)* -- `template` joins the grammar as a second DOCUMENT-level kind beside `diagram`.\
@@ -404,12 +406,13 @@ The routes, bodies and refusals are identical, because the prefix is stripped at
 It opens on exactly two paths, and widening it is a deliberate act rather than a consequence of adding a route:
 ```text
 /connect/v1/...      ->  /api/v1/...      the REST surface
-/connect/d/<id>.svg  ->  /d/<id>.svg      the rendered picture
+/connect/svg/<id>.svg -> /<id>.svg        the rendered picture
+/<id>.svg            ->  /<id>.svg        the rendered picture (outside IAP, H23)
 ```
 
 The picture is the same route the editor links to, so an agent can fetch a render of what it just drew:
 ```sh
-curl -s -H "Authorization: Bearer XXXX-XXXX-XXXX-XXXX" -O https://draw.apnex.io/connect/d/<id>.svg
+curl -s -H "Authorization: Bearer XXXX-XXXX-XXXX-XXXX" -O https://draw.apnex.io/connect/svg/<id>.svg
 ```
 
 It is grant-gated like everything else, because an SVG carries the whole document's content and a representation is not a permission.
@@ -490,6 +493,7 @@ Only the owner may grant or revoke, a level is `read` or `write`, and a principa
 ```sh
 curl -s -X POST   localhost:8080/api/v1/diagrams/<id>/grants -d '{"principal":"agent:planner","level":"write"}'
 curl -s -X DELETE localhost:8080/api/v1/diagrams/<id>/grants/agent%3Aplanner
+curl -s -X PUT    localhost:8080/api/v1/diagrams/<id>/public -d '{"public":true}'
 ```
 
 A **connection code** is the credential an agent authenticates with, and it is not a principal -- it authenticates AS an `agent:<name>`, so rotating or revoking one leaves everything that agent owns untouched.\
@@ -534,7 +538,7 @@ curl -s -X POST localhost:8080/api/v1/diagrams/<id>/sync/slides
 
 Any diagram also renders to a self-contained SVG by adding `.svg` to its deep link:
 ```sh
-curl -O localhost:8080/d/<diagram-id>.svg
+curl -O localhost:8080/<diagram-id>.svg
 ```
 
 The glyph artwork and styles travel inside that file, so it opens anywhere with nothing else to fetch, and each shape carries its entity id so an export traces back to the model.

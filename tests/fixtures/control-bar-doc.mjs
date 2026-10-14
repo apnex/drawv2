@@ -34,5 +34,5 @@ export function controlBarDoc() {
 		{ id: 'link-000001', name: 'link-000001', src: 'node-c11001', dst: 'node-d22001' },
 		{ id: 'link-000002', name: 'link-000002', src: 'node-d22001', dst: 'node-e33001' }];
 	// RESTATED at WD-b1 (H19.45): a document holds its two layouts (tests/fixtures/composed.mjs `heldLayouts`)
-	return { meta: { id: 'diagram-cba001', name: 'control-bar' }, layouts: heldLayouts(), nodes, links, zones: [], groups: [] };
+	return { meta: { id: '0000000000cba001', name: 'control-bar' }, layouts: heldLayouts(), nodes, links, zones: [], groups: [] };
 }

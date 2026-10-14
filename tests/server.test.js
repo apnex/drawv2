@@ -190,7 +190,7 @@ test('resume: in step -> `sync`, no document; behind -> a snapshot', async () =>
 	assert.equal(back.body.doc.meta.id, id);
 	assert.equal('rewound' in back.body, false, 'behind is not rewound');
 
-	c.send('resume', { diagram: 'diagram-ffffff', version: 0 });
+	c.send('resume', { diagram: '0000000000ffffff', version: 0 });
 	const err = await c.expect('error');
 	assert.equal(err.body.code, 'unknown-diagram');
 	c.close();
@@ -220,14 +220,14 @@ test('I11: `create {doc}` mints the id, and a body `version` is ignored', async 
 	const before = (await c.expect('snapshot')).body;
 
 	const doc = {
-		meta: { id: 'diagram-ffffff', name: 'claimed' },
+		meta: { id: '0000000000ffffff', name: 'claimed' },
 		nodes: [{ id: 'node-cccc01', name: 'a', type: 'host', x: 60, y: 60 }],
 		links: [], zones: [], groups: []
 	};
 	c.send('create', { name: 'adopted', doc });
 	const made = await c.expect('snapshot');
-	assert.notEqual(made.body.doc.meta.id, 'diagram-ffffff', 'the client cannot name a diagram');
-	assert.match(made.body.doc.meta.id, /^diagram-[0-9a-f]{6}$/, 'the server minted one');
+	assert.notEqual(made.body.doc.meta.id, '0000000000ffffff', 'the client cannot name a diagram');
+	assert.match(made.body.doc.meta.id, /^[0-9a-f]{16}$/, 'the server minted one');
 	assert.equal(made.body.doc.nodes.length, 1, 'the content came with it');
 	assert.equal(made.body.version, 0, 'a new diagram starts at 0 whatever the client believed');
 
@@ -341,7 +341,7 @@ test('static client is served with traversal protection', async () => {
 
 test('deep links /d/<diagram-id> serve the editor', async () => {
 	const id = (await get('/api/v1/diagrams')).body[0].id;
-	const deep = await fetch(`${base}/d/${id}`);
+	const deep = await fetch(`${base}/${id}`);
 	assert.equal(deep.status, 200);
 	assert.match(deep.headers.get('content-type'), /text\/html/);
 	const html = await deep.text();
@@ -354,7 +354,7 @@ test('deep links /d/<diagram-id> serve the editor', async () => {
 	// only well-formed diagram ids route to the editor
 	assert.equal((await fetch(`${base}/d/garbage`)).status, 404);
 	assert.equal((await fetch(`${base}/d/diagram-XYZXYZ`)).status, 404);
-	assert.equal((await fetch(`${base}/d/diagram-000001/extra`)).status, 404);
+	assert.equal((await fetch(`${base}/0000000000000001/extra`)).status, 404);
 });
 
 test('malformed websocket input gets error replies, session survives', async () => {
@@ -874,13 +874,13 @@ test('B112: free anchors exclude what is occupied, and an anchor round-trips int
 test('B101: an agent can fetch the picture of what it drew, through its own door', async () => {
 	const id = (await get('/api/v1/diagrams')).body[0].id;
 
-	const front = await fetch(`${base}/d/${id}.svg`);
+	const front = await fetch(`${base}/${id}.svg`);
 	assert.equal(front.status, 200, 'the editor route still works');
 	const svg = await front.text();
 	assert.match(svg, /^<svg/, 'and it is an SVG');
 
 	// the same picture, named without the prefix the load balancer routes past IAP
-	const door = await fetch(`${base}/connect/d/${id}.svg`);
+	const door = await fetch(`${base}/connect/svg/${id}.svg`);
 	assert.equal(door.status, 200, 'reachable through the agent door -- B101 was that it was not');
 	assert.equal(door.headers.get('content-type'), 'image/svg+xml; charset=utf-8');
 	assert.equal(await door.text(), svg, 'byte for byte the same render, because it is one route');
@@ -888,7 +888,7 @@ test('B101: an agent can fetch the picture of what it drew, through its own door
 	// the REST surface still comes through its own entry
 	assert.equal((await fetch(`${base}/connect/v1/diagrams`)).status, 200);
 	// an unknown diagram is a 404 from the route, not a static-file miss
-	assert.equal((await fetch(`${base}/connect/d/diagram-ffffff.svg`)).status, 404);
+	assert.equal((await fetch(`${base}/connect/svg/0000000000ffffff.svg`)).status, 404);
 });
 
 test('B101: the agent door is not a blanket strip -- it opens onto two paths, not the app', async () => {
@@ -1065,19 +1065,19 @@ test('create {doc} validateDoc rejections: duplicate ids and self-links', async 
 
 test('corrupt and invalid files in the data dir are skipped at boot', async () => {
 	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-corrupt-'));
-	fs.writeFileSync(path.join(dir, 'diagram-bad001.json'), 'not json at all {{{');
-	fs.writeFileSync(path.join(dir, 'diagram-bad002.json'), JSON.stringify({ meta: { id: 'diagram-bad002', name: 'x' }, nodes: [{ id: 'node-zz', evil: true }] }));
+	fs.writeFileSync(path.join(dir, '0000000000bad001.json'), 'not json at all {{{');
+	fs.writeFileSync(path.join(dir, '0000000000bad002.json'), JSON.stringify({ meta: { id: '0000000000bad002', name: 'x' }, nodes: [{ id: 'node-zz', evil: true }] }));
 	const good = {
 		// RESTATED at WD-b1 (H19.45): schema 3 -- a document holds its two layouts (tests/fixtures/composed.mjs `heldLayouts`)
-		meta: { id: 'diagram-aaaa11', name: 'good', version: 0, schema: 3 },
+		meta: { id: '0000000000aaaa11', name: 'good', version: 0, schema: 3 },
 		nodes: [], links: [], pipes: [], zones: [], groups: [], layouts: heldLayouts()
 	};
-	fs.writeFileSync(path.join(dir, 'diagram-aaaa11.json'), JSON.stringify(good));
+	fs.writeFileSync(path.join(dir, '0000000000aaaa11.json'), JSON.stringify(good));
 
 	const app2 = await makeApp({ dataDir: dir, secretsDir: dir, port: 0 });
 	const list = await (await fetch(`http://localhost:${app2.port}/api/v1/diagrams`)).json();
 	assert.equal(list.length, 1);
-	assert.equal(list[0].id, 'diagram-aaaa11');
+	assert.equal(list[0].id, '0000000000aaaa11');
 	await app2.close();
 	fs.rmSync(dir, { recursive: true, force: true });
 });
@@ -1315,7 +1315,7 @@ of a folder is answered with one exact status. The traversal requests go out RAW
 it sends -- the server must hold the line against a client that does not.
 */
 test('K9: a template deep link serves the editor, as a diagram one does', async () => {
-	const res = await fetch(`${base}/d/template-1ced1f`);
+	const res = await fetch(`${base}/template-1ced1f`);
 	assert.equal(res.status, 200);
 	assert.match(res.headers.get('content-type'), /text\/html/);
 });

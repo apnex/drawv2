@@ -68,7 +68,7 @@ test('B27: a content region outside its panel is refused, put or set -- a shrink
 });
 
 test('B27: a document holding a zone or a panel past the edge is refused at the document door -- create, boot, restore', () => {
-	const doc = (patch) => ({ meta: { id: 'diagram-0b2701', name: 'd' }, layouts: heldLayouts(), nodes: [], zones: [], links: [], pipes: [], groups: [], ...patch });
+	const doc = (patch) => ({ meta: { id: '00000000000b2701', name: 'd' }, layouts: heldLayouts(), nodes: [], zones: [], links: [], pipes: [], groups: [], ...patch });
 	assert.equal(validateDoc(doc({ zones: [zone(), { ...zone({ id: 'zone-0b2702', x: -930, y: -510 }) }] })), null, 'within the edges -- the control');
 	assert.match(validateDoc(doc({ zones: [zone({ w: 240 })] })), /past the surface's edge/);
 	assert.match(validateDoc(doc({ nodes: [panel({ span: { cols: 4, rows: 3 } })] })), /past the surface's edge/);

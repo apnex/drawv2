@@ -750,7 +750,7 @@ VERBS.push(
 		},
 	},
 	{
-		name: 'render', group: 'Lifecycle', usage: 'draw render [--out file.svg]', route: '/d/<id>.svg', method: 'GET',
+		name: 'render', group: 'Lifecycle', usage: 'draw render [--out file.svg]', route: '/<id>.svg', method: 'GET',
 		summary: 'the picture, as SVG', example: 'draw render --out topology.svg',
 		flags: [{ name: '--out', about: 'write to a file instead of stdout' },
 			{ name: '--summary', about: 'what the renderer emitted, by element -- verification without a browser' },
@@ -758,7 +758,7 @@ VERBS.push(
 		async run(ctx) {
 			const id = await activeId(ctx, ctx.flags);
 			// the one route that is not JSON, so it bypasses the shared parser
-			const url = `${ctx.host}${ctx.code ? '/connect' : ''}/d/${id}.svg`;
+			const url = `${ctx.host}${ctx.code ? '/connect/svg' : ''}/${id}.svg`;
 			const res = await fetch(url, { headers: ctx.code ? { authorization: `Bearer ${ctx.code}` } : {} });
 			if (!res.ok) die(`render: HTTP ${res.status}`);
 			const svg = await res.text();
@@ -1321,6 +1321,24 @@ VERBS.push(
 			const id = await activeId(ctx, ctx.flags);
 			const b = ok(await request(ctx, `/diagrams/${id}/grants`, { method: 'POST', body: { principal, level } }), 'grant');
 			return { json: b, text: `${principal} ${level}` };
+		},
+	},
+	{
+		name: 'publish', group: 'Access', usage: 'draw publish [--off]',
+		route: '/diagrams/<id>/public', method: 'PUT', also: ['GET /diagrams'],
+		summary: 'publish `/<id>.svg` for IAP-free embedding, or make it private with --off (H23)',
+		example: 'draw publish --diagram topology',
+		flags: [{ name: '--off', about: 'make the diagram private again' },
+			{ name: '--diagram', about: 'target by id or name' }],
+		async run(ctx) {
+			const id = await activeId(ctx, ctx.flags);
+			const pub = !ctx.flags.off;
+			const b = ok(await request(ctx, `/diagrams/${id}/public`, {
+				method: 'PUT', body: { public: pub },
+			}), 'publish');
+			const svgUrl = `${ctx.host}/${id}.svg`;
+			return { json: { ...b, url: b.public ? svgUrl : null },
+				text: b.public ? `public  ${id}  ${svgUrl}` : `private  ${id}` };
 		},
 	},
 	{
@@ -2936,7 +2954,7 @@ export function parityOf(model, render, placed) {
 VERBS.push({
 	name: 'parity', group: 'Context', usage: 'draw parity',
 	route: '/diagrams/<id>', method: 'GET',
-	also: ['GET /diagrams', 'GET /diagrams/<id>/layouts/<layout>/anchors', 'GET /d/<id>.svg'],
+	also: ['GET /diagrams', 'GET /diagrams/<id>/layouts/<layout>/anchors', 'GET /<id>.svg'],
 	summary: 'do the model, the render and the map agree -- A5, measured rather than assumed',
 	example: 'draw parity',
 	flags: [{ name: '--diagram', about: 'target by id or name' }],
@@ -2946,7 +2964,7 @@ VERBS.push({
 		const anchors = ok(await request(ctx, `/diagrams/${id}/layouts/node/anchors`), 'parity').anchors;
 
 		// the render is fetched raw, like `draw render` does -- the one route that is not JSON
-		const url = `${ctx.host}${ctx.code ? '/connect' : ''}/d/${id}.svg`;
+		const url = `${ctx.host}${ctx.code ? '/connect/svg' : ''}/${id}.svg`;
 		const res = await fetch(url, { headers: ctx.code ? { authorization: `Bearer ${ctx.code}` } : {} });
 		if (!res.ok) die(`parity: the render answered HTTP ${res.status}`);
 		const body = (await res.text()).split('</defs>').pop();
@@ -3027,7 +3045,7 @@ VERBS.push(
 		name: 'restore', group: 'Lifecycle', usage: 'draw restore <id>',
 		route: '/diagrams/deleted/<id>/restore', method: 'POST', also: ['GET /diagrams/deleted'],
 		summary: 'bring one back out of the delete window',
-		example: 'draw restore diagram-a97651',
+		example: 'draw restore 0000000000a97651',
 		args: [{ name: 'id', about: 'the diagram id, as `draw deleted` lists it' }],
 		async run(ctx, args) {
 			if (!args[0]) die('restore needs a diagram id -- `draw deleted` lists what is recoverable');
@@ -3039,8 +3057,8 @@ VERBS.push(
 			window: deleting two diagrams called `scratch` is ordinary, and picking one silently
 			would be the worst possible behaviour on a recovery surface.
 			*/
-			if (!/^diagram-[0-9a-f]{6}$/.test(args[0])) {
-				die(`restore takes a diagram id like diagram-a97651, not a name -- a deleted diagram has no live name to resolve, and two may share one. \`draw deleted\` lists the ids.`);
+			if (!/^[0-9a-f]{16}$/.test(args[0])) {
+				die(`restore takes a 16-hex diagram id like 0000000000a97651, not a name -- a deleted diagram has no live name to resolve, and two may share one. \`draw deleted\` lists the ids.`);
 			}
 			const b = ok(await request(ctx, `/diagrams/deleted/${args[0]}/restore`, { method: 'POST' }), 'restore');
 			return { json: b, text: `restored ${b.name || b.restored}  (${b.restored})` };

@@ -101,7 +101,7 @@ test('H9.9: the first write against a template forks it, and the answer says whe
 		}, 'client', null, ME);
 
 		assert.equal(res.ok, true, 'the write lands');
-		assert.match(res.forkedTo || '', /^diagram-[0-9a-f]{6}$/, 'on a real diagram, and the caller is told which');
+		assert.match(res.forkedTo || '', /^[0-9a-f]{16}$/, 'on a real diagram, and the caller is told which');
 
 		const fork = store.get(res.forkedTo);
 		assert.equal(fork.all('node').length, before + 1, 'the fork carries the template content plus the write');
@@ -215,7 +215,7 @@ test('H9.9: a session rebinds to its fork, so a second write does not fork again
 		await settle();
 		const forked = seen.find((m) => m.cmd === 'forked');
 		assert.ok(forked, 'the session is told it moved');
-		assert.match(forked.body.diagram, /^diagram-[0-9a-f]{6}$/, 'onto a real diagram');
+		assert.match(forked.body.diagram, /^[0-9a-f]{16}$/, 'onto a real diagram');
 
 		ws.send(JSON.stringify({ cmd: 'commit', body: rename('second') }));
 		await settle();
@@ -334,7 +334,7 @@ H9.9 -- refreshing the browser on a template must serve the editor, not 404.
 
 `serveStatic` matched deep links with its own copy of the id grammar,
 `/^\/d\/diagram-[0-9a-f]{6}$/`, which never learned about templates. A refresh on
-`/d/template-c8d87c` fell through to a file lookup for a file that does not exist and answered 404,
+`/template-c8d87c` fell through to a file lookup for a file that does not exist and answered 404,
 so the first thing a user did after opening a template broke.
 
 The grammar is IMPORTED now. A restated grammar is one that goes out of date somewhere, and this is
@@ -344,7 +344,7 @@ the third place in this feature where the id had to be recognised -- the other t
 test('H9.9: a deep link to a template serves the editor, and nonsense still does not', async () => {
 	const { DOCUMENT_ID } = await import('../planner/validate.js');
 	for (const [id, want] of [
-		['template-c8d87c', true], ['diagram-000001', true],
+		['template-c8d87c', true], ['0000000000000001', true],
 		['node-000001', false], ['nonsense', false], ['template-XYZ', false], ['', false],
 	]) {
 		assert.equal(DOCUMENT_ID.test(id), want, `${id || '(empty)'} as a deep link`);

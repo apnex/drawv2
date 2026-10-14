@@ -648,7 +648,7 @@ test('B220: a caption the commit accepts survives a reload', async () => {
 		// `fresh()` mints no document id, and validateDoc checks meta before it reaches the reveal --
 		// without this the round trip fails on the fixture rather than on the caption
 		const doc = m.toJSON();
-		doc.meta.id = 'diagram-aa0001';
+		doc.meta.id = '0000000000aa0001';
 		doc.meta.name = 'round-trip';
 		return { ok: r.ok, error: r.error, doc };
 	};
@@ -695,7 +695,7 @@ test('H15.3: a declared flow round-trips, and a collapse that flips preserves it
 	const { validateDoc } = await import('./fixtures/composed.mjs');
 	// `fresh()` mints no document id, and validateDoc checks meta first -- without this the round
 	// trip would fail on the fixture rather than on the field under test
-	const loadable = () => { const d = m.toJSON(); d.meta.id = 'diagram-cc0001'; d.meta.name = 'flow'; return d; };
+	const loadable = () => { const d = m.toJSON(); d.meta.id = '0000000000cc0001'; d.meta.name = 'flow'; return d; };
 
 	commit(m, log, { ops: [
 		put('node', node('node-cc0001', -120)), put('node', node('node-cc0002', 120)), put('node', node('node-cc0003', 240)),
@@ -756,7 +756,7 @@ const linkPut = (id, src, dst, extra = {}) => put('link', { id, name: id, src, d
 // the document the store would write, checked the way the store checks it when it next boots
 const loadsAtBoot = (mm) => {
 	const d = mm.toJSON();
-	d.meta = { ...d.meta, id: 'diagram-aa0000', name: 'd' };
+	d.meta = { ...d.meta, id: '0000000000aa0000', name: 'd' };
 	return validateDoc(d);
 };
 
