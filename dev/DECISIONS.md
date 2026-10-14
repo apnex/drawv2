@@ -1967,3 +1967,9 @@ Recorder: asked whether a device type is one declaration across the pack familie
 
 AMENDED 2026-10-14 by U4-1: H17-D6 ("the one device-type table is imported by its users") is reversed -- the other plugins receive their slice of the type table at composition instead of importing it; SD11b and the 2026-10-07 transit-configuration ruling are amended -- the network still defines its routing packs, while which type takes which routing pack is declared in the devices plugin's type table.
 
+**SD5 -- a pin through a type offering no passage is refused; a stop whose transit is off cuts -- 2026-10-14 (H21.3, B282).**\
+Director: "continue"\
+Shown: docs/ARCHITECTURE-TARGET.md@cb87575\
+Affects: docs/ARCHITECTURE-TARGET.md\
+Recorder: asked whether an edit that tries to run a link through a device that cannot pass links is refused or cut in two -- keeping the current split (refuse for a type that never passes links; cut in two when a device's transit switch is off; recommended) versus refusing in both cases -- the director chose "continue" (the recommended split). A type offering no passage refuses a pin in the validator (`2026-09-22`), while a stop whose per-device transit switch is off cuts the link into two links ending there (`TR-2`, `TR-2b`, `Z1`, `B303`), the same at every door; `SD5` leaves the target's section 9.1.
+
