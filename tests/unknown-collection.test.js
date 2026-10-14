@@ -51,3 +51,28 @@ test('B307: an agent posting the old shape -- waypoints, no schema -- is refused
 		assert.match(JSON.stringify(body), /unknown collection: waypoints/);
 	} finally { await app.close(); fs.rmSync(dir, { recursive: true, force: true }); }
 });
+
+test('B248 (SD12): each document lists the plugins its composition needs, a peer lacking a listed plugin refuses the document, and changing the list is an undoable edit', async () => {
+	const { Model, commit, undo } = await import('./fixtures/composed.mjs');
+	const { Log } = await import('../planner/log.mjs');
+	const m = new Model();
+	m.state.meta.id = 'diagram-0e0001';
+	assert.deepEqual(m.toJSON().meta.plugins, ['layouts', 'zones', 'groups', 'devices', 'the simulation', 'the network'],
+		'a document lists the plugins its composition brings (SD12)');
+	// A peer composed without the network refuses a document that lists 'the network'
+	const { pipes: _p, links: _l, ...coreDoc } = m.toJSON();
+	assert.match(validateDoc(coreDoc, { kinds: CORE }), /unsupported plugin: the network/,
+		'a peer lacking a plugin the document lists refuses it (SD12)');
+	assert.match(validateDoc(doc({ meta: { ...doc().meta, plugins: ['layouts', 'quantum-router'] } }), { kinds: PAGE }), /unsupported plugin: quantum-router/,
+		'an unknown plugin in meta.plugins is refused');
+	// Changing the plugin list is an undoable meta edit (SD12)
+	const log = new Log();
+	const res = commit(m, log, { ops: [{ op: 'meta', patch: { plugins: ['layouts', 'devices'] } }], label: 'trim plugins' });
+	assert.equal(res.ok, true, res.error);
+	assert.deepEqual(m.state.meta.plugins, ['layouts', 'devices']);
+	const back = undo(m, log);
+	assert.equal(back.ok, true);
+	assert.deepEqual(m.state.meta.plugins, ['layouts', 'zones', 'groups', 'devices', 'the simulation', 'the network'],
+		'undo restores the previous plugin list');
+});
+

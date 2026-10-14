@@ -34,6 +34,7 @@ function doc() {
 
 const sit = (m, id, mode) => situationOf({
 	get: (kind, i) => m.get(kind, i),
+	isSpawning: (e) => !!e?.spawn,
 	rolesOf: (id) => waypointRoles(id, ((i) => m.all('link').filter((l) => l.src === i || l.dst === i || (l.via || []).includes(i)))(id)),   // K5: the caller applies the one role derivation
 }, { mode, targetId: id }, NOW);
 

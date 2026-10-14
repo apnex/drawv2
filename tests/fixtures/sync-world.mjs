@@ -36,6 +36,7 @@ import { createPageNetwork } from '../../network/page.mjs';
 import { plan } from '../../planner/txn.mjs';
 import { validateDoc } from '../../planner/validate.js';
 import { productKinds } from '../../product/kinds.mjs';
+import '../../product/types.mjs';
 import { NETWORK_ROWS } from '../../network/kinds.mjs';
 import { linkReading, readModel } from '../../network/read-model.mjs';
 import { createTransit } from '../../network/transit.mjs';

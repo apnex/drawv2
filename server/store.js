@@ -175,6 +175,7 @@ function cleanMeta(id, meta = {}, trusted = false) {
 		schema: SCHEMA,
 		owner: trusted ? str(meta.owner) : '',
 		grants,
+		plugins: Array.isArray(meta.plugins) ? meta.plugins.filter((p) => typeof p === 'string').map((p) => str(p)) : [...(KINDS.plugins ?? [])],
 	};
 }
 

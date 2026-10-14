@@ -109,6 +109,7 @@ Read it with this amendment in hand: its `beat` is this document's unnamed story
   "meta":   { "id": "diagram-x", "name": "demo", "version": 12, "schema": 3,
               "owner": "user:someone@example.com",
               "grants": { "user:other@example.com": "read", "agent:planner": "write" },
+              "plugins": ["layouts", "zones", "groups", "devices", "the simulation", "the network"]
               },
   "nodes":  [ { "id": "node-a1b2c3", "name": "web-1", "type": "host", "shape": "circle", "x": 510, "y": 270 },
               { "id": "node-5e5e5e", "name": "waypoint-1", "x": 570, "y": 270,

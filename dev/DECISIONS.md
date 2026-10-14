@@ -1985,3 +1985,10 @@ Shown: docs/ARCHITECTURE-TARGET.md@54cb27b\
 Affects: docs/ARCHITECTURE-TARGET.md\
 Recorder: asked whether a device type's run-mode behaviour is a third pack family alongside appearance and routing -- yes (recommended) versus keeping tower behaviour outside the type declaration -- the director ruled yes: simulation behaviour is decoupled as a third pack family, the simulation defines its behaviour packs (starting with the current tower pack, with room for future run behaviours), each device type's declaration in the devices plugin names its behaviour pack if any, and the simulation receives its slice at composition (`U4-1`). All five questions in the target's section 9.1 are now settled.
 
+**H22 -- close all remaining part-divergences and section 8.2 target divergences -- 2026-10-15.**\
+Director: "continue. close all remaining divergences"\
+Shown: docs/ARCHITECTURE-TARGET.md@2ad6a8c\
+Affects: docs/ARCHITECTURE-TARGET.md\
+Recorder: asked after `H21` closed whether to leave the remaining five recorded divergences held on their triggers or open `H22` to drive both `docs/ARCHITECTURE.md` section 5 ("Part divergence") and `docs/ARCHITECTURE-TARGET.md` section 8.2 ("Divergence") to zero, the director directed closing all remaining divergences (`B349`, `B329`, `B328`, `B248`, `B330`).
+
+

@@ -11,6 +11,10 @@ import { NETWORK_POINTS } from './anchor-points.mjs';
 import { LINK_FOLLOWER } from './link-clone.mjs';
 import { LINK_DESCRIBE, LINK_SELECT_ALL } from './link-facts.mjs';
 import { NETWORK_REFLECTS } from './selection-reflects.mjs';
+import { pathOf } from './network-queries.mjs';
+import { linksBetween, makeLink } from './link-queries.mjs';
+import { pairHolders } from './link-rules.mjs';
+import { waypointRolesIn } from './roles.mjs';
 
 // C-d: and its link's end handles, with the press row that opens the shared handle gesture on one
 // C-e: and what a waypoint and a link cover at a point and in a box
@@ -20,4 +24,6 @@ export const NETWORK_CANVAS = { owner: 'network', painters: LINK_PAINTERS, appea
 	describe: LINK_DESCRIBE, selectAll: LINK_SELECT_ALL,   // C-e: how a link reads, and Ctrl+A
 	reflects: NETWORK_REFLECTS,   // C-e: what a selected link lights -- its waypoints, its blockers
 	// C-f: what it draws, and what a run-mode press aims at -- a waypoint, an endpoint to arm; and its count
-	drawn: ['.link'], runTargets: ['.waypoint'], tally: { rank: 1, word: 'links', of: (model) => model.all('link').length } };
+	drawn: ['.link'], runTargets: ['.waypoint'], helpWords: { link: 'a link' },
+	linkDrag: { pathOf, makeLink, rolesOf: waypointRolesIn, admitted: (model, src, dst, via) => !pairHolders({ src, dst, via }, linksBetween(model, src, dst), model).length },
+	tally: { rank: 1, word: 'links', of: (model) => model.all('link').length } };

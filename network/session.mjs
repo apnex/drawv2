@@ -26,6 +26,7 @@ import { createNetwork } from './network.mjs';
 import { judgeDrag } from './guide.mjs';
 import { ageIn } from './view.mjs';
 import { createTransit } from './transit.mjs';
+import { nodeTypeOf } from './transit-offers.mjs';
 import { pipeId, pipeEntity } from './pipe-kind.mjs';
 import { ANCHOR_KINDS } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
 
@@ -69,7 +70,7 @@ export function createNetworkSession() {
 			const { flipped, refused, entries } = transit.flip(anchors);
 			const said = [];
 			if (flipped.length) said.push(`transit ${flipped.map((e) => `${e.transit ? 'on' : 'off'} at ${e.name || e.id}`).join(', ')}`);
-			if (refused.length) said.push(`${refused.map((e) => `${e.name || e.id} is a ${e.type}`).join(', ')}, which never passes routes -- its transit stays off`);
+			if (refused.length) said.push(`${refused.map((e) => `${e.name || e.id} is a ${nodeTypeOf(e)}`).join(', ')}, which never passes routes -- its transit stays off`);
 			pendingNotice = said.join('; ');
 			for (const w of watchers) w(flipped.map((e) => e.id), entries);
 		},

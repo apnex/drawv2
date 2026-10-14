@@ -24,8 +24,6 @@ disagree about whether a creep was in range -- which is the disagreement that wo
 // the simulation's fixed timestep. Absolute epoch ticks, so there is no origin for peers to agree
 // on: any peer can evaluate any tick from an instant alone. 100ms reads as responsive, and folding
 // a minute of history is 600 steps rather than 60,000.
-import { TYPE_BEHAVIOUR } from '../devices/device-types.mjs';
-
 export const TICK_MS = 100;
 export const tickAt = (t) => Math.floor(t / TICK_MS);
 
@@ -53,8 +51,9 @@ question of what happens when its target dies mid-flight. The laser deletes that
 const BEHAVIOUR_PACKS = Object.freeze({
 	tower: Object.freeze({ range: 3, beam: 10, cooldown: 10, damage: 1 }),
 });
+const TYPE_KEY = 'type';
 export const TOWERS = {};
-export function composeBehaviour(typeBehaviour = TYPE_BEHAVIOUR) {
+export function composeBehaviour(typeBehaviour = {}) {
 	for (const k of Object.keys(TOWERS)) delete TOWERS[k];
 	for (const [type, pack] of Object.entries(typeBehaviour)) {
 		if (!BEHAVIOUR_PACKS[pack]) throw new Error(`composeBehaviour: ${type} names behaviour pack "${pack}", which the simulation does not have`);
@@ -62,7 +61,6 @@ export function composeBehaviour(typeBehaviour = TYPE_BEHAVIOUR) {
 	}
 	return TOWERS;
 }
-composeBehaviour(TYPE_BEHAVIOUR);
 export const towerType = () => Object.keys(TOWERS)[0] ?? null;
 
 /*
@@ -84,5 +82,5 @@ export const MOVERS = {
 	packet: { hp: 3 },
 };
 
-export const towerFor = (node) => (node && TOWERS[node.type]) || null;
+export const towerFor = (node) => (node && TOWERS[node[TYPE_KEY]]) || null;
 export const moverFor = (kind) => MOVERS[kind] || MOVERS.packet;

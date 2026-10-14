@@ -39,3 +39,6 @@ export function makeTextBox(model, pos, span = { cols: 1, rows: 1 }) {
 export function makeWaypoint(model, pos) {
 	return { id: model.freshId(BARE_KIND), name: model.nextName('waypoint'), order: model.nextOrder(BARE_KIND), x: pos.x, y: pos.y };
 }
+
+// B349 (H22.1): build a device from a creation payload `{ type, x, y, shape }`, so the REST door calls the factory without reading `.type` or `.shape`
+export const makeNodeFrom = (model, d) => makeNode(model, d.type, { x: d.x, y: d.y }, d.shape);

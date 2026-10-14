@@ -21,7 +21,7 @@ import { ANCHOR_KINDS } from '../model/anchors.mjs';   // the bare anchor, asked
 import { isBareEntity } from '../devices/device-shapes.mjs';
 import { linkReading } from '../network/read-model.mjs';   // a link's path, route, down and blockers, as one answer (R-b, H1)
 import { pipeEntity } from '../network/pipe-kind.mjs';   // a pipe from its two ends, by the network's own rule (W-a)
-import { makeNode } from '../devices/make-node.mjs';   // the devices plugin's factories (O-e1)
+import { makeNode, makeNodeFrom } from '../devices/make-node.mjs';   // the devices plugin's factories (O-e1)
 import { deviceTypeRecords } from '../devices/device-types.mjs';   // U4-2 (H21.3): the declared device types the server serves
 import { waypointRolesIn } from '../network/roles.mjs';   // B339 (H21.8, SD1): an anchor's derived roles
 import { combatReport } from '../engine/rules.mjs';   // B339 (H21.8, SD1): combat and movers derived on the server
@@ -211,7 +211,7 @@ function bodyRejected(req, res, value) {
 // build a full entity from the high-level verb payload, via the model's factories
 // (which mint the id/name); the planner then validates it like any other op
 function buildEntity(model, kind, d) {
-	if (kind === 'node') return makeNode(model, d.type, { x: d.x, y: d.y }, d.shape);
+	if (kind === 'node') return makeNodeFrom(model, d);
 	if (kind === 'link') return makeLink(model, d.src, d.dst);
 	if (kind === 'zone') return makeZone(model, { x: d.x, y: d.y, w: d.w, h: d.h });
 	if (kind === 'group') return Array.isArray(d.members) ? makeGroup(model, d.members) : null;

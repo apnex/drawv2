@@ -118,12 +118,12 @@ The anchored core's parts, declared once in `tools/layers.mjs` `PARTS` and rende
 | `planner` | Make the one write every door applies | core | `planner/`, `model/invariants.mjs` | `document`, `kind-contract` |
 | `layouts` | Declare a diagram's grids | plugin | `layouts/` | `lattice` |
 | `devices` | Compose a device onto an anchor | plugin | `devices/` | `colours`, `document`, `kind-contract`, `lattice`, `primitives` |
-| `network` | Connect anchors | plugin | `network/` | `colours`, `devices`, `document`, `kind-contract`, `lattice`, `primitives`, `rules` |
+| `network` | Connect anchors | plugin | `network/` | `colours`, `document`, `kind-contract`, `lattice`, `primitives`, `rules` |
 | `zones` | Bound regions of cells | plugin | `zones/` | `colours`, `kind-contract`, `lattice`, `layouts` |
 | `groups` | Name sets of anchors | plugin | `groups/` | `colours`, `document`, `kind-contract`, `lattice` |
-| `simulation` | Derive what the clock drives | plugin | `engine/kinds.mjs`, `engine/movers.mjs`, `engine/rules.mjs`, `engine/spawn-appearance.mjs`, `engine/spawners.mjs`, `engine/spawn-field.mjs`, `engine/spawn-runs.mjs`, `model/reveal.mjs`, `app/src/movers.js`, `app/src/reveal.js`, `app/src/paintloop.js` | `canvas`, `devices`, `document`, `kind-contract`, `lattice`, `network`, `renderer` |
-| `product` | Compose the plugins into the product | composition | `product/` | `devices`, `groups`, `kind-contract`, `lattice`, `layouts`, `network`, `simulation`, `zones` |
-| `canvas` | Turn input into edits through the parts' declarations | host | `app/src/actions.js`, `app/src/capture.js`, `app/src/changes.js`, `app/src/commands.js`, `app/src/compose-canvas.js`, `app/src/help.js`, `app/src/input.js`, `app/src/input-state.js`, `app/src/keymap.js`, `app/src/labeledit.js`, `app/src/overlay.js`, `app/src/pick.js`, `app/src/readout.js`, `app/src/recognize.js`, `app/src/releases.js`, `app/src/selection.js`, `app/src/snap.js`, `app/src/tools.js`, `app/src/triggers.js`, `app/src/grids.js`, `engine/situation.mjs` | `document`, `kind-contract`, `lattice`, `network`, `planner`, `primitives`, `relations`, `renderer`, `rules` |
+| `simulation` | Derive what the clock drives | plugin | `engine/kinds.mjs`, `engine/movers.mjs`, `engine/rules.mjs`, `engine/spawn-appearance.mjs`, `engine/spawners.mjs`, `engine/spawn-field.mjs`, `engine/spawn-runs.mjs`, `model/reveal.mjs`, `engine/mover-painter.mjs`, `engine/reveal-painter.mjs`, `engine/paintloop.mjs` | `devices`, `document`, `kind-contract`, `lattice`, `network` |
+| `product` | Compose the plugins into the product | composition | `product/` | `colours`, `devices`, `groups`, `kind-contract`, `lattice`, `layouts`, `network`, `simulation`, `zones` |
+| `canvas` | Turn input into edits through the parts' declarations | host | `app/src/actions.js`, `app/src/capture.js`, `app/src/changes.js`, `app/src/commands.js`, `app/src/compose-canvas.js`, `app/src/help.js`, `app/src/input.js`, `app/src/input-state.js`, `app/src/keymap.js`, `app/src/labeledit.js`, `app/src/overlay.js`, `app/src/pick.js`, `app/src/readout.js`, `app/src/recognize.js`, `app/src/releases.js`, `app/src/selection.js`, `app/src/snap.js`, `app/src/tools.js`, `app/src/triggers.js`, `app/src/grids.js`, `engine/situation.mjs` | `document`, `kind-contract`, `lattice`, `planner`, `primitives`, `relations`, `renderer`, `rules` |
 | `renderer` | Draw a document through the parts' painters | host | `app/src/renderer.js`, `app/src/painter.js` | `document`, `lattice`, `primitives` |
 | `sync` | Keep a tab converged with the server | host | `app/src/sync.js`, `app/src/net.js`, `app/src/watchdog.js`, `app/src/clock.js` | `canvas`, `document`, `kind-contract` |
 | `product-page` | Compose the product page | composition root | `app/src/main.js`, `app/src/palette.js`, `app/src/run-mode.js`, `app/src/spectate.js` | `canvas`, `devices`, `network`, `product`, `renderer`, `simulation`, `sync` |
@@ -135,7 +135,7 @@ The anchored core's parts, declared once in `tools/layers.mjs` `PARTS` and rende
 | `hub` | Carry each change to the tabs watching a document | door | `server/hub.js`, `server/protocol.js`, `server/locks.js`, `server/sessionlog.mjs` | `kind-contract` |
 | `rest` | Answer agents over HTTP | door | `server/rest.js`, `server/routes.mjs` | `devices`, `document`, `groups`, `hub`, `kind-contract`, `lattice`, `layouts`, `network`, `simulation`, `zones` |
 | `cli` | Give an agent one command per verb | door | `cli/` | -- |
-| `export` | Render a document without a browser | door | `kernel/adapt.mjs`, `kernel/engine.mjs`, `kernel/svg-scene.mjs`, `server/svg.mjs` | `colours`, `devices`, `groups`, `lattice`, `network`, `primitives`, `zones` |
+| `export` | Render a document without a browser | door | `server/svg.mjs` | `colours`, `lattice`, `primitives`, `product`, `renderer` |
 <!-- END GENERATED: architecture-parts -->
 
 ---
@@ -145,16 +145,7 @@ The anchored core's parts, declared once in `tools/layers.mjs` `PARTS` and rende
 Each import between two parts that the target's consumes do not allow, read from the code.
 
 <!-- BEGIN GENERATED: architecture-part-divergence. Run tools/generate-architecture.mjs; do not edit by hand. -->
-| Part | Imports | Carried by | Which the target does not allow, from |
-|---|---|---|---|
-| `canvas` | `network` | B328 | `app/src/input.js` |
-| `export` | `devices` | B330 | `kernel/svg-scene.mjs`, `server/svg.mjs` |
-| `export` | `groups` | B330 | `kernel/svg-scene.mjs` |
-| `export` | `network` | B330 | `kernel/engine.mjs`, `kernel/svg-scene.mjs`, `server/svg.mjs` |
-| `export` | `zones` | B330 | `kernel/svg-scene.mjs` |
-| `network` | `devices` | B282 | `network/anchor-appearance.mjs`, `network/anchor-points.mjs`, `network/keys.mjs`, `network/link-clone.mjs`, `network/link-keys.mjs`, `network/link-reactions.mjs`, `network/link-references.mjs`, `network/selection-reflects.mjs`, `network/transit-offers.mjs`, `network/transit.mjs` |
-| `simulation` | `canvas` | B329 | `engine/spawn-runs.mjs` |
-| `simulation` | `renderer` | B329 | `app/src/movers.js` |
+None: every import between parts is one the target allows.
 <!-- END GENERATED: architecture-part-divergence -->
 
 ---
@@ -167,17 +158,17 @@ A module belongs to one layer, and a layer imports only what it may (`tools/laye
 | Layer | Duty | May import |
 |---|---|---|
 | `core` | the anchor on the grid: the lattice's arithmetic, the kind contract, the document store and the drawing primitives | -- |
-| `network` | connection: links, pipes, routes, junctions and transit | `core`, `devices` |
+| `network` | connection: links, pipes, routes, junctions and transit | `core` |
 | `layouts` | the diagram's grids, as stored layout records | `core` |
 | `zones` | regions of cells | `core`, `layouts` |
 | `groups` | named sets of anchors | `core` |
 | `devices` | what a device composed onto an anchor is, and how it looks | `core` |
 | `planner` | the one write: plan, commit, undo, redo, the log and validation | `core` |
 | `product` | the product's composition of the plugins: its kinds and its canvas parts | `core`, `devices`, `network`, `layouts`, `zones`, `groups`, `simulation` |
-| `canvas` | turning input into edits, and a document into a drawing, through the plugins' parts | `core`, `devices`, `network`, `layouts`, `zones`, `groups`, `planner` |
+| `canvas` | turning input into edits, and a document into a drawing, through the plugins' parts | `core`, `planner` |
 | `chrome` | the production page around the canvas: sync, status, palette, readouts and its composition root | `core`, `devices`, `network`, `layouts`, `zones`, `groups`, `planner`, `product`, `canvas`, `simulation`, `export` |
 | `simulation` | derived motion: spawners, movers, towers and run mode | `core`, `devices`, `network` |
-| `export` | the headless SVG path | `core`, `devices`, `network`, `zones`, `groups` |
+| `export` | the headless SVG path | `core`, `devices`, `network`, `zones`, `groups`, `product`, `canvas` |
 | `server-only` | the server's doors and storage, never served to a browser | `core`, `devices`, `network`, `layouts`, `zones`, `groups`, `planner`, `product`, `simulation`, `export`, `serve` |
 | `serve` | the one static responder both servers share | -- |
 | `cli` | the command-line tool agents drive | -- |
@@ -214,11 +205,11 @@ What each plugin brings to the page (`product/canvas.mjs`).
 |---|---|
 | the product | `orders`, `deleteRanks` |
 | layouts | `places`, `grids` |
-| zones | `painters`, `places`, `presses`, `handles`, `keys`, `sizeStep`, `deleteRanks`, `describe`, `selectAll`, `labels`, `drawn`, `tally` |
+| zones | `painters`, `places`, `presses`, `handles`, `keys`, `sizeStep`, `deleteRanks`, `describe`, `selectAll`, `labels`, `drawn`, `helpWords`, `tally` |
 | groups | `painters`, `keys`, `deleteRanks`, `follows`, `drawn` |
 | devices | `defs`, `bare`, `appearances`, `presses`, `hand`, `at`, `sizeStep`, `sizes`, `keys`, `describe`, `selectAll`, `labels`, `drawn`, `tally` |
-| network | `painters`, `appearances`, `presses`, `handles`, `at`, `deleteRanks`, `follows`, `describe`, `selectAll`, `reflects`, `drawn`, `runTargets`, `tally` |
-| the simulation | `appearances` |
+| network | `painters`, `appearances`, `presses`, `handles`, `at`, `deleteRanks`, `follows`, `describe`, `selectAll`, `reflects`, `drawn`, `runTargets`, `helpWords`, `linkDrag`, `tally` |
+| the simulation | `appearances`, `isSpawning` |
 <!-- END GENERATED: architecture-canvas -->
 
 ---
@@ -312,7 +303,7 @@ The layer manifest's decoupling ratchets, each with its reason and when it ends 
 |---|---|---|---|---|
 | L5p | `kernel/router.mjs:routeGeometry` | 1 | a generic polyline's geometry -- rounded turns, the one path the movers and the renderer walk -- named for one consumer, the route | kernel/router.mjs is next changed: rename it then |
 | L7k | `cli/verbs.mjs` | 7 | the CLI's static imports stay inside cli/ so an installed copy runs (B138), so its verbs list the kinds themselves | the CLI learns the kinds from the server |
-| L7k | `kernel/adapt.mjs` | 2 | the export door converts a document to the kernel's scene by kind name | the export door draws through the painters (B330) |
+| L7k | `kernel/adapt.mjs` | 2 | the declarative scene adapter converts a document to the kernel's scene by kind name for the scene tests | permanent |
 <!-- END GENERATED: architecture-exceptions -->
 
 ---

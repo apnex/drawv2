@@ -55,4 +55,5 @@ export function applyOps(model, ops) {
 function applyMeta(model, patch) {
 	const meta = model.state.meta;
 	if (patch.name !== undefined) meta.name = patch.name;
+	if (patch.plugins !== undefined) meta.plugins = [...patch.plugins];
 }

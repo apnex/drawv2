@@ -23,23 +23,31 @@ authored. The spawn CONFIG stays visible in every mode -- that is the renderer's
 file's -- so an author can see that an endpoint emits without it moving under their cursor.
 */
 
-import { el } from './painter.js';
-import { moversAt } from '../../engine/movers.mjs';
-import { spawnersOf } from '../../engine/spawners.mjs';
-import { worldOf, combatAt, aimAt } from '../../engine/rules.mjs';
-import { roundedPath } from '../../kernel/router.mjs';
-import { BEND_R } from '../../kernel/spec.mjs';
-import { loop, clockOf } from './paintloop.js';
+import { moversAt } from './movers.mjs';
+import { spawnersOf } from './spawners.mjs';
+import { worldOf, combatAt, aimAt } from './rules.mjs';
+import { roundedPath } from '../kernel/router.mjs';
+import { BEND_R } from '../kernel/spec.mjs';
+import { loop, clockOf } from './paintloop.mjs';
+
+const NS = 'http://www.w3.org/2000/svg';
+function defaultEl(tag, attrs = {}, parent = null) {
+	const node = document.createElementNS(NS, tag);
+	for (const k in attrs) node.setAttributeNS(null, k, attrs[k]);
+	if (parent) parent.appendChild(node);
+	return node;
+}
 
 // how often to look for a NEWLY DEPARTED mover. Not a frame rate -- the compositor owns motion.
 const TICK_MS = 200;
 
 export class Movers {
-	constructor({ model, renderer, layer, now }) {
+	constructor({ model, renderer, layer, now, el = defaultEl }) {
 		this.model = model;
 		this.renderer = renderer;
 		this.layer = layer;
 		this.now = clockOf(now);
+		this.el = el;
 		this.anims = new Map();     // mover id -> { el, anim }
 		this.beams = new Map();     // tower id -> { line, targetId }
 		this.beamLayer = null;
@@ -84,8 +92,8 @@ export class Movers {
 	layers() {
 		if (!this.layer) return false;
 		if (!this.moverLayer || !this.moverLayer.isConnected) {
-			this.moverLayer = el('g', { class: 'packets' }, this.layer);
-			this.beamLayer = el('g', { class: 'beams' }, this.layer);   // second child: drawn over the packets
+			this.moverLayer = this.el('g', { class: 'packets' }, this.layer);
+			this.beamLayer = this.el('g', { class: 'beams' }, this.layer);   // second child: drawn over the packets
 		}
 		return true;
 	}
@@ -102,7 +110,7 @@ export class Movers {
 	start() {
 		if (this.loop) return;
 		/*
-		The floor and the frame loop are `paintloop.js`, shared with app/src/reveal.js -- both derive
+		The floor and the frame loop are `paintloop.js`, shared with engine/reveal-painter.mjs -- both derive
 		what they draw from the clock and both need a hidden tab to keep painting. Extracted after
 		scan-twins reported the pair at 57%.
 
@@ -226,7 +234,7 @@ export class Movers {
 		// happens to be first in the DOM. Costs an attribute; without it, identity is unobservable.
 		// B172 -- the KIND names a class and the stylesheet owns the look, so one edit reaches every
 		// packet including those already armed. A stored hex could never do that; three repaints proved it.
-		const dot = el('circle', { r: 6, class: `mover ${spawner.kind || 'packet'}`, 'data-mover': mover.id }, this.moverLayer);
+		const dot = this.el('circle', { r: 6, class: `mover ${spawner.kind || 'packet'}`, 'data-mover': mover.id }, this.moverLayer);
 		dot.style.offsetPath = `path("${d}")`;
 		dot.style.offsetRotate = '0deg';          // a packet does not bank into the corners
 
@@ -258,7 +266,7 @@ export class Movers {
 			const t = towers.get(f.tower);
 			let rec = this.beams.get(f.tower);
 			if (!rec) {
-				const line = el('line', { class: 'beam', x1: t.x, y1: t.y, x2: t.x, y2: t.y }, this.beamLayer);
+				const line = this.el('line', { class: 'beam', x1: t.x, y1: t.y, x2: t.x, y2: t.y }, this.beamLayer);
 				rec = { line, targetId: f.target };
 				this.beams.set(f.tower, rec);
 			}

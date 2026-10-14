@@ -7,6 +7,7 @@ them in as \`runRules\`. Run mode is the product's feature -- spawners and tower
 no run-mode rows of its own, and a composition without the simulation passes none: the lab passes none, as ruled
 (dev/DECISIONS.md, the lab's absent bindings).
 */
+import '../../product/types.mjs';
 import { SPAWN_RUNS } from '../../engine/spawn-runs.mjs';
 import { PANEL_RUNS } from '../../devices/device-panels.mjs';
 

@@ -215,9 +215,11 @@ export function composeKinds(given, who = 'a composition') {
 			...(added ? { refers: owned ? (...args) => owned(...args) ?? added(...args) : added } : {}) });
 	}
 	const list = rows.map((r) => r.kind);
+	const plugins = Object.freeze([...new Set(given.map((r) => r.owner).filter((o) => o && o !== 'the core'))]);
 	const of = (fact) => Object.fromEntries(rows.map((r) => [r.kind, fact(byName.get(r.kind))]));   // the rows as merged (S-a)
 	return Object.freeze({
 		list,
+		plugins,
 		has: (kind) => byName.has(kind),
 		row: (kind) => byName.get(kind),
 		collection: of((r) => r.collection),

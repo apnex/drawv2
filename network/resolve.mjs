@@ -24,6 +24,7 @@ takes its last four -- and the exception drew those lost links as live. Measured
 
 import { isLinkDown, blockersOf } from './network-queries.mjs';   // the network's questions over a Model (Q-a)
 import { preferredRoute } from './pipes.mjs';
+import { nodeTypeOf } from './transit-offers.mjs';
 
 /*
 EVERY ANSWER HERE READS ONE DERIVATION: the network view (network/view.mjs), which works each board state out once
@@ -111,7 +112,7 @@ export function whyDown(model, ids, network = null) {
 	const name = (id) => model.endpointOf(id)?.name || id;
 	const { declared = [], types = [] } = network ? network.transitBlocking(down[0], model) : {};
 	if (declared.length) return `${down[0].id} is down: its way passes ${declared.map(name).join(' or ')}, whose transit is off -- it heals when transit is turned back on`;
-	if (types.length) return `${down[0].id} is down: its way passes ${types.map((id) => `${name(id)}, a ${model.endpointOf(id)?.type}`).join(', ')}, which never passes routes`;
+	if (types.length) return `${down[0].id} is down: its way passes ${types.map((id) => `${name(id)}, a ${nodeTypeOf(model.endpointOf(id))}`).join(', ')}, which never passes routes`;
 	return `${down[0].id} is down: no way over the pipes it may use -- it heals when one is laid`;
 }
 

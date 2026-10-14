@@ -15,7 +15,9 @@ a spawner's kind, not a colour, so the stylesheet owns the look.
 */
 
 import { BARE_KIND } from '../model/anchors.mjs';
-import { inReadView, onEndpoint, onOpenGround } from './situation.mjs';
+const inReadView = (s) => s.mode === 'run';
+const onEndpoint = (s) => !!s.target && Array.isArray(s.target.roles) && s.target.roles.includes('endpoint');
+const onOpenGround = (s) => !s.target;
 import { bareAnchor } from '../devices/device-shapes.mjs';
 import { makeNode } from '../devices/make-node.mjs';
 import { towerType } from './kinds.mjs';

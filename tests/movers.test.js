@@ -337,7 +337,7 @@ test('B171: the presentation rebuilds a mover whose route changed, and only then
 	it compares against is produced by the same function that built the element -- if those two ever
 	drift, the check silently stops firing and the defect returns without a test failing.
 	*/
-	const src = readFileSync(new URL('../app/src/movers.js', import.meta.url), 'utf8');
+	const src = readFileSync(new URL('../engine/mover-painter.mjs', import.meta.url), 'utf8');
 	/*
 	The comparison moved when painting went per-frame: rebuilding a path string for each of twenty
 	packets sixty times a second is work for nothing, so it is built once per SPAWNER per frame and
@@ -435,17 +435,17 @@ test('H13.5: painting has a timer floor, so a hidden tab still makes progress', 
 	*/
 	/*
 	Asserted against the LOOP rather than against the source text of movers.js. The floor moved to
-	`app/src/paintloop.js` when scan-twins reported it duplicated into the beat painter at 57%, and
+	`engine/paintloop.mjs` when scan-twins reported it duplicated into the beat painter at 57%, and
 	a test grepping for `setInterval(...)` in one consumer would now pass or fail on where the code
 	happens to live rather than on whether a hidden tab keeps painting.
 	*/
-	const src = readFileSync(new URL('../app/src/paintloop.js', import.meta.url), 'utf8');
+	const src = readFileSync(new URL('../engine/paintloop.mjs', import.meta.url), 'utf8');
 	assert.match(src, /setInterval\(paint, intervalMs\)/, 'the interval must call paint');
 	assert.match(src, /raf = requestAnimationFrame\(frame\)/, 'and the frame loop runs on top of it');
 
 	// and the consumer must give the loop BOTH halves: folding without painting is what left a
 	// background peer creating nothing at all.
-	const movers = readFileSync(new URL('../app/src/movers.js', import.meta.url), 'utf8');
+	const movers = readFileSync(new URL('../engine/mover-painter.mjs', import.meta.url), 'utf8');
 	assert.match(movers, /loop\(\(\) => \{ this\.fold\(\); this\.paint\(\);/,
 		'movers must fold and paint on the floor, not fold alone');
 });

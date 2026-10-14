@@ -24,6 +24,7 @@ import { worldOf } from '../engine/rules.mjs';
 import { createEntity } from '../app/src/commands.js';
 import { validateEntity } from './fixtures/composed.mjs';   // the composition production runs; the validator takes no default since S-f
 import { applyOps } from '../model/ops.mjs';
+import '../product/types.mjs';
 import { TOWERS } from '../engine/kinds.mjs';
 import { makeNode } from '../devices/make-node.mjs';   // O-e1: the devices plugin's factories
 

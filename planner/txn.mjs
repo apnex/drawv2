@@ -80,7 +80,7 @@ an absent entity, which no planner emits.
 function inverseOf(model, op) {
 	if (op.op === 'meta') {
 		const prev = {};
-		for (const k of Object.keys(op.patch)) prev[k] = model.state.meta[k];
+		for (const k of Object.keys(op.patch)) prev[k] = Array.isArray(model.state.meta[k]) ? [...model.state.meta[k]] : model.state.meta[k];
 		return { op: 'meta', patch: prev };
 	}
 	const id = op.op === 'put' ? op.entity.id : op.id;
@@ -454,7 +454,7 @@ Phase 1 for one requested op: resolved, validated against the document as the op
 what it changes. Answers the op to apply, or none; `unchanged` marks a put of an entity already present byte for byte.
 */
 function planOne(model, op, place, kinds) {
-	if (op.op === 'meta') return planMeta(model, op);
+	if (op.op === 'meta') return planMeta(model, op, kinds);
 
 	/*
 	B189/W9 -- a `place` op names a RELATIONSHIP and is resolved here, against the projection this
@@ -519,14 +519,15 @@ function planOne(model, op, place, kinds) {
 	return { ok: true, op: { op: 'del', kind: op.kind, id: op.id } };
 }
 
-function planMeta(model, op) {
+function planMeta(model, op, kinds) {
 	const patch = op.patch || {};
 	// the server never trusts the wire: the same gate patchMeta ran, now inside the transaction
-	const err = validateMetaPatch(patch);
+	const err = validateMetaPatch(patch, kinds);
 	if (err) return { ok: false, error: err };
 	const meta = model.state.meta;
 	const next = {};
 	if (patch.name !== undefined && patch.name !== meta.name) next.name = patch.name;
+	if (patch.plugins !== undefined && JSON.stringify(patch.plugins) !== JSON.stringify(meta.plugins)) next.plugins = [...patch.plugins];
 	return { ok: true, op: Object.keys(next).length ? { op: 'meta', patch: next } : null };
 }
 

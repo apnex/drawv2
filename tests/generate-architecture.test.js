@@ -67,25 +67,26 @@ test('H21.6: every product module is in exactly one part -- one left out, or in 
 });
 
 test('H21.6: an import the target does not allow must be carried by a live row -- uncarried, carried by a closed row, or carried stale, it fails', async () => {
-	let r = run('--check', '--parts', await partsWith((p) => { delete p.network.carried; }));
+	// RESTATED at H22.1 (B349): drop `devices` from `simulation.consumes` in the synthetic parts table to test uncarried, invalid, closed and stale `carried` entries
+	let r = run('--check', '--parts', await partsWith((p) => { p.simulation.consumes = p.simulation.consumes.filter((x) => x !== 'devices'); }));
 	assert.equal(r.status, 1);
-	assert.match(r.stdout, /part network imports devices, which the target's consumes do not allow, and no backlog row carries it/);
-	r = run('--check', '--parts', await partsWith((p) => { p.network.carried.devices = 'B282x'; }));
+	assert.match(r.stdout, /part simulation imports devices, which the target's consumes do not allow, and no backlog row carries it/);
+	r = run('--check', '--parts', await partsWith((p) => { p.simulation.consumes = p.simulation.consumes.filter((x) => x !== 'devices'); p.simulation.carried = { ...p.simulation.carried, devices: 'B282x' }; }));
 	assert.equal(r.status, 1, 'a carrier that is no row');
 	// REVIEW 2: a carrier is a bare B<n> -- not a frozen `from B<n>`, a ruling or a board item
 	for (const bad of ['from B323', 'O1', 'H1.1']) {
-		r = run('--check', '--parts', await partsWith((p) => { p.network.carried.devices = bad; }));
+		r = run('--check', '--parts', await partsWith((p) => { p.simulation.consumes = p.simulation.consumes.filter((x) => x !== 'devices'); p.simulation.carried = { ...p.simulation.carried, devices: bad }; }));
 		assert.match(r.stdout, /is carried by a backlog row, written B<n>/, bad);
 	}
-	r = run('--check', '--parts', await partsWith((p) => { p.network.carried.devices = 'B323'; }));
+	r = run('--check', '--parts', await partsWith((p) => { p.simulation.consumes = p.simulation.consumes.filter((x) => x !== 'devices'); p.simulation.carried = { ...p.simulation.carried, devices: 'B323' }; }));
 	assert.match(r.stdout, /cites B323, which is CLOSED/, 'a carrier that is closed');
-	r = run('--check', '--parts', await partsWith((p) => { p.network.consumes.push('devices'); }));
+	r = run('--check', '--parts', await partsWith((p) => { p.network.carried = { devices: 'B282' }; }));
 	assert.equal(r.status, 1);
-	assert.match(r.stdout, /PARTS\.network\.carried names devices, but network imports it no more outside its consumes/, 'a carrier left after the import is allowed');
+	assert.match(r.stdout, /PARTS\.network\.carried names devices, but network imports it no more outside its consumes/, 'a carrier left after the import is gone');
 });
 
 test("H21.6 review 2: the consumes are held to the target's section 4.3 -- a kind's ceiling, parts that exist, no cycle", async () => {
-	let r = run('--check', '--parts', await partsWith((p) => { p.canvas.consumes.push('network'); delete p.canvas.carried.network; }));
+	let r = run('--check', '--parts', await partsWith((p) => { p.canvas.consumes.push('network'); delete p.canvas.carried?.network; }));
 	assert.equal(r.status, 1);
 	assert.match(r.stdout, /part canvas \(host\) consumes network \(plugin\), which a host may not/, 'D1: the canvas names no plugin');
 	r = run('--check', '--parts', await partsWith((p) => { p.lattice.consumes.push('devices'); }));

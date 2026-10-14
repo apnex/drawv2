@@ -11,10 +11,6 @@ Which device type takes which routing pack is declared once in `devices/device-t
 composition (`U4-1`), so no device type name appears in this module and a per-type permission table and a pack registry are
 one lookup (`2026-09-22`).
 */
-import { BARE_KIND } from '../model/anchors.mjs';
-import { isBareEntity } from '../devices/device-shapes.mjs';
-import { TYPE_ROUTING } from '../devices/device-types.mjs';
-
 const BOTH = Object.freeze([true, false]), OFF = Object.freeze([false]);
 
 const ROUTING_PACKS = Object.freeze({
@@ -23,8 +19,11 @@ const ROUTING_PACKS = Object.freeze({
 	endpoint:     Object.freeze({ roles: Object.freeze(['endpoint']),                     offers: OFF }),
 });
 
-let composedRouting = { ...TYPE_ROUTING };
-export function composeRouting(typeRouting = TYPE_ROUTING) {
+const TYPE_KEY = 'type';
+export const nodeTypeOf = (entity) => (entity && entity[TYPE_KEY]) || null;
+
+let composedRouting = {};
+export function composeRouting(typeRouting = {}) {
 	for (const [type, pack] of Object.entries(typeRouting)) {
 		if (!ROUTING_PACKS[pack]) throw new Error(`composeRouting: ${type} names routing pack "${pack}", which the network does not have`);
 	}
@@ -32,7 +31,10 @@ export function composeRouting(typeRouting = TYPE_ROUTING) {
 }
 
 /** The routing pack an anchor's composition includes: a bare anchor takes `unrestricted`. */
-const routingPackOf = (entity) => (isBareEntity(BARE_KIND, entity) ? ROUTING_PACKS.unrestricted : ROUTING_PACKS[composedRouting[entity?.type]] ?? ROUTING_PACKS.endpoint);
+const routingPackOf = (entity) => {
+	const t = nodeTypeOf(entity);
+	return !t ? ROUTING_PACKS.unrestricted : ROUTING_PACKS[composedRouting[t]] ?? ROUTING_PACKS.endpoint;
+};
 
 /** The transit values a node's routing pack offers, its default first: a bare anchor offers both. */
 export const transitOffersOf = (entity) => routingPackOf(entity).offers;

@@ -15,7 +15,7 @@ changes. These were app/src/keymap.js rows, app/src/input.js `toggleClosePath`, 
 */
 
 import { projection } from '../model/model.mjs';
-import { isTypedEntity } from '../devices/device-shapes.mjs';
+import { nodePermitsBend } from './transit-offers.mjs';
 import { linkBetween, makeLink } from './link-queries.mjs';
 
 const plain = (e) => !e.ctrlKey && !e.metaKey && !e.altKey;
@@ -45,7 +45,7 @@ const linksFor = (model, ids, star) => {
 };
 
 const linkTheSelected = (star) => (host) => {
-	const ids = host.selected().filter((e) => e.kind === 'node' && isTypedEntity('node', e)).map((e) => e.id);
+	const ids = host.selected().filter((e) => e.kind === 'node' && !nodePermitsBend(e)).map((e) => e.id);
 	if (ids.length < 2) return;
 	const made = host.ask((model) => linksFor(model, ids, star));
 	if (!made.length) return;

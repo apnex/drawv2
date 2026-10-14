@@ -193,7 +193,13 @@ export function validateDoc(doc, { kinds } = {}) {
 	}
 	if (!str(doc.meta.name || '', NAME_MAX)) return 'invalid meta.name';
 	for (const key of Object.keys(doc.meta)) {
-		if (!['id', 'name', 'version', 'schema', 'owner', 'grants'].includes(key)) return `unknown meta key: ${key}`;
+		if (!['id', 'name', 'version', 'schema', 'owner', 'grants', 'plugins'].includes(key)) return `unknown meta key: ${key}`;
+	}
+	if ('plugins' in doc.meta) {
+		if (!Array.isArray(doc.meta.plugins) || doc.meta.plugins.some((p) => typeof p !== 'string' || !p.trim())) return 'invalid meta.plugins';
+		const heldPlugins = new Set(kinds.plugins ?? []);
+		const missing = doc.meta.plugins.filter((p) => !heldPlugins.has(p));
+		if (missing.length) return `unsupported plugin: ${missing.join(', ')} -- this composition has ${(kinds.plugins ?? []).join(', ') || 'none'} (SD12, B248)`;
 	}
 	if ('schema' in doc.meta && doc.meta.schema !== SCHEMA) return `unsupported meta.schema: ${doc.meta.schema}`;
 	/*
@@ -338,11 +344,18 @@ export function validateSelectionIds(ids, kinds) {
 }
 
 // meta patch from the client: only `name` is writable
-export function validateMetaPatch(patch) {
+export function validateMetaPatch(patch, kinds = null) {
 	if (!patch || typeof patch !== 'object') return 'patch is not an object';
 	for (const key of Object.keys(patch)) {
 		if (key === 'name') {
 			if (!str(patch.name, NAME_MAX) || patch.name.trim() === '') return 'invalid name';
+		} else if (key === 'plugins') {
+			if (!Array.isArray(patch.plugins) || patch.plugins.some((p) => typeof p !== 'string' || !p.trim())) return 'invalid plugins';
+			if (kinds) {
+				const heldPlugins = new Set(kinds.plugins ?? []);
+				const missing = patch.plugins.filter((p) => !heldPlugins.has(p));
+				if (missing.length) return `unsupported plugin: ${missing.join(', ')} -- this composition has ${(kinds.plugins ?? []).join(', ') || 'none'} (SD12, B248)`;
+			}
 		} else {
 			return `meta.${key} is not writable`;
 		}

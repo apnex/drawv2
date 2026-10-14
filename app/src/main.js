@@ -6,14 +6,14 @@ server sync to a KERNEL-SOURCED renderer. The kernel owns every geometry number 
 
 import { editOf } from './commands.js';   // C-e (D5): the network's edit, built here
 import { Clock } from './clock.js';
-import { Movers } from './movers.js';
+import { Movers } from '../../engine/mover-painter.mjs';
 import { helpSections, renderHelp } from './help.js';
 import { composeCanvas, tallyOf } from './compose-canvas.js';   // K8: the canvas half, composed as the lab composes it
 import { Palette } from './palette.js';
 import { Net, wsUrl } from './net.js';
 import { Sync, bindGestureDefer } from './sync.js';
 import { Watchdog } from './watchdog.js';
-import { Reveal } from './reveal.js';
+import { Reveal } from '../../engine/reveal-painter.mjs';
 import { makeSpectator, followTarget } from './spectate.js';
 import { RUN_PRESSES } from './run-mode.js';   // K5: run mode is the product's, handed to Input here
 import { productKinds } from '../../product/kinds.mjs';
@@ -104,7 +104,7 @@ Both wires live here rather than inside either party: the renderer does not know
 the movers do not listen to the renderer. The root connects them, which is the only place that
 legitimately knows about both.
 */
-const movers = new Movers({ model, renderer, layer: svg.querySelector('#movers'), now: () => clock.now() });
+const movers = new Movers({ model, renderer, layer: svg.querySelector('#movers'), now: () => clock.now(), el });
 renderer.watchMode(() => movers.sync());
 model.onChange(() => movers.sync());
 

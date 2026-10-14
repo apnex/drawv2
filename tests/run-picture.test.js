@@ -136,7 +136,7 @@ test('R-c: the download draws each link along its route over pipes, and a down l
 });
 
 test('R-c: a ring is drawn closed once -- its route\'s return to its start is the drawing closing itself', async () => {
-	const { render } = await import('../server/svg.mjs');
+	const { render } = await import('../kernel/svg-scene.mjs');
 	const { docToSchema } = await import('../kernel/adapt.mjs');
 	const ring = {
 		meta: { id: 'diagram-000001', name: 'd' },

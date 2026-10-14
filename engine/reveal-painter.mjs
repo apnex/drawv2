@@ -21,8 +21,8 @@ off the same attribute this sets), and no caption typing. The caption TEXT is re
 owns the status bar to render; how it is typed out is presentation on top of a derived string, and
 putting it here would make this module own a second concern.
 */
-import { revealedAt, beatsOf, traceOf } from '../../model/reveal.mjs';
-import { loop, clockOf } from './paintloop.js';
+import { revealedAt, beatsOf, traceOf } from '../model/reveal.mjs';
+import { loop, clockOf } from './paintloop.mjs';
 
 // The floor, matching movers.js. Not a frame rate -- a reveal moves at human pace, and the rAF loop
 // below is what makes it smooth when the tab is visible.

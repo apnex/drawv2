@@ -78,6 +78,9 @@ const ALLOW = {
 	cite them -- rows, rulings, deletion registers, audits, specs with line numbers true of the file as it was -- and M4
 	forbids rewriting them. Code was repointed in the commit that moved it.
 	*/
+	'*:app/src/movers.js': 'moved to engine/mover-painter.mjs at H22.2 (B329); a record written while it lived here cites it here',
+	'*:app/src/reveal.js': 'moved to engine/reveal-painter.mjs at H22.2 (B329); a record written while it lived here cites it here',
+	'*:app/src/paintloop.js': 'moved to engine/paintloop.mjs at H22.2 (B329); a record written while it lived here cites it here',
 	'*:server/txn.mjs': 'moved to planner/txn.mjs at K4 (H17-D5); a record written while it lived here cites it here',
 	// B291 (H19.3): the migrations and their tests, deleted once every stored document was schema 2; records written while they lived cite them
 	'*:server/migrate.mjs': 'the schema 2 migration, deleted at H19.3 (B291) once every stored document was schema 2; records written while it lived cite it',

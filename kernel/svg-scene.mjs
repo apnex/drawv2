@@ -8,6 +8,12 @@ This half draws waypoints and links, which is network appearance, so it sits in 
 network layer; the core half may not. The live canvas builds addressable DOM instead (B28) and never imports this.
 */
 import { STD, L_STD } from './spec.mjs';
+import { resolve } from './engine.mjs';
+
+export function render(schema, pad) {
+	const { V, L, scene } = resolve(schema);
+	return renderScene(scene, V, L, pad);
+}
 import { bboxOf } from './geometry.mjs';
 import { waypointLayers, linkAppearance, downStroke, NETWORK_TOKENS } from '../network/appearance.mjs';
 import { roundedPath } from './router.mjs';

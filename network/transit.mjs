@@ -13,12 +13,8 @@ was session state in the lab, which a reload lost and undo did not move; now it 
 value, and undo restores it with everything else. The network refuses a value the type does not offer.
 */
 import { cutAtBend, openRingIntoLoop, closeLoopIntoRing } from './link-rules.mjs';
-import { nodeOffersTransit } from './transit-offers.mjs';   // whether a node may be passed (H19.10)
+import { nodeOffersTransit, transitOffersOf, nodeTypeOf } from './transit-offers.mjs';   // whether a node may be passed (H19.10)
 import { BARE_KIND } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
-import { isBareEntity, bareAnchor } from '../devices/device-shapes.mjs';
-
-// the table of what each type offers is the plugin's configuration, in a module of its own (H19.10)
-import { transitOffersOf } from './transit-offers.mjs';
 
 // an anchor's transit: what it stores, or its type's default
 const valueOf = (entity) => (typeof entity.transit === 'boolean' ? entity.transit : transitOffersOf(entity)[0]);
@@ -128,7 +124,7 @@ export function transitReactions(transit) {
 		refuse: ({ matches }) => {
 			for (const { after } of matches) {
 				if (!after || typeof after.transit !== 'boolean' || transitOffersOf(after).includes(after.transit)) continue;
-				return `${after.name || after.id} is a ${after.type}, which never passes routes -- its transit cannot be turned on`;
+				return `${after.name || after.id} is a ${nodeTypeOf(after)}, which never passes routes -- its transit cannot be turned on`;
 			}
 			return null;
 		},

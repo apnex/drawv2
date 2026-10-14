@@ -50,13 +50,14 @@ export function eventsFor(input) {
 }
 
 // an input as a person reads it
-const KIND_WORDS = { node: 'a node', waypoint: 'a waypoint', zone: 'a zone', link: 'a link', canvas: 'the canvas', handle: 'a corner handle', lhandle: 'a link end', mark: 'a plugin\'s mark',
+const KIND_WORDS = { node: 'a node', waypoint: 'a waypoint', canvas: 'the canvas', handle: 'a corner handle', lhandle: 'a link end', mark: 'a plugin\'s mark',
 	'region:endpoint': 'an endpoint', 'region:ground': 'open ground', 'region:action': 'a panel button', 'region:input': 'a panel input' };
-export function shown(input) {
+export function shown(input, words = {}) {
 	if (input === 'double') return 'double-click';
 	const press = /^(?:(.+)\+)?(left|right) on (.+)$/.exec(input);
 	if (!press) return input.replace('Arrows', 'arrow keys');
-	const kinds = press[3].split('|').map((k) => KIND_WORDS[k] ?? k);
+	const dict = { ...KIND_WORDS, ...words };
+	const kinds = press[3].split('|').map((k) => dict[k] ?? `a ${k}`);
 	const where = kinds.length > 1 ? `${kinds.slice(0, -1).join(', ')} or ${kinds[kinds.length - 1]}` : kinds[0];
 	return `${press[1] ? `${press[1]} + ` : ''}${press[2]}-press ${where}`;
 }
@@ -66,7 +67,7 @@ The overlay's sections, from the composed tables Input resolves: each documented
 label of its action (or a plugin row's own `doc`), and the situation it applies in.
 */
 export function helpSections(bindings) {
-	const line = (row) => ({ inputs: row.input ? row.input.map(shown) : [row.said], label: ACTION_LABELS[actionOf(row)] ?? row.doc ?? null, context: row.context ?? null });
+	const line = (row) => ({ inputs: row.input ? row.input.map((inp) => shown(inp, bindings.words)) : [row.said], label: ACTION_LABELS[actionOf(row)] ?? row.doc ?? null, context: row.context ?? null });
 	const documented = (rows, field = 'input') => rows.filter((r) => r[field]).map(line);
 	return [
 		{ title: 'keys', lines: documented(bindings.keys) },

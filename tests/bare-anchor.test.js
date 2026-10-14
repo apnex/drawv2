@@ -95,6 +95,7 @@ const LITERAL = /['"`]waypoints?['"`-]|\.waypoints\b/;
 const RECORD = {
 	'devices/anchor-words.mjs': [2, 'the drawn word, derived from a stored entity (`drawnKind`, `isAnchorWord`) -- moved from model/ at O-e1'],
 	'devices/make-node.mjs': [1, 'a new waypoint\'s NAME, `waypoint-<n>` -- the word people use (F4); moved with `makeWaypoint` from model/model.mjs at O-e1'],
+	'network/keys.mjs': [1, 'the situation\'s drawn word for a bare anchor (`waypoint`), F4 (B349)'],
 	'network/link-reactions.mjs': [1, 'a reaction\'s id, `waypoint-links`, which names it in the generated table'],
 	'cli/verbs.mjs': [19, 'the verbs\' words for the two shapes of node, read through the CLI\'s own view (F4)'],
 	'kernel/adapt.mjs': [3, 'the scene\'s `waypoint` kind -- what is drawn, F4; kernel/ may not import model/ (C9)'],

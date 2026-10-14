@@ -32,8 +32,6 @@ Input — pointer/keyboard state machine. Two-button gestures (`dev/DECISIONS.md
   Escape            cancel / clear / close overlay              ?       help overlay
 */
 
-import { pathOf } from '../../network/network-queries.mjs';   // the network's questions over a Model (Q-a)
-import { linksBetween, makeLink } from '../../network/link-queries.mjs';   // which links meet an anchor: the network's (K13d)
 import { Overlay } from './overlay.js';
 import { pressRows, hitFactsOf, DOUBLE_CLICKS } from './recognize.js';
 import { KEYMAP, KEY_RELEASES } from './keymap.js';
@@ -48,10 +46,8 @@ import { LINK_RELEASES, MARQUEE_RELEASES, CTRL_CLICKS, PRESS_DRAGS, CLONE_DRAGS 
 import { roundedPath } from '../../kernel/router.mjs';
 import { BEND_R } from '../../kernel/spec.mjs';
 import { newId, kindOf } from '../../model/model.mjs';
-import { pairHolders } from '../../network/link-rules.mjs';
 import * as commands from './commands.js';
 import { situationOf } from '../../engine/situation.mjs';
-import { waypointRolesIn } from '../../network/roles.mjs';
 import { BARE_KIND, ANCHOR_KINDS } from '../../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
 
 
@@ -250,7 +246,7 @@ const GESTURES = {
 			// order a person happened to draw in decide what they could have.
 			// judged on every stop DRAWN, pins and guides: with no drag judge they are the same, and with one the judge
 			// decides by pins itself (network/guide.mjs) -- the one predicate either way (RULESET-AUDIT T4)
-			const admitted = !pairHolders({ src: ctx.src.id, dst, via: route }, linksBetween(i.model, ctx.src.id, dst), i.model).length;
+			const admitted = i.linkKit ? i.linkKit.admitted(i.model, ctx.src.id, dst, route) : true;
 			/*
 			WHAT THE RELEASE MEANS is a row of app/src/releases.js LINK_RELEASES, chosen from these facts by the Rules engine:
 			commit, commit and chain, chain on, a click that retypes, toggles, selects or focuses, or discard. The actions do
@@ -342,8 +338,11 @@ export class Input {
 	*/
 	constructor({ svg, model, history, selection, renderer, labels, readout, tools, host, help, snap, now, plugins = [], runRules = [], parts = [] }) {
 		// C-c: the kinds placed on the grid, and how -- the canvas parts' (snap.js placesOf); C-d: their press rows and handles, below
+		this.parts = parts;
 		this.places = placesOf(parts);
 		this.bare = parts.find((p) => p.bare)?.bare ?? null;
+		this.linkKit = parts.find((p) => p.linkDrag)?.linkDrag ?? null;
+		this.helpWords = Object.assign({}, ...parts.map((p) => p.helpWords).filter(Boolean));
 		this.svg = svg;
 		/*
 		The route hook -- how the incubating network plugin (ruled 2026-09-28) sees a finished link drag
@@ -625,7 +624,8 @@ export class Input {
 		return situationOf({
 			get: (kind, id) => this.model.get(kind, id),
 			wordOf: (kind, e) => this.places.wordOf(kind, e),
-			rolesOf: (id) => waypointRolesIn(this.model, id),   // the one role derivation (K5), its transit included (B277)
+			rolesOf: (id) => (this.linkKit ? this.linkKit.rolesOf(this.model, id) : []),   // the one role derivation (K5, B328)
+			isSpawning: (e) => this.parts.some((p) => p.isSpawning?.(e)),
 		}, {
 			mode: this.renderer.mode,
 			readOnly: this.readOnly,
@@ -903,7 +903,7 @@ export class Input {
 		const end = target ? { x: target.x, y: target.y } : snapNode(pos);
 		// the cursor is a free ANCHOR — pathOf resolves the rest of the route around it
 		// through every stop drawn so far, guides included, so the author sees the route they are drawing
-		const path = pathOf(this.model, { src: this.ctx.src, via: this.ctx.route ?? this.ctx.via, dst: end });
+		const path = this.linkKit?.pathOf(this.model, { src: this.ctx.src, via: this.ctx.route ?? this.ctx.via, dst: end }) ?? null;
 		if (path) this.ctx.path.update(roundedPath(path, BEND_R));
 	}
 
@@ -916,7 +916,7 @@ export class Input {
 	*/
 	// `extra`: the entries a drag judge adds (N-c), after the drag's own
 	commitRoute(ctx, dstId, via, extra = []) {
-		const link = { ...makeLink(this.model, ctx.src.id, dstId), ...(via && via.length ? { via: [...via] } : {}) };
+		const link = { ...this.linkKit.makeLink(this.model, ctx.src.id, dstId), ...(via && via.length ? { via: [...via] } : {}) };
 		this.history.commit(commands.withJudged(commands.routeLink(ctx.placed, link), extra));
 		this.selection.set([link.id]);
 	}
@@ -1071,7 +1071,7 @@ export class Input {
 	bindings() {
 		const m = this.meaningRules;
 		return { keys: this.keyRules, presses: this.pressRules, double: this.doubleRules, run: this.runRules,
-			releases: [...m.link, ...m.marquee, ...m.ctrlClick] };
+			releases: [...m.link, ...m.marquee, ...m.ctrlClick], words: this.helpWords };
 	}
 
 	decide(table, evt, facts) {
@@ -1132,7 +1132,7 @@ export class Input {
 			const inner = new Set(stops.slice(bounds[k] + 1, bounds[k + 1]));
 			const pins = via.filter((p) => inner.has(p));
 			const a = stops[bounds[k]], b = stops[bounds[k + 1]];
-			links.push({ ...makeLink(this.model, a, b), id: newId('link', { ...this.model.collection('link'), ...Object.fromEntries(links.map((l) => [l.id, l])) }), ...(pins.length ? { via: pins } : {}) });
+			links.push({ ...this.linkKit.makeLink(this.model, a, b), id: newId('link', { ...this.model.collection('link'), ...Object.fromEntries(links.map((l) => [l.id, l])) }), ...(pins.length ? { via: pins } : {}) });
 		}
 		this.history.commit(commands.withJudged(commands.routeLinks(ctx.placed, links), extra));
 		this.selection.set(links.map((l) => l.id));
@@ -1445,7 +1445,7 @@ export class Input {
 		const { entity: node } = this.handSpec.stamp(this.model, type, snapped);   // the held item, stamped by the hand (C-e)
 		this.model.put('node', node);          // live, so the preview and the next segment can see it
 		const via = [...(this.ctx.via || [])];
-		const link = { ...makeLink(this.model, this.ctx.src.id, node.id), ...(via.length ? { via } : {}) };
+		const link = { ...this.linkKit.makeLink(this.model, this.ctx.src.id, node.id), ...(via.length ? { via } : {}) };
 		/*
 		`chainHop`, not `routeLink` -- the kinds are named rather than assumed.
 

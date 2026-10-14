@@ -140,7 +140,7 @@ for (const m of productModules) if (!partOf.has(m) && !NOT_PARTS[m]) partFaults.
 for (const m of Object.keys(NOT_PARTS)) if (partOf.has(m)) partFaults.push(`${m} is in NOT_PARTS and in part ${partOf.get(m)}`);
 // every relative specifier: `import ... from`, `export ... from`, a bare `import '...'`, `import(...)`; either quote
 const importsOf = (f) => [...code(f).matchAll(/(?:\bfrom\s*|\bimport\s*\(?\s*)(['"])(\.{1,2}\/[^'"]+)\1/g)].map((m) => path.normalize(path.join(path.dirname(f), m[2])));
-for (const m of productModules) for (const t of importsOf(m)) if (NOT_PARTS[t]) partFaults.push(`${m} imports ${t}, which NOT_PARTS says no product module imports`);
+for (const m of productModules) if (!NOT_PARTS[m]) for (const t of importsOf(m)) if (NOT_PARTS[t]) partFaults.push(`${m} imports ${t}, which NOT_PARTS says no product module imports`);
 const edges = new Map();   // "a -> b" -> Set(importing module)
 for (const m of productModules) {
 	for (const t of importsOf(m)) {

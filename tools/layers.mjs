@@ -77,6 +77,9 @@ export const KIND_MAY_CONSUME = {
 };
 export const NOT_PARTS = {
 	'kernel/fixtures.mjs': 'the reference scenes the tests and the route tools render; no product module imports it',
+	'kernel/adapt.mjs': 'the declarative scene adapter the tests render; server/svg.mjs draws through the painters (B330)',
+	'kernel/engine.mjs': 'the declarative scene resolver the tests render; server/svg.mjs draws through the painters (B330)',
+	'kernel/svg-scene.mjs': 'the declarative scene emitter the tests render; server/svg.mjs draws through the painters (B330)',
 };
 export const PARTS = {
 	lattice: { duty: 'Compute geometry on the grid', kind: 'core', by: ['O1'],
@@ -100,17 +103,17 @@ export const PARTS = {
 	devices: { duty: 'Compose a device onto an anchor', kind: 'plugin', by: ['O4', 'WD10'],
 		modules: ['devices/'], consumes: ['lattice', 'kind-contract', 'document', 'relations', 'colours', 'primitives', 'rules'] },
 	network: { duty: 'Connect anchors', kind: 'plugin', by: ['SD11', 'SD11b', 'O1'],
-		modules: ['network/'], consumes: ['lattice', 'kind-contract', 'document', 'relations', 'colours', 'primitives', 'rules'], carried: { devices: 'B282' } },
+		modules: ['network/'], consumes: ['lattice', 'kind-contract', 'document', 'relations', 'colours', 'primitives', 'rules'] },
 	zones: { duty: 'Bound regions of cells', kind: 'plugin', by: ['O1', 'O4'],
 		modules: ['zones/'], consumes: ['lattice', 'kind-contract', 'document', 'layouts', 'colours', 'primitives', 'rules'] },
 	groups: { duty: 'Name sets of anchors', kind: 'plugin', by: ['O1'],
 		modules: ['groups/'], consumes: ['lattice', 'kind-contract', 'document', 'relations', 'colours', 'primitives', 'rules'] },
 	simulation: { duty: 'Derive what the clock drives', kind: 'plugin', by: ['AX1', 'AX4', 'SD11b'],
 		modules: ['engine/kinds.mjs', 'engine/movers.mjs', 'engine/rules.mjs', 'engine/spawn-appearance.mjs', 'engine/spawners.mjs', 'engine/spawn-field.mjs',
-			'engine/spawn-runs.mjs', 'model/reveal.mjs', 'app/src/movers.js', 'app/src/reveal.js', 'app/src/paintloop.js'],
-		consumes: ['lattice', 'kind-contract', 'document', 'relations', 'colours', 'primitives', 'rules', 'network', 'devices'], carried: { renderer: 'B329', canvas: 'B329' } },
+			'engine/spawn-runs.mjs', 'model/reveal.mjs', 'engine/mover-painter.mjs', 'engine/reveal-painter.mjs', 'engine/paintloop.mjs'],
+		consumes: ['lattice', 'kind-contract', 'document', 'relations', 'colours', 'primitives', 'rules', 'network', 'devices'] },
 	product: { duty: 'Compose the plugins into the product', kind: 'composition', by: ['N1', 'D1'],
-		modules: ['product/'], consumes: ['kind-contract', 'lattice', 'layouts', 'devices', 'network', 'zones', 'groups', 'simulation'] },
+		modules: ['product/'], consumes: ['kind-contract', 'lattice', 'colours', 'layouts', 'devices', 'network', 'zones', 'groups', 'simulation'] },
 	canvas: { duty: 'Turn input into edits through the parts\' declarations', kind: 'host', by: ['D1', 'D2', 'D5'],
 		modules: ['app/src/actions.js', 'app/src/capture.js', 'app/src/changes.js', 'app/src/commands.js', 'app/src/compose-canvas.js', 'app/src/help.js',
 			'app/src/input.js', 'app/src/input-state.js', 'app/src/keymap.js', 'app/src/labeledit.js', 'app/src/overlay.js', 'app/src/pick.js',
@@ -118,7 +121,7 @@ export const PARTS = {
 			// app/src/grids.js draws the grids placement snaps to, from the canvas's places (app/src/snap.js gridsOf); in the renderer
 			// it would make the renderer and the canvas consume each other
 			'app/src/triggers.js', 'app/src/grids.js', 'engine/situation.mjs'],
-		consumes: ['lattice', 'kind-contract', 'document', 'relations', 'rules', 'planner', 'renderer', 'primitives', 'colours'], carried: { network: 'B328' } },
+		consumes: ['lattice', 'kind-contract', 'document', 'relations', 'rules', 'planner', 'renderer', 'primitives', 'colours'] },
 	renderer: { duty: 'Draw a document through the parts\' painters', kind: 'host', by: ['D1', 'D3'],
 		modules: ['app/src/renderer.js', 'app/src/painter.js'], consumes: ['lattice', 'document', 'primitives', 'colours'] },
 	sync: { duty: 'Keep a tab converged with the server', kind: 'host', by: ['SD2'],
@@ -144,8 +147,8 @@ export const PARTS = {
 	cli: { duty: 'Give an agent one command per verb', kind: 'door', by: ['SD1'],
 		modules: ['cli/'], consumes: [] },
 	export: { duty: 'Render a document without a browser', kind: 'door', by: ['H2'],
-		modules: ['kernel/adapt.mjs', 'kernel/engine.mjs', 'kernel/svg-scene.mjs', 'server/svg.mjs'],
-		consumes: ['lattice', 'document', 'kind-contract', 'primitives', 'colours', 'product', 'renderer'], beyondKind: { renderer: 'H2' }, carried: { network: 'B330', devices: 'B330', zones: 'B330', groups: 'B330' } },
+		modules: ['server/svg.mjs'],
+		consumes: ['lattice', 'document', 'kind-contract', 'primitives', 'colours', 'product', 'renderer'], beyondKind: { renderer: 'H2' } },
 };
 
 /*
@@ -193,17 +196,17 @@ export const ALIGNMENT = {
 
 export const ALLOWED = {
 	core: ['core'],
-	network: ['core', 'devices', 'network'],
+	network: ['core', 'network'],
 	layouts: ['core', 'layouts'],   // WD-b1 (H19.45): the layouts plugin -- the two grids as stored entities; it imports the core and itself
 	zones: ['core', 'layouts', 'zones'],   // O-b1 (H19.19): the zones plugin -- the zone kind; WD-b1: its extent is the zone layout's
 	groups: ['core', 'groups'],   // O-c (H19.20): the groups plugin -- the group kind and its rules; it imports the core and itself
 	devices: ['core', 'devices'],   // O-e1 (H19.21; O4): the devices plugin -- whether a device is composed on an anchor; it imports the core and itself
 	planner: ['core', 'planner'],   // O-d (H19.22): it composes nothing, so it imports no plugin
 	product: ['core', 'devices', 'network', 'layouts', 'zones', 'groups', 'simulation', 'product'],   // C-a (D3): the network's appearances on the anchor among the product's canvas parts   // O-d (H19.22): the product's composition -- the anchor and the shipped plugins
-	canvas: ['core', 'devices', 'network', 'layouts', 'zones', 'groups', 'planner', 'canvas'],
+	canvas: ['core', 'planner', 'canvas'],
 	chrome: ['core', 'devices', 'network', 'layouts', 'zones', 'groups', 'planner', 'product', 'canvas', 'simulation', 'export', 'chrome'],
 	simulation: ['core', 'devices', 'network', 'simulation'],
-	export: ['core', 'devices', 'network', 'zones', 'groups', 'export'],
+	export: ['core', 'devices', 'network', 'zones', 'groups', 'product', 'canvas', 'export'],
 	'server-only': ['core', 'devices', 'network', 'layouts', 'zones', 'groups', 'planner', 'product', 'simulation', 'export', 'server-only', 'serve'],
 	serve: [],   // K9: it imports nothing but Node's own modules
 	// O-d (H19.22): the CLI's reader takes the product's composition (cli/verbs.mjs `modelOf`) from product/, so the interim
@@ -283,7 +286,6 @@ export const LAYER = {
 	network: [
 		// V-a (H18.25, PU22): the network's roles and appearance moved from kernel/ into network/, whose folder layer is this one
 		// S-e (H18.15): the link rules, the link reactions with `linkTenant`, and the pair capacity moved into network/ (G5)
-		'engine/situation.mjs',  // K5: what is true right now, as a value; O-e1 (H19.21): out of the core, since it names what is under the pointer by the devices plugin's drawn word
 	],
 	planner: [
 		// K4 (H17-D5): the planner is its own folder now, `planner/`, whose folder layer is this one (FOLDERS)
@@ -297,6 +299,7 @@ export const LAYER = {
 		'app/src/tools.js',      // K7: the held tools -- stamp hand, text tool, the hand's ghost; the palette is a view of them
 		'app/src/compose-canvas.js', // K8: the canvas half of a page, composed once for the product and the lab
 		'app/src/readout.js',    // the readout line: what the cursor, a drag and the selection are -- canvas state, built by composeCanvas
+		'engine/situation.mjs',  // K5, B328 (H22.3): what is true right now, as a value, in the canvas layer
 	],
 	chrome: [
 		'app/src/main.js',       // the production composition root; nothing imports it
@@ -304,7 +307,7 @@ export const LAYER = {
 		'app/src/help.js',       // the generated help overlay (gesture system stage 6): draws what the bindings document
 		'app/src/run-mode.js',   // K5: run mode's press rows, the product's feature, handed to Input by main.js
 		'app/src/palette.js',    // the device palette widget; input.js's reach into it went at K7 (`RATCHETS.L2` is empty)
-		'app/src/movers.js', 'app/src/reveal.js', 'app/src/paintloop.js',   // the simulation's painters: production-only, outside the lab
+		'engine/mover-painter.mjs', 'engine/reveal-painter.mjs', 'engine/paintloop.mjs',   // the simulation's painters: production-only, outside the lab
 	],
 	simulation: [
 		'engine/movers.mjs', 'engine/spawners.mjs', 'engine/kinds.mjs', 'engine/rules.mjs',
@@ -345,9 +348,9 @@ export const ENTRIES = {
 			'app/src/capture.js', 'app/src/changes.js', 'app/src/clock.js', 'app/src/commands.js', 'app/src/input-state.js', 'app/src/input.js', 'app/src/keymap.js',
 			'engine/spawn-runs.mjs',   // C-e (H19.33): the simulation's run-mode rows, which run-mode.js hands in -- the page's alone
 			'devices/device-panels.mjs',   // C-e (H19.33): the devices plugin's panel rows, likewise
-			'app/src/actions.js', 'app/src/help.js', 'app/src/run-mode.js', 'app/src/labeledit.js', 'app/src/main.js', 'app/src/movers.js', 'app/src/net.js', 'app/src/overlay.js',
-			'app/src/painter.js', 'app/src/paintloop.js', 'app/src/palette.js', 'app/src/pick.js', 'app/src/readout.js',
-			'app/src/recognize.js', 'app/src/releases.js', 'app/src/renderer.js', 'app/src/reveal.js', 'app/src/selection.js', 'app/src/snap.js', 'app/src/triggers.js', 'app/src/tools.js', 'app/src/compose-canvas.js',
+			'app/src/actions.js', 'app/src/help.js', 'app/src/run-mode.js', 'app/src/labeledit.js', 'app/src/main.js', 'engine/mover-painter.mjs', 'app/src/net.js', 'app/src/overlay.js',
+			'app/src/painter.js', 'engine/paintloop.mjs', 'app/src/palette.js', 'app/src/pick.js', 'app/src/readout.js',
+			'app/src/recognize.js', 'app/src/releases.js', 'app/src/renderer.js', 'engine/reveal-painter.mjs', 'app/src/selection.js', 'app/src/snap.js', 'app/src/triggers.js', 'app/src/tools.js', 'app/src/compose-canvas.js',
 			'app/src/spectate.js', 'app/src/sync.js', 'app/src/watchdog.js', 'engine/ivm.mjs',
 			'engine/kinds.mjs', 'engine/movers.mjs', 'engine/relations.mjs', 'engine/rules.mjs',
 			'engine/situation.mjs', 'engine/spawners.mjs', 'engine/store.mjs', 
@@ -385,7 +388,7 @@ export const ENTRIES = {
 			'devices/device-shapes.mjs', 'devices/anchor-words.mjs', 'devices/make-node.mjs', 'devices/occupancy.mjs',   // O-e1 (H19.21): the devices plugin
 			'devices/device-fields.mjs', 'engine/spawn-field.mjs',   // O-e2 (H19.21): the fields composed onto the anchor
 			'network/link-queries.mjs',   // K13d (H19.25): the network's link queries, off the Model
-			'network/network-queries.mjs',   // Q-a (H19.27): the network's questions over a Model, off the Model
+			'network/network-queries.mjs', 'network/read-model.mjs',   // Q-a (H19.27): the network's questions over a Model, off the Model
 			'network/link-kind.mjs', 'network/link-references.mjs', 'network/transit-offers.mjs',   // S-e (H18.15, G5): the network's link row and its references; H19.10 what each type offers
 		],
 	},
@@ -675,9 +678,9 @@ export const RATCHET_REASONS = {
 		'cli/verbs.mjs': { cites: ['from B138', 'H21.3'],
 			reason: 'the CLI\'s static imports stay inside cli/ so an installed copy runs (B138), so its verbs list the kinds themselves',
 			trigger: 'the CLI learns the kinds from the server' },
-		'kernel/adapt.mjs': { cites: ['B330'],
-			reason: 'the export door converts a document to the kernel\'s scene by kind name',
-			trigger: 'the export door draws through the painters (B330)' },
+		'kernel/adapt.mjs': { cites: ['H22.5'],
+			reason: 'the declarative scene adapter converts a document to the kernel\'s scene by kind name for the scene tests',
+			trigger: 'permanent' },
 	},
 };
 

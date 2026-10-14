@@ -101,9 +101,7 @@ function describeTarget(access, id) {
 		`waypointRole`; nothing downstream of here needs one.
 		*/
 		t.roles = access.rolesOf ? access.rolesOf(id) : [];   // derived by the one rule, by whoever owns the links (K5)
-		// whether this endpoint is already emitting. A boolean rather than the config, because the
-		// question a decision asks is "is it on"; the numbers belong to whoever is going to run them.
-		t.spawning = !!entity.spawn;
+		t.spawning = access.isSpawning ? access.isSpawning(entity) : false;
 	}
 	return t;
 }

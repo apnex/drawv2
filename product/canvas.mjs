@@ -17,6 +17,24 @@ import { DEVICES_CANVAS } from '../devices/device-appearance.mjs';
 import { NETWORK_CANVAS } from '../network/canvas.mjs';
 import { SIMULATION_CANVAS } from '../engine/spawn-appearance.mjs';
 import { TYPE_ROUTING } from '../devices/device-types.mjs';
+import { ZONE_TOKENS } from '../zones/zone-painter.mjs';
+import { GROUP_TOKENS } from '../groups/group-painter.mjs';
+import { NETWORK_TOKENS, downStroke } from '../network/appearance.mjs';
+import { TOKENS } from '../kernel/theme.mjs';
+
+export const LINK_COLOURS = { up: NETWORK_TOKENS.link, down: downStroke() };
+
+// B330 (H22.5): the standalone CSS rules for the elements the plugins' painters and appearances emit into a downloaded SVG
+export const EXPORT_CSS = `
+.zone .zone-rect { fill:${ZONE_TOKENS.zoneFill}; fill-opacity:${ZONE_TOKENS.zoneFillOp}; stroke:${ZONE_TOKENS.zoneStroke}; stroke-opacity:${ZONE_TOKENS.zoneStrokeOp}; stroke-width:1; }
+.zone .label-pill, .node .label-pill { fill:${TOKENS.panel}; fill-opacity:0.82; }
+.zone .zone-label { fill:${TOKENS.label}; font-family:ui-monospace,monospace; dominant-baseline:central; }
+.node .label { fill:${TOKENS.label}; font-family:ui-monospace,monospace; text-anchor:middle; dominant-baseline:central; }
+.group .group-hull { fill:none; stroke:${GROUP_TOKENS.group}; stroke-width:1.1; }
+.link { fill:none; stroke:${NETWORK_TOKENS.link}; stroke-linecap:round; stroke-linejoin:round; }
+.link[data-down] { stroke:${downStroke()}; }
+.link-hit { display:none; }
+`;
 import { composeRouting } from '../network/transit-offers.mjs';
 
 // U4-1 (H21.3, B282): hand the network plugin its routing slice of the device type declarations at composition

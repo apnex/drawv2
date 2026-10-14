@@ -151,7 +151,7 @@ Generated from `tools/layers.mjs` `PARTS`; the current document renders the same
 | `zones` | Bound regions of cells | plugin | O1, O4 | `lattice`, `kind-contract`, `document`, `layouts`, `colours`, `primitives`, `rules` |
 | `groups` | Name sets of anchors | plugin | O1 | `lattice`, `kind-contract`, `document`, `relations`, `colours`, `primitives`, `rules` |
 | `simulation` | Derive what the clock drives | plugin | AX1, AX4, SD11b | `lattice`, `kind-contract`, `document`, `relations`, `colours`, `primitives`, `rules`, `network`, `devices` |
-| `product` | Compose the plugins into the product | composition | N1, D1 | `kind-contract`, `lattice`, `layouts`, `devices`, `network`, `zones`, `groups`, `simulation` |
+| `product` | Compose the plugins into the product | composition | N1, D1 | `kind-contract`, `lattice`, `colours`, `layouts`, `devices`, `network`, `zones`, `groups`, `simulation` |
 | `canvas` | Turn input into edits through the parts' declarations | host | D1, D2, D5 | `lattice`, `kind-contract`, `document`, `relations`, `rules`, `planner`, `renderer`, `primitives`, `colours` |
 | `renderer` | Draw a document through the parts' painters | host | D1, D3 | `lattice`, `document`, `primitives`, `colours` |
 | `sync` | Keep a tab converged with the server | host | SD2 | `document`, `kind-contract`, `canvas` |
@@ -292,15 +292,8 @@ A named entity's name is unique across every named kind (N5).
 
 ### 8.2 Divergence -- what this states and the current instant does not
 
-**Measured:** every import in the code between two parts that the target's consumes do not allow is listed, generated, in the current document's section "Part divergence".\
-**Listed by hand,** each row named by the backlog row that carries it:
-
-| This target states | The current instant | Carried by |
-|---|---|---|
-| each document lists the plugins it needs | no document does | B248 |
-| the download is drawn by the rendering run mode draws | the export door is a second renderer, naming kinds | B330 |
-| the simulation's page pieces are the simulation's | the movers and the reveal live in the canvas folder | B329 |
-| the canvas names no plugin's kind beyond D2's record of the draw-a-link gesture | the canvas names plugin kinds and imports plugin modules, each recorded in its ratchet's record (`tests/canvas-names-no-plugin.test.js`) | B328 |
+**Measured:** every import in the code between two parts that the target's consumes do not allow is listed, generated, in the current document's section "Part divergence" (now zero).\
+**Listed by hand:** none -- every divergence recorded here at ratification (`B332`, `B338`, `B248`, `B330`, `B329`, `B328`) is closed (`H21.8`, `H22`).
 
 ---
 
@@ -323,7 +316,6 @@ All five questions recorded here at ratification (H21.6) have been ruled: the an
 | A diagram varying its grids | held until the infinite canvas is designed (B325; WD7) |
 | Unloading what is out of view | held until the infinite canvas is designed (B289) |
 | Policy over packets and flows | out of scope; named so nothing excludes it (2026-09-22) |
-| Each document lists the plugins it needs | ratified (SD12); its building held with the director's approval, on B248's trigger |
 | Absorption of rulings recorded before 2026-10-11 | a ruling from then on names the documents it affects, and the gate checks each cites it -- a citation check, not proof that the section absorbs it; an older ruling's absorption is read by review |
 
 ### 9.3 Alignment with mission-kit -- a register (A-0)

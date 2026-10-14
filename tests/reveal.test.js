@@ -129,11 +129,11 @@ test('a zero interval reveals a whole beat at once rather than never', () => {
 });
 
 /*
-The consumer. `app/src/reveal.js` turns the derivation into marks on the canvas, and these drive it
+The consumer. `engine/reveal-painter.mjs` turns the derivation into marks on the canvas, and these drive it
 with a fake renderer and a fake clock -- no DOM at all, which is the property B45 exists to keep.
 */
 test('the painter hides what the beat has not reached, and shows it when it does', async () => {
-	const { Reveal } = await import('../app/src/reveal.js');
+	const { Reveal } = await import('../engine/reveal-painter.mjs');
 	const marks = new Map();
 	const renderer = { byId: (id) => marks.get(id) };
 	for (const id of ['node-aa0001', 'node-aa0002', 'node-aa0003']) {
@@ -156,7 +156,7 @@ test('the painter hides what the beat has not reached, and shows it when it does
 });
 
 test('the painter reports the caption, and only when it changes', async () => {
-	const { Reveal } = await import('../app/src/reveal.js');
+	const { Reveal } = await import('../engine/reveal-painter.mjs');
 	const said = [];
 	let t = 900;
 	const r = new Reveal({
@@ -172,7 +172,7 @@ test('the painter reports the caption, and only when it changes', async () => {
 });
 
 test('a document with no reveal leaves every entity alone', async () => {
-	const { Reveal } = await import('../app/src/reveal.js');
+	const { Reveal } = await import('../engine/reveal-painter.mjs');
 	const mark = { attrs: new Set(), setAttribute(k) { this.attrs.add(k); }, removeAttribute(k) { this.attrs.delete(k); } };
 	const r = new Reveal({ model: { state: { reveal: null } }, renderer: { byId: () => mark }, now: () => 5000 });
 	r.paint();
@@ -185,7 +185,7 @@ test('undoing a beat restores everything it was hiding', async () => {
 	at that instant stays hidden forever -- entities present in the document and invisible on the
 	canvas, with nothing left to explain why.
 	*/
-	const { Reveal } = await import('../app/src/reveal.js');
+	const { Reveal } = await import('../engine/reveal-painter.mjs');
 	const marks = new Map();
 	for (const id of ['node-aa0001', 'node-aa0002', 'node-aa0003']) {
 		marks.set(id, { attrs: new Set(),

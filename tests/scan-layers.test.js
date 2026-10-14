@@ -689,6 +689,7 @@ test('H17 K10: every seeded board is accepted by the real planner', async () => 
 	const { commit } = await import('../planner/txn.mjs');
 	const { Log } = await import('../planner/log.mjs');
 	const { productKinds } = await import('../product/kinds.mjs');
+	await import('../product/types.mjs');
 	const { PIPE_ROW } = await import('../network/pipe-kind.mjs');
 	const { createNetworkSession } = await import('../network/session.mjs');
 

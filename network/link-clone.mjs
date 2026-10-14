@@ -10,7 +10,7 @@ app/src/commands.js `cloneSubgraph`.
 */
 
 import { newId } from '../model/model.mjs';
-import { bareAnchor } from '../devices/device-shapes.mjs';
+import { nodePermitsBend } from './transit-offers.mjs';
 
 export const LINK_FOLLOWER = {
 	rank: 1,
@@ -20,8 +20,8 @@ export const LINK_FOLLOWER = {
 			const via = Array.isArray(link.via) ? link.via : [];
 			for (const wid of via) {
 				if (idMap.has(wid)) continue;
-				const w = bareAnchor(model, wid);
-				if (w) cloneAnchor(w);
+				const w = model.get('node', wid);
+				if (nodePermitsBend(w)) cloneAnchor(w);
 			}
 			const copy = { id: newId('link', scratch.collection('link')), name: scratch.nextName('link'), src: idMap.get(link.src), dst: idMap.get(link.dst) };
 			const mapped = via.map((wid) => idMap.get(wid)).filter(Boolean);

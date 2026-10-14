@@ -16,6 +16,7 @@ import { pipeEntity } from '../network/pipe-kind.mjs';
 import { worldOf, combatAt, factsAt, aimAt, DERIVATIONS } from '../engine/rules.mjs';
 import { tickAt, TICK_MS } from '../engine/kinds.mjs';
 import { moversAt } from '../engine/movers.mjs';
+import '../product/types.mjs';
 import { TOWERS, MOVERS, cycleOf, moverFor } from '../engine/kinds.mjs';
 
 function board({ towers = [[600, 0]], speed = 1.4, interval = 900 } = {}) {

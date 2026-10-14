@@ -11,6 +11,9 @@ import { composeRouting } from '../network/transit-offers.mjs';
 import { composeBehaviour } from '../engine/kinds.mjs';
 import { productKinds } from './kinds.mjs';
 import { NETWORK_ROWS } from '../network/kinds.mjs';
+import { readModel } from '../network/read-model.mjs';
+
+export { readModel };
 
 // B332 (H21.8): the full product composition of kinds, including the network's rows and tenant
 export const COMPOSED_KINDS = productKinds(...NETWORK_ROWS);

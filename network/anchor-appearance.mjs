@@ -12,7 +12,7 @@ the K8 DOM corpus holds that. The layer list itself is the network's, shared wit
 */
 
 import { L_STD } from '../kernel/spec.mjs';
-import { hasDevice } from '../devices/device-fields.mjs';
+import { nodePermitsBend } from './transit-offers.mjs';
 import { waypointLayers, NETWORK_TOKENS } from './appearance.mjs';
 import { waypointRolesIn } from './roles.mjs';
 import { declaresNoTransit, linksRoutedThrough } from './network-queries.mjs';
@@ -62,7 +62,7 @@ const TRANSIT = {
 	id: 'transit',
 	kind: 'node',
 	// a waypoint's ring is among its marks; over a device it composes on its own (TRANSIT.md section 12, X1)
-	state: (entity, { model }) => (hasDevice(entity) && declaresNoTransit(model, entity.id) ? 'off' : null),
+	state: (entity, { model }) => (!nodePermitsBend(entity) && declaresNoTransit(model, entity.id) ? 'off' : null),
 	composes: true,
 	parts: {
 		transit(entity, g, { el }) {

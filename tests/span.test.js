@@ -462,7 +462,7 @@ Nothing is stored. Closing a path changes how its corners draw because a ring HA
 falls out of the derivation rather than out of a rewrite.
 */
 test('B162: the kernel derives bend from endpoint, and closing a path flips it', async () => {
-	const { render } = await import('../server/svg.mjs');
+	const { render } = await import('../kernel/svg-scene.mjs');
 	const { docToSchema } = await import('../kernel/adapt.mjs');
 	const doc = (closed) => ({
 		meta: { id: 'diagram-aa0001', name: 't' },
@@ -477,7 +477,7 @@ test('B162: the kernel derives bend from endpoint, and closing a path flips it',
 });
 
 test('B199: every waypoint draws the anchor, and an endpoint adds a pad inside it', async () => {
-	const { render } = await import('../server/svg.mjs');
+	const { render } = await import('../kernel/svg-scene.mjs');
 	const { docToSchema } = await import('../kernel/adapt.mjs');
 	const { waypointStyle } = await import('../network/appearance.mjs');
 	const svg = render(docToSchema({
@@ -620,7 +620,7 @@ test('B162/B218: create, update AND delete refresh a link\'s waypoints', () => {
 });
 
 test('B162: an endpoint is opaque so the path terminates on it, a bend stays hollow', async () => {
-	const { render } = await import('../server/svg.mjs');
+	const { render } = await import('../kernel/svg-scene.mjs');
 	const { docToSchema } = await import('../kernel/adapt.mjs');
 	const { waypointAnchor, waypointStyle } = await import('../network/appearance.mjs');
 	const svg = render(docToSchema({
@@ -710,7 +710,7 @@ test('B162: the waypoint style has one owner, and neither renderer restates it',
 });
 
 test('B162: the two renderers agree, value for value', async () => {
-	const { render } = await import('../server/svg.mjs');
+	const { render } = await import('../kernel/svg-scene.mjs');
 	const { docToSchema } = await import('../kernel/adapt.mjs');
 	const { waypointAnchor, waypointStyle } = await import('../network/appearance.mjs');
 	// what the export emits, parsed back out of the SVG it produced
@@ -870,7 +870,7 @@ relaxed the validator; without this the feature is still undrawable.
 */
 test('B209: each role combination draws its own layers, in both renderers', async () => {
 	const { waypointLayers } = await import('../network/appearance.mjs');
-	const { render } = await import('../server/svg.mjs');
+	const { render } = await import('../kernel/svg-scene.mjs');
 	const { docToSchema } = await import('../kernel/adapt.mjs');
 
 	const cases = [
@@ -928,7 +928,8 @@ test('B209: a waypoint that already has links is a valid link target', async () 
 	// covers (network/anchor-points.mjs), and the old slice would have passed against a file that no longer holds it
 	const src = fs.readFileSync(new URL('../app/src/pick.js', import.meta.url), 'utf8');
 	const points = fs.readFileSync(new URL('../network/anchor-points.mjs', import.meta.url), 'utf8');
-	assert.match(points, /word: 'waypoint', of: \(model\) => bareAnchors\(model\), grabs: near/, 'every waypoint is grabbed, the declaration as read');
+	// RESTATED at H22.1 (B349): network/anchor-points.mjs filters by its own `nodePermitsBend` rather than importing `bareAnchors` from devices/
+	assert.match(points, /word: 'waypoint', of: \(model\) => model\.all\('node'\)\.filter\(nodePermitsBend\), grabs: near/, 'every waypoint is grabbed, the declaration as read');
 	assert.doesNotMatch(points, /waypointFree|free/i,
 		'a link end must be offered a waypoint that already carries a link, or a junction cannot be DRAWN');
 	// B211 -- and starting a link from one is the same question, so the predicate is gone entirely
@@ -988,7 +989,7 @@ at is opaque, and a circle a line passes through is not.
 */
 test('B212: the junction ring masks what is behind it, as the endpoint pad does', async () => {
 	const { waypointLayers } = await import('../network/appearance.mjs');
-	const { render } = await import('../server/svg.mjs');
+	const { render } = await import('../kernel/svg-scene.mjs');
 	const { docToSchema } = await import('../kernel/adapt.mjs');
 
 	const fillOf = (roles, cls) => waypointLayers(roles, 20).find((l) => l.cls === cls).fill;
@@ -1032,7 +1033,7 @@ export can emit. An undeclared link has no head, because it asserts nothing.
 test('H15.6: the arrowhead follows the declaration, from one source', async () => {
 	const { linkFacing } = await import('../network/roles.mjs');
 	const { linkMarker } = await import('../network/appearance.mjs');
-	const { render } = await import('../server/svg.mjs');
+	const { render } = await import('../kernel/svg-scene.mjs');
 	const { docToSchema, schemaToDoc } = await import('../kernel/adapt.mjs');
 
 	assert.equal(linkMarker({ id: 'l', src: 'a', dst: 'b' }), null,
@@ -1107,7 +1108,7 @@ that failed rather than trusted because the code looks right.
 */
 test('H15.15: a control link exports dashed, round-trips, and survives an update', async () => {
 	const { linkDash, linkWidth } = await import('../network/appearance.mjs');
-	const { render } = await import('../server/svg.mjs');
+	const { render } = await import('../kernel/svg-scene.mjs');
 	const { docToSchema, schemaToDoc } = await import('../kernel/adapt.mjs');
 	const mk = (control) => ({
 		nodes: [{ id: 'node-aa0001', name: 'a', type: 'host', x: -60, y: 0 }, { id: 'node-aa0002', name: 'b', type: 'host', x: 60, y: 0 }],
@@ -1234,7 +1235,7 @@ not pixels or points. A stroke stays proportional to the drawing under zoom, whi
 test('H15.18: a text panel has a 1-unit frame and 13-unit text, from one source', async () => {
 	const { frameWidth } = await import('../devices/device-types.mjs');
 	const { STD } = await import('../kernel/spec.mjs');
-	const { render } = await import('../server/svg.mjs');
+	const { render } = await import('../kernel/svg-scene.mjs');
 	const { docToSchema } = await import('../kernel/adapt.mjs');
 
 	const panel = { id: 'node-aa0001', type: 'text', content: [{ at: [0, 0], cols: 1, rows: 1, content: 'text', value: 'hi' }] };
@@ -1286,7 +1287,7 @@ asserts the rendered OUTPUT rather than that a function is called.
 */
 test('B234: an exported node and zone carry their names', async () => {
 	const { docToSchema } = await import('../kernel/adapt.mjs');
-	const { render } = await import('../server/svg.mjs');
+	const { render } = await import('../kernel/svg-scene.mjs');
 	const doc = {
 		nodes: [{ id: 'node-aa0001', name: 'spine1', type: 'router', x: 0, y: 0 }],
 		zones: [{ id: 'zone-aa0001', name: 'core', x: -120, y: -120, w: 240, h: 240 }],

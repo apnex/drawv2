@@ -27,7 +27,6 @@ import { nodeOffersTransit, nodePermitsBend } from './transit-offers.mjs';   // 
 import { isLinkLoop } from './link-references.mjs';   // B300: a join may leave a loop
 import { linkEndsAt } from './roles.mjs';   // whether a link ends at a point (B244), one statement with the roles (V-a)
 import { BARE_KIND } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
-import { isBareEntity, bareAnchors } from '../devices/device-shapes.mjs';
 
 const touching = (m, w) => m.all('link').filter((l) => l.src === w || l.dst === w || (l.via || []).includes(w));
 
@@ -44,7 +43,7 @@ const NODE_LINKS = {
 	doc: 'deleting a typed node deletes every link ending at it, and every link pinned through it -- a pinned link lives and dies with its pins (P-7, H19.10)',
 	trigger: { deleted: ['node'] },
 	run: ({ op, doc }, emit) => {
-		if (isBareEntity(op.kind, doc.get(op.kind, op.id))) return;   // a waypoint: WAYPOINT_LINKS
+		if (nodePermitsBend(doc.get(op.kind, op.id))) return;   // a waypoint: WAYPOINT_LINKS
 		const through = (l) => l.src === op.id || l.dst === op.id || (l.via ?? []).includes(op.id);
 		emit(doc.all('link').filter(through).sort((a, b) => (a.id < b.id ? -1 : 1)).map((link) => ({ op: 'del', kind: 'link', id: link.id })));
 	},
@@ -57,7 +56,7 @@ const WAYPOINT_LINKS = {
 	doc: 'deleting a waypoint deletes the links ending at it, and strips it from the links bending through it -- or deletes one the strip would leave a second straight link on its pair (B81)',
 	trigger: { deleted: [BARE_KIND] },
 	run: ({ op, doc }, emit) => {
-		if (!isBareEntity(op.kind, doc.get(op.kind, op.id))) return;   // a typed node: NODE_LINKS
+		if (!nodePermitsBend(doc.get(op.kind, op.id))) return;   // a typed node: NODE_LINKS
 		const id = op.id;
 		const ops = [];
 		/*
@@ -125,7 +124,7 @@ const STRANDED_LINKS = {
 	// rather than trusting its trigger to have filtered -- the shadow guard hands a reaction every change, and caught this
 	// one taking a moved waypoint for a deleted one
 	run: ({ before, doc, matches }, emit) => {
-		const gone = new Set(matches.filter((c) => !c.after && isBareEntity(c.kind, c.before)).map((c) => c.id));
+		const gone = new Set(matches.filter((c) => !c.after && c.kind === BARE_KIND && nodePermitsBend(c.before)).map((c) => c.id));
 		for (const was of before.all('link')) {
 			if (!(was.via || []).some((w) => gone.has(w))) continue;
 			if (doc.get('link', was.id)) emit([{ op: 'del', kind: 'link', id: was.id }]);
@@ -222,7 +221,7 @@ function orphanSweep({ alsoReferenced = null, keepsOrphan, says }) {
 			const wasReferenced = refs(before);
 			const nowReferenced = refs(doc);
 			const bendOnly = wasBendOnly(before);
-			const debris = bareAnchors(doc).filter((w) => !nowReferenced.has(w.id)
+			const debris = doc.all(BARE_KIND).filter(nodePermitsBend).filter((w) => !nowReferenced.has(w.id)
 				&& wasReferenced.has(w.id)                       // it arrived unreferenced; not ours to remove
 				&& !keepsOrphan(w, { wasBendOnly: bendOnly.has(w.id) }));
 			for (const w of debris) emit([{ op: 'del', kind: BARE_KIND, id: w.id }]);

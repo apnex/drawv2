@@ -15,6 +15,7 @@ import { waypointRoles } from '../network/roles.mjs';
 // the server a stored document, and neither has to become the other
 const accessOf = (entities, links = []) => ({
 	get: (kind, id) => entities[id] || null,
+	isSpawning: (e) => !!e?.spawn,
 	rolesOf: (id) => waypointRoles(id, ((id) => links.filter((l) => l.src === id || l.dst === id || (l.via || []).includes(id)))(id)),   // K5: the caller applies the one role derivation
 });
 

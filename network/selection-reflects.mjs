@@ -16,7 +16,7 @@ edit, since an edit can change who blocks whom (network/host.mjs).
 */
 
 import { isLinkDown, blockersOf } from './network-queries.mjs';
-import { bareAnchor } from '../devices/device-shapes.mjs';
+import { nodePermitsBend } from './transit-offers.mjs';
 
 export const NETWORK_REFLECTS = [
 	{ cls: 'on-selected-path', keeps: true, of: (model, selected) => {
@@ -24,7 +24,7 @@ export const NETWORK_REFLECTS = [
 		for (const id of selected) {
 			const link = model.get('link', id);
 			if (!link) continue;
-			for (const w of [link.src, link.dst, ...(link.via || [])]) if (bareAnchor(model, w)) lit.add(w);
+			for (const w of [link.src, link.dst, ...(link.via || [])]) if (nodePermitsBend(model.get('node', w))) lit.add(w);
 		}
 		return lit;
 	} },

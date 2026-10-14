@@ -44,8 +44,7 @@ link mutation -- a document-wide predicate wearing a per-mutation costume, O(way
 every write. Built once it is O(links), and the document path is unchanged at O(links).
 */
 
-import { isBareEntity } from '../devices/device-shapes.mjs';   // whether a device is composed: the devices plugin's (O-e1)
-import { nodeOffersTransit } from './transit-offers.mjs';   // whether a node may be passed (H19.10)
+import { nodeOffersTransit, nodePermitsBend, nodeTypeOf } from './transit-offers.mjs';   // whether a node may be passed or bend (H19.10, H22.1)
 
 // Index every waypoint reference in a set of links. One pass, and the shape both callers need.
 function waypointOwners(links) {
@@ -72,7 +71,7 @@ export function linkAccess(access) {
 	let owners = null;
 	view = {
 		hasNode: (id) => access.has('node', id),
-		hasWaypoint: (id) => isBareEntity('node', access.get('node', id)),
+		hasWaypoint: (id) => nodePermitsBend(access.get('node', id)),
 		// H19.10: a node a link may pass -- pinned through it, a junction -- by what its type offers (a waypoint, or a router)
 		passable: (id) => nodeOffersTransit(access.get('node', id)),
 		nodeOf: (id) => access.get('node', id),
@@ -116,7 +115,7 @@ export function linkReferential(link, access) {
 		H19.10 (ruled 2026-10-07) -- a link may be pinned through a node whose type offers transit: a waypoint, or a device that
 		passes routes, a junction there. A device that never passes routes is only ever a link's end.
 		*/
-		if (!passable(w)) { const n = nodeOf(w); return `link via a node that never passes routes: ${n?.name ?? w} is a ${n?.type ?? 'node'} -- a link may end there, not pass it`; }
+		if (!passable(w)) { const n = nodeOf(w); return `link via a node that never passes routes: ${n?.name ?? w} is a ${nodeTypeOf(n) ?? 'node'} -- a link may end there, not pass it`; }
 	}
 
 	// one node in two roles of one link -- its end and a pin, or two pins -- whatever its kind (H19.10); a loop's one end is

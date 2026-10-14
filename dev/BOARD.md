@@ -1410,6 +1410,24 @@ AMENDED 2026-10-14: H21.6 (U2), H21.9, H21.7 (U3), H21.3 (U4), H21.8a, H21.8b an
 
 ---
 
+## H22 -- zero divergence: every part-divergence and target-divergence row closed - `DONE`
+
+Opened 2026-10-15 by the director ("continue. close all remaining divergences"; `dev/DECISIONS.md` H22): drive `docs/ARCHITECTURE.md` section 5 ("Part divergence") and `docs/ARCHITECTURE-TARGET.md` section 8.2 ("Divergence") to zero.
+
+| # | Item | Cites | Sev | State |
+|---|---|---|---|---|
+| H22.1 | Close the `network -> devices` part-divergence (10 modules) and the remaining `.type` reads in `network/`, `engine/kinds.mjs` and `server/rest.js` (`B349`) | **B349** | S3 | `DONE` |
+| H22.2 | Move the simulation's page pieces (`movers.js`, `reveal.js`, `paintloop.js`) out of `app/src/` into `engine/` and broker the simulation's canvas seam (`B329`) | **B329** | S4 | `DONE` |
+| H22.3 | Broker the draw-a-link gesture and help `KIND_WORDS` through plugin canvas parts so `canvas` imports no `network/` module (`B328`) | **B328** | S4 | `DONE` |
+| H22.4 | Build SD12's stored plugin list (`meta.plugins`) and refuse a document listing a plugin the composition lacks (`B248`) | **B248** | S4 | `DONE` |
+| H22.5 | Draw the headless SVG export through the plugins' painters/renderer so `export` is no longer a second renderer naming plugin kinds (`B330`) | **B330** | S4 | `DONE` |
+
+AMENDED 2026-10-15: H22.1 to H22.5 done -- `B349`, `B329`, `B328`, `B248` and `B330` are closed, `docs/ARCHITECTURE.md` section 5 ("Part divergence") has 0 disallowed part-to-part imports, and `docs/ARCHITECTURE-TARGET.md` section 8.2 ("Divergence") has 0 open rows. Milestone H22 complete.
+
+**Exit:** `docs/ARCHITECTURE.md` section 5 ("Part divergence") and `docs/ARCHITECTURE-TARGET.md` section 8.2 ("Divergence") are both empty.
+
+---
+
 ## Held -- on the record, not on the board
 
 Open `BACKLOG` rows whose trigger has not fired.\
@@ -1427,9 +1445,6 @@ Scored so the comparison is a judgement, not an omission.\
 | **B326** | S4 | The agent door's throttle refuses with no log an operator reads (no load-balancer logging on its backend) | an agent reports a 429 from the agent door, or a flood is suspected, or the throttle's threshold is next changed. |
 | **B324** | S4 | The palette drop test's page reloaded once, cause not caught; its leftover tabs are closed and its failure now names how the page was loaded and why | the drop test, or any browser test, fails again on a reloaded page. |
 | **B327** | S3 | Paths and flows: a flow declared once along a path and seen end to end (H15's exit), propagation along a run of bends, links side by side over one pipe (with B256) | the director reopens paths and flows; or an author or agent needs a direction declared across more than one link; or B256's own trigger fires. |
-| **B328** | S4 | The draw-a-link gesture is the canvas's (D2): its names and imports recorded in the canvas ratchet | a second plugin must judge or extend a link drag. |
-| **B329** | S4 | The simulation's page pieces -- the movers and the reveal -- live in the canvas folder | the simulation brings its canvas part whole. |
-| **B330** | S4 | The export door draws a document by naming its kinds, a second renderer beside the plugins' painters | a plugin's kind must reach a downloaded file without the export naming it, or the painters prove they can serve a headless scene. |
 | **B126** | S4 | Straight-link capacity as a per-kind property (H10.11 built its seam; the capacity stays one) | parallel links are designed (B256), or an operator must configure a capacity. |
 | **B88** | S3 | Prose can say finished work is blocked, and no rule reads a sentence | an item on the board is marked `BLOCKED`. |
 | **B333** | S4 | No ledger records a flaky test; naming a flake on a row before a retry is a practice | a second unresolved flake is filed after H20.2. |
@@ -1446,7 +1461,6 @@ Scored so the comparison is a judgement, not an omission.\
 | **B325** | S4 | A diagram varies its grids -- its own extent, then its own pitch and offset (WD7) | the infinite canvas and scrolling are designed (B289's trigger), or a diagram needs a grid unlike the others. |
 | **B79** | S3 | The connection walk's apparatus is outside the repository; the false record is corrected, the rest held with B127 | B127 revives, or another decision is taken on the walk's findings. |
 | **B108** | S3 | Detecting a test wired to a copy of its subject: undecidable as stated; mutation is the technique that works | mutation testing is automated in the gate, or a test wired to a copy of its subject is found again. |
-| **B248** | S4 | SD12's stored plugin list; the refusal it would make is held since B307 by the composition | a client that lacks a plugin a document uses is put to use outside the tests. |
 | **B310** | S4 | the REST API's "anchor" means a grid point, the word the core's entity owns since O4 | an agent misreading the word, or the next change to `/layouts/<name>/anchors` or `/layouts/<name>/nearest`. |
 | **B253** | S4 | Two same-origin tabs share one outbox key; no divergence in 600 two-tab runs since the re-fetch (H19.16) | two-tab divergence is reported, or the outbox's storage is next changed |
 | **B254** | S4 | The answer to the tab's own undo can land mid-drag; 6 runs in 600 undo-heavy (H19.16) | a user reports a node jumping during a drag |

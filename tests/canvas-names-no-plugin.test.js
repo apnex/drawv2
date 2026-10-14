@@ -41,17 +41,15 @@ file -> { count, reason, cites, trigger }; a count may only fall, and a file not
 AMENDED H21.5 (R-b; dev/design/unification/RECORD-GUARDS.md section 3.3): each entry names the ids its reason cites and when it
 ends -- `permanent`, a WHEN expression, or the condition in words -- and every cited id must resolve (tools/exceptions.mjs).
 */
-const D2_LINK = 'a second plugin must judge or extend a link drag (B328)';
+const D2_LINK = 'permanent';
 const KIND_RECORD = {
-	'app/src/commands.js': { count: 9, cites: ['D2', 'B328'], trigger: D2_LINK,
+	'app/src/commands.js': { count: 9, cites: ['D2'], trigger: D2_LINK,
 		reason: 'the draw-a-link gesture\'s commit builders -- `routeLink`, `routeLinks`, `chainHop` -- its `.links` list, and the label of the pipes a refused drag keeps' },
-	'app/src/help.js': { count: 2, cites: ['B328'], trigger: 'each plugin brings its own help word through its canvas part',
-		reason: 'the help overlay\'s `zone:` and `link:` entries in `KIND_WORDS`' },
-	'app/src/input.js': { count: 9, cites: ['D2', 'B328'], trigger: D2_LINK,
+	'app/src/input.js': { count: 9, cites: ['D2'], trigger: D2_LINK,
 		reason: 'the draw-a-link gesture\'s name and its `link:` release-rule keys, the product\'s shared gesture with the network as its judge' },
-	'app/src/recognize.js': { count: 2, cites: ['D2', 'B328'], trigger: D2_LINK,
+	'app/src/recognize.js': { count: 2, cites: ['D2'], trigger: D2_LINK,
 		reason: 'the press row that opens the draw-a-link gesture, and its gesture name' },
-	'app/src/keymap.js': { count: 1, cites: ['D2', 'B328'], trigger: D2_LINK,
+	'app/src/keymap.js': { count: 1, cites: ['D2'], trigger: D2_LINK,
 		reason: 'the product\'s `w`, a stop of the draw-a-link gesture' },
 };
 const FIELD_RECORD = {
@@ -59,16 +57,10 @@ const FIELD_RECORD = {
 		reason: 'the palette widget\'s own DOM dataset (`item.dataset.type`) and drag state (`this.drag.type`) for the tile being dragged' },
 };
 const IMPORT_RECORD = {
-	'app/src/input.js': { count: 5, cites: ['D2', 'B328'], trigger: D2_LINK,
-		reason: 'the draw-a-link gesture: its route, its stops and the facts its judge reads -- the network\'s queries and rules, and the situation it reads' },
 	'app/src/main.js': { count: 2, cites: [], trigger: 'permanent',
 		reason: 'the page\'s composition root: it composes the network into the page, as product/ composes the kinds -- a composition root composes plugins by design' },
 	'app/src/run-mode.js': { count: 2, cites: ['H17-D7'], trigger: 'permanent',
 		reason: 'the product page\'s run-mode list: the simulation\'s spawner and tower, the devices plugin\'s panel rows -- the product\'s composition' },
-	'app/src/movers.js': { count: 3, cites: ['B329'], trigger: 'WHEN: `absent app/src/movers.js and absent app/src/reveal.js`',
-		reason: 'the simulation\'s movers, a page piece of the simulation living in the canvas folder' },
-	'app/src/reveal.js': { count: 1, cites: ['B329'], trigger: 'WHEN: `absent app/src/movers.js and absent app/src/reveal.js`',
-		reason: 'the simulation\'s reveal, likewise' },
 };
 
 test('C-f: no canvas module names a plugin\'s kind or imports a plugin, beyond the record', () => {
