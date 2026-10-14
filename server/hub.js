@@ -151,3 +151,17 @@ export class Hub {
 		});
 	}
 }
+
+/*
+B116/B114, B342 (H21.8) -- the one place agent activity and viewer presence are pushed, filtered per session.
+Lives in the hub so the hub's sessions (`server/protocol.js`), the server (`server/app.js`) and REST (`server/rest.js`) all
+call it without the hub importing the REST door.
+*/
+export function announceActivity(hub, store, locks) {
+	if (!hub) return;
+	const agents = locks ? locks.activity() : [];
+	hub.announceEach('agents', (s) => ({ agents: agents.filter((a) => store.canRead(a.diagram, s.principal)) }));
+	const viewers = hub.viewers();
+	hub.announceEach('viewers', (s) => ({ viewers: viewers.filter((v) => store.canRead(v.diagram, s.principal)) }));
+}
+

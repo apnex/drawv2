@@ -297,14 +297,12 @@ A named entity's name is unique across every named kind (N5).
 
 | This target states | The current instant | Carried by |
 |---|---|---|
-| a device the graph makes a junction draws its junction mark over its frame | nothing draws it | B331 |
 | the planner and the canvas take the network as any plugin, and the doors take it within the product's composition | the planner takes a `links` option and imports the network's layer; the canvas takes a `network` slot; each door composes the network's rows itself | B332 |
 | the core holds the palette and primitives no plugin owns; each plugin holds its colour roles and its frame and content drawing | the core's theme holds the zone, group, link and waypoint roles; its primitives draw a device's frame and content | B338 |
 | an agent reads an anchor's role; the CLI imports no product module | no door serves a role; the CLI imports product modules to derive combat and movers, and restates a rule | B339 |
 | each document lists the plugins it needs | no document does | B248 |
 | the download is drawn by the rendering run mode draws | the export door is a second renderer, naming kinds | B330 |
 | a part reads another plugin's kind only through the composition | the canvas reads the devices plugin's drawn word for a create label; the groups painter reads a device's span | B340 |
-| occupancy is the core's anchor capability | the occupancy index and the one-anchor-to-a-point invariant are the network layer's | B341 |
 | the simulation's page pieces are the simulation's | the movers and the reveal live in the canvas folder | B329 |
 | the canvas names no plugin's kind beyond D2's record of the draw-a-link gesture | the canvas names plugin kinds and imports plugin modules, each recorded in its ratchet's record (`tests/canvas-names-no-plugin.test.js`) | B328 |
 

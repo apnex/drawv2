@@ -86,7 +86,7 @@ export const PARTS = {
 	document: { duty: 'Hold one document\'s entities', kind: 'core', by: ['O1', 'O4', 'Q1'],
 		modules: ['model/model.mjs', 'model/anchors.mjs', 'model/ops.mjs', 'model/order.mjs', 'model/stacking.mjs'], consumes: ['kind-contract', 'lattice'] },
 	relations: { duty: 'Index which entities relate', kind: 'core', by: ['O1'],
-		modules: ['engine/relations.mjs', 'engine/ivm.mjs', 'engine/store.mjs'], consumes: ['document', 'kind-contract', 'lattice'], carried: { devices: 'B341' } },
+		modules: ['engine/relations.mjs', 'engine/ivm.mjs', 'engine/store.mjs'], consumes: ['document', 'kind-contract', 'lattice'] },
 	colours: { duty: 'Hold the colours every role draws from', kind: 'core', by: ['N1'],
 		modules: ['kernel/palette.mjs', 'kernel/theme.mjs'], consumes: [] },
 	primitives: { duty: 'Draw the shapes painters compose', kind: 'core', by: ['N1', 'D3'],
@@ -137,7 +137,7 @@ export const PARTS = {
 		modules: ['server/store.js', 'server/files.mjs', 'server/docfile.mjs', 'server/seed.js'],
 		consumes: ['document', 'kind-contract', 'lattice', 'planner', 'product', 'relations', 'access', 'placement'], carried: { network: 'B332' } },
 	hub: { duty: 'Carry each change to the tabs watching a document', kind: 'door', by: ['SD2'],
-		modules: ['server/hub.js', 'server/protocol.js', 'server/locks.js', 'server/sessionlog.mjs'], consumes: ['store', 'planner', 'document', 'kind-contract', 'access'], carried: { rest: 'B342' } },
+		modules: ['server/hub.js', 'server/protocol.js', 'server/locks.js', 'server/sessionlog.mjs'], consumes: ['store', 'planner', 'document', 'kind-contract', 'access'] },
 	rest: { duty: 'Answer agents over HTTP', kind: 'door', by: ['SD1', 'Q1'],
 		modules: ['server/rest.js', 'server/routes.mjs'],
 		consumes: ['store', 'hub', 'planner', 'document', 'kind-contract', 'product', 'lattice', 'access', 'layouts', 'network', 'devices', 'zones', 'groups'] },
@@ -198,7 +198,7 @@ export const ALLOWED = {
 	zones: ['core', 'layouts', 'zones'],   // O-b1 (H19.19): the zones plugin -- the zone kind; WD-b1: its extent is the zone layout's
 	groups: ['core', 'groups'],   // O-c (H19.20): the groups plugin -- the group kind and its rules; it imports the core and itself
 	devices: ['core', 'devices'],   // O-e1 (H19.21; O4): the devices plugin -- whether a device is composed on an anchor; it imports the core and itself
-	planner: ['core', 'network', 'planner'],   // O-d (H19.22): it composes nothing, so it imports no plugin
+	planner: ['core', 'planner'],   // O-d (H19.22): it composes nothing, so it imports no plugin
 	product: ['core', 'devices', 'network', 'layouts', 'zones', 'groups', 'simulation', 'product'],   // C-a (D3): the network's appearances on the anchor among the product's canvas parts   // O-d (H19.22): the product's composition -- the anchor and the shipped plugins
 	canvas: ['core', 'devices', 'network', 'layouts', 'zones', 'groups', 'planner', 'canvas'],
 	chrome: ['core', 'devices', 'network', 'layouts', 'zones', 'groups', 'planner', 'product', 'canvas', 'simulation', 'export', 'chrome'],
@@ -276,13 +276,13 @@ export const LAYER = {
 		'model/order.mjs',       // K15: the one derivation order, by id (B246)
 		'model/stacking.mjs',    // the drawing order as readers compare it -- the canvas, the network's ages (F-d)
 		'kernel/palette.mjs',    // every colour value, by name (Material, a neutral ladder, four custom); roles elsewhere name them
+		// B341 (H21.8; O1): the document invariants and the maintained relations/occupancy index are the core's anchor capability
+		'model/invariants.mjs',
+		'engine/relations.mjs', 'engine/store.mjs', 'engine/ivm.mjs',
 	],
 	network: [
 		// V-a (H18.25, PU22): the network's roles and appearance moved from kernel/ into network/, whose folder layer is this one
-		'model/invariants.mjs',   // the document invariants the planner checks
 		// S-e (H18.15): the link rules, the link reactions with `linkTenant`, and the pair capacity moved into network/ (G5)
-		'engine/relations.mjs', 'engine/store.mjs',        // the maintained reverse indices over the entity graph, link incidence among them
-		'engine/ivm.mjs',                                  // the index's generic mechanism; relations.mjs is its only user
 		'engine/situation.mjs',  // K5: what is true right now, as a value; O-e1 (H19.21): out of the core, since it names what is under the pointer by the devices plugin's drawn word
 	],
 	planner: [

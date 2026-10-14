@@ -85,6 +85,7 @@ const ALLOW = {
 	'planner/log.mjs:LOG_HARD_MAX': 'the hard ceiling that overrides the human floor. Same reason as LOG_MAX, and the interaction between the two is the property under test.',
 	'planner/txn.mjs:MAX_OPS': 'the per-transaction op cap. Asserted so the rejection is proven to happen BEFORE any write, which is a claim about ordering that needs the bound.',
 	'planner/validate.js:validateEntity': 'the per-entity half of the validator, called by validateDoc. Exported because 27 assertions exercise entity shapes directly -- span, content regions, node frame -- and routing each through a whole document would test the wrapper instead of the rule.',
+	'devices/occupancy.mjs:occupiedAt': 'whether a device rests on a cell (O-e1, H19.21), moved off Model#occupiedAt; 29 assertions in tests/engine.test.js, tests/span.test.js, tests/wide-devices.test.js and tests/devices-plugin.test.js hold device-vs-waypoint cell occupancy over the core index (B341).',
 	'cli/verbs.mjs:isWaypoint': 'the CLI`s restatement of model/anchors.mjs`s question -- a node with no type -- which it cannot import (B138). Its production callers are `viewOf`, `map` and `set` in the same file; the test holds it to model/anchors.mjs`s answer over one document.',
 };
 

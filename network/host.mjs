@@ -141,16 +141,16 @@ export function attachNetwork({ session, model, renderer, selection, edit, pipeL
 	joined into how many links (2026-10-02), then what is down -- is said when the planner answers, from the answer's ops.
 	A toggle that changes nothing (every anchor refused) commits nothing, and settles at once.
 	*/
-	let pendingTransit = null;
+	const pendingTransit = [];
 	session.onTransitChange((ids, entries) => {
 		const said = session.takeNotice() ?? '';
 		if (!entries?.length) { settle(''); say(`${said}${downSummary(model)}`); return; }
-		pendingTransit = said;
+		pendingTransit.push(said);
 		edit('transit', entries);   // through the canvas's generic builder -- the network builds no command by hand (D5)
 		for (const id of ids) { const e = model.endpointOf(id); if (e) renderer.render(kindOf(id), e); }   // the ring, at once
 	});
 	const transitNotice = (answer) => {
-		const said = pendingTransit; pendingTransit = null;
+		const said = pendingTransit.shift() ?? '';
 		const { cut, joined, opened, closed } = transitSummary(answer.change?.ops ?? answer.ops ?? []);
 		const rings = (n, did) => (n ? ` -- ${n} ring${n === 1 ? '' : 's'} ${did}` : '');   // B299
 		say(`${said}${rings(opened, 'opened')}${cut ? ` -- ${cut.links} link${cut.links === 1 ? '' : 's'} cut into ${cut.pieces} pieces` : ''}${joined ? ` -- ${joined.pieces} pieces joined into ${joined.links} link${joined.links === 1 ? '' : 's'}` : ''}${rings(closed, 'closed again')}${downSummary(model)}`);
@@ -164,7 +164,7 @@ export function attachNetwork({ session, model, renderer, selection, edit, pipeL
 	const answered = (request, answer, apply) => {
 		const accepted = session.answered(answer, model, apply);
 		if (accepted) settled(request, answer);
-		if (!accepted && request.label === 'transit') pendingTransit = null;
+		if (!accepted && request.label === 'transit') pendingTransit.shift();
 		return accepted;
 	};
 	/*
@@ -173,7 +173,7 @@ export function attachNetwork({ session, model, renderer, selection, edit, pipeL
 	*/
 	const settled = (request, answer) => {
 		settle(`v${answer.version ?? '?'} ${request.verb ?? request.label ?? ''}`);
-		if (request.label === 'transit' && pendingTransit !== null) transitNotice(answer);   // the transit edit's own notice (F-e)
+		if (request.label === 'transit' && pendingTransit.length > 0) transitNotice(answer);   // the transit edit's own notice (F-e)
 		whyAgain();   // B296
 	};
 	const refused = (answer) => { settle(''); say(`refused: ${answer.error}`); whyAwaits = false; };

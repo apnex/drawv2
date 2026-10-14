@@ -12,7 +12,6 @@ put, set or delete re-derives the waypoints at its ends and bends, since their r
 
 import { STD, BEND_R } from '../kernel/spec.mjs';
 import { roundedPath } from '../kernel/router.mjs';
-import { bareAnchor } from '../devices/device-shapes.mjs';
 import { linkAppearance, APPEARANCE_KEYS } from './appearance.mjs';
 import { pathOf, isLinkDown } from './network-queries.mjs';
 
@@ -99,7 +98,7 @@ const LINK_PAINTER = {
 	Re-rendered rather than patched: the role decides fill, radius, stroke width and class together,
 	and setting those four from here would be a second copy of the drawing.
 	*/
-	redraws: (link, { model }) => [link.src, link.dst, ...(link.via || [])].map((id) => bareAnchor(model, id)).filter(Boolean).map((w) => ['node', w]),
+	redraws: (link, { model }) => [link.src, link.dst, ...(link.via || [])].map((id) => model.endpointOf(id)).filter(Boolean).map((w) => ['node', w]),
 };
 
 export const LINK_PAINTERS = [LINK_PAINTER];

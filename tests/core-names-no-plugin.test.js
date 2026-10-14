@@ -99,9 +99,6 @@ const PRODUCT_KIND_RECORD = {
 	'cli/verbs.mjs': { count: 139, cites: ['from B138', 'B282', 'B339'],
 		reason: 'the CLI\'s standalone verbs and local derivations over every collection and kind (B138, B339)',
 		trigger: 'the CLI asks the server for what the server derives (B339) and dispatches per-kind verbs from one table (B282)' },
-	'engine/relations.mjs': { count: 6, cites: ['B341'],
-		reason: 'the link-incidence view living beside the core\'s occupancy index in the network layer (B341)',
-		trigger: 'occupancy is the core\'s anchor capability, apart from the network\'s link incidence (B341)' },
 	'engine/situation.mjs': { count: 2, cites: ['D2', 'B328'],
 		reason: 'the pointer situation naming `link` for the draw-a-link gesture and a selected link (D2, B328)',
 		trigger: 'a second plugin must judge or extend a link drag, or the situation reads what a part exposes (B328)' },
@@ -231,7 +228,8 @@ test('O-d: the core holds the anchor\'s storage row alone; its checks are compos
 test('O-d: the planner composes nothing and imports no plugin', () => {
 	assert.equal(fs.existsSync(path.join(root, 'planner/kinds.mjs')), false, 'the product\'s composition left the planner');
 	assert.equal(fs.existsSync(path.join(root, 'planner/policy.mjs')), false, 'and the cap arithmetic it held went with the kinds it capped');
-	assert.deepEqual(ALLOWED.planner, ['core', 'network', 'planner'], 'the planner may import the core, the network\'s rung and itself');
+	// RESTATED at H21.8 (B332, B341): model/invariants.mjs is in core, so the planner imports the core and itself alone
+	assert.deepEqual(ALLOWED.planner, ['core', 'planner'], 'the planner may import the core and itself alone');
 	for (const f of plannerModules()) assert.doesNotMatch(code(f), /from '\.\.\/(zones|groups|devices|product|engine)\//, `${f} imports a plugin`);
 	assert.equal(ALLOWED.cli.includes('planner'), false, 'the CLI\'s interim allowance is gone: it reads with the product\'s composition');
 });

@@ -111,7 +111,7 @@ The anchored core's parts, declared once in `tools/layers.mjs` `PARTS` and rende
 | `lattice` | Compute geometry on the grid | core | `kernel/geometry.mjs`, `kernel/spec.mjs`, `kernel/router.mjs`, `model/surface.mjs` | -- |
 | `kind-contract` | Compose kinds from the rows plugins declare | core | `model/shape.mjs`, `model/limits.mjs` | -- |
 | `document` | Hold one document's entities | core | `model/model.mjs`, `model/anchors.mjs`, `model/ops.mjs`, `model/order.mjs`, `model/stacking.mjs` | `kind-contract` |
-| `relations` | Index which entities relate | core | `engine/relations.mjs`, `engine/ivm.mjs`, `engine/store.mjs` | `devices`, `document` |
+| `relations` | Index which entities relate | core | `engine/relations.mjs`, `engine/ivm.mjs`, `engine/store.mjs` | `document` |
 | `colours` | Hold the colours every role draws from | core | `kernel/palette.mjs`, `kernel/theme.mjs` | -- |
 | `primitives` | Draw the shapes painters compose | core | `kernel/renderer.mjs` | `colours`, `lattice` |
 | `rules` | Match an input to one declared row | core | `kernel/input-rules.mjs` | -- |
@@ -132,7 +132,7 @@ The anchored core's parts, declared once in `tools/layers.mjs` `PARTS` and rende
 | `access` | Establish who a request comes from | door | `server/identity.mjs`, `server/codes.mjs`, `server/origin.mjs` | -- |
 | `placement` | Choose the free anchor a relationship names | door | `server/anchor.mjs` | `devices`, `document`, `lattice` |
 | `store` | Keep documents durable | door | `server/store.js`, `server/files.mjs`, `server/docfile.mjs`, `server/seed.js` | `access`, `document`, `kind-contract`, `lattice`, `network`, `placement`, `planner`, `product` |
-| `hub` | Carry each change to the tabs watching a document | door | `server/hub.js`, `server/protocol.js`, `server/locks.js`, `server/sessionlog.mjs` | `kind-contract`, `rest` |
+| `hub` | Carry each change to the tabs watching a document | door | `server/hub.js`, `server/protocol.js`, `server/locks.js`, `server/sessionlog.mjs` | `kind-contract` |
 | `rest` | Answer agents over HTTP | door | `server/rest.js`, `server/routes.mjs` | `devices`, `document`, `groups`, `hub`, `kind-contract`, `lattice`, `layouts`, `network`, `zones` |
 | `cli` | Give an agent one command per verb | door | `cli/` | `network`, `product`, `simulation` |
 | `export` | Render a document without a browser | door | `kernel/adapt.mjs`, `kernel/engine.mjs`, `kernel/svg-scene.mjs`, `server/svg.mjs` | `colours`, `devices`, `lattice`, `network`, `primitives` |
@@ -154,9 +154,7 @@ Each import between two parts that the target's consumes do not allow, read from
 | `cli` | `simulation` | B339 | `cli/verbs.mjs` |
 | `export` | `devices` | B330 | `kernel/svg-scene.mjs`, `server/svg.mjs` |
 | `export` | `network` | B330 | `kernel/engine.mjs`, `kernel/svg-scene.mjs`, `server/svg.mjs` |
-| `hub` | `rest` | B342 | `server/protocol.js` |
-| `network` | `devices` | B282 | `network/anchor-appearance.mjs`, `network/anchor-points.mjs`, `network/keys.mjs`, `network/link-clone.mjs`, `network/link-keys.mjs`, `network/link-painter.mjs`, `network/link-reactions.mjs`, `network/link-references.mjs`, `network/selection-reflects.mjs`, `network/transit-offers.mjs`, `network/transit.mjs` |
-| `relations` | `devices` | B341 | `engine/relations.mjs` |
+| `network` | `devices` | B282 | `network/anchor-appearance.mjs`, `network/anchor-points.mjs`, `network/keys.mjs`, `network/link-clone.mjs`, `network/link-keys.mjs`, `network/link-reactions.mjs`, `network/link-references.mjs`, `network/selection-reflects.mjs`, `network/transit-offers.mjs`, `network/transit.mjs` |
 | `simulation` | `canvas` | B329 | `engine/spawn-runs.mjs` |
 | `simulation` | `renderer` | B329 | `app/src/movers.js` |
 | `store` | `network` | B332 | `server/seed.js`, `server/store.js` |
@@ -177,7 +175,7 @@ A module belongs to one layer, and a layer imports only what it may (`tools/laye
 | `zones` | regions of cells | `core`, `layouts` |
 | `groups` | named sets of anchors | `core` |
 | `devices` | what a device composed onto an anchor is, and how it looks | `core` |
-| `planner` | the one write: plan, commit, undo, redo, the log and validation | `core`, `network` |
+| `planner` | the one write: plan, commit, undo, redo, the log and validation | `core` |
 | `product` | the product's composition of the plugins: its kinds and its canvas parts | `core`, `devices`, `network`, `layouts`, `zones`, `groups`, `simulation` |
 | `canvas` | turning input into edits, and a document into a drawing, through the plugins' parts | `core`, `devices`, `network`, `layouts`, `zones`, `groups`, `planner` |
 | `chrome` | the production page around the canvas: sync, status, palette, readouts and its composition root | `core`, `devices`, `network`, `layouts`, `zones`, `groups`, `planner`, `product`, `canvas`, `simulation`, `export` |

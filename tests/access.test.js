@@ -1800,7 +1800,8 @@ test('B116: the pushed agent list never names a diagram the receiver may not rea
 
 	const locks = new Locks();
 	locks.acquire(secret, 'agent:planner');
-	const { announceActivity } = await import('../server/rest.js');
+	// RESTATED at H21.8 (B342): announceActivity lives in server/hub.js
+	const { announceActivity } = await import('../server/hub.js');
 	announceActivity(hub, store, locks);
 
 	const toGuest = gws.last('agents').body.agents;
@@ -1829,7 +1830,8 @@ test('B114: presence is pushed on the same terms, and derived from the live sess
 	assert.deepEqual(hub.viewers().map((v) => [v.principal, v.diagram]).sort(),
 		[[GUEST, mine], [OWNER, secret]].sort(), 'derived from the registry, not tracked');
 
-	const { announceActivity } = await import('../server/rest.js');
+	// RESTATED at H21.8 (B342): announceActivity lives in server/hub.js
+	const { announceActivity } = await import('../server/hub.js');
 	announceActivity(hub, store, null);
 	assert.deepEqual(gws.last('viewers').body.viewers.map((v) => v.diagram), [mine],
 		'the guest learns only about the diagram it may read -- not that the owner is on another');

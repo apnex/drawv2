@@ -33,7 +33,7 @@ refused and the client is resynced read-only — it can never clobber the contro
 // the wire shape has one definition. `locked` tells a client, on any snapshot,
 // whether the diagram is currently Server-Locked (read-only for it).
 import crypto from 'node:crypto';
-import { announceActivity } from './rest.js';
+import { announceActivity } from './hub.js';
 import { NAME_MAX } from '../model/limits.mjs';   // truncates where validate.js rejects (B86)
 
 /*

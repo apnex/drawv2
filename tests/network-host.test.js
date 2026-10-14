@@ -177,3 +177,35 @@ test('B283: turning transit off at two pins of one link at once makes three stra
 	assert.deepEqual(shape(), [`${S}>${E}[${A},${B}]`], 'turned back on, they join into the one link, pinned at both');
 	assert.ok(model.get('link', 'link-000001'), 'with the id it was drawn with');
 });
+
+// B348 (H21.8): on the product page two `x` presses can leave before the first `ack` arrives; `pendingTransit` must be a FIFO
+// queue so the first `settled` does not consume the second toggle's notice and leave the second saying `v3 transit`
+test('B348: two transit toggles sent before the first answer arrives keep each toggle\'s notice in FIFO order', () => {
+	const session = createNetworkSession();
+	const model = new Model({ kinds: productKinds(...NETWORK_ROWS), attached: { network: session.network } });
+	attachRelations(model, { cellOf });
+	const P = 'node-00000a';
+	model.put('node', { id: P, name: 'P', x: 0, y: 0 });
+	const toOp = (e) => (e.op === 'set' ? { op: 'set', kind: e.kind, id: e.id, patch: e.after } : e);
+	const inFlight = [], said = [];
+	const f = fakeLayer();
+	const net = attachNetwork({
+		session, model, renderer: { update: () => {}, reflectSelection: () => {}, render: () => {}, watchMode: () => {} },
+		selection: { subscribe: () => {}, list: () => [] },
+		edit: (label, entries) => {
+			const c = editOf(label, entries);
+			const r = plan(model, c.entries.map(toOp), { links: session.network.links, kinds: productKinds(...NETWORK_ROWS) });
+			applyOps(model, r.ops);   // previewed locally before the server's ack returns
+			inFlight.push({ req: c, ans: { ok: true, version: inFlight.length + 2, ops: r.ops } });
+		},
+		pipeLayer: f.root, el: f.el, say: (t) => said.push(t),
+	});
+	session.toggleTransit([{ ...model.get('node', P), kind: 'node' }]);
+	session.toggleTransit([{ ...model.get('node', P), kind: 'node' }]);
+	assert.equal(inFlight.length, 2, 'two toggles on the wire before the first ack arrives');
+	net.settled(inFlight[0].req, inFlight[0].ans);
+	assert.equal(said.at(-1), 'transit off at P');
+	net.settled(inFlight[1].req, inFlight[1].ans);
+	assert.equal(said.at(-1), 'transit on at P', 'the second toggle says its own notice, not v3 transit');
+});
+

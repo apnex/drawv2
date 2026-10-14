@@ -89,3 +89,25 @@ test('C-a: a malformed appearance or order is refused when the canvas is built, 
 	refused({ owner: 'p', appearances: [{ id: 'marks', kind: 'node', state: () => 'm', composes: true }] }, /Renderer: appearance marks is brought by network and by p/);
 	refused({ owner: 'p', orders: { node: { layers: [], ranks: [] } } }, /Renderer: the order for node is declared by the product and by p/);
 });
+
+// B331 (H21.8; ruled 2026-09-22, D3): appearance resolves per state -- a device that the graph makes a junction draws its
+// junction mark (`wp-junction`) composed over its frame, while an endpoint device draws none
+test('B331: a device that the graph makes a junction draws its junction mark composed over its frame; an endpoint device does not', async () => {
+	const parts = await canvas();
+	const { svg, restore } = makeRenderer();
+	try {
+		const m = new Model();
+		new Renderer(m, svg, { parts });
+		m.put('node', { id: 'node-0e3010', name: 'r', type: 'router', shape: 'circle', x: 0, y: 0 });
+		m.put('node', { id: 'node-0e3011', name: 'a', type: 'host', shape: 'circle', x: -120, y: 0 });
+		m.put('node', { id: 'node-0e3012', name: 'b', type: 'host', shape: 'circle', x: 120, y: 0 });
+		m.put('link', { id: 'link-0e3020', name: 'l1', src: 'node-0e3011', dst: 'node-0e3010' });
+		const routerEl = () => svg.ownerDocument.getElementById('node-0e3010');
+		assert.equal(classesIn(routerEl()).includes('wp-junction'), false, 'control: an endpoint router draws no junction mark');
+		// pin a link through the router so the graph makes it a junction
+		m.put('link', { id: 'link-0e3021', name: 'l2', src: 'node-0e3011', dst: 'node-0e3012', via: ['node-0e3010'] });
+		assert.equal(classesIn(routerEl()).includes('wp-junction'), true, 'a junction router draws wp-junction composed over its frame');
+		assert.equal(classesIn(routerEl()).includes('wp-anchor'), false, 'and still no waypoint anchor ring');
+	} finally { restore(); }
+});
+

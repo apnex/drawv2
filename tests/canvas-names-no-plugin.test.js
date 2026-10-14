@@ -73,8 +73,6 @@ const IMPORT_RECORD = {
 		reason: 'the page\'s composition root: it composes the network into the page, as product/ composes the kinds -- a composition root composes plugins by design' },
 	'app/src/run-mode.js': { count: 2, cites: ['H17-D7'], trigger: 'permanent',
 		reason: 'the product page\'s run-mode list: the simulation\'s spawner and tower, the devices plugin\'s panel rows -- the product\'s composition' },
-	'app/src/compose-canvas.js': { count: 1, cites: ['B332'], trigger: 'the canvas takes the network as a generic plugin, not a slot of its own (B332, H21.8)',
-		reason: 'the relations index -- the occupancy index, on the network\'s rung -- attached at the composition root' },
 	'app/src/movers.js': { count: 3, cites: ['B329'], trigger: 'WHEN: `absent app/src/movers.js and absent app/src/reveal.js`',
 		reason: 'the simulation\'s movers, a page piece of the simulation living in the canvas folder' },
 	'app/src/reveal.js': { count: 1, cites: ['B329'], trigger: 'WHEN: `absent app/src/movers.js and absent app/src/reveal.js`',

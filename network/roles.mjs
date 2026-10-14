@@ -10,6 +10,7 @@ is, so the canvas and the export cannot disagree.
 
 import { stopsAt } from './network-queries.mjs';   // the network's questions over a Model (Q-a)
 import { linksAt } from './link-queries.mjs';   // which links meet an anchor (K13d)
+import { nodePermitsBend } from './transit-offers.mjs';
 /*
 The bend/endpoint rule, in ONE place, because two renderers need the same answer.
 
@@ -175,8 +176,13 @@ there -- and not the declaration, which only draws the ring (B278): a type offer
 nothing. The Model is read by shape -- `kernel/` imports no `model/` -- so a model with no network, where nothing stops,
 gets the transiting roles it always had.
 */
-export const waypointRolesIn = (model, id) =>
-	waypointRoles(id, linksAt(model, id), { transit: !stopsAt(model, id) });   // K13d: the links are the network's own query
+export const waypointRolesIn = (model, id) => {
+	const touching = linksAt(model, id), transit = !stopsAt(model, id);
+	const roles = waypointRoles(id, touching, { transit });
+	const entity = model.endpointOf?.(id) ?? model.get?.('node', id);
+	if (transit && !roles.includes('junction') && entity && !nodePermitsBend(entity) && touching.some((l) => (l.via ?? []).includes(id))) return ['junction'];
+	return roles;
+};
 
 /*
 The single role, for callers that still ask for one. Derived from the set so there is one

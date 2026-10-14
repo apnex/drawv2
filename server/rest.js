@@ -10,6 +10,7 @@ exactly one side writes at a time.
 import { layoutRecords } from '../layouts/layout-records.mjs';   // WD8 (H19.45): the list the agent API serves
 import { linksOf, linksAt, makeLink } from '../network/link-queries.mjs';   // which links meet an anchor: the network's (K13d)
 import { snapshotBody, changeBody, reversalBody } from './protocol.js';
+import { announceActivity } from './hub.js';   // B342 (H21.8): in the hub, so the hub does not import REST
 import { LAYOUTS, nearestAnchor, anchorAt } from '../kernel/geometry.mjs';
 import { NODE_EXT } from '../model/surface.mjs';
 import { makeZone } from '../zones/make-zone.mjs';   // the zones plugin's factory (O-b1)
@@ -53,13 +54,7 @@ filtered the pull and not the push, which told a session the ids of diagrams it 
 Exported so the websocket and the sweep timer push exactly what REST pushes -- three call sites, one
 sentence, which is the thing that went wrong when there were three sentences.
 */
-export function announceActivity(hub, store, locks) {
-	if (!hub) return;
-	const agents = locks ? locks.activity() : [];
-	hub.announceEach('agents', (s) => ({ agents: agents.filter((a) => store.canRead(a.diagram, s.principal)) }));
-	const viewers = hub.viewers();
-	hub.announceEach('viewers', (s) => ({ viewers: viewers.filter((v) => store.canRead(v.diagram, s.principal)) }));
-}
+
 
 // which collection an id belongs to, without the caller having to say
 function entityIn(model, id) {

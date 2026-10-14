@@ -13,14 +13,14 @@ const links = (model) => (model.kinds?.has('link') === false ? [] : model.all('l
 
 // every link ending at this anchor -- src or dst
 export function linksOf(model, nodeId) {
-	if (model.index) return model.index.linksOf(nodeId);
+	if (model.index) return model.index.referrersOf(nodeId, 'link').filter((l) => l.src === nodeId || l.dst === nodeId);
 	return links(model).filter((l) => l.src === nodeId || l.dst === nodeId).sort(byId);
 }
 
 // every link referencing this anchor in ANY role -- an end or a bend; for a waypoint, the link it serves -- used for
 // occupancy ("free" = none), reflow on a move, and the delete cascade
 export function linksAt(model, waypointId) {
-	if (model.index) return model.index.linksAt(waypointId);
+	if (model.index) return model.index.referrersOf(waypointId, 'link');
 	return links(model).filter((l) =>
 		l.src === waypointId || l.dst === waypointId || (Array.isArray(l.via) && l.via.includes(waypointId))).sort(byId);
 }
@@ -28,13 +28,12 @@ export function linksAt(model, waypointId) {
 // whether a and b are joined at all: AN end-pair link, the lowest id among them (B246) -- since B72 a pair may carry several,
 // so reason about which with `linksBetween`
 export function linkBetween(model, a, b) {
-	if (model.index) return model.index.linkBetween(a, b);
 	return linksBetween(model, a, b)[0];
 }
 
 // every link joining a and b, either way (B80): a pair may hold a straight link and routed ones beside it
 export function linksBetween(model, a, b) {
-	if (model.index) return model.index.linksBetween(a, b);
+	if (model.index) return model.index.referrersOf(a, 'link').filter((l) => (l.src === a && l.dst === b) || (l.src === b && l.dst === a));
 	return links(model).filter((l) =>
 		(l.src === a && l.dst === b) || (l.src === b && l.dst === a)).sort(byId);
 }

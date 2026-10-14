@@ -81,14 +81,14 @@ function composeParts(parts, svg) {
 			if (typeof a.state !== 'function') throw new Error(`Renderer: ${part.owner}'s appearance ${a.id} has no state`);
 			const stray = Object.keys(a.parts ?? {}).filter((l) => !order.layers.includes(l) || l === SESSION_LAYER);
 			if (stray.length) throw new Error(`Renderer: ${part.owner}'s appearance ${a.id} draws into layer ${stray.join(', ')}, which the order for ${a.kind} does not list`);
-			if (!a.composes) {
+			if (a.composes !== true) {
 				if (!a.root || typeof a.root.class !== 'function') throw new Error(`Renderer: ${part.owner}'s appearance ${a.id} competes and names no root`);
 				if (!order.ranks.includes(a.id)) throw new Error(`Renderer: ${part.owner}'s appearance ${a.id} competes and the order for ${a.kind} does not rank it`);
 				const layer = svg.querySelector(`#${a.root.layer}`);
 				if (!layer) throw new Error(`Renderer: ${part.owner}'s appearance ${a.id} draws into #${a.root.layer}, which the page does not have`);
 			}
 			if (!appearances.has(a.kind)) appearances.set(a.kind, []);
-			appearances.get(a.kind).push({ ...a, owner: part.owner, layerEl: a.composes ? null : svg.querySelector(`#${a.root.layer}`) });
+			appearances.get(a.kind).push({ ...a, owner: part.owner, layerEl: a.composes === true ? null : svg.querySelector(`#${a.root.layer}`) });
 		}
 	}
 	return { painters: composePainters(parts, svg), appearances, orders };
@@ -382,8 +382,9 @@ export class Renderer {
 		const kit = this.kit(), ranks = this.orders.get(kind).ranks;
 		const applying = this.appearances.get(kind).map((a) => ({ a, state: a.state(entity, kit) })).filter((x) => x.state != null);
 		const composes = (x) => (typeof x.a.composes === 'function' ? x.a.composes(x.state) : !!x.a.composes);
-		const winner = applying.filter((x) => !composes(x)).sort((p, q) => ranks.indexOf(p.a.id) - ranks.indexOf(q.a.id))[0];
-		return winner ? { winner, composers: applying.filter(composes) } : null;
+		const ranked = applying.filter((x) => x.a.composes !== true).sort((p, q) => ranks.indexOf(p.a.id) - ranks.indexOf(q.a.id));
+		const winner = ranked[0];
+		return winner ? { winner, composers: applying.filter((x) => x !== winner && composes(x)) } : null;
 	}
 
 	// what an entity was drawn by: its winner and state, the composers and theirs, and the winner's structure

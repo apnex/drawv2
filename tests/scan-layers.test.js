@@ -300,7 +300,8 @@ re-points it.
 */
 const MAN = 'tools/layers.mjs';
 const MUTANTS = [
-	{ id: 'M1', rule: 'L2', also: ['L3'], edits: [{ file: 'kernel/spec.mjs', append: "\nimport { violations } from '../model/invariants.mjs';\n" }] },
+	// RESTATED at H21.8 (B341): model/invariants.mjs is core now, so M1 imports model/ (L3) and network/ (L2)
+	{ id: 'M1', rule: 'L2', also: ['L3'], edits: [{ file: 'kernel/spec.mjs', append: "\nimport { violations } from '../model/invariants.mjs';\nimport { splitAtBend } from '../network/link-rules.mjs';\n" }] },
 	// K5: the situation is core now, so a canvas reaching the SIMULATION is shown with the movers
 	{ id: 'M2', rule: 'L2', edits: [{ file: 'app/src/input.js', append: "\nexport async function __m2() { return (await import('../../engine/movers.mjs')).moversAt; }\n" }] },
 	{ id: 'M3', rule: 'L5p', edits: [{ file: 'kernel/spec.mjs', append: '\nexport const linkLength = (link) => (link.via ? link.via.length + 1 : 1);\n' }] },
@@ -330,7 +331,8 @@ const MUTANTS = [
 	// accepting only its own kind (planted and caught when the literal went).
 	// a core barrel forwarding network code, and one forwarding simulation code under a listed name
 	// K2c: with the barrels gone, a core module that starts forwarding network code IS a new barrel, so it fails L4 too
-	{ id: 'A5', rule: 'L2', also: ['L4'], edits: [{ file: 'model/limits.mjs', append: "export { violations } from './invariants.mjs';\n" }] },
+	// RESTATED at H21.8 (B341): model/invariants.mjs is core now, so A5 forwards from network/link-rules.mjs
+	{ id: 'A5', rule: 'L2', also: ['L4'], edits: [{ file: 'model/limits.mjs', append: "export { splitAtBend } from '../network/link-rules.mjs';\n" }] },
 	/*
 	K2a: the second edit is gone. It existed only to keep L10 quiet -- `model/index.mjs` was in the
 	planner's unused list, so a new re-export there needed listing too, or the mutant would have
