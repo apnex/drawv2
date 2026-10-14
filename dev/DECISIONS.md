@@ -1973,3 +1973,9 @@ Shown: docs/ARCHITECTURE-TARGET.md@cb87575\
 Affects: docs/ARCHITECTURE-TARGET.md\
 Recorder: asked whether an edit that tries to run a link through a device that cannot pass links is refused or cut in two -- keeping the current split (refuse for a type that never passes links; cut in two when a device's transit switch is off; recommended) versus refusing in both cases -- the director chose "continue" (the recommended split). A type offering no passage refuses a pin in the validator (`2026-09-22`), while a stop whose per-device transit switch is off cuts the link into two links ending there (`TR-2`, `TR-2b`, `Z1`, `B303`), the same at every door; `SD5` leaves the target's section 9.1.
 
+**U4-2 -- the CLI asks the server for the device types, and each type's map letter lives on its declaration in the devices plugin -- 2026-10-14 (H21.3, B282).**\
+Director: "continue"\
+Shown: docs/ARCHITECTURE-TARGET.md@4bcde50\
+Affects: docs/ARCHITECTURE-TARGET.md\
+Recorder: asked how the CLI learns the device types and their single-letter map symbols -- asking the server for the types with each type's map letter on its declaration in the devices plugin (recommended) versus keeping a standalone copy in `cli/verbs.mjs` held equal by a gate test (`B167`) -- the director chose "continue" (the recommended option). The server serves the declared device types and their map letters, the CLI reads them from the server (`SD1`), and the CLI's three per-type tables (`NODE_TYPES`, `GLYPH`, `LEGEND`) and `B167`'s copy check retire when `H21.3` builds this; `U4-2` leaves the target's section 9.1.
+
