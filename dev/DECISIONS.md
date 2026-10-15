@@ -2060,5 +2060,11 @@ Shown: docs/spec/ATOMICS.md@08ecb86\
 Affects: docs/spec/ATOMICS.md, dev/design/arrows/README.md\
 Recorder: shown a page of mockups, outside the repository and kept as `dev/design/arrows/issue1-placement.html` -- three line treatments (plain lines run in with arrowed lines stopping at the head; every line runs in; every line ends at the outline) at 0, 3 and 6 px, across a device, a selected and grouped device, a round device, a control link, a diagonal, a wide device, an endpoint, a junction, two opposed links and a waypoint with transit off, beside a square and a round port -- after the director observed that an arrowhead sits where a port would and that 6 px may be too far, and that they have always liked lines running into a junction, the director chose "every line runs in" at 0 px, as recommended, "for now". Every line runs to its anchor's centre, as today; the head's tip sits on the anchor's outline, measured along the line -- a device's frame (square, round, or a wide device's rectangle) or a waypoint's outer ring -- and the head is drawn over the anchor. A known cost, accepted: a group's outline, and on a diagonal the selection brackets, cross the tip. The head's size is issue 2.
 
+**H24.6-2 -- arrowheads, issue 2: a head is 4 line widths long and never under 18 px -- 2026-10-15 (B356).**\
+Director: "Agree with F."\
+Shown: docs/spec/ATOMICS.md@9d7845b\
+Affects: docs/spec/ATOMICS.md, dev/design/arrows/README.md\
+Recorder: shown a page of head sizes at the ruled placement, outside the repository and kept as `dev/design/arrows/issue2-size.html` -- today's 5 line widths (30 px on a data link, 18 on a control link), 4 line widths (24, 14), 3 (18, 11), one size of 24 or of 18 for every link, and 4 line widths with a floor of 18 (24, 18) -- across a data link, a control link, both on one device, a selected and grouped device, a junction, an endpoint, two opposed links, a diagonal and the same at half zoom, the director agreed with the recommended F: a head is 4 line widths long, never under 18 px -- 24 px on a 6 px data link and 18 px on a 3.6 px control link, so a control link's head stays visible at half zoom and still reads lighter than a data link's. The head's shape is asked next.
+
 
 

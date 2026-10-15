@@ -403,6 +403,6 @@ Each decision is recorded here as it is ruled; until then the arrowhead is as H1
 | # | Issue | Decision |
 |---|---|---|
 | 1 | Placement: the line runs to the device's centre, so the head lies under the device | ruled for now (H24.6-1): every line runs to its anchor's centre, as today, and the head's tip sits ON the anchor's outline, measured along the line -- a device's frame (square, round, or a wide device's rectangle) or a waypoint's outer ring -- with the head drawn over the anchor; a group's outline, and on a diagonal the selection brackets, cross the tip (accepted). Mockups: `dev/design/arrows/issue1-placement.html` |
-| 2 | Control links: a thinner line makes a smaller head, wholly hidden | open |
+| 2 | Control links: a thinner line makes a smaller head, wholly hidden | ruled (H24.6-2): a head is 4 line widths long and never under 18 px -- 24 px on a 6 px data link, 18 px on a 3.6 px control link; with the tip on the outline (H24.6-1) a control link's head shows, and still reads lighter than a data link's. Mockups: `dev/design/arrows/issue2-size.html` |
 | 3 | Selection: a selected link turns green and its head stays blue (B226) | open |
 | 4 | Long links: the direction shows only at the far end | open |
