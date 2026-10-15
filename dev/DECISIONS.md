@@ -2003,5 +2003,8 @@ Shown: dev/BOARD.md@8c9554b\
 Affects: docs/spec/ACCESS.md\
 Recorder: asked where a published diagram's SVG is embedded from, because the classic load balancer cannot route `/<id>.svg` outside IAP -- Option 1, the existing IAP-free `/connect/svg/<id>.svg` (recommended), Option 2, migrating `map-apnex-io` to the global external load balancer (`EXTERNAL_MANAGED`) to keep the approved `/<id>.svg`, or doing nothing -- the director approved Option 2: the backend services, the backend bucket and the forwarding rules behind `map-apnex-io` move from `EXTERNAL` to `EXTERNAL_MANAGED` through Google's staged migration (`PREPARE`, `TEST_BY_PERCENTAGE`, `TEST_ALL_TRAFFIC`, then the scheme), and `path-draw` gains a route rule sending `/<id>.svg` to `svc-draw-connect`.
 
+AMENDED 2026-10-15 -- **H23, refined by the director** (H23.6), after publishing a diagram: "Small visual style - can we make the button highlight a pale/light green when we change from private to public, rather than the text?".
+`#publish` shows public with a pale green background, Light Green 200 lifting to Light Green 100 on hover, and dark text, where it had turned its text green.
+
 
 

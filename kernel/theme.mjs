@@ -74,6 +74,7 @@ export const CHROME_ROLES = {
 	agentsNoneHover: 'neutral30', agentsNoneInkHover: 'grey500',
 	whoami: 'blueGrey900', whoamiHover: 'blueGrey800',
 	codeNew: 'greenDim',
+	publishPublic: 'lightGreen200', publishPublicHover: 'lightGreen100', publishPublicInk: 'neutral1a',   // H23.6: published lights the button, not its text
 	restore: 'blueGrey900', restoreBorder: 'grey800',
 };
 export const CHROME = resolveRoles(CHROME_ROLES);

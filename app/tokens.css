@@ -59,6 +59,9 @@
 	--tok-whoami: #263238;   /* blueGrey900 */
 	--tok-whoami-hover: #37474f;   /* blueGrey800 */
 	--tok-code-new: #12180c;   /* greenDim */
+	--tok-publish-public: #c5e1a5;   /* lightGreen200 */
+	--tok-publish-public-hover: #dcedc8;   /* lightGreen100 */
+	--tok-publish-public-ink: #1a1a1a;   /* neutral1a */
 	--tok-restore: #263238;   /* blueGrey900 */
 	--tok-restore-border: #424242;   /* grey800 */
 }

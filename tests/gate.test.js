@@ -1167,3 +1167,50 @@ test('H9.9: the picker distinguishes a template, and does it with paintable prop
 		assert.match(p, paintable, `\`${p}\` is not painted on an <option> — it would render as nothing`);
 	}
 });
+
+/*
+H23.6 -- a published diagram lights `#publish` pale green: the BACKGROUND changes, and the text stays dark.
+
+The director asked for the button to highlight rather than its text to turn green ("make the button highlight a pale/light
+green when we change from private to public, rather than the text"). Read from the stylesheet and resolved through the
+roles (kernel/theme.mjs `CHROME`), so the test holds what is painted rather than a token's name.
+
+Legibility is the control: dark ink on the pale fill must clear WCAG AA's 4.5:1, and so must the hover, which lifts the
+fill to a paler green and keeps the ink -- a pale fill with the old light-green text would read as nothing.
+*/
+test('H23.6: #publish shows public with a pale green background and dark text, not green text', async () => {
+	const css = fs.readFileSync(path.join(root, 'app/style.css'), 'utf8');
+	const { CHROME } = await import('../kernel/theme.mjs');
+	const { colour } = await import('../kernel/palette.mjs');
+	const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+	const rule = (sel) => (css.match(new RegExp(`(?:^|\\n)${esc(sel)}\\s*\\{([^}]*)\\}`)) || [])[1] || '';
+	const token = (body, prop) => (body.match(new RegExp(`(?:^|[;\\s])${prop}:\\s*var\\(--tok-([\\w-]+)\\)`)) || [])[1] || null;
+	const paint = (body, prop) => {
+		const t = token(body, prop);
+		return t ? CHROME[t.replace(/-(\w)/g, (_, c) => c.toUpperCase())] : undefined;
+	};
+	const luminance = (hex) => {
+		const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255)
+			.map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4));
+		return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+	};
+	const contrast = (a, b) => { const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x); return (hi + 0.05) / (lo + 0.05); };
+
+	const pub = rule('#menu #publish.publish-public');
+	const hover = rule('#menu #publish.publish-public:hover:not(:disabled)');
+	const priv = rule('#menu #publish.publish-private');
+	assert.ok(pub && hover && priv, 'the public, public-hover and private rules all exist');
+
+	const fill = paint(pub, 'background-color'), ink = paint(pub, 'color');
+	assert.equal(fill, colour('lightGreen200'), 'public: the button is filled pale green (Light Green 200)');
+	assert.notEqual(token(pub, 'color'), 'accent', 'and the text is no longer the green accent -- the old public style');
+	assert.ok(contrast(fill, ink) >= 4.5, `dark text on the pale fill clears 4.5:1 (got ${contrast(fill, ink).toFixed(1)})`);
+
+	const hoverFill = paint(hover, 'background-color'), hoverInk = paint(hover, 'color') ?? ink;
+	assert.equal(hoverFill, colour('lightGreen100'), 'hover lifts the fill to a paler green (Light Green 100)');
+	assert.ok(luminance(hoverFill) > luminance(fill), 'paler than the resting fill, so the hover reads as a lift');
+	assert.ok(contrast(hoverFill, hoverInk) >= 4.5, 'and the text stays legible on it');
+
+	// control: private keeps its quiet grey, so the two states differ by fill rather than by text colour alone
+	assert.notEqual(paint(priv, 'background-color'), fill, 'private is not green');
+});

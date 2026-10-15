@@ -30,7 +30,7 @@ const PALETTE = {
 	indigo50: '#e8eaf6',
 	lightBlue200: '#81d4fa', lightBlue300: '#4fc3f7',
 	green400: '#66bb6a',
-	lightGreen300: '#aed581',
+	lightGreen100: '#dcedc8', lightGreen200: '#c5e1a5', lightGreen300: '#aed581',
 	amber300: '#ffd54f',
 	orange300: '#ffb74d', orange400: '#ffa726', orange500: '#ff9800',
 	deepOrange300: '#ff8a65', deepOrangeA400: '#ff3d00',

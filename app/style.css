@@ -284,8 +284,9 @@ rather than riding along here, where it was silently governing the agents button
 }
 #menu #publish.publish-private { background-color: var(--tok-surface-raised); color: var(--tok-ink-faint); }
 #menu #publish.publish-private:hover:not(:disabled) { background-color: var(--tok-agents-none-hover); color: var(--tok-agents-none-ink-hover); }
-#menu #publish.publish-public { background-color: var(--tok-code-new); color: var(--tok-accent); }
-#menu #publish.publish-public:hover:not(:disabled) { color: var(--tok-ink-bright); }
+/* H23.6: published lights the whole button pale green with dark text, rather than turning the text green */
+#menu #publish.publish-public { background-color: var(--tok-publish-public); color: var(--tok-publish-public-ink); }
+#menu #publish.publish-public:hover:not(:disabled) { background-color: var(--tok-publish-public-hover); }
 #menu #publish:disabled { cursor: default; }
 
 /*

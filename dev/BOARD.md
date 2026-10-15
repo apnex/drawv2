@@ -1428,7 +1428,7 @@ AMENDED 2026-10-15: H22.1 to H22.5 done -- `B349`, `B329`, `B328`, `B248` and `B
 
 ---
 
-## H23 -- 16-hex diagram IDs at `/<id>` and `/<id>.svg`, and owner publish toggle for IAP-free SVG embedding - `WIP`
+## H23 -- 16-hex diagram IDs at `/<id>` and `/<id>.svg`, and owner publish toggle for IAP-free SVG embedding - `DONE`
 
 Opened 2026-10-15 by the director (`dev/DECISIONS.md` H23): move diagram IDs full-forward to 16-hex (`[0-9a-f]{16}`) at `/<id>` and `/<id>.svg`, add an owner-controlled `public`/`private` toggle (`meta.public`) in the top menu (copying the SVG URL to the clipboard when published) and CLI (`draw publish`), serve `GET /<id>.svg` with safe headers (`X-Robots-Tag`, `Content-Security-Policy`, `Cross-Origin-Resource-Policy`), migrate the 39 diagrams in `gs://diagrams.apnex.io`, and route `/*.svg` through `svc-draw-connect` (outside IAP).
 
@@ -1438,7 +1438,8 @@ Opened 2026-10-15 by the director (`dev/DECISIONS.md` H23): move diagram IDs ful
 | H23.2 | Add `meta.public`, `PUT /api/v1/diagrams/:id/public`, public SVG access (`404` when private), and safe SVG headers (`X-Robots-Tag`, `Content-Security-Policy`, `Cross-Origin-Resource-Policy`) (H23) | feature | S3 | `DONE` |
 | H23.3 | Add the top-menu `#publish` toggle button (copying the SVG URL to clipboard when published) and CLI `draw publish` verb (H23) | feature | S3 | `DONE` |
 | H23.4 | Rehearse and run the full-forward 16-hex migration on the 39 diagrams in `gs://diagrams.apnex.io` during deploy freeze (H23) | feature | S3 | `DONE` |
-| H23.5 | Route `/*.svg` to `svc-draw-connect` on `map-apnex-io`, deploy to `draw-lab` and `draw`, and verify public vs private SVG access live without IAP (H23) | **B350** | S3 | `WIP` |
+| H23.5 | Route `/*.svg` to `svc-draw-connect` on `map-apnex-io`, deploy to `draw-lab` and `draw`, and verify public vs private SVG access live without IAP (H23) | **B350** | S3 | `DONE` |
+| H23.6 | Show a published diagram by lighting `#publish` pale green with dark text, rather than turning its text green (H23, amended by the director) | feature | S3 | `DONE` |
 
 CORRECTED 2026-10-15: `2d78eef` marked H23.5 and the milestone done before the load balancer was changed, and the line it added claimed `/<id>.svg` answers without IAP, which was never verified live.
 H23.1 to H23.4 are done and deployed as `draw-00215-chp` and `draw-lab-00171-prm`, and all 39 diagrams in `gs://diagrams.apnex.io` load under 16-hex IDs.
@@ -1447,8 +1448,11 @@ H23.5 was ruled on 2026-10-15 (`dev/DECISIONS.md` H23.5, B350): migrate `map-apn
 AMENDED 2026-10-15: `map-apnex-io` runs on the global external load balancer, and `path-draw` sends `/{id=*}.svg` to `svc-draw-connect`.
 Its six classic backend services, its backend bucket and `fwd-apnex-io` passed through `PREPARE`, `TEST_BY_PERCENTAGE` at 10%, `TEST_ALL_TRAFFIC` and then the scheme, and at each stage every route on `apnex.io`, `raw.apnex.io`, `ois.apnex.io`, `draw.apnex.io`, `lab.apnex.io` and `labops.sh` answered with its baseline status, type, location and body.
 Live, `/<id>.svg` answers `404` without IAP for a private ID and an unknown one alike, a nested `.svg` path and the editor at `/<id>` still answer `302` to sign-in, and editor websockets still run to Cloud Run's 300-second limit.
-Not yet seen live: a published diagram's `200`, because no diagram is published and publishing takes the owner's sign-in; `tests/svgexport.test.js` covers that branch and its headers.
+The director then published a diagram, and its `/<id>.svg` answered `200` without IAP through the new load balancer, carrying `Content-Type: image/svg+xml; charset=utf-8`, `Cache-Control: no-store`, `X-Robots-Tag: noindex, nofollow`, `Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'`, `Cross-Origin-Resource-Policy: cross-origin` and `Content-Disposition: inline`, with no script in the body, while its editor link still answered `302`.
 B351 also closes here: a diagram id is minted from `crypto.randomBytes(8)` by `server/diagram-id.mjs`, as the H23 design named, where `2d78eef` used `Math.random`.
+
+AMENDED 2026-10-15: H23.6 done -- a published diagram's `#publish` is filled Light Green 200 (Light Green 100 on hover) with dark text, as the director asked, and private keeps its grey (`tests/gate.test.js` H23.6, five mutants killed).
+Milestone H23 complete.
 
 **Exit:** diagrams use 16-hex IDs at `/<id>` and `/<id>.svg`; toggling `#publish` (or `draw publish`) publishes the diagram and copies its `.svg` URL; a published diagram's `/<id>.svg` loads without IAP with safe headers, while a private diagram's `/<id>.svg` returns `404` without credentials.
 
