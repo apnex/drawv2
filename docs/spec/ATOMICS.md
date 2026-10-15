@@ -392,3 +392,17 @@ AMENDED 2026-10-01 (H15.9): every kind.\
 In the live renderer each of node, zone, group and waypoint has a look -- every attribute that can change while the element's structure stays, per part -- which create applies after building the structure and update applies after checking it (`app/src/renderer.js`); what changes the structure (a span, content, a waypoint's roles) re-renders instead.\
 The waypoint's rings remain a list of layers rather than a set of attributes, because a waypoint draws several circles rather than one element.\
 `tests/appearance.test.js` holds the property for every kind: an update equals a fresh render, in two separate documents.
+
+---
+
+## Arrowheads [DESIGNING 2026-10-15 -- H24.6, B356]
+
+A link's declared direction is barely shown (B356), and the director chose to target all four causes and to design each with them, one at a time, before any code (H24.6).\
+Each decision is recorded here as it is ruled; until then the arrowhead is as H15.6 built it -- one filled triangle at the end where the flow arrives, five line widths long, its tip at the end of the line.
+
+| # | Issue | Decision |
+|---|---|---|
+| 1 | Placement: the line runs to the device's centre, so the head lies under the device | open -- being discussed |
+| 2 | Control links: a thinner line makes a smaller head, wholly hidden | open |
+| 3 | Selection: a selected link turns green and its head stays blue (B226) | open |
+| 4 | Long links: the direction shows only at the far end | open |

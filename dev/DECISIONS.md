@@ -2048,5 +2048,11 @@ Shown: dev/BOARD.md@229dca4\
 Affects: dev/design/input/GESTURE-SYSTEM.md\
 Recorder: measured first that Shift+right click already selected a zone and Shift+right drag already moved it, so the change is that a Shift+left press on a zone stops taking it; offered that (recommended), selecting by a zone's edge instead, or no change -- noting that a right drag is awkward on a touchpad -- the director replied "continue". A zone's pick says it is pressed with the right button; the product's left-press and left-clone rows pass over such a kind by that fact, naming none; the zones plugin's draw row takes a Shift+left press on the canvas or on a zone; Ctrl+Shift+right clones a zone and Alt+Shift+right deletes one, and the help says so.
 
+**H24.6 -- arrows: all four issues targeted, each discussed and designed one at a time before code -- 2026-10-15 (B356).**\
+Director: "Yes each of those issues are what I'd like to target. I want to discuss what we should do about each one and design it before we commit to code"\
+Shown: dev/BOARD.md@1fa0beb\
+Affects: docs/spec/ATOMICS.md\
+Recorder: shown the four arrow issues found by rendering every case -- heads hidden under devices, none visible on a control-plane link, a selected link's head staying blue, direction readable only at a long link's far end -- and offered fixing in place (recommended), fixing with chevrons along the line, or the director's own design, the director chose to target all four and design each before any code. A K5 survey was begun and the director redirected before any question was answered: "rather than a survey, lets just discuss each one individually". So each issue is discussed in turn, its decision recorded in `docs/spec/ATOMICS.md` "Arrowheads" as it is ruled, and the four are built once designed.
+
 
 

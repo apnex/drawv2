@@ -1463,7 +1463,7 @@ Milestone H23 complete again.
 
 ---
 
-## H24 -- UI, UX and polish: smaller items, one at a time - `DONE`
+## H24 -- UI, UX and polish: smaller items, one at a time - `WIP`
 
 Opened 2026-10-15 by the director (`dev/DECISIONS.md` H24): smaller UI, UX and polish items, each registered as a row, tested before and after, and deployed in small batches.
 
@@ -1474,6 +1474,7 @@ Opened 2026-10-15 by the director (`dev/DECISIONS.md` H24): smaller UI, UX and p
 | H24.3 | Releasing Shift deselects a zone; a press in progress keeps it until it ends (H24.3) | **B353** | S4 | `DONE` |
 | H24.4 | The app calls itself `draw` -- header, tab, title and help heading (H24.4) | **B354** | S5 | `DONE` |
 | H24.5 | Under Shift the left button always draws a zone, over an existing one too; the right button selects, moves and clones one (H24.5) | **B355** | S4 | `DONE` |
+| H24.6 | Arrows: a link's direction shown whole, on every link, in every state and along its length -- each issue discussed and designed, then built (H24.6) | **B356** | S3 | `WIP` |
 
 **Exit:** each item the director names is done or ruled, and deployed.
 
