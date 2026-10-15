@@ -2066,5 +2066,11 @@ Shown: docs/spec/ATOMICS.md@9d7845b\
 Affects: docs/spec/ATOMICS.md, dev/design/arrows/README.md\
 Recorder: shown a page of head sizes at the ruled placement, outside the repository and kept as `dev/design/arrows/issue2-size.html` -- today's 5 line widths (30 px on a data link, 18 on a control link), 4 line widths (24, 14), 3 (18, 11), one size of 24 or of 18 for every link, and 4 line widths with a floor of 18 (24, 18) -- across a data link, a control link, both on one device, a selected and grouped device, a junction, an endpoint, two opposed links, a diagonal and the same at half zoom, the director agreed with the recommended F: a head is 4 line widths long, never under 18 px -- 24 px on a 6 px data link and 18 px on a 3.6 px control link, so a control link's head stays visible at half zoom and still reads lighter than a data link's. The head's shape is asked next.
 
+**H24.6-2b -- arrowheads, the head's shape: hollow, outlined at 4 px, its inside clear and the line broken beneath it -- 2026-10-15 (B356).**\
+Director: "continue with recommendation, hollow 4px"\
+Shown: docs/spec/ATOMICS.md@e3d71d0\
+Affects: docs/spec/ATOMICS.md, dev/design/arrows/README.md\
+Recorder: asked how a head is built in SVG and to see a hollow one, then to double the hollow outline, the director was shown a page of shapes at the ruled size, outside the repository and kept as `dev/design/arrows/issue2b-shape.html` -- filled, hollow at 2 and 4 px, see-through at 4 px, an open chevron, a narrow and a notched head -- and told that a marker cannot sit on the outline while the line runs to the centre, cannot hold an 18 px floor, and cannot take the line's colour, so each head is to be drawn as a shape of its own; and that an inside painted the canvas colour would show as a dark patch inside a tinted zone. The director chose the recommendation: a hollow head, outlined at 4 px with its outline's outer edge on the anchor's outline, its inside left clear, and the line broken beneath it -- drawn from its far end to the head's base and again from the tip to the anchor's centre -- so it reads the same on the canvas and inside a zone, and the line still runs into a junction past the tip.
+
 
 
