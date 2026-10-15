@@ -1563,6 +1563,59 @@ test('H24.1: on the product page a plain double-click inside a zone opens no edi
 });
 
 /*
+H24.3 -- ON THE PAGE, WITH REAL INPUT: releasing Shift deselects a zone, and a rename begun with Shift+double-click survives it.
+
+The rename is the path most likely to break: the name editor opens with Shift held, the person lets go of Shift to type, and
+that release now empties the selection. The editor must stay open, take the typed name, and commit it on Enter.
+*/
+test('H24.3: on the product page releasing Shift deselects a zone, and a Shift+double-click rename still commits', { skip: SKIP }, async () => {
+	const t = await attach(`http://127.0.0.1:${port}/${NET_DIAGRAM}`);
+	let zoneId = null;
+	try {
+		await until(t, `document.getElementById('node-ab00a1') ? 1 : 0`, 8000);
+		await t.eval(`window.draw.input.setReadOnly(false), 1`);
+		zoneId = await t.eval(`(async () => { const { makeZone } = await import('/zones/make-zone.mjs');
+			const z = makeZone(window.draw.model, { x: -90, y: 270, w: 180, h: 120 });
+			window.draw.history.commit({ label: 'zone', entries: [{ op: 'put', kind: 'zone', entity: z }] });
+			return z.id; })()`);
+		await until(t, `document.getElementById('${zoneId}') && window.draw.sync.outbox.every((m) => m.answered) ? 1 : 0`, 6000);
+		await t.eval(`window.draw.selection.clear(), 1`);
+
+		const [sx, sy] = JSON.parse(await t.eval(`JSON.stringify((() => { const m = document.getElementById('container').getScreenCTM(); return [m.a * 0 + m.e, m.d * 330 + m.f]; })())`));
+		const shift = (down) => t.send('Input.dispatchKeyEvent', { type: down ? 'rawKeyDown' : 'keyUp', key: 'Shift', code: 'ShiftLeft', windowsVirtualKeyCode: 16, modifiers: down ? 8 : 0 });
+		const clicks = async (n) => {
+			await t.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: sx, y: sy, modifiers: 8 });
+			for (let clickCount = 1; clickCount <= n; clickCount++) {
+				await t.send('Input.dispatchMouseEvent', { type: 'mousePressed', x: sx, y: sy, button: 'left', buttons: 1, clickCount, modifiers: 8 });
+				await t.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: sx, y: sy, button: 'left', buttons: 0, clickCount, modifiers: 8 });
+			}
+			await sleep(120);
+		};
+		const seen = () => t.eval(`JSON.stringify({ editor: !!document.getElementById('label-editor'), selected: window.draw.selection.list() })`).then(JSON.parse);
+
+		await shift(true); await clicks(1);
+		assert.deepEqual((await seen()).selected, [zoneId], 'precondition: Shift+click selects the zone');
+		await shift(false); await sleep(60);
+		assert.deepEqual((await seen()).selected, [], 'releasing Shift deselects it');
+
+		await shift(true); await clicks(2);
+		assert.deepEqual(await seen(), { editor: true, selected: [zoneId] }, 'Shift+double-click opens its name editor');
+		await shift(false); await sleep(60);
+		assert.deepEqual(await seen(), { editor: true, selected: [] }, 'letting go of Shift to type deselects the zone and leaves the editor open');
+		await t.eval(`(() => { const i = document.getElementById('label-editor'); i.select(); return 1; })()`);
+		await t.send('Input.insertText', { text: 'edge-tier' });
+		for (const type of ['keyDown', 'keyUp']) await t.send('Input.dispatchKeyEvent', { type, key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13, ...(type === 'keyDown' ? { text: '\r' } : {}) });
+		await until(t, `window.draw.model.get('zone', '${zoneId}')?.name === 'edge-tier' && !document.getElementById('label-editor') ? 1 : 0`, 3000);
+	} finally {
+		if (zoneId) {
+			await t.eval(`(() => { const z = window.draw.model.get('zone', '${zoneId}'); if (z) window.draw.history.commit({ label: 'unzone', entries: [{ op: 'del', kind: 'zone', entity: { ...z } }] }); return 1; })()`).catch(() => {});
+			await until(t, `window.draw.sync.outbox.every((m) => m.answered) ? 1 : 0`, 6000).catch(() => {});
+		}
+		await t.close();
+	}
+});
+
+/*
 B324 (H20.2) -- A TEST LEAVES NO TAB BEHIND. `t.ws.close()` closed the debugging socket and left the tab open and connected, so by
 the palette drop test four tabs were live editors of its diagram; each test's tab is closed now (`close`, above).
 */

@@ -2024,5 +2024,17 @@ Shown: dev/BACKLOG.md@e95f55c\
 Affects: dev/design/input/GESTURE-SYSTEM.md\
 Recorder: offered B264 -- a double-click finds a zone without Shift while a press reaches one only with Shift, kept by the director's ruling of 2026-09-30 until re-evaluated -- the director re-evaluated it: every zone interaction requires Shift. A zone's double-click edit is asked only while Shift is held, as its press pick is, so `GESTURE-SYSTEM.md` acceptance 5 holds again; whether Ctrl+A may still select zones without Shift is put to the director as B352.
 
+**H24.2 -- Ctrl+A keeps selecting zones -- 2026-10-15 (B352).**\
+Director: "Keep zones in ctrl+A."\
+Shown: dev/BOARD.md@5d32f68\
+Affects: dev/design/input/GESTURE-SYSTEM.md\
+Recorder: asked whether Ctrl+A keeps selecting zones (recommended: select-all is a deliberate "everything", and leaving zones out would make moving the whole diagram leave them behind) or leaves them out so a zone is reached only with Shift, the director chose to keep them: Ctrl+A is the one way to select a zone without Shift, by ruling.
+
+**H24.3 -- releasing Shift deselects a zone -- 2026-10-15.**\
+Director: "Next minor thing - selecting a zone, then releasing shift should unslect zones. A zone should not remain selected while shift released"\
+Shown: dev/BOARD.md@5d32f68\
+Affects: dev/design/input/GESTURE-SYSTEM.md\
+Recorder: given in the same message as H24.2, so a zone Ctrl+A selected stays selected until Shift is next released. Releasing Shift drops from the selection every entity of a kind picked only under Shift, and nothing else; a press or drag in progress keeps it until it ends, unless Shift is held again by then. So a selected zone's keys work while Shift is held -- Delete, F2, Shift+arrow -- and the arrow-key nudge, which needs Shift up, no longer reaches a zone.
+
 
 

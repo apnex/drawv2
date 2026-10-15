@@ -1463,16 +1463,19 @@ Milestone H23 complete again.
 
 ---
 
-## H24 -- UI, UX and polish: smaller items, one at a time - `WIP`
+## H24 -- UI, UX and polish: smaller items, one at a time - `DONE`
 
 Opened 2026-10-15 by the director (`dev/DECISIONS.md` H24): smaller UI, UX and polish items, each registered as a row, tested before and after, and deployed in small batches.
 
 | # | Item | Cites | Sev | State |
 |---|---|---|---|---|
 | H24.1 | Every zone interaction takes Shift: a double-click inside a zone renames it only with Shift held (H24.1) | **B264** | S4 | `DONE` |
-| H24.2 | Ctrl+A and zones: keep selecting them, or leave them to Shift (ruling owed) | **B352** | S4 | `TODO` |
+| H24.2 | Ctrl+A and zones: keep selecting them, or leave them to Shift -- kept, by ruling (H24.2) | **B352** | S4 | `DONE` |
+| H24.3 | Releasing Shift deselects a zone; a press in progress keeps it until it ends (H24.3) | **B353** | S4 | `DONE` |
 
 **Exit:** each item the director names is done or ruled, and deployed.
+
+AMENDED 2026-10-15: H24.1 to H24.3 done and deployed; the milestone reopens with the director's next item.
 
 ---
 
@@ -1540,7 +1543,6 @@ B163, the last entry, was ratified and closed on 2026-10-01: the standing goals 
 
 | Row | Decision owed | Why it cannot be settled without you |
 |---|---|---|
-| **B352** | Whether Ctrl+A keeps selecting zones, or leaves them out so a zone is reached only with Shift | H24.1 ruled that every zone interaction takes Shift, and Ctrl+A is the one path that reaches zones without it; select-all meaning everything is a reasonable reading too |
 
 **R13 reads this table in both directions**, which is what `Held` has had since B123 and this section never did.\
 A row recording `RULING-OWED` must appear here, so a decision cannot wait unseen; an entry here must still be `RULING-OWED`, so a ruling that has landed cannot keep asserting itself.\

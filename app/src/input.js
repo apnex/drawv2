@@ -427,6 +427,9 @@ export class Input {
 		// C-d (H19.32): the product's press rows and each canvas part's -- a plugin's rows over the shared gestures (D2)
 		// D4: what each drawn hit is -- placed, an anchor, cloned by Ctrl+left, picked under a modifier -- from the parts' picks and places
 		this.hitFacts = hitFactsOf(picksOf(parts), this.places);
+		// H24.3: the kinds picked only under Shift -- a zone -- which leave the selection once Shift is released
+		this.shiftOnlyKinds = new Set(picksOf(parts).filter((p) => p.modifier === 'shiftKey').map((p) => p.kind));
+		this.shiftUpPending = false;   // Shift came up while a press owned the pointer: drop them when it ends
 		// C-e: what each part's items cover at a point and in a box, in the parts' order; a link ends at an anchor
 		this.points = pointsOf(parts);
 		this.anchorWords = [...this.hitFacts].filter(([, f]) => f.anchor).map(([w]) => w);
@@ -1037,6 +1040,7 @@ export class Input {
 		try { this.dispatchUp(evt); } finally {
 			this.state = track(this.state, evt);   // the press is over
 			if (wasGesturing) this.onGestureEnd();
+			this.afterShiftUpPress(evt);   // H24.3
 		}
 	}
 
@@ -1238,6 +1242,7 @@ export class Input {
 		this.overlayUi.refreshHover(null);
 		if (evt) this.overlayUi.showGrids(evt, false);
 		this.onGestureEnd();
+		this.afterShiftUpPress(evt);   // H24.3
 	}
 
 	// ---- hover + arming ----
@@ -1331,6 +1336,7 @@ export class Input {
 	// ---- key handlers. Bodies unchanged from the ladder; only their dispatch moved. ----
 
 	onShiftDown(evt) {
+		this.shiftUpPending = false;   // H24.3: held again, so nothing is owed when the press ends
 		if (this.mode === 'move' || this.mode === 'clone') {
 			// re-render the drag NOW: the commit follows the last rendered frame
 			if (this.state.pointer.at) this.updateMove(this.state.pointer.at, true);
@@ -1562,6 +1568,26 @@ export class Input {
 			this.renderer.clearState(this.overlayUi.hovered, 'hover');
 			this.overlayUi.disarm();
 		}
+		// H24.3: and a selected one leaves the selection -- at once, or when a press that owns the pointer ends
+		if (this.mode) this.shiftUpPending = true;
+		else this.dropShiftOnly();
+	}
+
+	/*
+	H24.3 -- A ZONE DOES NOT STAY SELECTED ONCE SHIFT IS RELEASED. The director: "selecting a zone, then releasing shift should
+	unselect zones". Every selected entity of a kind picked only under Shift leaves the selection; nothing else does. Ctrl+A
+	still selects zones (B352, ruled), and they stay until Shift is next released.
+	*/
+	dropShiftOnly() {
+		const keep = this.selection.list().filter((id) => !this.shiftOnlyKinds.has(kindOf(id)));
+		if (keep.length !== this.selection.size()) this.selection.set(keep);
+	}
+
+	// H24.3: a press that owned the pointer when Shift came up has ended -- drop what needed Shift, unless it is held again
+	afterShiftUpPress(evt) {
+		if (!this.shiftUpPending || this.mode) return;
+		this.shiftUpPending = false;
+		if (!evt?.shiftKey) this.dropShiftOnly();
 	}
 
 	// Alt or Control released: the armed affordance follows what is still held

@@ -393,6 +393,7 @@ Each is a real fork, with a recommendation.
 - **Acceptance 6 holds, and B245 is closed (H17.5).** Threading a pinned waypoint no longer unpins it on the tab mid-drag; the drag step records it and the unpin rides in the link's own commit (`routeLink`, `chainHop`). The planner is told, and a cancelled drag keeps the pin. The only corpus records that changed are those two scenarios.
 - **B264 parked:** a double click on a zone without Shift stays, by the director's ruling; acceptance 5 is withdrawn until the director re-evaluates it in the lab.
   AMENDED 2026-10-15 (H24.1): the director re-evaluated it -- "all zone interaction requires shift" -- and acceptance 5 holds again: a zone's double-click edit is asked only with Shift held (`zones/zone-labels.mjs` `modifier`), so a plain double-click inside a zone passes through it as a plain press does, and B264 is closed.
+  AMENDED 2026-10-15 (H24.2, H24.3): Ctrl+A keeps selecting zones, by ruling, and releasing Shift deselects every zone -- the kinds picked only under Shift -- at once, or when a press in progress ends unless Shift is held again by then (`app/src/input.js` `onShiftUp`, `dropShiftOnly`).
 - **Not in this stage, by the guardrails:** an action registry with labels. Actions are Input's named methods, which the rows reference; the registry and its labels arrive with their first reader, the generated help overlay (stage 6).
 - **Behaviour otherwise unchanged:** every other corpus record byte-identical; ten mutants, each caught.
 

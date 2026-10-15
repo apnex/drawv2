@@ -280,3 +280,78 @@ test('C-d: a Shift-press on a zone selects it alone -- Shift is the zone\'s laye
 		assert.deepEqual(h.selection.list(), [z.id]);
 	} finally { h.restore(); }
 });
+
+/*
+H24.3 -- A ZONE DOES NOT STAY SELECTED ONCE SHIFT IS RELEASED.
+
+The director: "selecting a zone, then releasing shift should unselect zones. A zone should not remain selected while shift
+released". Shift is the zone's layer key -- a zone is picked only with it held (zones/zone-painter.mjs, its pick's
+`modifier`) -- so releasing it drops from the selection every entity of a kind picked only under Shift, and nothing else.
+The canvas names no kind: it reads the modifier off the composed picks, as `onShiftUp` already does for a hovered zone.
+
+A drag owns the pointer: Shift released mid-drag (a zone moved, a corner dragged) leaves the zone selected until the drag
+ends, and the drop happens then, unless Shift is held again by the time the pointer comes up.
+*/
+const zoneTarget = (z, x, y, mod = {}) => pointer(x, y, { target: { tagName: 'rect', classList: { contains: () => false }, dataset: {}, closest: (s) => (s.includes('zone') ? { id: z.id } : null) }, ...mod });
+const shiftDown = (h) => h.capture.onKeyDown({ key: 'Shift', code: 'ShiftLeft', shiftKey: true, ctrlKey: false, altKey: false, metaKey: false, target: { tagName: 'BODY' }, preventDefault() {}, stopPropagation() {} });
+const shiftUp = (h) => h.capture.onKeyUp({ key: 'Shift', code: 'ShiftLeft', shiftKey: false, ctrlKey: false, altKey: false, metaKey: false, target: { tagName: 'BODY' }, preventDefault() {}, stopPropagation() {} });
+
+test('H24.3: releasing Shift deselects a zone picked with it; a device stays selected', async () => {
+	const { seedNodes } = await import('./fixtures/client-harness.mjs');
+	const h = makeInput();
+	try {
+		const [n] = seedNodes(h.model, [[0, 0]]);
+		const z = makeZone(h.model, { x: 150, y: 150, w: 120, h: 120 }); h.model.put('zone', z);
+		shiftDown(h);
+		h.capture.onDown(zoneTarget(z, 200, 200, { shiftKey: true }));
+		h.capture.onUp(zoneTarget(z, 200, 200, { shiftKey: true }));
+		assert.deepEqual(h.selection.list(), [z.id], 'precondition: Shift+click selects the zone');
+		shiftUp(h);
+		assert.deepEqual(h.selection.list(), [], 'and releasing Shift deselects it');
+
+		// control: Shift released over a selection holding a device and a zone (Ctrl+A) keeps the device
+		h.selection.set([n.id, z.id]);
+		shiftDown(h); shiftUp(h);
+		assert.deepEqual(h.selection.list(), [n.id], 'only the kind picked under Shift leaves the selection');
+		shiftDown(h); shiftUp(h);
+		assert.deepEqual(h.selection.list(), [n.id], 'a device alone is untouched by Shift');
+	} finally { h.restore(); }
+});
+
+test('H24.3: Shift released mid-drag leaves the zone selected until the drag ends, then deselects it', () => {
+	const h = makeInput();
+	try {
+		const z = makeZone(h.model, { x: 150, y: 150, w: 120, h: 120 }); h.model.put('zone', z);
+		shiftDown(h);
+		h.capture.onDown(zoneTarget(z, 200, 200, { shiftKey: true }));
+		h.capture.onMove(zoneTarget(z, 260, 200, { shiftKey: true }));
+		h.capture.onMove(zoneTarget(z, 320, 200, { shiftKey: true }));
+		shiftUp(h);
+		assert.deepEqual(h.selection.list(), [z.id], 'mid-drag the zone stays selected -- the drag owns the pointer');
+		h.capture.onMove(zoneTarget(z, 380, 200));
+		h.capture.onUp(zoneTarget(z, 380, 200));
+		assert.notEqual(h.model.get('zone', z.id).x, 150, 'the drag completed and moved the zone');
+		assert.deepEqual(h.selection.list(), [], 'and once it ended with Shift up, the zone is deselected');
+
+		// control: Shift held again by the time the pointer comes up keeps it
+		shiftDown(h);
+		h.capture.onDown(zoneTarget(z, 400, 200, { shiftKey: true }));
+		h.capture.onMove(zoneTarget(z, 460, 200, { shiftKey: true }));
+		shiftUp(h); shiftDown(h);
+		h.capture.onUp(zoneTarget(z, 460, 200, { shiftKey: true }));
+		assert.deepEqual(h.selection.list(), [z.id], 'Shift held again at the end: the zone stays selected');
+
+		// each of the two ways "held again" is known, alone: a drag cancelled with no pointer event (a document swap) has only
+		// Shift's keydown to go on; a release whose Shift keydown was never seen (focus elsewhere) has only the event's own flag
+		h.capture.onDown(zoneTarget(z, 460, 200, { shiftKey: true }));
+		h.capture.onMove(zoneTarget(z, 520, 200, { shiftKey: true }));
+		shiftUp(h); shiftDown(h);
+		h.input.cancelDrag();
+		assert.deepEqual(h.selection.list(), [z.id], 'cancelled with no event after Shift was pressed again: the zone stays');
+		h.capture.onDown(zoneTarget(z, 460, 200, { shiftKey: true }));
+		h.capture.onMove(zoneTarget(z, 520, 200, { shiftKey: true }));
+		shiftUp(h);
+		h.capture.onUp(zoneTarget(z, 520, 200, { shiftKey: true }));
+		assert.deepEqual(h.selection.list(), [z.id], 'released with Shift held, its keydown unseen: the zone stays');
+	} finally { h.restore(); }
+});
