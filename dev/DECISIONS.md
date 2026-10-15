@@ -2012,5 +2012,17 @@ Shown: dev/BOARD.md@e4cd94a\
 Affects: docs/spec/ACCESS.md\
 Recorder: asked after H23 closed whether to leave the last classic pieces as they were (recommended), move only the HTTP-to-HTTPS redirect for `apnex.io` (`fwd-apnex-io-http`), or move the separate `labops.sh` load balancer too (`fwd-labops`, `fwd-labops-http`, `map-labops`), the director directed moving everything: `svc-mmd-render` and the unattached `svc-mermaid` go through Google's staged migration, and the three remaining forwarding rules move to `EXTERNAL_MANAGED`, so no `EXTERNAL` load balancing resource is left in the project.
 
+**H24 -- smaller UI, UX and polish items, one at a time -- 2026-10-15.**\
+Director: "Actually, I want to tackle some smaller UI, UX and polish items"\
+Shown: dev/BOARD.md@e95f55c\
+Affects: dev/BOARD.md\
+Recorder: offered three next milestones after H23 -- making public SVG embeds robust (recommended first), letting an agent explain a system step by step (B188, B194), or reasoning which parts become shared mission-kit components (B343) -- the director chose smaller UI, UX and polish items instead, so `H24` takes them one at a time, each registered as a row and tested before and after; B334, whose trigger fired during H23 unreviewed, is parked again with a new trigger, as stated when the milestone was offered.
+
+**H24.1 -- every zone interaction takes Shift: a double-click inside a zone renames it only with Shift held -- 2026-10-15 (B264).**\
+Director: "Lets tackle the zones issue. My thinking is all zone interaction requires shift"\
+Shown: dev/BACKLOG.md@e95f55c\
+Affects: dev/design/input/GESTURE-SYSTEM.md\
+Recorder: offered B264 -- a double-click finds a zone without Shift while a press reaches one only with Shift, kept by the director's ruling of 2026-09-30 until re-evaluated -- the director re-evaluated it: every zone interaction requires Shift. A zone's double-click edit is asked only while Shift is held, as its press pick is, so `GESTURE-SYSTEM.md` acceptance 5 holds again; whether Ctrl+A may still select zones without Shift is put to the director as B352.
+
 
 

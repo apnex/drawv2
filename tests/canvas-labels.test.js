@@ -26,11 +26,12 @@ const board = (h) => {
 	return { d, z, tb };
 };
 
+// RESTATED 2026-10-15 (H24.1, B264): the zone's double-click is Shift+double-click now -- every zone interaction takes Shift
 test('C-e: a double-click edits a device\'s name on its icon or the strip beneath, a zone\'s inside it, a text box\'s text anywhere on it -- the state under test', () => {
 	const h = makeInput();
 	try {
 		const { d, z, tb } = board(h);
-		h.capture.onDblClick(pointer(3, 2)); h.capture.onDblClick(pointer(10, 34)); h.capture.onDblClick(pointer(500, 480));
+		h.capture.onDblClick(pointer(3, 2)); h.capture.onDblClick(pointer(10, 34)); h.capture.onDblClick(pointer(500, 480, { shiftKey: true }));
 		assert.deepEqual(opened(h), [`node:${d.id}`, `node:${d.id}`, `zone:${z.id}`]);
 		h.capture.onDblClick(pointer(-120, -180));
 		assert.deepEqual(h.selection.list(), [tb.id], 'the text box, selected');
@@ -113,5 +114,38 @@ test('B321: F2 with a pipe selected opens no name editor', async () => {
 		h.selection.set([p.id]);
 		h.capture.onKeyDown(key('F2'));
 		assert.deepEqual(opened(h), []);
+	} finally { h.restore(); }
+});
+
+/*
+H24.1 (B264) -- every zone interaction takes Shift, and a double-click was the one that did not.
+
+A zone is an inert backdrop: a press reaches it only with Shift held (zones/zone-painter.mjs, its pick's `modifier`), so a
+plain click or marquee passes through it. The double-click asked the zones plugin's edit (`zones/zone-labels.mjs`) with no
+such test, so a plain double-click anywhere in a zone opened its name editor and selected it -- the gap B264 recorded and
+the director ruled closed: "all zone interaction requires shift".
+
+The control is what must not change: a device and a text box inside the zone still edit on a plain double-click, because
+their ranks come before the zone's and they are not backdrops.
+*/
+test('H24.1 (B264): a double-click inside a zone edits its name only with Shift held; a device or text box in it needs none', () => {
+	const h = makeInput();
+	try {
+		const { z } = board(h);
+		h.capture.onDblClick(pointer(500, 480));
+		assert.deepEqual(opened(h), [], 'a plain double-click inside a zone opens no editor');
+		assert.deepEqual(h.selection.list(), [], 'and selects nothing -- it passes through, as a plain press does');
+
+		h.capture.onDblClick(pointer(500, 480, { shiftKey: true }));
+		assert.deepEqual(opened(h), [`zone:${z.id}`], 'Shift+double-click edits the zone\'s name');
+		assert.deepEqual(h.selection.list(), [z.id], 'and selects it');
+
+		// control: what sits inside the zone is not a backdrop, so it edits without Shift
+		const [d] = seedNodes(h.model, [[420, 420]]);
+		const tb = makeTextBox(h.model, { x: 360, y: 540 }, { cols: 2, rows: 1 }); h.model.put('node', tb);
+		h.capture.onDblClick(pointer(421, 419));
+		assert.deepEqual(opened(h), [`zone:${z.id}`, `node:${d.id}`], 'a device inside the zone edits on a plain double-click');
+		h.capture.onDblClick(pointer(380, 545));
+		assert.deepEqual(h.selection.list(), [tb.id], 'and so does a text box inside it');
 	} finally { h.restore(); }
 });

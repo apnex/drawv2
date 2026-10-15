@@ -1514,6 +1514,55 @@ test('V-d: on the product page a deleted pin takes its link before the server an
 });
 
 /*
+H24.1 (B264) -- ON THE PAGE, WITH REAL INPUT: a double-click inside a zone renames it only with Shift held.
+
+The unit test drives the capture with a built event (tests/canvas-labels.test.js H24.1). This drives Chrome's own mouse, so the
+`dblclick` is the browser's, made from two real presses with Shift held through both -- the path a person takes, including
+the first Shift+press selecting the zone before the double-click arrives. The zone is drawn on empty ground of the network
+board, below its links, and taken away again so the tests after this one see the board they expect.
+*/
+test('H24.1: on the product page a plain double-click inside a zone opens no editor; Shift+double-click renames it', { skip: SKIP }, async () => {
+	const t = await attach(`http://127.0.0.1:${port}/${NET_DIAGRAM}`);
+	let zoneId = null;
+	try {
+		await until(t, `document.getElementById('node-ab00a1') ? 1 : 0`, 8000);
+		await t.eval(`window.draw.input.setReadOnly(false), 1`);
+		zoneId = await t.eval(`(async () => { const { makeZone } = await import('/zones/make-zone.mjs');
+			const z = makeZone(window.draw.model, { x: -90, y: 270, w: 180, h: 120 });
+			window.draw.history.commit({ label: 'zone', entries: [{ op: 'put', kind: 'zone', entity: z }] });
+			return z.id; })()`);
+		await until(t, `document.getElementById('${zoneId}') && window.draw.sync.outbox.every((m) => m.answered) ? 1 : 0`, 6000);
+		await t.eval(`window.draw.selection.clear(), 1`);
+
+		const screen = (x, y) => t.eval(`JSON.stringify((() => { const m = document.getElementById('container').getScreenCTM(); return [m.a * ${x} + m.e, m.d * ${y} + m.f]; })())`).then(JSON.parse);
+		const [sx, sy] = await screen(0, 330);   // inside the zone, nothing else there
+		const doubleClick = async (modifiers) => {
+			await t.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: sx, y: sy, modifiers });
+			for (const clickCount of [1, 2]) {
+				await t.send('Input.dispatchMouseEvent', { type: 'mousePressed', x: sx, y: sy, button: 'left', buttons: 1, clickCount, modifiers });
+				await t.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: sx, y: sy, button: 'left', buttons: 0, clickCount, modifiers });
+			}
+			await sleep(120);
+		};
+		const seen = () => t.eval(`JSON.stringify({ editor: !!document.getElementById('label-editor'), selected: window.draw.selection.list() })`).then(JSON.parse);
+
+		await doubleClick(0);
+		assert.deepEqual(await seen(), { editor: false, selected: [] }, 'a plain double-click inside the zone opens no editor and selects nothing');
+
+		await doubleClick(8);   // CDP's Shift
+		assert.deepEqual(await seen(), { editor: true, selected: [zoneId] }, 'Shift+double-click opens the zone\'s name editor, the zone selected');
+		await t.key('Escape');
+		await until(t, `document.getElementById('label-editor') ? 0 : 1`, 2000);
+	} finally {
+		if (zoneId) {
+			await t.eval(`(() => { const z = window.draw.model.get('zone', '${zoneId}'); if (z) window.draw.history.commit({ label: 'unzone', entries: [{ op: 'del', kind: 'zone', entity: { ...z } }] }); return 1; })()`).catch(() => {});
+			await until(t, `window.draw.sync.outbox.every((m) => m.answered) ? 1 : 0`, 6000).catch(() => {});
+		}
+		await t.close();
+	}
+});
+
+/*
 B324 (H20.2) -- A TEST LEAVES NO TAB BEHIND. `t.ws.close()` closed the debugging socket and left the tab open and connected, so by
 the palette drop test four tabs were live editors of its diagram; each test's tab is closed now (`close`, above).
 */

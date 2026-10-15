@@ -18,7 +18,7 @@ Input — pointer/keyboard state machine. Two-button gestures (`dev/DECISIONS.md
                     click stamps, Enter stamps at the ghost); Q pipettes the type
                     under the cursor (or clears); same digit / Esc / tile click drops;
                     click a DIFFERENT-type node to retype it in place (fast-replace)
-  double-click/F2   edit label (Tab inside the editor renames the next entity)
+  double-click/F2   edit label (Tab inside the editor renames the next entity; a zone's with Shift held, H24.1)
   arrows            nudge selection one cell (coalesced undo)
   Shift+arrows      resize the lone selected zone, OR grow the lone selected node's span, one cell (NW-anchored, coalesced)
   Z                 wrap the selection in a fitted zone
@@ -1268,10 +1268,11 @@ export class Input {
 
 	// the `edit-label` binding: a locked client never reaches here -- the engine's guard refuses it (app/src/recognize.js)
 	// C-e: what a double-click edits is what the parts say they edit at the point, in rank order -- a text box's text, a device's
-	// name, a zone's name (devices/device-labels.mjs, zones/zone-labels.mjs); the first that answers wins
+	// name, a zone's name (devices/device-labels.mjs, zones/zone-labels.mjs); the first that answers wins. An edit naming a
+	// `modifier` is asked only while it is held -- a backdrop's, as its press pick is (H24.1, B264)
 	editUnderPointer(evt) {
 		let target = null;
-		for (const e of this.edits) if ((target = e.find(this.model, evt.at))) break;
+		for (const e of this.edits) if ((!e.modifier || evt[e.modifier]) && (target = e.find(this.model, evt.at))) break;
 		if (!target) return;
 		if (this.mode) this.cancelDrag(evt);
 		// rename implies selection: handles/readout/F2 follow the edited entity

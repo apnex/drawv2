@@ -1463,6 +1463,19 @@ Milestone H23 complete again.
 
 ---
 
+## H24 -- UI, UX and polish: smaller items, one at a time - `WIP`
+
+Opened 2026-10-15 by the director (`dev/DECISIONS.md` H24): smaller UI, UX and polish items, each registered as a row, tested before and after, and deployed in small batches.
+
+| # | Item | Cites | Sev | State |
+|---|---|---|---|---|
+| H24.1 | Every zone interaction takes Shift: a double-click inside a zone renames it only with Shift held (H24.1) | **B264** | S4 | `DONE` |
+| H24.2 | Ctrl+A and zones: keep selecting them, or leave them to Shift (ruling owed) | **B352** | S4 | `TODO` |
+
+**Exit:** each item the director names is done or ruled, and deployed.
+
+---
+
 ## Held -- on the record, not on the board
 
 Open `BACKLOG` rows whose trigger has not fired.\
@@ -1483,7 +1496,7 @@ Scored so the comparison is a judgement, not an omission.\
 | **B126** | S4 | Straight-link capacity as a per-kind property (H10.11 built its seam; the capacity stays one) | parallel links are designed (B256), or an operator must configure a capacity. |
 | **B88** | S3 | Prose can say finished work is blocked, and no rule reads a sentence | an item on the board is marked `BLOCKED`. |
 | **B333** | S4 | No ledger records a flaky test; naming a flake on a row before a retry is a practice | a second unresolved flake is filed after H20.2. |
-| **B334** | S4 | No tool reads the cloud configuration a record asserts; reading before asserting is a practice | an infrastructure claim in the records is found false again. |
+| **B334** | S4 | No tool reads the cloud configuration a record asserts; reading before asserting is a practice | an infrastructure claim in the records is found false again after H23, or the agent door's throttle or the public SVG route is next changed. |
 | **B335** | S4 | The other allow lists' reasons (scan-dead, scan-cli, rebuild-debt) cite nothing a check reads | a reason in one of those lists is found citing finished work. |
 | **B336** | S4 | Four specifications' status banners below their titles are unchecked | one of those specifications' status lines is found false. |
 | **B337** | S5 | The Held table's severity is typed on the board, not read from the register (AR3) | the triage scale is next changed, or a Held severity is found disagreeing with its row's finding. |
@@ -1501,7 +1514,6 @@ Scored so the comparison is a judgement, not an omission.\
 | **B254** | S4 | The answer to the tab's own undo can land mid-drag; 6 runs in 600 undo-heavy (H19.16) | a user reports a node jumping during a drag |
 | **B256** | S4 | Pipes carry one link each, and a link may not run a pipe twice (hairpins) | concurrent links on one pipe are designed -- a parallel renderer or sub-anchors -- at which point `pipeCapacity` rises above one and a hairpin becomes two runs a pipe can carry. |
 | **B262** | S4 | Bindings cannot override one another (Q3, held for now, DG2) | a binding whose meaning must shadow another's, where writing the two as disjoint conditions is measurably worse -- longer, duplicated, or unreadable -- or a plugin needs to replace a product binding rather than add beside it. |
-| **B264** | S4 | A double click finds a zone without Shift; a press needs Shift (kept for now) | the director re-evaluates double-click on zones in the lab, or an author double-clicks a zone meaning the node beneath it. |
 | **B265** | S3 | The context panel (a fixed panel following the situation) is not designed; gesture system stage 7 parked | the director opens the context panel's design. |
 | **B188** | S3 | Perception symmetric with authoring: `draft show` exists, `--draft` on a READ does not, so an agent cannot ask what the document would look like after its draft applies | an agent stages enough that it cannot hold the result in its head. |
 | **B194** | S3 | `draw event <condition>` -- an agent BLOCKS on a described condition rather than asking a person to confirm one. Viewer-opened, lock-freed, commit-landed all become one verb | an agent must wait on something a viewer cannot supply -- a lock freeing, or a commit from another agent. |
@@ -1528,6 +1540,7 @@ B163, the last entry, was ratified and closed on 2026-10-01: the standing goals 
 
 | Row | Decision owed | Why it cannot be settled without you |
 |---|---|---|
+| **B352** | Whether Ctrl+A keeps selecting zones, or leaves them out so a zone is reached only with Shift | H24.1 ruled that every zone interaction takes Shift, and Ctrl+A is the one path that reaches zones without it; select-all meaning everything is a reasonable reading too |
 
 **R13 reads this table in both directions**, which is what `Held` has had since B123 and this section never did.\
 A row recording `RULING-OWED` must appear here, so a decision cannot wait unseen; an entry here must still be `RULING-OWED`, so a ruling that has landed cannot keep asserting itself.\
