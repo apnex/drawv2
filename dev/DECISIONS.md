@@ -2006,5 +2006,11 @@ Recorder: asked where a published diagram's SVG is embedded from, because the cl
 AMENDED 2026-10-15 -- **H23, refined by the director** (H23.6), after publishing a diagram: "Small visual style - can we make the button highlight a pale/light green when we change from private to public, rather than the text?".
 `#publish` shows public with a pale green background, Light Green 200 lifting to Light Green 100 on hover, and dark text, where it had turned its text green.
 
+**H23.7 -- move every remaining classic load balancer resource in `labops` to the global external load balancer -- 2026-10-15.**\
+Director: "move everything to new loadbalancer"\
+Shown: dev/BOARD.md@e4cd94a\
+Affects: docs/spec/ACCESS.md\
+Recorder: asked after H23 closed whether to leave the last classic pieces as they were (recommended), move only the HTTP-to-HTTPS redirect for `apnex.io` (`fwd-apnex-io-http`), or move the separate `labops.sh` load balancer too (`fwd-labops`, `fwd-labops-http`, `map-labops`), the director directed moving everything: `svc-mmd-render` and the unattached `svc-mermaid` go through Google's staged migration, and the three remaining forwarding rules move to `EXTERNAL_MANAGED`, so no `EXTERNAL` load balancing resource is left in the project.
+
 
 

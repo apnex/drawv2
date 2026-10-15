@@ -452,3 +452,5 @@ AMENDED 2026-10-15 (H23): diagram IDs are 16-hex (`[0-9a-f]{16}`) at `/<id>` and
 
 AMENDED 2026-10-15 (H23.5): `map-apnex-io` runs on the global external load balancer (`EXTERNAL_MANAGED`), and a `path-draw` route rule sends `/<id>.svg` to `svc-draw-connect`, which has IAP off.\
 This settles the open question above on `/d/<id>.svg`: a published diagram's SVG answers without any principal, and a private one answers `404` exactly as an unknown ID does.
+
+AMENDED 2026-10-15 (H23.7): the HTTP-to-HTTPS redirect in front of `draw.apnex.io` runs on the global external load balancer too, so no classic load balancer resource is left on any path to the application.

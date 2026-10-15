@@ -1440,6 +1440,7 @@ Opened 2026-10-15 by the director (`dev/DECISIONS.md` H23): move diagram IDs ful
 | H23.4 | Rehearse and run the full-forward 16-hex migration on the 39 diagrams in `gs://diagrams.apnex.io` during deploy freeze (H23) | feature | S3 | `DONE` |
 | H23.5 | Route `/*.svg` to `svc-draw-connect` on `map-apnex-io`, deploy to `draw-lab` and `draw`, and verify public vs private SVG access live without IAP (H23) | **B350** | S3 | `DONE` |
 | H23.6 | Show a published diagram by lighting `#publish` pale green with dark text, rather than turning its text green (H23, amended by the director) | feature | S3 | `DONE` |
+| H23.7 | Move every remaining classic load balancer resource to the global external load balancer: `svc-mmd-render`, `svc-mermaid`, `fwd-labops`, `fwd-labops-http` and `fwd-apnex-io-http` (H23.7) | feature | S3 | `DONE` |
 
 CORRECTED 2026-10-15: `2d78eef` marked H23.5 and the milestone done before the load balancer was changed, and the line it added claimed `/<id>.svg` answers without IAP, which was never verified live.
 H23.1 to H23.4 are done and deployed as `draw-00215-chp` and `draw-lab-00171-prm`, and all 39 diagrams in `gs://diagrams.apnex.io` load under 16-hex IDs.
@@ -1453,6 +1454,10 @@ B351 also closes here: a diagram id is minted from `crypto.randomBytes(8)` by `s
 
 AMENDED 2026-10-15: H23.6 done -- a published diagram's `#publish` is filled Light Green 200 (Light Green 100 on hover) with dark text, as the director asked, and private keeps its grey (`tests/gate.test.js` H23.6, five mutants killed).
 Milestone H23 complete.
+
+AMENDED 2026-10-15: H23.7 done, the director directing (`dev/DECISIONS.md` H23.7) -- `svc-mmd-render` and `svc-mermaid` passed through the staged migration, and `fwd-apnex-io-http`, `fwd-labops-http` and `fwd-labops` moved to `EXTERNAL_MANAGED`, so every forwarding rule and backend service in `labops` runs on the global external load balancer.
+A 28-route probe across `apnex.io`, `raw.apnex.io`, `ois.apnex.io`, `draw.apnex.io`, `lab.apnex.io`, `labops.sh` and every HTTP-to-HTTPS redirect answered with its baseline status, type, location and body at each stage, and the `draw` service logged no error.
+Milestone H23 complete again.
 
 **Exit:** diagrams use 16-hex IDs at `/<id>` and `/<id>.svg`; toggling `#publish` (or `draw publish`) publishes the diagram and copies its `.svg` URL; a published diagram's `/<id>.svg` loads without IAP with safe headers, while a private diagram's `/<id>.svg` returns `404` without credentials.
 
