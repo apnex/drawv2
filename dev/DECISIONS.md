@@ -2054,5 +2054,11 @@ Shown: dev/BOARD.md@1fa0beb\
 Affects: docs/spec/ATOMICS.md\
 Recorder: shown the four arrow issues found by rendering every case -- heads hidden under devices, none visible on a control-plane link, a selected link's head staying blue, direction readable only at a long link's far end -- and offered fixing in place (recommended), fixing with chevrons along the line, or the director's own design, the director chose to target all four and design each before any code. A K5 survey was begun and the director redirected before any question was answered: "rather than a survey, lets just discuss each one individually". So each issue is discussed in turn, its decision recorded in `docs/spec/ATOMICS.md` "Arrowheads" as it is ruled, and the four are built once designed.
 
+**H24.6-1 -- arrowheads, issue 1: every line runs to its anchor's centre, and the tip sits on the anchor's outline -- 2026-10-15 (B356).**\
+Director: "Lets continue with ii at 0px as recommended for now"\
+Shown: docs/spec/ATOMICS.md@08ecb86\
+Affects: docs/spec/ATOMICS.md, dev/design/arrows/README.md\
+Recorder: shown a page of mockups, outside the repository and kept as `dev/design/arrows/issue1-placement.html` -- three line treatments (plain lines run in with arrowed lines stopping at the head; every line runs in; every line ends at the outline) at 0, 3 and 6 px, across a device, a selected and grouped device, a round device, a control link, a diagonal, a wide device, an endpoint, a junction, two opposed links and a waypoint with transit off, beside a square and a round port -- after the director observed that an arrowhead sits where a port would and that 6 px may be too far, and that they have always liked lines running into a junction, the director chose "every line runs in" at 0 px, as recommended, "for now". Every line runs to its anchor's centre, as today; the head's tip sits on the anchor's outline, measured along the line -- a device's frame (square, round, or a wide device's rectangle) or a waypoint's outer ring -- and the head is drawn over the anchor. A known cost, accepted: a group's outline, and on a diagonal the selection brackets, cross the tip. The head's size is issue 2.
+
 
 
