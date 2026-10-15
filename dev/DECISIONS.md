@@ -2072,5 +2072,11 @@ Shown: docs/spec/ATOMICS.md@e3d71d0\
 Affects: docs/spec/ATOMICS.md, dev/design/arrows/README.md\
 Recorder: asked how a head is built in SVG and to see a hollow one, then to double the hollow outline, the director was shown a page of shapes at the ruled size, outside the repository and kept as `dev/design/arrows/issue2b-shape.html` -- filled, hollow at 2 and 4 px, see-through at 4 px, an open chevron, a narrow and a notched head -- and told that a marker cannot sit on the outline while the line runs to the centre, cannot hold an 18 px floor, and cannot take the line's colour, so each head is to be drawn as a shape of its own; and that an inside painted the canvas colour would show as a dark patch inside a tinted zone. The director chose the recommendation: a hollow head, outlined at 4 px with its outline's outer edge on the anchor's outline, its inside left clear, and the line broken beneath it -- drawn from its far end to the head's base and again from the tip to the anchor's centre -- so it reads the same on the canvas and inside a zone, and the line still runs into a junction past the tip.
 
+**H24.6-3 -- arrowheads, issue 3: a head takes its line's colour in every state -- 2026-10-15 (B356, B226).**\
+Director: "continue. a"\
+Shown: docs/spec/ATOMICS.md@d933d0a\
+Affects: docs/spec/ATOMICS.md, dev/design/arrows/README.md\
+Recorder: shown a page of the ruled head in every link state -- normal, selected, armed to delete, down, blocking a down link, an end being dragged, a junction with one link selected, a selected control link -- under three rules, outside the repository and kept as `dev/design/arrows/issue3-colour.html`: (a) the head follows its line in every state, (b) only when selected, blue otherwise, (c) always blue, as today; and told that under (a) a selected head on a device's frame shares the frame's green. The director chose (a), as recommended: a head takes its link's colour and opacity in every state -- green when selected, red when armed, orange when down or blocking, faded with its line while an end is dragged -- which retires the trade B226 recorded, possible now that each head is a shape of its own rather than a marker.
+
 
 
