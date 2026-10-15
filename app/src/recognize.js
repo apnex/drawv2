@@ -67,7 +67,8 @@ export function hitFactsOf(picks, places) {
 		if (p.handle) continue;
 		const was = facts.get(p.word) ?? {};
 		facts.set(p.word, { placed: was.placed || places.has(p.kind), anchor: was.anchor || ANCHOR_KINDS.includes(p.kind), clones: was.clones || !!p.clones, modifier: was.modifier ?? p.modifier ?? null,
-			idle: was.idle ?? p.idle ?? null });   // C-f: the state it shows idle under the pointer -- a device's ring
+			idle: was.idle ?? p.idle ?? null,   // C-f: the state it shows idle under the pointer -- a device's ring
+			right: was.right || p.button === 'right' });   // H24.5: pressed with the right button only -- a zone
 	}
 	return facts;
 }
@@ -80,30 +81,40 @@ export function pressRows(picks, places) {
 	const facts = hitFactsOf(picks, places);
 	const is = (fact) => (h) => !!facts.get(h.kind)?.[fact];
 	const drawn = (h) => facts.has(h.kind);   // a hit naming something a plugin draws -- a real, selectable entity (not a handle, not the canvas)
-	const placed = is('placed'), anchor = is('anchor'), clones = is('clones');
+	const placed = is('placed'), anchor = is('anchor'), clones = is('clones'), right = is('right');
 	const selects = (h) => (drawn(h) && !anchor(h)) || !!h.mark;
 	const words = (test) => [...facts.keys()].filter((w) => test({ kind: w })).join('|');
-	const pressed = [...facts.keys()].filter((w) => !facts.get(w).anchor).map((w) => `${facts.get(w).modifier ? `${MODIFIER_WORD[facts.get(w).modifier]}+` : ''}left on ${w}`);
+	// the left press's help line names what a left press takes -- not a kind pressed with the right button only (H24.5)
+	const pressed = [...facts.keys()].filter((w) => !facts.get(w).anchor && !facts.get(w).right).map((w) => `${facts.get(w).modifier ? `${MODIFIER_WORD[facts.get(w).modifier]}+` : ''}left on ${w}`);
+	// H24.5: a right-button row's help lines -- the kinds picked with no modifier, then each held modifier's own (a zone's Shift)
+	const onRight = (mods, test) => {
+		const ws = [...facts.keys()].filter((w) => test({ kind: w }));
+		const line = (held, list) => `${[...mods, ...held].join('+')}${mods.length || held.length ? '+' : ''}right on ${list.join('|')}`;
+		const plain = ws.filter((w) => !facts.get(w).modifier);
+		const byMod = [...new Set(ws.map((w) => facts.get(w).modifier).filter(Boolean))];
+		return [...(plain.length ? [line([], plain)] : []), ...byMod.map((m) => line([MODIFIER_WORD[m]], ws.filter((w) => facts.get(w).modifier === m)))];
+	};
 	return [
 		// right button: the delete chord, then clone, then press
-		{ id: 'chord', input: [`Alt+right on ${words(drawn)}`],     mutates: true,  on: (e) => R(e) && e.altKey && !!e.on.id && !e.on.handle,      run: 'deleteUnderCursor' },
-		{ id: 'r-clone', input: [`Ctrl+right on ${words(placed)}`],   mutates: true,  on: (e) => R(e) && e.ctrlKey && !e.altKey && placed(e.on),           gesture: 'clone-pending' },
-		{ id: 'r-press', input: [`right on ${words(placed)}`],   mutates: false, on: (e) => R(e) && !e.ctrlKey && !e.altKey && placed(e.on),          gesture: 'pending' },
+		{ id: 'chord', input: onRight(['Alt'], drawn),     mutates: true,  on: (e) => R(e) && e.altKey && !!e.on.id && !e.on.handle,      run: 'deleteUnderCursor' },
+		{ id: 'r-clone', input: onRight(['Ctrl'], placed),   mutates: true,  on: (e) => R(e) && e.ctrlKey && !e.altKey && placed(e.on),           gesture: 'clone-pending' },
+		{ id: 'r-press', input: onRight([], placed),   mutates: false, on: (e) => R(e) && !e.ctrlKey && !e.altKey && placed(e.on),          gesture: 'pending' },
 
 		// left button, most specific first in reading, and disjoint in fact: a press on a handle opens the shared handle gesture from
-		// the row of the plugin that declared it; a held tool's press is the devices plugin's text box (C-d)
-		{ id: 'l-clone', input: [`Ctrl+left on ${words(clones)}`],   mutates: true,  on: (e) => L(e) && e.ctrlKey && clones(e.on), when: free,                gesture: 'clone-pending' },
+		// the row of the plugin that declared it; a held tool's press is the devices plugin's text box (C-d). A kind pressed with the
+		// right button only -- a zone -- is taken by no left row here, so its plugin's own left row may (H24.5: Shift+left draws over it)
+		{ id: 'l-clone', input: [`Ctrl+left on ${words((h) => clones(h) && !right(h))}`],   mutates: true,  on: (e) => L(e) && e.ctrlKey && clones(e.on) && !right(e.on), when: free,                gesture: 'clone-pending' },
 		// a left press on an anchor draws a link from it -- with Ctrl, one that clones is cloned instead (the row above)
 		{ id: 'link', input: [`left on ${words(anchor)}`],      mutates: true,  on: (e) => L(e) && anchor(e.on) && !(e.ctrlKey && clones(e.on)), when: free, gesture: 'link' },
 
 		// the non-mutating tail. These are what a Server-Locked client is left with, and SCOPE decision 5
 		// promises exactly them: "selection, the data view, and the readout still work".
 		// a plugin's mark (app/src/pick.js) is pressed as a link is: it selects, and a drag never moves it (H17.22 N-c2)
-		{ id: 'press', input: [...pressed, 'left on mark'],     mutates: false, on: (e) => L(e) && selects(e.on) && !e.ctrlKey, when: free, gesture: 'pending' },
+		{ id: 'press', input: [...pressed, 'left on mark'],     mutates: false, on: (e) => L(e) && selects(e.on) && !right(e.on) && !e.ctrlKey, when: free, gesture: 'pending' },
 		{ id: 'marquee', input: ['left on canvas'],   mutates: false, on: (e) => L(e) && e.on.kind === 'canvas' && !e.shiftKey, when: free,    gesture: 'marquee' },
 
 		// ...and what a locked client reached by falling past the authoring rows above, which a writer never sees
-		{ id: 'press-locked',   mutates: false, whileReadOnly: true, on: (e) => L(e) && drawn(e.on) && (anchor(e.on) || e.ctrlKey), gesture: 'pending' },
+		{ id: 'press-locked',   mutates: false, whileReadOnly: true, on: (e) => L(e) && drawn(e.on) && !right(e.on) && (anchor(e.on) || e.ctrlKey), gesture: 'pending' },
 		{ id: 'marquee-locked', mutates: false, whileReadOnly: true, on: (e) => L(e) && e.on.kind === 'canvas' && e.shiftKey, gesture: 'marquee' },
 		{ id: 'r-press-locked', mutates: false, whileReadOnly: true, on: (e) => R(e) && (e.ctrlKey || e.altKey) && placed(e.on), gesture: 'pending' },
 	];

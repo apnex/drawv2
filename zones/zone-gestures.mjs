@@ -67,10 +67,12 @@ function resizeBox(pos, fixedCorner) {
 	return { x: box.x, y: box.y, w: box.w, h: box.h };
 }
 
-// the zone's draw: Shift and left-drag on the canvas, with no tool held, opens the shared box gesture on the zone's grid
+// the zone's draw: Shift and left-drag on the canvas, with no tool held, opens the shared box gesture on the zone's grid --
+// H24.5: on an existing zone too, which the left button no longer takes (zone-painter.mjs: a zone is pressed with the right),
+// so a zone can be drawn over or inside another
 const ZONE_DRAW = {
-	id: 'zone-draw', input: ['Shift+left on canvas'], mutates: true, doc: 'draw a zone',
-	on: (e) => e.button === 0 && e.on.kind === 'canvas' && e.shiftKey,
+	id: 'zone-draw', input: ['Shift+left on canvas|zone'], mutates: true, doc: 'draw a zone',
+	on: (e) => e.button === 0 && (e.on.kind === 'canvas' || e.on.kind === 'zone') && e.shiftKey,
 	when: (s) => !s.tool,
 	gesture: 'box',
 	box: {

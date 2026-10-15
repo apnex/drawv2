@@ -394,6 +394,7 @@ Each is a real fork, with a recommendation.
 - **B264 parked:** a double click on a zone without Shift stays, by the director's ruling; acceptance 5 is withdrawn until the director re-evaluates it in the lab.
   AMENDED 2026-10-15 (H24.1): the director re-evaluated it -- "all zone interaction requires shift" -- and acceptance 5 holds again: a zone's double-click edit is asked only with Shift held (`zones/zone-labels.mjs` `modifier`), so a plain double-click inside a zone passes through it as a plain press does, and B264 is closed.
   AMENDED 2026-10-15 (H24.2, H24.3): Ctrl+A keeps selecting zones, by ruling, and releasing Shift deselects every zone -- the kinds picked only under Shift -- at once, or when a press in progress ends unless Shift is held again by then (`app/src/input.js` `onShiftUp`, `dropShiftOnly`).
+  AMENDED 2026-10-15 (H24.5): a zone is pressed with the right button only -- Shift+right selects, moves and with Ctrl clones it -- so a Shift+left press that lands on a zone draws a new zone over it; the zone's pick carries `button: 'right'`, which the product's left rows read as a fact (`app/src/recognize.js` `right`), and the corner handles, drawn over the zone, still resize with the left button.
 - **Not in this stage, by the guardrails:** an action registry with labels. Actions are Input's named methods, which the rows reference; the registry and its labels arrive with their first reader, the generated help overlay (stage 6).
 - **Behaviour otherwise unchanged:** every other corpus record byte-identical; ten mutants, each caught.
 

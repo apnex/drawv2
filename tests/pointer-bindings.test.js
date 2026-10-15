@@ -89,10 +89,32 @@ test('a tool is never held on a locked client: locking releases it, and a locked
 	} finally { h.restore(); }
 });
 
+/*
+RESTATED 2026-10-15 (H24.5): a LEFT press on a zone is ruled anew -- "only right click drag selects or moves an existing zone",
+so Shift+left draws a new zone over it -- and the old table is no oracle for it. Those presses are held case by case instead:
+a writer's Shift+left on a zone, with no tool held, draws a zone; a held text tool places a text box there as anywhere; every
+other left press on a zone starts nothing. A zone is
+selected, moved and cloned with the right button, which the old table still answers for.
+*/
+const ruledAnew = (e) => e.on.kind === 'zone' && e.button === 0;
+
+test('H24.5: a left press on a zone draws a zone under Shift for a writer, places a held text tool\'s box, and starts nothing otherwise', () => {
+	const differ = [];
+	for (const g of GUARDS) for (const s of SITUATIONS) for (const e of PRESSES.filter(ruledAnew)) {
+		if (!reachable(g, s)) continue;
+		// a held text tool places a text box wherever a left press lands, a zone included -- unchanged since the old table's `tool` row
+		const want = s.tool ? 'gesture:textbox' : !g.readOnly && e.shiftKey ? 'gesture:zone' : 'nothing';
+		const now = outcome(resolveInput(PRESS_TABLE, e, s, g).rule);
+		if (now !== want) differ.push(`${JSON.stringify(g)} tool=${s.tool} ${JSON.stringify({ s: e.shiftKey, c: e.ctrlKey, a: e.altKey })}: ${now}, want ${want}`);
+	}
+	assert.deepEqual(differ, []);
+});
+
 test('the pointer table starts exactly the gesture the old ordered table did, for every press, tool and lock', () => {
 	const differ = [];
 	for (const g of GUARDS) for (const s of SITUATIONS) for (const e of PRESSES) {
 		if (!reachable(g, s)) continue;
+		if (ruledAnew(e)) continue;   // H24.5, held above
 		// CORRECTED at B316: the old table saw a link end's hit with no id ({ kind: 'lhandle', end }) -- C-d step two gave the old side
 		// the new shape, and so hid that the delete chord came to match a link end's handle
 		const was = outcome(oldResolve(oldHit(e.on), e, { readOnly: g.readOnly, tool: s.tool }));

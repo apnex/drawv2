@@ -228,7 +228,8 @@ test('C-d: what a press starts follows the plugins\' facts -- a right press move
 	assert.deepEqual(Object.fromEntries([...facts].map(([w, f]) => [w, [f.placed, f.anchor, f.clones].map(Number).join('')])),
 		{ node: '111', link: '001', waypoint: '110', zone: '101' }, 'placed / anchor / clones, per hit word');
 	const rows = pressRows(picksOf(PRODUCT_CANVAS), placesOf(PRODUCT_CANVAS));
-	assert.deepEqual(rows.find((r) => r.id === 'r-press').input, ['right on node|waypoint|zone']);
+	// RESTATED 2026-10-15 (H24.5): a zone is pressed with Shift+right, and its help line says the Shift
+	assert.deepEqual(rows.find((r) => r.id === 'r-press').input, ['right on node|waypoint', 'Shift+right on zone']);
 	assert.deepEqual(rows.find((r) => r.id === 'link').input, ['left on node|waypoint']);
 });
 
@@ -267,6 +268,7 @@ test('C-d: Ctrl over a hovered device or zone lights the clone; over a waypoint 
 	} finally { h.restore(); }
 });
 
+// RESTATED 2026-10-15 (H24.5): the press is Shift+RIGHT -- a Shift+left press on a zone draws a new zone over it
 test('C-d: a Shift-press on a zone selects it alone -- Shift is the zone\'s layer key, not selection-add', async () => {
 	const { seedNodes } = await import('./fixtures/client-harness.mjs');
 	const h = makeInput();
@@ -274,7 +276,7 @@ test('C-d: a Shift-press on a zone selects it alone -- Shift is the zone\'s laye
 		const [n] = seedNodes(h.model, [[0, 0]]);
 		const z = makeZone(h.model, { x: 150, y: 150, w: 120, h: 120 }); h.model.put('zone', z);
 		h.selection.set([n.id]);
-		const onZone = pointer(200, 200, { shiftKey: true, target: { tagName: 'rect', classList: { contains: () => false }, dataset: {}, closest: (s) => (s.includes('zone') ? { id: z.id } : null) } });
+		const onZone = pointer(200, 200, { shiftKey: true, button: 2, buttons: 2, target: { tagName: 'rect', classList: { contains: () => false }, dataset: {}, closest: (s) => (s.includes('zone') ? { id: z.id } : null) } });
 		h.capture.onDown(onZone);
 		h.capture.onUp(onZone);
 		assert.deepEqual(h.selection.list(), [z.id]);
@@ -293,9 +295,12 @@ A drag owns the pointer: Shift released mid-drag (a zone moved, a corner dragged
 ends, and the drop happens then, unless Shift is held again by the time the pointer comes up.
 */
 const zoneTarget = (z, x, y, mod = {}) => pointer(x, y, { target: { tagName: 'rect', classList: { contains: () => false }, dataset: {}, closest: (s) => (s.includes('zone') ? { id: z.id } : null) }, ...mod });
+// H24.5: a zone is pressed with the right button
+const rightOn = (z, x, y, mod = {}) => zoneTarget(z, x, y, { button: 2, buttons: 2, ...mod });
 const shiftDown = (h) => h.capture.onKeyDown({ key: 'Shift', code: 'ShiftLeft', shiftKey: true, ctrlKey: false, altKey: false, metaKey: false, target: { tagName: 'BODY' }, preventDefault() {}, stopPropagation() {} });
 const shiftUp = (h) => h.capture.onKeyUp({ key: 'Shift', code: 'ShiftLeft', shiftKey: false, ctrlKey: false, altKey: false, metaKey: false, target: { tagName: 'BODY' }, preventDefault() {}, stopPropagation() {} });
 
+// RESTATED 2026-10-15 (H24.5): the zone is pressed with Shift+right, as it now always is
 test('H24.3: releasing Shift deselects a zone picked with it; a device stays selected', async () => {
 	const { seedNodes } = await import('./fixtures/client-harness.mjs');
 	const h = makeInput();
@@ -303,9 +308,9 @@ test('H24.3: releasing Shift deselects a zone picked with it; a device stays sel
 		const [n] = seedNodes(h.model, [[0, 0]]);
 		const z = makeZone(h.model, { x: 150, y: 150, w: 120, h: 120 }); h.model.put('zone', z);
 		shiftDown(h);
-		h.capture.onDown(zoneTarget(z, 200, 200, { shiftKey: true }));
-		h.capture.onUp(zoneTarget(z, 200, 200, { shiftKey: true }));
-		assert.deepEqual(h.selection.list(), [z.id], 'precondition: Shift+click selects the zone');
+		h.capture.onDown(rightOn(z, 200, 200, { shiftKey: true }));
+		h.capture.onUp(rightOn(z, 200, 200, { shiftKey: true }));
+		assert.deepEqual(h.selection.list(), [z.id], 'precondition: Shift+right click selects the zone');
 		shiftUp(h);
 		assert.deepEqual(h.selection.list(), [], 'and releasing Shift deselects it');
 
@@ -318,40 +323,116 @@ test('H24.3: releasing Shift deselects a zone picked with it; a device stays sel
 	} finally { h.restore(); }
 });
 
+// RESTATED 2026-10-15 (H24.5): the zone is pressed and dragged with Shift+right
 test('H24.3: Shift released mid-drag leaves the zone selected until the drag ends, then deselects it', () => {
 	const h = makeInput();
 	try {
 		const z = makeZone(h.model, { x: 150, y: 150, w: 120, h: 120 }); h.model.put('zone', z);
 		shiftDown(h);
-		h.capture.onDown(zoneTarget(z, 200, 200, { shiftKey: true }));
-		h.capture.onMove(zoneTarget(z, 260, 200, { shiftKey: true }));
-		h.capture.onMove(zoneTarget(z, 320, 200, { shiftKey: true }));
+		h.capture.onDown(rightOn(z, 200, 200, { shiftKey: true }));
+		h.capture.onMove(rightOn(z, 260, 200, { shiftKey: true }));
+		h.capture.onMove(rightOn(z, 320, 200, { shiftKey: true }));
 		shiftUp(h);
 		assert.deepEqual(h.selection.list(), [z.id], 'mid-drag the zone stays selected -- the drag owns the pointer');
-		h.capture.onMove(zoneTarget(z, 380, 200));
-		h.capture.onUp(zoneTarget(z, 380, 200));
+		h.capture.onMove(rightOn(z, 380, 200));
+		h.capture.onUp(rightOn(z, 380, 200));
 		assert.notEqual(h.model.get('zone', z.id).x, 150, 'the drag completed and moved the zone');
 		assert.deepEqual(h.selection.list(), [], 'and once it ended with Shift up, the zone is deselected');
 
 		// control: Shift held again by the time the pointer comes up keeps it
 		shiftDown(h);
-		h.capture.onDown(zoneTarget(z, 400, 200, { shiftKey: true }));
-		h.capture.onMove(zoneTarget(z, 460, 200, { shiftKey: true }));
+		h.capture.onDown(rightOn(z, 400, 200, { shiftKey: true }));
+		h.capture.onMove(rightOn(z, 460, 200, { shiftKey: true }));
 		shiftUp(h); shiftDown(h);
-		h.capture.onUp(zoneTarget(z, 460, 200, { shiftKey: true }));
+		h.capture.onUp(rightOn(z, 460, 200, { shiftKey: true }));
 		assert.deepEqual(h.selection.list(), [z.id], 'Shift held again at the end: the zone stays selected');
 
 		// each of the two ways "held again" is known, alone: a drag cancelled with no pointer event (a document swap) has only
 		// Shift's keydown to go on; a release whose Shift keydown was never seen (focus elsewhere) has only the event's own flag
-		h.capture.onDown(zoneTarget(z, 460, 200, { shiftKey: true }));
-		h.capture.onMove(zoneTarget(z, 520, 200, { shiftKey: true }));
+		h.capture.onDown(rightOn(z, 460, 200, { shiftKey: true }));
+		h.capture.onMove(rightOn(z, 520, 200, { shiftKey: true }));
 		shiftUp(h); shiftDown(h);
 		h.input.cancelDrag();
 		assert.deepEqual(h.selection.list(), [z.id], 'cancelled with no event after Shift was pressed again: the zone stays');
-		h.capture.onDown(zoneTarget(z, 460, 200, { shiftKey: true }));
-		h.capture.onMove(zoneTarget(z, 520, 200, { shiftKey: true }));
+		h.capture.onDown(rightOn(z, 460, 200, { shiftKey: true }));
+		h.capture.onMove(rightOn(z, 520, 200, { shiftKey: true }));
 		shiftUp(h);
-		h.capture.onUp(zoneTarget(z, 520, 200, { shiftKey: true }));
+		h.capture.onUp(rightOn(z, 520, 200, { shiftKey: true }));
 		assert.deepEqual(h.selection.list(), [z.id], 'released with Shift held, its keydown unseen: the zone stays');
 	} finally { h.restore(); }
+});
+
+/*
+H24.5 -- UNDER SHIFT, THE LEFT BUTTON ALWAYS DRAWS A ZONE, AND THE RIGHT BUTTON SELECTS, MOVES AND CLONES ONE.
+
+The director: "for zones (in shift mode) we make it that only right click drag selects or moves an existing zone. that way -
+left click can be used to create a new zone on top of an old one". A Shift+left press that landed on a zone used to take that
+zone -- select it, drag it -- so no zone could be started inside another. The zone's pick now says it is pressed with the
+right button (zones/zone-painter.mjs), the product's left-press rows pass over it by that fact, and the zones plugin's draw
+row takes a Shift+left press on the canvas or on a zone. A corner handle is drawn over its zone and still resizes it with the
+left button.
+*/
+
+test('H24.5: Shift+left-drag inside an existing zone draws a new zone over it; a Shift+left click on a zone selects nothing', () => {
+	const h = makeInput();
+	try {
+		const z = makeZone(h.model, { x: 150, y: 150, w: 300, h: 300 }); h.model.put('zone', z);
+		shiftDown(h);
+		h.capture.onDown(zoneTarget(z, 215, 215, { shiftKey: true }));
+		h.capture.onMove(zoneTarget(z, 330, 330, { shiftKey: true }));
+		h.capture.onUp(zoneTarget(z, 330, 330, { shiftKey: true }));
+		const zones = h.model.all('zone');
+		assert.equal(zones.length, 2, 'a second zone was drawn, starting inside the first');
+		const made = zones.find((x) => x.id !== z.id);
+		assert.deepEqual({ x: h.model.get('zone', z.id).x, y: h.model.get('zone', z.id).y }, { x: 150, y: 150 }, 'and the first did not move');
+		assert.ok(made.x >= 150 && made.y >= 150 && made.x + made.w <= 450 && made.y + made.h <= 450, 'the new zone sits inside the old one');
+		assert.deepEqual(h.selection.list(), [made.id], 'the new zone is selected, as a drawn zone always is');
+
+		h.selection.clear();
+		h.capture.onDown(zoneTarget(z, 420, 420, { shiftKey: true }));
+		h.capture.onUp(zoneTarget(z, 420, 420, { shiftKey: true }));
+		assert.deepEqual(h.selection.list(), [], 'a Shift+left click on a zone no longer selects it');
+		assert.equal(h.model.all('zone').length, 2, 'and a click with no area draws nothing');
+	} finally { h.restore(); }
+});
+
+test('H24.5: Shift+right selects and moves a zone, Ctrl+Shift+right clones it, and a corner handle still resizes with the left button', () => {
+	const h = makeInput();
+	try {
+		const z = makeZone(h.model, { x: 150, y: 150, w: 120, h: 120 }); h.model.put('zone', z);
+		shiftDown(h);
+		h.capture.onDown(rightOn(z, 200, 200, { shiftKey: true }));
+		h.capture.onUp(rightOn(z, 200, 200, { shiftKey: true, buttons: 0 }));
+		assert.deepEqual(h.selection.list(), [z.id], 'Shift+right click selects the zone');
+		h.capture.onDown(rightOn(z, 200, 200, { shiftKey: true }));
+		h.capture.onMove(rightOn(z, 320, 200, { shiftKey: true }));
+		h.capture.onUp(rightOn(z, 320, 200, { shiftKey: true, buttons: 0 }));
+		assert.equal(h.model.get('zone', z.id).x, 270, 'Shift+right drag moves it');
+		h.capture.onDown(rightOn(z, 320, 200, { shiftKey: true, ctrlKey: true }));
+		h.capture.onMove(rightOn(z, 320, 380, { shiftKey: true, ctrlKey: true }));
+		h.capture.onUp(rightOn(z, 320, 380, { shiftKey: true, ctrlKey: true, buttons: 0 }));
+		assert.equal(h.model.all('zone').length, 2, 'Ctrl+Shift+right drag clones it');
+
+		h.selection.set([z.id]);
+		h.capture.onDown(handle('se', 390, 270));
+		h.capture.onMove(handle('se', 510, 330));
+		h.capture.onUp(handle('se', 510, 330));
+		const r = h.model.get('zone', z.id);
+		assert.deepEqual({ w: r.w, h: r.h }, { w: 240, h: 180 }, 'a corner handle resizes with the left button, as before');
+	} finally { h.restore(); }
+});
+
+test('H24.5: the help says it -- Shift+left on the canvas or a zone draws, and a zone is pressed, cloned and deleted with Shift+right', async () => {
+	const { pressRows } = await import('../app/src/recognize.js');
+	const { picksOf } = await import('../app/src/pick.js');
+	const { placesOf } = await import('../app/src/snap.js');
+	const rows = pressRows(picksOf(PRODUCT_CANVAS), placesOf(PRODUCT_CANVAS));
+	const input = (id) => rows.find((r) => r.id === id).input;
+	assert.deepEqual(input('r-press'), ['right on node|waypoint', 'Shift+right on zone']);
+	assert.deepEqual(input('r-clone'), ['Ctrl+right on node|waypoint', 'Ctrl+Shift+right on zone']);
+	assert.deepEqual(input('chord'), ['Alt+right on node|link|waypoint', 'Alt+Shift+right on zone']);
+	assert.deepEqual(input('press'), ['left on link', 'left on mark'], 'no left press takes a zone');
+	assert.deepEqual(input('l-clone'), ['Ctrl+left on node|link'], 'nor a left clone -- a link and a device still clone with Ctrl+left');
+	const draw = PRODUCT_CANVAS.find((p) => p.owner === 'zones').presses.find((r) => r.id === 'zone-draw');
+	assert.deepEqual(draw.input, ['Shift+left on canvas|zone'], 'the zone\'s draw names both');
 });

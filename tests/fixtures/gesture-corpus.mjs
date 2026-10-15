@@ -139,7 +139,8 @@ export const SCENARIOS = [
 	{ id: 'click-waypoint-selects', board: 'bent', steps: [['down', 180, 120, 'w0'], ['up', 180, 120, 'w0', { up: true }]] },
 	// ---- move, clone, delete chord ----
 	{ id: 'move-node-right-drag', board: 'pair', steps: drag([0, 0], [120, 60], 'n0', 'n0', { button: 2 }) },
-	{ id: 'move-zone-shift-drag', board: 'zone', steps: drag([-60, -60], [0, 60], 'z0', 'z0', { shift: true }) },
+	// RESTATED 2026-10-15 (H24.5): a zone is moved with Shift+RIGHT drag -- the left button draws a new zone over it (below)
+	{ id: 'move-zone-shift-drag', board: 'zone', steps: drag([-60, -60], [0, 60], 'z0', 'z0', { shift: true, button: 2 }) },
 	{ id: 'move-link-refused', board: 'straight', steps: drag([180, 0], [180, 120], 'l0', 'l0') },
 	{ id: 'move-shift-held-ortho', board: 'pair', steps: [['down', 0, 0, 'n0', { button: 2 }], ['move', 120, 20, 'n0', { button: 2 }], ['key', 'Shift', { shift: true }], ['move', 120, 20, 'n0', { button: 2, shift: true }], ['up', 120, 20, 'n0', { button: 2, shift: true, up: true }]] },
 	{ id: 'clone-ctrl-drag', board: 'pair', steps: drag([0, 0], [120, 120], 'n0', 'n0', { ctrl: true }) },
@@ -157,6 +158,8 @@ export const SCENARIOS = [
 	{ id: 'marquee-click-stamps-hand', board: 'empty', steps: [['hand', 'router'], ['down', 120, 120], ['up', 120, 120, null, { up: true }]] },
 	{ id: 'zone-draw', board: 'empty', steps: drag([0, 0], [240, 180], null, null, { shift: true }) },
 	{ id: 'zone-draw-zero', board: 'empty', steps: [['down', 0, 0, null, { shift: true }], ['up', 0, 0, null, { shift: true, up: true }]] },
+	// H24.5: Shift+left drag that starts on an existing zone draws a second zone over it, the first left where it was
+	{ id: 'zone-draw-over-zone', board: 'zone', steps: drag([-60, -60], [60, 60], 'z0', 'z0', { shift: true }) },
 	// ---- handles ----
 	{ id: 'resize-zone-corner', board: 'zone', steps: [['select', ['z0']], ...drag([150, 150], [270, 270], { corner: 'se' }, { corner: 'se' })] },
 	{ id: 'replug-straight-to-free-pair', board: 'three', steps: [['link', 'n2', 'n1'], ['selectLast'], ...drag([360, 360], [0, 0], { handle: 'src' }, 'n0')] },

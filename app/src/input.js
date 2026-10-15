@@ -7,8 +7,9 @@ Input — pointer/keyboard state machine. Two-button gestures (`dev/DECISIONS.md
   Alt+right-click   delete entity under cursor (red arming)     [v1 chord, resurrected]
   drag empty        marquee select (passes through zones)
   Shift             the ZONE layer: zones are inert backdrop unless Shift is
-                    held — Shift+click/drag selects/moves, Shift+drag on empty
-                    canvas draws a zone (zone grid doubles as layer indicator)
+                    held — Shift+right-click/drag selects/moves a zone, Shift+drag
+                    anywhere, an existing zone included, draws one (H24.5); releasing
+                    Shift deselects zones (H24.3) (zone grid doubles as layer indicator)
   drag zone handle  resize selected zone (handles stay live once selected)
   drag link endpoint  re-plug: rewire that end of a selected link onto another node
   Shift mid-drag    ortho lock: constrain a move/clone to its dominant axis

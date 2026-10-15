@@ -1583,18 +1583,19 @@ test('H24.3: on the product page releasing Shift deselects a zone, and a Shift+d
 
 		const [sx, sy] = JSON.parse(await t.eval(`JSON.stringify((() => { const m = document.getElementById('container').getScreenCTM(); return [m.a * 0 + m.e, m.d * 330 + m.f]; })())`));
 		const shift = (down) => t.send('Input.dispatchKeyEvent', { type: down ? 'rawKeyDown' : 'keyUp', key: 'Shift', code: 'ShiftLeft', windowsVirtualKeyCode: 16, modifiers: down ? 8 : 0 });
-		const clicks = async (n) => {
+		// RESTATED 2026-10-15 (H24.5): a zone is selected with Shift+RIGHT click; the rename stays a Shift+left double-click
+		const clicks = async (n, button = 'left') => {
 			await t.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: sx, y: sy, modifiers: 8 });
 			for (let clickCount = 1; clickCount <= n; clickCount++) {
-				await t.send('Input.dispatchMouseEvent', { type: 'mousePressed', x: sx, y: sy, button: 'left', buttons: 1, clickCount, modifiers: 8 });
-				await t.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: sx, y: sy, button: 'left', buttons: 0, clickCount, modifiers: 8 });
+				await t.send('Input.dispatchMouseEvent', { type: 'mousePressed', x: sx, y: sy, button, buttons: button === 'right' ? 2 : 1, clickCount, modifiers: 8 });
+				await t.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: sx, y: sy, button, buttons: 0, clickCount, modifiers: 8 });
 			}
 			await sleep(120);
 		};
 		const seen = () => t.eval(`JSON.stringify({ editor: !!document.getElementById('label-editor'), selected: window.draw.selection.list() })`).then(JSON.parse);
 
-		await shift(true); await clicks(1);
-		assert.deepEqual((await seen()).selected, [zoneId], 'precondition: Shift+click selects the zone');
+		await shift(true); await clicks(1, 'right');
+		assert.deepEqual((await seen()).selected, [zoneId], 'precondition: Shift+right click selects the zone');
 		await shift(false); await sleep(60);
 		assert.deepEqual((await seen()).selected, [], 'releasing Shift deselects it');
 
@@ -1606,6 +1607,58 @@ test('H24.3: on the product page releasing Shift deselects a zone, and a Shift+d
 		await t.send('Input.insertText', { text: 'edge-tier' });
 		for (const type of ['keyDown', 'keyUp']) await t.send('Input.dispatchKeyEvent', { type, key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13, ...(type === 'keyDown' ? { text: '\r' } : {}) });
 		await until(t, `window.draw.model.get('zone', '${zoneId}')?.name === 'edge-tier' && !document.getElementById('label-editor') ? 1 : 0`, 3000);
+	} finally {
+		if (zoneId) {
+			await t.eval(`(() => { const z = window.draw.model.get('zone', '${zoneId}'); if (z) window.draw.history.commit({ label: 'unzone', entries: [{ op: 'del', kind: 'zone', entity: { ...z } }] }); return 1; })()`).catch(() => {});
+			await until(t, `window.draw.sync.outbox.every((m) => m.answered) ? 1 : 0`, 6000).catch(() => {});
+		}
+		await t.close();
+	}
+});
+
+/*
+H24.5 -- ON THE PAGE, WITH REAL INPUT: Shift+left drag that starts inside a zone draws a second zone over it, and Shift+right
+drag moves a zone. The right press is Chrome's own, so the page's context-menu refusal and its pointer capture are exercised
+with the button the gesture now uses.
+*/
+test('H24.5: on the product page Shift+left drag inside a zone draws a new zone over it, and Shift+right drag moves a zone', { skip: SKIP }, async () => {
+	const t = await attach(`http://127.0.0.1:${port}/${NET_DIAGRAM}`);
+	let zoneId = null;
+	try {
+		await until(t, `document.getElementById('node-ab00a1') ? 1 : 0`, 8000);
+		await t.eval(`window.draw.input.setReadOnly(false), 1`);
+		zoneId = await t.eval(`(async () => { const { makeZone } = await import('/zones/make-zone.mjs');
+			const z = makeZone(window.draw.model, { x: -150, y: 270, w: 300, h: 180 });
+			window.draw.history.commit({ label: 'zone', entries: [{ op: 'put', kind: 'zone', entity: z }] });
+			return z.id; })()`);
+		await until(t, `document.getElementById('${zoneId}') && window.draw.sync.outbox.every((m) => m.answered) ? 1 : 0`, 6000);
+		await t.eval(`window.draw.selection.clear(), 1`);
+		const screen = (x, y) => t.eval(`JSON.stringify((() => { const m = document.getElementById('container').getScreenCTM(); return [m.a * ${x} + m.e, m.d * ${y} + m.f]; })())`).then(JSON.parse);
+		const drag = async (from, to, button) => {
+			const [ax, ay] = await screen(...from), [bx, by] = await screen(...to);
+			const buttons = button === 'right' ? 2 : 1;
+			await t.send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Shift', code: 'ShiftLeft', windowsVirtualKeyCode: 16, modifiers: 8 });
+			await t.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: ax, y: ay, modifiers: 8 });
+			await t.send('Input.dispatchMouseEvent', { type: 'mousePressed', x: ax, y: ay, button, buttons, clickCount: 1, modifiers: 8 });
+			for (const f of [0.3, 0.6, 1]) await t.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: ax + (bx - ax) * f, y: ay + (by - ay) * f, button, buttons, modifiers: 8 });
+			await t.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: bx, y: by, button, buttons: 0, clickCount: 1, modifiers: 8 });
+			await t.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Shift', code: 'ShiftLeft', windowsVirtualKeyCode: 16, modifiers: 0 });
+			await sleep(150);
+		};
+		const zones = () => t.eval(`JSON.stringify(window.draw.model.all('zone').map((z) => ({ id: z.id, x: z.x, y: z.y, w: z.w, h: z.h })))`).then(JSON.parse);
+
+		await drag([-90, 330], [30, 390], 'left');
+		let zs = await zones();
+		assert.equal(zs.length, 2, 'Shift+left drag inside the zone drew a second zone');
+		assert.deepEqual(zs.find((z) => z.id === zoneId), { id: zoneId, x: -150, y: 270, w: 300, h: 180 }, 'and the first did not move');
+		const drawn = zs.find((z) => z.id !== zoneId);
+
+		await drag([120, 300], [240, 300], 'right');
+		zs = await zones();
+		assert.equal(zs.find((z) => z.id === zoneId).x, -30, 'Shift+right drag moved the first zone a cell pair to the right');
+		assert.equal(zs.length, 2, 'and drew nothing');
+		await until(t, `window.draw.sync.outbox.every((m) => m.answered) ? 1 : 0`, 6000);
+		await t.eval(`(() => { const z = window.draw.model.get('zone', '${drawn.id}'); if (z) window.draw.history.commit({ label: 'unzone', entries: [{ op: 'del', kind: 'zone', entity: { ...z } }] }); return 1; })()`);
 	} finally {
 		if (zoneId) {
 			await t.eval(`(() => { const z = window.draw.model.get('zone', '${zoneId}'); if (z) window.draw.history.commit({ label: 'unzone', entries: [{ op: 'del', kind: 'zone', entity: { ...z } }] }); return 1; })()`).catch(() => {});

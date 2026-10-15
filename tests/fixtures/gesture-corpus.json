@@ -2785,6 +2785,87 @@
 			"selection": []
 		}
 	},
+	"zone-draw-over-zone": {
+		"claims": [
+			false,
+			false,
+			false
+		],
+		"threw": [],
+		"commits": [
+			{
+				"ops": [
+					{
+						"op": "put",
+						"kind": "zone",
+						"entity": {
+							"id": "zone#1",
+							"name": "zone-2",
+							"order": 2,
+							"x": -30,
+							"y": -30,
+							"w": 120,
+							"h": 120
+						}
+					}
+				],
+				"label": "create zone"
+			}
+		],
+		"judged": [],
+		"said": [],
+		"editor": [],
+		"palette": [],
+		"host": [],
+		"final": {
+			"nodes": [
+				{
+					"id": "node#1",
+					"name": "host-1",
+					"order": 1,
+					"type": "host",
+					"shape": "circle",
+					"x": 0,
+					"y": 0
+				},
+				{
+					"id": "node#2",
+					"name": "host-2",
+					"order": 2,
+					"type": "host",
+					"shape": "circle",
+					"x": 360,
+					"y": 0
+				}
+			],
+			"waypoints": [],
+			"links": [],
+			"zones": [
+				{
+					"id": "zone#2",
+					"name": "zone-1",
+					"order": 1,
+					"x": -150,
+					"y": -150,
+					"w": 300,
+					"h": 300
+				},
+				{
+					"id": "zone#1",
+					"name": "zone-2",
+					"order": 2,
+					"x": -30,
+					"y": -30,
+					"w": 120,
+					"h": 120
+				}
+			],
+			"groups": [],
+			"selection": [
+				"zone#1"
+			]
+		}
+	},
 	"resize-zone-corner": {
 		"claims": [
 			false,

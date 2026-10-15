@@ -2042,5 +2042,11 @@ Shown: dev/BOARD.md@2c2636e\
 Affects: dev/design/brand/README.md\
 Recorder: asked whether the page keeps `draw` and `next` joined by a middle dot -- its header since the first commit, with the tab reading `draw-next - <diagram>` and the help heading naming the renderer (`kernel-rendered`) -- or uses `draw`, the name on the README, the About, Privacy and Terms pages and the address, the director chose `draw`: the header, the static title, the tab and the help heading say `draw`, and the help heading drops the renderer's name.
 
+**H24.5 -- under Shift, the left button always draws a zone, and the right button selects, moves and clones one -- 2026-10-15 (B355).**\
+Director: "I wonder if for zones (in shift mode) we make it that only right click drag selects or moves an existing zone. that way - left click can be used to create a new zne on top of an old one"\
+Shown: dev/BOARD.md@229dca4\
+Affects: dev/design/input/GESTURE-SYSTEM.md\
+Recorder: measured first that Shift+right click already selected a zone and Shift+right drag already moved it, so the change is that a Shift+left press on a zone stops taking it; offered that (recommended), selecting by a zone's edge instead, or no change -- noting that a right drag is awkward on a touchpad -- the director replied "continue". A zone's pick says it is pressed with the right button; the product's left-press and left-clone rows pass over such a kind by that fact, naming none; the zones plugin's draw row takes a Shift+left press on the canvas or on a zone; Ctrl+Shift+right clones a zone and Alt+Shift+right deletes one, and the help says so.
+
 
 

@@ -35,7 +35,9 @@ const ZONE_PAINTER = {
 	layer: 'zones',
 	stacked: true,
 	// C-b: an inert backdrop, picked only with Shift held -- a plain press passes through it to the canvas (DESIGN U1)
-	picks: [{ closest: 'g.zone', word: 'zone', modifier: 'shiftKey', clones: true }],   // D4: Ctrl+left clones it
+	// H24.5: and pressed with the right button only -- Shift+right selects, moves and (with Ctrl) clones it, so Shift+left is
+	// free to draw a new zone over it (zone-gestures.mjs `ZONE_DRAW`)
+	picks: [{ closest: 'g.zone', word: 'zone', modifier: 'shiftKey', button: 'right', clones: true }],
 	create(entity, { el, applyLook, pillWidth, layer }) {
 		const g = el('g', { id: entity.id, class: 'zone' }, layer);
 		el('rect', { class: 'zone-rect', rx: ZONE_R }, g);
