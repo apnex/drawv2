@@ -6,7 +6,6 @@
 // to kernel/svg-scene.mjs, in the export layer. That half draws waypoints and links, which is network appearance; this
 // half is core, and the live canvas (app/src/renderer.js) imports only it.
 import { STD, L_STD } from './spec.mjs';
-import { TOKENS } from './theme.mjs';
 
 // selection corner-brackets (rounded, matching the group radius) — derived per variant.
 // Exported so an interactive host can draw the SAME brackets (CSS-gated) without re-render.
@@ -56,28 +55,11 @@ no caller re-implements the `rows <= 1` branch either.
 */
 // glyph defs + the variant's frame defs (shared once per page)
 /*
-H15.6 -- the arrowhead, defined once for both renderers.
-
-`markerUnits="strokeWidth"` so the head scales with the line rather than needing its own number,
-and `orient="auto"` so it follows the path's direction at the end it sits on -- which is what makes
-ONE definition serve both ends: the start marker is the same shape, turned around by the path.
-
-B226 -- THE FILL IS THE LINK TOKEN, not `context-stroke`.
-
-`context-stroke` is the right idea and does not paint here: it resolved to the literal string in
-`getComputedStyle` and rasterised to ZERO lit pixels, against 480 for the same marker with a
-literal fill. So the head was referenced by both renderers, present in the defs, and invisible --
-which is worse than absent, because every attribute check passed.
-
-The cost of naming the colour is that a SELECTED link keeps a head in the base colour rather than
-the selection colour. That is a small, visible wrongness rather than a total one, and it is the
-trade until `context-stroke` is available.
+H15.6 -- the arrowhead WAS an SVG marker defined here, once for both renderers. RETIRED at H24.6 (B356): a marker sits at the
+path's last point -- the anchor's centre, under the device -- cannot hold a size floor, and could not take the line's colour
+(B226, `context-stroke` painting nothing). A head is a shape of its own now, worked out by network/link-head.mjs and drawn by the
+network's link painter.
 */
-function arrowDefs() {
-	const head = `<path d="M0 0 L6 3 L0 6 z" fill="${TOKENS.selectBox}"/>`;
-	return `<marker id="flow-end" viewBox="0 0 6 6" refX="5.4" refY="3" markerWidth="5" markerHeight="5" markerUnits="strokeWidth" orient="auto">${head}</marker>`
-		+ `<marker id="flow-start" viewBox="0 0 6 6" refX="5.4" refY="3" markerWidth="5" markerHeight="5" markerUnits="strokeWidth" orient="auto-start-reverse">${head}</marker>`;
-}
 
 /*
 B235 -- the shared frame defs carry the WEIGHT too.
@@ -92,7 +74,6 @@ export function sharedDefs(V = STD, L = L_STD, extraDefs = '') {
 	  <defs>
 	    <circle id="m-circle" class="frame" r="${L.frame.ext}" stroke-width="${V.frameW}"/>
 	    <rect id="m-square" class="frame" x="${-L.frame.ext}" y="${-L.frame.ext}" width="${2 * L.frame.ext}" height="${2 * L.frame.ext}" rx="${L.frame.r}" stroke-width="${V.frameW}"/>
-	    ${arrowDefs()}
 	  </defs>
 	</svg>`;
 }

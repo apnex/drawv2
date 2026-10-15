@@ -113,7 +113,7 @@ The anchored core's parts, declared once in `tools/layers.mjs` `PARTS` and rende
 | `document` | Hold one document's entities | core | `model/model.mjs`, `model/anchors.mjs`, `model/ops.mjs`, `model/order.mjs`, `model/stacking.mjs` | `kind-contract` |
 | `relations` | Index which entities relate | core | `engine/relations.mjs`, `engine/ivm.mjs`, `engine/store.mjs` | `document` |
 | `colours` | Hold the colours every role draws from | core | `kernel/palette.mjs`, `kernel/theme.mjs` | -- |
-| `primitives` | Draw the shapes painters compose | core | `kernel/renderer.mjs` | `colours`, `lattice` |
+| `primitives` | Draw the shapes painters compose | core | `kernel/renderer.mjs` | `lattice` |
 | `rules` | Match an input to one declared row | core | `kernel/input-rules.mjs` | -- |
 | `planner` | Make the one write every door applies | core | `planner/`, `model/invariants.mjs` | `document`, `kind-contract` |
 | `layouts` | Declare a diagram's grids | plugin | `layouts/` | `lattice` |
@@ -207,7 +207,7 @@ What each plugin brings to the page (`product/canvas.mjs`).
 | layouts | `places`, `grids` |
 | zones | `painters`, `places`, `presses`, `handles`, `keys`, `sizeStep`, `deleteRanks`, `describe`, `selectAll`, `labels`, `drawn`, `helpWords`, `tally` |
 | groups | `painters`, `keys`, `deleteRanks`, `follows`, `drawn` |
-| devices | `defs`, `bare`, `appearances`, `presses`, `hand`, `at`, `sizeStep`, `sizes`, `keys`, `describe`, `selectAll`, `labels`, `drawn`, `tally` |
+| devices | `defs`, `bare`, `appearances`, `presses`, `hand`, `at`, `sizeStep`, `sizes`, `outlines`, `keys`, `describe`, `selectAll`, `labels`, `drawn`, `tally` |
 | network | `painters`, `appearances`, `presses`, `handles`, `at`, `deleteRanks`, `follows`, `describe`, `selectAll`, `reflects`, `drawn`, `runTargets`, `helpWords`, `linkDrag`, `tally` |
 | the simulation | `appearances`, `isSpawning` |
 <!-- END GENERATED: architecture-canvas -->

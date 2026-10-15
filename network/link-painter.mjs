@@ -12,8 +12,9 @@ put, set or delete re-derives the waypoints at its ends and bends, since their r
 
 import { STD, BEND_R } from '../kernel/spec.mjs';
 import { roundedPath } from '../kernel/router.mjs';
-import { linkAppearance, APPEARANCE_KEYS } from './appearance.mjs';
+import { linkAppearance, APPEARANCE_KEYS, downStroke, NETWORK_TOKENS } from './appearance.mjs';
 import { pathOf, isLinkDown } from './network-queries.mjs';
+import { linkHeadOf, HEAD_OUTLINE } from './link-head.mjs';
 
 const LINK_W = STD.linkW;   // the link's stroke width (6)
 
@@ -28,11 +29,30 @@ const hitOf = (d, look) => ({ d, fill: 'none', stroke: 'transparent', 'stroke-wi
 	...(look['stroke-linecap'] ? { 'stroke-linecap': look['stroke-linecap'] } : {}) });
 
 // the routed path: src, its bends, dst -- resolved by the network (`pathOf`), rounded at the kernel's bend; closed, a ring
-const linkPath = (model, link) => { const path = pathOf(model, link); return path && roundedPath(path, BEND_R, !!link.closed); };
-// how a link looks: the ONE derivation (H15.9), fed whether it is down, which only the network knows
-const lookOf = (model, link) => linkAppearance(link, LINK_W, { down: isLinkDown(model, link) });
-// its click twin, found by the link it stands for (B268)
+const linkPath = (points, link) => points && roundedPath(points, BEND_R, !!link.closed);
+/*
+H24.6 (B356) -- ITS HEAD, a shape of its own (network/link-head.mjs): at the end the flow arrives at, its tip on that anchor's
+outline -- as the part drawing the anchor declares it (`outlineOf`, the devices plugin for a device), or the network's own ring
+-- with the line broken beneath it. Null for an undeclared link, or one with no room.
+*/
+const headOf = (model, link, points, outlineOf) => {
+	if (!points) return null;
+	const outline = (id) => outlineOf?.('node', model.get('node', id));
+	return linkHeadOf(link, points, { start: outline(link.src), end: outline(link.dst) }, LINK_W);
+};
+// how a link looks: the ONE derivation (H15.9), fed whether it is down, which only the network knows, and whether it carries a head
+const lookOf = (model, link, head) => linkAppearance(link, LINK_W, { down: isLinkDown(model, link), headed: !!head });
+/*
+The head's element: hollow, its outline 4 px. Its colour is the link's, by its state: the stylesheet colours it from the link
+element it follows (`.link.selected + .link-head`, app/style.css; down and blocking, network/network.css), and these attributes
+are what the export, which loads no stylesheet, draws. It names its link by `data-head-of` -- not `data-link`, which marks a
+click twin the export leaves out -- and takes no click of its own (the twin under it does).
+*/
+const headAttrs = (head, down) => ({ class: 'link-head', 'data-head-of': head.of, d: head.headD, fill: 'none', stroke: down ? downStroke() : NETWORK_TOKENS.link,
+	'stroke-width': HEAD_OUTLINE, 'stroke-linejoin': 'miter', ...(down ? { 'data-down': '' } : {}) });
+// its click twin, found by the link it stands for (B268); its head, likewise
 const twinOf = (id, layer) => [...layer.querySelectorAll('.link-hit')].find((t) => t.getAttribute('data-link') === id) ?? null;
+const headElOf = (id, layer) => [...layer.querySelectorAll('.link-head')].find((t) => t.getAttribute('data-head-of') === id) ?? null;
 
 const LINK_PAINTER = {
 	kind: 'link',
@@ -40,17 +60,20 @@ const LINK_PAINTER = {
 	stacked: true,
 	// C-b: the path itself, and its click twin wherever a dotted or dashed stroke has a gap (B268)
 	picks: [{ self: 'link', word: 'link', clones: true }, { self: 'link-hit', word: 'link', id: (t) => t.dataset.link, clones: true }],   // D4: Ctrl+left clones it
-	create(link, { el, layer, model }) {
-		const d = linkPath(model, link);
+	// the link, then its head straight after it -- the stylesheet colours a head by the element before it -- then its click twin
+	create(link, { el, layer, model, outlineOf }) {
+		const points = pathOf(model, link), d = linkPath(points, link);
 		if (!d) return null;
-		const look = lookOf(model, link);
-		const path = el('path', { id: link.id, class: 'link', fill: 'none', d, ...look }, layer);
-		el('path', { class: 'link-hit', 'data-link': link.id, ...hitOf(d, look) }, layer);   // its click area (B268)
+		const head = headOf(model, link, points, outlineOf), look = lookOf(model, link, head);
+		const path = el('path', { id: link.id, class: 'link', fill: 'none', d: head ? head.lineD : d, ...look }, layer);
+		if (head) el('path', headAttrs({ ...head, of: link.id }, 'data-down' in look), layer);
+		el('path', { class: 'link-hit', 'data-link': link.id, ...hitOf(d, look) }, layer);   // its click area (B268), the whole line
 		return path;
 	},
-	update(link, dom, { setAttrs, layer, model }) {
-		const d = linkPath(model, link);
-		if (d) setAttrs(dom, { d });
+	update(link, dom, { el, setAttrs, layer, model, outlineOf }) {
+		const points = pathOf(model, link), d = linkPath(points, link);
+		const head = d ? headOf(model, link, points, outlineOf) : null;
+		if (d) setAttrs(dom, { d: head ? head.lineD : d });
 		/*
 		B228 -- THE MARKER IS PART OF THE LINK, so an update must re-derive it.
 
@@ -70,18 +93,28 @@ const LINK_PAINTER = {
 		key set. B228 was an update that set some of these and forgot others; there is now no
 		list to forget, because `APPEARANCE_KEYS` is what the derivation itself declares.
 		*/
-		const want = lookOf(model, link);
+		const want = lookOf(model, link, head);
 		for (const attr of APPEARANCE_KEYS) {
 			if (attr in want) dom.setAttribute(attr, want[attr]);
 			else dom.removeAttribute(attr);
 		}
 		const twin = twinOf(link.id, layer);
-		if (twin) setAttrs(twin, hitOf(dom.getAttribute('d'), want));
+		if (twin && d) setAttrs(twin, hitOf(d, want));
+		/*
+		H24.6 -- THE HEAD IS PART OF THE LINK, as the marker was (B228): an update makes it, moves it or takes it away, by the same
+		derivation create uses. A new one goes straight after the link, before its twin, where create puts it.
+		*/
+		const had = headElOf(link.id, layer);
+		if (head) {
+			const attrs = headAttrs({ ...head, of: link.id }, 'data-down' in want);
+			if (had) { setAttrs(had, attrs); if (!('data-down' in attrs)) had.removeAttribute('data-down'); }
+			else layer.insertBefore(el('path', attrs, layer), twin);
+		} else if (had) had.remove();
 		return undefined;
 	},
-	// the elements drawn with it, moved and removed with it -- its click twin -- and the link an element in its layer stands for
-	companions: (id, layer) => [twinOf(id, layer)].filter(Boolean),
-	ownerOf: (element) => element.getAttribute('data-link'),
+	// the elements drawn with it, moved and removed with it -- its head, then its click twin -- and the link an element stands for
+	companions: (id, layer) => [headElOf(id, layer), twinOf(id, layer)].filter(Boolean),
+	ownerOf: (element) => element.getAttribute('data-link') ?? element.getAttribute('data-head-of'),
 	/*
 	A link change can change what its WAYPOINTS are.
 

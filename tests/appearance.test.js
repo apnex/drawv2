@@ -44,6 +44,7 @@ const N = (o = {}) => ['node', { id: 'node-a00001', name: 'router-1', type: 'rou
 const N2 = ['node', { id: 'node-a00002', name: 'host-2', type: 'host', shape: 'circle', x: 360, y: 0 }];
 const W = (o = {}) => ['node', { id: 'node-a00003', name: 'w', x: -240, y: 120, ...o }];
 const L = ['link', { id: 'link-a00004', name: 'l', src: 'node-a00003', dst: 'node-a00001' }];
+const LF = ['link', { ...L[1], direction: 'forward' }];   // H24.6: a link carrying a head
 const Z = (o = {}) => ['zone', { id: 'zone-a00005', name: 'dmz', x: -330, y: -210, w: 600, h: 420, ...o }];
 const G = ['group', { id: 'group-a00006', name: 'g', members: ['node-a00001', 'node-a00002'] }];
 const PANEL = N({ content: [{ content: 'text', at: [0, 0], cols: 2, rows: 1, value: 'hello' }], span: { cols: 2, rows: 1 } });
@@ -64,6 +65,13 @@ const CASES = {
 	'waypoint armed': [[N(), W(), L], [['node', 'node-a00003', { spawn: { interval: 1000, speed: 2, kind: 'packet', since: 1700000000000 } }]]],
 	'lone waypoint moved': [[W()], [['node', 'node-a00003', { x: 0, y: 240 }]]],
 	'link declared': [[N(), W(), L], [['link', 'link-a00004', { direction: 'forward' }]]],
+	// H24.6 (B356): the head is a shape of its own, made, moved and taken away by an update as a fresh render draws it -- including
+	// when the device it points at changes its outline under it (W is diagonal from N, so a circle and a square differ there)
+	'link reversed': [[N(), W(), LF], [['link', 'link-a00004', { direction: 'reverse' }]]],
+	'link made control, under a head': [[N(), W(), LF], [['link', 'link-a00004', { control: true }]]],
+	'device reshaped under a head': [[N(), W(), LF], [['node', 'node-a00001', { shape: 'square' }]]],
+	'device grown to a span under a head': [[N(), W(), LF], [['node', 'node-a00001', { span: { cols: 2, rows: 2 } }]]],
+	'device moved under a head': [[N(), W(), LF], [['node', 'node-a00001', { x: 120, y: 60 }]]],
 };
 
 for (const [name, [board, change]] of Object.entries(CASES)) {

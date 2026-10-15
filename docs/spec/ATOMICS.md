@@ -291,7 +291,8 @@ Two can now be a junction as well, so `waypointRoles` takes direction as an inpu
 `control`, an optional boolean on a link.\
 Absent is the ordinary DATA plane, so every document written before the field reads exactly as it did; `true` marks a link that carries no data-plane packets.
 
-It is drawn DASHED, at a pattern derived from the stroke width rather than a number of its own -- the same reasoning the arrowhead uses for `markerUnits`.
+It is drawn DASHED, at a pattern derived from the stroke width rather than a number of its own -- the same reasoning the arrowhead uses for `markerUnits`.\
+AMENDED 2026-10-16 (H24.6): the arrowhead is no marker now; it is 4 line widths long with an 18 px floor ("Arrowheads", below).
 
 **A bend requires BOTH**: the directions agree AND the planes match.
 
@@ -374,7 +375,8 @@ Everything a renderer needs to draw an entity is derived in ONE call and returne
 A caller emits what it is given and decides nothing.
 
 `linkAppearance(link, w)` is the first, and the only one so far.\
-It answers the weight, the dash and the head together, where those were three questions assembled by hand at four call sites.
+It answers the weight, the dash and the head together, where those were three questions assembled by hand at four call sites.\
+AMENDED 2026-10-16 (H24.6): the head left it -- a head is a shape of its own, answered in one call by `linkHeadOf` (`network/link-head.mjs`); what the line owes a head, square caps, is still the appearance's.
 
 **`APPEARANCE_KEYS` declares every key the derivation can produce**, which is what makes an UPDATE possible to write correctly.\
 An update applies the derivation over the declared set, setting what is present and REMOVING what is not -- so a key a previous state set cannot strand on an element whose state has changed.
@@ -395,10 +397,10 @@ The waypoint's rings remain a list of layers rather than a set of attributes, be
 
 ---
 
-## Arrowheads [DESIGNED 2026-10-16, not yet built -- H24.6, B356]
+## Arrowheads [BUILT 2026-10-16, on the lab -- H24.6, B356]
 
 A link's declared direction is barely shown (B356), and the director chose to target all four causes and to design each with them, one at a time, before any code (H24.6).\
-Each decision is recorded here as it is ruled; until then the arrowhead is as H15.6 built it -- one filled triangle at the end where the flow arrives, five line widths long, its tip at the end of the line.
+Each decision was recorded here as it was ruled; until H24.6 the arrowhead was as H15.6 built it -- one filled triangle at the end where the flow arrives, five line widths long, its tip at the end of the line.
 
 | # | Issue | Decision |
 |---|---|---|
@@ -420,3 +422,18 @@ Which end carries it is unchanged: the end where the flow arrives (`linkMarker`)
 - **Along the line (H24.6-4).** Nothing, for now (B357).
 
 Accepted costs: a group's outline, and on a diagonal the selection brackets, cross the tip.
+
+### Built
+
+`network/link-head.mjs` works a head out from a link's routed points, the outlines of the anchors at its ends and the line's width; `network/link-painter.mjs` draws it, on create and on update alike, as a `.link-head` path straight after its link and before the link's click twin, and breaks the line beneath it.\
+An anchor's outline is declared by the part that draws it -- `DEVICE_OUTLINES` (`devices/device-footprint.mjs`) for a device -- and reaches the painter through the renderer's `outlineOf`; a waypoint, which declares none, takes the network's own ring, a circle of 20.\
+The stylesheet colours a head from the link element before it (`app/style.css`, `network/network.css`); the export, which loads no stylesheet, reads the head's own `stroke` attribute.
+
+Settled while building, each within the rulings:
+
+- **A short last run shrinks the head** rather than bending it round a corner: a link that bends one cell before its anchor has 20 px of straight run outside the outline, so its head is 20 px, under the 18 px floor's intent only where no room exists.
+- **A closed ring carries its head where it closes**, at its first anchor: forward on the run home, reverse on the first run, travelled backwards.
+- **A wide device reached from its far side** takes the head where the line crosses its rectangle; the line runs on beneath the device to its first cell, as before (B282).
+- **A line carrying a head has square caps**, so no round cap shows inside the hollow head; a down link keeps round ones for its dots.
+
+Seen on the page, for the director's look: a selected link's end handle, which sits on the outline, covers the head's tip while the link is selected.

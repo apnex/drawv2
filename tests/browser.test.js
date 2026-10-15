@@ -914,10 +914,17 @@ test('B228: cycling flow changes the marker every time, not only the first', { s
 		if (!r || !model) return { err: 'no app handle' };
 		const link = model.all('link')[0];
 		if (!link) return { err: 'no link' };
+		// RESTATED 2026-10-16 (H24.6, B356): the head is a shape of its own, straight after its link, not a marker attribute -- so
+		// which end it is at is read from where it sits along the link
 		const markerOf = () => {
 			const el = document.getElementById(link.id);
 			if (!el) return 'MISSING';
-			return el.getAttribute('marker-end') || el.getAttribute('marker-start') || 'none';
+			const head = [...document.querySelectorAll('#links .link-head')].find((h) => h.getAttribute('data-head-of') === link.id);
+			if (!head) return 'none';
+			if (head.previousElementSibling !== el) return 'MISPLACED';
+			const x = Number(head.getAttribute('d').match(/^M(-?[\\d.]+)/)[1]);   // doubled: this runs inside a template string
+			const a = model.get('node', link.src), b = model.get('node', link.dst);
+			return Math.abs(x - b.x) < Math.abs(x - a.x) ? 'end' : 'start';
 		};
 		// THE REAL GESTURE. Selecting the link and pressing f is what the director does, and it is
 		// the only path that exercises the command, the history commit and the renderer together.
@@ -935,8 +942,9 @@ test('B228: cycling flow changes the marker every time, not only the first', { s
 		return { out, trace, sel, said: app.readout && app.readout.flashMsg, flow: String(model.get('link', link.id).direction) };
 	})()`);
 	assert.ok(!seen.err, `precondition: ${seen.err || 'ok'}`);
-	assert.equal(seen.out[1], 'url(#flow-end)', 'forward must show the end marker after an update');
-	assert.equal(seen.out[2], 'url(#flow-start)', 'reverse must SWAP it, not keep the old one');
+	assert.equal(seen.out[0], 'none', 'precondition: the fixture link is undeclared, with no head');
+	assert.equal(seen.out[1], 'end', 'forward must draw the head at the end after an update');
+	assert.equal(seen.out[2], 'start', 'reverse must MOVE it, not keep the old one');
 	assert.equal(seen.out[3], 'none', 'and clearing must remove it rather than leave the last one');
 }));
 
@@ -976,66 +984,51 @@ test('B229: the selection line says which way a selected link flows, and keeps s
 }));
 
 /*
-H15.6 / B226: the arrowhead must actually PAINT, not merely be referenced.
+H15.6 / B226, RESTATED 2026-10-16 (H24.6, B356): THE HEAD MUST BE SEEN, and in its line's colour.
 
-The marker reached the exported SVG and the canvas both carried `marker-end`, and the director
-could not see an arrow. Attribute presence is not visibility -- `fill="context-stroke"` resolves
-against the referencing element's stroke, and the canvas strokes its links from a STYLESHEET rather
-than from a stroke attribute. Whether that counts as context is the whole question, and no amount
-of reading the DOM answers it.
-
-So this asks the browser for PIXELS. `getBBox` on the rendered marker would say the shape exists;
-only a readback says it has colour on the canvas the director is looking at.
+B226 found a marker referenced, defined and painting nothing, and settled for a head in the link colour on a selected green line,
+because `context-stroke` painted nothing. H24.6 retired the marker: a head is a shape of its own, straight after its link, so the
+stylesheet colours it from the link before it (H24.6-3), and its tip sits on its anchor's outline rather than at the centre, under
+the anchor (H24.6-1). Both are asked of the browser -- the computed colour, and where the shape actually is -- since neither can
+be read off the DOM's attributes. The states are set on the link as the renderer sets them; the line itself is the control.
 */
-test('B226: a declared link paints an arrowhead the user can see', { skip: SKIP }, async () => {
+test('B226 / H24.6: a directed link\'s head sits outside its anchor, and takes its line\'s colour in every state', { skip: SKIP }, () => withWriteAccess(async () => {
 	assert.equal(booted.loaded, true, 'precondition: fixture loaded');
-	const painted = await tab.eval(`(async () => {
-		const svg = document.querySelector('#container svg') || document.querySelector('svg');
-		const link = document.querySelector('#links .link');
-		if (!link) return { err: 'no link in the fixture' };
-		link.setAttribute('marker-end', 'url(#flow-end)');
-		// the marker must exist in the document the page actually loaded
-		const def = document.querySelector('#flow-end');
-		if (!def) return { err: 'no #flow-end marker defined on the page' };
-		const head = def.querySelector('path');
-		const fill = getComputedStyle(head).fill;
-		// serialise just this link and rasterise it, so the readback is of the REAL stroke
-		const box = link.getBBox();
-		const one = '<svg xmlns="http://www.w3.org/2000/svg" width="' + Math.ceil(box.width + 40) + '" height="' + Math.ceil(box.height + 40) + '">'
-			+ new XMLSerializer().serializeToString(document.querySelector('#kdefs svg') || document.createElementNS('http://www.w3.org/2000/svg','svg'))
-			+ '<g transform="translate(' + (20 - box.x) + ',' + (20 - box.y) + ')">' + new XMLSerializer().serializeToString(link) + '</g></svg>';
-		const img = new Image();
-		const url = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(one)));
-		await new Promise((res, rej) => { img.onload = res; img.onerror = () => rej(new Error('raster failed')); img.src = url; });
-		const c = document.createElement('canvas');
-		c.width = img.width; c.height = img.height;
-		const ctx = c.getContext('2d');
-		ctx.drawImage(img, 0, 0);
-		const d = ctx.getImageData(0, 0, c.width, c.height).data;
-		let lit = 0;
-		for (let i = 0; i < d.length; i += 4) if (d[i + 3] > 0) lit += 1;
-		// control: does a marker with a LITERAL fill paint, in the same rasterisation?
-		const lit2 = await (async () => {
-			const two = one.replace('fill="context-stroke"', 'fill="#4fc3f7"');
-			const im2 = new Image();
-			await new Promise((res, rej) => { im2.onload = res; im2.onerror = rej; im2.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(two))); });
-			const c2 = document.createElement('canvas'); c2.width = im2.width; c2.height = im2.height;
-			c2.getContext('2d').drawImage(im2, 0, 0);
-			const dd = c2.getContext('2d').getImageData(0, 0, c2.width, c2.height).data;
-			let n = 0; for (let i = 0; i < dd.length; i += 4) if (dd[i + 3] > 0) n += 1;
-			return n;
-		})();
-		return { fill, lit, lit2, w: c.width, h: c.height };
+	const seen = await tab.eval(`(() => {
+		const app = window.draw, model = app.model, link = model.all('link')[0];
+		if (!link) return { err: 'no link' };
+		const press = () => document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'f', bubbles: true }));
+		app.selection.set([link.id]);
+		press();   // forward
+		const line = document.getElementById(link.id);
+		const head = [...document.querySelectorAll('#links .link-head')].find((h) => h.getAttribute('data-head-of') === link.id);
+		const restore = () => { app.selection.set([link.id]); press(); press(); app.selection.clear(); };   // reverse, then undeclared
+		if (!head) { restore(); return { err: 'no head after f' }; }
+		const pair = () => [getComputedStyle(line).stroke, getComputedStyle(head).stroke];
+		const box = head.getBBox(), dst = model.get('node', link.dst);
+		const out = { follows: head.previousElementSibling === line, tipX: box.x + box.width, outlineX: dst.x - 20, selected: pair() };
+		app.selection.clear();
+		out.normal = pair();
+		line.classList.add('armed'); out.armed = pair(); line.classList.remove('armed');
+		line.setAttribute('data-down', ''); out.down = pair(); line.removeAttribute('data-down');
+		line.classList.add('blocking'); out.blocking = pair(); line.classList.remove('blocking');
+		line.classList.add('replugging'); out.replugging = [getComputedStyle(line).opacity, getComputedStyle(head).opacity]; line.classList.remove('replugging');
+		restore();
+		out.after = String(model.get('link', link.id).direction ?? 'none');
+		return out;
 	})()`);
-	assert.ok(!painted.err, `precondition: ${painted.err || 'ok'}`);
-	/*
-	THE CONTROL IS THE POINT. `lit2` rasterises the same link with a LITERAL fill, so a zero in
-	`lit` cannot be blamed on the harness, the serialisation or the canvas -- only on the paint.
-	That control is what turned "I cannot see the arrow" into a measurement.
-	*/
-	assert.ok(painted.lit2 > 0, 'control: a literal fill must paint, or this test measures nothing');
-	assert.ok(painted.lit > 0, 'the arrowhead must PAINT -- an attribute that resolves to nothing is not a picture');
-});
+	assert.ok(!seen.err, `precondition: ${seen.err || 'ok'}`);
+	assert.equal(seen.follows, true, 'the head is drawn straight after its link, where the stylesheet looks for it');
+	assert.ok(seen.tipX <= seen.outlineX + 0.5 && seen.tipX >= seen.outlineX - 5,
+		`the head ends at the anchor's outline (x ${seen.outlineX}), not under the anchor: its shape ends at x ${seen.tipX}`);
+	for (const state of ['selected', 'normal', 'armed', 'down', 'blocking']) {
+		assert.equal(seen[state][1], seen[state][0], `${state}: the head takes its line's colour`);
+	}
+	assert.notEqual(seen.selected[0], seen.normal[0], 'control: selected and normal really are different colours');
+	assert.notEqual(seen.down[0], seen.normal[0], 'and so are down and normal');
+	assert.deepEqual(seen.replugging, ['0.15', '0.15'], 'an end being dragged fades the head with its line');
+	assert.equal(seen.after, 'none', 'and the fixture link is left undeclared, as the tests after this expect');
+}));
 
 /*
 H15.15 / B226's lesson: the dash must PAINT, and the gesture must reach it.

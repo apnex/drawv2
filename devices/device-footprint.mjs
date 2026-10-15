@@ -10,6 +10,8 @@ little more), what keeps a hover after a gesture (the frame), what a marquee box
 import { L_STD } from '../kernel/spec.mjs';
 import { spanExtent } from '../kernel/geometry.mjs';
 import { typedNodes } from './device-shapes.mjs';
+import { hasDevice } from './device-fields.mjs';
+import { isPanel } from './device-types.mjs';   // H24.6: a panel draws a rectangle, as a wide device does
 
 const NODE_R = L_STD.frame.ext;   // a device frame's half-extent (20)
 
@@ -30,6 +32,23 @@ WD-b2 (H19.46) -- A DEVICE'S SIZE, for its place: the extent of its span beyond 
 anchor's place read it from product/canvas.mjs until the layouts plugin took the place. A node with no span -- a device of one
 cell, or a waypoint -- answers nothing, and the canvas reads one cell (app/src/snap.js `placesOf`).
 */
+/*
+H24.6 (B356) -- A DEVICE'S OUTLINE, for a link's head to touch (docs/spec/ATOMICS.md "Arrowheads"). What the device draws: a
+wide device or a panel a rectangle from its first cell across its span, a plain device its circle or square. A node the devices
+plugin does not draw -- a waypoint -- answers nothing, and the link painter takes the network's own anchor ring.
+*/
+export const DEVICE_OUTLINES = {
+	node: (n) => {
+		if (!hasDevice(n)) return undefined;
+		const spanned = !!n.span && (n.span.cols > 1 || n.span.rows > 1);
+		if (spanned || isPanel(n)) {
+			const { sw, sh } = spanExtent(n.span);
+			return { form: 'rect', x0: -NODE_R, y0: -NODE_R, x1: sw + NODE_R, y1: sh + NODE_R };
+		}
+		return n.shape === 'square' ? { form: 'rect', x0: -NODE_R, y0: -NODE_R, x1: NODE_R, y1: NODE_R } : { form: 'circle', r: NODE_R };
+	},
+};
+
 export const DEVICE_SIZES = {
 	node: (n) => {
 		if (!n.span) return undefined;

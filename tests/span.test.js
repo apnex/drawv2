@@ -1084,12 +1084,25 @@ test('H15.6: the arrowhead follows the declaration, from one source', async () =
 		zones: [], groups: [],
 		links: [{ id: 'link-aa0001', name: 'l', src: 'node-aa0001', dst: 'node-aa0002', ...(direction === undefined ? {} : { direction }) }],
 	});
-	assert.match(render(docToSchema(mk('forward'))), /marker-end="url\(#flow-end\)"/,
-		'a forward flow must reach the exported path, not merely the defs');
-	assert.match(render(docToSchema(mk('reverse'))), /marker-start="url\(#flow-start\)"/,
-		'and a reversed one must point the other way');
-	assert.doesNotMatch(render(docToSchema(mk(undefined))), /marker-(end|start)=/,
-		'an undeclared link must export no head at all');
+	/*
+	RESTATED 2026-10-16 (H24.6, B356): the head is no marker now but a shape of its own, drawn by the network's link painter, and
+	the export is the product's own -- server/svg.mjs drives the real Renderer, as run mode does (H2). The property is unchanged:
+	the declaration reaches the exported picture, at the end the flow arrives at, and an undeclared link exports no head.
+	kernel/svg-scene.mjs, the declarative scene the tests render, draws no head at all, and is no longer asked.
+	*/
+	const { svgDocument } = await import('../server/svg.mjs');
+	const { heldLayouts } = await import('./fixtures/composed.mjs');
+	const { pipeEntity } = await import('../network/pipe-kind.mjs');
+	const exportOf = (direction) => {
+		const doc = mk(direction);
+		return svgDocument({ meta: { id: '0000000000aa0001', name: 'h', version: 1, schema: 3 }, layouts: heldLayouts(), selection: [],
+			nodes: doc.nodes.map((n, i) => ({ ...n, order: i + 1 })), links: doc.links.map((l) => ({ ...l, order: 1 })),
+			pipes: [pipeEntity('node-aa0001', 'node-aa0002', 'link')], zones: [], groups: [] });
+	};
+	const headTipX = (svg) => Number((svg.match(/<path class="link-head"[^>]* d="M(-?[\d.]+) /) || [])[1]);
+	assert.ok(headTipX(exportOf('forward')) > 30, 'a forward flow must reach the exported picture, its head at the dst end (x 60)');
+	assert.ok(headTipX(exportOf('reverse')) < -30, 'and a reversed one must point the other way, at the src end (x -60)');
+	assert.doesNotMatch(exportOf(undefined), /class="link-head"/, 'an undeclared link must export no head at all');
 
 	// the round trip too: what the adapter carries out, it must carry back
 	const back = schemaToDoc(docToSchema(mk('reverse')));
@@ -1171,12 +1184,14 @@ test('H15.15: a control link exports dashed, round-trips, and survives an update
 	// assembly, `lookOf`, which is the one derivation fed the down state -- the property this held of the renderer's two branches
 	const clientRenderer = fs.readFileSync(new URL('../network/link-painter.mjs', import.meta.url), 'utf8');
 	const updateBranch = clientRenderer.slice(clientRenderer.indexOf('\tupdate(link, dom'));
-	assert.match(updateBranch, /lookOf\(model, link\)/, 'the UPDATE path must re-derive through the same assembly create uses, not patch by hand');
+	// RESTATED 2026-10-16 (H24.6): the assembly is fed whether the link carries a head, and both branches derive the head the same way
+	assert.match(updateBranch, /lookOf\(model, link, head\)/, 'the UPDATE path must re-derive through the same assembly create uses, not patch by hand');
+	assert.match(updateBranch, /headOf\(model, link, points, outlineOf\)/, 'and the head by the same derivation');
 	const createBranch = clientRenderer.slice(clientRenderer.indexOf('\tcreate(link'), clientRenderer.indexOf('\tupdate(link, dom'));
-	assert.match(createBranch, /const look = lookOf\(model, link\)/, 'and CREATE must use it too, or the two can disagree');
+	assert.match(createBranch, /const head = headOf\(model, link, points, outlineOf\), look = lookOf\(model, link, head\)/, 'and CREATE must use both too, or the two can disagree');
 	assert.match(createBranch, /class: 'link'[^\n]*\.\.\.look/, 'and emit it');
-	assert.match(clientRenderer, /const lookOf = \(model, link\) => linkAppearance\(link, LINK_W, \{ down: isLinkDown\(model, link\) \}\)/,
-		'the assembly is the one derivation, fed the down state');
+	assert.match(clientRenderer, /const lookOf = \(model, link, head\) => linkAppearance\(link, LINK_W, \{ down: isLinkDown\(model, link\), headed: !!head \}\)/,
+		'the assembly is the one derivation, fed the down state and whether it carries a head');
 	assert.match(updateBranch, /APPEARANCE_KEYS/,
 		'and iterate the DECLARED keys, so a key it no longer sets is removed rather than stranded');
 });
@@ -1350,13 +1365,19 @@ test('H15.9: linkAppearance is the whole answer, and it is attributes rather tha
 	assert.ok(!('stroke-dasharray' in plain), 'and carries NO dash key -- absent, not null');
 	assert.ok(!('marker-end' in plain) && !('marker-start' in plain), 'and no head');
 
-	const ctrl = linkAppearance({ id: 'l', src: 'a', dst: 'b', control: true, direction: 'forward' });
+	const ctrl = linkAppearance({ id: 'l', src: 'a', dst: 'b', control: true, direction: 'forward' }, STD.linkW, { headed: true });
 	assert.ok(ctrl['stroke-width'] < plain['stroke-width'], 'a control link is thinner');
 	assert.match(ctrl['stroke-dasharray'], /^[\d.]+ [\d.]+$/, 'and dashed, as a ready attribute value');
-	assert.equal(ctrl['marker-end'], 'url(#flow-end)', 'and its head is a ready url(), not a hint');
-
-	assert.equal(linkAppearance({ id: 'l', direction: 'reverse' })['marker-start'], 'url(#flow-start)',
-		'a reversed flow points the other way');
+	/*
+	RESTATED 2026-10-16 (H24.6, B356): the head was a marker attribute here (`marker-end`, `marker-start`). It is a shape of its own
+	now (network/link-head.mjs), so the line carries no head attribute at all; what the line owes a head is SQUARE caps, so no
+	round cap pokes into it -- except a down link's, whose dots need round ones.
+	*/
+	assert.ok(!('marker-end' in ctrl) && !('marker-start' in ctrl), 'a directed line carries no marker: its head is drawn apart');
+	assert.equal(ctrl['stroke-linecap'], 'butt', 'and a line carrying a head has square caps');
+	assert.ok(!('stroke-linecap' in plain), 'control: a line without one states no cap');
+	assert.equal(linkAppearance({ id: 'l', direction: 'forward' }, STD.linkW, { headed: true, down: true })['stroke-linecap'], 'round',
+		'and a down link keeps the round caps its dots need');
 
 	/*
 	THE KEY SET IS THE WHOLE ANSWER. An update must be able to remove what a previous state set,
@@ -1378,6 +1399,8 @@ test('H15.9: linkAppearance is the whole answer, and it is attributes rather tha
 		assert.doesNotMatch(src, /linkMarker\(|linkDash\(|linkWidth\(/,
 			`${name} still asks the sub-questions directly, so there are two ways to draw a link`);
 	}
+	// H24.6: and the head is one call too -- which end and how wide are the appearance's answers, asked inside it
+	assert.match(clientRenderer, /linkHeadOf\(/, 'the painter derives a head in one call');
 });
 
 /*

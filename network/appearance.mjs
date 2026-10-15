@@ -337,7 +337,8 @@ undefined, because a caller that sets attributes blindly would otherwise write "
 DOM. `APPEARANCE_KEYS` names every key this can produce, so an UPDATE can remove what a previous
 state set -- which is the half B228 got wrong and could not have got right without it.
 */
-export const APPEARANCE_KEYS = ['stroke-width', 'stroke-dasharray', 'stroke-linecap', 'data-down', 'marker-end', 'marker-start'];
+// H24.6: the head is a shape of its own now (network/link-head.mjs), so no marker key; a headed line's caps are square
+export const APPEARANCE_KEYS = ['stroke-width', 'stroke-dasharray', 'stroke-linecap', 'data-down'];
 
 /*
 A DOWN link -- one with no route right now, which heals when a route returns (ruled 2026-09-25) -- is
@@ -354,18 +355,21 @@ it. Production never passes it: it has no routes to lose.
 */
 const DOT_GAP = 2;   // centre to centre, in stroke widths: one dot's width of gap between dots
 
-export const linkAppearance = (link, w = STD.linkW, { down = false } = {}) => {
+/*
+H24.6 (B356): the head is no longer an attribute of the line. It is drawn as a shape of its own over a gap in the line
+(network/link-head.mjs, network/link-painter.mjs), so a line that carries one -- `headed` -- has SQUARE caps: a round cap at
+the gap would poke a bump into the hollow head. The export's default cap is round, so the square one is stated, not assumed.
+A down link keeps its round caps, which its dots need.
+*/
+export const linkAppearance = (link, w = STD.linkW, { down = false, headed = false } = {}) => {
 	const width = linkWidth(link, w);
 	const dash = down ? `0 ${round1(width * DOT_GAP)}` : linkDash(link, width);
-	const head = linkMarker(link);
 	return {
 		'stroke-width': width,
 		...(dash ? { 'stroke-dasharray': dash } : {}),
-		...(down ? { 'stroke-linecap': 'round' } : {}),
+		...(down ? { 'stroke-linecap': 'round' } : headed ? { 'stroke-linecap': 'butt' } : {}),
 		// ORANGE as well (2026-09-29): link colour is the stylesheet's, beside .link.selected, so the state is marked here and coloured there
 		...(down ? { 'data-down': '' } : {}),
-		...(head === 'end' ? { 'marker-end': 'url(#flow-end)' } : {}),
-		...(head === 'start' ? { 'marker-start': 'url(#flow-start)' } : {}),
 	};
 };
 

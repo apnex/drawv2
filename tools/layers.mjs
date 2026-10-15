@@ -383,6 +383,7 @@ export const ENTRIES = {
 			'groups/group-painter.mjs',   // C-a (H19.29): the groups plugin's painter
 			'devices/device-appearance.mjs', 'network/anchor-appearance.mjs', 'engine/spawn-appearance.mjs',   // C-a (D3): the anchor's appearances
 			'network/link-painter.mjs', 'network/canvas.mjs',   // C-a (H19.29): the network's link painter and its canvas part
+			'network/link-head.mjs',   // H24.6 (B356): a directed link's head, the painter's geometry
 			'network/link-handles.mjs',   // C-d (H19.32): the network's link end handles and re-plug
 			'groups/group-kind.mjs', 'groups/group-rules.mjs', 'groups/make-group.mjs', 'groups/group-of.mjs',   // O-c (H19.20): the groups plugin
 			'devices/device-shapes.mjs', 'devices/anchor-words.mjs', 'devices/make-node.mjs', 'devices/occupancy.mjs',   // O-e1 (H19.21): the devices plugin
@@ -448,6 +449,7 @@ export const ENTRIES = {
 			'groups/group-painter.mjs',   // C-a (H19.29): the groups plugin's painter
 			'devices/device-appearance.mjs', 'network/anchor-appearance.mjs', 'engine/spawn-appearance.mjs',   // C-a (D3): the anchor's appearances
 			'network/link-painter.mjs', 'network/canvas.mjs',   // C-a (H19.29): the network's link painter and its canvas part
+			'network/link-head.mjs',   // H24.6 (B356): a directed link's head, the painter's geometry
 			'network/link-handles.mjs',   // C-d (H19.32): the network's link end handles and re-plug
 			'groups/group-kind.mjs', 'groups/group-rules.mjs', 'groups/make-group.mjs', 'groups/group-of.mjs',   // O-c (H19.20): the groups plugin
 			'devices/device-shapes.mjs', 'devices/anchor-words.mjs', 'devices/make-node.mjs', 'devices/occupancy.mjs',   // O-e1 (H19.21): the devices plugin
