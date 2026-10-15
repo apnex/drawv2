@@ -1,5 +1,5 @@
 /*
-draw·next theme — interaction state classes (ported from client/style.css) with the KERNEL's
+draw theme — interaction state classes (ported from client/style.css) with the KERNEL's
 colours; geometry SIZES are set inline by the renderer from the kernel spec, so nothing here
 hardcodes an extent. The kernel owns numbers; this owns state + chrome.
 */

@@ -1,5 +1,5 @@
 /*
-draw·next boot — the thin UI over the kernel. Wires the (ported) document model, command
+draw boot — the thin UI over the kernel. Wires the (ported) document model, command
 history, selection, input gesture machine, palette, label editor, readout, data-view, and
 server sync to a KERNEL-SOURCED renderer. The kernel owns every geometry number + the glyph art.
 */
@@ -748,7 +748,7 @@ const sync = new Sync({
 		if (onStateLastId && onStateLastId !== meta.id) { disarmDelete(); networkSaid = null; }   // B298: a notice belongs to its diagram
 		onStateLastId = meta.id;
 		if (document.activeElement !== menu.name) menu.name.value = meta.name;
-		document.title = `draw-next - ${meta.name}`;
+		document.title = `draw - ${meta.name}`;   // H24.4: the name every public page uses
 		/*
 		B74/H10.3 -- the durable channel, written from STATE rather than from an event.
 

@@ -1472,10 +1472,12 @@ Opened 2026-10-15 by the director (`dev/DECISIONS.md` H24): smaller UI, UX and p
 | H24.1 | Every zone interaction takes Shift: a double-click inside a zone renames it only with Shift held (H24.1) | **B264** | S4 | `DONE` |
 | H24.2 | Ctrl+A and zones: keep selecting them, or leave them to Shift -- kept, by ruling (H24.2) | **B352** | S4 | `DONE` |
 | H24.3 | Releasing Shift deselects a zone; a press in progress keeps it until it ends (H24.3) | **B353** | S4 | `DONE` |
+| H24.4 | The app calls itself `draw` -- header, tab, title and help heading (H24.4) | **B354** | S5 | `DONE` |
 
 **Exit:** each item the director names is done or ruled, and deployed.
 
 AMENDED 2026-10-15: H24.1 to H24.3 done and deployed; the milestone reopens with the director's next item.
+AMENDED 2026-10-15: H24.4 done and deployed -- the app calls itself `draw`.
 
 ---
 

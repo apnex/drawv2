@@ -1214,3 +1214,28 @@ test('H23.6: #publish shows public with a pale green background and dark text, n
 	// control: private keeps its quiet grey, so the two states differ by fill rather than by text colour alone
 	assert.notEqual(paint(priv, 'background-color'), fill, 'private is not green');
 });
+
+/*
+H24.4 -- the app calls itself `draw`, the name on every public page.
+
+The header read `draw·next`, the tab `draw-next - <diagram>`, the static title `draw — next (kernel)` and the help heading
+`draw·next — controls (kernel-rendered)`, while the README, the About, Privacy and Terms pages a person meets before signing in,
+and the address itself all say `draw`. The director: "Lets write \"draw\"". Comments are read past, so a code comment may still
+say what the page once said.
+*/
+test('H24.4: the page shows the name draw -- header, title, tab and help -- as the public pages do', () => {
+	const strip = (t) => t.replace(/<!--[\s\S]*?-->/g, '').replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:'"`])\/\/[^\n]*/g, '$1');
+	const html = strip(fs.readFileSync(path.join(root, 'app/index.html'), 'utf8'));
+	const main = strip(fs.readFileSync(path.join(root, 'app/src/main.js'), 'utf8'));
+
+	assert.match(html, /<title>draw<\/title>/, 'the static title is draw');
+	assert.match(html, /<span id="logo">draw<\/span>/, 'the header logo is draw');
+	assert.match(html, /<h2>draw — controls<\/h2>/, 'the help heading is draw, without the renderer\'s name');
+	assert.match(main, /document\.title = `draw - \$\{meta\.name\}`;/, 'the tab reads draw - <diagram name>');
+	for (const [name, text] of [['app/index.html', html], ['app/src/main.js', main]]) {
+		assert.doesNotMatch(text, /draw[·-]next|draw — next|kernel-rendered/, `${name} shows no other name`);
+	}
+
+	// control: the README is the tracked statement of the name (the public pages live under the untracked `deploy/`)
+	assert.match(fs.readFileSync(path.join(root, 'README.md'), 'utf8'), /^# draw$/m, 'the README is titled draw');
+});

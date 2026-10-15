@@ -2036,5 +2036,11 @@ Shown: dev/BOARD.md@5d32f68\
 Affects: dev/design/input/GESTURE-SYSTEM.md\
 Recorder: given in the same message as H24.2, so a zone Ctrl+A selected stays selected until Shift is next released. Releasing Shift drops from the selection every entity of a kind picked only under Shift, and nothing else; a press or drag in progress keeps it until it ends, unless Shift is held again by then. So a selected zone's keys work while Shift is held -- Delete, F2, Shift+arrow -- and the arrow-key nudge, which needs Shift up, no longer reaches a zone.
 
+**H24.4 -- the app calls itself `draw` -- 2026-10-15 (B354).**\
+Director: "I see. Lets write \"draw\""\
+Shown: dev/BOARD.md@2c2636e\
+Affects: dev/design/brand/README.md\
+Recorder: asked whether the page keeps `draw` and `next` joined by a middle dot -- its header since the first commit, with the tab reading `draw-next - <diagram>` and the help heading naming the renderer (`kernel-rendered`) -- or uses `draw`, the name on the README, the About, Privacy and Terms pages and the address, the director chose `draw`: the header, the static title, the tab and the help heading say `draw`, and the help heading drops the renderer's name.
+
 
 

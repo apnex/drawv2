@@ -3,6 +3,9 @@
 The `router` glyph, taken from `kernel/theme.mjs` rather than redrawn.\
 Same path data the editor renders, in the same palette: `#aed581` on `#101010`.
 
+The product's name is `draw`, on the page as on the public pages (H24.4): the header, the tab (`draw - <diagram name>`) and the help heading.\
+The lab calls itself `draw lab`.
+
 `router.html` is the source.\
 It renders at 4x into a larger viewport, and the PNG is cropped to content and downscaled with LANCZOS -- rendering directly at 120 produces a partial paint and worse antialiasing.
 
