@@ -37,19 +37,16 @@ export function projection(model) {
 	return scratch;
 }
 
-// `taken` is the ids already in use, as an object keyed by id or as a predicate -- the Model's `freshId` asks one
+// `taken` is the ids already in use, as an object keyed by id or as a predicate -- the Model's `freshId` asks one.
+// An ENTITY id only: a diagram id is a capability URL once published (H23), so the server mints it from the platform's
+// cryptographic source (`server/store.js` `mintDiagramId`, B351), and the core, which may not read its host (L11), refuses.
 export function newId(kind, taken = {}) {
+	if (kind === 'diagram') throw new Error('newId cannot mint a diagram id -- server/store.js mintDiagramId does, from crypto.randomBytes (B351)');
 	const used = typeof taken === 'function' ? taken : (id) => taken[id];
 	let id;
 	do {
-		if (kind === 'diagram') {
-			const hi = Math.floor(Math.random() * 0x100000000).toString(16).padStart(8, '0');
-			const lo = Math.floor(Math.random() * 0x100000000).toString(16).padStart(8, '0');
-			id = `${hi}${lo}`;
-		} else {
-			const hex = Math.floor(Math.random() * 0xffffff).toString(16).padStart(6, '0');
-			id = `${kind}-${hex}`;
-		}
+		const hex = Math.floor(Math.random() * 0xffffff).toString(16).padStart(6, '0');
+		id = `${kind}-${hex}`;
 	} while (used(id));
 	return id;
 }

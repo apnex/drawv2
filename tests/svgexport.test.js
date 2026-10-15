@@ -1,5 +1,5 @@
 /*
-`GET /d/<id>.svg` — the diagram as a downloadable, self-contained SVG.
+`GET /<id>.svg` — the diagram as a downloadable, self-contained SVG (`/d/<id>.svg` until H23).
 
 This closes B28 by PROMOTION rather than deletion. `app/src/schema.js` was flagged as dead ("not in
 the production path") and `KERNEL_CSS` as a dead export; both were in fact the two halves of a
@@ -33,7 +33,8 @@ after(async () => {
 
 const firstId = async () => (await (await fetch(`${base}/api/v1/diagrams`)).json())[0].id;
 
-test('GET /d/<id>.svg serves an SVG document, not the editor page', async () => {
+// CORRECTED 2026-10-15 (H23): the title read `/d/<id>.svg`; the body has fetched `/<id>.svg` since 2d78eef
+test('GET /<id>.svg serves an SVG document, not the editor page', async () => {
 	const id = await firstId();
 	const r = await fetch(`${base}/${id}.svg`);
 	assert.equal(r.status, 200);
@@ -74,7 +75,8 @@ test('an unknown diagram id is a 404, not the editor and not a blank image', asy
 	assert.equal(r.status, 404);
 });
 
-test('/d/<id> without the suffix still serves the editor — the deep link is unchanged', async () => {
+// CORRECTED 2026-10-15 (H23): the title read `/d/<id>`; the body has fetched `/<id>` since 2d78eef
+test('/<id> without the suffix still serves the editor — the deep link is unchanged', async () => {
 	const id = await firstId();
 	const r = await fetch(`${base}/${id}`);
 	assert.equal(r.status, 200);
@@ -141,4 +143,47 @@ test('H23: a private diagram answers 404 to an unauthenticated SVG request; publ
 		fs.rmSync(dir, { recursive: true, force: true });
 		fs.rmSync(home, { recursive: true, force: true });
 	}
+});
+
+/*
+B351 (H23) -- a published SVG link is a capability URL, so its id comes from the platform's cryptographic source.
+
+H23's design named `crypto.randomBytes(8)`, and `2d78eef` shipped two `Math.random` halves inside `model/model.mjs` instead.
+The server is the only minter (`server/store.js` `create`), so the id is drawn there, and the core -- which may not read
+its host (scan-layers L11) -- refuses to mint one rather than quietly answering with a weaker id.
+
+The control is `Math.random` pinned to 0.5: an id still derived from it reads `8000000080000000`, which is what this test saw before the fix.
+*/
+test('B351 (H23): the server mints a diagram id from crypto.randomBytes(8), redraws a taken one, and the model refuses to mint one', async () => {
+	const crypto = (await import('node:crypto')).default;
+	const { Store } = await import('../server/store.js');
+	const { newId } = await import('../model/model.mjs');
+	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-b351-'));
+	const store = new Store(dir, { authz: false });
+	await store.init();
+	const realBytes = crypto.randomBytes;
+	const realRandom = Math.random;
+	const drawn = [];
+	const queue = [Buffer.from('0123456789abcdef', 'hex'), Buffer.from('0123456789abcdef', 'hex'), Buffer.from('fedcba9876543210', 'hex')];
+	try {
+		Math.random = () => 0.5;
+		crypto.randomBytes = (n, ...rest) => {
+			if (rest.length || !queue.length) return realBytes(n, ...rest);
+			drawn.push(n);
+			return queue.shift();
+		};
+		const a = store.create('a');
+		assert.equal(a.ok, true, a.error);
+		assert.equal(a.model.state.meta.id, '0123456789abcdef', 'the id is the hex of the bytes crypto.randomBytes returned');
+		const b = store.create('b');
+		assert.equal(b.ok, true, b.error);
+		assert.equal(b.model.state.meta.id, 'fedcba9876543210', 'a taken id is drawn again rather than reused');
+		assert.deepEqual(drawn, [8, 8, 8], 'each draw asks for exactly 8 bytes -- 64 bits, 16 hex digits');
+	} finally {
+		crypto.randomBytes = realBytes;
+		Math.random = realRandom;
+		fs.rmSync(dir, { recursive: true, force: true });
+	}
+	assert.throws(() => newId('diagram'), /server\/store\.js/, 'the model refuses to mint a diagram id, and names who does');
+	assert.match(newId('node'), /^node-[0-9a-f]{6}$/, 'control: entity ids still mint in the model');
 });

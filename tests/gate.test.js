@@ -679,7 +679,7 @@ test('H9.7/B101: the agent door is stripped at ingress and nothing below can see
 	/*
 	B101 moved the door from the REST router to ingress, and that made this invariant STRONGER
 	rather than merely different. The old rewrite sat inside rest.js, so the router itself -- and
-	everything app.js routes outside it, including `/d/<id>.svg` -- could see the prefix. That is
+	everything app.js routes outside it, including the picture (`/d/<id>.svg` then, `/<id>.svg` since H23) -- could see the prefix. That is
 	precisely why the picture was unreachable through the door. Stripping at ingress means the set
 	of door-blind code is now everything except the four lines that do the stripping.
 	*/

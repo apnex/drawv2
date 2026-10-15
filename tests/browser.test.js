@@ -1277,7 +1277,7 @@ before the move, unchanged after it, each on a FRESH tab so nothing an earlier t
   holds only while the palette's key listener is registered before the canvas's. Construction order is behaviour.
 */
 async function freshTab() {
-	const t = await attach(`http://127.0.0.1:${port}/${K8_DIAGRAM}`);   // the deep link: the page reads /d/<id>, not ?diagram=
+	const t = await attach(`http://127.0.0.1:${port}/${K8_DIAGRAM}`);   // the deep link: the page reads /<id> (H23; /d/<id> before), not ?diagram=
 	await until(t, `document.getElementById('node-ba0002') ? 1 : 0`, 8000);
 	await t.eval(`window.draw.input.setReadOnly(false), 1`);   // earlier tests hold the server lock (see K7)
 	return t;

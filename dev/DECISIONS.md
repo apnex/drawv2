@@ -1997,5 +1997,11 @@ Shown: docs/spec/ACCESS.md@641c0ea\
 Affects: docs/spec/ACCESS.md, docs/spec/API.md\
 Recorder: after approving Recommendation 1 ("continue with recommendation1") and reviewing the five-slice plan (`H23.1` to `H23.5`), the director approved the plan with the publish/share toggle button also copying the public SVG URL to the clipboard when turned on: (1) diagram IDs move full-forward from `diagram-<6hex>` to 16-hex (`[0-9a-f]{16}`, 64 bits) at `/<id>` and `/<id>.svg` (while entity IDs stay `<kind>-<6hex>` and built-in templates stay `template-<6hex>`); (2) `meta.public` (`false` by default) is toggled by the owner via `PUT /api/v1/diagrams/:id/public`, the top-menu `#publish` button (which copies the `<origin>/<id>.svg` URL to the clipboard when published), and `draw publish`; (3) `/*.svg` routes through `svc-draw-connect` (outside IAP) and serves `GET /<id>.svg` with `Content-Type: image/svg+xml; charset=utf-8`, `X-Robots-Tag: noindex, nofollow`, `Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'`, and `Cross-Origin-Resource-Policy: cross-origin` when `meta.public` is true or the caller can read the diagram, and `404` otherwise.
 
+**H23.5 -- migrate `map-apnex-io` to the global external load balancer so `/<id>.svg` routes outside IAP -- 2026-10-15 (B350).**\
+Director: "Option 2. Approved"\
+Shown: dev/BOARD.md@8c9554b\
+Affects: docs/spec/ACCESS.md\
+Recorder: asked where a published diagram's SVG is embedded from, because the classic load balancer cannot route `/<id>.svg` outside IAP -- Option 1, the existing IAP-free `/connect/svg/<id>.svg` (recommended), Option 2, migrating `map-apnex-io` to the global external load balancer (`EXTERNAL_MANAGED`) to keep the approved `/<id>.svg`, or doing nothing -- the director approved Option 2: the backend services, the backend bucket and the forwarding rules behind `map-apnex-io` move from `EXTERNAL` to `EXTERNAL_MANAGED` through Google's staged migration (`PREPARE`, `TEST_BY_PERCENTAGE`, `TEST_ALL_TRAFFIC`, then the scheme), and `path-draw` gains a route rule sending `/<id>.svg` to `svc-draw-connect`.
+
 
 

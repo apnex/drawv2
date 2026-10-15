@@ -147,7 +147,8 @@ export async function request(ctx, path, opts = {}) {
 }
 
 async function requestOnce(ctx, path, { method = 'GET', body = null, headers = {} } = {}) {
-	const url = `${ctx.host}${path.startsWith('/d/') ? '' : ctx.prefix}${path}`;
+	// every path here is relative to the version prefix; the picture (`/<id>.svg`) is fetched by `render` and `parity` themselves (H23)
+	const url = `${ctx.host}${ctx.prefix}${path}`;
 	const h = { ...headers };
 	if (ctx.code) h.authorization = `Bearer ${ctx.code}`;
 	if (body !== null) h['content-type'] = 'application/json';

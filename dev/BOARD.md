@@ -1442,8 +1442,13 @@ Opened 2026-10-15 by the director (`dev/DECISIONS.md` H23): move diagram IDs ful
 
 CORRECTED 2026-10-15: `2d78eef` marked H23.5 and the milestone done before the load balancer was changed, and the line it added claimed `/<id>.svg` answers without IAP, which was never verified live.
 H23.1 to H23.4 are done and deployed as `draw-00215-chp` and `draw-lab-00171-prm`, and all 39 diagrams in `gs://diagrams.apnex.io` load under 16-hex IDs.
-H23.5 waits on a director pick (B350, under Decisions required): `map-apnex-io` is a classic load balancer (`EXTERNAL`), and the URL map API refuses both ways to match `/<id>.svg`, `regexMatch` ("Matching with a regex is not allowed") and `pathTemplateMatch` ("incompatible with LB Type Global EXTERNAL").
-Live today, `/<id>.svg` answers `302` to IAP sign-in, and `/connect/svg/<id>.svg` answers without IAP, with `404` for a private or unknown ID alike.
+H23.5 was ruled on 2026-10-15 (`dev/DECISIONS.md` H23.5, B350): migrate `map-apnex-io` to the global external load balancer, because `map-apnex-io` was a classic load balancer (`EXTERNAL`), and the URL map API refuses both ways to match `/<id>.svg` there, `regexMatch` ("Matching with a regex is not allowed") and `pathTemplateMatch` ("incompatible with LB Type Global EXTERNAL").
+
+AMENDED 2026-10-15: `map-apnex-io` runs on the global external load balancer, and `path-draw` sends `/{id=*}.svg` to `svc-draw-connect`.
+Its six classic backend services, its backend bucket and `fwd-apnex-io` passed through `PREPARE`, `TEST_BY_PERCENTAGE` at 10%, `TEST_ALL_TRAFFIC` and then the scheme, and at each stage every route on `apnex.io`, `raw.apnex.io`, `ois.apnex.io`, `draw.apnex.io`, `lab.apnex.io` and `labops.sh` answered with its baseline status, type, location and body.
+Live, `/<id>.svg` answers `404` without IAP for a private ID and an unknown one alike, a nested `.svg` path and the editor at `/<id>` still answer `302` to sign-in, and editor websockets still run to Cloud Run's 300-second limit.
+Not yet seen live: a published diagram's `200`, because no diagram is published and publishing takes the owner's sign-in; `tests/svgexport.test.js` covers that branch and its headers.
+B351 also closes here: a diagram id is minted from `crypto.randomBytes(8)` by `server/diagram-id.mjs`, as the H23 design named, where `2d78eef` used `Math.random`.
 
 **Exit:** diagrams use 16-hex IDs at `/<id>` and `/<id>.svg`; toggling `#publish` (or `draw publish`) publishes the diagram and copies its `.svg` URL; a published diagram's `/<id>.svg` loads without IAP with safe headers, while a private diagram's `/<id>.svg` returns `404` without credentials.
 
@@ -1514,7 +1519,6 @@ B163, the last entry, was ratified and closed on 2026-10-01: the standing goals 
 
 | Row | Decision owed | Why it cannot be settled without you |
 |---|---|---|
-| **B350** | Where a published diagram's SVG is embedded from: the existing IAP-free `/connect/svg/<id>.svg`, or `/<id>.svg` after migrating `map-apnex-io` to the global external load balancer | H23 approved `/<id>.svg`, and the classic load balancer cannot route it outside IAP; one option changes the approved URL, the other changes the load balancer shared by five hosts |
 
 **R13 reads this table in both directions**, which is what `Held` has had since B123 and this section never did.\
 A row recording `RULING-OWED` must appear here, so a decision cannot wait unseen; an entry here must still be `RULING-OWED`, so a ruling that has landed cannot keep asserting itself.\

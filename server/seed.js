@@ -5,6 +5,7 @@ are stable across reseeds.
 */
 
 import { newId } from '../model/model.mjs';
+import { mintDiagramId } from './diagram-id.mjs';   // B351: the document's own id is a diagram id, minted from crypto.randomBytes
 import { SCHEMA, completeAlwaysHeld } from '../model/shape.mjs';
 import { pipeEntity } from '../network/pipe-kind.mjs';   // a link's leg is a pipe (P3), and the seed is stored complete
 import { productKinds } from '../product/kinds.mjs';   // WD-b1: the always-held entities are the product's (its layouts); the store passes its own composition
@@ -44,7 +45,7 @@ export function seedDoc(kinds = productKinds()) {
 	const ordered = (list) => list.map((e, i) => ({ ...e, order: i + 1 }));
 	return completeAlwaysHeld({
 		meta: {
-			id: make('diagram'),
+			id: mintDiagramId(),
 			name: 'example',
 			version: 0,
 			schema: SCHEMA

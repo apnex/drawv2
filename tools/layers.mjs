@@ -137,7 +137,7 @@ export const PARTS = {
 	placement: { duty: 'Choose the free anchor a relationship names', kind: 'door', by: ['SD1'],
 		modules: ['server/anchor.mjs'], consumes: ['lattice', 'document', 'relations', 'devices'] },
 	store: { duty: 'Keep documents durable', kind: 'door', by: ['SD2', 'WD6'],
-		modules: ['server/store.js', 'server/files.mjs', 'server/docfile.mjs', 'server/seed.js'],
+		modules: ['server/store.js', 'server/files.mjs', 'server/docfile.mjs', 'server/seed.js', 'server/diagram-id.mjs'],
 		consumes: ['document', 'kind-contract', 'lattice', 'planner', 'product', 'relations', 'access', 'placement', 'network'] },
 	hub: { duty: 'Carry each change to the tabs watching a document', kind: 'door', by: ['SD2'],
 		modules: ['server/hub.js', 'server/protocol.js', 'server/locks.js', 'server/sessionlog.mjs'], consumes: ['store', 'planner', 'document', 'kind-contract', 'access'] },
@@ -324,7 +324,7 @@ export const LAYER = {
 	],
 	'server-only': [
 		'server/anchor.mjs',     // anchor resolution; the store passes it to the planner as its placement edge (K3, PL-4), and it stays 404 (K4)
-		'server/app.js', 'server/codes.mjs', 'server/docfile.mjs', 'server/files.mjs', 'server/hub.js', 'server/identity.mjs',
+		'server/app.js', 'server/codes.mjs', 'server/diagram-id.mjs', 'server/docfile.mjs', 'server/files.mjs', 'server/hub.js', 'server/identity.mjs',
 		'server/locks.js', 'server/origin.mjs', 'server/protocol.js', 'server/rest.js', 'server/routes.mjs', 'server/seed.js',
 		'server/server.js', 'server/sessionlog.mjs', 'server/store.js',
 	],

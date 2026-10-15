@@ -239,12 +239,12 @@ export async function createApp({ dataDir, secretsDir, port = 8080, clientDir, h
 			return res.end();
 		}
 		/*
-		`/d/<id>.svg` — the diagram you are looking at, as a downloadable image.
+		`/<id>.svg` — the diagram you are looking at, as a downloadable image (`/d/<id>.svg` until H23).
 
 		A sibling of the deep link rather than an /api/v1 route, because it is not a description of
-		the model: it is the picture, for someone who has `/d/<id>` open and wants the same thing as
+		the model: it is the picture, for someone who has `/<id>` open and wants the same thing as
 		a file. `curl -O` then yields `<id>.svg` rather than a file called `svg`. It must be matched
-		BEFORE static handling, which owns `/d/` today and would otherwise look for a file on disk.
+		BEFORE static handling, which would otherwise look for a file on disk.
 		A read, so no lock — the same rule the rest of GET follows.
 		*/
 		const asSvg = url.pathname.match(/^\/([0-9a-f]{16})\.svg$/);

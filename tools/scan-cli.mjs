@@ -102,10 +102,10 @@ const known = new Set(ROUTES.map((r) => norm(r.path)));
 Two paths sit OUTSIDE the versioned surface by design, and `server/routes.mjs` says so: it declares
 paths relative to the version prefix, and these are not relative to anything.
 
-`/d/<id>.svg` is the picture, reached through its own door entry (`/connect/d/` -> `/d/`, B101).
+`/<id>.svg` is the picture, reached through its own door entry (`/connect/svg/` -> `/`, B101, H23).
 The root `/health` is the liveness contract that Cloud Run and the Dockerfile probe, and it stays
 uncredentialed for that reason -- B132 gave the agent a prefix-relative `health` beside it rather
-than moving the probe. Listing `/d/<id>.svg` in ROUTES would make that file's own stated rule false.
+than moving the probe. Listing `/<id>.svg` in ROUTES would make that file's own stated rule false.
 */
 const OFF_SURFACE = new Set(['*.svg']);
 

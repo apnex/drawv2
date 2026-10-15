@@ -449,3 +449,6 @@ The workflow set is assumed to be the two described.\
 If others exist, the grant model is the part most likely to need widening.
 
 AMENDED 2026-10-15 (H23): diagram IDs are 16-hex (`[0-9a-f]{16}`) at `/<id>` and `/<id>.svg`, and the owner may publish a diagram (`meta.public`) so `/<id>.svg` is served outside IAP.
+
+AMENDED 2026-10-15 (H23.5): `map-apnex-io` runs on the global external load balancer (`EXTERNAL_MANAGED`), and a `path-draw` route rule sends `/<id>.svg` to `svc-draw-connect`, which has IAP off.\
+This settles the open question above on `/d/<id>.svg`: a published diagram's SVG answers without any principal, and a private one answers `404` exactly as an unknown ID does.

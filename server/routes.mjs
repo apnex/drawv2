@@ -17,8 +17,8 @@ is a door rather than a route (`/api/v1` or `/connect/v1`).
 
 Two paths are deliberately ABSENT because they are not relative to that prefix, and listing them
 here made the rule above false. The root `/health` is the liveness contract Cloud Run and the
-Dockerfile probe, so it carries no credential and must not start needing one. `/d/<id>.svg` is the
-picture, reached through its own door entry (B101).
+Dockerfile probe, so it carries no credential and must not start needing one. `/<id>.svg` is the
+picture, reached through its own door entry (B101; the path moved from `/d/<id>.svg` at H23).
 
 `health` below was always the correct DECLARATION -- prefix-relative, so `/api/v1/health` -- and the
 server simply never implemented it. The prover papered over the gap by special-casing this one entry

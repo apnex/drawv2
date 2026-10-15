@@ -7,7 +7,8 @@ server; everything is validated before it touches a model.
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { Model, newId } from '../model/model.mjs';
+import { Model } from '../model/model.mjs';
+import { mintDiagramId } from './diagram-id.mjs';   // B351: the one minter of diagram ids, from crypto.randomBytes
 import { NODE_EXT } from '../model/surface.mjs';
 import { seedDoc } from './seed.js';
 import { validateDoc, validateSelectionIds, validPrincipal } from '../planner/validate.js';
@@ -701,7 +702,7 @@ export class Store {
 			}
 		}
 		const taken = Object.fromEntries([...this.diagrams.keys()].map((k) => [k, true]));
-		const id = newId('diagram', taken);
+		const id = mintDiagramId(taken);
 		if (!name) {
 			// scan existing names: map size collides after deletes
 			const names = new Set([...this.diagrams.values()].map((e) => e.model.state.meta.name));

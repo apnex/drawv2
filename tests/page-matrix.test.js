@@ -3,7 +3,7 @@ THE BEHAVIOUR MATRIX ON THE PRODUCT PAGE -- P7 (H18.38 to H18.40; dev/design/uni
 
 The lab's runner (tests/fixtures/matrix-runner.mjs) driving the PRODUCT page against a real server: each row's board is a
 diagram on the server, committed through REST as the lab commits its seed through its planner; the page opens it at
-`/d/<id>`; real mouse and key input drives the page's gesture machine; and the row is held to the LAB'S OWN record (L1) --
+`/<id>` (`/d/<id>` until H23); real mouse and key input drives the page's gesture machine; and the row is held to the LAB'S OWN record (L1) --
 one corpus, never written from here. What differs is the page's own nature, named in the prelude and nowhere else: the
 authority is the server's document, read through REST, and the notice is the header banner (J3). A step settles when the
 page's outbox is answered, since the planner is across a socket rather than in the page.
