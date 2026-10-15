@@ -200,10 +200,16 @@ test('H9.9: a session rebinds to its fork, so a second write does not fork again
 	const seen = [];
 	ws.on('message', (d) => seen.push(JSON.parse(d.toString())));
 	await new Promise((r) => ws.on('open', r));
-	const settle = () => new Promise((r) => setTimeout(r, 120));
+	/*
+	CORRECTED 2026-10-16 (B358): this waited a fixed 120 ms after each message and then asserted the answer had come, so a
+	loaded machine failed it -- the pre-push gate did, at a load average of 8, with nothing wrong. It waits for the answer
+	itself now, and gives up after 5 s, after which the assertion below reports what never arrived.
+	*/
+	const until = async (seenIt) => { for (const t0 = Date.now(); !seenIt() && Date.now() - t0 < 5000;) await new Promise((r) => setTimeout(r, 10)); };
+	const answers = (cmd) => seen.filter((m) => m.cmd === cmd).length;
 	try {
 		ws.send(JSON.stringify({ cmd: 'hello', body: { diagram: tplId } }));
-		await settle();
+		await until(() => answers('snapshot') > 0);
 		/*
 		Renames, not new nodes. Placing a node needs a free anchor, and two of my attempts were
 		refused for colliding with the template's own content -- which looks EXACTLY like the rebind
@@ -212,13 +218,14 @@ test('H9.9: a session rebinds to its fork, so a second write does not fork again
 		const rename = (name) => ({ ops: [{ op: 'meta', patch: { name } }], label: 'rename' });
 
 		ws.send(JSON.stringify({ cmd: 'commit', body: rename('first') }));
-		await settle();
+		await until(() => answers('forked') > 0 && answers('ack') > 0);
 		const forked = seen.find((m) => m.cmd === 'forked');
 		assert.ok(forked, 'the session is told it moved');
 		assert.match(forked.body.diagram, /^[0-9a-f]{16}$/, 'onto a real diagram');
 
+		const acked = answers('ack');
 		ws.send(JSON.stringify({ cmd: 'commit', body: rename('second') }));
-		await settle();
+		await until(() => answers('ack') > acked);   // the second write's own answer, whatever it says
 		const mine = app.store.list(OWNER).filter((e) => !e.template);
 		assert.equal(mine.length, 1, 'the SECOND write went to the same fork, not to a new one');
 		assert.equal(app.store.get(forked.body.diagram).state.meta.name, 'second',

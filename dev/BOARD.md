@@ -1475,6 +1475,7 @@ Opened 2026-10-15 by the director (`dev/DECISIONS.md` H24): smaller UI, UX and p
 | H24.4 | The app calls itself `draw` -- header, tab, title and help heading (H24.4) | **B354** | S5 | `DONE` |
 | H24.5 | Under Shift the left button always draws a zone, over an existing one too; the right button selects, moves and clones one (H24.5) | **B355** | S4 | `DONE` |
 | H24.6 | Arrows: a link's direction shown whole, on every link, in every state and along its length -- each issue discussed and designed, then built (H24.6) | **B356** | S3 | `WIP` |
+| H24.7 | A template test waits for the server's reply instead of a fixed 120 ms, which a loaded pre-push gate failed (H24.7) | **B358** | S5 | `DONE` |
 
 **Exit:** each item the director names is done or ruled, and deployed.
 
