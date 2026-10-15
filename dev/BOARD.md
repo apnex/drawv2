@@ -1526,6 +1526,7 @@ Scored so the comparison is a judgement, not an omission.\
 | **B188** | S3 | Perception symmetric with authoring: `draft show` exists, `--draft` on a READ does not, so an agent cannot ask what the document would look like after its draft applies | an agent stages enough that it cannot hold the result in its head. |
 | **B194** | S3 | `draw event <condition>` -- an agent BLOCKS on a described condition rather than asking a person to confirm one. Viewer-opened, lock-freed, commit-landed all become one verb | an agent must wait on something a viewer cannot supply -- a lock freeing, or a commit from another agent. |
 | **B175** | S3 | A second armed endpoint appeared not to animate in one tab; resolved with no change and no cause found | a second report of a spawner that is armed and not animating, or the same one recurring. |
+| **B357** | S4 | A long or bent link shows its direction only at its far end (H24.6-4 kept it so for now) | the director reopens direction along a link, or a reader misreads a long link's direction. |
 | **B180** | S3 | Sampling the derived world stopped being uniform when combat made health accumulate: position is still a closed form of `t`, health must be folded | wanting to scrub backwards -- replay a wave, review a death, audit a disputed kill; not slowness. |
 
 **Cleared 2026-08-26**, because the trigger fired and was answered, or the ruling landed:

@@ -395,7 +395,7 @@ The waypoint's rings remain a list of layers rather than a set of attributes, be
 
 ---
 
-## Arrowheads [DESIGNING 2026-10-15 -- H24.6, B356]
+## Arrowheads [DESIGNED 2026-10-16, not yet built -- H24.6, B356]
 
 A link's declared direction is barely shown (B356), and the director chose to target all four causes and to design each with them, one at a time, before any code (H24.6).\
 Each decision is recorded here as it is ruled; until then the arrowhead is as H15.6 built it -- one filled triangle at the end where the flow arrives, five line widths long, its tip at the end of the line.
@@ -406,4 +406,17 @@ Each decision is recorded here as it is ruled; until then the arrowhead is as H1
 | 2 | Control links: a thinner line makes a smaller head, wholly hidden | ruled (H24.6-2): a head is 4 line widths long and never under 18 px -- 24 px on a 6 px data link, 18 px on a 3.6 px control link; with the tip on the outline (H24.6-1) a control link's head shows, and still reads lighter than a data link's. Mockups: `dev/design/arrows/issue2-size.html` |
 | 2b | Shape: today's head is a filled triangle, as wide as it is long | ruled (H24.6-2b): hollow, outlined at 4 px -- the outline's outer edge on the anchor's outline -- its inside clear, and the line broken beneath it, drawn from its far end to the head's base and again from the tip to the anchor's centre; each head is a shape of its own, not an SVG marker, which cannot sit on the outline, hold an 18 px floor, or take the line's colour. Mockups: `dev/design/arrows/issue2b-shape.html` |
 | 3 | Selection: a selected link turns green and its head stays blue (B226) | ruled (H24.6-3): a head takes its link's colour and opacity in every state -- selected, armed, down, blocking, an end being dragged -- retiring B226's trade. Mockups: `dev/design/arrows/issue3-colour.html` |
-| 4 | Long links: the direction shows only at the far end | open |
+| 4 | Long links: the direction shows only at the far end | ruled (H24.6-4): no change for now -- a head at the end only; held as B357. Mockups: `dev/design/arrows/issue4-long.html` |
+
+### The design, as ruled
+
+A directed link's head is drawn as a shape of its own by the network's link painter, the one drawing path the canvas, the exported and published SVG and the lab share; the SVG marker (`kernel/renderer.mjs` `arrowDefs`) retires.\
+Which end carries it is unchanged: the end where the flow arrives (`linkMarker`), and an undeclared link has none.
+
+- **Where (H24.6-1).** The line still runs to its anchor's centre. The head points along the line's last straight run, its outline's outer edge touching the anchor's outline where the line crosses it -- a device's frame, square or round, a wide device's rectangle, or a waypoint's outer ring, 20 px out. It is drawn over the anchor.
+- **How big (H24.6-2).** As long as it is wide, 4 line widths long and never under 18 px: 24 px on a 6 px data link, 18 px on a 3.6 px control link.
+- **What shape (H24.6-2b).** Hollow, outlined at 4 px, its inside clear. The line is broken beneath it -- drawn from its far end to the head's base, and again from the tip to the anchor's centre -- so it reads the same on the canvas and inside a tinted zone.
+- **What colour (H24.6-3).** The link's own colour and opacity in every state: selected, armed, down, blocking, an end being dragged.
+- **Along the line (H24.6-4).** Nothing, for now (B357).
+
+Accepted costs: a group's outline, and on a diagonal the selection brackets, cross the tip.

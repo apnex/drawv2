@@ -2078,5 +2078,11 @@ Shown: docs/spec/ATOMICS.md@d933d0a\
 Affects: docs/spec/ATOMICS.md, dev/design/arrows/README.md\
 Recorder: shown a page of the ruled head in every link state -- normal, selected, armed to delete, down, blocking a down link, an end being dragged, a junction with one link selected, a selected control link -- under three rules, outside the repository and kept as `dev/design/arrows/issue3-colour.html`: (a) the head follows its line in every state, (b) only when selected, blue otherwise, (c) always blue, as today; and told that under (a) a selected head on a device's frame shares the frame's green. The director chose (a), as recommended: a head takes its link's colour and opacity in every state -- green when selected, red when armed, orange when down or blocking, faded with its line while an end is dragged -- which retires the trade B226 recorded, possible now that each head is a shape of its own rather than a marker.
 
+**H24.6-4 -- arrowheads, issue 4: no marks along a link for now; the head stays at the end -- 2026-10-16 (B356, B357).**\
+Director: "I want to keep it as is for now, no change"\
+Shown: docs/spec/ATOMICS.md@38bf10c\
+Affects: docs/spec/ATOMICS.md, dev/design/arrows/README.md\
+Recorder: shown a page of a scene at 60% zoom -- a 12-cell link, a 2-cell link, a bent link with runs of 7, 2 and 5 cells, a control link, and two links side by side flowing opposite ways -- under five rules for marks along a link, outside the repository and kept as `dev/design/arrows/issue4-long.html`: none (today), one at the middle of the link, one at the middle of every run, one every 4 cells, one at the middle of each run of 5 cells or more (recommended), beside three mark styles; and told that moving dashes were left off because dashes mean the control plane, dots mean down, and run mode already moves packets. The director chose no change for now: a directed link shows its head at the end where the flow arrives and nowhere else. The concern is held as B357 with its trigger, so it is not lost.
+
 
 
