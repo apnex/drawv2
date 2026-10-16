@@ -17,6 +17,7 @@ import { attachRelations } from '../engine/store.mjs';
 import { cellOf } from '../kernel/geometry.mjs';
 import { Renderer } from '../app/src/renderer.js';
 import { makeRenderer } from './fixtures/client-harness.mjs';
+import { pipeEntity } from '../network/pipe-kind.mjs';   // H24.6: a pipe under a link, so it is up
 
 // a subtree as plain data: tag, attributes, text and children, in order
 const ser = (n) => ({ tag: n.tagName, attrs: Object.fromEntries(Object.entries(n.attrs || {}).sort()), text: n.textContent ?? null, kids: (n.children || []).map(ser) });
@@ -45,6 +46,12 @@ const N2 = ['node', { id: 'node-a00002', name: 'host-2', type: 'host', shape: 'c
 const W = (o = {}) => ['node', { id: 'node-a00003', name: 'w', x: -240, y: 120, ...o }];
 const L = ['link', { id: 'link-a00004', name: 'l', src: 'node-a00003', dst: 'node-a00001' }];
 const LF = ['link', { ...L[1], direction: 'forward' }];   // H24.6: a link carrying a head
+// a pipe under it, so the link is up; and a ring of four waypoints, closed, with its pipes
+const PIPE = ['pipe', pipeEntity('node-a00003', 'node-a00001', 'link')];
+const RING_IDS = ['node-a00011', 'node-a00012', 'node-a00013', 'node-a00014'];
+const RING_NODES = [[0, 0], [240, 0], [240, 240], [0, 240]].map(([x, y], i) => ['node', { id: RING_IDS[i], name: `r${i}`, x: x + 600, y }]);
+const RING_PIPES = RING_IDS.map((id, i) => ['pipe', pipeEntity(id, RING_IDS[(i + 1) % 4], 'link')]);
+const RING = ['link', { id: 'link-a00009', name: 'ring', src: RING_IDS[0], dst: RING_IDS[3], via: [RING_IDS[1], RING_IDS[2]], closed: true, control: true }];
 const Z = (o = {}) => ['zone', { id: 'zone-a00005', name: 'dmz', x: -330, y: -210, w: 600, h: 420, ...o }];
 const G = ['group', { id: 'group-a00006', name: 'g', members: ['node-a00001', 'node-a00002'] }];
 const PANEL = N({ content: [{ content: 'text', at: [0, 0], cols: 2, rows: 1, value: 'hello' }], span: { cols: 2, rows: 1 } });
@@ -72,6 +79,12 @@ const CASES = {
 	'device reshaped under a head': [[N(), W(), LF], [['node', 'node-a00001', { shape: 'square' }]]],
 	'device grown to a span under a head': [[N(), W(), LF], [['node', 'node-a00001', { span: { cols: 2, rows: 2 } }]]],
 	'device moved under a head': [[N(), W(), LF], [['node', 'node-a00001', { x: 120, y: 60 }]]],
+	// and its leg (2026-10-16), which takes the line's dash and must give it up when the line does
+	// a pipe under the link, so it is UP -- dashed or solid, not the dotted look of a link with no route -- and the change is real
+	'link made data again, under a head': [[N(), W(), PIPE, ['link', { ...LF[1], control: true }]], [['link', 'link-a00004', { control: false }]]],
+	'link made control, up, under a head': [[N(), W(), PIPE, LF], [['link', 'link-a00004', { control: true }]]],
+	// a ring carries its head where it closes, its one piece's dash pattern started inside the tip
+	'ring declared': [RING_NODES.concat(RING_PIPES, [RING]), [['link', 'link-a00009', { direction: 'forward' }]]],
 };
 
 for (const [name, [board, change]] of Object.entries(CASES)) {

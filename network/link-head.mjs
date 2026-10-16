@@ -11,8 +11,8 @@ lab share.
              outline's OUTER edge touching the anchor's outline where the line crosses it (H24.6-1)
   how big    4 line widths long, never under 18 px -- as wide as it is long (H24.6-2); shrunk only when the straight run is too
              short to hold it, so it never bends round a corner
-  shape      hollow, outlined at 4 px, its inside clear: the line is broken beneath it, drawn to 1 px inside the head's base and
-             again from the tip to the centre (H24.6-2b)
+  shape      hollow, outlined at 4 px, its inside clear: the line is broken beneath it, drawn out from 1 px inside the head's base,
+             with a leg of its own from under the head's solid tip on to the centre (H24.6-2b; attached, 2026-10-16)
   which end  where the flow arrives (`linkMarker`); a closed ring, which has no ends, carries it where it closes, at its first
              anchor
 
@@ -52,7 +52,8 @@ const at = (p, u, d) => [p[0] + u[0] * d, p[1] + u[1] * d];
 /*
 `points` the link's routed path (src, its bends, dst), `closed` a ring, `which` 'end' | 'start' | null (`linkMarker`), `width`
 the line's, `outlines` { start, end } -- the anchors' at either end. Null when undeclared or when no run has room; otherwise
-the tip, the head's length, its outline as a path (`headD`) and the line broken beneath it (`lineD`).
+the tip, the head's length, its outline as a path (`headD`), the line from the head's base outward (`lineD`, its dash pattern
+started at `lineOffset`), and the leg from inside the tip into the anchor (`legD`, its pattern started at the tip by `legOffset`).
 */
 export function linkHead({ points, closed = false, which, width, outlines = {} }) {
 	if (!which || !points || points.length < 2) return null;
@@ -78,20 +79,47 @@ export function linkHead({ points, closed = false, which, width, outlines = {} }
 	const room = runLen - (D - reach) - (other ? outlineDistance(other, { x: u[0], y: u[1] }) : 0);
 	const L = Math.min(headLength(width), room);
 	if (L < HEAD_MIN) return null;
-	const gap = at(tip, u, -(L - OVERLAP));   // where the line stops, 1 px inside the head's base
-	// the line, primitive by primitive as the router lays it, the head's run broken
-	let lineD = `M${fmt(geo[0].a)}`;
-	geo.forEach((g, i) => {
-		if (i !== h) { lineD += g.kind === 'line' ? ` L${fmt(g.b)}` : ` Q${fmt(g.c)} ${fmt(g.b)}`; return; }
-		lineD += arrives === 'b' ? ` L${fmt(gap)} M${fmt(tip)} L${fmt(g.b)}` : ` L${fmt(tip)} M${fmt(gap)} L${fmt(g.b)}`;
-	});
+	const gap = at(tip, u, -(L - OVERLAP));   // where the line meets the head, 1 px inside its base
+	/*
+	EACH PIECE BEGINS AT THE HEAD (the director, 2026-10-16: the leg past the head should be "attached to the head of the arrow").
+	The leg into the anchor starts `tuck` px inside the tip, where the solid apex is at least as wide as the line, so the two read as
+	one shape -- starting at the tip itself, a flat line end met the apex's point and left a notch either side. And a dashed or
+	dotted line must not begin in a gap: one path cannot promise where its pattern stands after a break (renderers differ on
+	whether dashing restarts), so the leg is a piece of its own, its pattern started at the tip (`legOffset`), and the line is laid
+	from the head's base outward, so its first dash sits on the base. A ring has no leg: it is one piece from inside the tip, round
+	in the flow's direction, back to the base.
+	*/
+	const tuck = Math.min(width + 1, HEAD_OUTLINE / SIN - 0.5);
+	const legStart = at(tip, u, -tuck);
+	const rev = (g) => (g.kind === 'line' ? ` L${fmt(g.a)}` : ` Q${fmt(g.c)} ${fmt(g.a)}`);   // a primitive travelled backwards
+	const fwd = (g) => (g.kind === 'line' ? ` L${fmt(g.b)}` : ` Q${fmt(g.c)} ${fmt(g.b)}`);
+	let lineD, legD = null, lineOffset = 0;
+	if (!closed && arrives === 'b') {        // from the base, back along the head's run and every primitive before it
+		lineD = `M${fmt(gap)} L${fmt(run.a)}`;
+		for (let i = h - 1; i >= 0; i--) lineD += rev(geo[i]);
+		legD = `M${fmt(legStart)} L${fmt(centre)}`;
+	} else if (!closed) {                    // from the base, on along the head's run and every primitive after it
+		lineD = `M${fmt(gap)} L${fmt(run.b)}`;
+		for (let i = h + 1; i < geo.length; i++) lineD += fwd(geo[i]);
+		legD = `M${fmt(legStart)} L${fmt(centre)}`;
+	} else if (arrives === 'b') {            // a ring, forward: on past the tip, round, and home to the base
+		lineD = `M${fmt(legStart)} L${fmt(run.b)}`;
+		for (let i = 0; i < h; i++) lineD += fwd(geo[i]);
+		lineD += ` L${fmt(gap)}`;
+		lineOffset = -tuck;
+	} else {                                 // a ring, reverse: the same, travelled the other way
+		lineD = `M${fmt(legStart)} L${fmt(run.a)}${rev(geo[0])}`;
+		for (let i = geo.length - 1; i > h; i--) lineD += rev(geo[i]);
+		lineD += ` L${fmt(gap)}`;
+		lineOffset = -tuck;
+	}
 	// the outline's centre line: its outer edge touches the tip, its base, and as wide as it is long
 	const back = (HEAD_OUTLINE / 2) / SIN;
 	const tipC = at(tip, u, -back);
 	const depth = L - back - HEAD_OUTLINE / 2;
 	const base = at(tipC, u, -depth), half = depth / 2, nrm = [-u[1], u[0]];
 	const headD = `M${fmt(tipC)} L${fmt(at(base, nrm, half))} L${fmt(at(base, nrm, -half))} Z`;
-	return { tip: [r3(tip[0]), r3(tip[1])], length: r3(L), headD, lineD };
+	return { tip: [r3(tip[0]), r3(tip[1])], length: r3(L), headD, lineD, lineOffset: r3(lineOffset), legD, legOffset: r3(-tuck) };
 }
 
 /*

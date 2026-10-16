@@ -2084,5 +2084,9 @@ Shown: docs/spec/ATOMICS.md@38bf10c\
 Affects: docs/spec/ATOMICS.md, dev/design/arrows/README.md\
 Recorder: shown a page of a scene at 60% zoom -- a 12-cell link, a 2-cell link, a bent link with runs of 7, 2 and 5 cells, a control link, and two links side by side flowing opposite ways -- under five rules for marks along a link, outside the repository and kept as `dev/design/arrows/issue4-long.html`: none (today), one at the middle of the link, one at the middle of every run, one every 4 cells, one at the middle of each run of 5 cells or more (recommended), beside three mark styles; and told that moving dashes were left off because dashes mean the control plane, dots mean down, and run mode already moves packets. The director chose no change for now: a directed link shows its head at the end where the flow arrives and nowhere else. The concern is held as B357 with its trigger, so it is not lost.
 
+AMENDED 2026-10-16 -- **H24.6-2b, refined by the director** after the lab build: "One small thing I wanted to address - is the \"cut\" on the link after the arrow head - it leaves a tiny gap rather than emphasising the continuation of the link. Can we make the last little leg that connects into the junction attached to the head of the arrow?".
+The leg from the head on into the anchor now starts inside the head's solid tip, where the ink is at least as wide as the line, so line and head read as one shape; it had started at the tip itself, where a flat line end met the apex's point and left a notch either side.
+And a dashed or dotted line no longer begins in a gap at the head: the leg is a piece of its own whose pattern starts at the tip, and the line is laid from the head's base outward, so its first dash sits on the base.
+
 
 

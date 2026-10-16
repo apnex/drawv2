@@ -41,14 +41,19 @@ test('H24.6-1, -2b: a forward head\'s tip is on the destination\'s outline, and 
 	const h = linkHead({ points: [[-300, 0], [0, 0]], which: 'end', width: 6, outlines: { start: CIRCLE, end: CIRCLE } });
 	assert.deepEqual(h.tip, [-20, 0], 'the tip on the outline, 20 px from the centre');
 	assert.equal(h.length, 24);
-	assert.equal(h.lineD, 'M-300 0 L-43 0 M-20 0 L0 0', 'the line stops 1 px into the head\'s base, and resumes at the tip to the centre');
+	// RESTATED 2026-10-16 (H24.6, the director: the leg past the head is "attached to the head of the arrow"): the line is drawn FROM the
+	// head's base outward, and the leg into the anchor is a piece of its own starting under the head's solid tip, so each begins at the head
+	assert.equal(h.lineD, 'M-43 0 L-300 0', 'the line starts 1 px into the head\'s base and runs out to the far end');
+	assert.equal(h.legD, 'M-27 0 L0 0', 'the leg starts 7 px inside the tip -- under solid ink at least as wide as the line -- and runs to the centre');
+	assert.equal(h.legOffset, -7, 'and its dash pattern, if any, begins at the tip');
 	assert.equal(h.headD, `M${(-20 - BACK).toFixed(3).replace(/\.?0+$/, '')} 0 L-42 8.764 L-42 -8.764 Z`, 'the outline\'s centre line: its outer edge touches the tip');
 });
 
 test('H24.6-1: a reverse head sits at the source, and the line is broken there', () => {
 	const h = linkHead({ points: [[-300, 0], [0, 0]], which: 'start', width: 6, outlines: { start: CIRCLE, end: CIRCLE } });
 	assert.deepEqual(h.tip, [-280, 0]);
-	assert.equal(h.lineD, 'M-300 0 L-280 0 M-257 0 L0 0');
+	assert.equal(h.lineD, 'M-257 0 L0 0', 'from the head\'s base out to the far end');
+	assert.equal(h.legD, 'M-273 0 L-300 0', 'and the leg from inside the tip into the source');
 });
 
 test('H24.6-1: a head follows the line\'s last straight run -- a diagonal into a square stops at its corner side, a wide device from its far side', () => {
@@ -56,24 +61,40 @@ test('H24.6-1: a head follows the line\'s last straight run -- a diagonal into a
 	near(d.tip[0], -20, 'a diagonal into a square: x'); near(d.tip[1], -10, 'and y -- on the square\'s side, 22.36 px out');
 	const w = linkHead({ points: [[400, 0], [0, 0]], which: 'end', width: 6, outlines: { start: CIRCLE, end: { form: 'rect', x0: -20, y0: -20, x1: 140, y1: 80 } } });
 	assert.deepEqual(w.tip, [140, 0], 'into a 3 x 2 device from the right: on its right side, not its first cell');
-	assert.equal(w.lineD, 'M400 0 L163 0 M140 0 L0 0');
+	assert.equal(w.lineD, 'M163 0 L400 0');
+	assert.equal(w.legD, 'M147 0 L0 0', 'the leg runs on beneath the device to its first cell');
 });
 
 test('H24.6-2: a head shrinks to fit a short last run rather than bending round a corner -- a bend one cell before a device', () => {
 	const h = linkHead({ points: [[-300, -60], [0, -60], [0, 0]], which: 'end', width: 6, outlines: { start: CIRCLE, end: CIRCLE } });
 	assert.equal(h.length, 20, '40 px of straight run after the bend, 20 of it inside the outline: a 20 px head, not 24');
-	assert.equal(h.lineD, 'M-300 -60 L-20 -60 Q0 -60 0 -40 L0 -39 M0 -20 L0 0');
+	assert.equal(h.lineD, 'M0 -39 L0 -40 Q0 -60 -20 -60 L-300 -60', 'drawn from the head back round the bend');
+	assert.equal(h.legD, 'M0 -27 L0 0');
 });
 
 test('H24.6-1: a closed ring carries its head where it closes, at its first anchor, from either side', () => {
 	const ring = [[0, 0], [240, 0], [240, 240], [0, 240]];
 	const f = linkHead({ points: ring, closed: true, which: 'end', width: 6, outlines: { start: CIRCLE, end: CIRCLE } });
 	assert.deepEqual(f.tip, [0, 20], 'forward: on the closing run, arriving from below');
-	assert.equal(f.lineD, 'M0 20 Q0 0 20 0 L220 0 Q240 0 240 20 L240 220 Q240 240 220 240 L20 240 Q0 240 0 220 L0 43 M0 20 L0 20');
+	assert.equal(f.lineD, 'M0 27 L0 20 Q0 0 20 0 L220 0 Q240 0 240 20 L240 220 Q240 240 220 240 L20 240 Q0 240 0 220 L0 43',
+		'one piece: from inside the tip, round the ring in the flow\'s direction, back to the head\'s base');
+	assert.equal(f.legD, null, 'a ring has no leg: the line itself goes on past the tip');
+	assert.equal(f.lineOffset, -7, 'and its dash pattern begins at the tip');
 	const r = linkHead({ points: ring, closed: true, which: 'start', width: 6, outlines: { start: CIRCLE, end: CIRCLE } });
 	assert.deepEqual(r.tip, [20, 0], 'reverse: on the first run, arriving from the right');
-	assert.equal(r.lineD, 'M0 20 Q0 0 20 0 L20 0 M43 0 L220 0 Q240 0 240 20 L240 220 Q240 240 220 240 L20 240 Q0 240 0 220 L0 20');
-	assert.ok(!/Z/.test(f.lineD + r.lineD), 'no closepath: a Z would close to the last moveto, across the gap');
+	assert.equal(r.lineD, 'M27 0 L20 0 Q0 0 0 20 L0 220 Q0 240 20 240 L220 240 Q240 240 240 220 L240 20 Q240 0 220 0 L43 0');
+	assert.ok(!/[ZM].*M/.test(f.lineD + ' ' + r.lineD.slice(1)) && !/Z/.test(f.lineD + r.lineD), 'one open piece each, no closepath');
+});
+
+test('H24.6: the leg starts under the head\'s solid tip, where the ink is at least as wide as the line, so they read as one', () => {
+	const SOLID = HEAD_OUTLINE / Math.sin(Math.atan(0.5));   // the apex is solid ink this far behind the tip (8.94)
+	for (const w of [6, 3.6]) {
+		const h = linkHead({ points: [[-300, 0], [0, 0]], which: 'end', width: w, outlines: {} });
+		const tuck = -h.legOffset;
+		assert.ok(tuck / 2 >= w / 2, `w ${w}: the head is ${tuck} px wide ${tuck} px behind its tip, at least the line's ${w}`);
+		assert.ok(tuck < SOLID, `w ${w}: and still inside the solid apex (${SOLID.toFixed(2)} px), so the hollow inside stays clear`);
+		assert.equal(Number(h.legD.match(/^M(-?[\d.]+)/)[1]), -20 - tuck, 'the leg starts there');
+	}
 });
 
 test('H24.6: an undeclared link has no head', () => {
@@ -138,8 +159,15 @@ test('H24.6: the export draws a hollow head at every kind of anchor, its tip on 
 	near(heads['link-c00005'].tipC[0] - base(heads['link-c00005']), 18 - BACK - 2, 'a control link\'s head: 18 long');
 	assert.equal(heads['link-c00008'].down, true, 'a down link\'s head is marked down');
 	assert.notEqual(heads['link-c00008'].stroke, heads['link-c00001'].stroke, 'and takes the down colour, not the link colour');
-	assert.match(svg, /<g id="link-c00001"><path d="M-360 0 L-43 0 M-20 0 L0 0"[^>]* stroke-linecap="butt"/,
-		'the line is broken beneath the head, with square ends so no cap shows inside it');
+	// RESTATED 2026-10-16 (H24.6): drawn from the head's base outward, the leg a piece of its own (`.link-leg`) from inside the tip
+	assert.match(svg, /<g id="link-c00001"><path d="M-43 0 L-360 0"[^>]* stroke-linecap="butt"/,
+		'the line starts at the head\'s base, with square ends so no cap shows inside it');
+	const legs = Object.fromEntries([...svg.matchAll(/<path class="link-leg"([^>]*)\/>/g)].map((m) => [m[1].match(/ data-leg-of="([^"]*)"/)[1], m[1]]));
+	assert.deepEqual(Object.keys(legs).sort(), Object.keys(heads).sort(), 'every head has its leg');
+	assert.match(legs['link-c00001'], / d="M-27 0 L0 0"/, 'a data link\'s leg, from under the tip to the centre');
+	assert.match(legs['link-c00005'], / stroke-dasharray="[\d.]+ [\d.]+"/, 'a control link\'s leg is dashed like its line');
+	assert.match(legs['link-c00005'], / stroke-dashoffset="-4.6"/, 'and its first dash starts at the tip, 4.6 px into it');
+	assert.match(svg, /<g id="link-c00005"><path d="M-37 540 L-360 540"/, 'the control line starts at its head\'s base, where its first dash begins');
 	assert.match(svg, /<g id="link-c00007"><path d="M-360 780 L0 780"/, 'control: an undeclared link is one unbroken line');
 });
 
@@ -162,12 +190,12 @@ test('H24.6: a head is deleted with its link, and stays straight after it when t
 		n('node-d00001', -360, 0); n('node-d00002', 0, 0); n('node-d00003', -360, 120); n('node-d00004', 0, 120);
 		m.put('link', { id: 'link-d00001', name: 'a', src: 'node-d00001', dst: 'node-d00002', direction: 'forward', order: 1 });
 		m.put('link', { id: 'link-d00002', name: 'b', src: 'node-d00003', dst: 'node-d00004', direction: 'forward', order: 2 });
-		const layer = () => svg.byId['#links'].children.map((c) => c.attrs.id || `${c.attrs.class}:${c.attrs['data-head-of'] ?? c.attrs['data-link']}`);
-		assert.deepEqual(layer(), ['link-d00001', 'link-head:link-d00001', 'link-hit:link-d00001', 'link-d00002', 'link-head:link-d00002', 'link-hit:link-d00002']);
+		const layer = () => svg.byId['#links'].children.map((c) => c.attrs.id || `${c.attrs.class}:${c.attrs['data-head-of'] ?? c.attrs['data-leg-of'] ?? c.attrs['data-link']}`);
+		assert.deepEqual(layer(), ['link-d00001', 'link-head:link-d00001', 'link-leg:link-d00001', 'link-hit:link-d00001', 'link-d00002', 'link-head:link-d00002', 'link-leg:link-d00002', 'link-hit:link-d00002']);
 		m.set('link', 'link-d00001', { order: 3 });   // drawn last now: restacked above the other
-		assert.deepEqual(layer(), ['link-d00002', 'link-head:link-d00002', 'link-hit:link-d00002', 'link-d00001', 'link-head:link-d00001', 'link-hit:link-d00001'],
+		assert.deepEqual(layer(), ['link-d00002', 'link-head:link-d00002', 'link-leg:link-d00002', 'link-hit:link-d00002', 'link-d00001', 'link-head:link-d00001', 'link-leg:link-d00001', 'link-hit:link-d00001'],
 			'restacked, each head still straight after its own link');
 		m.del('link', 'link-d00002');
-		assert.deepEqual(layer(), ['link-d00001', 'link-head:link-d00001', 'link-hit:link-d00001'], 'deleted, its head goes with it');
+		assert.deepEqual(layer(), ['link-d00001', 'link-head:link-d00001', 'link-leg:link-d00001', 'link-hit:link-d00001'], 'deleted, its head and leg go with it');
 	} finally { restore(); }
 });

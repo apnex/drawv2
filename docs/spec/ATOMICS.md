@@ -435,5 +435,6 @@ Settled while building, each within the rulings:
 - **A closed ring carries its head where it closes**, at its first anchor: forward on the run home, reverse on the first run, travelled backwards.
 - **A wide device reached from its far side** takes the head where the line crosses its rectangle; the line runs on beneath the device to its first cell, as before (B282).
 - **A line carrying a head has square caps**, so no round cap shows inside the hollow head; a down link keeps round ones for its dots.
+- **The leg is attached to the head** (refined by the director, 2026-10-16): the short piece from the head on into the anchor starts inside the head's solid tip, where the ink is at least as wide as the line, and is drawn as a piece of its own (`.link-leg`, straight after the head) whose dash pattern starts at the tip; the line is laid from the head's base outward, so its first dash sits on the base. A ring has no leg: it is one piece from inside the tip, round, back to the base.
 
 Seen on the page, for the director's look: a selected link's end handle, which sits on the outline, covers the head's tip while the link is selected.

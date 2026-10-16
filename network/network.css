@@ -8,8 +8,9 @@ A DOWN link -- no route over the pipes right now -- is orange as well as dotted 
 selected down link's way (2026-09-30): 8.8:1 on the canvas.
 */
 .link[data-down], .link.blocking { stroke: var(--tok-network-down); }
-/* H24.6: a directed link's head, drawn straight after it, takes its colour (app/style.css holds the rest) */
-.link[data-down] + .link-head, .link.blocking + .link-head { stroke: var(--tok-network-down); }
+/* H24.6: a directed link's head, drawn straight after it, and the leg after the head, take its colour (app/style.css holds the rest) */
+.link[data-down] + .link-head, .link.blocking + .link-head,
+.link[data-down] + .link-head + .link-leg, .link.blocking + .link-head + .link-leg { stroke: var(--tok-network-down); }
 
 /*
 A HAND PIPE CAN BE SELECTED and deleted (ruled 2026-10-02, N6; B281): the painter gives each one an invisible hit line,

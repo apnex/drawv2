@@ -1004,29 +1004,33 @@ test('B226 / H24.6: a directed link\'s head sits outside its anchor, and takes i
 		const head = [...document.querySelectorAll('#links .link-head')].find((h) => h.getAttribute('data-head-of') === link.id);
 		const restore = () => { app.selection.set([link.id]); press(); press(); app.selection.clear(); };   // reverse, then undeclared
 		if (!head) { restore(); return { err: 'no head after f' }; }
-		const pair = () => [getComputedStyle(line).stroke, getComputedStyle(head).stroke];
+		// the leg into the anchor, straight after the head (2026-10-16: "attached to the head of the arrow")
+		const leg = head.nextElementSibling && head.nextElementSibling.classList.contains('link-leg') ? head.nextElementSibling : null;
+		const pair = () => [getComputedStyle(line).stroke, getComputedStyle(head).stroke, leg ? getComputedStyle(leg).stroke : 'NO LEG'];
 		const box = head.getBBox(), dst = model.get('node', link.dst);
-		const out = { follows: head.previousElementSibling === line, tipX: box.x + box.width, outlineX: dst.x - 20, selected: pair() };
+		const out = { follows: head.previousElementSibling === line, legFollows: !!leg && leg.getAttribute('data-leg-of') === link.id, tipX: box.x + box.width, outlineX: dst.x - 20, selected: pair() };
 		app.selection.clear();
 		out.normal = pair();
 		line.classList.add('armed'); out.armed = pair(); line.classList.remove('armed');
 		line.setAttribute('data-down', ''); out.down = pair(); line.removeAttribute('data-down');
 		line.classList.add('blocking'); out.blocking = pair(); line.classList.remove('blocking');
-		line.classList.add('replugging'); out.replugging = [getComputedStyle(line).opacity, getComputedStyle(head).opacity]; line.classList.remove('replugging');
+		line.classList.add('replugging'); out.replugging = [getComputedStyle(line).opacity, getComputedStyle(head).opacity, leg ? getComputedStyle(leg).opacity : 'NO LEG']; line.classList.remove('replugging');
 		restore();
 		out.after = String(model.get('link', link.id).direction ?? 'none');
 		return out;
 	})()`);
 	assert.ok(!seen.err, `precondition: ${seen.err || 'ok'}`);
 	assert.equal(seen.follows, true, 'the head is drawn straight after its link, where the stylesheet looks for it');
+	assert.equal(seen.legFollows, true, 'and the leg into the anchor straight after the head');
 	assert.ok(seen.tipX <= seen.outlineX + 0.5 && seen.tipX >= seen.outlineX - 5,
 		`the head ends at the anchor's outline (x ${seen.outlineX}), not under the anchor: its shape ends at x ${seen.tipX}`);
 	for (const state of ['selected', 'normal', 'armed', 'down', 'blocking']) {
 		assert.equal(seen[state][1], seen[state][0], `${state}: the head takes its line's colour`);
+		assert.equal(seen[state][2], seen[state][0], `${state}: and so does the leg`);
 	}
 	assert.notEqual(seen.selected[0], seen.normal[0], 'control: selected and normal really are different colours');
 	assert.notEqual(seen.down[0], seen.normal[0], 'and so are down and normal');
-	assert.deepEqual(seen.replugging, ['0.15', '0.15'], 'an end being dragged fades the head with its line');
+	assert.deepEqual(seen.replugging, ['0.15', '0.15', '0.15'], 'an end being dragged fades the head and the leg with its line');
 	assert.equal(seen.after, 'none', 'and the fixture link is left undeclared, as the tests after this expect');
 }));
 

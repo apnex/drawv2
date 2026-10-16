@@ -50,9 +50,22 @@ click twin the export leaves out -- and takes no click of its own (the twin unde
 */
 const headAttrs = (head, down) => ({ class: 'link-head', 'data-head-of': head.of, d: head.headD, fill: 'none', stroke: down ? downStroke() : NETWORK_TOKENS.link,
 	'stroke-width': HEAD_OUTLINE, 'stroke-linejoin': 'miter', ...(down ? { 'data-down': '' } : {}) });
-// its click twin, found by the link it stands for (B268); its head, likewise
+/*
+The leg (the director, 2026-10-16: "attached to the head of the arrow"): the short piece of line from under the head's tip on into
+the anchor, drawn straight after the head as a piece of its own, so a dashed or dotted pattern starts at the tip rather than
+wherever the line's left off. It is the line's own look -- width, dash, caps -- and its colour by state as the head's is.
+*/
+const legAttrs = (head, look) => ({ class: 'link-leg', 'data-leg-of': head.of, d: head.legD, fill: 'none', stroke: 'data-down' in look ? downStroke() : NETWORK_TOKENS.link,
+	'stroke-width': look['stroke-width'], 'stroke-linecap': look['stroke-linecap'] ?? 'butt',
+	...(look['stroke-dasharray'] ? { 'stroke-dasharray': look['stroke-dasharray'], 'stroke-dashoffset': head.legOffset } : {}),
+	...('data-down' in look ? { 'data-down': '' } : {}) });
+const LEG_OPTIONAL = ['stroke-dasharray', 'stroke-dashoffset', 'data-down'];   // what a leg may stop carrying, removed on update
+// its click twin, found by the link it stands for (B268); its head and its leg, likewise
 const twinOf = (id, layer) => [...layer.querySelectorAll('.link-hit')].find((t) => t.getAttribute('data-link') === id) ?? null;
 const headElOf = (id, layer) => [...layer.querySelectorAll('.link-head')].find((t) => t.getAttribute('data-head-of') === id) ?? null;
+const legElOf = (id, layer) => [...layer.querySelectorAll('.link-leg')].find((t) => t.getAttribute('data-leg-of') === id) ?? null;
+// a ring's one piece starts inside its head's tip, so its dash pattern is started there (no other line states an offset)
+const lineOffsetOf = (head) => (head && head.lineOffset ? { 'stroke-dashoffset': head.lineOffset } : {});
 
 const LINK_PAINTER = {
 	kind: 'link',
@@ -65,8 +78,9 @@ const LINK_PAINTER = {
 		const points = pathOf(model, link), d = linkPath(points, link);
 		if (!d) return null;
 		const head = headOf(model, link, points, outlineOf), look = lookOf(model, link, head);
-		const path = el('path', { id: link.id, class: 'link', fill: 'none', d: head ? head.lineD : d, ...look }, layer);
+		const path = el('path', { id: link.id, class: 'link', fill: 'none', d: head ? head.lineD : d, ...look, ...lineOffsetOf(head) }, layer);
 		if (head) el('path', headAttrs({ ...head, of: link.id }, 'data-down' in look), layer);
+		if (head?.legD) el('path', legAttrs({ ...head, of: link.id }, look), layer);   // straight after its head
 		el('path', { class: 'link-hit', 'data-link': link.id, ...hitOf(d, look) }, layer);   // its click area (B268), the whole line
 		return path;
 	},
@@ -98,6 +112,7 @@ const LINK_PAINTER = {
 			if (attr in want) dom.setAttribute(attr, want[attr]);
 			else dom.removeAttribute(attr);
 		}
+		if (head?.lineOffset) dom.setAttribute('stroke-dashoffset', head.lineOffset); else dom.removeAttribute('stroke-dashoffset');
 		const twin = twinOf(link.id, layer);
 		if (twin && d) setAttrs(twin, hitOf(d, want));
 		/*
@@ -110,11 +125,18 @@ const LINK_PAINTER = {
 			if (had) { setAttrs(had, attrs); if (!('data-down' in attrs)) had.removeAttribute('data-down'); }
 			else layer.insertBefore(el('path', attrs, layer), twin);
 		} else if (had) had.remove();
+		// and its leg, likewise: made, changed or taken away, and a new one put between the head and the twin, where create puts it
+		const leg = legElOf(link.id, layer);
+		if (head?.legD) {
+			const attrs = legAttrs({ ...head, of: link.id }, want);
+			if (leg) { setAttrs(leg, attrs); for (const k of LEG_OPTIONAL) if (!(k in attrs)) leg.removeAttribute(k); }
+			else layer.insertBefore(el('path', attrs, layer), twin);
+		} else if (leg) leg.remove();
 		return undefined;
 	},
-	// the elements drawn with it, moved and removed with it -- its head, then its click twin -- and the link an element stands for
-	companions: (id, layer) => [headElOf(id, layer), twinOf(id, layer)].filter(Boolean),
-	ownerOf: (element) => element.getAttribute('data-link') ?? element.getAttribute('data-head-of'),
+	// the elements drawn with it, moved and removed with it -- its head, its leg, then its click twin -- and the link an element stands for
+	companions: (id, layer) => [headElOf(id, layer), legElOf(id, layer), twinOf(id, layer)].filter(Boolean),
+	ownerOf: (element) => element.getAttribute('data-link') ?? element.getAttribute('data-head-of') ?? element.getAttribute('data-leg-of'),
 	/*
 	A link change can change what its WAYPOINTS are.
 

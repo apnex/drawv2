@@ -414,10 +414,11 @@ H24.6 (B356) -- A DIRECTED LINK'S HEAD, drawn straight after its link (network/l
 link is in every state (H24.6-3), from the link element before it -- down and blocking in network/network.css. It takes no
 click: the link's twin beneath it does.
 */
-.link-head { fill: none; stroke: var(--tok-link); pointer-events: none; }
-.link.selected + .link-head { stroke: var(--tok-accent); }
-.link.armed + .link-head { stroke: var(--tok-danger); }
-.link.replugging + .link-head { opacity: 0.15; }
+/* and its leg -- the short piece from under the head's tip into the anchor, drawn straight after the head -- likewise (2026-10-16) */
+.link-head, .link-leg { fill: none; stroke: var(--tok-link); pointer-events: none; }
+.link.selected + .link-head, .link.selected + .link-head + .link-leg { stroke: var(--tok-accent); }
+.link.armed + .link-head, .link.armed + .link-head + .link-leg { stroke: var(--tok-danger); }
+.link.replugging + .link-head, .link.replugging + .link-head + .link-leg { opacity: 0.15; }
 
 /* ---- zones (kernel translucent fill; selection via var) ---- */
 .zone { --zstroke: var(--tok-zone-stroke); --zwidth: 1; }
