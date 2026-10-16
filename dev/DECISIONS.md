@@ -2094,5 +2094,11 @@ Shown: docs/spec/ATOMICS.md@1dd6059\
 Affects: docs/spec/ATOMICS.md\
 Recorder: shown the build on the lab, with two findings from looking at it -- a head arriving from below is mostly covered by the device's name label, and a selected link's end handle sits on its head's tip -- and offered fixing both first (recommended: the tip stopping under the label from below, the handle moved back to the head's base), shipping as is with both held, or no change, the director chose to ship as is: production runs `1dd6059`, the build the lab runs, and the two findings are held as B359 and B360 with their triggers.
 
+**H24.8 -- the published SVG draws what view mode draws, shipped to production -- 2026-10-16 (B361).**\
+Director: "ship prod now"\
+Shown: dev/BACKLOG.md@6c336a2\
+Affects: server/svg.mjs, product/canvas.mjs\
+Recorder: the director found the published SVG of `0e9c0c1b81ec9907` stacking its lines over its devices and setting its names off their place, and asked: "These are supposed to be unified renderer code?" Shown that they are -- one renderer and the same painters, as H2 rules -- and that the export kept its own order of layers and its own copy of the label rules, both drifted; and shown the fix built and held by a browser test comparing every drawn element of view mode with the served file, with a side-by-side of view mode, the live SVG and the fixed SVG, because the lab serves no published SVG and so could not show it. Offered shipping now (recommended), looking at the preview first, or no change, the director chose to ship now: production runs `6c336a2`, and the published SVG is byte-identical to the preview that matched view mode in all 104 things drawn.
+
 
 

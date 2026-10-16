@@ -1463,7 +1463,7 @@ Milestone H23 complete again.
 
 ---
 
-## H24 -- UI, UX and polish: smaller items, one at a time - `WIP`
+## H24 -- UI, UX and polish: smaller items, one at a time - `DONE`
 
 Opened 2026-10-15 by the director (`dev/DECISIONS.md` H24): smaller UI, UX and polish items, each registered as a row, tested before and after, and deployed in small batches.
 
@@ -1476,7 +1476,7 @@ Opened 2026-10-15 by the director (`dev/DECISIONS.md` H24): smaller UI, UX and p
 | H24.5 | Under Shift the left button always draws a zone, over an existing one too; the right button selects, moves and clones one (H24.5) | **B355** | S4 | `DONE` |
 | H24.6 | Arrows: a link's direction shown whole, on every link, in every state and along its length -- each issue discussed and designed, then built (H24.6) | **B356** | S3 | `DONE` |
 | H24.7 | A template test waits for the server's reply instead of a fixed 120 ms, which a loaded pre-push gate failed (H24.7) | **B358** | S5 | `DONE` |
-| H24.8 | The published SVG draws what view mode draws: the page's order of layers, devices over the links, and the page's label styling (H24.8) | **B361** | S3 | `WIP` |
+| H24.8 | The published SVG draws what view mode draws: the page's order of layers, devices over the links, and the page's label styling (H24.8) | **B361** | S3 | `DONE` |
 
 **Exit:** each item the director names is done or ruled, and deployed.
 
@@ -1485,6 +1485,7 @@ AMENDED 2026-10-15: H24.4 done and deployed -- the app calls itself `draw`.
 AMENDED 2026-10-15: H24.5 done and deployed -- Shift+left draws a zone anywhere, an existing zone included, and a zone is selected, moved and cloned with Shift+right.
 AMENDED 2026-10-16: H24.6 done and live -- a directed link's head is hollow, on its anchor's outline, 4 line widths never under 18 px, the line's colour, its leg attached; designed with the director one issue at a time (`dev/DECISIONS.md` H24.6 to H24.6-5), built on the lab first, shipped as is. Held: B357 (direction along a link), B359 (the label over a head from below), B360 (the end handle over a tip). H24.7 done (B358). The milestone reopens with the director's next item.
 AMENDED 2026-10-16: reopened for H24.8 -- the director found the published SVG of `0e9c0c1b81ec9907` stacking lines over devices and setting names off their place, against view mode (B361).
+AMENDED 2026-10-16: H24.8 done and live -- the published SVG stacks its layers in the page's own order and styles names and line ends as the page does, held by a browser test comparing view mode with the served file; shipped to production by the director (`dev/DECISIONS.md` H24.8). The milestone reopens with the director's next item.
 
 ---
 
