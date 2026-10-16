@@ -90,24 +90,64 @@ test('C-a: a malformed appearance or order is refused when the canvas is built, 
 	refused({ owner: 'p', orders: { node: { layers: [], ranks: [] } } }, /Renderer: the order for node is declared by the product and by p/);
 });
 
-// B331 (H21.8; ruled 2026-09-22, D3): appearance resolves per state -- a device that the graph makes a junction draws its
-// junction mark (`wp-junction`) composed over its frame, while an endpoint device draws none
-test('B331: a device that the graph makes a junction draws its junction mark composed over its frame; an endpoint device does not', async () => {
+/*
+RESTATED at H24.9 (B362). B331 (H21.8) drew the network's junction ring over a device that the graph makes a junction, building
+the 2026-09-22 ruling's "the ring composes over the frame"; the director saw it across the middle of the glyph and ruled no mark
+on a device (`dev/DECISIONS.md` H24.9). So a device is drawn by its glyph alone, a junction or not, as it is when one link ends
+at it. The role is still the graph's: the junction a device is still reads as one. A waypoint junction keeps its ring, and a
+device whose transit is off keeps its transit ring, which still composes over the device.
+*/
+test('H24.9 (B362): a device the graph makes a junction draws no junction mark -- three links ending at it, or one pinned through it -- in authoring, in run mode and in the export; a waypoint junction keeps its ring', async () => {
 	const parts = await canvas();
+	const { waypointRolesIn } = await import('../network/roles.mjs');
+	const { svgDocument } = await import('../server/svg.mjs');
+	const { pipeEntity } = await import('../network/pipe-kind.mjs');
+	const { heldLayouts } = await import('./fixtures/composed.mjs');
+	const node = (id, name, type, x, y, more = {}) => ({ id, name, ...(type ? { type, shape: 'circle' } : {}), x, y, ...more });
+	const NODES = [
+		node('node-0e3010', 'r', 'router', 0, 0), node('node-0e3011', 'a', 'host', -120, 0), node('node-0e3012', 'b', 'host', 120, 0),
+		node('node-0e3013', 'f', 'firewall', 0, 240), node('node-0e3014', 'c', 'host', -120, 240), node('node-0e3015', 'd', 'host', 0, 360),
+		node('node-0e3016', 'w', null, 240, 240), node('node-0e3017', 't', 'router', 240, 0, { transit: false }),
+	];
+	const LINKS = [
+		{ id: 'link-0e3020', name: 'l1', src: 'node-0e3011', dst: 'node-0e3010' },
+		{ id: 'link-0e3021', name: 'l2', src: 'node-0e3011', dst: 'node-0e3012', via: ['node-0e3010'] },   // pinned through r
+		{ id: 'link-0e3022', name: 'l3', src: 'node-0e3014', dst: 'node-0e3013' },   // three end at f
+		{ id: 'link-0e3023', name: 'l4', src: 'node-0e3015', dst: 'node-0e3013' },
+		{ id: 'link-0e3024', name: 'l5', src: 'node-0e3013', dst: 'node-0e3016' },
+		{ id: 'link-0e3025', name: 'l6', src: 'node-0e3015', dst: 'node-0e3016' },   // three end at w
+		{ id: 'link-0e3026', name: 'l7', src: 'node-0e3012', dst: 'node-0e3016' },
+		{ id: 'link-0e3027', name: 'l8', src: 'node-0e3012', dst: 'node-0e3017' },   // one ends at t, whose transit is off
+	];
 	const { svg, restore } = makeRenderer();
 	try {
 		const m = new Model();
-		new Renderer(m, svg, { parts });
-		m.put('node', { id: 'node-0e3010', name: 'r', type: 'router', shape: 'circle', x: 0, y: 0 });
-		m.put('node', { id: 'node-0e3011', name: 'a', type: 'host', shape: 'circle', x: -120, y: 0 });
-		m.put('node', { id: 'node-0e3012', name: 'b', type: 'host', shape: 'circle', x: 120, y: 0 });
-		m.put('link', { id: 'link-0e3020', name: 'l1', src: 'node-0e3011', dst: 'node-0e3010' });
-		const routerEl = () => svg.ownerDocument.getElementById('node-0e3010');
-		assert.equal(classesIn(routerEl()).includes('wp-junction'), false, 'control: an endpoint router draws no junction mark');
-		// pin a link through the router so the graph makes it a junction
-		m.put('link', { id: 'link-0e3021', name: 'l2', src: 'node-0e3011', dst: 'node-0e3012', via: ['node-0e3010'] });
-		assert.equal(classesIn(routerEl()).includes('wp-junction'), true, 'a junction router draws wp-junction composed over its frame');
-		assert.equal(classesIn(routerEl()).includes('wp-anchor'), false, 'and still no waypoint anchor ring');
+		const r = new Renderer(m, svg, { parts });
+		for (const n of NODES) m.put('node', n);
+		for (const l of LINKS) m.put('link', l);
+		const drawn = (id) => classesIn(svg.ownerDocument.getElementById(id));
+		// the state under test: the graph makes both devices junctions, and the waypoint too
+		for (const id of ['node-0e3010', 'node-0e3013', 'node-0e3016']) assert.ok(waypointRolesIn(m, id).includes('junction'), `precondition: the graph makes ${id} a junction`);
+		for (const mode of ['edit', 'run']) {
+			r.setMode(mode);
+			assert.equal(drawn('node-0e3010').includes('wp-junction'), false, `${mode}: a router a link is pinned through draws no junction mark`);
+			assert.equal(drawn('node-0e3013').includes('wp-junction'), false, `${mode}: a firewall three links end at draws no junction mark`);
+			assert.equal(drawn('node-0e3016').includes('wp-junction'), true, `${mode}: control -- a waypoint three links end at keeps its junction ring`);
+			assert.equal(drawn('node-0e3017').includes('wp-transit'), true, `${mode}: control -- a device whose transit is off keeps its transit ring, composed over it`);
+		}
+		assert.equal(drawn('node-0e3010').includes('wp-anchor'), false, 'and a device draws no waypoint anchor ring');
 	} finally { restore(); }
+	// and the export, which draws what view mode draws (H24.8)
+	const exported = svgDocument({
+		meta: { id: '0000000000000e30', name: 'h24-9', version: 0, schema: 3 }, layouts: heldLayouts(), nodes: NODES, links: LINKS,
+		pipes: LINKS.flatMap((l) => { const s = [l.src, ...(l.via ?? []), l.dst]; return s.slice(1).map((b, i) => pipeEntity(s[i], b, 'link')); }),
+		zones: [], groups: [], selection: [],
+	});
+	// the export writes a waypoint's circles without their classes (server/svg.mjs `serializeNode`), so a ring is known by its radius
+	const { waypointJunction } = await import('../network/appearance.mjs');
+	const ring = new RegExp(`<circle[^>]*\\br="${waypointJunction().radius}"`);
+	const group = (id) => { const at = exported.indexOf(`<g id="${id}"`); return exported.slice(at, exported.indexOf('</g>', at + 1)); };
+	assert.match(group('node-0e3016'), ring, 'control: the export draws the waypoint junction\'s ring');
+	for (const id of ['node-0e3010', 'node-0e3013']) assert.doesNotMatch(group(id), ring, `the export draws no junction mark on ${id}`);
 });
 

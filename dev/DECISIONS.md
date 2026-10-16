@@ -369,6 +369,10 @@ So the glyph and the junction mark are not competing for one space; they are exp
 | endpoint | glyph wins alone | the frame already says something terminates here |
 | junction | the ring composes over the frame | nothing about a frame says flow meets and does something to it |
 
+AMENDED 2026-10-16 -- **the junction row, overturned by the director** (H24.9, B362) once it was seen built: "Agree with A".\
+A device is drawn by its glyph alone in every state, a junction as an endpoint; the network's junction ring, which B331 composed over the frame, lay across the middle of the glyph.\
+The mechanism stands -- `composes` per state -- and a device whose transit is off still composes its transit ring.
+
 A pack therefore declares `composes` and priority PER DERIVED STATE rather than once for the whole pack.
 
 **Hypothesis, not designed**: that the router's centre ring should come FROM `routable` when the anchor derives `junction`, rather than being drawn into the glyph.\
@@ -2099,6 +2103,18 @@ Director: "ship prod now"\
 Shown: dev/BACKLOG.md@6c336a2\
 Affects: server/svg.mjs, product/canvas.mjs\
 Recorder: the director found the published SVG of a diagram of theirs stacking its lines over its devices and setting its names off their place, and asked: "These are supposed to be unified renderer code?" Shown that they are -- one renderer and the same painters, as H2 rules -- and that the export kept its own order of layers and its own copy of the label rules, both drifted; and shown the fix built and held by a browser test comparing every drawn element of view mode with the served file, with a side-by-side of view mode, the live SVG and the fixed SVG, because the lab serves no published SVG and so could not show it. Offered shipping now (recommended), looking at the preview first, or no change, the director chose to ship now: production runs `6c336a2`, and the published SVG is byte-identical to the preview that matched view mode in all 104 things drawn.
+
+**H24.10 -- the published diagram whose id reached this public repository keeps its address; the history stands -- 2026-10-16 (B363).**\
+Director: "no big deal, diagram not confidential, continue"\
+Shown: dev/BACKLOG.md@02a0731\
+Affects: dev/BACKLOG.md\
+Recorder: told that the H24.8 records had named the director's published diagram by its id in two pushed commits of this public repository, that the id was already removed from every file in the tree and the mockup script made to take an address as an argument, and that the request log showed no fetch of the diagram from anyone but the director's network and the recorder's checks; offered a new address (a copy published under a new id, the original unpublished, every shared link ended; recommended if the diagram is confidential), rewriting the two commits (not recommended: GitHub does not fully purge them), or no further change (recommended if not), the director chose no further change: the diagram is not confidential. The rule recorded with B363 stands -- a record names a published diagram in words, never by its id.
+
+**H24.9 -- a device that passes routes draws no junction mark: its glyph alone, a junction or not -- 2026-10-16 (B362, B364).**\
+Director: "Agree with A, though C and D look interesting perhaps for a future use-case"\
+Shown: dev/design/junctions/device-junction-mark.html@02a0731\
+Affects: network/anchor-appearance.mjs, docs/ARCHITECTURE-TARGET.md, dev/design/unification/DEVICE-JUNCTIONS.md, dev/design/junctions/README.md\
+Recorder: the director observed that a router, firewall or vxlan that is a junction has the junction ring drawn on top of its glyph and asked whether that was correct. Told it was B331 (H21.8) building the 2026-09-22 ruling's junction row, "the ring composes over the frame", which nobody had looked at drawn, and shown five treatments drawn from the product's own rendering -- the director's three junction devices and a test board: today's ring over the glyph, A no mark on a device (recommended: the lines meeting at a device already show the meeting, and the glyph stays clear), B the ring beneath the glyph (mostly hidden), C a blue inner outline (the blue of a selected device's brackets), D a small mark at a corner (where diagonal heads and end handles land) -- the director chose A. A device is drawn by its glyph alone in every state, so a junction looks as a device with one link does; the role is still derived; a waypoint junction keeps its ring and a device whose transit is off its transit ring. The 2026-09-22 junction row is overturned, marked there. C and D are held as B364 for a future use, as the director suggested.
 
 
 

@@ -1477,8 +1477,8 @@ Opened 2026-10-15 by the director (`dev/DECISIONS.md` H24): smaller UI, UX and p
 | H24.6 | Arrows: a link's direction shown whole, on every link, in every state and along its length -- each issue discussed and designed, then built (H24.6) | **B356** | S3 | `DONE` |
 | H24.7 | A template test waits for the server's reply instead of a fixed 120 ms, which a loaded pre-push gate failed (H24.7) | **B358** | S5 | `DONE` |
 | H24.8 | The published SVG draws what view mode draws: the page's order of layers, devices over the links, and the page's label styling (H24.8) | **B361** | S3 | `DONE` |
-| H24.9 | A device that passes routes and is a junction: how it shows it, now that the network's ring is drawn over its glyph -- shown five treatments, the director's ruling owed (H24.9) | **B362** | S4 | `WIP` |
-| H24.10 | A published diagram's address was written into this public repository's records: removed from the tree; a new address and the history are the director's to rule (H24.10) | **B363** | S2 | `WIP` |
+| H24.9 | A device that passes routes and is a junction draws no junction mark -- its glyph alone, ruled from five treatments (H24.9) | **B362** | S4 | `WIP` |
+| H24.10 | A published diagram's address was written into this public repository's records: removed from the tree; no new address and no rewrite, by ruling (H24.10) | **B363** | S2 | `DONE` |
 
 **Exit:** each item the director names is done or ruled, and deployed.
 
@@ -1489,6 +1489,8 @@ AMENDED 2026-10-16: H24.6 done and live -- a directed link's head is hollow, on 
 AMENDED 2026-10-16: reopened for H24.8 -- the director found a published SVG stacking lines over devices and setting names off their place, against view mode (B361).
 AMENDED 2026-10-16: H24.8 done and live -- the published SVG stacks its layers in the page's own order and styles names and line ends as the page does, held by a browser test comparing view mode with the served file; shipped to production by the director (`dev/DECISIONS.md` H24.8). The milestone reopens with the director's next item.
 AMENDED 2026-10-16: reopened for H24.9 -- the director found a junction device's ring drawn over its glyph (B362) -- and H24.10, found while preparing it: a published diagram's id in this public repository's records (B363).
+AMENDED 2026-10-16: H24.10 done -- the id is out of the tree, and the director ruled no further change: the diagram is not confidential (`dev/DECISIONS.md` H24.10).
+AMENDED 2026-10-16: H24.9 ruled and built -- a junction device draws its glyph alone (`dev/DECISIONS.md` H24.9); on the lab for the director's look before production. The inner outline and the corner mark are held as B364.
 
 ---
 
@@ -1536,6 +1538,7 @@ Scored so the comparison is a judgement, not an omission.\
 | **B175** | S3 | A second armed endpoint appeared not to animate in one tab; resolved with no change and no cause found | a second report of a spawner that is armed and not animating, or the same one recurring. |
 | **B359** | S4 | A head arriving at a device from below is mostly covered by the device's name label (shipped as is, H24.6-5) | the director reopens it, or a reader misreads a link arriving at a device from below. |
 | **B360** | S5 | A selected link's end handle covers its head's tip (shipped as is, H24.6-5) | the director reopens it, or the next change to a link's end handles. |
+| **B364** | S5 | Two marks for a device kept for a future use: a blue inner outline and a small corner mark (H24.9) | a device state needs showing on the device itself -- a role, a status, a fault or a selection kind -- or the director asks for C or D. |
 | **B357** | S4 | A long or bent link shows its direction only at its far end (H24.6-4 kept it so for now) | the director reopens direction along a link, or a reader misreads a long link's direction. |
 | **B180** | S3 | Sampling the derived world stopped being uniform when combat made health accumulate: position is still a closed form of `t`, health must be folded | wanting to scrub backwards -- replay a wave, review a death, audit a disputed kill; not slowness. |
 
@@ -1559,8 +1562,6 @@ B163, the last entry, was ratified and closed on 2026-10-01: the standing goals 
 
 | Row | Decision owed | Why it cannot be settled without you |
 |---|---|---|
-| **B362** | How a device that passes routes shows it is a junction: today's ring over the glyph, no mark, the ring beneath, an inner outline, or a corner mark | it changes how every router, firewall and vxlan junction looks, and overturns how B331 built the 2026-09-22 ruling |
-| **B363** | Whether the published diagram whose id reached this public repository is given a new address, and whether the two commits are rewritten | a new address ends every link the director has shared; the diagram and the history are the director's |
 
 **R13 reads this table in both directions**, which is what `Held` has had since B123 and this section never did.\
 A row recording `RULING-OWED` must appear here, so a decision cannot wait unseen; an entry here must still be `RULING-OWED`, so a ruling that has landed cannot keep asserting itself.\

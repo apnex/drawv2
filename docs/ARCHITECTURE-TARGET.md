@@ -228,7 +228,7 @@ What a device is, said once per family.
 - **A node with no type** is a bare anchor (P-10): it permits every role (2026-09-22), and is drawn by the network's marks per state, with no device appearance (D3).
 - **Transit is a per-anchor input:** the routing table says what a type offers; an anchor's own stored `transit` says whether it is on; with transit off an anchor is an endpoint for every link that ends there, at any count (2026-10-02).
 - **A violation:** a pin through a type that offers no passage is refused in the validator (2026-09-22, SD5); where a delete leaves two links that a join would make a bend at a type that does not permit one, the join does not happen, and links that end at a device keep ending there (2026-09-28, Z1); a pin where an anchor's transit goes off is cut, and `w` on such an anchor makes two links ending there (TR-2, TR-2b, Z1, SD5).
-- **Appearance resolves per state** (2026-09-22, D3): a device that the graph makes a junction draws its junction mark composed over its frame.
+- **Appearance resolves per state** (2026-09-22, D3): an appearance composes or competes per derived state. A device is drawn by its glyph alone whatever role the graph gives it, a junction included (H24.9, which overturned the junction ring composed over its frame); a device whose transit is off composes its transit ring.
 - **No stored document changes when a type is a composition** (P-10).
 
 ---

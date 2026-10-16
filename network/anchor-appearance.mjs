@@ -33,20 +33,18 @@ const MARKS = {
 	kind: 'node',
 	// its roles -- a bend has none -- read from the links meeting it and whether what arrives stops (B277)
 	state: (entity, { model }) => { const roles = waypointRolesIn(model, entity.id); return roles.length ? roles.join(' ') : 'bend'; },
-	// B331 (H21.8; ruled 2026-09-22, D3): appearance resolves per state -- a junction's ring composes over a device's frame,
-	// while an endpoint or a bend competes and is outranked by the device
-	composes: (state) => state.split(' ').includes('junction'),
+	/*
+	H24.9 (B362): in every state the marks compete, and the device outranks them -- so a device is drawn by its glyph alone,
+	a junction or not. B331 (H21.8) had a junction's ring compose over the device, building the 2026-09-22 ruling's "the ring
+	composes over the frame"; drawn, it lay across the middle of the glyph, and the director ruled no mark on a device
+	(`dev/DECISIONS.md` H24.9). The role is still the graph's (network/roles.mjs); a waypoint junction keeps its ring.
+	*/
+	composes: false,
 	root: { layer: 'waypoints', class: (entity, kit, state) => `waypoint ${state}` },
 	picks: [{ closest: 'g.waypoint', word: 'waypoint' }],   // C-b: hit by the word people use (F4)
 	parts: {
 		marks(entity, g, { el, model, mode }, state) {
 			const roles = state === 'bend' ? [] : state.split(' ');
-			// when MARKS composes over a device (`g` won as `.node`), draw the junction mark (`wp-junction`) hollow over the frame (B331)
-			if (g.getAttribute('class') === 'node') {
-				const j = waypointLayers(['junction'], FE, null, null, { run: mode === 'run' }).find((l) => l.cls === 'wp-junction');
-				if (j) layerCircle({ ...j, fill: 'none' }, g, el);
-				return;
-			}
 			// whether it declares transit off, from the network, since the lab holds that choice in its session (TRANSIT.md, TR-7)
 			const anchor = { transit: declaresNoTransit(model, entity.id) ? false : undefined };
 			// in run mode, the run picture -- what the download draws too, decided in one place (RUN_PICTURE, R-c)
