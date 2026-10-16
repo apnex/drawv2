@@ -58,6 +58,35 @@ function networkBoard() {
 		zones: [], groups: [], selection: [],
 	};
 }
+/*
+H24.8 (B361): a board of its own for the published SVG's parity with view mode -- every thing a diagram draws whose look the two
+could disagree on: devices with their names, a zone with its name, a text panel, directed links with their heads and legs, a
+junction three links meet at, a link running beneath a device (charlie sits on alpha's way to bravo), and a link with no
+direction (alpha to delta), whose ends no head shapes.
+*/
+const PARITY_DIAGRAM = '0000000000fa0001';
+function parityBoard() {
+	const device = (id, name, type, x, y, order) => ({ id, name, type, shape: 'square', x, y, order });
+	const link = (n, src, dst, direction = 'forward') => ({ id: `link-fa000${n}`, name: `l${n}`, src, dst, ...(direction ? { direction } : {}), order: n });
+	return {
+		meta: { id: PARITY_DIAGRAM, name: 'parity', version: 1, schema: 3 }, layouts: heldLayouts(),
+		nodes: [
+			device('node-fa00a1', 'alpha', 'router', -360, 0, 1),
+			device('node-fa00a2', 'bravo', 'host', 360, 0, 2),
+			device('node-fa00a3', 'charlie', 'host', 0, 0, 3),
+			device('node-fa00a4', 'delta', 'host', 0, 240, 4),
+			{ id: 'node-fa00b1', name: 'j', x: 0, y: -180, order: 5 },
+			{ id: 'node-fa00c1', name: 'note', type: 'text', shape: 'square', x: -360, y: -300, span: { cols: 5, rows: 1 }, order: 6,
+				content: [{ at: [0, 0], cols: 5, rows: 1, content: 'text', value: 'a note on the board', align: 'left', size: 11 }] },
+		],
+		links: [link(1, 'node-fa00a1', 'node-fa00a2'), link(2, 'node-fa00a4', 'node-fa00b1'), link(3, 'node-fa00a2', 'node-fa00b1'), link(4, 'node-fa00b1', 'node-fa00a1'),
+			link(5, 'node-fa00a1', 'node-fa00a4', null)],
+		pipes: [['node-fa00a1', 'node-fa00a2'], ['node-fa00a4', 'node-fa00b1'], ['node-fa00a2', 'node-fa00b1'], ['node-fa00b1', 'node-fa00a1'], ['node-fa00a1', 'node-fa00a4']]
+			.map(([x, y]) => pipeEntity(x, y, 'link')),
+		zones: [{ id: 'zone-fa0001', name: 'the zone', x: -450, y: -90, w: 900, h: 420, order: 1 }],
+		groups: [], selection: [],
+	};
+}
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 let dir = null, srv = null, chrome = null, tab = null, port = 0, cdp = 0, booted = null;
@@ -190,6 +219,7 @@ before(async () => {
 	fs.writeFileSync(path.join(dir, `${DIAGRAM}.json`), JSON.stringify(fixture()));
 	fs.writeFileSync(path.join(dir, `${K8_DIAGRAM}.json`), JSON.stringify({ ...fixture(), meta: { ...fixture().meta, id: K8_DIAGRAM, name: 'k8' } }));
 	fs.writeFileSync(path.join(dir, `${NET_DIAGRAM}.json`), JSON.stringify(networkBoard()));
+	fs.writeFileSync(path.join(dir, `${PARITY_DIAGRAM}.json`), JSON.stringify(parityBoard()));
 	port = 8200 + (process.pid % 300);
 	cdp = 9600 + (process.pid % 300);
 
@@ -1662,6 +1692,92 @@ test('H24.5: on the product page Shift+left drag inside a zone draws a new zone 
 			await until(t, `window.draw.sync.outbox.every((m) => m.answered) ? 1 : 0`, 6000).catch(() => {});
 		}
 		await t.close();
+	}
+});
+
+/*
+H24.8 (B361) -- THE PUBLISHED SVG DRAWS WHAT VIEW MODE DRAWS, measured where a person sees it: in the browser.
+
+H2 ruled run mode and the download one rendering, and they share the `Renderer` and every painter -- yet the director found a
+published diagram stacking its lines over its devices and setting every name off its place. The export stacked its layers in
+the order the parts are listed, not the page's, and styled labels from its own copy of the rules: names 6 px low, their pills
+see-through, another font. Neither shows in a DOM compared in Node, which has no layers to order and no stylesheet to apply.
+
+So this reads both pictures as the browser draws them: the page in run mode, and the file `/<id>.svg` serves, opened on its
+own. The things each draws, back to front, must be the same things in the same order; and each element drawn -- path, circle,
+rect, text, glyph -- must compute the same paint and, for text, the same font and alignment, and take the same box. What the
+download leaves out by H2 -- the canvas's ground (its grid) and the link's click twin -- is left out of both readings here.
+*/
+const PARITY_PICTURE = `(isPage) => {
+	const PAINT = ['fill', 'fill-opacity', 'stroke', 'stroke-width', 'stroke-opacity', 'stroke-dasharray', 'stroke-linecap', 'stroke-linejoin', 'opacity', 'visibility'];
+	const TYPE = ['font-family', 'font-size', 'font-weight', 'font-style', 'text-anchor', 'dominant-baseline', 'letter-spacing'];
+	const DRAWN = ['path', 'circle', 'rect', 'text', 'use', 'line', 'ellipse', 'polygon', 'polyline'];
+	const shown = (e) => getComputedStyle(e).display !== 'none';
+	const keyOf = (e) => e.getAttribute('data-head-of') ? 'head of ' + e.getAttribute('data-head-of')
+		: e.getAttribute('data-leg-of') ? 'leg of ' + e.getAttribute('data-leg-of') : e.id;
+	const root = isPage ? document.getElementById('container') : document.documentElement;
+	const layers = isPage ? [...root.children].filter((g) => g.tagName === 'g' && !['grid-nodes', 'grid-zones', 'snaplayer', 'movers', 'overlay'].includes(g.id)) : [root];
+	const entities = layers.flatMap((g) => [...g.children])
+		.filter((e) => !['style', 'defs'].includes(e.tagName) && !e.hasAttribute('data-link') && keyOf(e) && shown(e));
+	const drawn = (e) => {
+		const out = [];
+		const visit = (n) => {
+			if (!shown(n)) return;
+			if (DRAWN.includes(n.tagName)) {
+				const cs = getComputedStyle(n), look = {};
+				for (const p of n.tagName === 'text' ? [...PAINT, ...TYPE] : PAINT) look[p] = cs.getPropertyValue(p);
+				// its box on the diagram -- in the picture's own coordinates, whatever transforms the element sits under
+				const b = n.getBBox(), m = n.ownerSVGElement.getScreenCTM().inverse().multiply(n.getScreenCTM());
+				const xs = [], ys = [];
+				for (const [x, y] of [[b.x, b.y], [b.x + b.width, b.y], [b.x, b.y + b.height], [b.x + b.width, b.y + b.height]]) {
+					const q = new DOMPoint(x, y).matrixTransform(m); xs.push(q.x); ys.push(q.y);
+				}
+				const box = [Math.min(...xs), Math.min(...ys), Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)].map((v) => Math.round(v));
+				out.push({ tag: n.tagName, text: n.tagName === 'text' ? n.textContent : undefined, look, box });
+			}
+			for (const c of n.children) visit(c);
+		};
+		visit(e);
+		return out;
+	};
+	return JSON.stringify(entities.map((e) => ({ key: keyOf(e), drawn: drawn(e) })));
+}`;
+
+test('H24.8 (B361): the published SVG draws what view mode draws -- the same things stacked in the same order, each drawn element painted, set and placed alike', { skip: SKIP }, async () => {
+	const page = await attach(`http://127.0.0.1:${port}/${PARITY_DIAGRAM}`);
+	let file = null;
+	try {
+		assert.ok(await until(page, `document.getElementById('node-fa00a1') && document.querySelector('[data-head-of]') ? 1 : 0`, 8000), 'precondition: the parity board loaded, its heads drawn');
+		await page.key('r');
+		assert.ok(await until(page, `document.getElementById('container').classList.contains('run-mode') || false`, 4000), 'precondition: view mode, entered by pressing r');
+		const viewed = JSON.parse(await page.eval(`(${PARITY_PICTURE})(true)`));
+
+		assert.equal((await fetch(`http://127.0.0.1:${port}/${PARITY_DIAGRAM}.svg`)).status, 200, 'precondition: the file is served');
+		file = await attach(`http://127.0.0.1:${port}/${PARITY_DIAGRAM}.svg`);
+		assert.ok(await until(file, `document.documentElement.tagName === 'svg' && document.readyState === 'complete' ? 1 : 0`, 8000), 'precondition: the file opened as an image');
+		const published = JSON.parse(await file.eval(`(${PARITY_PICTURE})(false)`));
+
+		// control: the reading holds the whole board -- the devices, the panel, the junction, the zone, the links with their heads and legs
+		const keys = viewed.map((e) => e.key);
+		for (const k of ['node-fa00a1', 'node-fa00a3', 'node-fa00b1', 'node-fa00c1', 'zone-fa0001', 'link-fa0001', 'head of link-fa0001', 'leg of link-fa0001', 'link-fa0005']) assert.ok(keys.includes(k), `view mode draws ${k}`);
+		assert.ok(!keys.includes('head of link-fa0005'), 'control: the link with no direction draws no head');
+		assert.ok(viewed.flatMap((e) => e.drawn).filter((d) => d.tag === 'text').length >= 6, 'and its names and the panel\'s text');
+
+		assert.deepEqual(published.map((e) => e.key), keys, 'the file draws the same things, back to front, as view mode -- a device over the links that pass beneath it');
+		const differences = [];
+		for (const [i, v] of viewed.entries()) {
+			const p = published[i];
+			if (p.drawn.map((d) => d.tag).join() !== v.drawn.map((d) => d.tag).join()) { differences.push(`${v.key}: draws ${v.drawn.map((d) => d.tag)} in view mode, ${p.drawn.map((d) => d.tag)} in the file`); continue; }
+			for (const [j, d] of v.drawn.entries()) {
+				const q = p.drawn[j], what = `${v.key} ${d.tag}${d.text ? ` "${d.text}"` : ''}`;
+				for (const [prop, val] of Object.entries(d.look)) if (q.look[prop] !== val) differences.push(`${what}: ${prop} ${val} in view mode, ${q.look[prop]} in the file`);
+				if (d.box.some((n, k) => Math.abs(n - q.box[k]) > 1)) differences.push(`${what}: box ${d.box} in view mode, ${q.box} in the file`);
+			}
+		}
+		assert.deepEqual(differences, [], 'every drawn element is painted, set and placed alike');
+	} finally {
+		await page.close();
+		if (file) await file.close();
 	}
 });
 

@@ -11,18 +11,39 @@ import { STD, L_STD } from '../kernel/spec.mjs';
 import { TOKENS, KERNEL_CSS } from '../kernel/theme.mjs';
 import { sharedDefs } from '../kernel/renderer.mjs';
 import { Renderer } from '../app/src/renderer.js';
+import fs from 'node:fs';
 import { PRODUCT_CANVAS, EXPORT_CSS, LINK_COLOURS } from '../product/canvas.mjs';
 import { COMPOSED_KINDS, readModel } from '../product/types.mjs';
 
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
+/*
+H24.8 (B361): THE PAGE'S ORDER OF LAYERS IS THE EXPORT'S. The product page lays out its canvas's layers, back to front, in
+`#container` (app/index.html; the lab's page is held to the same list by tests/run-picture.test.js), and the export stacks the
+layers its parts draw into in that order, read from the page itself -- one declaration, no copy to drift. The export once
+stacked them in the order the parts are listed, which drew every device of a published diagram under its links. A layer the
+page does not lay out is refused, not stacked by guess.
+*/
+let pageLayers = null;
+function pageLayerOrder() {
+	if (pageLayers) return pageLayers;
+	const html = fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf8');
+	const container = html.match(/<svg id="container"[\s\S]*?<\/svg>/)?.[0];
+	if (!container) throw new Error('app/index.html lays out no <svg id="container">, whose order of layers the export stacks by');
+	pageLayers = [...container.matchAll(/<g id="([\w-]+)"/g)].map((m) => m[1]);
+	return pageLayers;
+}
+
 function layerIdsOf(parts) {
-	const ids = [];
+	const drawn = new Set();
 	for (const p of parts) {
-		for (const x of p.painters ?? []) if (x.layer && !ids.includes(x.layer)) ids.push(x.layer);
-		for (const x of p.appearances ?? []) if (x.root?.layer && !ids.includes(x.root.layer)) ids.push(x.root.layer);
+		for (const x of p.painters ?? []) if (x.layer) drawn.add(x.layer);
+		for (const x of p.appearances ?? []) if (x.root?.layer) drawn.add(x.root.layer);
 	}
-	return ids;
+	const order = pageLayerOrder();
+	const unplaced = [...drawn].filter((id) => !order.includes(id));
+	if (unplaced.length) throw new Error(`a canvas part draws into ${unplaced.join(', ')}, a layer app/index.html does not lay out`);
+	return order.filter((id) => drawn.has(id));
 }
 
 function headlessSvg(layerIds) {
@@ -123,7 +144,8 @@ function serializeNode(n, layerSet) {
 		if (n.tag === 'path' && n.attrs.d) {
 			const { id, class: _c, d, ...rest } = n.attrs;
 			const stroke = 'data-down' in rest ? LINK_COLOURS.down : LINK_COLOURS.up;
-			const pathAttrs = Object.entries({ fill: 'none', stroke, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', ...rest }).map(([k, v]) => ` ${k}="${esc(v)}"`).join('');
+			// H24.8 (B361): its ends and corners as the painter left them, as on the page -- no rounding of the export's own
+			const pathAttrs = Object.entries({ fill: 'none', stroke, ...rest }).map(([k, v]) => ` ${k}="${esc(v)}"`).join('');
 			return `<g id="${esc(id)}"><path d="${esc(d)}"${pathAttrs}/></g>`;
 		}
 	}

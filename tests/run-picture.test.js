@@ -135,6 +135,42 @@ test('R-c: the download draws each link along its route over pipes, and a down l
 	assert.match(downAttrs, new RegExp(`stroke="${downStroke()}"`), 'and in the down colour, which the file carries itself');
 });
 
+/*
+H24.8 (B361) -- the download stacks what it draws as the page does. The export stacked its layers in the order the parts are listed
+-- zones, groups, devices, links, waypoints -- so every device in a published diagram lay under the links, where the page lays the
+links beneath the devices. The page's order is the one `#container` declares, in the product page and the lab alike, and the
+export reads it from the product page (server/svg.mjs `pageLayerOrder`).
+*/
+const containerLayers = (file) => {
+	const html = fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
+	const svg = html.match(/<svg id="container"[\s\S]*?<\/svg>/)[0];
+	return [...svg.matchAll(/<g id="([\w-]+)"/g)].map((m) => m[1]);
+};
+
+test('H24.8 (B361): the download stacks the things it draws in the page\'s order of layers -- links beneath the devices, waypoints between', () => {
+	const order = containerLayers('app/index.html');
+	assert.deepEqual(containerLayers('lab/index.html'), order, 'the lab lays its layers out as the product page does');
+	const at = (layer) => order.indexOf(layer);
+	assert.ok(at('zones') < at('links') && at('links') < at('waypoints') && at('waypoints') < at('nodes'), 'control: the page lays zones, then links, then waypoints, then devices');
+	const svg = svgDocument(doc(), KINDS);
+	const where = (id) => svg.indexOf(`<g id="${id}"`);
+	const links = ['link-000001', 'link-000002', 'link-000003', 'link-000004'].map(where);
+	const waypoints = ['node-0000e1', 'node-0000c1', 'node-0000d1'].map(where);
+	const devices = ['node-0000a1', 'node-0000a2', 'node-0000a3'].map(where);
+	assert.ok([...links, ...waypoints, ...devices].every((i) => i > 0), 'control: the download draws every link, waypoint and device');
+	assert.ok(Math.max(...links) < Math.min(...waypoints), 'every link is drawn before every waypoint');
+	assert.ok(Math.max(...waypoints) < Math.min(...devices), 'and every waypoint before every device, so a device lies over the links that reach it');
+});
+
+test('H24.8 (B361): the export stacks by the page\'s own layout -- a part drawing into a layer the page does not lay out is refused, not stacked by guess', () => {
+	const stray = { owner: 'a stray part', painters: [{ layer: 'nowhere', kind: 'zone' }] };
+	PRODUCT_CANVAS.push(stray);
+	try {
+		assert.throws(() => svgDocument(doc(), KINDS), /draws into nowhere, a layer app\/index\.html does not lay out/);
+	} finally { PRODUCT_CANVAS.pop(); }
+	assert.ok(svgDocument(doc(), KINDS).startsWith('<svg'), 'control: without it the export draws');
+});
+
 test('R-c: a ring is drawn closed once -- its route\'s return to its start is the drawing closing itself', async () => {
 	const { render } = await import('../kernel/svg-scene.mjs');
 	const { docToSchema } = await import('../kernel/adapt.mjs');

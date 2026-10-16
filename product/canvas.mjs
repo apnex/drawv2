@@ -24,14 +24,20 @@ import { TOKENS } from '../kernel/theme.mjs';
 
 export const LINK_COLOURS = { up: NETWORK_TOKENS.link, down: downStroke() };
 
-// B330 (H22.5): the standalone CSS rules for the elements the plugins' painters and appearances emit into a downloaded SVG
+/*
+B330 (H22.5): the standalone CSS rules for the elements the plugins' painters and appearances emit into a downloaded SVG.
+H24.8 (B361): each rule says what the page's stylesheet says for the same element (app/style.css, network/network.css), resolved
+to its colour -- a name on its baseline point in an opaque pill, in the page's font; a link's ends and corners as the page leaves
+them. Its own copy once centred names on that point and made their pills see-through, and the browser test
+`H24.8 (B361): the published SVG draws what view mode draws` now holds every drawn element to the page's look.
+*/
 export const EXPORT_CSS = `
 .zone .zone-rect { fill:${ZONE_TOKENS.zoneFill}; fill-opacity:${ZONE_TOKENS.zoneFillOp}; stroke:${ZONE_TOKENS.zoneStroke}; stroke-opacity:${ZONE_TOKENS.zoneStrokeOp}; stroke-width:1; }
-.zone .label-pill, .node .label-pill { fill:${TOKENS.panel}; fill-opacity:0.82; }
-.zone .zone-label { fill:${TOKENS.label}; font-family:ui-monospace,monospace; dominant-baseline:central; }
-.node .label { fill:${TOKENS.label}; font-family:ui-monospace,monospace; text-anchor:middle; dominant-baseline:central; }
+.label { font-family:monospace; fill:${TOKENS.label}; text-anchor:middle; }
+.label.zone-label { text-anchor:start; }
+.label-pill { fill:${TOKENS.panel}; }
 .group .group-hull { fill:none; stroke:${GROUP_TOKENS.group}; stroke-width:1.1; }
-.link { fill:none; stroke:${NETWORK_TOKENS.link}; stroke-linecap:round; stroke-linejoin:round; }
+.link { fill:none; stroke:${NETWORK_TOKENS.link}; }
 .link[data-down] { stroke:${downStroke()}; }
 .link-hit { display:none; }
 `;
