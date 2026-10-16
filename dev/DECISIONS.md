@@ -2088,5 +2088,11 @@ AMENDED 2026-10-16 -- **H24.6-2b, refined by the director** after the lab build:
 The leg from the head on into the anchor now starts inside the head's solid tip, where the ink is at least as wide as the line, so line and head read as one shape; it had started at the tip itself, where a flat line end met the apex's point and left a notch either side.
 And a dashed or dotted line no longer begins in a gap at the head: the leg is a piece of its own whose pattern starts at the tip, and the line is laid from the head's base outward, so its first dash sits on the base.
 
+**H24.6-5 -- arrowheads ship to production as built; the label and the end handle are held -- 2026-10-16 (B356, B359, B360).**\
+Director: "continue. ship as is"\
+Shown: docs/spec/ATOMICS.md@1dd6059\
+Affects: docs/spec/ATOMICS.md\
+Recorder: shown the build on the lab, with two findings from looking at it -- a head arriving from below is mostly covered by the device's name label, and a selected link's end handle sits on its head's tip -- and offered fixing both first (recommended: the tip stopping under the label from below, the handle moved back to the head's base), shipping as is with both held, or no change, the director chose to ship as is: production runs `1dd6059`, the build the lab runs, and the two findings are held as B359 and B360 with their triggers.
+
 
 

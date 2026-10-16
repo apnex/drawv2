@@ -397,7 +397,7 @@ The waypoint's rings remain a list of layers rather than a set of attributes, be
 
 ---
 
-## Arrowheads [BUILT 2026-10-16, on the lab -- H24.6, B356]
+## Arrowheads [BUILT 2026-10-16, live -- H24.6, B356]
 
 A link's declared direction is barely shown (B356), and the director chose to target all four causes and to design each with them, one at a time, before any code (H24.6).\
 Each decision was recorded here as it was ruled; until H24.6 the arrowhead was as H15.6 built it -- one filled triangle at the end where the flow arrives, five line widths long, its tip at the end of the line.
@@ -437,4 +437,4 @@ Settled while building, each within the rulings:
 - **A line carrying a head has square caps**, so no round cap shows inside the hollow head; a down link keeps round ones for its dots.
 - **The leg is attached to the head** (refined by the director, 2026-10-16): the short piece from the head on into the anchor starts inside the head's solid tip, where the ink is at least as wide as the line, and is drawn as a piece of its own (`.link-leg`, straight after the head) whose dash pattern starts at the tip; the line is laid from the head's base outward, so its first dash sits on the base. A ring has no leg: it is one piece from inside the tip, round, back to the base.
 
-Seen on the page, for the director's look: a selected link's end handle, which sits on the outline, covers the head's tip while the link is selected.
+Seen on the lab, and shipped as is (H24.6-5): a head arriving from below is mostly covered by the device's name label, held as B359; and a selected link's end handle, which sits on the outline, covers the head's tip while the link is selected, held as B360.

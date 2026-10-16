@@ -1463,7 +1463,7 @@ Milestone H23 complete again.
 
 ---
 
-## H24 -- UI, UX and polish: smaller items, one at a time - `WIP`
+## H24 -- UI, UX and polish: smaller items, one at a time - `DONE`
 
 Opened 2026-10-15 by the director (`dev/DECISIONS.md` H24): smaller UI, UX and polish items, each registered as a row, tested before and after, and deployed in small batches.
 
@@ -1474,7 +1474,7 @@ Opened 2026-10-15 by the director (`dev/DECISIONS.md` H24): smaller UI, UX and p
 | H24.3 | Releasing Shift deselects a zone; a press in progress keeps it until it ends (H24.3) | **B353** | S4 | `DONE` |
 | H24.4 | The app calls itself `draw` -- header, tab, title and help heading (H24.4) | **B354** | S5 | `DONE` |
 | H24.5 | Under Shift the left button always draws a zone, over an existing one too; the right button selects, moves and clones one (H24.5) | **B355** | S4 | `DONE` |
-| H24.6 | Arrows: a link's direction shown whole, on every link, in every state and along its length -- each issue discussed and designed, then built (H24.6) | **B356** | S3 | `WIP` |
+| H24.6 | Arrows: a link's direction shown whole, on every link, in every state and along its length -- each issue discussed and designed, then built (H24.6) | **B356** | S3 | `DONE` |
 | H24.7 | A template test waits for the server's reply instead of a fixed 120 ms, which a loaded pre-push gate failed (H24.7) | **B358** | S5 | `DONE` |
 
 **Exit:** each item the director names is done or ruled, and deployed.
@@ -1482,6 +1482,7 @@ Opened 2026-10-15 by the director (`dev/DECISIONS.md` H24): smaller UI, UX and p
 AMENDED 2026-10-15: H24.1 to H24.3 done and deployed; the milestone reopens with the director's next item.
 AMENDED 2026-10-15: H24.4 done and deployed -- the app calls itself `draw`.
 AMENDED 2026-10-15: H24.5 done and deployed -- Shift+left draws a zone anywhere, an existing zone included, and a zone is selected, moved and cloned with Shift+right.
+AMENDED 2026-10-16: H24.6 done and live -- a directed link's head is hollow, on its anchor's outline, 4 line widths never under 18 px, the line's colour, its leg attached; designed with the director one issue at a time (`dev/DECISIONS.md` H24.6 to H24.6-5), built on the lab first, shipped as is. Held: B357 (direction along a link), B359 (the label over a head from below), B360 (the end handle over a tip). H24.7 done (B358). The milestone reopens with the director's next item.
 
 ---
 
@@ -1527,6 +1528,8 @@ Scored so the comparison is a judgement, not an omission.\
 | **B188** | S3 | Perception symmetric with authoring: `draft show` exists, `--draft` on a READ does not, so an agent cannot ask what the document would look like after its draft applies | an agent stages enough that it cannot hold the result in its head. |
 | **B194** | S3 | `draw event <condition>` -- an agent BLOCKS on a described condition rather than asking a person to confirm one. Viewer-opened, lock-freed, commit-landed all become one verb | an agent must wait on something a viewer cannot supply -- a lock freeing, or a commit from another agent. |
 | **B175** | S3 | A second armed endpoint appeared not to animate in one tab; resolved with no change and no cause found | a second report of a spawner that is armed and not animating, or the same one recurring. |
+| **B359** | S4 | A head arriving at a device from below is mostly covered by the device's name label (shipped as is, H24.6-5) | the director reopens it, or a reader misreads a link arriving at a device from below. |
+| **B360** | S5 | A selected link's end handle covers its head's tip (shipped as is, H24.6-5) | the director reopens it, or the next change to a link's end handles. |
 | **B357** | S4 | A long or bent link shows its direction only at its far end (H24.6-4 kept it so for now) | the director reopens direction along a link, or a reader misreads a long link's direction. |
 | **B180** | S3 | Sampling the derived world stopped being uniform when combat made health accumulate: position is still a closed form of `t`, health must be folded | wanting to scrub backwards -- replay a wave, review a death, audit a disputed kill; not slowness. |
 
