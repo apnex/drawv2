@@ -1463,7 +1463,7 @@ Milestone H23 complete again.
 
 ---
 
-## H24 -- UI, UX and polish: smaller items, one at a time - `WIP`
+## H24 -- UI, UX and polish: smaller items, one at a time - `DONE`
 
 Opened 2026-10-15 by the director (`dev/DECISIONS.md` H24): smaller UI, UX and polish items, each registered as a row, tested before and after, and deployed in small batches.
 
@@ -1477,7 +1477,7 @@ Opened 2026-10-15 by the director (`dev/DECISIONS.md` H24): smaller UI, UX and p
 | H24.6 | Arrows: a link's direction shown whole, on every link, in every state and along its length -- each issue discussed and designed, then built (H24.6) | **B356** | S3 | `DONE` |
 | H24.7 | A template test waits for the server's reply instead of a fixed 120 ms, which a loaded pre-push gate failed (H24.7) | **B358** | S5 | `DONE` |
 | H24.8 | The published SVG draws what view mode draws: the page's order of layers, devices over the links, and the page's label styling (H24.8) | **B361** | S3 | `DONE` |
-| H24.9 | A device that passes routes and is a junction draws no junction mark -- its glyph alone, ruled from five treatments (H24.9) | **B362** | S4 | `WIP` |
+| H24.9 | A device that passes routes and is a junction draws no junction mark -- its glyph alone, ruled from five treatments (H24.9) | **B362** | S4 | `DONE` |
 | H24.10 | A published diagram's address was written into this public repository's records: removed from the tree; no new address and no rewrite, by ruling (H24.10) | **B363** | S2 | `DONE` |
 
 **Exit:** each item the director names is done or ruled, and deployed.
@@ -1491,6 +1491,7 @@ AMENDED 2026-10-16: H24.8 done and live -- the published SVG stacks its layers i
 AMENDED 2026-10-16: reopened for H24.9 -- the director found a junction device's ring drawn over its glyph (B362) -- and H24.10, found while preparing it: a published diagram's id in this public repository's records (B363).
 AMENDED 2026-10-16: H24.10 done -- the id is out of the tree, and the director ruled no further change: the diagram is not confidential (`dev/DECISIONS.md` H24.10).
 AMENDED 2026-10-16: H24.9 ruled and built -- a junction device draws its glyph alone (`dev/DECISIONS.md` H24.9); on the lab for the director's look before production. The inner outline and the corner mark are held as B364.
+AMENDED 2026-10-16: H24.9 done and live -- production runs `bc6d9cf`, shipped at the director's "continue" after the lab look (B362 closed). The milestone reopens with the director's next item.
 
 ---
 
