@@ -1495,6 +1495,21 @@ AMENDED 2026-10-16: H24.9 done and live -- production runs `bc6d9cf`, shipped at
 
 ---
 
+## H25 -- unification, completed: every copied fact measured, then each copy removed - `WIP`
+
+Opened 2026-10-17 by the director (`dev/DECISIONS.md` H25): H22 closed against a measure that counts imports between parts, and copied facts drifted unseen (B361); measure every copy first, then remove each by a staged plan, reviewed and ratified before its build.
+
+| # | Item | Cites | Sev | State |
+|---|---|---|---|---|
+| H25.0 | Measure and audit: every kind of copy measured by a check in the gate at today's count, a count that may only fall; the findings written down, and a staged plan drafted from them, reviewed adversarially (H25.0) | **B365** | S3 | `DONE` |
+| H25.1 | Ratify the plan to remove every copy, and its decisions D1 to D6 -- the director's ruling owed -- then build its stages, H25.0b's probe first (H25.1) | **B366** | S3 | `WIP` |
+
+**Exit:** every copy measure reads zero, or each remaining instance is an exception the director ruled, with its reason and trigger; view mode and the published SVG draw the director's diagrams pixel for pixel as before; no stored document changes.
+
+AMENDED 2026-10-17: H25.0 done -- 128 copies measured in the gate, a record that may only shrink inside a frozen ceiling; the audit and staged plan are `dev/design/unification/UNIFICATION-COMPLETE.md`, reviewed adversarially, its ratification owed (B366, under Decisions required).
+
+---
+
 ## Held -- on the record, not on the board
 
 Open `BACKLOG` rows whose trigger has not fired.\
@@ -1563,6 +1578,7 @@ B163, the last entry, was ratified and closed on 2026-10-01: the standing goals 
 
 | Row | Decision owed | Why it cannot be settled without you |
 |---|---|---|
+| **B366** | Ratify the plan to remove every measured copy (`dev/design/unification/UNIFICATION-COMPLETE.md`) and its decisions D1 to D6 | it sets seven stages of work that change nothing on screen, and each decision chooses where a plugin's look, the export's styles, the old renderer and two held copies end up |
 
 **R13 reads this table in both directions**, which is what `Held` has had since B123 and this section never did.\
 A row recording `RULING-OWED` must appear here, so a decision cannot wait unseen; an entry here must still be `RULING-OWED`, so a ruling that has landed cannot keep asserting itself.\

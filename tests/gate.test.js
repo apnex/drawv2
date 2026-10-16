@@ -51,6 +51,7 @@ test('GR1: the gate is composed of the suite and every scanner it claims to run'
 		['GR14 scan-board', 'tools/scan-board.mjs', 'tools/scan-board.mjs'],
 		['GR15 scan-dead', 'tools/scan-dead.mjs', 'tools/scan-dead.mjs'],
 		['GR15 scan-twins', 'tools/scan-twins.mjs', 'tools/scan-twins.mjs'],
+		['H25.0 scan-copies', 'tools/scan-copies.mjs', 'tools/scan-copies.mjs'],   // B365: a copied fact, counted
 		['GR15 scan-docrefs', 'tools/scan-docrefs.mjs', 'tools/scan-docrefs.mjs'],
 		['GR16 scan-wiring', 'tools/scan-wiring.mjs', 'tools/scan-wiring.mjs'],
 	]) {

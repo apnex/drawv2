@@ -989,10 +989,33 @@ one place. The ORDER is part of each scanner's behaviour (it orders their output
 keeps the order it had in its scanner. L1 checks that every entry is a folder in FOLDERS, and that
 scan-dead reads every scanned folder except the tests (which it reads separately, as its TESTS).
 */
+// H25.0 (B365): the product's folders -- every folder scan-layers walks but the tools and the tests
+const PRODUCT_FOLDERS = FOLDERS.map((f) => f.dir).filter((d) => d !== 'tools' && d !== 'tests');
+
 export const SCANNER_ROOTS = {
 	dead: ['kernel', 'engine', 'model', 'app/src', 'server', 'planner', 'tools', 'cli', 'lab', 'network', 'layouts', 'zones', 'groups', 'devices', 'product'],   // scan-dead PROD: where a consumer counts as production
 	deadMethods: ['server', 'planner', 'model', 'engine', 'kernel'],                 // scan-dead METHOD_SCOPE: where a public method must have a caller
 	docrefs: ['kernel', 'engine', 'model', 'app/src', 'server', 'planner', 'cli', 'layouts', 'zones', 'groups', 'devices', 'product'],     // scan-docrefs CODE_ROOTS: code whose comments cite paths
-	twins: ['kernel', 'engine', 'model', 'app/src', 'server', 'planner'],     // scan-twins ROOTS: where shared arithmetic is compared
+	// H25.0 (B365): every product folder, read from FOLDERS, so a new plugin's folder is compared without an edit here. It was
+	// the six folders the product had when the scanner was written, and read none of the plugins' folders
+	twins: PRODUCT_FOLDERS,     // scan-twins ROOTS: where shared arithmetic is compared
 	writers: ['server', 'planner', 'model'],     // scan-writers ROOTS: where the one-writer rule is held
+	copies: PRODUCT_FOLDERS,    // H25.0 scan-copies: where a copied fact is looked for
+};
+
+/*
+H25.0 (B365) -- WHAT scan-copies READS BEYOND THE FOLDERS, AND THE COPIES IT LETS STAND.
+  entries     the production entries a module must be reached from to count as the product's: the three product roots (L7),
+              each page's script, and the lab's server, which the lab's service runs
+  owners      the part owning a stylesheet no part's folder holds: the page's own sheet, and the colour registry generated from
+              kernel/theme.mjs (tools/colour-tokens.mjs)
+  exceptions  per measure, each copy the director ruled may stand: `{ cites: [ruling], trigger }`, resolved by tools/exceptions.mjs.
+              H25's exit: every finding in tools/copies-record.json is one of these
+The findings themselves are tools/copies-record.json, which may only shrink, inside tools/copies-ceiling.json, frozen when H25
+opened (its hash is pinned in tests/scan-copies.test.js).
+*/
+export const COPIES = {
+	entries: [...RULES.L7.roots, ...Object.values(PAGES).flatMap((p) => p.scripts.map((s) => `${p.base}${s}`)), 'lab/server.mjs'],
+	owners: { 'app/style.css': 'product-page', 'app/tokens.css': 'colours' },
+	exceptions: {},
 };

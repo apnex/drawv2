@@ -327,14 +327,15 @@ What `npm run gate` runs, before every commit and again before every push.
 | 9 | `node tools/scan-docstyle.mjs` |
 | 10 | `node tools/scan-dead.mjs` |
 | 11 | `node tools/scan-twins.mjs` |
-| 12 | `node tools/scan-docrefs.mjs` |
-| 13 | `node tools/scan-wiring.mjs` |
-| 14 | `node tools/scan-cli.mjs` |
-| 15 | `node tools/scan-layers.mjs` |
-| 16 | `node tools/lab-matrix.mjs --check` |
-| 17 | `node tools/gesture-table.mjs --check` |
-| 18 | `node tools/reaction-table.mjs --check` |
-| 19 | `node tools/colour-tokens.mjs --check` |
+| 12 | `node tools/scan-copies.mjs` |
+| 13 | `node tools/scan-docrefs.mjs` |
+| 14 | `node tools/scan-wiring.mjs` |
+| 15 | `node tools/scan-cli.mjs` |
+| 16 | `node tools/scan-layers.mjs` |
+| 17 | `node tools/lab-matrix.mjs --check` |
+| 18 | `node tools/gesture-table.mjs --check` |
+| 19 | `node tools/reaction-table.mjs --check` |
+| 20 | `node tools/colour-tokens.mjs --check` |
 <!-- END GENERATED: architecture-gate -->
 
 ---

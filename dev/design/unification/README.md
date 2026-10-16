@@ -36,6 +36,7 @@ Nothing here is decided: these documents carry the problem space into the design
 | `ARCHITECTURE-REVIEW.md` | H21.6 (U2): the reviews of the architecture record -- `docs/ARCHITECTURE-TARGET.md` and the generated `docs/ARCHITECTURE.md` -- each finding with its disposition. | Audit; H21.6. |
 | `MISSION-KIT-ALIGNMENT.md` | H21.9: the target aligned with mission-kit -- each part compared with mission-kit's registered and proposed components, the code not migrated. | Design; H21.9. |
 | `TYPE-AS-COMPOSITION.md` | H21.3 (U4, B282): one declaration per device type in the devices plugin, handed to the plugins at composition and served to the CLI. | Delta; H21.3. |
+| `UNIFICATION-COMPLETE.md` | H25: the audit of every copied fact -- five measures counted by `tools/scan-copies.mjs` -- and the staged plan to remove each copy, with the director's decisions and an adversarial review. | Delta; H25.0. |
 
 The survey envelope that captures intent is `dev/surveys/unification-survey.md`.\
 Rulings stay in `dev/DECISIONS.md`; nothing here amends a ruling.\
