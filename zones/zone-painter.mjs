@@ -9,12 +9,10 @@ the K8 DOM corpus holds that.
 */
 
 import { STD, L_STD } from '../kernel/spec.mjs';
-import { resolveRoles } from '../kernel/palette.mjs';
 import { nameLabel } from '../kernel/renderer.mjs';   // H25.1: a name's label is the core's
 
 // B338 (H21.8, N1): the zones plugin's colour roles over the core palette
 export const ZONE_COLOURS = { zoneFill: 'blueGrey300', zoneStroke: 'blueGrey200' };
-export const ZONE_TOKENS = { ...resolveRoles(ZONE_COLOURS), zoneFillOp: 0.13, zoneStrokeOp: 0.55 };
 import { ZONE_EXT } from '../layouts/layout-table.mjs';   // WD-b1: the zone layout's extent, the layouts plugin's
 import { ZONE_PRESSES, ZONE_HANDLE_SPECS } from './zone-gestures.mjs';
 import { ZONE_KEYS, ZONE_SIZE_STEP } from './zone-keys.mjs';

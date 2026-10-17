@@ -17,7 +17,7 @@ import { BARE_KIND, ANCHOR_KINDS, anchorOf } from '../model/anchors.mjs';
 import { isBareEntity, isTypedEntity, bareAnchor, bareAnchors, typedNodes } from '../devices/device-shapes.mjs';
 import { drawnKind, isAnchorWord } from '../devices/anchor-words.mjs';
 import { Model } from '../model/model.mjs';
-import { docToSchema } from '../kernel/adapt.mjs';
+import { svgDocument } from '../server/svg.mjs';   // H25.5 (B378, D4): the real export renderer
 
 const root = new URL('..', import.meta.url).pathname;
 
@@ -55,17 +55,13 @@ test('F-b: the functions answer over a model, and over a plain document', () => 
 	// in planner/validate.js -- the link's row reads the generic access, a Model or a document alike, through `isBareEntity`
 });
 
-/*
-kernel/ may not import model/ (C9), so the export's adapter restates the question where it reads a document. Held to the
-module by behaviour: the scene's waypoints are exactly the document's bare anchors -- so F-c, changing the module, fails here
-until the adapter changes with it.
-*/
-test('F-b: the export\'s adapter draws exactly the document\'s bare anchors as waypoints, and the CLI reads the same', async () => {
+// RESTATED at H25.5 (B378, D4): the real export (server/svg.mjs svgDocument) draws exactly the document's bare anchors as waypoints
+test('F-b: the export draws exactly the document\'s bare anchors as waypoints, and the CLI reads the same', async () => {
 	const doc = board().toJSON();
-	const scene = docToSchema(doc).entities.filter((e) => e.kind === 'waypoint').map((e) => e.id);
+	const exported = [...svgDocument(doc).matchAll(/<g id="(node-[^"]*)"><g class="waypoint\b/g)].map((m) => m[1]);
 	const bare = doc.nodes.filter((n) => isBareEntity('node', n)).map((w) => w.id);   // the module's question, per stored node
 	assert.ok(bare.length > 0, 'the board has bare anchors, so the comparison is not vacuous');
-	assert.deepEqual(scene, bare);
+	assert.deepEqual(exported, bare);
 	// the CLI ships standalone (B138) and restates the question too
 	const { isWaypoint } = await import('../cli/verbs.mjs');
 	assert.deepEqual(doc.nodes.filter(isWaypoint).map((n) => n.id), bare);
@@ -99,13 +95,9 @@ const RECORD = {
 	'network/keys.mjs': [1, 'the situation\'s drawn word for a bare anchor (`waypoint`), F4 (B349)'],
 	'network/link-reactions.mjs': [1, 'a reaction\'s id, `waypoint-links`, which names it in the generated table'],
 	'cli/verbs.mjs': [19, 'the verbs\' words for the two shapes of node, read through the CLI\'s own view (F4)'],
-	'kernel/adapt.mjs': [3, 'the scene\'s `waypoint` kind -- what is drawn, F4; kernel/ may not import model/ (C9)'],
-	'kernel/engine.mjs': [2, 'the scene\'s `waypoint` kind -- what is drawn, F4'],
-	'kernel/fixtures.mjs': [3, 'the spec viewer\'s scenes, in the scene\'s vocabulary'],
-	'kernel/geometry.mjs': [1, 'the scene\'s `waypoint` kind -- what is drawn, F4'],
-	'network/appearance.mjs': [1, 'the scene\'s `waypoint` kind -- what is drawn, F4'],
+	// kernel/adapt.mjs, kernel/engine.mjs, kernel/fixtures.mjs, kernel/svg-scene.mjs and their scene helpers in
+	// kernel/geometry.mjs and network/appearance.mjs went at H25.5 (B378, D4)
 	'network/anchor-points.mjs': [1, 'the word a waypoint is picked by at a point, as its drawn pick names it -- F4; C-e step three'],
-	'kernel/svg-scene.mjs': [1, 'the scene\'s `waypoint` kind -- what is drawn, F4'],
 	'engine/situation.mjs': [3, 'the situation\'s word for what the pointer is over, derived through the module (F4)'],
 	// app/src/pick.js's one -- the waypoint's hit -- moved to the network's marks at C-b (H19.30)
 	// app/src/recognize.js's four -- the press rows' hit words -- went at C-d step four (D4): the rows read the plugins' facts

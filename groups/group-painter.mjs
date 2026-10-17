@@ -15,7 +15,7 @@ import { resolveRoles } from '../kernel/palette.mjs';
 
 // B338 (H21.8, N1): the groups plugin's colour role over the core palette
 export const GROUP_COLOURS = { group: 'deepPurpleA100' };
-export const GROUP_TOKENS = resolveRoles(GROUP_COLOURS);
+const GROUP_TOKENS = resolveRoles(GROUP_COLOURS);
 import { groupHull } from '../kernel/geometry.mjs';
 
 // the hull: the box around its members' span-aware footprints, padded to the group's extent -- null when no member resolves,

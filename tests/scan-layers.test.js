@@ -560,7 +560,8 @@ test('H17 K2a: a name is admitted only when a DEPARTED module imported it, not m
 		// planner/ (H17-D5), so they are departed and gone from their K0 paths; every other departed module still exists.
 		// S-e (H18.15, G5) moved model/referential.mjs to network/link-references.mjs, the link's references the network's
 		const gone = departed.filter((m) => !fs.existsSync(path.join(root, m)));
-		assert.deepEqual(gone.sort(), ['engine/index.mjs', 'engine/policy.mjs', 'kernel/grc.mjs', 'kernel/index.mjs', 'model/index.mjs',
+		// RESTATED at H25.5 (B378, D4 of H25-1): kernel/adapt.mjs and kernel/engine.mjs deleted with the old scene renderer
+		assert.deepEqual(gone.sort(), ['engine/index.mjs', 'engine/policy.mjs', 'kernel/adapt.mjs', 'kernel/engine.mjs', 'kernel/grc.mjs', 'kernel/index.mjs', 'model/index.mjs',
 			'model/referential.mjs', 'server/log.mjs', 'server/txn.mjs', 'server/validate.js'], 'only the modules deleted or moved by ruling may be missing');
 		// a deleted module's source is gone, so its frozen K0 export record stands in for it: a name it exported is a name
 		// its departure justifies (K11 moved the renderer text that used to mention `bboxOf`; the barrel exported it)

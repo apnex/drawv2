@@ -102,6 +102,11 @@ const ALLOW = {
 	'*:planner/policy.mjs': 'deleted at O-d (H19.22): the group threshold went to groups/group-rules.mjs (O-c), each kind\'s cap to its row; a record written while it lived here cites it here',
 	'*:kernel/network-roles.mjs': 'moved to network/roles.mjs at V-a (H18.25, PU22); a record written while it lived here cites it here',
 	'*:kernel/network-appearance.mjs': 'merged into network/appearance.mjs at V-a (H18.25, PU22); a record written while it lived here cites it here',
+	// H25.5 (B378, D4 of H25-1) deleted the old scene renderer's four modules; records written while they lived cite them
+	'*:kernel/adapt.mjs': 'deleted at H25.5 (B378, D4 of H25-1); a record written while it lived here cites it here',
+	'*:kernel/engine.mjs': 'deleted at H25.5 (B378, D4 of H25-1); a record written while it lived here cites it here',
+	'*:kernel/fixtures.mjs': 'deleted at H25.5 (B378, D4 of H25-1); a record written while it lived here cites it here',
+	'*:kernel/svg-scene.mjs': 'deleted at H25.5 (B378, D4 of H25-1); a record written while it lived here cites it here',
 	'*:model/link-rules.mjs': 'moved to network/link-rules.mjs at S-e (H18.15, G5); a record written while it lived here cites it here',
 	'*:model/link-reactions.mjs': 'moved to network/link-reactions.mjs at S-e (H18.15, G5); a record written while it lived here cites it here',
 	'*:model/referential.mjs': 'moved to network/link-references.mjs at S-e (H18.15, G5), the group\'s half to planner/kinds.mjs; a record written while it lived here cites it here',

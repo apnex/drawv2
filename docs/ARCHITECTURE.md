@@ -119,7 +119,7 @@ The anchored core's parts, declared once in `tools/layers.mjs` `PARTS` and rende
 | `layouts` | Declare a diagram's grids | plugin | `layouts/` | `lattice` |
 | `devices` | Compose a device onto an anchor | plugin | `devices/` | `colours`, `document`, `kind-contract`, `lattice`, `primitives` |
 | `network` | Connect anchors | plugin | `network/` | `colours`, `document`, `kind-contract`, `lattice`, `primitives`, `rules` |
-| `zones` | Bound regions of cells | plugin | `zones/` | `colours`, `kind-contract`, `lattice`, `layouts`, `primitives` |
+| `zones` | Bound regions of cells | plugin | `zones/` | `kind-contract`, `lattice`, `layouts`, `primitives` |
 | `groups` | Name sets of anchors | plugin | `groups/` | `colours`, `document`, `kind-contract`, `lattice` |
 | `simulation` | Derive what the clock drives | plugin | `engine/kinds.mjs`, `engine/movers.mjs`, `engine/rules.mjs`, `engine/spawn-appearance.mjs`, `engine/spawners.mjs`, `engine/spawn-field.mjs`, `engine/spawn-runs.mjs`, `model/reveal.mjs`, `engine/mover-painter.mjs`, `engine/reveal-painter.mjs`, `engine/paintloop.mjs` | `devices`, `document`, `kind-contract`, `lattice`, `network` |
 | `product` | Compose the plugins into the product | composition | `product/` | `devices`, `groups`, `kind-contract`, `lattice`, `layouts`, `network`, `simulation`, `zones` |
@@ -304,7 +304,6 @@ The layer manifest's decoupling ratchets, each with its reason and when it ends 
 |---|---|---|---|---|
 | L5p | `kernel/router.mjs:routeGeometry` | 1 | a generic polyline's geometry -- rounded turns, the one path the movers and the renderer walk -- named for one consumer, the route | kernel/router.mjs is next changed: rename it then |
 | L7k | `cli/verbs.mjs` | 7 | the CLI's static imports stay inside cli/ so an installed copy runs (B138), so its verbs list the kinds themselves | the CLI learns the kinds from the server |
-| L7k | `kernel/adapt.mjs` | 2 | the declarative scene adapter converts a document to the kernel's scene by kind name for the scene tests | permanent |
 <!-- END GENERATED: architecture-exceptions -->
 
 ---

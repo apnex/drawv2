@@ -75,12 +75,8 @@ export const KIND_MAY_CONSUME = {
 	door: ['core', 'composition', 'plugin', 'door'],  // the product's composition, one another, a plugin's queries and factories (SD2, Q1)
 	'composition root': '*',
 };
-export const NOT_PARTS = {
-	'kernel/fixtures.mjs': 'the reference scenes the tests and the route tools render; no product module imports it',
-	'kernel/adapt.mjs': 'the declarative scene adapter the tests render; server/svg.mjs draws through the painters (B330)',
-	'kernel/engine.mjs': 'the declarative scene resolver the tests render; server/svg.mjs draws through the painters (B330)',
-	'kernel/svg-scene.mjs': 'the declarative scene emitter the tests render; server/svg.mjs draws through the painters (B330)',
-};
+// H25.5 (B378, D4): empty -- the old scene renderer's four modules are deleted; every module in the product is a part's
+export const NOT_PARTS = {};
 export const PARTS = {
 	lattice: { duty: 'Compute geometry on the grid', kind: 'core', by: ['O1'],
 		modules: ['kernel/geometry.mjs', 'kernel/spec.mjs', 'kernel/router.mjs', 'model/surface.mjs'], consumes: [] },
@@ -317,9 +313,6 @@ export const LAYER = {
 		'model/reveal.mjs',      // the reveal beat's timing; its only product reader is the reveal painter
 	],
 	export: [
-		'kernel/engine.mjs', 'kernel/adapt.mjs',
-		'kernel/svg-scene.mjs',  // K11: a resolved scene as one SVG string, for the export door; draws network appearance, so it is not core
-		'kernel/fixtures.mjs',   // the spec viewer's reference scenes
 		'server/svg.mjs',        // the headless SVG door; it composes the export path and nothing else
 		'server/svg-style.mjs',  // H25.2 (B366): the page's drawing rules applied to what the export draws, written as attributes
 	],
@@ -632,9 +625,9 @@ export const RATCHETS = {
 	L7k: {
 		// PL-5 lowered model/model.mjs, server/rest.js, server/store.js and planner/validate.js to 0: they read model/shape.mjs
 		// F-c (H18.5) lowered cli/verbs.mjs from 11: the waypoint collection left the lists that named all the kinds
+		// H25.5 (B378, D4) deleted kernel/adapt.mjs with the old scene renderer
 		// each key's reason and trigger: RATCHET_REASONS.L7k
 		'cli/verbs.mjs': 7,
-		'kernel/adapt.mjs': 2,
 	},
 	// L9 is empty: V-c (H18.27) lowered app/src/input.js:splitAtBend, V-d (H18.28) app/src/commands.js:groupAfterRemoval --
 	// the browser keeps no copy of a planner rule; it previews with the planner (PL-6). The rule stays.
@@ -681,9 +674,6 @@ export const RATCHET_REASONS = {
 		'cli/verbs.mjs': { cites: ['from B138', 'H21.3'],
 			reason: 'the CLI\'s static imports stay inside cli/ so an installed copy runs (B138), so its verbs list the kinds themselves',
 			trigger: 'the CLI learns the kinds from the server' },
-		'kernel/adapt.mjs': { cites: ['H22.5'],
-			reason: 'the declarative scene adapter converts a document to the kernel\'s scene by kind name for the scene tests',
-			trigger: 'permanent' },
 	},
 };
 
@@ -911,18 +901,20 @@ export const UNUSED_EXPORTS = {
 			'check', 'grc', 'RULES', 'crossings', 'segmentsOf', 'cellCenter', 'layoutOf', 'oneSelected', 'onSpawner',
 			// H25.2 (B366): the kernel's scene CSS, a copy of the page's rules; the export applies the page's own (server/svg-style.mjs)
 			'KERNEL_CSS',
+			// H25.5 (B378, D4): the old scene renderer and its scene-element helpers, retired
+			'docToSchema', 'schemaToDoc', 'resolve', 'render', 'renderScene', 'renderElement', 'renderContentRegion',
+			'bboxOf', 'cellPx', 'derive', 'gridSnap', 'junction', 'port',
 		],
 		list: {
 			'kernel/geometry.mjs': {
 				'rebuild-debt': [
-					'bboxOf', 'cellOf', 'cellOn',
-					'cellPx', 'gridDot', 'group', 'groupHull', 'node', 'px', 'pxOn', 'snapLayout', 'spanExtent',
-					'zone'
+					'cellOf', 'cellOn',
+					'gridDot', 'groupHull', 'px', 'pxOn', 'snapLayout', 'spanExtent',
 				],
 				'serves-a-server-door': ['anchorAt', 'nearestAnchor'],   // anchorAt: server/anchor.mjs left the planner at PL-4, passed in by the store
 			},
 			'kernel/spec.mjs': {
-				'rebuild-debt': ['derive', 'BEND_R'],   // BEND_R: its consumer, `path`, left geometry for network/appearance.mjs at K13a
+				'rebuild-debt': ['BEND_R', 'L_STD'],   // BEND_R and L_STD: their consumers (`roundedPath`, the painters) are outside the planner closure
 			},
 			'kernel/theme.mjs': {
 				'rebuild-debt': [],
@@ -1034,6 +1026,10 @@ export const COPIES = {
 			'.waypoint.spawning .wp-ring': { cites: ['H25-4'], trigger: 'a second plugin puts a state on a waypoint, or the director asks for the spawner to be easier to see -- either redesigns how a waypoint\'s states are decided, in one sheet or as data' },
 			'.waypoint.spawning .wp-dot': { cites: ['H25-4'], trigger: 'a second plugin puts a state on a waypoint, or the director asks for the spawner to be easier to see -- either redesigns how a waypoint\'s states are decided, in one sheet or as data' },
 			'#container.zonegrid .zone': { cites: ['H25-4'], trigger: 'a kind other than the zone takes its pointer from the zone grid, or zones stop being placed on the layouts plugin\'s zone layout' },
+		},
+		// H25.5 (B378, D5 of H25-1): the REST route list beside the router, held equal to what the router dispatches by tests/routes.test.js
+		'modules no entry reaches': {
+			'server/routes.mjs': { cites: ['H25-1'], trigger: 'the router dispatches from server/routes.mjs directly, or a route is next added or changed' },
 		},
 	},
 };

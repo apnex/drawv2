@@ -1,7 +1,7 @@
 /*
 NETWORK APPEARANCE -- how the network is DRAWN: the scene elements for waypoints, paths, junctions and ports, the
 waypoint ring ladder and the layers each waypoint draws, and a link's width, dash, arrowhead and appearance attributes.
-Both renderers read it -- the live canvas (app/src/renderer.js) and the export (kernel/svg-scene.mjs) -- so they cannot
+The live canvas and the SVG export both draw through the network's painters and appearances (server/svg.mjs), so they cannot
 draw a waypoint or a link differently.
 
 K13a (dev/design/h17/PLAN.md): split from kernel/geometry.mjs, whose core grid exported these network names (L5, L5p).
@@ -32,35 +32,9 @@ export const NETWORK_COLOURS = {
 	down: 'orange500',           // a link with no route right now, and a link blocking the selected down link's way
 	pipeSelected: 'lightGreen300',   // a selected hand pipe (H17.22 N-c2, B281) -- the product's one selection colour, its accent
 };
-import { STD, BEND_R } from '../kernel/spec.mjs';
+import { STD } from '../kernel/spec.mjs';
 import { gridDot } from '../kernel/geometry.mjs';
 import { evenDash } from '../kernel/renderer.mjs';   // a fitted dash for the transit ring (2026-10-02)
-
-// ---- the network's scene elements (px coords, center-origin) ----
-/*
-waypoint: a placeable 40px-circle routing pivot. A path bends through its centre with r=20, so the
-bend is inscribed exactly in the circle. Permeable (not a routing obstacle).
-
-`role` is DERIVED by the engine from the relations, never stored on the document: a waypoint in a
-route's `via` is a BEND, one at its `from`/`to` is an ENDPOINT, and one at the from/to of a CLOSED
-route is a bend again, because a ring has no ends. Carrying it on the element rather than deciding
-in the renderer is what lets the live canvas and the SVG export agree without either restating the
-rule -- they both consume this.
-*/
-/*
-B209 -- carries the ROLE SET. `role` is a projection kept beside it for `bboxOf` and the hit tests,
-which ask a yes/no question and do not need the whole list.
-*/
-export const waypoint = (cx, cy, roles = []) => ({
-	kind: 'waypoint', cx, cy, roles,
-	role: roles.includes('endpoint') ? 'endpoint' : 'bend',
-});
-
-export const port = (cx, cy, o = {}) => ({ kind: 'port', cx, cy, style: o.style || 'square', size: o.size || 10 });
-export const junction = (cx, cy) => ({ kind: 'junction', cx, cy });       // a tap point on a trunk
-// path = a routed polyline through grid waypoints (px). The router renders it with rounded
-// corners; GRC validates its turns. `pts` = [[x,y], …]; radius defaults to the locked bend.
-export const path = (pts, o = {}) => ({ kind: 'path', pts, radius: o.radius ?? BEND_R, closed: !!o.closed });
 
 /*
 How a waypoint of each role is DRAWN, beside the rule for what it is.

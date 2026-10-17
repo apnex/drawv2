@@ -170,9 +170,10 @@ test('H24.8 (B361): the export stacks by the canvas\'s declared layout -- a part
 	assert.ok(svgDocument(doc(), KINDS).startsWith('<svg'), 'control: without it the export draws');
 });
 
+// RESTATED at H25.5 (B378, D4): compared directly against the router's closed path over the three stops, rather than the retired scene renderer
 test('R-c: a ring is drawn closed once -- its route\'s return to its start is the drawing closing itself', async () => {
-	const { render } = await import('../kernel/svg-scene.mjs');
-	const { docToSchema } = await import('../kernel/adapt.mjs');
+	const { roundedPath } = await import('../kernel/router.mjs');
+	const { BEND_R } = await import('../kernel/spec.mjs');
 	const ring = {
 		meta: { id: '0000000000000001', name: 'd' },
 		nodes: [{ id: 'node-0000b1', name: 'p', x: -120, y: 0 }, { id: 'node-0000b2', name: 'q', x: 120, y: 0 }, { id: 'node-0000b3', name: 'r', x: 0, y: -180 }],
@@ -180,6 +181,7 @@ test('R-c: a ring is drawn closed once -- its route\'s return to its start is th
 		pipes: [['node-0000b1', 'node-0000b2'], ['node-0000b2', 'node-0000b3'], ['node-0000b1', 'node-0000b3']].map(([x, y]) => pipeEntity(x, y, 'link')),
 	};
 	const d = (svg) => svg.match(/<g id="link-000001"><path d="([^"]*)"/)[1];
-	// its route runs along its stops, so it is drawn exactly as its stops draw it
-	assert.equal(d(svgDocument(ring, KINDS)), d(render(docToSchema(ring))));
+	const stops = [[-120, 0], [120, 0], [0, -180]];
+	assert.equal(d(svgDocument(ring, KINDS)), roundedPath(stops, BEND_R, true));
+	assert.notEqual(d(svgDocument(ring, KINDS)), roundedPath([...stops, stops[0]], BEND_R, true), 'control: closing a path that already returned to its start would double the corner');
 });

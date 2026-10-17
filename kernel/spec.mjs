@@ -31,7 +31,7 @@ export const STD = Object.freeze({
 export const BEND_R = STD.node;   // 20
 
 // defining params → per-layer geometry (the uniform +step ladder: frame→sel→group→zone)
-export function derive(V) {
+function derive(V) {
 	return {
 		cell: { ext: V.pitch / 2 },
 		frame: { ext: V.node, r: V.frameR },

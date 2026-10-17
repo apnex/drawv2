@@ -13,27 +13,17 @@ are vendored into `theme.mjs`.
 | module          | role |
 |-----------------|------|
 | `spec.mjs`      | the **LOCKED** `standard` variant (frozen) + the `derive()` ladder. Single source of px truth. |
-| `geometry.mjs`  | grid (`cell↔px`, `cellPx`), layouts and anchors, the `node`, `zone` and `group` elements, `bboxOf`, `gridDot`. Pure, core. |
-| `network-roles.mjs` | what a waypoint or link IS: `waypointRoles`, `linkFacing`. Pure; network layer (K13a). |
-| `network-appearance.mjs` | how the network is DRAWN: waypoint and path elements, the ring ladder and `waypointLayers`, link width, dash, arrowhead, `linkAppearance`. Network layer (K13a). |
-| `svg-scene.mjs` | a resolved scene as one SVG string, for the export door. Export layer (K11). |
-| `router.mjs`    | `roundedPath` (lifted prism NPath) + `gridSnap` + segment/corner helpers. Pure, integer-deterministic. |
-| `theme.mjs`     | **the visual-iterate surface**: style tokens, vendored glyph `<defs>`, `GLYPH_BB`, scene CSS. |
-| `renderer.mjs`  | scene → SVG (consumes `theme`; renders the waypoint). No layout decisions. |
-| `engine.mjs`    | `resolve(schema)` → scene. Places containers from cells; threads routes through cell-centre anchors. |
-| `fixtures.mjs`  | canonical scenes in the schema (reference · routing · clover). |
+| `geometry.mjs`  | grid (`cell↔px`), layouts and anchors, `gridDot`, `spanExtent`, `groupHull`. Pure, core. |
+| `router.mjs`    | `roundedPath` (lifted prism NPath) + segment/corner helpers. Pure, integer-deterministic. |
+| `theme.mjs`     | **the visual-iterate surface**: style tokens and `CANVAS_ROLES`. |
+| `renderer.mjs`  | shared frame primitives (`sharedDefs`, `selBox`, `nameLabel`, `showsSockets`, `evenDash`). |
 | `view.mjs`      | the spec/reference viewer → `kernel/out/spec.{html,png}` + a console self-check. |
 
 ## Where each name lives
 
 There is no barrel: every caller imports a name from the module that defines it (H17-D4, deleted at K2c).
 The design-rule checker, `grc.mjs`, was deleted at K12 by the director's ruling: nothing called it.
-The two entry points:
-
-```js
-import { resolve } from './kernel/engine.mjs';    // resolve(schema) -> { V, L, scene, byId }, the deterministic core
-import { render } from '../server/svg.mjs';       // render(schema)  -> SVG string, resolve then the scene renderer
-```
+The old declarative scene renderer (`adapt.mjs`, `engine.mjs`, `fixtures.mjs`, `svg-scene.mjs`) was retired at H25.5 (D4): both the canvas and `server/svg.mjs` `svgDocument` render through `app/src/renderer.js` and the plugins' painters.
 
 ## Schema
 

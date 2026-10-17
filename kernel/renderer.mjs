@@ -3,7 +3,7 @@
 // scene CSS come from theme.mjs (no client/ coupling).
 //
 // K11 (dev/design/h17/PLAN.md): the SVG SCENE -- a resolved scene emitted as one string, for the export door -- moved
-// to kernel/svg-scene.mjs, in the export layer. That half draws waypoints and links, which is network appearance; this
+// to the plugins' painters (H19.29 C-a; kernel/svg-scene.mjs retired at H25.5). This
 // half is core, and the live canvas (app/src/renderer.js) imports only it.
 import { STD, L_STD } from './spec.mjs';
 

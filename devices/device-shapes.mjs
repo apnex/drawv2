@@ -9,7 +9,7 @@ anchor is made (the node row refuses a change, planner/kinds.mjs), so an entity'
 cached it.
 
 Each function takes anything answering `get(kind, id)` and `all(kind)` -- a Model, the planner's projection, a test double.
-`kernel/adapt.mjs` (which may not import a plugin, C9) and the CLI (which ships standalone, B138) restate the question, held
+The CLI (which ships standalone, B138) restates the question, held
 to this module by tests/bare-anchor.test.js.
 */
 

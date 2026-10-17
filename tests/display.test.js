@@ -80,7 +80,7 @@ the SAME coordinates. That is what the copy silently threatened and what a share
 */
 
 import { contentLayout } from '../devices/device-types.mjs';
-import { renderContentRegion } from '../kernel/svg-scene.mjs';
+import { svgDocument } from '../server/svg.mjs';   // H25.5 (B378, D4): the real export renderer
 import { makeNode, makeWaypoint } from '../devices/make-node.mjs';   // O-e1: the devices plugin's factories
 
 const REGIONS = [
@@ -91,15 +91,18 @@ const REGIONS = [
 	{ at: [0, 0], cols: 4, rows: 4, content: 'text', value: 'x '.repeat(60), fill: '#ff0000' },
 ];
 
-test('B40: the kernel renderer emits text at exactly the coordinates contentLayout computes', () => {
+// RESTATED at H25.5 (B378, D4): the real renderer (devices/device-appearance.mjs via server/svg.mjs svgDocument) emits each
+// non-empty text line at the coordinates contentLayout computes (empty text nodes are stripped on serialisation)
+test('B40: the renderer emits text at exactly the coordinates contentLayout computes', () => {
 	for (const r of REGIONS) {
 		const layout = contentLayout(r);
-		const svg = renderContentRegion(r);
-		const ys = [...svg.matchAll(/<text x="([-\d.]+)" y="([-\d.]+)"/g)].map((m) => ({ x: Number(m[1]), y: Number(m[2]) }));
-		assert.equal(ys.length, layout.lines.length, `line count for ${JSON.stringify(r.value).slice(0, 30)}`);
+		const expected = layout.lines.filter((l) => l.text);
+		const svg = svgDocument({ meta: { id: '0000000000000001', name: 'd' }, nodes: [{ id: 'node-000001', name: '', type: 'text', shape: 'square', x: 0, y: 0, span: { cols: 4, rows: 5 }, content: [r] }], links: [], zones: [], groups: [] });
+		const ys = [...svg.matchAll(/<text class="content-text" x="([-\d.]+)" y="([-\d.]+)"/g)].map((m) => ({ x: Number(m[1]), y: Number(m[2]) }));
+		assert.equal(ys.length, expected.length, `line count for ${JSON.stringify(r.value).slice(0, 30)}`);
 		ys.forEach((p, i) => {
 			assert.equal(p.x, layout.tx, 'x follows the shared alignment');
-			assert.equal(p.y, layout.lines[i].y, 'y follows the shared wrap');
+			assert.equal(p.y, expected[i].y, 'y follows the shared wrap');
 		});
 	}
 });

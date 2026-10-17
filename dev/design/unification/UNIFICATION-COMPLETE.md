@@ -199,6 +199,7 @@ Each stage: tests first; the record lowered in its commit, which lists each find
    Each test that read them reads the real renderer, or is deleted with the commit naming the test of the real renderer that already says what it said; no test is deleted without one.
    `server/routes.mjs` stands as a ruled exception (D5).
    Proves: modules no production entry reaches holds only that exception.
+   AMENDED 2026-10-17, as built (B378): `kernel/adapt.mjs`, `kernel/engine.mjs`, `kernel/fixtures.mjs` and `kernel/svg-scene.mjs` deleted, along with the scene-element helpers they alone called (`kernel/geometry.mjs` `node`, `zone`, `group`, `bboxOf`, `cellPx`; `kernel/spec.mjs` `derive` un-exported; `kernel/router.mjs` `gridSnap`; `network/appearance.mjs` `waypoint`, `port`, `junction`, `path`; `network/read-model.mjs` `linesOf`; `zones/zone-painter.mjs` `ZONE_TOKENS`; `groups/group-painter.mjs` `GROUP_TOKENS` un-exported); all seven test files moved onto `server/svg.mjs` `svgDocument` and `app/src/renderer.js` `Renderer` with zero tests deleted; `NOT_PARTS` empty; `RATCHETS.L7k` drops `kernel/adapt.mjs`; `server/routes.mjs` recorded in `COPIES.exceptions` citing `H25-1` (D5); findings 8 to 4, all 4 ruled exceptions.
 6. **H25.6 -- one name.**
    `routeGeometry` is renamed for what it computes.
    Proves: ratchet L5p empty.

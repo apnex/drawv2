@@ -70,18 +70,17 @@ const plannerModules = () => fs.readdirSync(path.join(root, 'planner')).filter((
 // file -> { count, reason, cites, trigger }; a count may only fall (AMENDED H21.5, R-b: cites resolve, a trigger says when it ends)
 const RECORD = {
 	// model/model.mjs's 7 -- its link methods -- went to the network at K13d (H19.25, network/link-queries.mjs)
-	'kernel/geometry.mjs': { count: 8, cites: ['B325'],
-		reason: 'the zone lattice\'s name in `LAYOUTS` and `layout:` in `anchorAt`/`nearestAnchor` (B325), and the declarative scene helpers `zone` and `group`',
+	// RESTATED at H25.5 (B378, D4): the declarative scene helpers `zone`, `group` and `bboxOf` retired with the old scene renderer
+	'kernel/geometry.mjs': { count: 4, cites: ['B325'],
+		reason: 'the zone lattice\'s name in `LAYOUTS` and `layout:` in `anchorAt`/`nearestAnchor` (B325)',
 		trigger: 'a diagram varies its grids (B325)' },
 	'kernel/spec.mjs': { count: 2, cites: ['B325'],
 		reason: 'the `group:` and `zone:` layout constants in `STD`',
 		trigger: 'a diagram varies its grids (B325)' },
 };
 // and the plugin fields a core or planner module reads, the same way
+// H25.5 (B378, D4): empty -- kernel/geometry.mjs's `node()` retired with the old scene renderer
 const DEVICE_RECORD = {
-	'kernel/geometry.mjs': { count: 1, cites: ['H22.5'],
-		reason: 'the declarative scene helper `node()` reading `o.glyph`',
-		trigger: 'permanent' },
 };
 
 // U3 (H21.7): every remaining non-canvas product module (`export`, `server-only`, `serve`, `cli`, `lab`, `simulation`, `product`,
@@ -95,18 +94,6 @@ const PRODUCT_KIND_RECORD = {
 		trigger: 'permanent' },
 	'engine/spawners.mjs': { count: 2, cites: ['SD11b'],
 		reason: 'a spawner record and its movers report naming the `link` its movers ride along (SD11b)',
-		trigger: 'permanent' },
-	'kernel/adapt.mjs': { count: 8, cites: ['H22.5'],
-		reason: 'the declarative scene adapter converting zones, groups and links by kind name',
-		trigger: 'permanent' },
-	'kernel/engine.mjs': { count: 5, cites: ['H22.5'],
-		reason: 'the declarative scene resolver resolving zones, groups and links by kind name',
-		trigger: 'permanent' },
-	'kernel/fixtures.mjs': { count: 11, cites: ['H22.5'],
-		reason: 'the reference scenes in the declarative scene\'s vocabulary',
-		trigger: 'permanent' },
-	'kernel/svg-scene.mjs': { count: 5, cites: ['H22.5'],
-		reason: 'the declarative scene emitter rendering zones, groups and links by kind name',
 		trigger: 'permanent' },
 	'lab/server.mjs': { count: 3, cites: ['O1', 'WD6'],
 		reason: 'the lab static server mounting `/layouts/`, `/zones/` and `/groups/` for the browser',
@@ -145,27 +132,12 @@ const PRODUCT_FIELD_RECORD = {
 	'cli/verbs.mjs': { count: 36, cites: ['from B138'],
 		reason: 'the CLI\'s standalone verbs reading `.type`, `.shape`, `.span`, `.content`, `.transit`, `.spawn` and `.glyph` on wire payloads (B138)',
 		trigger: 'permanent' },
-	'kernel/adapt.mjs': { count: 27, cites: ['H22.5'],
-		reason: 'the declarative scene adapter reading `.type`, `.shape`, `.span`, `.content`, `.transit` and `.glyph`',
-		trigger: 'permanent' },
-	'kernel/engine.mjs': { count: 16, cites: ['H22.5'],
-		reason: 'the declarative scene resolver reading `.glyph`, `.span`, `.content` and `.transit`',
-		trigger: 'permanent' },
-	'kernel/svg-scene.mjs': { count: 7, cites: ['H22.5'],
-		reason: 'the declarative scene emitter reading `.content`, `.glyph` and `.transit`',
-		trigger: 'permanent' },
 };
 
 // U3 (H21.7): device type names (`host`, `server`, `loadbalancer`, `firewall`, `vxlan`, `router`) across every product layer
 const TYPE_NAME_RECORD = {
 	'devices/device-types.mjs': { count: 6, cites: ['U4-1', 'U4-2', 'U4-3'],
 		reason: 'the one device-type declaration table (`DEVICE_TYPES`): `host`, `server`, `loadbalancer`, `firewall`, `vxlan`, `router` (U4-1, U4-2, U4-3)',
-		trigger: 'permanent' },
-	'kernel/fixtures.mjs': { count: 23, cites: ['H22.5'],
-		reason: 'the spec viewer\'s reference scenes naming the device glyphs they draw',
-		trigger: 'permanent' },
-	'kernel/geometry.mjs': { count: 1, cites: ['H22.5'],
-		reason: 'the declarative scene helper `node()` defaulting `o.glyph` to `\'router\'`',
 		trigger: 'permanent' },
 	'server/seed.js': { count: 8, cites: ['SD2'],
 		reason: 'the seed diagram\'s eight devices (`host`, `router`, `firewall`, `loadbalancer`, three `server`, `vxlan`)',

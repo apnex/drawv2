@@ -160,6 +160,3 @@ export function pointAtDistance(geo, d) {
 	return last.b.slice();
 }
 
-// ---- grid snapping (hand-routed waypoints land exactly on the grid) ----
-const snap1 = (v, step) => Math.round(v / step) * step;
-export const gridSnap = (pts, step) => pts.map(([x, y]) => [snap1(x, step), snap1(y, step)]);

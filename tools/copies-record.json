@@ -8,10 +8,6 @@
 	"styled names nothing draws": [],
 	"copied lines": [],
 	"modules no entry reaches": [
-		"kernel/adapt.mjs",
-		"kernel/engine.mjs",
-		"kernel/fixtures.mjs",
-		"kernel/svg-scene.mjs",
 		"server/routes.mjs"
 	]
 }

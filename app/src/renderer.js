@@ -3,7 +3,7 @@ Renderer — reconciles model state into the SVG layers the plugins draw into (p
 Same DOM shape + state-class interface the legacy renderer exposed (so input/selection/CSS port
 unchanged), but every geometry NUMBER and glyph def comes from the KERNEL — no hardcoded sizes.
 Draws nodes at their EXACT entity px (so live drag stays smooth); the committed positions are
-always on-grid. The kernel's resolve()/renderScene() remain the headless/export authority.
+always on-grid; server/svg.mjs drives this same Renderer headlessly for the SVG export (H2, H25.5).
 */
 
 import { el, setAttrs } from './painter.js';

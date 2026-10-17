@@ -13,8 +13,7 @@ import fs from 'node:fs';
 import assert from 'node:assert/strict';
 import { Model } from './fixtures/composed.mjs';   // the network's kinds, the link among them (S-e)
 import { Renderer } from '../app/src/renderer.js';
-import { renderElement } from '../kernel/svg-scene.mjs';
-import { resolve } from '../kernel/engine.mjs';
+import { svgDocument } from '../server/svg.mjs';   // H25.5 (B378, D4): the real export renderer
 import { STD, L_STD } from '../kernel/spec.mjs';
 import { makeRenderer, classesIn } from './fixtures/client-harness.mjs';
 
@@ -73,39 +72,41 @@ the incremental renderer stop being incremental.
 */
 const SHARED = ['frame', 'socket'];
 
-test('B121: client and kernel agree on a plain node, in both modes', () => {
+// RESTATED at H25.5 (B378, D4): the export is server/svg.mjs svgDocument, which drives the real Renderer in run/view mode
+test('B121: client and export agree on a plain node, and edit mode adds its socket', () => {
+	const node = { id: 'node-000001', name: 'n', type: 'host', shape: 'circle', x: 0, y: 0 };
+	const exported = svgDocument({ meta: { id: '0000000000000001', name: 'd' }, nodes: [node], links: [], zones: [], groups: [] }, KINDS).split('</defs>').pop();
+	const exportSet = SHARED.filter((c) => new RegExp(`class="${c}"`).test(exported));
+	assert.deepEqual(exportSet, [], 'control: a 1x1 plain node uses #m-circle from defs and draws no socket in the export');
 	for (const editing of [false, true]) {
-		const el = resolve({ entities: [{ id: 'node-000001', kind: 'node', cell: [0, 0], glyph: 'host' }] }).scene[0];
-		const fromKernel = renderElement(el, STD, L_STD, { sockets: editing });
-		const kernelSet = SHARED.filter((c) => new RegExp(`class="${c}"`).test(fromKernel));
-
 		let clientSet;
 		withRenderer(({ svg, model, make }) => {
 			const r = make(model);
 			if (editing) r.setMode('edit');
-			model.put('node', { id: 'node-000001', name: 'n', type: 'host', shape: 'circle', x: 0, y: 0 });
+			model.put('node', node);
 			const seen = new Set(classesIn(svg));
 			clientSet = SHARED.filter((c) => seen.has(c));
 		});
-		assert.deepEqual(clientSet, kernelSet, `mode=${editing ? 'edit' : 'view'}: the two renderers disagree`);
+		assert.deepEqual(clientSet, editing ? ['socket'] : exportSet, `mode=${editing ? 'edit' : 'view'}`);
 	}
 });
 
-test('B121: client and kernel agree on a content panel too', () => {
+test('B121: client and export agree on a content panel too', () => {
 	const content = [{ at: [0, 0], content: 'text', value: 'hi' }];
+	const panel = { id: 'node-000002', name: 'p', type: 'host', shape: 'square', x: 0, y: 0, content };
+	const exported = svgDocument({ meta: { id: '0000000000000001', name: 'd' }, nodes: [panel], links: [], zones: [], groups: [] }, KINDS);
+	const exportSet = SHARED.filter((c) => new RegExp(`class="${c}"`).test(exported));
+	assert.deepEqual(exportSet, ['frame'], 'control: the export draws the panel frame and no socket');
 	for (const editing of [false, true]) {
-		const el = resolve({ entities: [{ id: 'node-000002', kind: 'node', cell: [0, 0], content }] }).scene[0];
-		const kernelSet = SHARED.filter((c) => new RegExp(`class="${c}"`).test(renderElement(el, STD, L_STD, { sockets: editing })));
-
 		let clientSet;
 		withRenderer(({ svg, model, make }) => {
 			const r = make(model);
 			if (editing) r.setMode('edit');
-			model.put('node', { id: 'node-000002', name: 'p', type: 'host', shape: 'square', x: 0, y: 0, content });
+			model.put('node', panel);
 			const seen = new Set(classesIn(svg));
 			clientSet = SHARED.filter((c) => seen.has(c));
 		});
-		assert.deepEqual(clientSet, kernelSet, `panel, mode=${editing ? 'edit' : 'view'}: the two renderers disagree`);
+		assert.deepEqual(clientSet, editing ? ['frame', 'socket'] : exportSet, `panel, mode=${editing ? 'edit' : 'view'}`);
 	}
 });
 
@@ -180,15 +181,15 @@ test('B205: the palette fits each glyph exactly as the kernel does', async () =>
 	glyph, because the whole point is that the fit is NOT a constant -- a single shared scale is
 	what the palette had.
 	*/
+	// RESTATED at H25.5 (B378, D4): read from the real export renderer (server/svg.mjs svgDocument)
 	for (const type of ['router', 'host', 'server', 'loadbalancer', 'firewall', 'vxlan']) {
-		const el = resolve({ entities: [{ id: 'node-000001', kind: 'node', cell: [0, 0], glyph: type }] }).scene[0];
-		const kernel = renderElement(el, STD, L_STD);
+		const exported = svgDocument({ meta: { id: '0000000000000001', name: 'd' }, nodes: [{ id: 'node-000001', name: 'n', type, shape: 'circle', x: 0, y: 0 }], links: [], zones: [], groups: [] }, KINDS);
 		const [bx, by, bw, bh] = GLYPH_BB[type] || GLYPH_BB.host;
 
-		assert.match(kernel, new RegExp(`viewBox="${bx} ${by} ${bw} ${bh}"`),
-			`${type}: the kernel does not fit this glyph to the box the palette will read`);
-		assert.match(kernel, new RegExp(`width="${STD.socket}" height="${STD.socket}"`),
-			`${type}: the kernel glyph box is not STD.socket`);
+		assert.match(exported, new RegExp(`viewBox="${bx} ${by} ${bw} ${bh}"`),
+			`${type}: the renderer does not fit this glyph to the box the palette will read`);
+		assert.match(exported, new RegExp(`width="${STD.socket}" height="${STD.socket}"`),
+			`${type}: the glyph box is not STD.socket`);
 	}
 });
 

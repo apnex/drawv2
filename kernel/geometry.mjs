@@ -1,17 +1,10 @@
-// GEOMETRY — the grid (cell↔px), its layouts and anchors, the core scene elements (node, zone, group) and bboxOf.
+// GEOMETRY — the grid (cell↔px), its layouts and anchors, the grid dot, span extent and group hull.
 // Pure geometry: no rendering, no I/O. Consumes the locked spec; everything downstream consumes these primitives.
-//
-// Coordinate model: CELLS = the logical integer grid (center-origin). PX = resolved canvas
-// units (cell · pitch). The single per-cell ANCHOR is the cell CENTRE (cellPx) — routes
-// thread cell centres; a Waypoint is a placeable anchor that bends a path between cells.
-//
-// K13a (dev/design/h17/PLAN.md): what a waypoint or a link IS moved to network/roles.mjs, and how the network is
-// DRAWN to network/appearance.mjs -- both in the network layer, so this core module exports no network name.
-import { STD, L_STD } from './spec.mjs';
+// H25.5 (B378, D4): the old scene renderer's element helpers (node, zone, group, bboxOf, cellPx) retired with it.
+import { STD } from './spec.mjs';
 
 // ---- the grid: cell (logical, integer) ↔ px (resolved, center-origin) ----
 export const px = (cell, V = STD) => cell * V.pitch;                       // one axis
-export const cellPx = ([cx, cy], V = STD) => [cx * V.pitch, cy * V.pitch];
 // px → cell (one axis): the inverse of px(). Rounds a resolved coordinate to its nearest logical
 // cell index; the `+ 0` normalizes signed zero (-0 → +0) so a cell never splits into "-0"/"0" keys.
 // The SINGLE source for px→cell — used by the schema adapter (rendering/validation) and, INJECTED,
@@ -73,18 +66,6 @@ export const anchorAt = (L, cx, cy, V = STD) => ({
 	layout: L.name, cx, cy, x: pxOn(L, cx, V), y: pxOn(L, cy, V),
 });
 
-// ---- element constructors (px coords, center-origin) ----
-// The RESOLVED primitives — a flat scene is a list of these.
-// A node anchors at (cx,cy) = its origin-cell centre. spanW/spanH are the px EXTENT BEYOND a 1×1
-// frame (a multi-cell footprint grows +x/+y from the origin); both 0 ⇒ today's 1-cell node, and
-// the fields are omitted so a 1×1 node element stays byte-identical. (W1 — multi-cell span foundation.)
-export const node = (cx, cy, o = {}) => {
-	const n = { kind: 'node', cx, cy, frame: o.frame || 'circle', glyph: o.glyph || 'router', sel: !!o.sel };
-	if (o.spanW) n.spanW = o.spanW;
-	if (o.spanH) n.spanH = o.spanH;
-	return n;
-};
-
 /*
 THE GRID DOT. A waypoint does not own it -- a waypoint HIGHLIGHTS it.
 
@@ -112,19 +93,6 @@ own literal and agreed with the kernel.
 const DOT_RADIUS = 2;
 export const gridDot = () => ({ radius: DOT_RADIUS });
 
-
-export const zone = (x, y, w, h) => ({ kind: 'zone', x, y, w, h });
-export const group = (x, y, w, h) => ({ kind: 'group', x, y, w, h });
-
-// bounding box of an element (px). null for links/paths — they're lines, checked by endpoint.
-export function bboxOf(el, L = L_STD) {
-	if (el.kind === 'node' || el.kind === 'waypoint') { const e = L.frame.ext; return { x: el.cx - e, y: el.cy - e, w: 2 * e + (el.spanW || 0), h: 2 * e + (el.spanH || 0) }; }
-	if (el.kind === 'port') return { x: el.cx - el.size / 2, y: el.cy - el.size / 2, w: el.size, h: el.size };
-	if (el.kind === 'junction') return { x: el.cx - 6, y: el.cy - 6, w: 12, h: 12 };   // connection-pad footprint
-	if (el.kind === 'zone' || el.kind === 'group') return { x: el.x, y: el.y, w: el.w, h: el.h };
-	return null;
-}
-
 /*
 A node's footprint BEYOND its 1×1 frame, in px — the extent a multi-cell span adds on +x/+y.
 
@@ -135,7 +103,7 @@ MIN_LINES floor — so this is the class of duplication a detector will not find
 
 Takes the SPAN, not the entity: the kernel has no business knowing an entity's shape. Two other
 `span` computations are deliberately NOT folded in, because they answer different questions with the
-same field — `engine/relations.mjs` keys occupied CELLS, `kernel/adapt.mjs` builds cell RANGES.
+same field — `engine/relations.mjs` keys occupied CELLS.
 */
 export const spanExtent = (span, V = STD) => ({
 	sw: span ? (span.cols - 1) * V.pitch : 0,

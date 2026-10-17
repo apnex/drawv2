@@ -92,8 +92,7 @@ test('F-e: the export and the canvas give a waypoint whose transit is off the sa
 	const { createNetworkSession } = await import('../network/session.mjs');
 	const { productKinds } = await import('../product/kinds.mjs');
 	const { PIPE_ROW } = await import('../network/pipe-kind.mjs');
-	const { docToSchema } = await import('../kernel/adapt.mjs');
-	const { resolve } = await import('../kernel/engine.mjs');
+	// RESTATED at H25.5 (B378, D4): the export is server/svg.mjs svgDocument, which drives the real Renderer
 	const { svgDocument } = await import('../server/svg.mjs');
 	const s = createNetworkSession();
 	const m = new Model({ attached: { network: s.network }, kinds: productKinds(...NETWORK_ROWS) });
@@ -104,12 +103,10 @@ test('F-e: the export and the canvas give a waypoint whose transit is off the sa
 	});
 	const canvas = waypointRolesIn(m, W);
 	assert.deepEqual(canvas, ['endpoint'], 'three links end there and transit is off: endpoints, never a junction');
-	const exported = resolve(docToSchema(m.toJSON())).scene.find((e) => e.id === W).roles;
-	assert.deepEqual(exported, canvas, 'the export reads the stored field and agrees');
 	const body = svgDocument(m.toJSON(), KINDS).split('</defs>').pop();
-	assert.match(body, new RegExp(`<g id="${W}"><g class="waypoint endpoint">[^]*?stroke-dasharray`), 'and draws the transit ring the canvas draws');
+	assert.match(body, new RegExp(`<g id="${W}"><g class="waypoint endpoint">[^]*?stroke-dasharray`), 'the export reads the stored field, gives it endpoint and draws the transit ring the canvas draws');
 	m.put('node', { id: W, name: 'w', x: 0, y: 0 });   // back on: the default, nothing stored
-	assert.deepEqual(resolve(docToSchema(m.toJSON())).scene.find((e) => e.id === W).roles, ['junction']);
+	assert.match(svgDocument(m.toJSON(), KINDS).split('</defs>').pop(), new RegExp(`<g id="${W}"><g class="waypoint junction">`), 'and back on, the export draws it as a junction');
 });
 
 test('F-e: transit survives a reload -- stored in the document, written by the store and read back at boot', async () => {

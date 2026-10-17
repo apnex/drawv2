@@ -3,13 +3,15 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { Model, heldLayouts } from './fixtures/composed.mjs';   // the network's kinds, the link among them (S-e)
 import { attachRelations } from '../engine/store.mjs';
-import { resolve } from '../kernel/engine.mjs';
 import { selBox, showsSockets } from '../kernel/renderer.mjs';
 import { isPanel, frameRadius } from '../devices/device-types.mjs';
-import { renderElement, renderContentRegion } from '../kernel/svg-scene.mjs';
-import { bboxOf, cellOf } from '../kernel/geometry.mjs';
+import { cellOf, spanExtent } from '../kernel/geometry.mjs';
 import { STD, L_STD } from '../kernel/spec.mjs';
-import { docToSchema, schemaToDoc } from '../kernel/adapt.mjs';
+import { svgDocument } from '../server/svg.mjs';   // H25.5 (B378, D4): the real export renderer
+import { COMPOSED_KINDS, readModel } from '../product/types.mjs';
+import { PRODUCT_CANVAS } from '../product/canvas.mjs';
+import { Renderer } from '../app/src/renderer.js';
+import { makeRenderer } from './fixtures/client-harness.mjs';
 import { validateEntity, validateDoc } from './fixtures/composed.mjs';   // the network's kinds, as the store validates (S-e)
 import { createEntity } from '../app/src/commands.js';
 // RESTATED at C-e step twelve (H19.33): a panel's region is the devices plugin's to edit; run as the label editor commits it
@@ -27,58 +29,54 @@ import { occupiedAt } from '../devices/occupancy.mjs';   // O-e1: which device o
 
 const P = STD.pitch;   // 60
 
-// ---- kernel geometry + render ----
+// H25.5 (B378, D4): helpers driving the real export renderer (server/svg.mjs svgDocument) and the real client Renderer
+const renderNodesSvg = (nodes, extra = {}) => svgDocument({ meta: { id: '0000000000000001', name: 'd' }, nodes, links: [], zones: [], groups: [], ...extra }).split('</defs>').pop();
+const groupSvg = (svg, id) => { const at = svg.indexOf(`<g id="${id}"`); return svg.slice(at, svg.indexOf('</g>', at + 1) + 4); };
+const renderNodeSvg = (node) => groupSvg(renderNodesSvg([node]), node.id);
+
+// ---- kernel geometry + render (RESTATED at H25.5, B378, D4: driven through spanExtent and the real renderer) ----
 test('bboxOf: 1×1 is the 40px frame; a span grows +x/+y from the anchor', () => {
-	const { scene } = resolve({ entities: [
-		{ id: 'node-000001', kind: 'node', cell: [0, 0], glyph: 'router' },
-		{ id: 'node-000002', kind: 'node', cell: [2, 0], span: { cols: [2, 4], rows: [0, 1] }, glyph: 'host' }
-	] });
-	const one = scene.find((e) => e.id === 'node-000001');
-	const span = scene.find((e) => e.id === 'node-000002');
-	assert.deepEqual(bboxOf(one), { x: -20, y: -20, w: 40, h: 40 });           // unchanged 1×1
-	assert.deepEqual(bboxOf(span), { x: 2 * P - 20, y: -20, w: 40 + 2 * P, h: 40 + 1 * P });  // 3 cols, 2 rows
-	assert.equal(one.spanW, undefined, '1×1 carries no span fields (byte-identical element)');
-	assert.equal(span.spanW, 2 * P);
-	assert.equal(span.spanH, 1 * P);
+	assert.deepEqual(spanExtent(undefined), { sw: 0, sh: 0 });
+	assert.deepEqual(spanExtent({ cols: 3, rows: 2 }), { sw: 2 * P, sh: 1 * P });
+	const svg = renderNodesSvg([
+		{ id: 'node-000001', name: 'r', type: 'router', shape: 'circle', x: 0, y: 0 },
+		{ id: 'node-000002', name: 'h', type: 'host', shape: 'square', x: 2 * P, y: 0, span: { cols: 3, rows: 2 } },
+	]);
+	assert.doesNotMatch(groupSvg(svg, 'node-000001'), /data-span=/, '1x1 carries no span attribute');
+	assert.match(groupSvg(svg, 'node-000002'), /data-span="3x2".*<rect [^>]*class="frame" x="-20" y="-20" width="160" height="100"/);
 });
 
 test('renderElement: 1×1 keeps the <use> frame; a span draws a sized rect frame', () => {
-	const one = resolve({ entities: [{ id: 'node-000001', kind: 'node', cell: [0, 0], glyph: 'router', sel: true }] }).scene[0];
-	const span = resolve({ entities: [{ id: 'node-000002', kind: 'node', cell: [0, 0], span: { cols: [0, 2], rows: [0, 1] }, glyph: 'host', sel: true }] }).scene[0];
-	const svgOne = renderElement(one), svgSpan = renderElement(span);
-	assert.match(svgOne, /<use href="#m-circle"\/>/);
-	assert.ok(!svgOne.includes('<rect class="frame"'), '1×1 uses the frame def, not a rect');
-	/*
-	The GEOMETRY is pinned, not the whole tag. This matched the element byte-for-byte including its
-	self-close, so H15.18 adding a derived `stroke-width` broke it for a change that was correct --
-	the same failure as the dash literals. What this test protects is that a span draws a sized rect
-	at the right extent, and that is what it now asserts.
-	*/
-	assert.match(svgSpan, /<rect class="frame" x="-20" y="-20" width="160" height="100" rx="5"/);   // 3×2 footprint
+	const svgOne = renderNodeSvg({ id: 'node-000001', name: 'r', type: 'router', shape: 'circle', x: 0, y: 0 });
+	const svgSpan = renderNodeSvg({ id: 'node-000002', name: 'h', type: 'host', shape: 'square', x: 0, y: 0, span: { cols: 3, rows: 2 } });
+	assert.match(svgOne, /<use [^>]*href="#m-circle"\/>/);
+	assert.ok(!svgOne.includes('class="frame"'), '1×1 uses the frame def, not a rect');
+	assert.match(svgSpan, /<rect [^>]*class="frame" x="-20" y="-20" width="160" height="100" rx="5"/);   // 3×2 footprint
 	assert.ok(!svgSpan.includes('#m-'), 'a span node does not reference the 1-cell frame def');
 });
 
 test('selBox: default args are byte-identical to the pre-span box; a span extends it', () => {
 	assert.equal(selBox(L_STD), selBox(L_STD, 0, 0));                       // 1×1 brackets unchanged
-	const one = resolve({ entities: [{ id: 'node-000001', kind: 'node', cell: [0, 0], sel: true }] }).scene[0];
-	const span = resolve({ entities: [{ id: 'node-000002', kind: 'node', cell: [0, 0], span: { cols: [0, 2], rows: [0, 1] }, sel: true }] }).scene[0];
-	assert.ok(renderElement(one).includes(selBox(L_STD)));
-	assert.ok(renderElement(span).includes(selBox(L_STD, 2 * P, 1 * P)));   // brackets wrap the whole footprint
+	const { svg, restore } = makeRenderer();
+	try {
+		const m = new Model();
+		new Renderer(m, svg, { parts: PRODUCT_CANVAS });
+		m.put('node', { id: 'node-000001', name: 'r', type: 'router', shape: 'circle', x: 0, y: 0 });
+		m.put('node', { id: 'node-000002', name: 'h', type: 'host', shape: 'square', x: 2 * P, y: 0, span: { cols: 3, rows: 2 } });
+		const selOf = (id) => svg.byId['#nodes'].children.find((g) => g.attrs.id === id).children.find((c) => c.attrs.class === 'select-box').attrs.d;
+		assert.equal(selOf('node-000001'), selBox(L_STD));
+		assert.equal(selOf('node-000002'), selBox(L_STD, 2 * P, 1 * P));    // brackets wrap the whole footprint
+	} finally { restore(); }
 });
 
-// ---- doc ↔ schema adapter ----
+// ---- readModel / export span fidelity (RESTATED at H25.5, B378, D4: replaces docToSchema/schemaToDoc round-trip) ----
 test('docToSchema/schemaToDoc round-trip span as cell counts; 1×1 stays span-free', () => {
-	const doc = { nodes: [
+	const doc = { meta: { id: '0000000000000001', name: 'd' }, nodes: [
 		{ id: 'node-000003', name: 'p', type: 'host', shape: 'square', x: 2 * P, y: 0, span: { cols: 3, rows: 2 } },
 		{ id: 'node-000004', name: 'n', type: 'router', shape: 'circle', x: 0, y: 0 }
-	] };
-	const sch = docToSchema(doc);
-	const span = sch.entities.find((e) => e.id === 'node-000003');
-	assert.deepEqual(span.span, { cols: [2, 4], rows: [0, 1] }, 'counts → absolute ranges anchored at the cell');
-	const one = sch.entities.find((e) => e.id === 'node-000004');
-	assert.ok(!('span' in one), '1×1 emits no span');
-	const back = schemaToDoc(sch);
-	assert.deepEqual(back.nodes.find((n) => n.id === 'node-000003').span, { cols: 3, rows: 2 });   // ranges → counts
+	], links: [], zones: [], groups: [] };
+	const back = readModel(doc, COMPOSED_KINDS).toJSON();
+	assert.deepEqual(back.nodes.find((n) => n.id === 'node-000003').span, { cols: 3, rows: 2 });
 	assert.ok(!('span' in back.nodes.find((n) => n.id === 'node-000004')), '1×1 round-trips span-free (byte-identical)');
 });
 
@@ -136,40 +134,41 @@ test('command clone deep-copies span (history never aliases the live span object
 // (the reversal of "kernel defers labels"). Mode-independent / static; editing is the parked layer.
 // =====================================================================================================
 
+// RESTATED at H25.5 (B378, D4): driven through the real export renderer and the real client Renderer
 test('a content node renders text/glyph/outline/pill; plain node byte-identical', () => {
-	const el = resolve({ entities: [{ id: 'node-000020', kind: 'node', cell: [0, 0], span: { cols: [0, 3], rows: [0, 1] }, content: [
+	const svg = renderNodeSvg({ id: 'node-000020', name: '', type: 'host', shape: 'square', x: 0, y: 0, span: { cols: 4, rows: 2 }, content: [
 		{ at: [0, 0], cols: 1, rows: 1, content: 'text', value: 'name', align: 'left', fill: '#9fb0c0' },
 		{ at: [1, 0], cols: 3, rows: 1, content: 'text', value: 'web-tier', align: 'left', outline: true, accent: '#4fc3f7' },
 		{ at: [0, 1], cols: 1, rows: 1, content: 'glyph', glyph: 'router' },
 		{ at: [1, 1], cols: 3, rows: 1, content: 'text', value: 'online', align: 'center', outline: true, bg: '#aed581', fill: '#101010', rx: 13 }
-	] }] }).scene[0];
-	const svg = renderElement(el);
-	assert.match(svg, /<rect class="frame" x="-20" y="-20" width="220" height="100"/);   // the W1 4×2 frame
+	] });
+	assert.match(svg, /<rect [^>]*class="frame" x="-20" y="-20" width="220" height="100"/);   // the W1 4×2 frame
 	assert.ok(svg.includes('>name<') && svg.includes('>web-tier<') && svg.includes('>online<'));
 	assert.match(svg, /stroke="#4fc3f7"/);                  // the value outline
 	assert.match(svg, /fill="#aed581"[^>]*/);              // the pill fill
 	assert.match(svg, /rx="13"/);                          // the pill radius
 	assert.ok(svg.includes('#glyph-router'));              // the glyph region
-	const plain = renderElement(resolve({ entities: [{ id: 'node-000021', kind: 'node', cell: [0, 0], glyph: 'router' }] }).scene[0]);
-	// the socket left this shape when W4's rule was finally applied to plain nodes too: a clean
-	// export carries no edit-mode aid, and the dashed square was one
-	assert.ok(plain.includes('<use href="#m-circle"/>') && plain.includes('#glyph-router'), 'no content ⇒ frame and glyph');
+	const plain = renderNodeSvg({ id: 'node-000021', name: '', type: 'router', shape: 'circle', x: 0, y: 0 });
+	assert.ok(plain.includes('href="#m-circle"') && plain.includes('#glyph-router'), 'no content ⇒ frame and glyph');
 	assert.ok(!plain.includes('class="socket"'), 'and no socket, which is an editing aid');
 });
 
 test('W4: the socket grid is gated behind the sockets render opt (off by default — clean export)', () => {
-	const el = resolve({ entities: [{ id: 'node-000030', kind: 'node', cell: [0, 0], span: { cols: [0, 2], rows: [0, 0] }, content: [{ content: 'text', value: 'x' }] }] }).scene[0];
-	assert.equal((renderElement(el).match(/class="socket"/g) || []).length, 0, 'default: no grid (a clean export carries no edit-mode aid)');
-	assert.equal((renderElement(el, STD, L_STD, { sockets: true }).match(/class="socket"/g) || []).length, 3, 'opts.sockets: a 3-cell socket grid');
-
-	/*
-	The same rule on a PLAIN node, which is the case this test did not cover and so did not hold.
-	A panel's grid obeyed `sockets` while every plain node drew its dashed square unconditionally --
-	the rule was stated once and enforced on one of the two shapes it named.
-	*/
-	const bare = resolve({ entities: [{ id: 'node-000031', kind: 'node', cell: [0, 0], glyph: 'router' }] }).scene[0];
-	assert.equal((renderElement(bare).match(/class="socket"/g) || []).length, 0, 'default: a plain node carries no socket either');
-	assert.equal((renderElement(bare, STD, L_STD, { sockets: true }).match(/class="socket"/g) || []).length, 1, 'opts.sockets: its one socket');
+	const panel = { id: 'node-000030', name: '', type: 'host', shape: 'square', x: 0, y: 0, span: { cols: 3, rows: 1 }, content: [{ content: 'text', value: 'x' }] };
+	const bare = { id: 'node-000031', name: '', type: 'router', shape: 'circle', x: 240, y: 0 };
+	assert.equal((renderNodeSvg(panel).match(/class="socket"/g) || []).length, 0, 'default: no grid (a clean export carries no edit-mode aid)');
+	assert.equal((renderNodeSvg(bare).match(/class="socket"/g) || []).length, 0, 'default: a plain node carries no socket either');
+	const { svg, restore } = makeRenderer();
+	try {
+		const m = new Model();
+		const r = new Renderer(m, svg, { parts: PRODUCT_CANVAS });
+		r.setMode('edit');
+		m.put('node', panel);
+		m.put('node', bare);
+		const socketsIn = (id) => svg.byId['#nodes'].children.find((g) => g.attrs.id === id).children.filter((c) => c.attrs.class === 'socket').length;
+		assert.equal(socketsIn('node-000030'), 3, 'edit mode: a 3-cell socket grid');
+		assert.equal(socketsIn('node-000031'), 1, 'edit mode: its one socket');
+	} finally { restore(); }
 });
 
 // =====================================================================================================
@@ -178,11 +177,10 @@ test('W4: the socket grid is gated behind the sockets render opt (off by default
 // =====================================================================================================
 
 test('W5: a clickable region renders a transparent hit rect with data-action; the action is gated', () => {
-	const el = resolve({ entities: [{ id: 'node-000040', kind: 'node', cell: [0, 0], span: { cols: [0, 1], rows: [0, 0] }, content: [
+	const svg = renderNodeSvg({ id: 'node-000040', name: '', type: 'host', shape: 'square', x: 0, y: 0, span: { cols: 2, rows: 1 }, content: [
 		{ at: [0, 0], content: 'text', value: 'Save', outline: true, action: 'diagram-new' },
 		{ at: [1, 0], content: 'text', value: 'x' }
-	] }] }).scene[0];
-	const svg = renderElement(el);
+	] });
 	assert.match(svg, /<rect class="clickable" data-action="diagram-new"[^>]*fill="transparent"\/>/);
 	assert.equal((svg.match(/class="clickable"/g) || []).length, 1, 'only the region with an action is clickable');
 	const base = { id: 'node-000041', name: 'p', type: 'host', shape: 'square', x: 0, y: 0 };
@@ -204,11 +202,10 @@ test('W5: the control-bar buttons carry actions and the document stays valid', (
 // =====================================================================================================
 
 test('W6: an input region renders a data-input hit rect (with its index); validation gates input', () => {
-	const el = resolve({ entities: [{ id: 'node-000050', kind: 'node', cell: [0, 0], span: { cols: [0, 2], rows: [0, 0] }, content: [
+	const svg = renderNodeSvg({ id: 'node-000050', name: '', type: 'host', shape: 'square', x: 0, y: 0, span: { cols: 3, rows: 1 }, content: [
 		{ at: [0, 0], content: 'text', value: 'name', align: 'left' },
 		{ at: [1, 0], cols: 2, content: 'text', value: 'v', outline: true, input: true }
-	] }] }).scene[0];
-	const svg = renderElement(el);
+	] });
 	assert.match(svg, /<rect class="clickable" data-input="" data-idx="1"[^>]*fill="transparent"\/>/);
 	const base = { id: 'node-000051', name: 'p', type: 'host', shape: 'square', x: 0, y: 0 };
 	assert.equal(validateEntity('node', { ...base, content: [{ content: 'text', value: 'x', input: true }] }), null);
@@ -243,16 +240,16 @@ test('W6: the control-bar input values are editable (input:true)', () => {
 
 test('a panel\'s corner follows shape (circle→rx=frame.ext, square→rx=frame.r); plain / span-glyph unchanged', () => {
 	const fe = L_STD.frame.ext, fr = L_STD.frame.r;
-	const c1 = renderElement(resolve({ entities: [{ id: 'node-00d101', kind: 'node', cell: [0, 0], content: [{ content: 'text', value: 'x' }] }] }).scene[0]);
-	assert.match(c1, new RegExp(`<rect class="frame" x="-20" y="-20" width="40" height="40" rx="${fe}"`), 'a circle (default) 1×1 panel = a 40×40 rect rx=20 (== the circle)');
-	const cSq = renderElement(resolve({ entities: [{ id: 'node-00d501', kind: 'node', cell: [0, 0], frame: 'square', content: [{ content: 'text', value: 'x' }] }] }).scene[0]);
-	assert.match(cSq, new RegExp(`<rect class="frame"[^>]*rx="${fr}"`), 'a SQUARE panel drops to rx=frame.r (5) — what "s" toggles to');
-	const c2 = renderElement(resolve({ entities: [{ id: 'node-00d201', kind: 'node', cell: [0, 0], span: { cols: [0, 2], rows: [0, 1] }, content: [{ content: 'text', value: 'x' }] }] }).scene[0]);
-	assert.match(c2, new RegExp(`<rect class="frame"[^>]*rx="${fe}"`), 'a multi-cell circle panel rounds to rx=20');
-	const spanGlyph = renderElement(resolve({ entities: [{ id: 'node-00d301', kind: 'node', cell: [0, 0], span: { cols: [0, 2], rows: [0, 0] }, glyph: 'router' }] }).scene[0]);
-	assert.match(spanGlyph, new RegExp(`<rect class="frame"[^>]*rx="${fr}"`), 'a span node with no content keeps rx=frame.r');
-	const plain = renderElement(resolve({ entities: [{ id: 'node-00d401', kind: 'node', cell: [0, 0], glyph: 'router' }] }).scene[0]);
-	assert.ok(plain.includes('<use href="#m-circle"/>') && !plain.includes('<rect class="frame"'), 'a 1×1 plain node uses the frame def');
+	const c1 = renderNodeSvg({ id: 'node-00d101', name: '', type: 'host', shape: 'circle', x: 0, y: 0, content: [{ content: 'text', value: 'x' }] });
+	assert.match(c1, new RegExp(`<rect [^>]*class="frame" x="-20" y="-20" width="40" height="40" rx="${fe}"`), 'a circle (default) 1×1 panel = a 40×40 rect rx=20 (== the circle)');
+	const cSq = renderNodeSvg({ id: 'node-00d501', name: '', type: 'host', shape: 'square', x: 0, y: 0, content: [{ content: 'text', value: 'x' }] });
+	assert.match(cSq, new RegExp(`<rect [^>]*class="frame"[^>]*rx="${fr}"`), 'a SQUARE panel drops to rx=frame.r (5) — what "s" toggles to');
+	const c2 = renderNodeSvg({ id: 'node-00d201', name: '', type: 'host', shape: 'circle', x: 0, y: 0, span: { cols: 3, rows: 2 }, content: [{ content: 'text', value: 'x' }] });
+	assert.match(c2, new RegExp(`<rect [^>]*class="frame"[^>]*rx="${fe}"`), 'a multi-cell circle panel rounds to rx=20');
+	const spanGlyph = renderNodeSvg({ id: 'node-00d301', name: '', type: 'router', shape: 'circle', x: 0, y: 0, span: { cols: 3, rows: 1 } });
+	assert.match(spanGlyph, new RegExp(`<rect [^>]*class="frame"[^>]*rx="${fr}"`), 'a span node with no content keeps rx=frame.r');
+	const plain = renderNodeSvg({ id: 'node-00d401', name: '', type: 'router', shape: 'circle', x: 0, y: 0 });
+	assert.ok(plain.includes('href="#m-circle"') && !plain.includes('class="frame"'), 'a 1×1 plain node uses the frame def');
 });
 
 test('reshapeNodes toggles node frame shape (circle<->square), undoable-shaped, skips non-nodes', () => {
@@ -270,16 +267,16 @@ test('reshapeNodes toggles node frame shape (circle<->square), undoable-shaped, 
 });
 
 test('span-aware group hull: the hull encloses a multi-cell member\'s full footprint (not just its anchor)', () => {
-	const sch = { entities: [
-		{ id: 'node-0000a1', kind: 'node', cell: [0, 0] },
-		{ id: 'node-0000a2', kind: 'node', cell: [3, 0], span: { cols: [3, 5], rows: [0, 1] } },   // 3×2 footprint to cell (5,1)
-		{ id: 'group-0000c1', kind: 'group', members: ['node-0000a1', 'node-0000a2'] }
-	] };
-	const g = resolve(sch).scene.find((e) => e.kind === 'group');
+	const svg = renderNodesSvg([
+		{ id: 'node-0000a1', name: 'a', type: 'host', shape: 'square', x: 0, y: 0 },
+		{ id: 'node-0000a2', name: 'b', type: 'host', shape: 'square', x: 3 * P, y: 0, span: { cols: 3, rows: 2 } },
+	], { groups: [{ id: 'group-0000c1', name: 'g', members: ['node-0000a1', 'node-0000a2'] }] });
+	const m = svg.match(/<rect class="group-hull"[^>]*x="([-\d.]+)" y="([-\d.]+)" width="([\d.]+)" height="([\d.]+)"/);
+	const [, x, y, w, h] = m.map(Number);
 	const ge = L_STD.group.ext;
-	assert.ok(g.x + g.w >= 5 * P + ge, 'right edge covers the span member’s far cell (300 + ext)');
-	assert.ok(g.y + g.h >= 1 * P + ge, 'bottom edge covers the span member’s far row (60 + ext)');
-	assert.ok(g.x + g.w > 3 * P + ge + 1, 'the hull reaches past the old anchor-only edge (180 + ext)');
+	assert.ok(x + w >= 5 * P + ge, 'right edge covers the span member’s far cell (300 + ext)');
+	assert.ok(y + h >= 1 * P + ge, 'bottom edge covers the span member’s far row (60 + ext)');
+	assert.ok(x + w > 3 * P + ge + 1, 'the hull reaches past the old anchor-only edge (180 + ext)');
 });
 
 test('A1: makeTextBox builds a valid text-box node (span + a single text region); renders via W1/W2', () => {
@@ -291,24 +288,25 @@ test('A1: makeTextBox builds a valid text-box node (span + a single text region)
 	assert.deepEqual(tb.content[0].at, [0, 0]);
 	assert.equal(tb.content[0].cols, 3);
 	assert.equal(validateEntity('node', tb), null, 'a text box passes the server gate (no new validator needed)');
-	const el = resolve(docToSchema({ nodes: [tb] })).scene[0];   // production render path
-	assert.equal(el.spanW, 2 * P, 'a 3-cell-wide footprint');
-	assert.ok(el.content && el.content.length === 1, 'the text region carries through to the kernel');
+	const svg = renderNodeSvg({ ...tb, content: [{ ...tb.content[0], value: 'hello' }] });
+	assert.match(svg, /data-span="3x2".*<rect [^>]*class="frame" x="-20" y="-20" width="160" height="100"/, 'a 3-cell-wide footprint');
+	assert.ok(svg.includes('>hello<'), 'the text region renders through the production path');
 });
 
 test('renderContentRegion escapes text and wraps a multi-row region into a paragraph', () => {
-	assert.ok(renderContentRegion({ content: 'text', value: '<b>&x' }).includes('&lt;b&gt;&amp;x'), 'XSS-safe text');
-	const single = renderContentRegion({ at: [0, 0], cols: 1, rows: 1, content: 'text', value: 'hi', align: 'left' });
+	const regionSvg = (r) => renderNodeSvg({ id: 'node-000090', name: '', type: 'text', shape: 'square', x: 0, y: 0, span: { cols: 3, rows: 3 }, content: [r] });
+	assert.ok(regionSvg({ content: 'text', value: '<b>&x' }).includes('&lt;b&gt;&amp;x'), 'XSS-safe text');
+	const single = regionSvg({ at: [0, 0], cols: 1, rows: 1, content: 'text', value: 'hi', align: 'left' });
 	assert.match(single, /text-anchor="start"/);
 	assert.equal((single.match(/<text/g) || []).length, 1, 'single row ⇒ one line');
-	const para = renderContentRegion({ at: [0, 0], cols: 2, rows: 2, content: 'text', value: 'one two three four five six seven' });
+	const para = regionSvg({ at: [0, 0], cols: 2, rows: 2, content: 'text', value: 'one two three four five six seven' });
 	assert.ok((para.match(/<text/g) || []).length >= 2, 'multi-row ⇒ wraps into multiple lines');
 });
 
 test('docToSchema/schemaToDoc round-trip content regions (node-local, unchanged)', () => {
 	const content = [{ at: [0, 0], cols: 1, rows: 1, content: 'text', value: 'name', align: 'left' }, { at: [1, 0], cols: 3, rows: 1, content: 'text', value: 'r1', outline: true }];
-	const doc = { nodes: [{ id: 'node-000022', name: 'p', type: 'host', shape: 'square', x: 0, y: 0, span: { cols: 4, rows: 1 }, content }] };
-	const back = schemaToDoc(docToSchema(doc));
+	const doc = { meta: { id: '0000000000000001', name: 'd' }, nodes: [{ id: 'node-000022', name: 'p', type: 'host', shape: 'square', x: 0, y: 0, span: { cols: 4, rows: 1 }, content }], links: [], zones: [], groups: [] };
+	const back = readModel(doc, COMPOSED_KINDS).toJSON();
 	assert.deepEqual(back.nodes[0].content, content);
 });
 
@@ -346,11 +344,10 @@ test('W3: the control bar is ONE panel + content regions, rendered by the real k
 	assert.equal(bar.content.length, 11, 'the 11 #menu controls as content regions');
 	assert.equal(validateEntity('node', bar), null, 'the bar node passes the server gate');
 	assert.equal(validateDoc(doc), null, 'the whole control-bar document is valid (real, persistable)');
-	// production render path: document → docToSchema → kernel
-	const barEl = resolve(docToSchema(doc)).scene.find((e) => e.id === 'node-ba0001');
-	assert.equal(barEl.spanW, 23 * P, '24-cell wide footprint');
-	const svg = renderElement(barEl);
-	assert.match(svg, /<rect class="frame" x="-20" y="-20" width="1420"/);   // 24 cols: 23·60 + 40
+	// production render path: server/svg.mjs svgDocument
+	const svg = groupSvg(svgDocument(doc).split('</defs>').pop(), 'node-ba0001');
+	assert.match(svg, /data-span="24x1"/, '24-cell wide footprint');
+	assert.match(svg, /<rect [^>]*class="frame" x="-20" y="-20" width="1420"/);   // 24 cols: 23·60 + 40
 	for (const v of ['draw', 'scene-1', 'open ▾', 'slides', 'online']) assert.ok(svg.includes('>' + v + '<'), `renders "${v}"`);
 	assert.match(svg, /rx="13"/);                          // the status pill
 	assert.match(svg, /fill="#aed581"/);                  // brand text / pill fill
@@ -370,45 +367,21 @@ name collision in the system (HIERARCHY §0, connection taxonomy).
 
 This asserts the property rather than the absence, so a NEW dead kind fails the same way.
 */
+// RESTATED at H25.5 (B378, D4): with the old scene renderer retired, the kernel's renderer and geometry modules branch on no
+// element `kind` at all -- each plugin's painter draws its own kind
 test('B38: every element kind the kernel handles is a kind resolve() can emit', () => {
-	// the kernel renderer is two files since K11 (frame primitives, and the SVG scene); the rule checker was deleted at K12
-	const src = fs.readFileSync('kernel/renderer.mjs', 'utf8') + fs.readFileSync('kernel/svg-scene.mjs', 'utf8');
-	const handled = new Set([...src.matchAll(/kind === '(\w+)'/g)].map((m) => m[1]));
-
-	// What the engine can actually PUT IN A SCENE — read from what resolve() imports from geometry,
-	// not from which constructors happen to exist. The distinction is the whole point: a dead
-	// constructor still declares its kind, so testing against geometry.mjs would have passed while
-	// the dead kind sat there. Measured from the importer, the only thing that can emit.
-	const eng = fs.readFileSync('kernel/engine.mjs', 'utf8');
-	// K13a: the core elements come from geometry, the network's (waypoint, path) from its appearance -- network/ since V-a
-	const imported = [...eng.matchAll(/import \{([^}]*)\} from '(?:\.\/geometry|\.\.\/network\/appearance)\.mjs'/g)].map((m) => m[1]).join(',');
-	const constructible = new Set(imported.split(',').map((n) => n.trim()).filter(Boolean));
-
-	/*
-	Two kinds are handled without being emitted by resolve(), and both are DECLARED, not dead:
-	`port` and `junction` are `[LOCKED]` in docs/spec/ATOMICS.md (the 10px port, the junction pad,
-	parallel-link capacity) and are anchors under the ratified taxonomy. The connection grammar that
-	places them is the next design arc; the renderer and GRC already know how to draw and check them.
-	Deleting them would delete locked design work, which is a different act from deleting dead code.
-
-	`link` was neither: a straight connection IS a two-point path, so it was superseded rather than
-	pending, and it forced `wire` to exist purely to unify a live kind with a dead one.
-	*/
-	const DECLARED = new Set(['port', 'junction']);
-	const dead = [...handled].filter((k) => !constructible.has(k) && !DECLARED.has(k));
-	assert.deepEqual(dead, [], `the kernel handles element kinds nothing can construct: ${dead.join(', ')}`);
+	const src = fs.readFileSync('kernel/renderer.mjs', 'utf8') + fs.readFileSync('kernel/geometry.mjs', 'utf8');
+	const handled = [...src.matchAll(/kind === '(\w+)'/g)].map((m) => m[1]);
+	assert.deepEqual(handled, [], 'the kernel branches on no element kind');
 });
 
 test('B38: a straight connection is a two-point path — no separate element kind needed', () => {
-	const sch = { entities: [
-		{ id: 'node-000001', kind: 'node', cell: [0, 0] },
-		{ id: 'node-000002', kind: 'node', cell: [2, 0] },
-	], relations: [{ id: 'link-000001', name: 'link-000001', route: { src: 'node-000001', dst: 'node-000002' } }] };
-	const { scene } = resolve(sch);
-	const wires = scene.filter((e) => e.kind === 'path');
-	assert.equal(wires.length, 1);
-	assert.equal(wires[0].pts.length, 2, 'straight: two anchors, no bends');
-	assert.equal(scene.some((e) => e.kind === 'link'), false, 'and no `link` element is produced');
+	const svg = renderNodesSvg([
+		{ id: 'node-000001', name: 'a', type: 'host', shape: 'circle', x: 0, y: 0 },
+		{ id: 'node-000002', name: 'b', type: 'host', shape: 'circle', x: 2 * P, y: 0 },
+	], { links: [{ id: 'link-000001', name: 'l', src: 'node-000001', dst: 'node-000002' }] });
+	assert.match(svg, /<g id="link-000001"><path d="M0 0 L120 0" class="link"/, 'straight: a two-point path');
+	assert.doesNotMatch(svg, /<line\b/, 'and no separate line element');
 });
 
 /*
@@ -442,10 +415,16 @@ test('W4: isPanel, frameRadius and showsSockets are the single home of each deci
 });
 
 test('W4: both node shapes obey showsSockets, which is what drifted', () => {
-	const mk = (extra) => resolve({ entities: [{ id: 'node-000032', kind: 'node', cell: [0, 0], glyph: 'router', ...extra }] }).scene[0];
-	for (const [what, el] of [['plain', mk({})], ['panel', mk({ content: [{ content: 'text', value: 'x' }] })]]) {
-		assert.equal(/class="socket"/.test(renderElement(el)), false, `${what}: none by default`);
-		assert.equal(/class="socket"/.test(renderElement(el, STD, L_STD, { sockets: true })), true, `${what}: shown when asked`);
+	const mk = (extra) => ({ id: 'node-000032', name: '', type: 'router', shape: 'circle', x: 0, y: 0, ...extra });
+	for (const [what, node] of [['plain', mk({})], ['panel', mk({ content: [{ content: 'text', value: 'x' }] })]]) {
+		assert.equal(/class="socket"/.test(renderNodeSvg(node)), false, `${what}: none by default`);
+		const { svg, restore } = makeRenderer();
+		try {
+			const m = new Model(), r = new Renderer(m, svg, { parts: PRODUCT_CANVAS });
+			r.setMode('edit');
+			m.put('node', node);
+			assert.equal(svg.byId['#nodes'].children.find((g) => g.attrs.id === 'node-000032').children.some((c) => c.attrs.class === 'socket'), true, `${what}: shown when asked`);
+		} finally { restore(); }
 	}
 });
 
@@ -462,30 +441,26 @@ Nothing is stored. Closing a path changes how its corners draw because a ring HA
 falls out of the derivation rather than out of a rewrite.
 */
 test('B162: the kernel derives bend from endpoint, and closing a path flips it', async () => {
-	const { render } = await import('../kernel/svg-scene.mjs');
-	const { docToSchema } = await import('../kernel/adapt.mjs');
 	const doc = (closed) => ({
 		meta: { id: '0000000000aa0001', name: 't' },
 		nodes: [{ id: 'node-aa0001', type: 'host', x: 0, y: 0, name: 'a' }, { id: 'node-ea0001', name: 'node-ea0001', x: 120, y: 0 }, { id: 'node-ea0002', name: 'node-ea0002', x: 60, y: 60 }],
 		links: [{ id: 'link-aa0001', name: 'link-aa0001', src: 'node-aa0001', dst: 'node-ea0001', via: ['node-ea0002'], closed }],
 		zones: [], groups: [],
 	});
-	const roles = (d) => [...render(docToSchema(d)).matchAll(/class="waypoint (\w+)"/g)].map((m) => m[1]);
+	const roles = (d) => [...svgDocument(d).matchAll(/class="waypoint (\w+)"/g)].map((m) => m[1]);
 
 	assert.deepEqual(roles(doc(false)), ['endpoint', 'bend'], 'a terminal is an endpoint, a via is a bend');
 	assert.deepEqual(roles(doc(true)), ['bend', 'bend'], 'and a RING has no ends — both are corners');
 });
 
 test('B199: every waypoint draws the anchor, and an endpoint adds a pad inside it', async () => {
-	const { render } = await import('../kernel/svg-scene.mjs');
-	const { docToSchema } = await import('../kernel/adapt.mjs');
 	const { waypointStyle } = await import('../network/appearance.mjs');
-	const svg = render(docToSchema({
+	const svg = svgDocument({
 		meta: { id: '0000000000aa0001', name: 't' },
 		nodes: [{ id: 'node-aa0001', type: 'host', x: 0, y: 0, name: 'a' }, { id: 'node-ea0001', name: 'node-ea0001', x: 120, y: 0 }, { id: 'node-ea0002', name: 'node-ea0002', x: 60, y: 60 }],
 		links: [{ id: 'link-aa0001', name: 'link-aa0001', src: 'node-aa0001', dst: 'node-ea0001', via: ['node-ea0002'] }],
 		zones: [], groups: [],
-	}));
+	});
 	/*
 	AMENDED 2026-10-04 (R-c, H18.21; H2 refined): the export draws the RUN PICTURE, which leaves out the anchor ring and a bend's
 	dot (kernel RUN_PICTURE). So the export is held to that, and the whole composition -- what the canvas draws while
@@ -562,7 +537,9 @@ test('B162: one rule, consumed by the client renderer and the kernel alike', asy
 	*/
 	// RESTATED at C-a (H19.29, D3): the anchor's drawing is the plugins' appearances now -- the network's marks, the devices plugin's device
 	const client = fs.readFileSync(new URL('../network/anchor-appearance.mjs', import.meta.url), 'utf8');
-	const engine = fs.readFileSync(new URL('../kernel/engine.mjs', import.meta.url), 'utf8');
+	// RESTATED at H25.5 (B378, D4): the export drives the real Renderer over the same parts (server/svg.mjs), and waypointRolesIn
+	// in network/roles.mjs delegates to waypointRoles
+	const rolesMod = fs.readFileSync(new URL('../network/roles.mjs', import.meta.url), 'utf8');
 
 	/*
 	B166 settled the vocabulary this used to need translating.
@@ -578,14 +555,14 @@ test('B162: one rule, consumed by the client renderer and the kernel alike', asy
 	*/
 	// B277: the live renderer asks through `waypointRolesIn`, the same rule handed its model, so the anchor's transit is read
 	assert.match(client, /waypointRolesIn\(/, 'the live renderer asks for the role SET (B209), in its model (B277)');
-	assert.match(engine, /waypointRoles\(/, 'as does the kernel');
+	assert.match(rolesMod, /waypointRoles\(/, 'which delegates to waypointRoles');
 
 	// B166 -- a model link is accepted by the rule DIRECTLY, with nothing translating on the way
 	assert.equal(waypointRole('w1', [{ src: 'w1', dst: 'w2', via: ['w3'], closed: false }]), 'endpoint');
 	assert.equal(waypointRole('w1', [{ src: 'w1', dst: 'w2', via: ['w3'], closed: true }]), 'bend', 'a ring still has no ends');
 
 	// and no translation may reappear anywhere -- this is the whole point of the unification
-	for (const [label, src] of [['renderer', client], ['kernel engine', engine]]) {
+	for (const [label, src] of [['renderer', client], ['network roles', rolesMod]]) {
 		assert.doesNotMatch(src, /from:\s*\w+\.src/, `${label} must not re-introduce the mapping`);
 	}
 });
@@ -620,15 +597,13 @@ test('B162/B218: create, update AND delete refresh a link\'s waypoints', () => {
 });
 
 test('B162: an endpoint is opaque so the path terminates on it, a bend stays hollow', async () => {
-	const { render } = await import('../kernel/svg-scene.mjs');
-	const { docToSchema } = await import('../kernel/adapt.mjs');
 	const { waypointAnchor, waypointStyle } = await import('../network/appearance.mjs');
-	const svg = render(docToSchema({
+	const svg = svgDocument({
 		meta: { id: '0000000000aa0001', name: 't' },
 		nodes: [{ id: 'node-aa0001', type: 'host', x: -240, y: 0, name: 'a' }, { id: 'node-ea0001', name: 'node-ea0001', x: 120, y: 0 }, { id: 'node-ea0002', name: 'node-ea0002', x: 0, y: -120 }],
 		links: [{ id: 'link-aa0001', name: 'link-aa0001', src: 'node-aa0001', dst: 'node-ea0001', via: ['node-ea0002'] }],
 		zones: [], groups: [],
-	}));
+	});
 	/*
 	B199 -- read the LAST ring in the group, not the first. Every waypoint now opens with the anchor,
 	which is hollow by definition, so matching the first circle reported `none` for both roles and
@@ -698,9 +673,8 @@ test('B162: the waypoint style has one owner, and neither renderer restates it',
 	behavioural test in this file -- both would be correct on the day it was written -- and then
 	drift the first time one side changed.
 	*/
-	// K11: the kernel's waypoint drawing is in the SVG scene half (kernel/svg-scene.mjs)
-	// RESTATED at C-a (H19.29, D3): the anchor's drawing is the plugins' appearances now -- the network's marks, the devices plugin's device
-	for (const f of ['../network/anchor-appearance.mjs', '../kernel/svg-scene.mjs']) {
+	// RESTATED at H25.5 (B378, D4): both the canvas and the export draw through network/anchor-appearance.mjs
+	for (const f of ['../network/anchor-appearance.mjs']) {
 		const src = fs.readFileSync(new URL(f, import.meta.url), 'utf8');
 		assert.match(src, /waypointLayers\(/, `${f} must ASK for the layer list (B209), not restate which role draws what`);
 		assert.doesNotMatch(src, /endpoint\s*\?\s*5\s*:\s*1\.6/, `${f} restates the stroke weight`);
@@ -710,16 +684,14 @@ test('B162: the waypoint style has one owner, and neither renderer restates it',
 });
 
 test('B162: the two renderers agree, value for value', async () => {
-	const { render } = await import('../kernel/svg-scene.mjs');
-	const { docToSchema } = await import('../kernel/adapt.mjs');
 	const { waypointAnchor, waypointStyle } = await import('../network/appearance.mjs');
 	// what the export emits, parsed back out of the SVG it produced
-	const svg = render(docToSchema({
+	const svg = svgDocument({
 		meta: { id: '0000000000aa0001', name: 't' },
 		nodes: [{ id: 'node-aa0001', type: 'host', x: -240, y: 0, name: 'a' }, { id: 'node-ea0001', name: 'node-ea0001', x: 120, y: 0 }, { id: 'node-ea0002', name: 'node-ea0002', x: 0, y: -120 }],
 		links: [{ id: 'link-aa0001', name: 'link-aa0001', src: 'node-aa0001', dst: 'node-ea0001', via: ['node-ea0002'] }],
 		zones: [], groups: [],
-	}));
+	}).split('</defs>').pop();
 	/*
 	B199 -- the SUB-TYPE layer is the last ring in the group, because the anchor is drawn first for
 	every role. Matching the first circle compared the export's anchor against the kernel's endpoint
@@ -819,12 +791,12 @@ test('B200: the node grid and the waypoint centre are one dot, from one source',
 	const main = fs.readFileSync(new URL('../layouts/layout-canvas.mjs', import.meta.url), 'utf8');
 	// RESTATED at C-a (H19.29, D3): the anchor's drawing is the plugins' appearances now -- the network's marks, the devices plugin's device
 	const renderer = fs.readFileSync(new URL('../network/anchor-appearance.mjs', import.meta.url), 'utf8');
-	const kernelRenderer = (fs.readFileSync(new URL('../kernel/renderer.mjs', import.meta.url), 'utf8') + fs.readFileSync(new URL('../kernel/svg-scene.mjs', import.meta.url), 'utf8'));
+	// RESTATED at H25.5 (B378, D4): server/svg.mjs drives the real Renderer over PRODUCT_CANVAS, which includes network/anchor-appearance.mjs
+	const exportDoor = fs.readFileSync(new URL('../server/svg.mjs', import.meta.url), 'utf8');
 
 	assert.match(main, /gridDot\(\)\.radius/, 'the node grid must draw the kernel dot, not a literal of its own');
-	// B209 -- both renderers get the dot through the layer list; the kernel sources it from gridDot
 	assert.match(renderer, /waypointLayers\(/, 'the waypoint centre comes from the kernel layer list');
-	assert.match(kernelRenderer, /waypointLayers\(/, 'the SVG export must use the same list, or it diverges from the canvas');
+	assert.match(exportDoor, /new Renderer\(model, svg, \{ parts: PRODUCT_CANVAS \}\)/, 'the SVG export drives the same Renderer and parts');
 
 	/*
 	B224 -- THE GUARD NAMED THREE FILES, AND A FOURTH WAS ADDED.
@@ -870,8 +842,6 @@ relaxed the validator; without this the feature is still undrawable.
 */
 test('B209: each role combination draws its own layers, in both renderers', async () => {
 	const { waypointLayers } = await import('../network/appearance.mjs');
-	const { render } = await import('../kernel/svg-scene.mjs');
-	const { docToSchema } = await import('../kernel/adapt.mjs');
 
 	const cases = [
 		['bend', [], ['wp-anchor', 'wp-dot']],
@@ -905,7 +875,7 @@ test('B209: each role combination draws its own layers, in both renderers', asyn
 	});
 	const bend = [{ id: 'link-aa0001', name: 'l', src: 'node-aa0001', dst: 'node-aa0002', via: ['node-ea0001'] }];
 	const drawn = (links) => {
-		const m = render(docToSchema(doc(links))).match(/<g class="waypoint ([^"]*)">(.*?)<\/g>/s);
+		const m = svgDocument(doc(links)).match(/<g class="waypoint ([^"]*)">(.*?)<\/g>/s);
 		return { cls: m[1], circles: (m[2].match(/<circle/g) || []).length };
 	};
 
@@ -989,8 +959,6 @@ at is opaque, and a circle a line passes through is not.
 */
 test('B212: the junction ring masks what is behind it, as the endpoint pad does', async () => {
 	const { waypointLayers } = await import('../network/appearance.mjs');
-	const { render } = await import('../kernel/svg-scene.mjs');
-	const { docToSchema } = await import('../kernel/adapt.mjs');
 
 	const fillOf = (roles, cls) => waypointLayers(roles, 20).find((l) => l.cls === cls).fill;
 
@@ -1007,14 +975,14 @@ test('B212: the junction ring masks what is behind it, as the endpoint pad does'
 	assert.equal(fillOf([], 'wp-anchor'), 'none', 'the anchor is hollow: a bend shows the path turning through it');
 
 	// emitted, not just computed
-	const svg = render(docToSchema({
+	const svg = svgDocument({
 		meta: { id: '0000000000aa0001', name: 't' },
 		nodes: [{ id: 'node-aa0001', type: 'host', x: -120, y: 0, name: 'a' }, { id: 'node-aa0002', type: 'host', x: 120, y: 0, name: 'b' }, { id: 'node-ea0001', name: 'w', x: 0, y: 0 }],
 		links: [{ id: 'link-aa0001', name: 'l', src: 'node-aa0001', dst: 'node-ea0001' },
 			{ id: 'link-aa0002', name: 'm', src: 'node-ea0001', dst: 'node-aa0002' },
 			{ id: 'link-aa0003', name: 'n', src: 'node-aa0002', dst: 'node-ea0001' }],
 		zones: [], groups: [],
-	}));
+	});
 	const ring = svg.match(/class="waypoint junction">.*?<circle[^>]*r="7"[^>]*fill="([^"]*)"/s);
 	assert.ok(ring, 'the junction ring is drawn');
 	assert.notEqual(ring[1], 'none', 'and it is emitted opaque, not merely computed so');
@@ -1033,8 +1001,6 @@ export can emit. An undeclared link has no head, because it asserts nothing.
 test('H15.6: the arrowhead follows the declaration, from one source', async () => {
 	const { linkFacing } = await import('../network/roles.mjs');
 	const { linkMarker } = await import('../network/appearance.mjs');
-	const { render } = await import('../kernel/svg-scene.mjs');
-	const { docToSchema, schemaToDoc } = await import('../kernel/adapt.mjs');
 
 	assert.equal(linkMarker({ id: 'l', src: 'a', dst: 'b' }), null,
 		'an undeclared link carries no head -- it asserts no direction to point');
@@ -1063,11 +1029,9 @@ test('H15.6: the arrowhead follows the declaration, from one source', async () =
 	disagree. The pipeline enforces that more strongly than a call check did, because there is now
 	one answer rather than two call sites that happen to ask the same thing.
 	*/
-	const kernelRenderer = (fs.readFileSync(new URL('../kernel/renderer.mjs', import.meta.url), 'utf8') + fs.readFileSync(new URL('../kernel/svg-scene.mjs', import.meta.url), 'utf8'));
-	assert.match(kernelRenderer, /linkAppearance\(/, 'the SVG export must derive appearance in one call');
-	// RESTATED at C-a step four (H19.29): the link is drawn by the network's painter now (network/link-painter.mjs)
+	// RESTATED at H25.5 (B378, D4): both the canvas and the export draw links through network/link-painter.mjs
 	const clientRenderer = fs.readFileSync(new URL('../network/link-painter.mjs', import.meta.url), 'utf8');
-	assert.match(clientRenderer, /linkAppearance\(/, 'and so must the canvas');
+	assert.match(clientRenderer, /linkAppearance\(/, 'the link painter derives appearance in one call');
 
 	/*
 	AND IT MUST SURVIVE EVERY DOOR TO THE EXPORT, which is where this first shipped broken.
@@ -1090,7 +1054,6 @@ test('H15.6: the arrowhead follows the declaration, from one source', async () =
 	the declaration reaches the exported picture, at the end the flow arrives at, and an undeclared link exports no head.
 	kernel/svg-scene.mjs, the declarative scene the tests render, draws no head at all, and is no longer asked.
 	*/
-	const { svgDocument } = await import('../server/svg.mjs');
 	const { heldLayouts } = await import('./fixtures/composed.mjs');
 	const { pipeEntity } = await import('../network/pipe-kind.mjs');
 	const exportOf = (direction) => {
@@ -1104,9 +1067,9 @@ test('H15.6: the arrowhead follows the declaration, from one source', async () =
 	assert.ok(headTipX(exportOf('reverse')) < -30, 'and a reversed one must point the other way, at the src end (x -60)');
 	assert.doesNotMatch(exportOf(undefined), /class="link-head"/, 'an undeclared link must export no head at all');
 
-	// the round trip too: what the adapter carries out, it must carry back
-	const back = schemaToDoc(docToSchema(mk('reverse')));
-	assert.equal(back.links[0].direction, 'reverse', 'the adapter must not lose the declaration in either direction');
+	// RESTATED at H25.5 (B378, D4): readModel carries the direction field unchanged
+	const back = readModel({ meta: { id: '0000000000aa0001', name: 'h' }, ...mk('reverse') }, COMPOSED_KINDS).toJSON();
+	assert.equal(back.links[0].direction, 'reverse', 'readModel must not lose the declaration');
 });
 
 /*
@@ -1121,12 +1084,13 @@ that failed rather than trusted because the code looks right.
 */
 test('H15.15: a control link exports dashed, round-trips, and survives an update', async () => {
 	const { linkDash, linkWidth } = await import('../network/appearance.mjs');
-	const { render } = await import('../kernel/svg-scene.mjs');
-	const { docToSchema, schemaToDoc } = await import('../kernel/adapt.mjs');
+	const { pipeEntity } = await import('../network/pipe-kind.mjs');
 	const mk = (control) => ({
+		meta: { id: '0000000000aa0001', name: 'd' },
 		nodes: [{ id: 'node-aa0001', name: 'a', type: 'host', x: -60, y: 0 }, { id: 'node-aa0002', name: 'b', type: 'host', x: 60, y: 0 }],
 		zones: [], groups: [],
 		links: [{ id: 'link-aa0001', name: 'l', src: 'node-aa0001', dst: 'node-aa0002', ...(control ? { control: true } : {}) }],
+		pipes: [pipeEntity('node-aa0001', 'node-aa0002', 'link')],
 	});
 
 	/*
@@ -1136,16 +1100,16 @@ test('H15.15: a control link exports dashed, round-trips, and survives an update
 	*/
 	const ctrlW = linkWidth({ id: 'l', control: true });
 	const pattern = linkDash({ id: 'l', control: true }, ctrlW);
-	assert.match(render(docToSchema(mk(true))), new RegExp(`stroke-dasharray="${pattern}"`),
+	assert.match(svgDocument(mk(true)).split('</defs>').pop(), new RegExp(`stroke-dasharray="${pattern}"`),
 		'a control link must reach the exported path dashed, at the pattern its own width derives');
 	assert.notEqual(pattern.split(' ')[0], pattern.split(' ')[1],
 		'the dash is LONGER than the gap -- equal parts read as a row of squares rather than a dashed line');
-	assert.match(render(docToSchema(mk(true))), new RegExp(`stroke-width="${ctrlW}"`),
+	assert.match(svgDocument(mk(true)).split('</defs>').pop(), new RegExp(`stroke-width="${ctrlW}"`),
 		'and thinner than a data link, by the same rule the canvas reads');
-	assert.doesNotMatch(render(docToSchema(mk(false))), /stroke-dasharray/,
+	assert.doesNotMatch(svgDocument(mk(false)).split('</defs>').pop(), /stroke-dasharray/,
 		'and an ordinary data link must carry no dash attribute at all');
-	assert.equal(schemaToDoc(docToSchema(mk(true))).links[0].control, true,
-		'the adapter must not lose the plane in either direction -- that was B225');
+	assert.equal(readModel(mk(true), COMPOSED_KINDS).toJSON().links[0].control, true,
+		'readModel must not lose the plane -- that was B225');
 
 	// the dash is DERIVED, by one rule, and scales with the stroke rather than carrying its own number
 	/*
@@ -1178,10 +1142,7 @@ test('H15.15: a control link exports dashed, round-trips, and survives an update
 	create uses, over the DECLARED key set, so a key a previous state set is removed rather than
 	stranded. That is B228's property, now enforced by the key set instead of by remembering.
 	*/
-	const kernelRenderer = (fs.readFileSync(new URL('../kernel/renderer.mjs', import.meta.url), 'utf8') + fs.readFileSync(new URL('../kernel/svg-scene.mjs', import.meta.url), 'utf8'));
-	assert.match(kernelRenderer, /linkAppearance\(/, 'the SVG export must derive appearance in one call');
-	// RESTATED at C-a step four (H19.29): the link is drawn by the network's painter now (network/link-painter.mjs): create and update both call one
-	// assembly, `lookOf`, which is the one derivation fed the down state -- the property this held of the renderer's two branches
+	// RESTATED at C-a step four (H19.29) and H25.5 (B378, D4): both the canvas and the export draw links through network/link-painter.mjs
 	const clientRenderer = fs.readFileSync(new URL('../network/link-painter.mjs', import.meta.url), 'utf8');
 	const updateBranch = clientRenderer.slice(clientRenderer.indexOf('\tupdate(link, dom'));
 	// RESTATED 2026-10-16 (H24.6): the assembly is fed whether the link carries a head, and both branches derive the head the same way
@@ -1250,8 +1211,6 @@ not pixels or points. A stroke stays proportional to the drawing under zoom, whi
 test('H15.18: a text panel has a 1-unit frame and 13-unit text, from one source', async () => {
 	const { frameWidth } = await import('../devices/device-types.mjs');
 	const { STD } = await import('../kernel/spec.mjs');
-	const { render } = await import('../kernel/svg-scene.mjs');
-	const { docToSchema } = await import('../kernel/adapt.mjs');
 
 	const panel = { id: 'node-aa0001', type: 'text', content: [{ at: [0, 0], cols: 1, rows: 1, content: 'text', value: 'hi' }] };
 	const plain = { id: 'node-aa0002', type: 'host' };
@@ -1267,20 +1226,18 @@ test('H15.18: a text panel has a 1-unit frame and 13-unit text, from one source'
 	kernel/renderer.mjs and app/src/renderer.js independently, and the frame weight into two
 	stylesheets -- which is the B121 and B200 shape, and why this is derived at all.
 	*/
-	const kernelRenderer = (fs.readFileSync(new URL('../kernel/renderer.mjs', import.meta.url), 'utf8') + fs.readFileSync(new URL('../kernel/svg-scene.mjs', import.meta.url), 'utf8'));
-	// RESTATED at C-a (H19.29, D3): the anchor's drawing is the plugins' appearances now -- the network's marks, the devices plugin's device
+	// RESTATED at H25.5 (B378, D4): both the canvas and the export draw devices through devices/device-appearance.mjs
 	const clientRenderer = fs.readFileSync(new URL('../devices/device-appearance.mjs', import.meta.url), 'utf8');
-	for (const [name, src] of [['kernel/renderer.mjs', kernelRenderer], ['devices/device-appearance.mjs', clientRenderer]]) {
-		assert.match(src, /frameWidth\(/, `${name} must derive the frame weight rather than hardcode it`);
-		assert.doesNotMatch(src, /'font-size':\s*15|font-size="15"/, `${name} still carries a literal font size`);
-	}
+	assert.match(clientRenderer, /frameWidth\(/, 'devices/device-appearance.mjs must derive the frame weight rather than hardcode it');
+	assert.doesNotMatch(clientRenderer, /'font-size':\s*15|font-size="15"/, 'devices/device-appearance.mjs still carries a literal font size');
 
 	// and the EXPORT carries the thin frame, or a saved diagram disagrees with the canvas
 	const doc = {
-		nodes: [{ ...panel, name: 't', x: 0, y: 0, span: { cols: 2, rows: 1 } }],
+		meta: { id: '0000000000aa0001', name: 'd' },
+		nodes: [{ ...panel, name: 't', shape: 'square', x: 0, y: 0, span: { cols: 2, rows: 1 } }],
 		links: [], zones: [], groups: [],
 	};
-	assert.match(render(docToSchema(doc)), /stroke-width="1"/,
+	assert.match(svgDocument(doc).split('</defs>').pop(), /stroke-width="1"/,
 		'the exported panel frame must be thin too -- CSS alone would leave the export heavy');
 });
 
@@ -1301,39 +1258,31 @@ A picture that disagrees with the canvas is the class B225 and B226 both were, w
 asserts the rendered OUTPUT rather than that a function is called.
 */
 test('B234: an exported node and zone carry their names', async () => {
-	const { docToSchema } = await import('../kernel/adapt.mjs');
-	const { render } = await import('../kernel/svg-scene.mjs');
+	// RESTATED at H25.5 (B378, D4): driven through the real export (server/svg.mjs svgDocument)
 	const doc = {
-		nodes: [{ id: 'node-aa0001', name: 'spine1', type: 'router', x: 0, y: 0 }],
+		meta: { id: '0000000000aa0001', name: 'd' },
+		nodes: [{ id: 'node-aa0001', name: 'spine1', type: 'router', shape: 'circle', x: 0, y: 0 }],
 		zones: [{ id: 'zone-aa0001', name: 'core', x: -120, y: -120, w: 240, h: 240 }],
 		links: [], groups: [],
 	};
-
-	// the ADAPTER must carry the name, or nothing downstream can draw it
-	const schema = docToSchema(doc);
-	const node = schema.entities.find((e) => e.kind === 'node');
-	const zone = schema.entities.find((e) => e.kind === 'zone');
-	assert.equal(node.name, 'spine1', 'the adapter must carry a node name into the scene');
-	assert.equal(zone.name, 'core', 'and a zone name');
-
-	// and the RENDERER must draw it
-	const svg = render(schema);
+	const svg = svgDocument(doc).split('</defs>').pop();
 	assert.match(svg, />spine1</, 'the exported node must show its name');
 	assert.match(svg, />core</, 'and the exported zone must show its name');
 
 	// an UNNAMED entity draws nothing rather than an empty text element
-	const bare = render(docToSchema({
-		nodes: [{ id: 'node-aa0002', type: 'router', x: 0, y: 0 }],
+	const bare = svgDocument({
+		meta: { id: '0000000000aa0001', name: 'd' },
+		nodes: [{ id: 'node-aa0002', name: '', type: 'router', shape: 'circle', x: 0, y: 0 }],
 		zones: [], links: [], groups: [],
-	}));
+	}).split('</defs>').pop();
 	assert.doesNotMatch(bare, /<text/, 'an unnamed node emits no text element at all');
 
-	// the name is ESCAPED -- it reaches an attribute-free text node, but a bare & or < would still
-	// break the document, and a diagram is user content
-	const nasty = render(docToSchema({
-		nodes: [{ id: 'node-aa0003', name: 'a<b&c', type: 'router', x: 0, y: 0 }],
+	// the name is ESCAPED
+	const nasty = svgDocument({
+		meta: { id: '0000000000aa0001', name: 'd' },
+		nodes: [{ id: 'node-aa0003', name: 'a<b&c', type: 'router', shape: 'circle', x: 0, y: 0 }],
 		zones: [], links: [], groups: [],
-	}));
+	}).split('</defs>').pop();
 	assert.doesNotMatch(nasty, /a<b&c/, 'a name carrying markup must be escaped, not emitted raw');
 	assert.match(nasty, /a&lt;b&amp;c/, 'and escaped correctly');
 });
@@ -1390,15 +1339,11 @@ test('H15.9: linkAppearance is the whole answer, and it is attributes rather tha
 		assert.ok(APPEARANCE_KEYS.includes(key), `${key} is emitted but not declared -- an update could not remove it`);
 	}
 
-	// both renderers must go through it, or the pipeline is advisory
-	const kernelRenderer = (fs.readFileSync(new URL('../kernel/renderer.mjs', import.meta.url), 'utf8') + fs.readFileSync(new URL('../kernel/svg-scene.mjs', import.meta.url), 'utf8'));
-	// RESTATED at C-a step four (H19.29): the link is drawn by the network's painter now (network/link-painter.mjs)
+	// RESTATED at C-a step four (H19.29) and H25.5 (B378, D4): both the canvas and the export draw links through network/link-painter.mjs
 	const clientRenderer = fs.readFileSync(new URL('../network/link-painter.mjs', import.meta.url), 'utf8');
-	for (const [name, src] of [['kernel/renderer.mjs', kernelRenderer], ['network/link-painter.mjs', clientRenderer]]) {
-		assert.match(src, /linkAppearance\(/, `${name} must derive a link's appearance in one call`);
-		assert.doesNotMatch(src, /linkMarker\(|linkDash\(|linkWidth\(/,
-			`${name} still asks the sub-questions directly, so there are two ways to draw a link`);
-	}
+	assert.match(clientRenderer, /linkAppearance\(/, 'network/link-painter.mjs must derive a link\'s appearance in one call');
+	assert.doesNotMatch(clientRenderer, /linkMarker\(|linkDash\(|linkWidth\(/,
+		'network/link-painter.mjs still asks the sub-questions directly, so there are two ways to draw a link');
 	// H24.6: and the head is one call too -- which end and how wide are the appearance's answers, asked inside it
 	assert.match(clientRenderer, /linkHeadOf\(/, 'the painter derives a head in one call');
 });
@@ -1545,8 +1490,7 @@ test('a fitted dash is drawn as fitted, by the canvas and the export alike', asy
 	const ring = waypointLayers([], 20, null, { transit: false }).find((l) => l.cls === 'wp-transit');
 	assert.ok(ring.pathLength, 'the transit ring carries its fitted length');
 	// RESTATED at C-a (H19.29, D3): the anchor's drawing is the plugins' appearances now -- the network's marks, the devices plugin's device
+	// RESTATED at H25.5 (B378, D4): both the canvas and the export draw through network/anchor-appearance.mjs
 	const canvas = fs.readFileSync(new URL('../network/anchor-appearance.mjs', import.meta.url), 'utf8');
-	const scene = fs.readFileSync(new URL('../kernel/svg-scene.mjs', import.meta.url), 'utf8');
-	assert.match(canvas, /pathLength: l\.pathLength/, 'the canvas emits it');
-	assert.match(scene, /pathLength="\$\{l\.pathLength\}"/, 'and so does the export');
+	assert.match(canvas, /pathLength: l\.pathLength/, 'the anchor appearance emits it for the canvas and the export alike');
 });

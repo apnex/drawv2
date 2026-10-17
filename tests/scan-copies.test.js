@@ -15,7 +15,7 @@ import crypto from 'node:crypto';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { classesPutOnElements, classesInMarkup, stylesheetsInSource, copiedStyleRules, foreignStyleRules, stylesDrawnByNoPart, copiedLines, modulesNoEntryReaches, judgeFindings, judgeExceptions } from '../tools/copies.mjs';
-import { FOLDERS, SCANNER_ROOTS, COPIES } from '../tools/layers.mjs';
+import { FOLDERS, SCANNER_ROOTS, COPIES, NOT_PARTS } from '../tools/layers.mjs';
 
 const root = path.resolve(import.meta.dirname, '..');
 const read = (f) => fs.readFileSync(path.join(root, f), 'utf8');
@@ -220,9 +220,9 @@ test('H25.0: the duplicate scanners read every folder scan-layers walks but the 
 	for (const d of ['network', 'devices', 'zones', 'groups', 'layouts', 'product', 'lab', 'cli']) assert.ok(product.includes(d), `control: ${d} is a folder scan-layers walks`);
 	assert.deepEqual(SCANNER_ROOTS.twins, product, 'scan-twins compares every product folder (it read six, none a plugin\'s)');
 	assert.deepEqual(SCANNER_ROOTS.copies, product, 'scan-copies looks in every product folder');
-	// RESTATED at H25.3b (B374): the director ruled three copies may stand (dev/DECISIONS.md H25-4), each citing it with a trigger
-	assert.deepEqual(Object.fromEntries(Object.entries(COPIES.exceptions).map(([k, v]) => [k, Object.keys(v).sort()])), { 'foreign style rules': ['#container.zonegrid .zone', '.waypoint.spawning .wp-dot', '.waypoint.spawning .wp-ring'] }, 'the copies ruled to stand, and no others');
-	for (const x of Object.values(COPIES.exceptions).flatMap((m) => Object.values(m))) assert.ok(x.cites.includes('H25-4') && x.trigger.length > 20, 'each cites the ruling and says what reopens it');
+	// RESTATED at H25.3b (B374) and H25.5 (B378, D5 of H25-1): the three foreign style rules and the REST route list
+	assert.deepEqual(Object.fromEntries(Object.entries(COPIES.exceptions).map(([k, v]) => [k, Object.keys(v).sort()])), { 'foreign style rules': ['#container.zonegrid .zone', '.waypoint.spawning .wp-dot', '.waypoint.spawning .wp-ring'], 'modules no entry reaches': ['server/routes.mjs'] }, 'the copies ruled to stand, and no others');
+	for (const x of Object.values(COPIES.exceptions).flatMap((m) => Object.values(m))) assert.ok((x.cites.includes('H25-4') || x.cites.includes('H25-1')) && x.trigger.length > 20, 'each cites its ruling and says what reopens it');
 });
 
 /*
@@ -266,5 +266,14 @@ test('H25.1: the page\'s stylesheet styles no class only a plugin draws, and eve
 	for (const page of ['app/index.html', 'lab/index.html']) {
 		const hrefs = [...read(page).matchAll(/<link rel="stylesheet" href="([^"]+)">/g)].map((m) => m[1]);
 		assert.deepEqual(hrefs.slice(0, PAGE_STYLESHEETS.length), PAGE_STYLESHEETS.map((f) => (f.startsWith('app/') ? `/${f.slice(4)}` : `/${f}`)), `${page} loads the composition's sheets first, in its order`);
+	}
+});
+
+test('H25.5: the old scene renderer is gone -- NOT_PARTS is empty, and every recorded copy finding is a ruled exception', () => {
+	assert.deepEqual(NOT_PARTS, {}, 'every module in the product belongs to a part');
+	const record = JSON.parse(read('tools/copies-record.json'));
+	assert.deepEqual(record['modules no entry reaches'], ['server/routes.mjs'], 'only the ruled REST route list remains unreached');
+	for (const [k, v] of Object.entries(record)) {
+		for (const item of v) assert.ok(COPIES.exceptions[k]?.[item], `${k}: ${item} is on the record and not a ruled exception`);
 	}
 });

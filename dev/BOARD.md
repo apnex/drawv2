@@ -1509,7 +1509,7 @@ Opened 2026-10-17 by the director (`dev/DECISIONS.md` H25): H22 closed against a
 | H25.3 | Dead and unseen styles deleted or made visible (H25.3) | **B373** | S4 | `DONE` |
 | H25.3b | The style rules that name another plugin's word ruled: the spawner's two, the zone grid's cursor (H25.3b) | **B374** | S4 | `DONE` |
 | H25.4 | One canvas layout, declared once and generated into both pages (H25.4) | **B376** | S4 | `DONE` |
-| H25.5 | One renderer: the old scene renderer deleted, its tests on the real one (H25.5) | **B366** | S3 | `TODO` |
+| H25.5 | One renderer: the old scene renderer deleted, its tests on the real one (H25.5) | **B378** | S3 | `DONE` |
 | H25.6 | One name: `routeGeometry` renamed (H25.6) | **B366** | S5 | `TODO` |
 | H25.7 | Close: the architecture document reports every copy, generated (H25.7) | **B366** | S4 | `TODO` |
 
@@ -1528,6 +1528,8 @@ AMENDED 2026-10-17: H25.2b live in production (`72cd982`), at the director's "co
 AMENDED 2026-10-17: H25.3 done -- the dead rules deleted, the lab's restated rule gone, the selection rectangle's and the deleted-diagrams list's classes put where the measure reads them; no pixel changed, and one style reading differs as explained -- the link-band state, which the product never sets on a waypoint, no longer gives one the crosshair (B373 closed). Copy findings standing: 23, the three foreign style rules owed a ruling (B374, H25.3b).
 AMENDED 2026-10-17: H25.3 live in production (`6d365a3`), the published diagram and the favicon byte-identical before and after; H25.3b done -- the three foreign style rules stand as ruled exceptions, each with its trigger (`dev/DECISIONS.md` H25-4, B374 closed). Copy findings standing: 23, three of them ruled.
 AMENDED 2026-10-17: H25.4 done -- the canvas's layout declared once in the composition and written into both pages, the lab and the export reading the declaration (B376 closed). Copy findings standing: 8 -- three ruled exceptions, and the five modules no entry reaches.
+AMENDED 2026-10-17: H25.4 live in production (`b6e9bc2`), the published diagram and the favicon byte-identical before and after.
+AMENDED 2026-10-17: H25.5 done -- the old scene renderer's four modules and their dead scene helpers deleted, all seven test files moved onto the real renderer with zero tests deleted, `NOT_PARTS` empty, and `server/routes.mjs` recorded as a ruled exception (B378 closed). Copy findings standing: 4, all 4 of them ruled exceptions.
 
 ---
 

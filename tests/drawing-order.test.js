@@ -14,7 +14,8 @@ import { nextOrder } from '../model/order.mjs';
 import { byDrawingOrder, orderOf } from '../model/stacking.mjs';
 import { plan, commit, undo } from './fixtures/composed.mjs';
 import { Log } from '../planner/log.mjs';
-import { docToSchema } from '../kernel/adapt.mjs';
+import { svgDocument } from '../server/svg.mjs';   // H25.5 (B378, D4): the real export renderer
+import { KINDS } from './fixtures/composed.mjs';
 import { createNetwork } from '../network/network.mjs';
 import { productKinds } from '../product/kinds.mjs';
 import { PIPE_ROW, pipeEntity } from '../network/pipe-kind.mjs';
@@ -86,11 +87,12 @@ test('F-d (B259): a link\'s age is its order -- the older keeps a contested pipe
 	assert.equal(isLinkDown(l, l.get('link', 'link-00000u')), true, 'l older: u is down -- the order decides, not the id');
 });
 
+// RESTATED at H25.5 (B378, D4): read from the real export (server/svg.mjs svgDocument)
 test('F-d: the export stacks by the order the canvas stacks by', () => {
 	const doc = { meta: { id: '0000000000000001', name: 'd' }, groups: [],
 		nodes: [router('node-00000a', 0, { order: 2 }), router('node-00000b', 120, { order: 1 })],
 		links: [], zones: [{ id: 'zone-00000d', name: 'top', x: -90, y: -90, w: 180, h: 180, order: 9 }, { id: 'zone-00000c', name: 'low', x: -90, y: -90, w: 180, h: 180, order: 3 }] };
-	const ids = docToSchema(doc).entities.map((e) => e.id);
+	const ids = [...svgDocument(doc, KINDS).matchAll(/<g id="((?:node|zone)-[0-9a-f]{6})"/g)].map((m) => m[1]);
 	assert.deepEqual(ids.filter((i) => i.startsWith('node-')), ['node-00000b', 'node-00000a']);
 	assert.deepEqual(ids.filter((i) => i.startsWith('zone-')), ['zone-00000c', 'zone-00000d']);
 });
