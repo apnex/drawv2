@@ -211,7 +211,12 @@ test('H25.2: the export carries no stylesheet -- each element the page\'s rules 
 	assert.ok(lines.length > 0, 'control: the file draws links, each a group named by its id with its line first');
 	for (const l of lines) assert.match(l, new RegExp(` stroke="(${NETWORK_TOKENS.link}|${downStroke()})"`), 'each line in the link colour, or the down colour');
 	for (const m of body.matchAll(/<text class="label[^"]*"[^>]*>/g)) assert.match(m[0], new RegExp(` fill="${TOKENS.label}"`), 'each name in the label colour');
-	assert.match(body, /class="solid"[^>]* fill="#[0-9a-f]{6}"/, 'the glyph art carries its colours in the defs');
+	// the glyph art is drawn through <use> inside a device, so it takes the device's colours; without them a hollow's inside would
+	// draw in its fallback (found surviving by the H25.2 verifier: every test passed with the defs styled outside a device's scope)
+	const { drawingRules, nodeContext } = await import('../server/svg-style.mjs');
+	const scope = nodeContext(drawingRules());
+	assert.match(body, new RegExp(`class="hollow"[^>]* fill="${scope['--fill']}" stroke="${scope['--icon']}"`), 'the glyph art carries a device\'s colours in the defs');
+	assert.match(body, new RegExp(`class="solid"[^>]* fill="${scope['--icon']}"`), 'its solid parts too');
 	const favicon = await (await fetch(`${base}/favicon.svg`)).text();
 	assert.doesNotMatch(favicon, /<style|var\(/, 'and the favicon likewise');
 	assert.match(favicon, /<circle class="frame" r="[\d.]+" fill="#[0-9a-f]{6}" fill-opacity="1" stroke="#[0-9a-f]{6}"\/>/, 'its frame in a device\'s colours');

@@ -5,7 +5,7 @@ The export carried two copies of the page's styling (KERNEL_CSS, EXPORT_CSS) and
 Its first H25.2 build shipped the page's drawing sheets as a <style> instead, and an independent verifier found three faults in it:
 pasted inline into another page the rules restyled that page, the file took the page's cursors and selection rules, and renderers
 that skip CSS custom properties lost the lines, zones and ground. So the rules are APPLIED here, at export time, and their result
-written as each element's presentation attributes: the file carries no stylesheet, draws alike in any renderer, can restyle nothing
+written as each element's presentation attributes: the file carries no stylesheet, asks no CSS of a renderer, can restyle nothing
 around it, and states no look the page's sheets do not state.
 
   drawingRules()                    every rule of every sheet the page loads but its chrome, colour tokens written in, parsed
@@ -16,8 +16,10 @@ around it, and states no look the page's sheets do not state.
 
 A browser's cascade, reduced to what these sheets hold: compounds of a tag, an id, classes and attribute tests, joined by a
 descendant step or an adjacent-sibling step; ordered by specificity, then source order; an element's own inline style kept, since
-it beats any rule; custom properties inherited down the tree and `var()` resolved through them. A pseudo-class never matches a still
-picture. A selector or a drawing property this cannot carry faithfully is refused rather than shipped wrong.
+it beats any rule, and its custom properties beat theirs; custom properties inherited down the tree and `var()` resolved through
+them. A pseudo-class of the pointer or focus never matches a still picture. What this cannot carry faithfully is refused rather than
+shipped wrong: any other pseudo-class, a `>` or `~` step, `!important`, an at-rule, a `:root` property that is not a colour token, a
+transform with CSS units, a drawing property it does not know, a `var()` with no value, and markup its reader cannot read.
 */
 import fs from 'node:fs';
 import { PAGE_STYLESHEETS, CHROME_STYLESHEETS } from '../product/canvas.mjs';
@@ -27,6 +29,8 @@ const DRAWN = new Set(['fill', 'fill-opacity', 'stroke', 'stroke-width', 'stroke
 	'stroke-linejoin', 'stroke-miterlimit', 'opacity', 'display', 'visibility', 'font-family', 'font-size', 'font-weight', 'font-style', 'text-anchor',
 	'dominant-baseline', 'letter-spacing', 'transform', 'rx', 'ry']);
 const INTERACTIVE = new Set(['cursor', 'pointer-events', 'user-select', '-webkit-user-select', 'transition', 'touch-action']);
+// the pseudo-classes a still picture is never in; any other (`:first-child`, `:not()`) could match one, and is refused
+const POINTER = new Set(['hover', 'active', 'focus', 'focus-visible', 'focus-within', 'visited']);
 
 // one compound: `rect#canvas.a.b[data-x="y"]:hover`
 function compoundOf(text, selector) {
@@ -36,6 +40,8 @@ function compoundOf(text, selector) {
 	for (const p of m[2].matchAll(/#([\w-]+)|\.([\w-]+)|\[([\w-]+)(?:="([^"]*)")?\]|:([\w-]+)/g)) {
 		if (p[1]) c.ids.push(p[1]); else if (p[2]) c.classes.push(p[2]); else if (p[3]) c.attrs.push([p[3], p[4]]); else c.pseudos.push(p[5]);
 	}
+	const still = c.pseudos.find((p) => !POINTER.has(p));
+	if (still) throw new Error(`the export cannot match the pseudo-class ":${still}" in "${selector}" -- a still picture could be in it`);
 	return c;
 }
 // a selector, rightmost compound first, each with the step that leads to the next: ' ' an ancestor, '+' the sibling before
@@ -65,14 +71,33 @@ export function rulesOfSheets(sheets) {
 		for (const m of css.matchAll(/([^{}]+)\{([^}]*)\}/g)) {
 			const selector = m[1].trim().replace(/\s+/g, ' ');
 			const decls = [...m[2].matchAll(/(--[\w-]+|[a-z-]+)\s*:\s*([^;]+?)\s*(?:;|$)/g)].map((d) => [d[1], d[2].trim()]);
-			if (selector === ':root') { for (const [k, v] of decls) if (k.startsWith('--tok-')) tokens.set(k, v); continue; }
+			for (const [k, v] of decls) {
+				if (/!\s*important/i.test(v)) throw new Error(`${name}: "${selector}" sets ${k} !important, which the export does not weigh`);
+				if (k === 'transform' && /\d[a-z%]/i.test(v)) throw new Error(`${name}: "${selector}" sets a transform with CSS units (${v}), which an SVG attribute cannot hold`);
+			}
+			if (selector === ':root') {
+				for (const [k, v] of decls) {
+					if (!k.startsWith('--tok-')) throw new Error(`${name}: :root sets ${k}, which is not a colour token -- teach server/svg-style.mjs to inherit it`);
+					tokens.set(k, v);
+				}
+				continue;
+			}
 			raw.push({ selector, decls });
 		}
 	}
-	const token = (v) => v.replace(/var\((--tok-[\w-]+)\)/g, (all, name) => {
-		if (!tokens.has(name)) throw new Error(`a drawing rule names ${name}, which no colour registry the page loads declares`);
-		return tokens.get(name);
-	});
+	// each `var(--tok-...)`, fallback and all, replaced by the token: a token the page loads is always defined, so its fallback never draws
+	const token = (v) => {
+		let out = '', i = 0;
+		for (let at; (at = v.indexOf('var(--tok-', i)) >= 0;) {
+			let depth = 1, j = at + 4;
+			for (; j < v.length && depth; j++) { if (v[j] === '(') depth++; else if (v[j] === ')') depth--; }
+			const name = v.slice(at + 4, j - 1).split(',')[0].trim();
+			if (!tokens.has(name)) throw new Error(`a drawing rule names ${name}, which no colour registry the page loads declares`);
+			out += v.slice(i, at) + tokens.get(name);
+			i = j;
+		}
+		return out + v.slice(i);
+	};
 	let order = 0;
 	return raw.flatMap(({ selector, decls }) => selector.split(',').map((s) => ({ ...selectorOf(s), order: order++, decls: decls.map(([k, v]) => [k, token(v)]) })));
 }
@@ -136,7 +161,9 @@ function styleOf(n, rules, inherited) {
 	for (const r of rules.filter((x) => matches(n, x)).sort(bySpecificity)) for (const [k, v] of r.decls) decls.set(k, v);
 	const custom = { ...inherited };
 	for (const [k, v] of decls) if (k.startsWith('--')) custom[k] = resolve(v, custom, `${n.tag}#${n.attrs.id ?? ''}.${n.attrs.class ?? ''} ${k}`);
-	const inline = new Set([...(n.attrs.style ?? '').matchAll(/([\w-]+)\s*:/g)].map((m) => m[1]));
+	const own = [...(n.attrs.style ?? '').matchAll(/([\w-]+)\s*:\s*([^;]+)/g)].map((m) => [m[1], m[2].trim()]);
+	for (const [k, v] of own) if (k.startsWith('--')) custom[k] = resolve(v, custom, `${n.tag} style ${k}`);   // its own beat any rule's
+	const inline = new Set(own.map(([k]) => k));
 	const drawn = {};
 	for (const [k, v] of decls) {
 		if (k.startsWith('--') || INTERACTIVE.has(k)) continue;
@@ -155,11 +182,14 @@ export const drawnOf = (tag, attrs, rules) => styleOf({ tag, attrs, parentNode: 
 // ---- markup written as text, parsed into the same shape, styled, and written back with its own attributes in their order
 // escaped as server/svg.mjs escapes what it writes, and read back the same way, so a value goes through once escaped, never twice
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-const unesc = (s) => s.replace(/&(quot|lt|gt|amp);/g, (all, e) => ({ quot: '"', lt: '<', gt: '>', amp: '&' }[e]));
+const unesc = (s) => s.replace(/&(quot|lt|gt|amp|#\d+|#x[0-9a-f]+);/gi, (all, e) => ({ quot: '"', lt: '<', gt: '>', amp: '&' }[e]
+	?? String.fromCodePoint(e[1] === 'x' || e[1] === 'X' ? parseInt(e.slice(2), 16) : Number(e.slice(1)))));
 function parseMarkup(markup) {
 	const root = { tag: '#root', attrs: {}, children: [], parentNode: null };
 	let at = root;
-	for (const m of markup.matchAll(/<!--[\s\S]*?-->|<\/([\w:-]+)\s*>|<([\w:-]+)((?:\s+[\w:-]+="[^"]*")*)\s*(\/?)>|[^<]+/g)) {
+	for (const m of markup.matchAll(/<!--[\s\S]*?-->|<\/([\w:-]+)\s*>|<([\w:-]+)((?:\s+[\w:-]+="[^"]*")*)\s*(\/?)>|(<)|[^<]+/g)) {
+		// what the export and the defs are written as, and nothing else: a declaration, CDATA, an unquoted or single-quoted value is refused
+		if (m[5]) throw new Error(`the export's markup reader cannot read "${markup.slice(m.index, m.index + 40)}"`);
 		if (m[1]) { at = at.parentNode; continue; }
 		if (m[2]) {
 			const attrs = {};

@@ -2,7 +2,7 @@
 H25.2 (B366; dev/DECISIONS.md H25-2) -- THE PAGE'S RULES, APPLIED TO WHAT THE EXPORT DRAWS (server/svg-style.mjs).
 
 The export writes, as each element's attributes, what the page's own stylesheets give that element, and carries no stylesheet: so it
-draws alike in any renderer, restyles nothing it is pasted into, and states no look of its own. A small cascade does it, and each
+asks no CSS of a renderer, restyles nothing it is pasted into, and states no look of its own. A small cascade does it, and each
 case below holds one part of a browser's behaviour that it must reproduce -- the adjacent-sibling step among them, whose first
 reading attached each step to the wrong side and turned a down link's head blue until this caught it -- and each refusal it must
 make rather than ship a picture wrong. The parity test (tests/browser.test.js H24.8) and the probe hold its result to Chrome's.
@@ -40,6 +40,8 @@ test('H25.2: custom properties are inherited down the tree, and var() resolves t
 	assert.match(out, /<\/g><rect class="k" fill="#999" stroke-width="1" stroke="#999"\/>/, 'outside it, the fallbacks');
 	assert.match(style('<rect class="k"/>', '.k { fill: var(--f); }', { '--f': '#333' }), /fill="#333"/, 'a scope handed in, as the glyph art is drawn in a device\'s');
 	assert.throws(() => style('<rect class="k"/>', '.k { fill: var(--f); }'), /var\(--f\) has no value and no fallback/, 'and a value with neither is refused');
+	assert.match(style('<rect class="k"/>', ':root { --tok-a: #444; } .k { fill: var(--tok-a, #999); }'), /fill="#444"/, 'a colour token is defined wherever the page loads it, so its fallback never draws');
+	assert.match(style('<g class="n"><rect class="k" style="--f: #555"/></g>', '.n { --f: #222; } .k { --f: #666; fill: var(--f); }'), /<rect class="k" style="--f: #555" fill="#555"\/>/, 'an element\'s own custom property beats a rule\'s and an ancestor\'s');
 });
 
 test('H25.2: what acts only on a pointer or over time is left out; what draws and cannot be written is refused; so is syntax this cannot match', () => {
@@ -47,6 +49,14 @@ test('H25.2: what acts only on a pointer or over time is left out; what draws an
 	assert.throws(() => style('<rect class="k"/>', '.k { filter: blur(2px); }'), /a rule sets filter on <rect class="k">, which the export can neither draw nor knowingly leave out/);
 	assert.throws(() => sheet('.a > .b { fill: red; }'), /does not match the step ">"/);
 	assert.throws(() => sheet('.a:not(.b) { fill: red; }'), /cannot match the selector/);
+	assert.throws(() => sheet('.a:first-child { fill: red; }'), /cannot match the pseudo-class ":first-child"/, 'a pseudo-class a still picture could be in');
+	assert.doesNotThrow(() => sheet('.a:hover, .a:focus-visible { fill: red; }'), 'control: those of the pointer and focus are read, and never match');
+	assert.throws(() => sheet('.a { fill: red !important; }'), /!important, which the export does not weigh/);
+	assert.throws(() => sheet('.a { transform: rotate(45deg); }'), /a transform with CSS units/);
+	assert.doesNotThrow(() => sheet('.a { transform: scale(0.3); }'), 'control: the unitless transform the page\'s sheets hold');
+	assert.throws(() => sheet(':root { --gap: 4px; }'), /:root sets --gap, which is not a colour token/);
+	for (const bad of ['<rect a=\'x\'/>', '<![CDATA[x]]>', '<?xml version="1.0"?><g/>', '<rect hidden/>']) assert.throws(() => style(bad, '.a { fill: red; }'), /markup reader cannot read/, bad);
+	assert.equal(style('<text x="&#39;&#x3c;">a</text>', '.zz { fill: red; }'), '<text x="\'&lt;">a</text>', 'a numeric reference is read as its character, then written as the export writes it');
 	assert.throws(() => rulesOfSheets([{ name: 'm.css', css: '@media print { .a { fill: red; } }' }]), /m\.css holds an at-rule/);
 	assert.throws(() => sheet('.a { fill: var(--tok-missing); }'), /names --tok-missing, which no colour registry/);
 });
