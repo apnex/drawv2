@@ -1523,6 +1523,7 @@ AMENDED 2026-10-17: H25.1 live in production (`9cbb963`), its published SVG and 
 AMENDED 2026-10-17: H25.2 done -- the export and the favicon carry the page's own rules as each element's attributes and no stylesheet, as the director amended D3 after the first build failed its verification (`dev/DECISIONS.md` H25-2); KERNEL_CSS and EXPORT_CSS gone; the page's sheet split into chrome and canvas (B369 closed). Copy findings standing: 36.
 AMENDED 2026-10-17: H25.2 live in production (`4beb3c2`), at the director's "continue as recommended"; its published SVG and favicon draw 0 pixels differently before and after. The director lifted the plan's no-visible-change fence (`dev/DECISIONS.md` H25-3), and the spawning endpoint B370 had been held behind it is H25.2b.
 AMENDED 2026-10-17: H25.2b done -- the published file draws a spawning endpoint as the page does, its circles keeping their classes; the probe against production finds two of the director's diagrams and the parity board changed at their spawners and nothing else (B370 closed).
+AMENDED 2026-10-17: H25.2b live in production (`72cd982`), at the director's "continue"; the published diagram and the favicon byte-identical before and after.
 
 ---
 
