@@ -132,6 +132,43 @@ test('H25.4: a page\'s region is left out of the copied-lines measure only when 
 	assert.match(scanner, /regions: f in PAGES \? Object\.values\(PAGE_REGIONS\) : \[\]/, 'and gives a page its regions and a stylesheet none');
 });
 
+/*
+H25.4 (B376), the fourth verification -- THE MEASURE READS AS A BROWSER READS, AND A REGION HIDES NOTHING TYPED ELSEWHERE. A region was
+left out of both sides of a comparison, so lines typed in one page that the other generates matched nothing; and comments were
+removed in either language, lines split at LF alone -- so an HTML comment's opener in a stylesheet, one in a page's attribute, or a
+lone CR between lines hid live copies.
+*/
+test('H25.4: a copy typed of lines another page generates is found; comments are read in each file\'s own language; every line end counts', async () => {
+	const { markersOf } = await import('../tools/regions.mjs');
+	const typed = ['<p class="one">a line typed in the page itself</p>', '<p class="two">and another typed after it</p>', '<p class="three">a third</p>', '<p class="four">a fourth</p>', '<p class="five">a fifth</p>'];
+	const own = { ...markersOf('canvas', COPIES.generated.canvas), lines: typed };
+	const other = { ...markersOf('stylesheets', COPIES.generated.stylesheets), lines: ['<link rel="stylesheet" href="/a.css">', '<link rel="stylesheet" href="/b.css">', '<link rel="stylesheet" href="/c.css">', '<link rel="stylesheet" href="/d.css">', '<link rel="stylesheet" href="/e.css">'] };
+	const pages = (a, b) => copiedLines([{ name: 'a.html', text: a.join('\n'), regions: [own, other] }, { name: 'b.html', text: b.join('\n'), regions: [own, other] }]).flatMap((x) => x.lines);
+	assert.deepEqual(pages([own.begin, ...typed, own.end], [own.begin, ...typed, own.end]), [], 'control: the region in both pages, each generated, is no copy');
+	assert.deepEqual(pages([own.begin, ...typed, own.end], ['<template>', ...typed, '</template>']), typed, 'the same lines typed outside any region, in the other page, are');
+	assert.deepEqual(pages([own.begin, ...typed, '<p>one line more</p>', own.end], [own.begin, ...typed, own.end]), [...typed], 'a region holding its lines and one more is no region: what it holds is read');
+	// a region whose marker does not open its line is none -- and removing the one before it on the line must not make it one
+	assert.deepEqual(pages([other.begin, ...other.lines, other.end + own.begin, ...typed, own.end], [own.begin, ...typed, own.end]), typed, 'regions are found on the page as written');
+	const sheets = (a, b) => copiedLines([{ name: 'a.css', text: a, regions: [] }, { name: 'b.css', text: b, regions: [] }]).flatMap((x) => x.lines);
+	const rules = ['#one { color: red; cursor: pointer; }', '#two { color: blue; cursor: move; }', '#three { color: green; }', '#four { color: black; }', '#five { color: white; }'];
+	assert.deepEqual(sheets(['/* <!-- */', ...rules, '/* --> */'].join('\n'), rules.join('\n')), rules, 'an HTML comment\'s opener inside a stylesheet\'s comment hides no rule');
+	assert.deepEqual(sheets(['.x { content: "<!--"; }', ...rules, '.y { content: "-->"; }'].join('\n'), rules.join('\n')).filter((l) => rules.includes(l)), rules, 'nor one inside a string');
+	assert.deepEqual(sheets(['.x { content: "/*"; }', ...rules, '.y { content: "*/"; }'].join('\n'), rules.join('\n')).filter((l) => rules.includes(l)), rules, 'nor a stylesheet comment\'s own opener inside a string');
+	assert.deepEqual(sheets(['/* a comment', 'over two lines */', ...rules].join('\n'), rules.join('\n')), rules, 'control: a real stylesheet comment is still removed');
+	assert.deepEqual(pages(['<p title="<!--">', ...typed, '<p title="-->">'], typed), typed, 'an HTML comment\'s opener inside a page\'s attribute hides no element');
+	assert.deepEqual(pages(['<p>/*</p>', ...typed, '<p>*/</p>'], typed), typed, 'nor a stylesheet comment\'s opener in a page\'s text');
+	assert.deepEqual(pages([typed.join('\r')], typed), typed, 'lines ended by a lone CR are lines');
+	assert.deepEqual(sheets(['* { box-sizing: border-box; margin: 0; }', ...rules.slice(0, 4)].join('\n'), ['* { box-sizing: border-box; margin: 0; }', ...rules.slice(0, 4)].join('\n'))[0], '* { box-sizing: border-box; margin: 0; }', 'and a line opening with * is compared like any other');
+});
+
+test('H25.4: the regions the measure trusts are the ones the generators write -- one definition', async () => {
+	const { PAGE_REGIONS } = await import('../tools/page-regions.mjs');
+	const { markersOf } = await import('../tools/regions.mjs');
+	assert.deepEqual(Object.keys(PAGE_REGIONS).sort(), Object.keys(COPIES.generated).sort(), 'a region for each generator the manifest names, and no other');
+	for (const [name, r] of Object.entries(PAGE_REGIONS)) assert.deepEqual({ begin: r.begin, end: r.end }, markersOf(name, COPIES.generated[name]), `${name}: its markers are the manifest's`);
+	for (const tool of ['tools/stylesheets.mjs', 'tools/canvas-layout.mjs']) assert.match(fs.readFileSync(path.join(import.meta.dirname, '..', tool), 'utf8'), /PAGE_REGIONS\.(stylesheets|canvas)/, `${tool} writes the region from that definition`);
+});
+
 test('H25.4: each generator the copy measure trusts is run by the gate with --check, as a step of its own', () => {
 	const steps = JSON.parse(fs.readFileSync(path.join(import.meta.dirname, '..', 'package.json'), 'utf8')).scripts.gate.split('&&').map((x) => x.trim());
 	const owners = Object.entries(COPIES.generated);

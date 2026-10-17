@@ -1021,8 +1021,8 @@ opened (its hash is pinned in tests/scan-copies.test.js).
 */
 export const COPIES = {
 	entries: [...RULES.L7.roots, ...Object.values(PAGES).flatMap((p) => p.scripts.map((s) => `${p.base}${s}`)), 'lab/server.mjs'],
-	// H25.4 (B376): the regions a generator writes into the pages, each the gate checks with --check -- the only ones the copied-lines
-	// measure leaves out, matched by their exact markers (tools/regions.mjs markersOf), the first of each; any other marker is a fault
+	// H25.4 (B376): the regions a generator writes into the pages, each the gate checks with --check: their markers, which with the lines
+	// each holds make tools/page-regions.mjs PAGE_REGIONS -- the only text the copied-lines measure leaves out of a page's typed lines
 	generated: {
 		stylesheets: { tool: 'tools/stylesheets.mjs', source: 'product/canvas.mjs PAGE_STYLESHEETS' },
 		canvas: { tool: 'tools/canvas-layout.mjs', source: 'product/canvas.mjs CANVAS_VIEWBOX, CANVAS_LAYERS' },

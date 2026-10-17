@@ -6,8 +6,9 @@ declares each region -- its exact markers and the lines it holds -- for the gene
 leaves it out, so the two cannot disagree on what a region is.
 
 A REGION is a BEGIN marker, exactly, at the start of its line after whitespace only, the first END marker after it, and the
-lines between. The copy measure leaves one out only when it holds exactly the lines its generator writes, found on the page as
-written; anything else is compared like any typed line, and every marker not opening or closing such a region is a stray.
+lines between. The copy measure leaves one out of a page's typed lines only when it holds exactly the lines its generator writes,
+found on the page as written; anything else is compared like any typed line, and every marker not opening or closing such a region
+is a stray. The other side of every comparison is read in full (tools/copies.mjs), so a region hides nothing typed elsewhere.
 
   markersOf(name, { tool, source })   -> { begin, end }   the two marker comments, exactly
   withRegion(html, region, where)     -> html | null      the page with its region holding its lines at the marker's indent; null
@@ -52,8 +53,8 @@ function exactSpans(text, regions) {
 		const lines = r.lines.map((l) => l.trim()).filter(Boolean);
 		if (held.length === lines.length && held.every((l, i) => l === lines[i])) spans.push({ at: found.at, stop: found.stop + r.end.length, begin: found.at, end: found.stop });
 	}
-	spans.sort((a, b) => a.at - b.at);
-	return spans.filter((s, i) => !spans.some((o, j) => j !== i && o.at < s.stop && s.at < o.stop));   // overlapping regions: neither trusted
+	// two cannot overlap: a region trusted holds only its generator's lines, which carry no marker
+	return spans.sort((a, b) => a.at - b.at);
 }
 
 export function withoutRegions(text, regions) {

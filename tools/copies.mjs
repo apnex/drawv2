@@ -191,31 +191,46 @@ export function stylesDrawnByNoPart(sheets, drawnBy, idsWritten = null) {
 	return [...out].map(([name, names]) => ({ name, in: [...names].sort() }));
 }
 
-// a line worth comparing: trimmed and not blank, every comment removed whole first -- so a comment put into a copy hides none of
-// it -- and a generated region left out, which its generator holds equal to its one master (H25.1, mission-kit P3).
-// CORRECTED at H25.4 (B376): only a file's own regions (`regions`: each with its exact markers and the lines its generator writes,
-// tools/page-regions.mjs), and only where it holds exactly those lines -- any marked region was left out, so lines typed inside a
-// made-up region, a near copy, a stylesheet's pair, or one that removing another made, hid from the measure (H25.4's verifiers)
-const comparable = (text, regions = []) => withoutRegions(text, regions).replace(/<!--[\s\S]*?-->/g, '').replace(/\/\*[\s\S]*?\*\//g, '').split('\n').map((l) => l.trim()).filter((l) => l && !/^(<!--|-->|\/\*|\*)/.test(l));
+/*
+THE LINES A FILE HOLDS, as a browser reads them: split at every line end it honours (CRLF, a lone CR, LF), each comment removed
+by the file's own language -- a stylesheet's slash-star comments outside its strings, a page's HTML comments outside its tags -- so a comment put
+into a copy hides none of it, and nothing that only looks like a comment in the other language hides a line; then trimmed, the
+blank ones dropped. `typed` leaves out the regions the file holds exactly as their generators write them (tools/regions.mjs,
+tools/page-regions.mjs); `full` keeps them.
+CORRECTED at H25.4 (B376), by four verifications: a marked region was left out however it was marked, then whatever a generated
+region held, then from both sides of a comparison -- so a copy typed in one page of lines the other generates matched nothing;
+and comments were removed in either language from every file, and lines split at LF alone, so an HTML comment's opener inside a
+stylesheet's comment or string, one in a page's attribute, or a lone CR between lines hid live copies (those two since H25.0).
+*/
+const withoutCssComments = (t) => t.replace(/("(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*')|\/\*[\s\S]*?(?:\*\/|$)/g, (m, str) => str ?? '');
+const withoutHtmlComments = (t) => t.replace(/(<(?!!--)[^>"']*(?:(?:"[^"]*"|'[^']*')[^>"']*)*>)|<!--[\s\S]*?(?:-->|$)/g, (m, tag) => tag ?? '');
+function linesOf(file) {
+	const strip = file.name.endsWith('.css') ? withoutCssComments : withoutHtmlComments;
+	const split = (t) => strip(t).split(/\r\n|\r|\n/).map((l) => l.trim()).filter(Boolean);
+	return { name: file.name, typed: split(withoutRegions(file.text, file.regions ?? [])), full: split(file.text) };
+}
 
 /*
 Lines one file repeats from another, `run` lines in a row or more, and at least `chars` characters in the run so that a few closing
-tags never count. `files` is `[{ name, text, regions }]`, `regions` a page's generated regions (tools/page-regions.mjs), left out
-where each holds exactly its generator's lines; the answer gives, for each pair, the lines of the first that lie in a run the
-second repeats.
+tags never count. `files` is `[{ name, text, regions }]`, `regions` a page's generated regions (tools/page-regions.mjs). Each file's
+typed lines are looked for in the other's every line, generated or not: a region is left out only where both sides of a match
+are generated, each held to its one master by its generator. The answer gives, for each pair, the copied lines of either.
 */
 export function copiedLines(files, { run = 5, chars = 80 } = {}) {
-	const lines = files.map((f) => ({ name: f.name, lines: comparable(f.text, f.regions ?? []) }));
-	const out = [];
-	for (let a = 0; a < lines.length; a++) for (let b = a + 1; b < lines.length; b++) {
-		const windows = new Set();
-		for (let i = 0; i + run <= lines[b].lines.length; i++) windows.add(lines[b].lines.slice(i, i + run).join('\n'));
-		const copied = new Set();
-		for (let i = 0; i + run <= lines[a].lines.length; i++) {
-			const w = lines[a].lines.slice(i, i + run).join('\n');
+	const all = files.map(linesOf);
+	const windowsOf = (lines) => { const w = new Set(); for (let i = 0; i + run <= lines.length; i++) w.add(lines.slice(i, i + run).join('\n')); return w; };
+	const typedIn = (from, to) => {
+		const windows = windowsOf(to.full), copied = new Set();
+		for (let i = 0; i + run <= from.typed.length; i++) {
+			const w = from.typed.slice(i, i + run).join('\n');
 			if (w.length >= chars && windows.has(w)) for (let k = i; k < i + run; k++) copied.add(k);
 		}
-		if (copied.size) out.push({ files: [lines[a].name, lines[b].name], lines: [...copied].sort((x, y) => x - y).map((k) => lines[a].lines[k]) });
+		return [...copied].sort((x, y) => x - y).map((k) => from.typed[k]);
+	};
+	const out = [];
+	for (let a = 0; a < all.length; a++) for (let b = a + 1; b < all.length; b++) {
+		const lines = [...new Set([...typedIn(all[a], all[b]), ...typedIn(all[b], all[a])])];
+		if (lines.length) out.push({ files: [all[a].name, all[b].name], lines });
 	}
 	return out;
 }
