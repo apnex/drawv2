@@ -19,8 +19,8 @@ import path from 'node:path';
 import { FOLDERS, PARTS, PAGES, COPIES, SCANNER_ROOTS } from './layers.mjs';
 import { classesPutOnElements, classesInMarkup, stylesheetsInSource, copiedStyleRules, foreignStyleRules, stylesDrawnByNoPart, copiedLines, modulesNoEntryReaches, styleRulesOf, judgeFindings, judgeExceptions } from './copies.mjs';
 import { exceptionFaults } from './exceptions.mjs';
-import { strayMarkers } from './regions.mjs';
-import { markupFaults } from './markup.mjs';   // H25.4: refuses malformed comments/attributes/escapes in pages and sheets   // H25.4: the markers no region left out opens or closes
+import { strayMarkers } from './regions.mjs';   // H25.4: the markers no region left out opens or closes
+import { markupFaults } from './markup.mjs';   // H25.4: refuses malformed comments/attributes/escapes in pages and sheets
 import { PAGE_REGIONS } from './page-regions.mjs';   // H25.4: the regions the generators write into the pages
 
 const ROOT = path.resolve(import.meta.dirname, '..');
