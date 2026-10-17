@@ -1014,12 +1014,20 @@ H25.0 (B365) -- WHAT scan-copies READS BEYOND THE FOLDERS, AND THE COPIES IT LET
               kernel/theme.mjs (tools/colour-tokens.mjs), the core primitives' sheet, and the simulation's, whose modules are listed
               files in engine/ rather than a folder (H25.1); and the canvas's, split from the page's chrome (H25.2)
   exceptions  per measure, each copy the director ruled may stand: `{ cites: [ruling], trigger }`, resolved by tools/exceptions.mjs.
-              H25's exit: every finding in tools/copies-record.json is one of these
+              H25's exit: every finding in tools/copies-record.json is one of these. H25-4 (B374): the spawner's two rules and the
+              zone grid's cursor
 The findings themselves are tools/copies-record.json, which may only shrink, inside tools/copies-ceiling.json, frozen when H25
 opened (its hash is pinned in tests/scan-copies.test.js).
 */
 export const COPIES = {
 	entries: [...RULES.L7.roots, ...Object.values(PAGES).flatMap((p) => p.scripts.map((s) => `${p.base}${s}`)), 'lab/server.mjs'],
 	owners: { 'app/style.css': 'product-page', 'app/canvas.css': 'canvas', 'app/tokens.css': 'colours', 'kernel/primitives.css': 'primitives', 'engine/simulation.css': 'simulation' },
-	exceptions: {},
+	// H25-4 (B374): the three foreign style rules the director ruled may stand, each with what reopens it
+	exceptions: {
+		'foreign style rules': {
+			'.waypoint.spawning .wp-ring': { cites: ['H25-4'], trigger: 'a second plugin puts a state on a waypoint, or the director asks for the spawner to be easier to see -- either redesigns how a waypoint\'s states are decided, in one sheet or as data' },
+			'.waypoint.spawning .wp-dot': { cites: ['H25-4'], trigger: 'a second plugin puts a state on a waypoint, or the director asks for the spawner to be easier to see -- either redesigns how a waypoint\'s states are decided, in one sheet or as data' },
+			'#container.zonegrid .zone': { cites: ['H25-4'], trigger: 'a kind other than the zone takes its pointer from the zone grid, or zones stop being placed on the layouts plugin\'s zone layout' },
+		},
+	},
 };

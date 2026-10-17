@@ -8,6 +8,7 @@ canvas's states. H25.1 (B366): moved here from app/style.css word for word, in t
 .zone { --zstroke: var(--tok-zone-stroke); --zwidth: 1; }
 .zone.hover { --zwidth: 2; }
 .zone.selected { --zstroke: var(--tok-accent); }
+/* H25-4 (B374): the layouts plugin's zone grid, shown under Shift, says a zone can be moved -- a ruled exception (tools/layers.mjs COPIES.exceptions) */
 #container.zonegrid .zone { cursor: move; }
 .zone.armed { --zstroke: var(--tok-danger); cursor: not-allowed; }
 .zone.armed-clone { --zstroke: var(--tok-clone); cursor: copy; }

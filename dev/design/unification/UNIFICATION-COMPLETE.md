@@ -189,6 +189,7 @@ Each stage: tests first; the record lowered in its commit, which lists each find
    The six dead names' rules and the lab's redundant `#status` rule are deleted; the helpers that put `.marquee` and the status cells' classes do so where the reading sees them.
    Proves: styled names nothing draws at zero; copied style rules at zero.
    AMENDED 2026-10-17, as built (B373): the six dead names' rules deleted, with `.waypoint.linkband` (a state only devices declare); the lab's `#status` keeps its gap and takes its display from the page's sheet; the selection rectangle's class declared as a box row declares its preview (`app/src/input.js` `MARQUEE`), the deleted-diagrams list's cells named by a `cls` key (`app/src/main.js`); 36 findings to 23. The three foreign style rules -- the spawner's two, the zone grid's cursor -- are owed a ruling (B374), as H25.3b.
+   AMENDED 2026-10-17, H25.3b: the director ruled the three exceptions (`dev/DECISIONS.md` H25-4), each in `tools/layers.mjs` `COPIES.exceptions` with its trigger.
 4. **H25.4 -- one canvas layout.**
    The layer list is declared once in the product's composition; the pages' `#container` is generated from it and checked (`P3`), as their stylesheet lists are; the lab's `NEEDED`, the export and `tests/run-picture.test.js` read the declaration; the copied-lines measure passes over a region marked as generated, which its generator holds equal to the declaration.
    Proves: copied lines at zero.

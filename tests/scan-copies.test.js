@@ -124,7 +124,9 @@ test('H25.0: the duplicate scanners read every folder scan-layers walks but the 
 	for (const d of ['network', 'devices', 'zones', 'groups', 'layouts', 'product', 'lab', 'cli']) assert.ok(product.includes(d), `control: ${d} is a folder scan-layers walks`);
 	assert.deepEqual(SCANNER_ROOTS.twins, product, 'scan-twins compares every product folder (it read six, none a plugin\'s)');
 	assert.deepEqual(SCANNER_ROOTS.copies, product, 'scan-copies looks in every product folder');
-	assert.deepEqual(COPIES.exceptions, {}, 'no copy is ruled to stand yet');
+	// RESTATED at H25.3b (B374): the director ruled three copies may stand (dev/DECISIONS.md H25-4), each citing it with a trigger
+	assert.deepEqual(Object.fromEntries(Object.entries(COPIES.exceptions).map(([k, v]) => [k, Object.keys(v).sort()])), { 'foreign style rules': ['#container.zonegrid .zone', '.waypoint.spawning .wp-dot', '.waypoint.spawning .wp-ring'] }, 'the copies ruled to stand, and no others');
+	for (const x of Object.values(COPIES.exceptions).flatMap((m) => Object.values(m))) assert.ok(x.cites.includes('H25-4') && x.trigger.length > 20, 'each cites the ruling and says what reopens it');
 });
 
 /*

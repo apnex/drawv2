@@ -130,6 +130,10 @@ is TRANSIENT: the same colour would say two things with opposite lifetimes.
 Placed ABOVE `.armed` deliberately: arming a TOOL is a transient thing the person is doing right
 now and must still shout over this, which is a lasting property of the diagram. Same ordering
 reasoning as the selected-path highlight above.
+
+H25-4 (B374): these two name the simulation's `spawning`, and stand here by the director's ruling -- the order of a waypoint's
+states in one sheet decides which wins, and moving them to the simulation's sheet would leave them naming the network's classes
+instead. A ruled exception in tools/layers.mjs `COPIES.exceptions`, with the trigger that reopens it.
 */
 .waypoint.spawning .wp-ring { stroke: var(--tok-spawning); stroke-opacity: 1; stroke-width: 3; }
 .waypoint.spawning .wp-dot { fill: var(--tok-spawning); }
