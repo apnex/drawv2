@@ -33,7 +33,7 @@ import { composeCanvas } from '../../app/src/compose-canvas.js';   // K8: the ca
 import { commit, undo, redo } from '../../planner/txn.mjs';
 import { Log } from '../../planner/log.mjs';
 import { productKinds } from '../../product/kinds.mjs';
-import { PRODUCT_CANVAS } from '../../product/canvas.mjs';   // the plugins' canvas parts (C-a)
+import { PRODUCT_CANVAS, CANVAS_LAYERS } from '../../product/canvas.mjs';   // the plugins' canvas parts (C-a), and the canvas's layers (H25.4)
 // the network plugin -- incubated here from 2026-09-28, composed into a page by its one function since V-b (H18.26), as the
 // product page composes it
 import { routeLink } from '../../network/pipes.mjs';
@@ -46,9 +46,10 @@ The DOM contract, asserted rather than assumed.
 A missing layer is a silent null: the renderer appends into nothing and the canvas stays blank with
 no error, which is the hardest kind of failure to attribute. The product page and this one declare
 the same ids, so a divergence between them is a real defect and is named here at boot.
+H25.4 (B376): the canvas's layers are the composition's (product/canvas.mjs CANVAS_LAYERS), written into this page by
+tools/canvas-layout.mjs; this checks for them rather than typing them a third time.
 */
-const NEEDED = ['container', 'canvas', 'grid-nodes', 'grid-zones', 'snaplayer', 'zones', 'pipes', 'groups',
-	'links', 'waypoints', 'nodes', 'movers', 'overlay', 'readout-bottom', 'lab-notice', 'kdefs'];
+const NEEDED = ['container', 'canvas', ...CANVAS_LAYERS, 'readout-bottom', 'lab-notice', 'kdefs'];
 const missing = NEEDED.filter((id) => !document.getElementById(id));
 if (missing.length) throw new Error(`the lab page is missing: ${missing.join(', ')}`);
 

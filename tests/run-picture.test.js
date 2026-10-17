@@ -2,7 +2,7 @@
 // (network/appearance.mjs RUN_PICTURE): the canvas in run mode and the export draw the same picture, and the export
 // draws each link along its route, a down link with the canvas's down look (H1). CONSUMERS-ROUTE.md, stage R-c.
 
-import { PRODUCT_CANVAS } from '../product/canvas.mjs';   // C-a: the plugins' canvas parts, their painters among them
+import { PRODUCT_CANVAS, CANVAS_LAYERS } from '../product/canvas.mjs';   // C-a: the plugins' canvas parts, their painters among them; H25.4: the canvas's layers
 import { test } from 'node:test';
 import { KINDS, heldLayouts } from './fixtures/composed.mjs';   // O-b1: a reader is handed its caller's kinds
 import assert from 'node:assert/strict';
@@ -142,18 +142,12 @@ test('R-c: the download draws each link along its route over pipes, and a down l
 /*
 H24.8 (B361) -- the download stacks what it draws as the page does. The export stacked its layers in the order the parts are listed
 -- zones, groups, devices, links, waypoints -- so every device in a published diagram lay under the links, where the page lays the
-links beneath the devices. The page's order is the one `#container` declares, in the product page and the lab alike, and the
-export reads it from the product page (server/svg.mjs `pageLayerOrder`).
+links beneath the devices. The page's order is the one `#container` declares, in the product page and the lab alike.
+RESTATED at H25.4 (B376): the order is declared once (product/canvas.mjs CANVAS_LAYERS) and written into both pages
+(tools/canvas-layout.mjs, held by tests/canvas-layout.test.js); the export stacks by the declaration.
 */
-const containerLayers = (file) => {
-	const html = fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
-	const svg = html.match(/<svg id="container"[\s\S]*?<\/svg>/)[0];
-	return [...svg.matchAll(/<g id="([\w-]+)"/g)].map((m) => m[1]);
-};
-
 test('H24.8 (B361): the download stacks the things it draws in the page\'s order of layers -- links beneath the devices, waypoints between', () => {
-	const order = containerLayers('app/index.html');
-	assert.deepEqual(containerLayers('lab/index.html'), order, 'the lab lays its layers out as the product page does');
+	const order = CANVAS_LAYERS;
 	const at = (layer) => order.indexOf(layer);
 	assert.ok(at('zones') < at('links') && at('links') < at('waypoints') && at('waypoints') < at('nodes'), 'control: the page lays zones, then links, then waypoints, then devices');
 	const svg = svgDocument(doc(), KINDS);
@@ -166,11 +160,12 @@ test('H24.8 (B361): the download stacks the things it draws in the page\'s order
 	assert.ok(Math.max(...waypoints) < Math.min(...devices), 'and every waypoint before every device, so a device lies over the links that reach it');
 });
 
-test('H24.8 (B361): the export stacks by the page\'s own layout -- a part drawing into a layer the page does not lay out is refused, not stacked by guess', () => {
+// RESTATED at H25.4 (B376): the layout is the composition's declaration, which the pages are written from
+test('H24.8 (B361): the export stacks by the canvas\'s declared layout -- a part drawing into a layer it does not hold is refused, not stacked by guess', () => {
 	const stray = { owner: 'a stray part', painters: [{ layer: 'nowhere', kind: 'zone' }] };
 	PRODUCT_CANVAS.push(stray);
 	try {
-		assert.throws(() => svgDocument(doc(), KINDS), /draws into nowhere, a layer app\/index\.html does not lay out/);
+		assert.throws(() => svgDocument(doc(), KINDS), /draws into nowhere, a layer the canvas's layout does not hold/);
 	} finally { PRODUCT_CANVAS.pop(); }
 	assert.ok(svgDocument(doc(), KINDS).startsWith('<svg'), 'control: without it the export draws');
 });

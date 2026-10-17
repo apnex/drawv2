@@ -48,4 +48,20 @@ the registries' colours written in -- what H24.8 (B361) asked of the export, vie
 rather than a copy held to it by a test.
 */
 export const CHROME_STYLESHEETS = ['app/style.css'];
+
+/*
+H25.4 (B376): THE CANVAS'S LAYOUT -- the viewBox, whose rectangle is the canvas's ground, and the layers a page stacks, back to
+front. Which part's layer lies over which is a fact of the composition, so it is declared here once: tools/canvas-layout.mjs writes
+it into each page's `#container` between generated markers (the gate checks), the lab checks its page holds each layer
+(lab/src/root.js), and the export stacks what it draws by it (server/svg.mjs) -- H24.8 (B361) found the published file stacking
+its layers in another order than the page. A part's painter names the layer it draws into; one this does not hold is refused.
+*/
+export const CANVAS_VIEWBOX = '-960 -540 1920 1080';
+export const CANVAS_LAYERS = [
+	'grid-nodes', 'grid-zones', 'snaplayer', 'zones',
+	'pipes',       // V-b (H18.26): the network's pipes, beneath the links that run over them
+	'groups', 'links', 'waypoints', 'nodes',
+	'movers',      // H12.8: over the graph, so a packet is never hidden by the line it travels; in a layer of their own, so the renderer's reconcile never sees them -- derived presentation, not document entities
+	'overlay',
+];
 export const PAGE_STYLESHEETS = ['app/tokens.css', 'kernel/primitives.css', ...PRODUCT_CANVAS.flatMap((p) => p.stylesheets ?? []), ...CHROME_STYLESHEETS, 'app/canvas.css'];

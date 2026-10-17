@@ -193,6 +193,7 @@ Each stage: tests first; the record lowered in its commit, which lists each find
 4. **H25.4 -- one canvas layout.**
    The layer list is declared once in the product's composition; the pages' `#container` is generated from it and checked (`P3`), as their stylesheet lists are; the lab's `NEEDED`, the export and `tests/run-picture.test.js` read the declaration; the copied-lines measure passes over a region marked as generated, which its generator holds equal to the declaration.
    Proves: copied lines at zero.
+   AMENDED 2026-10-17, as built (B376): `product/canvas.mjs` declares `CANVAS_VIEWBOX` and `CANVAS_LAYERS`, the layer order's reasons with them; `tools/canvas-layout.mjs` writes each page's `<svg id="container">` between generated markers, in the gate with `--check`, through `tools/regions.mjs`, which `tools/stylesheets.mjs` now shares; the lab's `NEEDED` spreads the declaration; the export stacks by it, where it read the product page's markup; `tests/run-picture.test.js` reads the declaration, and `tests/canvas-layout.test.js` holds each page to it. Copied lines 15 to 0; 23 findings to 8 -- the three ruled exceptions and the five modules no entry reaches (H25.5, and D5's route list).
 5. **H25.5 -- one renderer (D4).**
    The old scene renderer's four modules are deleted, with their records in `tests/core-names-no-plugin.test.js` and the manifest's `NOT_PARTS`.
    Each test that read them reads the real renderer, or is deleted with the commit naming the test of the real renderer that already says what it said; no test is deleted without one.

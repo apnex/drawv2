@@ -10,40 +10,28 @@ the parts' `defs`, each element carrying as attributes what the page's own style
 import { STD, L_STD } from '../kernel/spec.mjs';
 import { sharedDefs } from '../kernel/renderer.mjs';
 import { Renderer } from '../app/src/renderer.js';
-import fs from 'node:fs';
-import { PRODUCT_CANVAS } from '../product/canvas.mjs';
+import { PRODUCT_CANVAS, CANVAS_LAYERS } from '../product/canvas.mjs';
 import { drawingRules, styleMarkup, nodeContext, drawnOf } from './svg-style.mjs';   // H25.2: the page's rules, applied
 import { COMPOSED_KINDS, readModel } from '../product/types.mjs';
 
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 /*
-H24.8 (B361): THE PAGE'S ORDER OF LAYERS IS THE EXPORT'S. The product page lays out its canvas's layers, back to front, in
-`#container` (app/index.html; the lab's page is held to the same list by tests/run-picture.test.js), and the export stacks the
-layers its parts draw into in that order, read from the page itself -- one declaration, no copy to drift. The export once
-stacked them in the order the parts are listed, which drew every device of a published diagram under its links. A layer the
-page does not lay out is refused, not stacked by guess.
+H24.8 (B361): THE PAGE'S ORDER OF LAYERS IS THE EXPORT'S. The export stacks the layers its parts draw into back to front as the
+page does; it once stacked them in the order the parts are listed, which drew every device of a published diagram under its links.
+H25.4 (B376): the order is the composition's (product/canvas.mjs CANVAS_LAYERS), which tools/canvas-layout.mjs writes into the
+pages -- read here from the declaration, where it was read out of the product page's markup. A layer it does not hold is refused,
+not stacked by guess.
 */
-let pageLayers = null;
-function pageLayerOrder() {
-	if (pageLayers) return pageLayers;
-	const html = fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf8');
-	const container = html.match(/<svg id="container"[\s\S]*?<\/svg>/)?.[0];
-	if (!container) throw new Error('app/index.html lays out no <svg id="container">, whose order of layers the export stacks by');
-	pageLayers = [...container.matchAll(/<g id="([\w-]+)"/g)].map((m) => m[1]);
-	return pageLayers;
-}
-
 function layerIdsOf(parts) {
 	const drawn = new Set();
 	for (const p of parts) {
 		for (const x of p.painters ?? []) if (x.layer) drawn.add(x.layer);
 		for (const x of p.appearances ?? []) if (x.root?.layer) drawn.add(x.root.layer);
 	}
-	const order = pageLayerOrder();
-	const unplaced = [...drawn].filter((id) => !order.includes(id));
-	if (unplaced.length) throw new Error(`a canvas part draws into ${unplaced.join(', ')}, a layer app/index.html does not lay out`);
-	return order.filter((id) => drawn.has(id));
+	const unplaced = [...drawn].filter((id) => !CANVAS_LAYERS.includes(id));
+	if (unplaced.length) throw new Error(`a canvas part draws into ${unplaced.join(', ')}, a layer the canvas's layout does not hold (product/canvas.mjs CANVAS_LAYERS)`);
+	return CANVAS_LAYERS.filter((id) => drawn.has(id));
 }
 
 function headlessSvg(layerIds) {

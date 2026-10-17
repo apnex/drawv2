@@ -6,23 +6,7 @@
 		".waypoint.spawning .wp-ring"
 	],
 	"styled names nothing draws": [],
-	"copied lines": [
-		"app/index.html and lab/index.html: </svg>",
-		"app/index.html and lab/index.html: <g id=\"grid-nodes\"></g>",
-		"app/index.html and lab/index.html: <g id=\"grid-zones\"></g>",
-		"app/index.html and lab/index.html: <g id=\"groups\"></g>",
-		"app/index.html and lab/index.html: <g id=\"links\"></g>",
-		"app/index.html and lab/index.html: <g id=\"movers\"></g>",
-		"app/index.html and lab/index.html: <g id=\"nodes\"></g>",
-		"app/index.html and lab/index.html: <g id=\"overlay\"></g>",
-		"app/index.html and lab/index.html: <g id=\"pipes\"></g>",
-		"app/index.html and lab/index.html: <g id=\"snaplayer\"></g>",
-		"app/index.html and lab/index.html: <g id=\"waypoints\"></g>",
-		"app/index.html and lab/index.html: <g id=\"zones\"></g>",
-		"app/index.html and lab/index.html: <main id=\"stage\">",
-		"app/index.html and lab/index.html: <rect id=\"canvas\" x=\"-960\" y=\"-540\" width=\"1920\" height=\"1080\"/>",
-		"app/index.html and lab/index.html: <svg id=\"container\" viewBox=\"-960 -540 1920 1080\" xmlns=\"http://www.w3.org/2000/svg\">"
-	],
+	"copied lines": [],
 	"modules no entry reaches": [
 		"kernel/adapt.mjs",
 		"kernel/engine.mjs",
