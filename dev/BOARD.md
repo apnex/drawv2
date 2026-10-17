@@ -1525,7 +1525,7 @@ AMENDED 2026-10-17: H25.2 done -- the export and the favicon carry the page's ow
 AMENDED 2026-10-17: H25.2 live in production (`4beb3c2`), at the director's "continue as recommended"; its published SVG and favicon draw 0 pixels differently before and after. The director lifted the plan's no-visible-change fence (`dev/DECISIONS.md` H25-3), and the spawning endpoint B370 had been held behind it is H25.2b.
 AMENDED 2026-10-17: H25.2b done -- the published file draws a spawning endpoint as the page does, its circles keeping their classes; the probe against production finds two of the director's diagrams and the parity board changed at their spawners and nothing else (B370 closed).
 AMENDED 2026-10-17: H25.2b live in production (`72cd982`), at the director's "continue"; the published diagram and the favicon byte-identical before and after.
-AMENDED 2026-10-17: H25.3 done -- the dead rules deleted, the lab's restated rule gone, the selection rectangle's and the deleted-diagrams list's classes put where the measure reads them; no pixel changed (B373 closed). Copy findings standing: 23, the three foreign style rules owed a ruling (B374, H25.3b).
+AMENDED 2026-10-17: H25.3 done -- the dead rules deleted, the lab's restated rule gone, the selection rectangle's and the deleted-diagrams list's classes put where the measure reads them; no pixel changed, and one style reading differs as explained -- the link-band state, which the product never sets on a waypoint, no longer gives one the crosshair (B373 closed). Copy findings standing: 23, the three foreign style rules owed a ruling (B374, H25.3b).
 
 ---
 
@@ -1576,6 +1576,7 @@ Scored so the comparison is a judgement, not an omission.\
 | **B364** | S5 | Two marks for a device kept for a future use: a blue inner outline and a small corner mark (H24.9) | a device state needs showing on the device itself -- a role, a status, a fault or a selection kind -- or the director asks for C or D. |
 | **B371** | S4 | librsvg before 2.50 draws no device in the published file: it reads no plain `href` (found by H25.2's verifier) | a published file is seen drawn without its devices where it is shared, or the director asks for the file to draw in older renderers. |
 | **B372** | S4 | A page that pastes the published file inline restyles more of it than before: presentation attributes lose to its rules (found by H25.2's verifier) | a published file is seen restyled by a page it is pasted into, or the director asks for the file to hold its look against a host's rules. |
+| **B375** | S5 | A waypoint shows the move cursor, though a left press on it draws a link (found by H25.3's verifier) | the director asks for the waypoint's cursor to say what a press does, or the canvas's cursors are next revised. |
 | **B357** | S4 | A long or bent link shows its direction only at its far end (H24.6-4 kept it so for now) | the director reopens direction along a link, or a reader misreads a long link's direction. |
 | **B180** | S3 | Sampling the derived world stopped being uniform when combat made health accumulate: position is still a closed form of `t`, health must be folded | wanting to scrub backwards -- replay a wave, review a death, audit a disputed kill; not slowness. |
 

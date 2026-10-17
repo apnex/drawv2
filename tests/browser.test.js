@@ -1781,6 +1781,34 @@ test('H24.8 (B361): the published SVG draws what view mode draws -- the same thi
 });
 
 /*
+H25.3 (B373) -- THE SELECTION RECTANGLE IS DRAWN WITH THE CLASS ITS RULE STYLES. Its class is declared once (app/src/input.js
+`MARQUEE`), where the copy measure reads what a module puts on its elements. The measure credits the declaration, not the draw:
+H25.3's verifier misspelt the class at the call, kept the declaration, and every check passed. So this reads the rectangle drawn.
+*/
+test('H25.3: a drag on empty canvas draws the selection rectangle with the class its rule styles, and takes it away on release', { skip: SKIP }, async () => {
+	const t = await attach(`http://127.0.0.1:${port}/${PARITY_DIAGRAM}`);
+	try {
+		assert.ok(await until(t, `document.getElementById('node-fa00a1') ? 1 : 0`, 8000), 'precondition: the parity board loaded');
+		const screen = (x, y) => t.eval(`JSON.stringify((() => { const m = document.getElementById('container').getScreenCTM(); return [m.a * ${x} + m.e, m.d * ${y} + m.f]; })())`).then(JSON.parse);
+		const rects = () => t.eval(`JSON.stringify([...document.querySelectorAll('#overlay rect')].map((r) => ({ cls: r.getAttribute('class'), dash: getComputedStyle(r).strokeDasharray })))`).then(JSON.parse);
+		const [ax, ay] = await screen(-820, 380), [bx, by] = await screen(-700, 480);   // left of everything the board draws
+		assert.deepEqual(await rects(), [], 'control: no rectangle before the drag');
+		await t.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: ax, y: ay });
+		await t.send('Input.dispatchMouseEvent', { type: 'mousePressed', x: ax, y: ay, button: 'left', buttons: 1, clickCount: 1 });
+		for (const f of [0.3, 0.6, 1]) await t.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: ax + (bx - ax) * f, y: ay + (by - ay) * f, button: 'left', buttons: 1 });
+		await sleep(100);
+		const during = await rects();
+		await t.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: bx, y: by, button: 'left', buttons: 0, clickCount: 1 });
+		await sleep(150);
+		assert.deepEqual(during.map((r) => r.cls), ['marquee'], 'mid-drag: one rectangle, of the class the page\'s rule names');
+		assert.notEqual(during[0].dash, 'none', 'and the rule reaches it -- its dashes drawn');
+		assert.deepEqual(await rects(), [], 'gone on release');
+	} finally {
+		await t.close();
+	}
+});
+
+/*
 B324 (H20.2) -- A TEST LEAVES NO TAB BEHIND. `t.ws.close()` closed the debugging socket and left the tab open and connected, so by
 the palette drop test four tabs were live editors of its diagram; each test's tab is closed now (`close`, above).
 */

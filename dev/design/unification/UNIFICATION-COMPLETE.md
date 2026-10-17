@@ -212,7 +212,7 @@ Each stage: tests first; the record lowered in its commit, which lists each find
 3. `tools/layers.mjs` `RATCHETS.L5p` is empty.
 4. The H25.0b probe, run by an agent that did not build the stage, renders every pinned document at the H25.0b baseline commit and at the candidate commit, in the same browser build, in the renderer's authoring mode, in edit mode, and in run mode with the movers' layer hidden and the clock fixed: no pixel differs between the two.
 5. The same probe renders the served SVG of every diagram the director has published, and the favicon the server serves, at both commits: no pixel differs; and on the state board, every element's computed style in each interaction state -- selected, armed, armed to clone, hover, an end being dragged, link band, down, down and selected, blocking, a text box's preview, a run-mode clickable under the pointer -- is equal at both commits.
-   AMENDED 2026-10-17 (`dev/DECISIONS.md` H25-3): in 4 and 5, "no pixel differs" reads "every pixel that differs is explained, and judged correct by the director".
+   AMENDED 2026-10-17 (`dev/DECISIONS.md` H25-3): in 4 and 5, "no pixel differs" reads "every pixel that differs is explained, and judged correct by the director", and the computed styles likewise -- H25.3's deleted waypoint link-band rule left one reading differing for good, a state the product never sets on a waypoint (B373).
 6. `tests/browser.test.js` `H24.8 (B361)` runs, not skipped, and passes, its board holding a down link with a head and a group.
 7. Every `var()` in a served SVG carries a literal fallback.
    AMENDED 2026-10-17 with D3 (`dev/DECISIONS.md` H25-2): a served SVG and the favicon carry no `var()` at all, no stylesheet and no pointer rule (`tests/svgexport.test.js` H25.2).
