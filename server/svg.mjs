@@ -216,9 +216,9 @@ export function svgDocument(doc, kinds = COMPOSED_KINDS, pad = 18) {
 	const vbX = minX - pad, vbY = minY - pad, vbW = (maxX - minX) + 2 * pad, vbH = (maxY - minY) + 2 * pad;
 	// H25.2 (B366; dev/DECISIONS.md H25-2): the page's rules applied and written as each element's attributes, so the file carries no
 	// stylesheet, asks no CSS of a renderer and restyles nothing it is pasted into. Applied to the drawing as the file writes it --
-	// its layers flattened, a waypoint's circles bare, a line's id given to its group -- so a rule meets each element exactly where a
-	// browser reading this file with the page's sheets would meet it, and nothing the painted tree held that the file does not
-	// styles anything (a spawning endpoint's ring: tests/svg-style.test.js, B370).
+	// its layers flattened, a line's id given to its group -- so a rule meets each element exactly where a browser reading this file
+	// with the page's sheets would meet it, and nothing the painted tree held that the file does not styles anything. A waypoint's
+	// circles keep their classes (H25.2b, B370), so the page's spawning rule draws a spawner as on the page (tests/svg-style.test.js).
 	const rules = drawingRules();
 	const defs = styleMarkup(sharedDefs(undefined, undefined, PRODUCT_CANVAS.map((p) => p.defs).filter(Boolean).join('\n')), rules, nodeContext(rules));
 	const items = styleMarkup(svg.children.flatMap((layer) => withCompanions(layer.children).map((c) => (c.companions ? linkGroup(c, layerSet) : serializeNode(c, layerSet)))).filter(Boolean).join(''), rules);

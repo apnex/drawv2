@@ -128,7 +128,9 @@ const LOOKS = `(() => {
 	const out = {};
 	const look = (el, key) => { const cs = getComputedStyle(el); out[key] = P.map((p) => cs.getPropertyValue(p)).join('|'); };
 	let n = 0;
-	for (const el of document.querySelectorAll('#container *')) look(el, (el.closest('[id]')?.id ?? '') + ' ' + el.tagName + '.' + (el.getAttribute('class') ?? '') + ' #' + (n++));
+	// H25.2b (B370): the movers left out, as the pictures leave them out -- the parity board holds a spawner, whose packets in run mode
+	// come and go with the clock, and a reading keyed by each element's place would count a packet more on one side as a difference
+	for (const el of document.querySelectorAll('#container *')) if (!el.closest('#movers')) look(el, (el.closest('[id]')?.id ?? '') + ' ' + el.tagName + '.' + (el.getAttribute('class') ?? '') + ' #' + (n++));
 	n = 0;
 	for (const el of document.querySelectorAll('header *, footer *, #palette *')) look(el, 'chrome ' + el.tagName + '#' + el.id + '.' + (el.getAttribute('class') ?? '') + ' #' + (n++));
 	return out;

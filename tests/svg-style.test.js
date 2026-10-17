@@ -100,9 +100,13 @@ test('H25.2b: the rules meet the file as written, and the file writes what they 
 	const r = attrs('wp-ring'), d = attrs('wp-dot');
 	assert.deepEqual([r.stroke, r['stroke-width'], r['stroke-opacity']], [ring.stroke, ring['stroke-width'], ring['stroke-opacity']], 'the ring in the page\'s spawning colour and width');
 	assert.equal(d.fill, dot.fill, 'the dot likewise');
-	const plain = out.match(/<g id="node-fa00b1"><g class="waypoint[^"]*">(.*?)<\/g><\/g>/);
-	assert.ok(plain && !/spawning/.test(plain[0]), 'control: the junction, which spawns nothing');
-	assert.ok(!plain[1].includes(`"${ring.stroke}"`), 'is not drawn in it');
+	const { NETWORK_TOKENS } = await import('../network/appearance.mjs');
+	for (const id of ['node-fa00b1', 'node-fa00b3']) {
+		const plain = out.match(new RegExp(`<g id="${id}"><g class="waypoint[^"]*">(.*?)</g></g>`));
+		assert.ok(plain && !/spawning/.test(plain[0]), `control: ${id} -- the junction, and the plain endpoint -- spawns nothing`);
+		const strokes = [...plain[1].matchAll(/ stroke="([^"]*)"/g)].map((m) => m[1]);
+		assert.ok(strokes.length > 0 && strokes.every((s) => s === NETWORK_TOKENS.waypoint), `and ${id} is drawn in the waypoint colour, not the spawning one: ${strokes}`);
+	}
 	assert.ok(out.includes('>b&lt;r&gt;&amp;&quot;v</text>'), 'and a name the file escapes is read back and written once escaped, not twice');
 	assert.doesNotMatch(out, /&amp;(gt|lt|amp|quot);/, 'nothing escaped twice');
 });

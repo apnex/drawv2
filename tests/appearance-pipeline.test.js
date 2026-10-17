@@ -143,7 +143,7 @@ test('H24.9 (B362): a device the graph makes a junction draws no junction mark -
 		pipes: LINKS.flatMap((l) => { const s = [l.src, ...(l.via ?? []), l.dst]; return s.slice(1).map((b, i) => pipeEntity(s[i], b, 'link')); }),
 		zones: [], groups: [], selection: [],
 	});
-	// the export writes a waypoint's circles without their classes (server/svg.mjs `serializeNode`), so a ring is known by its radius
+	// a ring is known by its radius -- CORRECTED at H25.2b (B370): the export keeps a waypoint circle's class now; the radius still names it
 	const { waypointJunction } = await import('../network/appearance.mjs');
 	const ring = new RegExp(`<circle[^>]*\\br="${waypointJunction().radius}"`);
 	const group = (id) => { const at = exported.indexOf(`<g id="${id}"`); return exported.slice(at, exported.indexOf('</g>', at + 1)); };

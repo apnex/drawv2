@@ -51,7 +51,7 @@ Ratifying this delta ratifies decisions D1 to D6 of section 9 as recommended, un
 ## 4. The anti-scope fence
 
 - **No visible change.** Every stage is held to section 7's probe: no pixel differs, in any mode, on the pinned documents; a stage that changes a pixel stops and is shown to the director.
-  AMENDED 2026-10-17 by the director (`dev/DECISIONS.md` H25-3): correctness and quality come first, and the director never asked for no visible change -- this fence was the plan's own. The probe still runs on every stage, to find every difference rather than to forbid one: each is explained and judged, a change that makes a picture correct is wanted and shown to the director, and a difference nobody can explain stops the stage.
+  AMENDED 2026-10-17 by the director (`dev/DECISIONS.md` H25-3): correctness and quality come first, and the director never asked for no visible change -- this fence was the agent's own, offered with H25's first action and stated here. The probe still runs on every stage, to find every difference rather than to forbid one: each is explained and judged, a change that makes a picture correct is wanted and shown to the director, and a difference nobody can explain stops the stage.
 - **Moving a rule moves it.** A rule moves word for word with its selector unchanged; nothing is restyled, merged or renamed on the way.
 - **No behaviour change and no new feature.** The router is not rewritten (D5); the CLI gains no route and changes no output (D6).
 - **No stored document changes.** No schema change, no migration, no repair at boot.
@@ -290,6 +290,7 @@ Each stage: tests first; the record lowered in its commit, which lists each find
 
 **Guardrails for the build:**
 - No pixel changes (criteria 4, 5).
+  AMENDED 2026-10-17 by the director (`dev/DECISIONS.md` H25-3): "no pixel changes" reads "every pixel that changes is explained and judged correct by the director"; so do the A8 and A13 rows and the tension on churn above -- a stage proves each difference correct, and the director's attention goes to each difference, shown.
 - A rule moves word for word.
 - No stored document changes.
 - No finding is removed by moving a copy out of the scanner's sight: each stage's commit names every finding it removes and the declaration that replaced it, and the probe's runner checks that list against the diff.
