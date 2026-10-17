@@ -126,23 +126,17 @@ test('R-c: the download draws each link along its route over pipes, and a down l
 	d.links.push({ id: 'link-000005', name: 'l5', src: 'node-0000a1', dst: 'node-0000a2' });   // a plain link: no pipe joins a and c
 	d.pipes.push(pipeEntity('node-0000a1', 'node-0000f1', 'hand'), pipeEntity('node-0000a2', 'node-0000f1', 'hand'));
 	const svg = svgDocument(d, KINDS);
-	// RESTATED at H25.2 (B366, D3): a link's line is written as the painter drew it, its class kept, inside the group named by its id,
-	// and its colour is the page's own link rules, carried in the export's style with the colours written in -- the export no longer
-	// writes a stroke of its own
-	const style = svg.match(/<style>([\s\S]*?)<\/style>/)[1];
-	assert.match(style, new RegExp(`(^|\\n)\\.link \\{[^}]*stroke: ${NETWORK_TOKENS.link};`), 'the export\'s style strokes a link in the link colour');
-	assert.match(style, new RegExp(`(^|\\n)\\.link\\[data-down\\], \\.link\\.blocking \\{ stroke: ${downStroke()}; \\}`), 'and a down link in the down colour, which the file carries itself');
-	const pathOf = (text, id) => text.match(new RegExp(`<g id="${id}"><path d="([^"]*)"([^>]*)/>`))?.slice(1);
-	const [routed, attrs] = pathOf(svg, 'link-000005');
+	const pathOf = (id) => svg.match(new RegExp(`<g id="${id}"><path d="([^"]*)"([^>]*)/>`))?.slice(1);
+	const [routed, attrs] = pathOf('link-000005');
 	assert.match(routed, /^M-360 0 L.* Q0 -240 .* L360 0$/, 'l5 is drawn up through f, its route, turning at f -- not straight from a to c');
 	assert.doesNotMatch(attrs, /stroke-dasharray/, 'an up link is solid');
-	assert.doesNotMatch(attrs, /data-down/, 'and not down');
+	assert.match(attrs, new RegExp(`stroke="${NETWORK_TOKENS.link}"`));
 	// take f's pipes away: l5 has no way, so it is down -- drawn straight through its stops, dotted and orange
 	d.pipes = d.pipes.filter((p) => !p.id.includes('0000f1'));
-	const [down, downAttrs] = pathOf(svgDocument(d, KINDS), 'link-000005');
+	const [down, downAttrs] = svgDocument(d, KINDS).match(/<g id="link-000005"><path d="([^"]*)"([^>]*)\/>/).slice(1);
 	assert.equal(down, 'M-360 0 L360 0', 'drawn along its intent, straight');
 	assert.match(downAttrs, /stroke-dasharray="0 /, 'dotted');
-	assert.match(downAttrs, /data-down=""/, 'and marked down, so the down rule colours it');
+	assert.match(downAttrs, new RegExp(`stroke="${downStroke()}"`), 'and in the down colour, which the file carries itself');
 });
 
 /*

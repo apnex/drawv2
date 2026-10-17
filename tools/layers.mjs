@@ -147,7 +147,7 @@ export const PARTS = {
 	cli: { duty: 'Give an agent one command per verb', kind: 'door', by: ['SD1'],
 		modules: ['cli/'], consumes: [] },
 	export: { duty: 'Render a document without a browser', kind: 'door', by: ['H2'],
-		modules: ['server/svg.mjs'],
+		modules: ['server/svg.mjs', 'server/svg-style.mjs'],
 		consumes: ['lattice', 'document', 'kind-contract', 'primitives', 'colours', 'product', 'renderer'], beyondKind: { renderer: 'H2' } },
 };
 
@@ -321,6 +321,7 @@ export const LAYER = {
 		'kernel/svg-scene.mjs',  // K11: a resolved scene as one SVG string, for the export door; draws network appearance, so it is not core
 		'kernel/fixtures.mjs',   // the spec viewer's reference scenes
 		'server/svg.mjs',        // the headless SVG door; it composes the export path and nothing else
+		'server/svg-style.mjs',  // H25.2 (B366): the page's drawing rules applied to what the export draws, written as attributes
 	],
 	'server-only': [
 		'server/anchor.mjs',     // anchor resolution; the store passes it to the planner as its placement edge (K3, PL-4), and it stays 404 (K4)
@@ -908,6 +909,8 @@ export const UNUSED_EXPORTS = {
 		retired: [
 			// K12, 2026-10-01: the design-rule checker (ruled), its helper, and exports nothing called
 			'check', 'grc', 'RULES', 'crossings', 'segmentsOf', 'cellCenter', 'layoutOf', 'oneSelected', 'onSpawner',
+			// H25.2 (B366): the kernel's scene CSS, a copy of the page's rules; the export applies the page's own (server/svg-style.mjs)
+			'KERNEL_CSS',
 		],
 		list: {
 			'kernel/geometry.mjs': {

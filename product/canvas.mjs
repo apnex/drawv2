@@ -42,9 +42,10 @@ sheet in the order the parts compose, then the page's chrome and the canvas's ow
 painters (its part's `stylesheets`), and a page lists exactly these: tools/stylesheets.mjs writes them into app/index.html and
 lab/index.html and the gate checks they agree. Each part's sheet loads before the page's, as network/network.css always did.
 H25.2 (B366, D3): the page's own sheet split in two -- its chrome (app/style.css) and the canvas (app/canvas.css), the canvas's
-loaded last, where its rules stood -- and every sheet but the chrome's and the colour registries' is what the export and the
-favicon are styled by (server/svg.mjs `drawingStyle`), the registries' colours written in -- what H24.8 (B361) asked of the
-export, view mode drawn, met by one statement of each look rather than a copy held to it by a test.
+loaded last, where its rules stood -- and every sheet but the chrome's is what the export and the favicon take their look from,
+applied to each element they draw and written as its attributes (server/svg-style.mjs, as D3 was amended: dev/DECISIONS.md H25-2),
+the registries' colours written in -- what H24.8 (B361) asked of the export, view mode drawn, met by one statement of each look
+rather than a copy held to it by a test.
 */
 export const CHROME_STYLESHEETS = ['app/style.css'];
 export const PAGE_STYLESHEETS = ['app/tokens.css', 'kernel/primitives.css', ...PRODUCT_CANVAS.flatMap((p) => p.stylesheets ?? []), ...CHROME_STYLESHEETS, 'app/canvas.css'];

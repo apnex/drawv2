@@ -1518,7 +1518,7 @@ AMENDED 2026-10-17: the plan ratified with D1 to D6 as recommended (`dev/DECISIO
 AMENDED 2026-10-17: H25.0b done -- `tools/probe/parity.mjs` compares two commits pixel for pixel and style for style on the director's 19 pinned diagrams and the parity board, shown to pass against itself and to catch five planted changes where each shows (B367 closed).
 AMENDED 2026-10-17: H25.1 done -- each plugin brings its own stylesheet, the pages load the composition's list, a name's label is the core's; 201 rules moved word for word, no pixel or computed style changed by the probe, verified by an agent that did not build it (B368 closed). The copy findings are named by the fact copied now, the ceiling re-expressed from be5c9c3: 120 findings, 88 standing.
 AMENDED 2026-10-17: H25.1 live in production (`9cbb963`), its published SVG and favicon byte-identical before and after.
-AMENDED 2026-10-17: H25.2 done -- the export and the favicon are styled by the page's own drawing sheets and write no colour of their own; KERNEL_CSS and EXPORT_CSS gone; the page's sheet split into chrome and canvas; no pixel or computed style changed by the probe (B369 closed). Copy findings standing: 36.
+AMENDED 2026-10-17: H25.2 done -- the export and the favicon carry the page's own rules as each element's attributes and no stylesheet, as the director amended D3 after the first build failed its verification (`dev/DECISIONS.md` H25-2); KERNEL_CSS and EXPORT_CSS gone; the page's sheet split into chrome and canvas (B369 closed). Copy findings standing: 36.
 
 ---
 
@@ -1567,6 +1567,7 @@ Scored so the comparison is a judgement, not an omission.\
 | **B359** | S4 | A head arriving at a device from below is mostly covered by the device's name label (shipped as is, H24.6-5) | the director reopens it, or a reader misreads a link arriving at a device from below. |
 | **B360** | S5 | A selected link's end handle covers its head's tip (shipped as is, H24.6-5) | the director reopens it, or the next change to a link's end handles. |
 | **B364** | S5 | Two marks for a device kept for a future use: a blue inner outline and a small corner mark (H24.9) | a device state needs showing on the device itself -- a role, a status, a fault or a selection kind -- or the director asks for C or D. |
+| **B370** | S3 | The published file draws a spawning endpoint as a plain waypoint, where the page draws it green (found by H25.2's probe) | the H25 programme closes and its no-pixel-change fence lifts, or the director asks for the published file to show a spawner. |
 | **B357** | S4 | A long or bent link shows its direction only at its far end (H24.6-4 kept it so for now) | the director reopens direction along a link, or a reader misreads a long link's direction. |
 | **B180** | S3 | Sampling the derived world stopped being uniform when combat made health accumulate: position is still a closed form of `t`, health must be folded | wanting to scrub backwards -- replay a wave, review a death, audit a disputed kill; not slowness. |
 

@@ -81,5 +81,6 @@ export const CHROME = resolveRoles(CHROME_ROLES);
 
 // measured glyph bounding boxes at icon scale 0.3: [x, y, w, h] — fits any glyph into the
 // socket regardless of frame shape. Canonical render data (was geometry.mjs).
-// H25.2 (B366): KERNEL_CSS, the scene CSS vendored from the old client, retired -- the export and the favicon are styled by the
-// page's own stylesheets (server/svg.mjs drawingStyle), so the glyph art, the frame and a node's colours are stated once.
+// H25.2 (B366): KERNEL_CSS, the scene CSS vendored from the old client, retired -- the export and the favicon take their look from
+// the page's own stylesheets, written onto each element (server/svg-style.mjs), so the glyph art, the frame and a node's colours
+// are stated once.

@@ -4,14 +4,15 @@ Render a stored diagram as a SELF-CONTAINED SVG document (H2, B330, H22.5).
 Ruled H2 (2026-10-04): run mode and the download are ONE rendering, decided in one place in code. `svgDocument` drives the
 real `Renderer` (`app/src/renderer.js`) in `'run'` mode over `PRODUCT_CANVAS` (`product/canvas.mjs`) and a lightweight
 headless SVG tree, then serialises the rendered layers into a standalone `<svg xmlns="http://www.w3.org/2000/svg">` with
-the page's own drawing stylesheets (`drawingStyle`, H25.2) and the parts' `defs`. `export` therefore imports `renderer`, `product`,
+the parts' `defs`, each element carrying as attributes what the page's own stylesheets give it (server/svg-style.mjs, H25.2). `export` therefore imports `renderer`, `product`,
 `lattice`, `document`, `primitives` and `colours` -- never a plugin directly.
 */
 import { STD, L_STD } from '../kernel/spec.mjs';
 import { sharedDefs } from '../kernel/renderer.mjs';
 import { Renderer } from '../app/src/renderer.js';
 import fs from 'node:fs';
-import { PRODUCT_CANVAS, PAGE_STYLESHEETS, CHROME_STYLESHEETS } from '../product/canvas.mjs';
+import { PRODUCT_CANVAS } from '../product/canvas.mjs';
+import { drawingRules, styleMarkup, nodeContext, drawnOf } from './svg-style.mjs';   // H25.2: the page's rules, applied
 import { COMPOSED_KINDS, readModel } from '../product/types.mjs';
 
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -31,35 +32,6 @@ function pageLayerOrder() {
 	if (!container) throw new Error('app/index.html lays out no <svg id="container">, whose order of layers the export stacks by');
 	pageLayers = [...container.matchAll(/<g id="([\w-]+)"/g)].map((m) => m[1]);
 	return pageLayers;
-}
-
-/*
-H25.2 (B366, D3): THE EXPORT IS STYLED BY THE PAGE'S OWN STYLESHEETS. It carried two copies of its own, `KERNEL_CSS` and
-`EXPORT_CSS`, and wrote a link's colour and a label's fill itself; the copies drifted from the page unseen (B361). Now its style is
-every sheet the page loads (product/canvas.mjs `PAGE_STYLESHEETS`) but the page's chrome -- which an SVG pasted inline into another
-page must never bring with it -- and the colour registries, whose colours are written in: each `var(--tok-...)` is replaced by its
-value, so the file stands alone and every `var()` left keeps a literal fallback. A token no registry declares is refused, not
-shipped. Comments go; the rules are the page's, word for word. Read once.
-*/
-let drawing = null;
-export function drawingStyle() {
-	if (drawing) return drawing;
-	const read = (f) => fs.readFileSync(new URL(`../${f}`, import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
-	const tokens = new Map(), rules = [];
-	for (const f of PAGE_STYLESHEETS.filter((x) => !CHROME_STYLESHEETS.includes(x))) {
-		for (const m of read(f).matchAll(/([^{}]+)\{([^}]*)\}/g)) {
-			const selector = m[1].trim(), body = m[2].trim().replace(/\s+/g, ' ');
-			// a registry's rule: the colours, read and never shipped
-			if (selector === ':root') { for (const d of body.matchAll(/(--tok-[\w-]+)\s*:\s*([^;]+);/g)) tokens.set(d[1], d[2].trim()); continue; }
-			rules.push(`${selector.replace(/\s+/g, ' ')} { ${body} }`);
-		}
-	}
-	const css = rules.join('\n').replace(/var\((--tok-[\w-]+)\)/g, (all, name) => {
-		if (!tokens.has(name)) throw new Error(`the export's style names ${name}, which no colour registry the page loads declares`);
-		return tokens.get(name);
-	});
-	drawing = css;
-	return drawing;
 }
 
 function layerIdsOf(parts) {
@@ -240,7 +212,13 @@ export function svgDocument(doc, kinds = COMPOSED_KINDS, pad = 18) {
 	}
 	const { minX, minY, maxX, maxY } = boundsOf(svg);
 	const vbX = minX - pad, vbY = minY - pad, vbW = (maxX - minX) + 2 * pad, vbH = (maxY - minY) + 2 * pad;
-	const defs = sharedDefs(undefined, undefined, PRODUCT_CANVAS.map((p) => p.defs).filter(Boolean).join('\n'));
-	const items = svg.children.flatMap((layer) => withCompanions(layer.children).map((c) => (c.companions ? linkGroup(c, layerSet) : serializeNode(c, layerSet)))).filter(Boolean).join('');
-	return `<svg xmlns="http://www.w3.org/2000/svg" class="scene" viewBox="${vbX} ${vbY} ${vbW} ${vbH}">\n<style>\n${drawingStyle()}\n</style>\n${defs}\n\t  <rect id="canvas" x="${vbX}" y="${vbY}" width="${vbW}" height="${vbH}"/>\n\t  ${items}\n\t</svg>`;
+	// H25.2 (B366; dev/DECISIONS.md H25-2): the page's rules applied and written as each element's attributes, so the file carries no
+	// stylesheet, draws alike in any renderer and restyles nothing it is pasted into. Applied to the drawing as the file writes it --
+	// its layers flattened, a waypoint's circles bare, a line's id given to its group -- so a rule meets each element exactly where a
+	// browser reading this file with the page's sheets would meet it, and nothing the painted tree held that the file does not
+	// styles anything (a spawning endpoint's ring: tests/svg-style.test.js, B370).
+	const rules = drawingRules();
+	const defs = styleMarkup(sharedDefs(undefined, undefined, PRODUCT_CANVAS.map((p) => p.defs).filter(Boolean).join('\n')), rules, nodeContext(rules));
+	const items = styleMarkup(svg.children.flatMap((layer) => withCompanions(layer.children).map((c) => (c.companions ? linkGroup(c, layerSet) : serializeNode(c, layerSet)))).filter(Boolean).join(''), rules);
+	return `<svg xmlns="http://www.w3.org/2000/svg" class="scene" viewBox="${vbX} ${vbY} ${vbW} ${vbH}">\n${defs}\n\t  <rect x="${vbX}" y="${vbY}" width="${vbW}" height="${vbH}" fill="${drawnOf('rect', { id: 'canvas' }, rules).fill}"/>\n\t  ${items}\n\t</svg>`;
 }

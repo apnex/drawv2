@@ -21,7 +21,8 @@ import { originPolicy } from './origin.mjs';
 import { Locks } from './locks.js';
 import { Hub, announceActivity } from './hub.js';
 import { SessionLog } from './sessionlog.mjs';
-import { svgDocument, drawingStyle } from './svg.mjs';
+import { svgDocument } from './svg.mjs';
+import { drawingRules, styleMarkup, nodeContext } from './svg-style.mjs';
 import { fileWithin, sendFile } from './static.mjs';
 
 /*
@@ -283,7 +284,8 @@ export async function createApp({ dataDir, secretsDir, port = 8080, clientDir, h
 		*/
 		if (url.pathname === '/favicon.svg') {
 			res.writeHead(200, { 'Content-Type': 'image/svg+xml', 'Cache-Control': 'max-age=3600' });
-			return res.end(faviconSvg(drawingStyle()));   // H25.2: the page's own drawing stylesheets, as the export's
+			const rules = drawingRules();
+			return res.end(styleMarkup(faviconSvg(), rules, nodeContext(rules)));   // H25.2: the page's own rules written onto it, as the export's
 		}
 		// the new thin UI + the kernel ESM, mounted beside the legacy client during migration
 		if (hasApp && (url.pathname === '/next' || url.pathname.startsWith('/next/'))) return serveFrom(req, res, appDir, '/next');

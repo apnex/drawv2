@@ -43,6 +43,7 @@ const EXT = /\.(js|mjs)$/;
 
 // symbol -> why it has no production consumer. Reviewed at each milestone close.
 const ALLOW = {
+	'server/svg-style.mjs:rulesOfSheets': 'H25.2 (B366): the parser behind `drawingRules`, which reads the page\'s own sheets through it in this module. Exported so tests/svg-style.test.js hands it sheets of its own and proves each refusal -- an at-rule, a step or selector the cascade cannot match, a token no registry declares -- on rules the real sheets do not hold.',
 	'tools/scan-skips.mjs:skipsIn': 'the TAP parser behind B250`s skip check. Its production caller is the CLI half of the same file, so the export earns its keep from tests/scan-skips.test.js, which drives it on written TAP -- nested subtests, todo, reasons -- without needing a machine that lacks Chrome.',
 	// K12 (2026-10-01): exports the deleted barrels had hidden, each kept for its own reason; the rest were deleted or un-exported.
 	'engine/kinds.mjs:MOVERS': 'the mover kinds table; `moverFor` reads it in this module. Exported so tests/rules.test.js asserts every kind against the table itself rather than a copy that would drift.',

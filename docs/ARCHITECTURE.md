@@ -135,7 +135,7 @@ The anchored core's parts, declared once in `tools/layers.mjs` `PARTS` and rende
 | `hub` | Carry each change to the tabs watching a document | door | `server/hub.js`, `server/protocol.js`, `server/locks.js`, `server/sessionlog.mjs` | `kind-contract` |
 | `rest` | Answer agents over HTTP | door | `server/rest.js`, `server/routes.mjs` | `devices`, `document`, `groups`, `hub`, `kind-contract`, `lattice`, `layouts`, `network`, `simulation`, `zones` |
 | `cli` | Give an agent one command per verb | door | `cli/` | -- |
-| `export` | Render a document without a browser | door | `server/svg.mjs` | `lattice`, `primitives`, `product`, `renderer` |
+| `export` | Render a document without a browser | door | `server/svg.mjs`, `server/svg-style.mjs` | `lattice`, `primitives`, `product`, `renderer` |
 <!-- END GENERATED: architecture-parts -->
 
 ---

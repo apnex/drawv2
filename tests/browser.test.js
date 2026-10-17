@@ -1695,7 +1695,7 @@ const PARITY_PICTURE = `(isPage) => {
 	const root = isPage ? document.getElementById('container') : document.documentElement;
 	const layers = isPage ? [...root.children].filter((g) => g.tagName === 'g' && !['grid-nodes', 'grid-zones', 'snaplayer', 'movers', 'overlay'].includes(g.id)) : [root];
 	const entities = layers.flatMap((g) => [...g.children])
-		.filter((e) => !['style', 'defs'].includes(e.tagName) && !e.hasAttribute('data-link') && keyOf(e) && e.id !== 'canvas' && shown(e))
+		.filter((e) => !['style', 'defs'].includes(e.tagName) && !e.hasAttribute('data-link') && keyOf(e) && shown(e))
 		// RESTATED at H25.2 (B366): the file writes a link as one group, its line then the head and leg that name it; each companion is
 		// read as its own thing, after the line, as the page draws it
 		.flatMap((e) => [e, ...e.querySelectorAll('[data-head-of], [data-leg-of]')]);
@@ -1721,9 +1721,9 @@ const PARITY_PICTURE = `(isPage) => {
 		visit(e);
 		return out;
 	};
-	// RESTATED at H25.2 (B366): the ground -- the page's canvas, and the file's since it is the canvas too -- compared by its paint,
-	// its size being each picture's own
-	const ground = document.getElementById('canvas'), gcs = ground && getComputedStyle(ground);
+	// RESTATED at H25.2 (B366): the ground -- the page's canvas, and the file's first rectangle, drawn as the canvas is -- compared by
+	// its paint, its size being each picture's own
+	const ground = isPage ? document.getElementById('canvas') : document.documentElement.querySelector(':scope > rect'), gcs = ground && getComputedStyle(ground);
 	return JSON.stringify({ ground: gcs ? [gcs.fill, gcs.fillOpacity].join(' ') : null, entities: entities.map((e) => ({ key: keyOf(e), drawn: drawn(e) })) });
 }`;
 

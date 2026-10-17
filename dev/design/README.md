@@ -2,7 +2,7 @@
 
 This is the geometry **exploration** the sovereign `kernel/` graduated from.\
 With the `client/` editor retired (CL5), the pre-kernel sandbox tooling here is **non-runnable**: the `sim/`, `walk/`, `build.mjs`, and `preview.mjs` scripts read the now-deleted `client/style.css` and `client/index.html` (glyph `<defs>`) at load and throw `ENOENT`.\
-They are historical lineage only -- **superseded by `kernel/`**; the CSS + glyph artwork they needed are vendored in `kernel/theme.mjs` (`KERNEL_CSS`) and the kernel's `sharedDefs()`.
+They are historical lineage only -- **superseded by `kernel/`**; the glyph artwork they needed is the kernel's `sharedDefs()`, and the CSS they needed was vendored in `kernel/theme.mjs` (`KERNEL_CSS`) until H25.2 retired it for the page's own stylesheets (`server/svg-style.mjs`).
 
 **Live tools that DO work here:**
 - `dev/design/view.mjs` -- the kernel spec/reference viewer (`node dev/design/view.mjs` -> `kernel/out/spec.{html,png}`),

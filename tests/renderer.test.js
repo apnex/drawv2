@@ -266,14 +266,9 @@ test('B275: the SVG export draws a node or zone name in the canvas label colour'
 	const svg = svgDocument({ meta: { id: '0000000000000001', name: 'x' }, links: [], groups: [],
 		nodes: [{ id: 'node-000001', name: 'edge-router', type: 'router', x: 0, y: 0, shape: 'circle' }],
 		zones: [{ id: 'zone-000002', name: 'dmz', x: -90, y: -90, w: 300, h: 240 }] }, KINDS);
-	// RESTATED at H25.2 (B366, D3): the colour is the page's own label rule (kernel/primitives.css), carried in the export's style
-	// with its token written in -- the export no longer writes a fill on each name, a second statement of that rule
-	const style = svg.match(/<style>([\s\S]*?)<\/style>/)[1];
-	assert.match(style, new RegExp(`(^|\\n)\\.label \\{[^}]*fill: ${TOKENS.label};`), 'the export\'s style fills a label in the canvas label colour');
 	for (const name of ['edge-router', 'dmz']) {
 		const text = svg.match(new RegExp(`<text[^>]*>${name}</text>`))?.[0];
 		assert.ok(text, `${name} is drawn`);
-		assert.match(text, /class="label[ "]/, `${name} is a label, so the rule applies`);
-		assert.doesNotMatch(text, / fill="/, `${name} carries no fill of its own to override it`);
+		assert.match(text, new RegExp(`fill="${TOKENS.label}"`), `${name} in the canvas label colour`);
 	}
 });

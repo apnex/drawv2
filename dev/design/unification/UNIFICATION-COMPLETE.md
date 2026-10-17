@@ -176,8 +176,10 @@ Each stage: tests first; the record lowered in its commit, which lists each find
    `tests/run-picture.test.js`'s assertions on the export's attribute colours are restated to assert the colour the element computes.
    Proves: copied style rules at zero, but for the lab's, removed in H25.3; foreign style rules at zero; the probe passes on the export, the favicon and the parity board's down link and group.
    AMENDED 2026-10-17, as built (B369):
-   - the page's own sheet is split into its chrome (`app/style.css`) and the canvas's (`app/canvas.css`), word for word, the canvas's loaded last where its rules stood -- the page's sheet held `html`, `body`, the header and the dialogs, and carrying them into the export would restyle any page the file is pasted into inline; the export's style is every sheet but the chrome's and the colour registries (`server/svg.mjs` `drawingStyle`);
-   - the ground is the canvas (`<rect id="canvas">`), coloured by the canvas's own rule, and the parity test compares it;
+   - the page's own sheet is split into its chrome (`app/style.css`) and the canvas's (`app/canvas.css`), word for word, the canvas's loaded last where its rules stood, so the export reads the canvas's rules without the chrome's;
+   - CORRECTED after the first build failed its verification (D3 as amended, H25-2): the export carries no stylesheet; `server/svg-style.mjs` applies every rule of every sheet but the chrome's -- a browser's cascade reduced to what these sheets hold, custom properties inherited, colour tokens written in, pointer rules left out, anything it cannot carry refused -- and writes each element's drawn properties as its attributes, the shared defs and the favicon likewise; the first build's `drawingStyle`, which shipped those sheets as a <style>, is gone;
+   - the rules are applied to the file as it is written, not to the tree the painters drew -- the probe caught a spawning endpoint's ring turned green when they were -- which exposed that the published file has never drawn a spawner as the page does (B370, held behind this programme's no-pixel-change fence);
+   - the ground is drawn as the canvas is, its fill the canvas rule's, with no page-wide id; the parity test compares it;
    - a link is written as one group named by its id -- its line, its class kept, then the head and the leg that name it -- so the page's down rule reaches the head as the line's next sibling; the first build wrote the line bare, and the CLI, which counts links by the group (`draw render --summary`, `draw parity`), counted none, which an installed CLI would have done against a new server;
    - the lab server served the product page's sheets from a list it typed, which missed the canvas's; the probe found the lab's canvas drawn at another size, and the lab now serves the composition's list;
    - copied style rules 32 to 1 (the lab's redundant `#status`, H25.3), foreign 13 to 4 (the cross-plugin rules, H25.3); the probe against 9cbb963 passed.
@@ -249,6 +251,7 @@ Each stage: tests first; the record lowered in its commit, which lists each find
 - **D3 -- how the export gets its styles.**
   Recommended: from the same stylesheets, every `var()` given a literal fallback, `serializeNode` writing no colours of its own.
   Otherwise: every drawn element carries its look as attributes, and the export loads no stylesheet.
+  AMENDED 2026-10-17 by the director (`dev/DECISIONS.md` H25-2): the first build shipped the page's sheets as a stylesheet and failed its verification -- it restyled a page it was pasted into, carried the page's cursors, and lost its lines in renderers that skip custom properties, so the premise that a `var()` fallback keeps such a renderer drawing was false. The export now applies the page's own rules at export time and writes each element's result as its attributes (`server/svg-style.mjs`), carrying no stylesheet.
 - **D4 -- the old scene renderer.**
   Recommended: deleted, each test reading the real renderer or naming the test that already says what it said.
   Otherwise: moved under `tests/` as a fixture -- recorded as a copy still, a second renderer kept for the tests.

@@ -54,7 +54,8 @@ test('the exported SVG is SELF-CONTAINED — every referenced id is defined in t
 	const id = await firstId();
 	const body = await (await fetch(`${base}/${id}.svg`)).text();
 	assert.match(body, /<defs/, 'the glyph artwork travels with it');
-	assert.match(body, /<style/, 'so do the styles — a download has no stylesheet to reach for');
+	// RESTATED at H25.2 (B366; dev/DECISIONS.md H25-2): the styles travel as each element's attributes, so the file needs no <style>
+	assert.match(body, /<text class="label[^"]*"[^>]* fill="#[0-9a-f]{6}"/, 'so do the styles -- a download has no stylesheet to reach for, so each element carries its own');
 
 	const referenced = [...new Set([...body.matchAll(/href="#([\w-]+)"/g)].map((m) => m[1]))];
 	const defined = new Set([...body.matchAll(/id="([\w-]+)"/g)].map((m) => m[1]));
@@ -189,36 +190,31 @@ test('B351 (H23): the server mints a diagram id from crypto.randomBytes(8), redr
 });
 
 /*
-H25.2 (B366, D3) -- THE EXPORT AND THE FAVICON ARE STYLED BY THE PAGE'S OWN STYLESHEETS. They carried two copies of their own,
-KERNEL_CSS and EXPORT_CSS, and the export wrote a link's colour and a label's fill itself; the copies drifted unseen (B361). Now
-their style is every sheet the page loads but its chrome and the colour registries (server/svg.mjs `drawingStyle`), each colour
-token written in. Three promises are held here: no chrome rule rides along -- a file pasted inline into another page must not
-restyle it; every `var()` left has a literal fallback, so a renderer that resolves no custom property still draws it; and the
-export writes no colour of its own, so the page's rules are the only statement of a look.
+H25.2 (B366; dev/DECISIONS.md H25-2) -- THE EXPORT AND THE FAVICON CARRY THE PAGE'S RULES AS ATTRIBUTES, AND NO STYLESHEET.
+They carried two copies of the page's styling, KERNEL_CSS and EXPORT_CSS, and the export wrote colours of its own; the copies
+drifted unseen (B361). A first H25.2 build shipped the page's sheets as a <style>, and its verifier found that it restyled any page
+it was pasted into, took the page's cursors, and lost its lines in renderers that skip CSS custom properties. Now the page's rules
+are applied at export time and written onto each element (server/svg-style.mjs): no stylesheet, no var(), no pointer rule -- and
+every colour the old file wrote on a line, a name and the ground is written there again, by the page's own rules.
 */
-test('H25.2: the export is styled by the page\'s drawing sheets -- no chrome rule, every var() with a literal fallback, no colour of its own -- and so is the favicon', async () => {
-	const { drawingStyle } = await import('../server/svg.mjs');
-	const { PAGE_STYLESHEETS, CHROME_STYLESHEETS } = await import('../product/canvas.mjs');
+test('H25.2: the export carries no stylesheet -- each element the page\'s rules as attributes, no var(), no pointer rule -- and neither does the favicon', async () => {
+	const { NETWORK_TOKENS, downStroke } = await import('../network/appearance.mjs');
+	const { TOKENS } = await import('../kernel/theme.mjs');
 	const id = await firstId();
 	const body = await (await fetch(`${base}/${id}.svg`)).text();
-	const style = body.match(/<style>([\s\S]*?)<\/style>/)[1].trim();
-	assert.equal(style, drawingStyle(), 'the file carries the drawing style whole');
-	const selectors = style.split('\n').map((r) => r.slice(0, r.indexOf(' {')));
-	assert.ok(selectors.includes('.label') && selectors.includes('.frame') && selectors.includes('.zone-rect') && selectors.includes('.link'), 'control: the plugins\', the core\'s and the canvas\'s rules are in it');
-	const chrome = fs.readFileSync(new URL(`../${CHROME_STYLESHEETS[0]}`, import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
-	const chromeSelectors = [...chrome.matchAll(/([^{}]+)\{/g)].map((m) => m[1].trim().replace(/\s+/g, ' '));
-	assert.ok(chromeSelectors.includes('html, body') && chromeSelectors.length > 50, 'control: the chrome has rules of its own');
-	assert.deepEqual(selectors.filter((s) => chromeSelectors.includes(s) || /^(html|body|header|button|input)\b/.test(s)), [], 'not one of them rides along');
-	assert.deepEqual([...style.matchAll(/var\(([^)]*)\)/g)].map((m) => m[0]).filter((v) => !v.includes(',')), [], 'every var() keeps a literal fallback');
-	assert.doesNotMatch(style, /var\(--tok-/, 'every colour token is written in');
-	assert.ok(PAGE_STYLESHEETS.includes('app/canvas.css'), 'control: the canvas\'s sheet is one the page loads');
-	assert.match(body, /<rect id="canvas" x="[-\d.]+" y="[-\d.]+" width="[\d.]+" height="[\d.]+"\/>/, 'the ground is the canvas, coloured by the canvas\'s rule');
-	const lines = [...body.matchAll(/<g id="link-[^"]*"><path d="[^"]*"( class="link"[^>]*)>/g)];
+	assert.doesNotMatch(body, /<style/, 'no stylesheet to restyle a page the file is pasted into');
+	assert.doesNotMatch(body, /var\(/, 'no custom property for a renderer to skip');
+	assert.doesNotMatch(body, / (cursor|pointer-events|user-select)="/, 'none of the page\'s pointer rules');
+	assert.doesNotMatch(body, / id="canvas"/, 'no page-wide id on the ground');
+	assert.match(body, new RegExp(`<rect x="[-\\d.]+" y="[-\\d.]+" width="[\\d.]+" height="[\\d.]+" fill="${TOKENS.panel}"/>`), 'the ground in the canvas\'s colour');
+	const lines = [...body.matchAll(/<g id="link-[^"]*"><path d="[^"]*"([^>]*)>/g)].map((m) => m[1]);
 	assert.ok(lines.length > 0, 'control: the file draws links, each a group named by its id with its line first');
-	for (const m of lines) assert.doesNotMatch(m[1], / stroke="/, 'a line carries no stroke of the export\'s own');
-	for (const m of body.matchAll(/<text class="label[^"]*"[^>]*>/g)) assert.doesNotMatch(m[0], / fill="/, 'a name carries no fill of the export\'s own');
+	for (const l of lines) assert.match(l, new RegExp(` stroke="(${NETWORK_TOKENS.link}|${downStroke()})"`), 'each line in the link colour, or the down colour');
+	for (const m of body.matchAll(/<text class="label[^"]*"[^>]*>/g)) assert.match(m[0], new RegExp(` fill="${TOKENS.label}"`), 'each name in the label colour');
+	assert.match(body, /class="solid"[^>]* fill="#[0-9a-f]{6}"/, 'the glyph art carries its colours in the defs');
 	const favicon = await (await fetch(`${base}/favicon.svg`)).text();
-	assert.equal(favicon.match(/<style>([\s\S]*?)<\/style>/)[1].trim(), drawingStyle(), 'the favicon is styled by the same sheets');
+	assert.doesNotMatch(favicon, /<style|var\(/, 'and the favicon likewise');
+	assert.match(favicon, /<circle class="frame" r="[\d.]+" fill="#[0-9a-f]{6}" fill-opacity="1" stroke="#[0-9a-f]{6}"\/>/, 'its frame in a device\'s colours');
 });
 
 // H25.2 (B366): every sheet a page lists is served -- by the product's server and by the lab's. The lab served the product page's
