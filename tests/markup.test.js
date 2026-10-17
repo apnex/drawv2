@@ -20,6 +20,11 @@ test('H25.4: a page\'s comment ends where a browser ends it -- at -->, at --!>, 
 test('H25.4: nothing inside a tag, raw text or an SVG CDATA section opens a comment, and a stray < opens nothing', () => {
 	assert.deepEqual(live('<p title="<!--">a</p>\n<p>kept</p>\n<p title="-->">b</p>'), ['<p title="<!--">a</p>', '<p>kept</p>', '<p title="-->">b</p>'], 'a quoted attribute');
 	assert.deepEqual(live('<p x=a\'b>a</p>\n<!-- c -->\n<p>kept</p>'), ['<p x=a\'b>a</p>', '<p>kept</p>'], 'an unquoted value holding a quote opens no quoted value, so the comment after it is read');
+	assert.deepEqual(live('<div data-x=a="b data-y="><!--">\n<p>kept</p>\n<div data-z="-->"></div>'), ['<div data-x=a="b data-y="><!--">', '<p>kept</p>', '<div data-z="-->"></div>'], 'an = inside an unquoted value opens no new value');
+	assert.deepEqual(live('<div data-x=a=\'b>\n<!-- c -->\n<p>kept</p>'), ['<div data-x=a=\'b>', '<p>kept</p>'], 'nor a quote after an = inside an unquoted value');
+	assert.deepEqual(live('<svg data-x=a/><![CDATA[ > <!-- ]]></svg>\n<p>kept</p>\n<!-- end -->'), ['<svg data-x=a/><![CDATA[ > <!-- ]]></svg>', '<p>kept</p>'], 'a / ending an unquoted value does not self-close <svg>');
+	assert.deepEqual(live('<p>a</p>\n</>\n<p>b</p>'), ['<p>a</p>', '<p>b</p>'], 'an empty </> close tag is removed like a bogus comment');
+	assert.deepEqual(live('<script><!--<script></script><!--</script>\n<p>kept</p>\n<!-- end -->'), ['<script><!--<script></script><!--</script>', '<p>kept</p>'], 'a double-escaped <script> runs to its matching close');
 	assert.deepEqual(live('<textarea><!--</textarea>\n<p>kept</p>\n<p>--></p>'), ['<textarea><!--</textarea>', '<p>kept</p>', '<p>--></p>'], 'raw text');
 	assert.deepEqual(live('<style><!--</style>\n<p>kept</p>\n<p>--></p>'), ['<style><!--</style>', '<p>kept</p>', '<p>--></p>'], 'a style element');
 	assert.deepEqual(live('<svg><![CDATA[ > <!-- ]]></svg>\n<p>kept</p>\n<p>--></p>'), ['<svg><![CDATA[ > <!-- ]]></svg>', '<p>kept</p>', '<p>--></p>'], 'an SVG CDATA section');
@@ -37,6 +42,10 @@ test('H25.4: a stylesheet\'s comment is read outside its strings and unquoted ur
 	const lines = (css) => cssWithoutComments(css).split('\n').map((l) => l.trim()).filter(Boolean);
 	assert.deepEqual(lines('#a { x: 1; }\n/* gone */\n#b { x: 2; }'), ['#a { x: 1; }', '#b { x: 2; }'], 'control: a comment removed');
 	assert.deepEqual(lines('.x { background: url(/*); }\n#kept { x: 1; }\n.y { background: url(*/); }'), ['.x { background: url(/*); }', '#kept { x: 1; }', '.y { background: url(*/); }'], 'unquoted url()');
+	assert.deepEqual(lines(`.x { background: url(${' '.repeat(80)}/*); }\n#kept { x: 1; }\n.y { background: url(*/); }`).filter((l) => l === '#kept { x: 1; }'), ['#kept { x: 1; }'], 'unquoted url() after any run of whitespace');
+	assert.deepEqual(lines('#a { content: a\\:url(/* gone */); }\n#b { x: 1; }'), ['#a { content: a\\:url(); }', '#b { x: 1; }'], 'an escaped colon before url() is one identifier, not url()');
+	assert.deepEqual(lines('#x { --q: \\"; content: "/*"; }\n#kept { x: 1; }\n#y { --q: \\"; content: "*/"; }').filter((l) => l === '#kept { x: 1; }'), ['#kept { x: 1; }'], 'an escaped quote outside a string opens no string');
+	assert.deepEqual(lines('#x { --s: \\/*; }\n#kept { x: 1; }\n#y { --s: */; }').filter((l) => l === '#kept { x: 1; }'), ['#kept { x: 1; }'], 'an escaped slash before * opens no comment');
 	assert.deepEqual(lines('.x { content: "/*"; }\n#kept { x: 1; }\n.y { content: "*/"; }'), ['.x { content: "/*"; }', '#kept { x: 1; }', '.y { content: "*/"; }'], 'a string');
 	assert.deepEqual(lines('.x { content: "\\\n/*"; }\n#kept { x: 1; }\n.y { content: "*/"; }').filter((l) => l === '#kept { x: 1; }'), ['#kept { x: 1; }'], 'a string continued over an escaped newline');
 	assert.deepEqual(lines('.x { content: "/*\n#kept { x: 1; }\n.y { content: "*/"; }').filter((l) => l === '#kept { x: 1; }'), ['#kept { x: 1; }'], 'a string broken by a newline ends there');
