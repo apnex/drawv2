@@ -123,7 +123,7 @@ const PRODUCT_KIND_RECORD = {
 		trigger: 'a diagram varies its grids (B325)' },
 	'product/canvas.mjs': { count: 4, cites: ['H25.4'],
 		reason: 'the canvas\'s layers back to front (`CANVAS_LAYERS`): the composition names the layer each plugin draws into -- moved from the lab\'s `NEEDED` and the two pages (H25.4)',
-		trigger: 'permanent' },
+		trigger: 'each canvas part declares where its own layer stacks, so the composition names none' },
 	'server/anchor.mjs': { count: 1, cites: ['SD1'],
 		reason: 'server-side placement resolving `at.inside` against the diagram\'s zones (SD1)',
 		trigger: 'permanent' },

@@ -1022,8 +1022,11 @@ opened (its hash is pinned in tests/scan-copies.test.js).
 export const COPIES = {
 	entries: [...RULES.L7.roots, ...Object.values(PAGES).flatMap((p) => p.scripts.map((s) => `${p.base}${s}`)), 'lab/server.mjs'],
 	// H25.4 (B376): the regions a generator writes into the pages, each the gate checks with --check -- the only ones the copied-lines
-	// measure leaves out, and only the first of each
-	generated: { stylesheets: 'tools/stylesheets.mjs', canvas: 'tools/canvas-layout.mjs' },
+	// measure leaves out, matched by their exact markers (tools/regions.mjs markersOf), the first of each; any other marker is a fault
+	generated: {
+		stylesheets: { tool: 'tools/stylesheets.mjs', source: 'product/canvas.mjs PAGE_STYLESHEETS' },
+		canvas: { tool: 'tools/canvas-layout.mjs', source: 'product/canvas.mjs CANVAS_VIEWBOX, CANVAS_LAYERS' },
+	},
 	owners: { 'app/style.css': 'product-page', 'app/canvas.css': 'canvas', 'app/tokens.css': 'colours', 'kernel/primitives.css': 'primitives', 'engine/simulation.css': 'simulation' },
 	// H25-4 (B374): the three foreign style rules the director ruled may stand, each with what reopens it
 	exceptions: {

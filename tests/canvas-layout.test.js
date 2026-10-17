@@ -12,7 +12,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { CANVAS_LAYERS, CANVAS_VIEWBOX } from '../product/canvas.mjs';
-import { PAGES } from '../tools/layers.mjs';
+import { PAGES, COPIES } from '../tools/layers.mjs';
 import { markersOf, withRegion } from '../tools/regions.mjs';
 
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
@@ -27,7 +27,7 @@ test('H25.4: each page lays out the canvas the composition declares -- its viewB
 	const at = (id) => CANVAS_LAYERS.indexOf(id);
 	assert.ok(at('zones') < at('links') && at('pipes') < at('links') && at('links') < at('waypoints') && at('waypoints') < at('nodes') && at('nodes') < at('movers') && at('movers') < at('overlay'),
 		'control: the declaration stacks zones and pipes beneath the links, the links beneath waypoints and devices, the movers over them, the overlay last');
-	const { begin, end } = markersOf('canvas', 'tools/canvas-layout.mjs', 'product/canvas.mjs CANVAS_VIEWBOX, CANVAS_LAYERS');
+	const { begin, end } = markersOf('canvas', COPIES.generated.canvas);
 	const pages = Object.keys(PAGES);
 	assert.ok(pages.includes('app/index.html') && pages.includes('lab/index.html'), 'control: the product page and the lab are among the pages');
 	for (const page of pages) {
@@ -35,22 +35,22 @@ test('H25.4: each page lays out the canvas the composition declares -- its viewB
 		assert.ok(from > 0 && to > from, `${page} holds the generated canvas region`);
 		const region = html.slice(from, to);
 		assert.deepEqual(containerOf(region), { viewBox: CANVAS_VIEWBOX, ground: CANVAS_VIEWBOX, layers: CANVAS_LAYERS }, `${page}: the canvas is the declaration's`);
-		// and exactly so, character for character -- an attribute added to a layer is a hand edit too (H25.4's verifier)
-		const [x, y, w, h] = CANVAS_VIEWBOX.split(' ');
-		const svg = [`<svg id="container" viewBox="${CANVAS_VIEWBOX}" xmlns="http://www.w3.org/2000/svg">`, `<rect id="canvas" x="${x}" y="${y}" width="${w}" height="${h}"/>`, ...CANVAS_LAYERS.map((id) => `<g id="${id}"></g>`), '</svg>'];
-		assert.deepEqual(region.slice(begin.length).split('\n').map((l) => l.trim()).filter(Boolean), svg, `${page}: its region holds the declaration's canvas and nothing else`);
+		// and exactly so, character for character, indent and all -- an attribute added to a layer is a hand edit too (H25.4's verifiers)
+		const [x, y, w, h] = CANVAS_VIEWBOX.split(' '), indent = html.slice(html.lastIndexOf('\n', from) + 1, from);
+		const svg = [`<svg id="container" viewBox="${CANVAS_VIEWBOX}" xmlns="http://www.w3.org/2000/svg">`, `\t<rect id="canvas" x="${x}" y="${y}" width="${w}" height="${h}"/>`, ...CANVAS_LAYERS.map((id) => `\t<g id="${id}"></g>`), '</svg>'];
+		assert.equal(html.slice(from, to + end.length), [begin, ...svg, end].join(`\n${indent}`), `${page}: its region holds the declaration's canvas and nothing else`);
 		assert.equal(containerOf(html.slice(0, from) + html.slice(to)), null, `${page} lays out no other canvas outside the region`);
 	}
 });
 
 test('H25.4: a region is rewritten between its markers and nowhere else, at the marker\'s indent; a page without them is refused', () => {
-	const m = markersOf('canvas', 'tools/canvas-layout.mjs', 'the declaration');
+	const m = markersOf('canvas', { tool: 'tools/canvas-layout.mjs', source: 'the declaration' });
 	const page = `<main>\n\t\t${m.begin}\n\t\t<old/>\n\t\t${m.end}\n\t\t<kept/>\n</main>`;
 	assert.equal(withRegion(page, m, ['<a>', '\t<b/>', '</a>']), `<main>\n\t\t${m.begin}\n\t\t<a>\n\t\t\t<b/>\n\t\t</a>\n\t\t${m.end}\n\t\t<kept/>\n</main>`);
 	assert.equal(withRegion(withRegion(page, m, ['<a/>']), m, ['<a/>']), withRegion(page, m, ['<a/>']), 'written twice, the same');
 	assert.equal(withRegion('<main><old/></main>', m, ['<a/>']), null, 'a page with no markers has no region to write');
-	assert.throws(() => withRegion(`${page}\n${m.begin}\n<typed/>\n${m.end}`, m, ['<a/>']), /twice/, 'a page holding the region twice is refused: one is written, the other typed');
-	const stylesheets = markersOf('stylesheets', 'tools/stylesheets.mjs', 'product/canvas.mjs PAGE_STYLESHEETS');
+	assert.throws(() => withRegion(`${page}\n${m.begin}\n<typed/>\n${m.end}`, m, ['<a/>'], 'lab/index.html'), /lab\/index\.html holds the region .* twice/, 'a page holding the region twice is refused, by name: one is written, the other typed');
+	const stylesheets = markersOf('stylesheets', COPIES.generated.stylesheets);
 	assert.ok(read('app/index.html').includes(stylesheets.begin), 'control: the stylesheet region the pages already hold is written through the same markers');
 });
 

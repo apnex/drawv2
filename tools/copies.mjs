@@ -15,6 +15,7 @@ that runs them over the tree, and holds each count to its record, is tools/scan-
 
 Each is a pure function of the text it is handed, so tests/scan-copies.test.js can plant a copy and watch it caught.
 */
+import { withoutRegions } from './regions.mjs';   // H25.4: a generated region left out by its exact markers
 
 // a class name as the tree writes them: lower case, digits, single hyphens
 const CLASS_NAME = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
@@ -192,9 +193,10 @@ export function stylesDrawnByNoPart(sheets, drawnBy, idsWritten = null) {
 
 // a line worth comparing: trimmed and not blank, every comment removed whole first -- so a comment put into a copy hides none of
 // it -- and a generated region left out, which its generator holds equal to its one master (H25.1, mission-kit P3).
-// CORRECTED at H25.4 (B376): only a region a generator owns (`generated`, from tools/layers.mjs COPIES), and only its first --
-// any marked region was left out, so lines typed inside an unowned or a second region hid from the measure (H25.4's verifier)
-const comparable = (text, generated = []) => generated.reduce((t, name) => t.replace(new RegExp(`<!-- BEGIN GENERATED: ${name}\\b[\\s\\S]*?<!-- END GENERATED: ${name} -->`), ''), text).replace(/<!--[\s\S]*?-->/g, '').replace(/\/\*[\s\S]*?\*\//g, '').split('\n').map((l) => l.trim()).filter((l) => l && !/^(<!--|-->|\/\*|\*)/.test(l));
+// CORRECTED at H25.4 (B376): only a region a generator owns (`generated`: its exact markers, from tools/layers.mjs COPIES through
+// tools/regions.mjs), and only its first -- any marked region was left out, then any whose marker began with an owned name, so
+// lines typed in a made-up region, or one opened by a near copy of a real marker, hid from the measure (H25.4's verifiers)
+const comparable = (text, generated = []) => withoutRegions(text, generated).replace(/<!--[\s\S]*?-->/g, '').replace(/\/\*[\s\S]*?\*\//g, '').split('\n').map((l) => l.trim()).filter((l) => l && !/^(<!--|-->|\/\*|\*)/.test(l));
 
 /*
 Lines one file repeats from another, `run` lines in a row or more, and at least `chars` characters in the run so that a few closing

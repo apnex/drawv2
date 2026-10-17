@@ -73,7 +73,8 @@ test('F-b: the export\'s adapter draws exactly the document\'s bare anchors as w
 
 // ---- the ratchet ----
 
-const ROOTS = ['app/src', 'model', 'planner', 'engine', 'kernel', 'network', 'server', 'cli', 'lab/src', 'devices', 'layouts', 'zones', 'groups'];   // O-e1: and the plugins
+// RESTATED at H25.4 (B376): and the product's composition, where the canvas's layers are declared (found by H25.4's second verifier)
+const ROOTS = ['app/src', 'model', 'planner', 'engine', 'kernel', 'network', 'server', 'cli', 'lab/src', 'devices', 'layouts', 'zones', 'groups', 'product'];   // O-e1: and the plugins
 const walk = (d) => fs.readdirSync(path.join(root, d), { withFileTypes: true })
 	.flatMap((e) => (e.isDirectory() ? walk(path.join(d, e.name)) : /\.m?js$/.test(e.name) ? [path.join(d, e.name)] : []));
 // code lines only: block comments and whole-line comments are prose, which may say "waypoint" freely
@@ -116,6 +117,7 @@ const RECORD = {
 	// app/src/releases.js's one -- a waypoint hand the retype refused -- went at C-e step fourteen: no hand holds a waypoint
 	'network/anchor-appearance.mjs': [2, 'the drawn waypoint\'s class and its layer -- the network\'s marks, F4; moved from app/src/renderer.js at C-a (D3) -- and its pick, the hit\'s word, moved from app/src/pick.js at C-b'],
 	// lab/src/root.js's one -- the page's waypoint layer id -- went at H25.4: the lab checks for the canvas's declared layers
+	'product/canvas.mjs': [1, 'the canvas\'s waypoint layer id in `CANVAS_LAYERS`, the composition declaring the layers back to front -- moved from the lab and the pages at H25.4'],
 };
 
 test('F-b, F-c: the old kind\'s literal appears in no product module beyond the record, each with its reason', () => {

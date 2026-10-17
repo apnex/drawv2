@@ -19,6 +19,7 @@ import path from 'node:path';
 import { FOLDERS, PARTS, PAGES, COPIES, SCANNER_ROOTS } from './layers.mjs';
 import { classesPutOnElements, classesInMarkup, stylesheetsInSource, copiedStyleRules, foreignStyleRules, stylesDrawnByNoPart, copiedLines, modulesNoEntryReaches, styleRulesOf, judgeFindings, judgeExceptions } from './copies.mjs';
 import { exceptionFaults } from './exceptions.mjs';
+import { markersOf, strayMarkers } from './regions.mjs';   // H25.4: the regions a generator owns, by their exact markers
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const verbose = process.argv.includes('--verbose');
@@ -88,6 +89,10 @@ const idsWritten = new Set([
 
 // ---- the five measures
 const pagesAndSheets = [...Object.keys(PAGES), ...sheetFiles].sort().map((f) => ({ name: f, text: read(f) }));
+// H25.4 (B376): the regions a generator writes, by their exact markers -- the only ones the copied-lines measure leaves out; any
+// other GENERATED marker in a page or a sheet is a fault, since it would open a region nothing writes and the measure must read
+const GENERATED = Object.entries(COPIES.generated).map(([name, g]) => markersOf(name, g));
+const strays = pagesAndSheets.flatMap((f) => strayMarkers(f.text, GENERATED).map((m) => `${f.name} holds a generated marker no generator writes -- ${m.slice(0, 90)}`));
 const resolve = (from, spec) => {
 	const to = spec.startsWith('/') ? spec.slice(1) : path.posix.normalize(path.posix.join(path.posix.dirname(from), spec));
 	return /\.m?js$/.test(to) && exists(to) ? to : null;
@@ -102,7 +107,7 @@ const detail = {
 	'copied style rules': copiedStyleRules(sheets).map((x) => [x.rule, `${x.rule}  in ${x.in.join(' and ')}`]),
 	'foreign style rules': foreignStyleRules(sheets, drawnBy, isPlugin).map((x) => [x.selector, `${x.sheet}: ${x.selector}  -- ${x.classes.join(', ')}`]),
 	'styled names nothing draws': stylesDrawnByNoPart(sheets, drawnBy, idsWritten).map((x) => [x.name, `${x.name} in ${x.in.join(', ')}`]),
-	'copied lines': copiedLines(pagesAndSheets, { generated: Object.keys(COPIES.generated) }).flatMap((x) => x.lines.map((l) => [`${x.files[0]} and ${x.files[1]}: ${l}`, `${x.files[0]} and ${x.files[1]}: ${l}`])),
+	'copied lines': copiedLines(pagesAndSheets, { generated: GENERATED }).flatMap((x) => x.lines.map((l) => [`${x.files[0]} and ${x.files[1]}: ${l}`, `${x.files[0]} and ${x.files[1]}: ${l}`])),
 	'modules no entry reaches': modulesNoEntryReaches(COPIES.entries, modules, read, resolve).map((m) => [m, m]),
 };
 const findings = Object.fromEntries(Object.entries(detail).map(([k, v]) => [k, v.map(([key]) => key)]));
@@ -148,6 +153,7 @@ const verdicts = [
 	...judgeFindings(findings, process.argv.includes('--write') ? findings : record, ceiling),
 	...ruled.faults,
 	...exceptionFaults(ruled.entries, ROOT),
+	...strays,
 ];
 if (verdicts.length) {
 	for (const v of verdicts) console.log(`  \u2717 ${v}`);

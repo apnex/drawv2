@@ -12,7 +12,7 @@ Usage: node tools/canvas-layout.mjs --check | --write
 */
 import fs from 'node:fs';
 import path from 'node:path';
-import { PAGES } from './layers.mjs';
+import { PAGES, COPIES } from './layers.mjs';
 import { CANVAS_LAYERS, CANVAS_VIEWBOX } from '../product/canvas.mjs';
 import { markersOf, withRegion } from './regions.mjs';
 
@@ -20,7 +20,7 @@ const ROOT = path.resolve(import.meta.dirname, '..');
 const mode = process.argv[2];
 if (mode !== '--check' && mode !== '--write') { console.error('usage: node tools/canvas-layout.mjs --check | --write'); process.exit(2); }
 
-const MARKERS = markersOf('canvas', 'tools/canvas-layout.mjs', 'product/canvas.mjs CANVAS_VIEWBOX, CANVAS_LAYERS');
+const MARKERS = markersOf('canvas', COPIES.generated.canvas);
 const [x, y, width, height] = CANVAS_VIEWBOX.split(' ');
 const LINES = [
 	`<svg id="container" viewBox="${CANVAS_VIEWBOX}" xmlns="http://www.w3.org/2000/svg">`,
@@ -32,8 +32,7 @@ const LINES = [
 const problems = [];
 for (const page of Object.keys(PAGES)) {
 	const file = path.join(ROOT, page), html = fs.readFileSync(file, 'utf8');
-	let next;
-	try { next = withRegion(html, MARKERS, LINES); } catch (e) { problems.push(`${page} ${e.message}`); continue; }
+	const next = withRegion(html, MARKERS, LINES, page);
 	if (next === null) { problems.push(`${page} has no generated canvas region -- add the BEGIN and END markers where its canvas is laid out`); continue; }
 	if (next === html) continue;
 	if (mode === '--write') { fs.writeFileSync(file, next); console.log(`  canvas-layout: wrote ${page}`); }

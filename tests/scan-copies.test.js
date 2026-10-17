@@ -102,21 +102,31 @@ H25.4 (B376) -- A GENERATED REGION IS LEFT OUT ONLY WHEN A GENERATOR OWNS IT. An
 markers no generator writes, or inside a second region of a name one does, hid from the measure (found by H25.4's verifier, who
 copied seven lines into the lab inside a made-up region and every check passed).
 */
-test('H25.4: a generated region is left out of the copied-lines measure only when a generator owns it, and only its first', () => {
+test('H25.4: a generated region is left out of the copied-lines measure only when a generator owns it -- by its exact markers, its first only', async () => {
+	const { markersOf, strayMarkers } = await import('../tools/regions.mjs');
 	const six = ['<g id="grid-nodes"></g>', '<g id="grid-zones"></g>', '<g id="snaplayer"></g>', '<g id="zones"></g>', '<g id="pipes"></g>', '<g id="groups"></g>'];
-	const region = (name) => [`<!-- BEGIN GENERATED: ${name}. Run node tools/x.mjs --write -->`, ...six, `<!-- END GENERATED: ${name} -->`];
-	const pair = (a, b) => copiedLines([{ name: 'a.html', text: a.join('\n') }, { name: 'b.html', text: b.join('\n') }], { generated: ['canvas'] });
-	assert.deepEqual(pair(region('canvas'), region('canvas')), [], 'an owned region in each page: written from one master, not a copy');
-	assert.equal(pair(region('anything'), six)[0]?.lines.length, 6, 'a region no generator owns hides nothing');
-	assert.equal(pair([...region('canvas'), ...region('canvas')], six)[0]?.lines.length, 6, 'a second region of an owned name hides nothing');
-	assert.equal(copiedLines([{ name: 'a.html', text: region('canvas').join('\n') }, { name: 'b.html', text: six.join('\n') }])[0]?.lines.length, 6, 'and with no owner named, nothing is left out');
+	const owned = markersOf('canvas', COPIES.generated.canvas);
+	const region = (m) => [m.begin, ...six, m.end];
+	const pair = (a, b) => copiedLines([{ name: 'a.html', text: a.join('\n') }, { name: 'b.html', text: b.join('\n') }], { generated: [owned] });
+	assert.deepEqual(pair(region(owned), region(owned)), [], 'an owned region in each page: written from one master, not a copy');
+	assert.equal(pair(region(markersOf('anything', COPIES.generated.canvas)), six)[0]?.lines.length, 6, 'a region no generator owns hides nothing');
+	assert.equal(pair([...region(owned), ...region(owned)], six)[0]?.lines.length, 6, 'a second region of an owned name hides nothing');
+	// the second verifier's attacks: a region opened before the real one by a near copy of its marker, with or without an end
+	const near = { begin: owned.begin.replace('by hand', 'by  hand'), end: owned.end };
+	assert.equal(pair([near.begin, ...six, owned.end, ...region(owned)], six)[0]?.lines.length, 6, 'a near copy of the marker, before the real one, hides nothing');
+	assert.equal(pair(['<!-- BEGIN GENERATED: canvas (typed) -->', ...six, ...region(owned)], six)[0]?.lines.length, 6, 'nor one with no end of its own');
+	assert.equal(copiedLines([{ name: 'a.html', text: region(owned).join('\n') }, { name: 'b.html', text: six.join('\n') }])[0]?.lines.length, 6, 'and with no owner named, nothing is left out');
+	assert.deepEqual(strayMarkers([...region(owned), near.begin, '<!-- END GENERATED: anything -->'].join('\n'), [owned]), [near.begin, '<!-- END GENERATED: anything -->'], 'and every marker not exactly an owned one is named, for the scanner to refuse');
+	const scanner = fs.readFileSync(path.join(import.meta.dirname, '..', 'tools', 'scan-copies.mjs'), 'utf8');
+	assert.match(scanner, /strayMarkers\(f\.text, GENERATED\)/, 'the scanner names them in every page and sheet it reads');
+	assert.match(scanner, /\.\.\.strays,\n\];/, 'and fails on them');
 });
 
-test('H25.4: each generator the copy measure trusts is run by the gate with --check', () => {
-	const gate = JSON.parse(fs.readFileSync(path.join(import.meta.dirname, '..', 'package.json'), 'utf8')).scripts.gate;
+test('H25.4: each generator the copy measure trusts is run by the gate with --check, as a step of its own', () => {
+	const steps = JSON.parse(fs.readFileSync(path.join(import.meta.dirname, '..', 'package.json'), 'utf8')).scripts.gate.split('&&').map((x) => x.trim());
 	const owners = Object.entries(COPIES.generated);
 	assert.deepEqual(owners.map(([name]) => name).sort(), ['canvas', 'stylesheets'], 'control: the two regions the pages hold');
-	for (const [name, tool] of owners) assert.ok(gate.includes(`node ${tool} --check`), `the ${name} region's generator, ${tool}, is in the gate`);
+	for (const [name, { tool }] of owners) assert.ok(steps.includes(`node ${tool} --check`), `the ${name} region's generator, ${tool}, is a gate step exactly -- nothing after it to excuse a failure`);
 });
 
 test('H25.0: a module no production entry reaches -- by an import, a re-export or a literal import() -- is reported', () => {

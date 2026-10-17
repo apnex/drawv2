@@ -13,7 +13,7 @@ Usage: node tools/stylesheets.mjs --check | --write
 */
 import fs from 'node:fs';
 import path from 'node:path';
-import { PAGES } from './layers.mjs';
+import { PAGES, COPIES } from './layers.mjs';
 import { PAGE_STYLESHEETS } from '../product/canvas.mjs';
 import { markersOf, withRegion } from './regions.mjs';   // H25.4: the region writer tools/canvas-layout.mjs shares
 
@@ -23,7 +23,7 @@ if (mode !== '--check' && mode !== '--write') { console.error('usage: node tools
 
 // a sheet's address: a page's own folder is the root it is served from, every other folder is mounted under its name
 const href = (file) => (file.startsWith('app/') ? `/${file.slice('app/'.length)}` : `/${file}`);
-const MARKERS = markersOf('stylesheets', 'tools/stylesheets.mjs', 'product/canvas.mjs PAGE_STYLESHEETS');
+const MARKERS = markersOf('stylesheets', COPIES.generated.stylesheets);
 
 const missing = PAGE_STYLESHEETS.filter((f) => !fs.existsSync(path.join(ROOT, f)));
 if (missing.length) { console.error(`  stylesheets: ${missing.join(', ')} -- named by the composition and no file`); process.exit(1); }
@@ -31,8 +31,7 @@ if (missing.length) { console.error(`  stylesheets: ${missing.join(', ')} -- nam
 const problems = [];
 for (const page of Object.keys(PAGES)) {
 	const file = path.join(ROOT, page), html = fs.readFileSync(file, 'utf8');
-	let next;
-	try { next = withRegion(html, MARKERS, PAGE_STYLESHEETS.map((f) => `<link rel="stylesheet" href="${href(f)}">`)); } catch (e) { problems.push(`${page} ${e.message}`); continue; }
+	const next = withRegion(html, MARKERS, PAGE_STYLESHEETS.map((f) => `<link rel="stylesheet" href="${href(f)}">`), page);
 	if (next === null) { problems.push(`${page} has no generated stylesheet region -- add the BEGIN and END markers where its sheets load`); continue; }
 	if (next === html) continue;
 	if (mode === '--write') { fs.writeFileSync(file, next); console.log(`  stylesheets: wrote ${page}`); }
