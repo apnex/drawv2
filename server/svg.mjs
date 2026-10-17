@@ -137,7 +137,9 @@ function serializeNode(n, layerSet) {
 			const tr = transform?.match(/translate\(([-\d.]+),([-\d.]+)\)/);
 			const [cx, cy] = tr ? [tr[1], tr[2]] : ['0', '0'];
 			const innerAttrs = Object.entries(rest).map(([k, v]) => ` ${k}="${esc(v)}"`).join('');
-			const circles = n.children.filter((c) => c.tag === 'circle').map((c) => `<circle ${Object.entries({ cx, cy, ...c.attrs }).filter(([k]) => k !== 'class').map(([k, v]) => `${k}="${esc(v)}"`).join(' ')}/>`).join('');
+			// H25.2b (B370; dev/DECISIONS.md H25-3): each circle keeps its class, so the page's rules reach it as on the page -- a spawning
+			// endpoint's ring and dot green; written bare, the file drew every spawner as a plain endpoint
+			const circles = n.children.filter((c) => c.tag === 'circle').map((c) => `<circle ${Object.entries({ cx, cy, ...c.attrs }).map(([k, v]) => `${k}="${esc(v)}"`).join(' ')}/>`).join('');
 			return `<g id="${esc(id)}"><g${innerAttrs}>${circles}</g></g>`;
 		}
 	}

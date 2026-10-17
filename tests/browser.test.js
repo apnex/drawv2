@@ -1753,7 +1753,9 @@ test('H24.8 (B361): the published SVG draws what view mode draws -- the same thi
 
 		// control: the reading holds the whole board -- the devices, the panel, the junction, the zone, the links with their heads and legs
 		const keys = viewed.map((e) => e.key);
-		for (const k of ['node-fa00a1', 'node-fa00a3', 'node-fa00b1', 'node-fa00c1', 'zone-fa0001', 'group-fa0001', 'link-fa0001', 'head of link-fa0001', 'leg of link-fa0001', 'link-fa0005', 'link-fa0006', 'head of link-fa0006']) assert.ok(keys.includes(k), `view mode draws ${k}`);
+		// RESTATED at H25.2b (B370): and the spawning endpoint
+		assert.ok(await page.eval(`document.getElementById('node-fa00b2').matches('.waypoint.spawning')`), 'control: the board\'s spawner is drawn as one');
+		for (const k of ['node-fa00b2', 'node-fa00a1', 'node-fa00a3', 'node-fa00b1', 'node-fa00c1', 'zone-fa0001', 'group-fa0001', 'link-fa0001', 'head of link-fa0001', 'leg of link-fa0001', 'link-fa0005', 'link-fa0006', 'head of link-fa0006']) assert.ok(keys.includes(k), `view mode draws ${k}`);
 		assert.ok(!keys.includes('head of link-fa0005'), 'control: the link with no direction draws no head');
 		assert.ok(await page.eval(`document.getElementById('link-fa0006').hasAttribute('data-down')`), 'control: echo to foxtrot is down -- no pipe joins them');
 		assert.ok(viewed.flatMap((e) => e.drawn).filter((d) => d.tag === 'text').length >= 6, 'and its names and the panel\'s text');

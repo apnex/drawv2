@@ -77,28 +77,32 @@ test('H25.2: on the page\'s own sheets -- a down link\'s head and leg take the d
 });
 
 /*
-The rules are applied to the file as it is written, not to the tree the painters drew: the file flattens the layers, writes a
-waypoint's circles bare of their classes, and gives a line's id to its group, so a rule keyed to what the painted tree holds and
-the file does not would style the file where a browser reading it with the page's sheets never could. The first option-A build
-styled the painted tree, and the probe found a spawning endpoint's ring turned from the waypoint blue every published file has
-drawn to the spawning green (two of the director's diagrams). The page draws it green in every mode (network/network.css H12.8),
-so the published file has differed from view mode there all along -- recorded as B370 and held for the director; H25.2 changes
-no pixel, so the file goes on drawing what it drew.
+The rules are applied to the file as it is written, not to the tree the painters drew: the file flattens the layers and gives a
+line's id to its group, so a rule keyed to what the painted tree holds and the file does not would style the file where a browser
+reading it with the page's sheets never could. The first option-A build styled the painted tree, and the probe found a spawning
+endpoint's ring turned green in two of the director's diagrams -- which showed that the file had never drawn a spawner as the page
+does, since it wrote a waypoint's circles bare of the classes the page's rule names (B370).
+CORRECTED at H25.2b (B370; dev/DECISIONS.md H25-3): the file keeps a waypoint's circles' classes, so the page's own spawning rule
+draws the ring and the dot green, 3 wide, as on the page. tests/browser.test.js H24.8 compares the two in the browser, the parity
+board now holding a spawner.
 */
-test('H25.2: the rules meet the file as written -- a spawning endpoint\'s bare ring is drawn as every published file has drawn it (B370 holds the page\'s green)', async () => {
+test('H25.2b: the rules meet the file as written, and the file writes what they need -- a spawning endpoint drawn as the page draws it', async () => {
 	const { svgDocument } = await import('../server/svg.mjs');
 	const { parityBoard } = await import('../tools/probe/boards.mjs');
 	const board = parityBoard();
-	board.nodes.find((n) => n.id === 'node-fa00b1').spawn = { interval: 900, speed: 1, kind: 'packet', since: 0 };
 	board.nodes.find((n) => n.id === 'node-fa00a2').name = 'b<r>&"v';
 	const out = svgDocument(board);
-	const wp = out.match(/<g id="node-fa00b1"><g class="waypoint[^"]*\bspawning\b[^"]*">(.*?)<\/g><\/g>/);
-	assert.ok(wp, 'control: the junction is written as a spawning waypoint, its circles inside');
-	const circles = [...wp[1].matchAll(/<circle [^>]*>/g)].map((m) => m[0]);
-	assert.ok(circles.length >= 2, 'control: a ring and a dot');
-	for (const c of circles) assert.doesNotMatch(c, / class="/, 'the file writes them bare, so no class rule can name them');
-	const spawning = drawingRules().find((r) => r.text === '.waypoint.spawning .wp-ring').decls.find(([k]) => k === 'stroke')[1];
-	for (const c of circles) assert.ok(!c.includes(`"${spawning}"`), `so the page's spawning colour ${spawning} reaches none of them: ${c}`);
-	assert.ok(out.includes('>b&lt;r&gt;&amp;&quot;v</text>') || out.includes('>b&lt;r&gt;&amp;"v</text>'), 'and a name the file escapes is read back and written once escaped, not twice');
+	const wp = out.match(/<g id="node-fa00b2"><g class="waypoint[^"]*\bspawning\b[^"]*">(.*?)<\/g><\/g>/);
+	assert.ok(wp, 'control: the board\'s spawner is written as a spawning waypoint, its circles inside');
+	const rule = (text) => Object.fromEntries(drawingRules().find((r) => r.text === text).decls);
+	const ring = rule('.waypoint.spawning .wp-ring'), dot = rule('.waypoint.spawning .wp-dot');
+	const attrs = (cls) => Object.fromEntries([...(wp[1].match(new RegExp(`<circle [^>]*class="${cls}"[^>]*>`)) ?? [''])[0].matchAll(/([\w-]+)="([^"]*)"/g)].map((m) => [m[1], m[2]]));
+	const r = attrs('wp-ring'), d = attrs('wp-dot');
+	assert.deepEqual([r.stroke, r['stroke-width'], r['stroke-opacity']], [ring.stroke, ring['stroke-width'], ring['stroke-opacity']], 'the ring in the page\'s spawning colour and width');
+	assert.equal(d.fill, dot.fill, 'the dot likewise');
+	const plain = out.match(/<g id="node-fa00b1"><g class="waypoint[^"]*">(.*?)<\/g><\/g>/);
+	assert.ok(plain && !/spawning/.test(plain[0]), 'control: the junction, which spawns nothing');
+	assert.ok(!plain[1].includes(`"${ring.stroke}"`), 'is not drawn in it');
+	assert.ok(out.includes('>b&lt;r&gt;&amp;&quot;v</text>'), 'and a name the file escapes is read back and written once escaped, not twice');
 	assert.doesNotMatch(out, /&amp;(gt|lt|amp|quot);/, 'nothing escaped twice');
 });

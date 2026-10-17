@@ -1505,13 +1505,15 @@ Opened 2026-10-17 by the director (`dev/DECISIONS.md` H25): H22 closed against a
 | H25.0b | The probe: a pinned set of documents rendered at two commits in three modes, the published SVGs, the favicon and every interaction state, compared pixel for pixel and style for style (H25.0b) | **B367** | S3 | `DONE` |
 | H25.1 | Each plugin brings its own stylesheet, its state rules with it, listed in the pages in a generated order (H25.1) | **B368** | S3 | `DONE` |
 | H25.2 | The export and the favicon draw with the same stylesheets; the export writes no colours of its own (H25.2) | **B369** | S3 | `DONE` |
+| H25.2b | The published file draws a spawning endpoint as the page does, green (H25.2b) | **B370** | S3 | `DONE` |
 | H25.3 | Dead and unseen styles deleted or made visible (H25.3) | **B366** | S4 | `WIP` |
 | H25.4 | One canvas layout, declared once and generated into both pages (H25.4) | **B366** | S4 | `TODO` |
 | H25.5 | One renderer: the old scene renderer deleted, its tests on the real one (H25.5) | **B366** | S3 | `TODO` |
 | H25.6 | One name: `routeGeometry` renamed (H25.6) | **B366** | S5 | `TODO` |
 | H25.7 | Close: the architecture document reports every copy, generated (H25.7) | **B366** | S4 | `TODO` |
 
-**Exit:** every copy measure reads zero, or each remaining instance is an exception the director ruled, with its reason and trigger; view mode and the published SVG draw the director's diagrams pixel for pixel as before; no stored document changes.
+**Exit:** every copy measure reads zero, or each remaining instance is an exception the director ruled, with its reason and trigger; view mode and the published SVG draw the director's diagrams pixel for pixel as before; no stored document changes.\
+AMENDED 2026-10-17 by the director (`dev/DECISIONS.md` H25-3): correctness and quality come first -- every pixel that differs from before is explained and judged correct, rather than none differing.
 
 AMENDED 2026-10-17: H25.0 done -- 128 copies measured in the gate, a record that may only shrink inside a frozen ceiling; the audit and staged plan are `dev/design/unification/UNIFICATION-COMPLETE.md`, reviewed adversarially, its ratification owed (B366, under Decisions required).
 AMENDED 2026-10-17: the plan ratified with D1 to D6 as recommended (`dev/DECISIONS.md` H25-1); its stages are the items H25.0b to H25.7.
@@ -1519,6 +1521,8 @@ AMENDED 2026-10-17: H25.0b done -- `tools/probe/parity.mjs` compares two commits
 AMENDED 2026-10-17: H25.1 done -- each plugin brings its own stylesheet, the pages load the composition's list, a name's label is the core's; 201 rules moved word for word, no pixel or computed style changed by the probe, verified by an agent that did not build it (B368 closed). The copy findings are named by the fact copied now, the ceiling re-expressed from be5c9c3: 120 findings, 88 standing.
 AMENDED 2026-10-17: H25.1 live in production (`9cbb963`), its published SVG and favicon byte-identical before and after.
 AMENDED 2026-10-17: H25.2 done -- the export and the favicon carry the page's own rules as each element's attributes and no stylesheet, as the director amended D3 after the first build failed its verification (`dev/DECISIONS.md` H25-2); KERNEL_CSS and EXPORT_CSS gone; the page's sheet split into chrome and canvas (B369 closed). Copy findings standing: 36.
+AMENDED 2026-10-17: H25.2 live in production (`4beb3c2`), at the director's "continue as recommended"; its published SVG and favicon draw 0 pixels differently before and after. The director lifted the plan's no-visible-change fence (`dev/DECISIONS.md` H25-3), and the spawning endpoint B370 had been held behind it is H25.2b.
+AMENDED 2026-10-17: H25.2b done -- the published file draws a spawning endpoint as the page does, its circles keeping their classes; the probe against production finds two of the director's diagrams and the parity board changed at their spawners and nothing else (B370 closed).
 
 ---
 
@@ -1567,7 +1571,6 @@ Scored so the comparison is a judgement, not an omission.\
 | **B359** | S4 | A head arriving at a device from below is mostly covered by the device's name label (shipped as is, H24.6-5) | the director reopens it, or a reader misreads a link arriving at a device from below. |
 | **B360** | S5 | A selected link's end handle covers its head's tip (shipped as is, H24.6-5) | the director reopens it, or the next change to a link's end handles. |
 | **B364** | S5 | Two marks for a device kept for a future use: a blue inner outline and a small corner mark (H24.9) | a device state needs showing on the device itself -- a role, a status, a fault or a selection kind -- or the director asks for C or D. |
-| **B370** | S3 | The published file draws a spawning endpoint as a plain waypoint, where the page draws it green (found by H25.2's probe) | the H25 programme closes and its no-pixel-change fence lifts, or the director asks for the published file to show a spawner. |
 | **B371** | S4 | librsvg before 2.50 draws no device in the published file: it reads no plain `href` (found by H25.2's verifier) | a published file is seen drawn without its devices where it is shared, or the director asks for the file to draw in older renderers. |
 | **B372** | S4 | A page that pastes the published file inline restyles more of it than before: presentation attributes lose to its rules (found by H25.2's verifier) | a published file is seen restyled by a page it is pasted into, or the director asks for the file to hold its look against a host's rules. |
 | **B357** | S4 | A long or bent link shows its direction only at its far end (H24.6-4 kept it so for now) | the director reopens direction along a link, or a reader misreads a long link's direction. |
