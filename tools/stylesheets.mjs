@@ -13,17 +13,15 @@ Usage: node tools/stylesheets.mjs --check | --write
 */
 import fs from 'node:fs';
 import path from 'node:path';
-import { PAGES, COPIES } from './layers.mjs';
+import { PAGES } from './layers.mjs';
 import { PAGE_STYLESHEETS } from '../product/canvas.mjs';
-import { markersOf, withRegion } from './regions.mjs';   // H25.4: the region writer tools/canvas-layout.mjs shares
+import { withRegion } from './regions.mjs';   // H25.4: the region writer tools/canvas-layout.mjs shares
+import { PAGE_REGIONS } from './page-regions.mjs';   // H25.4: the region, declared once for this and the copy measure
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const mode = process.argv[2];
 if (mode !== '--check' && mode !== '--write') { console.error('usage: node tools/stylesheets.mjs --check | --write'); process.exit(2); }
 
-// a sheet's address: a page's own folder is the root it is served from, every other folder is mounted under its name
-const href = (file) => (file.startsWith('app/') ? `/${file.slice('app/'.length)}` : `/${file}`);
-const MARKERS = markersOf('stylesheets', COPIES.generated.stylesheets);
 
 const missing = PAGE_STYLESHEETS.filter((f) => !fs.existsSync(path.join(ROOT, f)));
 if (missing.length) { console.error(`  stylesheets: ${missing.join(', ')} -- named by the composition and no file`); process.exit(1); }
@@ -31,8 +29,10 @@ if (missing.length) { console.error(`  stylesheets: ${missing.join(', ')} -- nam
 const problems = [];
 for (const page of Object.keys(PAGES)) {
 	const file = path.join(ROOT, page), html = fs.readFileSync(file, 'utf8');
-	const next = withRegion(html, MARKERS, PAGE_STYLESHEETS.map((f) => `<link rel="stylesheet" href="${href(f)}">`), page);
-	if (next === null) { problems.push(`${page} has no generated stylesheet region -- add the BEGIN and END markers where its sheets load`); continue; }
+	const next = withRegion(html, PAGE_REGIONS.stylesheets, page);
+	if (next === null) { problems.push(`${page} has no generated stylesheet region -- add the BEGIN and END markers where its sheets load, each opening its line`); continue; }
+	const head = [html.indexOf('<head>'), html.indexOf('</head>')], at = html.indexOf(PAGE_REGIONS.stylesheets.begin);
+	if (!(head[0] >= 0 && head[0] < at && at < head[1])) { problems.push(`${page} loads its stylesheets outside its <head>`); continue; }
 	if (next === html) continue;
 	if (mode === '--write') { fs.writeFileSync(file, next); console.log(`  stylesheets: wrote ${page}`); }
 	else problems.push(`${page} lists other stylesheets than the composition -- run node tools/stylesheets.mjs --write`);

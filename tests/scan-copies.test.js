@@ -102,24 +102,34 @@ H25.4 (B376) -- A GENERATED REGION IS LEFT OUT ONLY WHEN A GENERATOR OWNS IT. An
 markers no generator writes, or inside a second region of a name one does, hid from the measure (found by H25.4's verifier, who
 copied seven lines into the lab inside a made-up region and every check passed).
 */
-test('H25.4: a generated region is left out of the copied-lines measure only when a generator owns it -- by its exact markers, its first only', async () => {
+test('H25.4: a page\'s region is left out of the copied-lines measure only when it holds exactly what its generator writes -- every other marked region is read', async () => {
 	const { markersOf, strayMarkers } = await import('../tools/regions.mjs');
 	const six = ['<g id="grid-nodes"></g>', '<g id="grid-zones"></g>', '<g id="snaplayer"></g>', '<g id="zones"></g>', '<g id="pipes"></g>', '<g id="groups"></g>'];
-	const owned = markersOf('canvas', COPIES.generated.canvas);
-	const region = (m) => [m.begin, ...six, m.end];
-	const pair = (a, b) => copiedLines([{ name: 'a.html', text: a.join('\n') }, { name: 'b.html', text: b.join('\n') }], { generated: [owned] });
-	assert.deepEqual(pair(region(owned), region(owned)), [], 'an owned region in each page: written from one master, not a copy');
-	assert.equal(pair(region(markersOf('anything', COPIES.generated.canvas)), six)[0]?.lines.length, 6, 'a region no generator owns hides nothing');
-	assert.equal(pair([...region(owned), ...region(owned)], six)[0]?.lines.length, 6, 'a second region of an owned name hides nothing');
-	// the second verifier's attacks: a region opened before the real one by a near copy of its marker, with or without an end
-	const near = { begin: owned.begin.replace('by hand', 'by  hand'), end: owned.end };
-	assert.equal(pair([near.begin, ...six, owned.end, ...region(owned)], six)[0]?.lines.length, 6, 'a near copy of the marker, before the real one, hides nothing');
-	assert.equal(pair(['<!-- BEGIN GENERATED: canvas (typed) -->', ...six, ...region(owned)], six)[0]?.lines.length, 6, 'nor one with no end of its own');
-	assert.equal(copiedLines([{ name: 'a.html', text: region(owned).join('\n') }, { name: 'b.html', text: six.join('\n') }])[0]?.lines.length, 6, 'and with no owner named, nothing is left out');
-	assert.deepEqual(strayMarkers([...region(owned), near.begin, '<!-- END GENERATED: anything -->'].join('\n'), [owned]), [near.begin, '<!-- END GENERATED: anything -->'], 'and every marker not exactly an owned one is named, for the scanner to refuse');
+	const own = { ...markersOf('canvas', COPIES.generated.canvas), lines: six };
+	const other = { ...markersOf('stylesheets', COPIES.generated.stylesheets), lines: ['<link rel="stylesheet" href="/a.css">'] };
+	const region = (r, lines = r.lines) => [r.begin, ...lines, r.end];
+	const typed = ['<p class="one">a line typed in the page itself</p>', '<p class="two">and another typed after it</p>', '<p class="three">a third</p>', '<p class="four">a fourth</p>', '<p class="five">a fifth</p>'];
+	const copies = (a, b, regions = [own, other]) => copiedLines([{ name: 'a.html', text: a.join('\n'), regions }, { name: 'b.html', text: b.join('\n'), regions }]).flatMap((x) => x.lines);
+	assert.deepEqual(copies(region(own), region(own)), [], 'a region holding its generator\'s lines in each page: one master, not a copy');
+	assert.deepEqual(copies([...region(own), ...typed], typed), typed, 'control: what is typed beside it is read');
+	assert.deepEqual(copies(region(own, typed), typed), typed, 'a region holding anything but its generator\'s lines hides nothing');
+	assert.deepEqual(copies(region({ ...markersOf('anything', COPIES.generated.canvas), lines: typed }), typed), typed, 'nor a region no generator writes');
+	assert.deepEqual(copies([...region(own, typed), ...region(own)], typed), typed, 'nor a typed region before the real one, of the same name');
+	assert.deepEqual(copies([own.begin.replace('by hand', 'by  hand'), ...typed, own.end, ...region(own)], typed), typed, 'nor one opened by a near copy of the marker');
+	assert.deepEqual(copies(['<!-- BEGIN GENERATED: canvas (typed) -->', ...typed, ...region(own)], typed), typed, 'nor one with no end of its own');
+	// the third verifier's: a stylesheet holds no region, so an exact pair in its comments hides nothing
+	const sheet = (lines) => [`/* ${own.begin} */`, ...lines, `/* ${own.end} */`];
+	assert.deepEqual(copiedLines([{ name: 'a.css', text: sheet(typed).join('\n'), regions: [] }, { name: 'b.css', text: typed.join('\n'), regions: [] }]).flatMap((x) => x.lines), typed, 'an exact pair in a stylesheet\'s comments hides nothing');
+	// and a region whose marker does not open its line -- `<` before it -- is none, so removing it cannot make the next marker whole
+	const made = [`<${other.begin}`, ...other.lines.map((l) => `<${l}`), `<${other.end}${own.begin.slice(1)}`, ...typed, ...region(own)];
+	assert.deepEqual(copies(made, typed), typed, 'removing one region never makes another: regions are found on the page as written');
+	// the real region's markers are kept; the typed region's two, and the one inside a comment, are named
+	assert.deepEqual(strayMarkers([...region(own), ...region(own, typed), `/* ${own.begin} */`].join('\n'), [own]), [own.begin, own.end, own.begin], 'every marker not opening or closing a region left out is named, for the scanner to refuse');
+	assert.deepEqual(strayMarkers([...region(own), '/* BEGIN GENERATED: x */'].join('\n'), [own]), ['/* BEGIN GENERATED: x */'], 'a stylesheet\'s own form of marker too');
 	const scanner = fs.readFileSync(path.join(import.meta.dirname, '..', 'tools', 'scan-copies.mjs'), 'utf8');
-	assert.match(scanner, /strayMarkers\(f\.text, GENERATED\)/, 'the scanner names them in every page and sheet it reads');
+	assert.match(scanner, /strayMarkers\(f\.text, f\.regions\)/, 'the scanner names them in every page and sheet it reads');
 	assert.match(scanner, /\.\.\.strays,\n\];/, 'and fails on them');
+	assert.match(scanner, /regions: f in PAGES \? Object\.values\(PAGE_REGIONS\) : \[\]/, 'and gives a page its regions and a stylesheet none');
 });
 
 test('H25.4: each generator the copy measure trusts is run by the gate with --check, as a step of its own', () => {

@@ -193,18 +193,19 @@ export function stylesDrawnByNoPart(sheets, drawnBy, idsWritten = null) {
 
 // a line worth comparing: trimmed and not blank, every comment removed whole first -- so a comment put into a copy hides none of
 // it -- and a generated region left out, which its generator holds equal to its one master (H25.1, mission-kit P3).
-// CORRECTED at H25.4 (B376): only a region a generator owns (`generated`: its exact markers, from tools/layers.mjs COPIES through
-// tools/regions.mjs), and only its first -- any marked region was left out, then any whose marker began with an owned name, so
-// lines typed in a made-up region, or one opened by a near copy of a real marker, hid from the measure (H25.4's verifiers)
-const comparable = (text, generated = []) => withoutRegions(text, generated).replace(/<!--[\s\S]*?-->/g, '').replace(/\/\*[\s\S]*?\*\//g, '').split('\n').map((l) => l.trim()).filter((l) => l && !/^(<!--|-->|\/\*|\*)/.test(l));
+// CORRECTED at H25.4 (B376): only a file's own regions (`regions`: each with its exact markers and the lines its generator writes,
+// tools/page-regions.mjs), and only where it holds exactly those lines -- any marked region was left out, so lines typed inside a
+// made-up region, a near copy, a stylesheet's pair, or one that removing another made, hid from the measure (H25.4's verifiers)
+const comparable = (text, regions = []) => withoutRegions(text, regions).replace(/<!--[\s\S]*?-->/g, '').replace(/\/\*[\s\S]*?\*\//g, '').split('\n').map((l) => l.trim()).filter((l) => l && !/^(<!--|-->|\/\*|\*)/.test(l));
 
 /*
 Lines one file repeats from another, `run` lines in a row or more, and at least `chars` characters in the run so that a few closing
-tags never count. `files` is `[{ name, text }]`; the answer gives, for each pair, the lines of the first that lie in a run the
+tags never count. `files` is `[{ name, text, regions }]`, `regions` a page's generated regions (tools/page-regions.mjs), left out
+where each holds exactly its generator's lines; the answer gives, for each pair, the lines of the first that lie in a run the
 second repeats.
 */
-export function copiedLines(files, { run = 5, chars = 80, generated = [] } = {}) {
-	const lines = files.map((f) => ({ name: f.name, lines: comparable(f.text, generated) }));
+export function copiedLines(files, { run = 5, chars = 80 } = {}) {
+	const lines = files.map((f) => ({ name: f.name, lines: comparable(f.text, f.regions ?? []) }));
 	const out = [];
 	for (let a = 0; a < lines.length; a++) for (let b = a + 1; b < lines.length; b++) {
 		const windows = new Set();

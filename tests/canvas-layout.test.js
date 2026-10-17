@@ -14,6 +14,7 @@ import fs from 'node:fs';
 import { CANVAS_LAYERS, CANVAS_VIEWBOX } from '../product/canvas.mjs';
 import { PAGES, COPIES } from '../tools/layers.mjs';
 import { markersOf, withRegion } from '../tools/regions.mjs';
+import { PAGE_REGIONS } from '../tools/page-regions.mjs';
 
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
 const containerOf = (html) => {
@@ -27,7 +28,8 @@ test('H25.4: each page lays out the canvas the composition declares -- its viewB
 	const at = (id) => CANVAS_LAYERS.indexOf(id);
 	assert.ok(at('zones') < at('links') && at('pipes') < at('links') && at('links') < at('waypoints') && at('waypoints') < at('nodes') && at('nodes') < at('movers') && at('movers') < at('overlay'),
 		'control: the declaration stacks zones and pipes beneath the links, the links beneath waypoints and devices, the movers over them, the overlay last');
-	const { begin, end } = markersOf('canvas', COPIES.generated.canvas);
+	const { begin, end } = PAGE_REGIONS.canvas;
+	assert.deepEqual({ begin, end }, markersOf('canvas', COPIES.generated.canvas), 'control: the region the generator writes is the one the manifest names');
 	const pages = Object.keys(PAGES);
 	assert.ok(pages.includes('app/index.html') && pages.includes('lab/index.html'), 'control: the product page and the lab are among the pages');
 	for (const page of pages) {
@@ -39,19 +41,20 @@ test('H25.4: each page lays out the canvas the composition declares -- its viewB
 		const [x, y, w, h] = CANVAS_VIEWBOX.split(' '), indent = html.slice(html.lastIndexOf('\n', from) + 1, from);
 		const svg = [`<svg id="container" viewBox="${CANVAS_VIEWBOX}" xmlns="http://www.w3.org/2000/svg">`, `\t<rect id="canvas" x="${x}" y="${y}" width="${w}" height="${h}"/>`, ...CANVAS_LAYERS.map((id) => `\t<g id="${id}"></g>`), '</svg>'];
 		assert.equal(html.slice(from, to + end.length), [begin, ...svg, end].join(`\n${indent}`), `${page}: its region holds the declaration's canvas and nothing else`);
+		assert.match(html.slice(0, from), /<main id="stage">\s*$/, `${page}: the canvas is the first thing in its stage`);
 		assert.equal(containerOf(html.slice(0, from) + html.slice(to)), null, `${page} lays out no other canvas outside the region`);
 	}
 });
 
-test('H25.4: a region is rewritten between its markers and nowhere else, at the marker\'s indent; a page without them is refused', () => {
-	const m = markersOf('canvas', { tool: 'tools/canvas-layout.mjs', source: 'the declaration' });
+test('H25.4: a region is rewritten between its markers and nowhere else, at the marker\'s indent; a page without them, or holding them twice, is refused', () => {
+	const m = { ...markersOf('canvas', { tool: 'tools/canvas-layout.mjs', source: 'the declaration' }), lines: ['<a>', '\t<b/>', '</a>'] };
 	const page = `<main>\n\t\t${m.begin}\n\t\t<old/>\n\t\t${m.end}\n\t\t<kept/>\n</main>`;
-	assert.equal(withRegion(page, m, ['<a>', '\t<b/>', '</a>']), `<main>\n\t\t${m.begin}\n\t\t<a>\n\t\t\t<b/>\n\t\t</a>\n\t\t${m.end}\n\t\t<kept/>\n</main>`);
-	assert.equal(withRegion(withRegion(page, m, ['<a/>']), m, ['<a/>']), withRegion(page, m, ['<a/>']), 'written twice, the same');
-	assert.equal(withRegion('<main><old/></main>', m, ['<a/>']), null, 'a page with no markers has no region to write');
-	assert.throws(() => withRegion(`${page}\n${m.begin}\n<typed/>\n${m.end}`, m, ['<a/>'], 'lab/index.html'), /lab\/index\.html holds the region .* twice/, 'a page holding the region twice is refused, by name: one is written, the other typed');
-	const stylesheets = markersOf('stylesheets', COPIES.generated.stylesheets);
-	assert.ok(read('app/index.html').includes(stylesheets.begin), 'control: the stylesheet region the pages already hold is written through the same markers');
+	assert.equal(withRegion(page, m), `<main>\n\t\t${m.begin}\n\t\t<a>\n\t\t\t<b/>\n\t\t</a>\n\t\t${m.end}\n\t\t<kept/>\n</main>`);
+	assert.equal(withRegion(withRegion(page, m), m), withRegion(page, m), 'written twice, the same');
+	assert.equal(withRegion('<main><old/></main>', m), null, 'a page with no markers has no region to write');
+	assert.equal(withRegion(`<main><${m.begin}\n<old/>\n${m.end}</main>`, m), null, 'nor one whose marker does not open its line');
+	assert.throws(() => withRegion(`${page}\n${m.begin}\n<typed/>\n${m.end}`, m, 'lab/index.html'), /lab\/index\.html holds the region .* twice/, 'a page holding the region twice is refused, by name: one is written, the other typed');
+	assert.ok(read('app/index.html').includes(PAGE_REGIONS.stylesheets.begin), 'control: the stylesheet region the pages already hold is written through the same definitions');
 });
 
 test('H25.4: nothing else types the layers -- the lab checks for the declared ones, and the export stacks by them', () => {
