@@ -31,7 +31,8 @@ if (missing.length) { console.error(`  stylesheets: ${missing.join(', ')} -- nam
 const problems = [];
 for (const page of Object.keys(PAGES)) {
 	const file = path.join(ROOT, page), html = fs.readFileSync(file, 'utf8');
-	const next = withRegion(html, MARKERS, PAGE_STYLESHEETS.map((f) => `<link rel="stylesheet" href="${href(f)}">`));
+	let next;
+	try { next = withRegion(html, MARKERS, PAGE_STYLESHEETS.map((f) => `<link rel="stylesheet" href="${href(f)}">`)); } catch (e) { problems.push(`${page} ${e.message}`); continue; }
 	if (next === null) { problems.push(`${page} has no generated stylesheet region -- add the BEGIN and END markers where its sheets load`); continue; }
 	if (next === html) continue;
 	if (mode === '--write') { fs.writeFileSync(file, next); console.log(`  stylesheets: wrote ${page}`); }

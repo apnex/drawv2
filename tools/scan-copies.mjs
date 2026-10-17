@@ -102,7 +102,7 @@ const detail = {
 	'copied style rules': copiedStyleRules(sheets).map((x) => [x.rule, `${x.rule}  in ${x.in.join(' and ')}`]),
 	'foreign style rules': foreignStyleRules(sheets, drawnBy, isPlugin).map((x) => [x.selector, `${x.sheet}: ${x.selector}  -- ${x.classes.join(', ')}`]),
 	'styled names nothing draws': stylesDrawnByNoPart(sheets, drawnBy, idsWritten).map((x) => [x.name, `${x.name} in ${x.in.join(', ')}`]),
-	'copied lines': copiedLines(pagesAndSheets).flatMap((x) => x.lines.map((l) => [`${x.files[0]} and ${x.files[1]}: ${l}`, `${x.files[0]} and ${x.files[1]}: ${l}`])),
+	'copied lines': copiedLines(pagesAndSheets, { generated: Object.keys(COPIES.generated) }).flatMap((x) => x.lines.map((l) => [`${x.files[0]} and ${x.files[1]}: ${l}`, `${x.files[0]} and ${x.files[1]}: ${l}`])),
 	'modules no entry reaches': modulesNoEntryReaches(COPIES.entries, modules, read, resolve).map((m) => [m, m]),
 };
 const findings = Object.fromEntries(Object.entries(detail).map(([k, v]) => [k, v.map(([key]) => key)]));

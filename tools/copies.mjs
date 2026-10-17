@@ -191,16 +191,18 @@ export function stylesDrawnByNoPart(sheets, drawnBy, idsWritten = null) {
 }
 
 // a line worth comparing: trimmed and not blank, every comment removed whole first -- so a comment put into a copy hides none of
-// it -- and a generated region left out, which its generator holds equal to its one master (H25.1, mission-kit P3)
-const comparable = (text) => text.replace(/<!-- BEGIN GENERATED: ([\w-]+)[\s\S]*?<!-- END GENERATED: \1 -->/g, '').replace(/<!--[\s\S]*?-->/g, '').replace(/\/\*[\s\S]*?\*\//g, '').split('\n').map((l) => l.trim()).filter((l) => l && !/^(<!--|-->|\/\*|\*)/.test(l));
+// it -- and a generated region left out, which its generator holds equal to its one master (H25.1, mission-kit P3).
+// CORRECTED at H25.4 (B376): only a region a generator owns (`generated`, from tools/layers.mjs COPIES), and only its first --
+// any marked region was left out, so lines typed inside an unowned or a second region hid from the measure (H25.4's verifier)
+const comparable = (text, generated = []) => generated.reduce((t, name) => t.replace(new RegExp(`<!-- BEGIN GENERATED: ${name}\\b[\\s\\S]*?<!-- END GENERATED: ${name} -->`), ''), text).replace(/<!--[\s\S]*?-->/g, '').replace(/\/\*[\s\S]*?\*\//g, '').split('\n').map((l) => l.trim()).filter((l) => l && !/^(<!--|-->|\/\*|\*)/.test(l));
 
 /*
 Lines one file repeats from another, `run` lines in a row or more, and at least `chars` characters in the run so that a few closing
 tags never count. `files` is `[{ name, text }]`; the answer gives, for each pair, the lines of the first that lie in a run the
 second repeats.
 */
-export function copiedLines(files, { run = 5, chars = 80 } = {}) {
-	const lines = files.map((f) => ({ name: f.name, lines: comparable(f.text) }));
+export function copiedLines(files, { run = 5, chars = 80, generated = [] } = {}) {
+	const lines = files.map((f) => ({ name: f.name, lines: comparable(f.text, generated) }));
 	const out = [];
 	for (let a = 0; a < lines.length; a++) for (let b = a + 1; b < lines.length; b++) {
 		const windows = new Set();

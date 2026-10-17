@@ -32,7 +32,8 @@ const LINES = [
 const problems = [];
 for (const page of Object.keys(PAGES)) {
 	const file = path.join(ROOT, page), html = fs.readFileSync(file, 'utf8');
-	const next = withRegion(html, MARKERS, LINES);
+	let next;
+	try { next = withRegion(html, MARKERS, LINES); } catch (e) { problems.push(`${page} ${e.message}`); continue; }
 	if (next === null) { problems.push(`${page} has no generated canvas region -- add the BEGIN and END markers where its canvas is laid out`); continue; }
 	if (next === html) continue;
 	if (mode === '--write') { fs.writeFileSync(file, next); console.log(`  canvas-layout: wrote ${page}`); }

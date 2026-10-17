@@ -35,6 +35,10 @@ test('H25.4: each page lays out the canvas the composition declares -- its viewB
 		assert.ok(from > 0 && to > from, `${page} holds the generated canvas region`);
 		const region = html.slice(from, to);
 		assert.deepEqual(containerOf(region), { viewBox: CANVAS_VIEWBOX, ground: CANVAS_VIEWBOX, layers: CANVAS_LAYERS }, `${page}: the canvas is the declaration's`);
+		// and exactly so, character for character -- an attribute added to a layer is a hand edit too (H25.4's verifier)
+		const [x, y, w, h] = CANVAS_VIEWBOX.split(' ');
+		const svg = [`<svg id="container" viewBox="${CANVAS_VIEWBOX}" xmlns="http://www.w3.org/2000/svg">`, `<rect id="canvas" x="${x}" y="${y}" width="${w}" height="${h}"/>`, ...CANVAS_LAYERS.map((id) => `<g id="${id}"></g>`), '</svg>'];
+		assert.deepEqual(region.slice(begin.length).split('\n').map((l) => l.trim()).filter(Boolean), svg, `${page}: its region holds the declaration's canvas and nothing else`);
 		assert.equal(containerOf(html.slice(0, from) + html.slice(to)), null, `${page} lays out no other canvas outside the region`);
 	}
 });
@@ -45,6 +49,7 @@ test('H25.4: a region is rewritten between its markers and nowhere else, at the 
 	assert.equal(withRegion(page, m, ['<a>', '\t<b/>', '</a>']), `<main>\n\t\t${m.begin}\n\t\t<a>\n\t\t\t<b/>\n\t\t</a>\n\t\t${m.end}\n\t\t<kept/>\n</main>`);
 	assert.equal(withRegion(withRegion(page, m, ['<a/>']), m, ['<a/>']), withRegion(page, m, ['<a/>']), 'written twice, the same');
 	assert.equal(withRegion('<main><old/></main>', m, ['<a/>']), null, 'a page with no markers has no region to write');
+	assert.throws(() => withRegion(`${page}\n${m.begin}\n<typed/>\n${m.end}`, m, ['<a/>']), /twice/, 'a page holding the region twice is refused: one is written, the other typed');
 	const stylesheets = markersOf('stylesheets', 'tools/stylesheets.mjs', 'product/canvas.mjs PAGE_STYLESHEETS');
 	assert.ok(read('app/index.html').includes(stylesheets.begin), 'control: the stylesheet region the pages already hold is written through the same markers');
 });

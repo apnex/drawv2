@@ -115,7 +115,7 @@ const RECORD = {
 	'app/src/keymap.js': [1, 'the `w` key\'s id, F4'],
 	// app/src/releases.js's one -- a waypoint hand the retype refused -- went at C-e step fourteen: no hand holds a waypoint
 	'network/anchor-appearance.mjs': [2, 'the drawn waypoint\'s class and its layer -- the network\'s marks, F4; moved from app/src/renderer.js at C-a (D3) -- and its pick, the hit\'s word, moved from app/src/pick.js at C-b'],
-	'lab/src/root.js': [1, 'the page\'s waypoint layer id'],
+	// lab/src/root.js's one -- the page's waypoint layer id -- went at H25.4: the lab checks for the canvas's declared layers
 };
 
 test('F-b, F-c: the old kind\'s literal appears in no product module beyond the record, each with its reason', () => {
