@@ -84,9 +84,13 @@ test('R-c: authoring draws the whole waypoint -- the run picture leaves out the 
 	for (const id of ['node-0000e1', 'node-0000c1', 'node-0000d1']) assert.equal(run[id].length, view[id].length - 1, `${id} loses only its anchor ring`);
 });
 
-test('R-c: what is left out is decided in one place -- no stylesheet hides authoring geometry in run mode', () => {
+// RESTATED at H25.1 (B368): every sheet the page loads, which since H25.1 includes each plugin's own -- the two this read had held
+// every canvas rule until then, and a run-mode rule put into a plugin's sheet would have passed unseen (found by H25.1's verifier)
+test('R-c: what is left out is decided in one place -- no stylesheet hides authoring geometry in run mode', async () => {
 	assert.equal(RUN_PICTURE.pipes, false);
-	for (const f of ['app/style.css', 'network/network.css']) {
+	const { PAGE_STYLESHEETS } = await import('../product/canvas.mjs');
+	assert.ok(PAGE_STYLESHEETS.includes('network/network.css') && PAGE_STYLESHEETS.includes('app/style.css'), 'control: the sheets this read before are among them');
+	for (const f of PAGE_STYLESHEETS) {
 		const css = fs.readFileSync(new URL(`../${f}`, import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
 		assert.doesNotMatch(css, /\.run-mode\s+[^{]*\.(wp-anchor|wp-dot|pipe|pipe-hit)\b/, `${f} hides a layer in run mode, a second place deciding the picture`);
 	}

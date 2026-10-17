@@ -26,7 +26,8 @@ export const LINK_COLOURS = { up: NETWORK_TOKENS.link, down: downStroke() };
 
 /*
 B330 (H22.5): the standalone CSS rules for the elements the plugins' painters and appearances emit into a downloaded SVG.
-H24.8 (B361): each rule says what the page's stylesheet says for the same element (app/style.css, network/network.css), resolved
+H24.8 (B361): each rule says what the page's stylesheets say for the same element (since H25.1 kernel/primitives.css,
+zones/zones.css, groups/groups.css and network/network.css), resolved
 to its colour -- a name on its baseline point in an opaque pill, in the page's font; a link's ends and corners as the page leaves
 them. Its own copy once centred names on that point and made their pills see-through, and the browser test
 `H24.8 (B361): the published SVG draws what view mode draws` now holds every drawn element to the page's look.

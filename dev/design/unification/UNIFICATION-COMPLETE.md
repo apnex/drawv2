@@ -169,6 +169,8 @@ Each stage: tests first; the record lowered in its commit, which lists each find
    - `.waypoint.linkband` styles a state only devices declare, for devices -- dead, deleted in H25.3;
    - the copy findings were named by the sheet each sat in, so a move read as a copy removed and another added; they are named by the fact copied now, and the ceiling was re-expressed from the tree H25 opened on, 120 findings where 128 were;
    - 201 rules before and after, each word for word; the probe against be5c9c3 passed.
+   - the simulation's sheet is owned through `tools/layers.mjs` `COPIES.owners`, as the core's is, rather than named in its part's module list, which lists modules;
+   - verified by an agent that did not build it: the probe between be5c9c3 and 9364fb2 passed, every pair and triple of twelve states and five container modes compared at both commits found no difference in thirty properties, and no pair of rules whose order changed can style one element; its findings -- a guard test still reading two sheets, two stale comments, this missing line, and `.label.zone-label` placed after the zone block rather than before it, which no element can tell apart -- are fixed or noted in the commit after.
 2. **H25.2 -- the export and the favicon draw with the same stylesheets (D3).**
    `server/svg.mjs` builds its style from the composed parts' sheets and the canvas's own rules, every `var()` given a literal fallback from the colour registry; `serializeNode` stops writing colours of its own; `KERNEL_CSS` and `EXPORT_CSS` retire, and the favicon takes the devices plugin's sheet.
    `tests/run-picture.test.js`'s assertions on the export's attribute colours are restated to assert the colour the element computes.

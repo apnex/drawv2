@@ -44,7 +44,7 @@ const headOf = (model, link, points, outlineOf) => {
 const lookOf = (model, link, head) => linkAppearance(link, LINK_W, { down: isLinkDown(model, link), headed: !!head });
 /*
 The head's element: hollow, its outline 4 px. Its colour is the link's, by its state: the stylesheet colours it from the link
-element it follows (`.link.selected + .link-head`, app/style.css; down and blocking, network/network.css), and these attributes
+element it follows (`.link.selected + .link-head` and the down and blocking rules, all in network/network.css since H25.1), and these attributes
 are what the export, which loads no stylesheet, draws. It names its link by `data-head-of` -- not `data-link`, which marks a
 click twin the export leaves out -- and takes no click of its own (the twin under it does).
 */
