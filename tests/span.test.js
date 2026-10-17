@@ -811,7 +811,8 @@ test('B200: the node grid and the waypoint centre are one dot, from one source',
 	the moment it exists rather than when somebody remembers to add it here.
 	*/
 	const drawing = [];
-	for (const dir of ['../app/src', '../kernel']) {
+	// RESTATED at H25.5 (B378): sweep the plugins' folders too, where the appearances now live
+	for (const dir of ['../app/src', '../kernel', '../network', '../devices', '../zones', '../groups', '../layouts']) {
 		const base = new URL(`${dir}/`, import.meta.url);
 		for (const f of fs.readdirSync(base)) {
 			if (!f.endsWith('.js') && !f.endsWith('.mjs')) continue;
