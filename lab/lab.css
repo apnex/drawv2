@@ -12,7 +12,7 @@ colour it draws, and adding a third while that row is open would be the same def
 #content { grid-template-columns: 1fr; }
 #stage { width: 100vw; }
 
-#status { display: flex; gap: 2rem; }
+#status { gap: 2rem; }   /* H25.3 (B373): its display is the page's (app/style.css), which the lab loads first */
 
 /* the notice sink the planner's refusals reach (G11); the product shows these in its own chrome */
 #lab-notice { opacity: 0.75; }

@@ -53,6 +53,9 @@ import { BARE_KIND, ANCHOR_KINDS } from '../../model/anchors.mjs';   // the bare
 
 
 const ARROW = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
+// H25.3 (B373): the selection rectangle's class, declared as a box row declares its preview (zones/zone-gestures.mjs), where the
+// copy measure reads what a module puts on its elements (tools/copies.mjs) -- passed bare to previewRect, it read as never drawn
+const MARQUEE = { preview: 'marquee' };
 
 // A1 — the node-frame rect spanning two snapped cell-centre points: the text-box draw preview + its
 // footprint (origin cell + span counts). a click (a===b) → a 1×1 frame; a drag → the spanned frame.
@@ -323,7 +326,7 @@ const GESTURES = {
 		},
 		cancel: (i, ctx) => ctx.rect.remove(),
 		update: (i, pos) => i.ctx.rect.update(resolveBox(i.ctx.p1, pos)),
-		start: (i, hit, pos) => ({ p1: pos, rect: previewRect(i.overlay, 'marquee') })
+		start: (i, hit, pos) => ({ p1: pos, rect: previewRect(i.overlay, MARQUEE.preview) })
 	},
 
 

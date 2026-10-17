@@ -1506,7 +1506,8 @@ Opened 2026-10-17 by the director (`dev/DECISIONS.md` H25): H22 closed against a
 | H25.1 | Each plugin brings its own stylesheet, its state rules with it, listed in the pages in a generated order (H25.1) | **B368** | S3 | `DONE` |
 | H25.2 | The export and the favicon draw with the same stylesheets; the export writes no colours of its own (H25.2) | **B369** | S3 | `DONE` |
 | H25.2b | The published file draws a spawning endpoint as the page does, green (H25.2b) | **B370** | S3 | `DONE` |
-| H25.3 | Dead and unseen styles deleted or made visible (H25.3) | **B366** | S4 | `WIP` |
+| H25.3 | Dead and unseen styles deleted or made visible (H25.3) | **B373** | S4 | `DONE` |
+| H25.3b | The style rules that name another plugin's word ruled: the spawner's two, the zone grid's cursor (H25.3b) | **B374** | S4 | `TODO` |
 | H25.4 | One canvas layout, declared once and generated into both pages (H25.4) | **B366** | S4 | `TODO` |
 | H25.5 | One renderer: the old scene renderer deleted, its tests on the real one (H25.5) | **B366** | S3 | `TODO` |
 | H25.6 | One name: `routeGeometry` renamed (H25.6) | **B366** | S5 | `TODO` |
@@ -1524,6 +1525,7 @@ AMENDED 2026-10-17: H25.2 done -- the export and the favicon carry the page's ow
 AMENDED 2026-10-17: H25.2 live in production (`4beb3c2`), at the director's "continue as recommended"; its published SVG and favicon draw 0 pixels differently before and after. The director lifted the plan's no-visible-change fence (`dev/DECISIONS.md` H25-3), and the spawning endpoint B370 had been held behind it is H25.2b.
 AMENDED 2026-10-17: H25.2b done -- the published file draws a spawning endpoint as the page does, its circles keeping their classes; the probe against production finds two of the director's diagrams and the parity board changed at their spawners and nothing else (B370 closed).
 AMENDED 2026-10-17: H25.2b live in production (`72cd982`), at the director's "continue"; the published diagram and the favicon byte-identical before and after.
+AMENDED 2026-10-17: H25.3 done -- the dead rules deleted, the lab's restated rule gone, the selection rectangle's and the deleted-diagrams list's classes put where the measure reads them; no pixel changed (B373 closed). Copy findings standing: 23, the three foreign style rules owed a ruling (B374, H25.3b).
 
 ---
 
@@ -1597,6 +1599,7 @@ B163, the last entry, was ratified and closed on 2026-10-01: the standing goals 
 
 | Row | Decision owed | Why it cannot be settled without you |
 |---|---|---|
+| **B374** | Three style rules name another plugin's word: rule each an exception, or remove the coupling by a design | an exception stands in H25's exit as the director's ruling, and the design that removes it changes how a waypoint's states are decided |
 
 **R13 reads this table in both directions**, which is what `Held` has had since B123 and this section never did.\
 A row recording `RULING-OWED` must appear here, so a decision cannot wait unseen; an entry here must still be `RULING-OWED`, so a ruling that has landed cannot keep asserting itself.\

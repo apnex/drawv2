@@ -116,10 +116,6 @@ the row harder to read for a difference the colour had already made.
 */
 #diagram-list option.tpl { color: var(--tok-ink-soft); background-color: var(--tok-chip); }
 
-#slides-url { width: 220px; }
-#slides-push.busy { color: var(--tok-warn); border-color: var(--tok-warn); }
-#slides-push.ok { color: var(--tok-accent); border-color: var(--tok-accent); }
-#slides-push.err { color: var(--tok-danger); border-color: var(--tok-danger); }
 #diagram-del.armed, #diagram-del.armed:hover { color: var(--tok-danger); border-color: var(--tok-danger); }
 /*
 B155: the banner takes the slack, so the indicators to its right cannot be pushed.
@@ -347,10 +343,6 @@ of one-pixel drift that cost an evening.
 /* ---- footer readout ---- */
 #status { position: relative; flex: 0 0 40px; display: flex; align-items: center; justify-content: space-between; padding: 0 14px; background: var(--tok-surface); border-top: 1px solid var(--tok-divider); }
 .readout { font-family: monospace; font-size: 12px; color: var(--tok-ink); cursor: pointer; white-space: nowrap; user-select: none; }
-
-/* ---- data view (Tab numeric overlay) ---- */
-.data-tag { font-family: monospace; font-size: 11px; fill: var(--tok-ink); opacity: 0.6; user-select: none; }
-.data-pill { fill: var(--tok-panel); opacity: 0.7; }
 
 /* ---- inline label editor ---- */
 #label-editor {

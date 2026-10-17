@@ -226,10 +226,12 @@ function renderUndelete() {
 	for (const d of recoverable) {
 		const left = timeLeft(d.purgeAt);
 		const tr = document.createElement('tr');
-		const cell = (cls, text) => { const td = document.createElement('td'); td.className = cls; td.textContent = text; tr.appendChild(td); return td; };
-		cell(`left${left.urgent ? '' : ' roomy'}`, left.text);
-		cell('name', d.name || '(unreadable)');
-		cell('id', d.id);
+		// H25.3 (B373): each cell's class named by its key, where the copy measure reads what a module puts on its elements
+		// (tools/copies.mjs) -- passed as a bare argument, the four read as styled and never drawn
+		const cell = ({ cls, text }) => { const td = document.createElement('td'); td.className = cls; td.textContent = text; tr.appendChild(td); return td; };
+		cell({ cls: `left${left.urgent ? '' : ' roomy'}`, text: left.text });
+		cell({ cls: 'name', text: d.name || '(unreadable)' });
+		cell({ cls: 'id', text: d.id });
 		const act = document.createElement('td');
 		const btn = document.createElement('button');
 		btn.textContent = 'restore';

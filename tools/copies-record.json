@@ -1,26 +1,11 @@
 {
-	"copied style rules": [
-		"#status { display }"
-	],
+	"copied style rules": [],
 	"foreign style rules": [
 		"#container.zonegrid .zone",
-		".waypoint.linkband",
 		".waypoint.spawning .wp-dot",
 		".waypoint.spawning .wp-ring"
 	],
-	"styled names nothing draws": [
-		"#slides-push",
-		"#slides-url",
-		".busy",
-		".data-pill",
-		".data-tag",
-		".id",
-		".left",
-		".marquee",
-		".name",
-		".ok",
-		".roomy"
-	],
+	"styled names nothing draws": [],
 	"copied lines": [
 		"app/index.html and lab/index.html: </svg>",
 		"app/index.html and lab/index.html: <g id=\"grid-nodes\"></g>",

@@ -603,6 +603,7 @@ that distinguishes "every current class remembered" from "the surface is covered
 test('B198: canvas text cannot be selected by a drag, including a class nobody has written yet', { skip: SKIP }, async () => {
 	assert.equal(booted.loaded, true, 'precondition: fixture loaded');
 
+	// RESTATED at H25.3 (B373): the data tag dropped from the classes read below -- nothing draws it, and its rule is deleted
 	const styles = await until(tab, `(() => {
 		const svg = document.getElementById('container');
 		if (!svg) return null;
@@ -611,7 +612,7 @@ test('B198: canvas text cannot be selected by a drag, including a class nobody h
 		svg.appendChild(probe);
 		const read = (el) => { const cs = getComputedStyle(el); return cs.userSelect || cs.webkitUserSelect; };
 		const out = { unclassed: read(probe), root: read(svg) };
-		for (const cls of ['content-text', 'label', 'data-tag']) {
+		for (const cls of ['content-text', 'label']) {
 			const el = svg.querySelector('.' + cls);
 			if (el) out[cls] = read(el);
 		}
