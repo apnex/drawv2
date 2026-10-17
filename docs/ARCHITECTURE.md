@@ -122,7 +122,7 @@ The anchored core's parts, declared once in `tools/layers.mjs` `PARTS` and rende
 | `zones` | Bound regions of cells | plugin | `zones/` | `colours`, `kind-contract`, `lattice`, `layouts`, `primitives` |
 | `groups` | Name sets of anchors | plugin | `groups/` | `colours`, `document`, `kind-contract`, `lattice` |
 | `simulation` | Derive what the clock drives | plugin | `engine/kinds.mjs`, `engine/movers.mjs`, `engine/rules.mjs`, `engine/spawn-appearance.mjs`, `engine/spawners.mjs`, `engine/spawn-field.mjs`, `engine/spawn-runs.mjs`, `model/reveal.mjs`, `engine/mover-painter.mjs`, `engine/reveal-painter.mjs`, `engine/paintloop.mjs` | `devices`, `document`, `kind-contract`, `lattice`, `network` |
-| `product` | Compose the plugins into the product | composition | `product/` | `colours`, `devices`, `groups`, `kind-contract`, `lattice`, `layouts`, `network`, `simulation`, `zones` |
+| `product` | Compose the plugins into the product | composition | `product/` | `devices`, `groups`, `kind-contract`, `lattice`, `layouts`, `network`, `simulation`, `zones` |
 | `canvas` | Turn input into edits through the parts' declarations | host | `app/src/actions.js`, `app/src/capture.js`, `app/src/changes.js`, `app/src/commands.js`, `app/src/compose-canvas.js`, `app/src/help.js`, `app/src/input.js`, `app/src/input-state.js`, `app/src/keymap.js`, `app/src/labeledit.js`, `app/src/overlay.js`, `app/src/pick.js`, `app/src/readout.js`, `app/src/recognize.js`, `app/src/releases.js`, `app/src/selection.js`, `app/src/snap.js`, `app/src/tools.js`, `app/src/triggers.js`, `app/src/grids.js`, `engine/situation.mjs` | `document`, `kind-contract`, `lattice`, `planner`, `primitives`, `relations`, `renderer`, `rules` |
 | `renderer` | Draw a document through the parts' painters | host | `app/src/renderer.js`, `app/src/painter.js` | `document`, `lattice`, `primitives` |
 | `sync` | Keep a tab converged with the server | host | `app/src/sync.js`, `app/src/net.js`, `app/src/watchdog.js`, `app/src/clock.js` | `canvas`, `document`, `kind-contract` |
@@ -135,7 +135,7 @@ The anchored core's parts, declared once in `tools/layers.mjs` `PARTS` and rende
 | `hub` | Carry each change to the tabs watching a document | door | `server/hub.js`, `server/protocol.js`, `server/locks.js`, `server/sessionlog.mjs` | `kind-contract` |
 | `rest` | Answer agents over HTTP | door | `server/rest.js`, `server/routes.mjs` | `devices`, `document`, `groups`, `hub`, `kind-contract`, `lattice`, `layouts`, `network`, `simulation`, `zones` |
 | `cli` | Give an agent one command per verb | door | `cli/` | -- |
-| `export` | Render a document without a browser | door | `server/svg.mjs` | `colours`, `lattice`, `primitives`, `product`, `renderer` |
+| `export` | Render a document without a browser | door | `server/svg.mjs` | `lattice`, `primitives`, `product`, `renderer` |
 <!-- END GENERATED: architecture-parts -->
 
 ---

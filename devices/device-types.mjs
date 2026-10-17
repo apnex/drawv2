@@ -15,7 +15,7 @@ types and their map letters rather than keeping a copy (`U4-2`).
 */
 
 import { STD, L_STD } from '../kernel/spec.mjs';
-import { KERNEL_CSS, TOKENS } from '../kernel/theme.mjs';
+import { TOKENS } from '../kernel/theme.mjs';
 import { hexColor } from '../kernel/renderer.mjs';
 
 export const DEVICE_TYPES = Object.freeze({
@@ -132,14 +132,16 @@ export const TYPE_BEHAVIOUR = BUILT.behaviour;
 export const deviceTypeRecords = BUILT.records;
 
 // B197/B204 -- the browser tab icon, composed from the type flagged `favicon: true` in `DEVICE_TYPES`
-export function faviconSvg() {
+// H25.2 (B366): styled by what the caller hands it -- the server hands it the page's own drawing stylesheets (server/svg.mjs
+// drawingStyle), where it read KERNEL_CSS, a copy of them
+export function faviconSvg(style) {
 	const [favName, fav] = Object.entries(DEVICE_TYPES).find(([, v]) => v.favicon);
 	const ext = L_STD.frame.ext;
 	const S = STD.socket;
 	const [bx, by, bw, bh] = fav.box;
 	const half = ext + 2.1;
 	return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="32" height="32" viewBox="${-half} ${-half} ${half * 2} ${half * 2}">
-<style>${KERNEL_CSS}</style>
+<style>${style}</style>
 ${GLYPH_DEFS}
 <g class="node">
 \t<circle class="frame" r="${ext}"/>

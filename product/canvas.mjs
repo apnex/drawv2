@@ -17,31 +17,6 @@ import { DEVICES_CANVAS } from '../devices/device-appearance.mjs';
 import { NETWORK_CANVAS } from '../network/canvas.mjs';
 import { SIMULATION_CANVAS } from '../engine/spawn-appearance.mjs';
 import { TYPE_ROUTING } from '../devices/device-types.mjs';
-import { ZONE_TOKENS } from '../zones/zone-painter.mjs';
-import { GROUP_TOKENS } from '../groups/group-painter.mjs';
-import { NETWORK_TOKENS, downStroke } from '../network/appearance.mjs';
-import { TOKENS } from '../kernel/theme.mjs';
-
-export const LINK_COLOURS = { up: NETWORK_TOKENS.link, down: downStroke() };
-
-/*
-B330 (H22.5): the standalone CSS rules for the elements the plugins' painters and appearances emit into a downloaded SVG.
-H24.8 (B361): each rule says what the page's stylesheets say for the same element (since H25.1 kernel/primitives.css,
-zones/zones.css, groups/groups.css and network/network.css), resolved
-to its colour -- a name on its baseline point in an opaque pill, in the page's font; a link's ends and corners as the page leaves
-them. Its own copy once centred names on that point and made their pills see-through, and the browser test
-`H24.8 (B361): the published SVG draws what view mode draws` now holds every drawn element to the page's look.
-*/
-export const EXPORT_CSS = `
-.zone .zone-rect { fill:${ZONE_TOKENS.zoneFill}; fill-opacity:${ZONE_TOKENS.zoneFillOp}; stroke:${ZONE_TOKENS.zoneStroke}; stroke-opacity:${ZONE_TOKENS.zoneStrokeOp}; stroke-width:1; }
-.label { font-family:monospace; fill:${TOKENS.label}; text-anchor:middle; }
-.label.zone-label { text-anchor:start; }
-.label-pill { fill:${TOKENS.panel}; }
-.group .group-hull { fill:none; stroke:${GROUP_TOKENS.group}; stroke-width:1.1; }
-.link { fill:none; stroke:${NETWORK_TOKENS.link}; }
-.link[data-down] { stroke:${downStroke()}; }
-.link-hit { display:none; }
-`;
 import { composeRouting } from '../network/transit-offers.mjs';
 
 // U4-1 (H21.3, B282): hand the network plugin its routing slice of the device type declarations at composition
@@ -63,8 +38,13 @@ export const PRODUCT_CANVAS = [ANCHOR_ORDER, LAYOUTS_CANVAS, ZONES_CANVAS, GROUP
 
 /*
 H25.1 (B366, D1): THE STYLESHEETS A PAGE LOADS, in order -- the colour registry, the core's primitives, each composed part's own
-sheet in the order the parts compose, then the page's own (chrome and canvas). A plugin brings its look as it brings its painters
-(its part's `stylesheets`), and a page lists exactly these: tools/stylesheets.mjs writes them into app/index.html and
+sheet in the order the parts compose, then the page's chrome and the canvas's own. A plugin brings its look as it brings its
+painters (its part's `stylesheets`), and a page lists exactly these: tools/stylesheets.mjs writes them into app/index.html and
 lab/index.html and the gate checks they agree. Each part's sheet loads before the page's, as network/network.css always did.
+H25.2 (B366, D3): the page's own sheet split in two -- its chrome (app/style.css) and the canvas (app/canvas.css), the canvas's
+loaded last, where its rules stood -- and every sheet but the chrome's and the colour registries' is what the export and the
+favicon are styled by (server/svg.mjs `drawingStyle`), the registries' colours written in -- what H24.8 (B361) asked of the
+export, view mode drawn, met by one statement of each look rather than a copy held to it by a test.
 */
-export const PAGE_STYLESHEETS = ['app/tokens.css', 'kernel/primitives.css', ...PRODUCT_CANVAS.flatMap((p) => p.stylesheets ?? []), 'app/style.css'];
+export const CHROME_STYLESHEETS = ['app/style.css'];
+export const PAGE_STYLESHEETS = ['app/tokens.css', 'kernel/primitives.css', ...PRODUCT_CANVAS.flatMap((p) => p.stylesheets ?? []), ...CHROME_STYLESHEETS, 'app/canvas.css'];

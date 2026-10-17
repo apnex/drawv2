@@ -1,0 +1,106 @@
+/*
+THE CANVAS'S STYLESHEET -- the look of what the canvas itself draws and the states it puts on what the parts draw: the canvas and
+its modes, a node's frame and states, the selection brackets, the live line, handles, snapping feedback, the grid and the beat's
+reveal. H25.2 (B366): split out of app/style.css word for word, in their order, so the page's chrome -- its header, palette, dialogs
+and footer -- stays there, and the export, which draws the canvas, can carry the canvas's rules without the chrome's. Loaded after
+app/style.css, where these rules stood after the chrome's palette rules (product/canvas.mjs PAGE_STYLESHEETS).
+*/
+
+#container { width: 100%; height: 100%; display: block; touch-action: none; }
+#canvas { fill: var(--tok-panel); }
+/* Tab hides names. A class rather than a re-render, so the toggle is instant on a large diagram. */
+#container.labels-off .label, #container.labels-off .label-pill { display: none; }
+
+/* W4 — edit mode: a subtle accent border cues that editing aids (the socket grid) are showing */
+#container.edit-mode #canvas { stroke: var(--tok-link); stroke-width: 2; stroke-opacity: 0.5; }
+/* W5 -- a green border cues run mode (its clickable regions are the devices plugin's, devices/devices.css) */
+#container.run-mode #canvas { stroke: var(--tok-accent); stroke-width: 2; stroke-opacity: 0.5; }
+
+/* ---- icon primitives (kernel art) ---- */
+.frame  { fill: var(--fill, var(--tok-panel)); fill-opacity: var(--outer-fill-opacity, 1); stroke: var(--outer, var(--tok-accent)); }
+
+/* ---- node state (compose via CSS vars) ---- */
+.node { --icon: var(--tok-accent); --fill: var(--tok-panel); --outer: var(--tok-accent); cursor: move; }
+.node.hover { --icon: var(--tok-panel); --fill: var(--tok-accent); }
+.node .select-box { display: none; fill: none; stroke: var(--tok-link); stroke-width: 2; pointer-events: none; }
+.node.selected .select-box { display: block; }
+.node.armed { --icon: var(--tok-panel); --fill: var(--tok-danger); --outer: var(--tok-danger); cursor: not-allowed; }
+.node.armed-clone { --icon: var(--tok-panel); --fill: var(--tok-clone); --outer: var(--tok-clone); cursor: copy; }
+.node.ghost { opacity: 0.6; pointer-events: none; }
+.node.ghost.blocked { --icon: var(--tok-danger); --outer: var(--tok-danger); }
+
+/*
+B198: NOTHING on the canvas is selectable text.
+
+The canvas is a drawing surface whose primary gesture is a drag, and a drag across it is a
+rubber-band select -- never a text selection. Chrome disagrees by default: an SVG `<text>` is
+selectable, so dragging anywhere on the canvas highlights every text element the sweep crosses in
+document order, INCLUDING ones nowhere near the pointer. That is what made it a visible defect
+rather than a cosmetic one -- text boxes lit up that the mouse never passed over.
+
+`.label` and `.data-tag` each carried `user-select: none` of their own and `.content-text`, added
+later, did not. Setting it per class means every future text element is one omission away from the
+same bug, and the omission is invisible until someone drags across a diagram that happens to have
+one. Setting it on the SVG root ends the class of defect instead of this instance of it.
+
+A text box that genuinely needs selectable content opts back in, and will have a reason to.
+*/
+#container, #container text { user-select: none; -webkit-user-select: none; }
+
+/* the canvas's own live line while a link is drawn (the links themselves are the network's, network/network.css) */
+.link-live { stroke: var(--tok-link); stroke-width: 6; stroke-dasharray: 10 8; pointer-events: none; }
+
+/* ---- handles (zone resize + link re-plug) ---- */
+.handle { fill: var(--tok-link); stroke: var(--tok-panel); stroke-width: 2; }
+.handle[data-corner="nw"], .handle[data-corner="se"] { cursor: nwse-resize; }
+.handle[data-corner="ne"], .handle[data-corner="sw"] { cursor: nesw-resize; }
+.handle[data-end] { cursor: grab; }
+
+/* ---- snap feedback + marquee + datum ---- */
+.gridline { stroke: var(--tok-ink); stroke-width: 2; pointer-events: none; }
+.snapbox { rx: 6px; fill: var(--tok-snapbox); stroke: var(--tok-label); stroke-width: 4; pointer-events: none; }
+.marquee { rx: 2px; stroke: var(--tok-label); stroke-width: 2; stroke-dasharray: 8 6; fill: var(--tok-label); fill-opacity: 0.08; pointer-events: none; }
+/* A1 — the armed text tool's cursor (its draw preview is the devices plugin's, devices/devices.css) */
+#container.texttool { cursor: crosshair; }
+.datum { fill: none; stroke: var(--tok-datum); stroke-width: 2; pointer-events: none; }
+
+/* ---- grid dots ---- */
+#grid-nodes circle { fill: var(--tok-grid-dot); pointer-events: none; }
+#grid-zones { visibility: hidden; }   /* shown with the zone grid by the layouts plugin, layouts/layouts.css */
+#grid-zones circle { fill: var(--tok-grid-dot); pointer-events: none; }
+
+/*
+H14.4 -- the beat.
+
+An unrevealed entity is HIDDEN rather than removed, because it is genuinely in the document: the
+ops of a beat applied when it committed, and the unfurl is presentation over complete state. The
+transition is a fade in, so an entity arriving reads as arriving rather than as a glitch, and
+`visibility` rather than `display` so nothing reflows as the beat plays.
+
+The caption is the second channel of a narrated build: centred, larger than the readout, and
+holding whatever was last said until a new beat replaces it. It takes the middle because while a
+beat is playing it is the thing being said, and the gesture coordinates beside it are not.
+
+NOT ASSERTED, and deliberately. The CDP test checks the `data-unrevealed` attribute, which is the
+property the derivation owns; the fade is the browser interpolating between two states it was given.
+Asserting a transition means either reading computed styles mid-animation, which is timing-dependent
+and the kind of test that passes for the wrong reason, or grepping the stylesheet, which asserts
+where code lives rather than what it does -- H13.5 had to be rewritten today for exactly that. So a
+deleted transition would go unnoticed by the suite and noticed immediately by a person, which is the
+right way round for something whose whole purpose is how it looks.
+
+`visibility` rather than `display`, so nothing reflows as a beat plays -- and alongside `opacity`
+rather than instead of it, because opacity alone leaves an invisible entity clickable.
+*/
+[data-unrevealed] { opacity: 0; visibility: hidden; }
+/*
+500ms, ruled, and deliberately the SAME as a link's trace: a node appearing and a line reaching it
+are one arrival, and two durations made the faster of them look like a glitch beside the other.
+Stated as FADE_MS in model/reveal.mjs beside TRACE_MS, so the two ruled numbers read together; this
+is where it is ENFORCED, because a browser interpolating an opacity needs no help from JS. A LINK is excluded: it
+traces from source to destination instead (`app/src/reveal.js`), and a fade would throw away the
+direction that is the whole reason a link is worth watching arrive.
+*/
+#nodes [id], #zones [id], #groups [id], #waypoints [id] {
+	transition: opacity 500ms ease-out;
+}

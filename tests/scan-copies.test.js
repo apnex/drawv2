@@ -143,9 +143,11 @@ test('H25.0: the frozen ceiling is the one H25 opened with, and the record holds
 	for (const [k, v] of Object.entries(record)) for (const f of v) assert.ok((ceiling[k] ?? []).includes(f), `${k}: ${f} is recorded and the ceiling never had it`);
 });
 
-test('H25.0: on this tree the scanner reads every stylesheet the pages load and both CSS constants, and every finding is on the record', () => {
+test('H25.0: on this tree the scanner reads every stylesheet the pages load, and every finding is on the record', () => {
 	const out = execFileSync('node', ['tools/scan-copies.mjs', '--verbose'], { cwd: root, encoding: 'utf8' });
-	for (const sheet of ['app/style.css', 'network/network.css', 'lab/lab.css', 'kernel/theme.mjs KERNEL_CSS', 'product/canvas.mjs EXPORT_CSS']) assert.ok(out.includes(sheet), `the scan reads ${sheet}`);
+	// RESTATED at H25.2 (B366): KERNEL_CSS and EXPORT_CSS retired; the canvas's own sheet split from the chrome's
+	for (const sheet of ['app/style.css', 'app/canvas.css', 'network/network.css', 'lab/lab.css', 'kernel/primitives.css', 'zones/zones.css']) assert.ok(out.includes(sheet), `the scan reads ${sheet}`);
+	assert.match(out, /scan-copies: 1[0-9] stylesheet\(s\)/, 'and no fewer sheets than the pages load');
 	for (const [k, v] of Object.entries(JSON.parse(read('tools/copies-record.json')))) assert.match(out, new RegExp(`\\n  ${k}: ${v.length}\\n`), `${k}: ${v.length}, as recorded`);
 	assert.match(out, /PASS -- every copy is on the record and none is new/);
 });

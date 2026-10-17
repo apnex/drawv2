@@ -81,15 +81,5 @@ export const CHROME = resolveRoles(CHROME_ROLES);
 
 // measured glyph bounding boxes at icon scale 0.3: [x, y, w, h] — fits any glyph into the
 // socket regardless of frame shape. Canonical render data (was geometry.mjs).
-// minimal scene CSS — vendored from client/style.css (icon primitives + frame + node state).
-// Everything the renderer's SVG output references; nothing app-specific.
-// its colours are the product's roles (a self-contained SVG cannot read app/tokens.css, so the values are written in)
-export const KERNEL_CSS = `
-.hollow { fill: var(--fill, ${TOKENS.hollow}); stroke: var(--icon, ${TOKENS.port}); stroke-width: 2; }
-.solid  { fill: var(--icon, ${TOKENS.port}); stroke: var(--icon, ${TOKENS.port}); stroke-width: 0.2; }
-.frame  { fill: var(--fill, ${TOKENS.panel}); fill-opacity: var(--outer-fill-opacity, 1); stroke: var(--outer, ${TOKENS.port}); }
-.icon   { transform: scale(0.3); }
-.node   { --icon:${TOKENS.port}; --fill:${TOKENS.panel}; --outer:${TOKENS.port}; }
-.node .select-box { display:none; fill:none; stroke:${TOKENS.selectBox}; stroke-width:2; pointer-events:none; }
-.node.selected .select-box { display:block; }
-`;
+// H25.2 (B366): KERNEL_CSS, the scene CSS vendored from the old client, retired -- the export and the favicon are styled by the
+// page's own stylesheets (server/svg.mjs drawingStyle), so the glyph art, the frame and a node's colours are stated once.

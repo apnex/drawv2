@@ -1504,8 +1504,8 @@ Opened 2026-10-17 by the director (`dev/DECISIONS.md` H25): H22 closed against a
 | H25.0 | Measure and audit: every kind of copy measured by a check in the gate at today's count, a count that may only fall; the findings written down, and a staged plan drafted from them, reviewed adversarially (H25.0) | **B365** | S3 | `DONE` |
 | H25.0b | The probe: a pinned set of documents rendered at two commits in three modes, the published SVGs, the favicon and every interaction state, compared pixel for pixel and style for style (H25.0b) | **B367** | S3 | `DONE` |
 | H25.1 | Each plugin brings its own stylesheet, its state rules with it, listed in the pages in a generated order (H25.1) | **B368** | S3 | `DONE` |
-| H25.2 | The export and the favicon draw with the same stylesheets; the export writes no colours of its own (H25.2) | **B366** | S3 | `WIP` |
-| H25.3 | Dead and unseen styles deleted or made visible (H25.3) | **B366** | S4 | `TODO` |
+| H25.2 | The export and the favicon draw with the same stylesheets; the export writes no colours of its own (H25.2) | **B369** | S3 | `DONE` |
+| H25.3 | Dead and unseen styles deleted or made visible (H25.3) | **B366** | S4 | `WIP` |
 | H25.4 | One canvas layout, declared once and generated into both pages (H25.4) | **B366** | S4 | `TODO` |
 | H25.5 | One renderer: the old scene renderer deleted, its tests on the real one (H25.5) | **B366** | S3 | `TODO` |
 | H25.6 | One name: `routeGeometry` renamed (H25.6) | **B366** | S5 | `TODO` |
@@ -1516,6 +1516,9 @@ Opened 2026-10-17 by the director (`dev/DECISIONS.md` H25): H22 closed against a
 AMENDED 2026-10-17: H25.0 done -- 128 copies measured in the gate, a record that may only shrink inside a frozen ceiling; the audit and staged plan are `dev/design/unification/UNIFICATION-COMPLETE.md`, reviewed adversarially, its ratification owed (B366, under Decisions required).
 AMENDED 2026-10-17: the plan ratified with D1 to D6 as recommended (`dev/DECISIONS.md` H25-1); its stages are the items H25.0b to H25.7.
 AMENDED 2026-10-17: H25.0b done -- `tools/probe/parity.mjs` compares two commits pixel for pixel and style for style on the director's 19 pinned diagrams and the parity board, shown to pass against itself and to catch five planted changes where each shows (B367 closed).
+AMENDED 2026-10-17: H25.1 done -- each plugin brings its own stylesheet, the pages load the composition's list, a name's label is the core's; 201 rules moved word for word, no pixel or computed style changed by the probe, verified by an agent that did not build it (B368 closed). The copy findings are named by the fact copied now, the ceiling re-expressed from be5c9c3: 120 findings, 88 standing.
+AMENDED 2026-10-17: H25.1 live in production (`9cbb963`), its published SVG and favicon byte-identical before and after.
+AMENDED 2026-10-17: H25.2 done -- the export and the favicon are styled by the page's own drawing sheets and write no colour of their own; KERNEL_CSS and EXPORT_CSS gone; the page's sheet split into chrome and canvas; no pixel or computed style changed by the probe (B369 closed). Copy findings standing: 36.
 
 ---
 

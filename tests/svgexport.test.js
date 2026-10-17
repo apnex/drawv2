@@ -187,3 +187,60 @@ test('B351 (H23): the server mints a diagram id from crypto.randomBytes(8), redr
 	assert.throws(() => newId('diagram'), /server\/store\.js/, 'the model refuses to mint a diagram id, and names who does');
 	assert.match(newId('node'), /^node-[0-9a-f]{6}$/, 'control: entity ids still mint in the model');
 });
+
+/*
+H25.2 (B366, D3) -- THE EXPORT AND THE FAVICON ARE STYLED BY THE PAGE'S OWN STYLESHEETS. They carried two copies of their own,
+KERNEL_CSS and EXPORT_CSS, and the export wrote a link's colour and a label's fill itself; the copies drifted unseen (B361). Now
+their style is every sheet the page loads but its chrome and the colour registries (server/svg.mjs `drawingStyle`), each colour
+token written in. Three promises are held here: no chrome rule rides along -- a file pasted inline into another page must not
+restyle it; every `var()` left has a literal fallback, so a renderer that resolves no custom property still draws it; and the
+export writes no colour of its own, so the page's rules are the only statement of a look.
+*/
+test('H25.2: the export is styled by the page\'s drawing sheets -- no chrome rule, every var() with a literal fallback, no colour of its own -- and so is the favicon', async () => {
+	const { drawingStyle } = await import('../server/svg.mjs');
+	const { PAGE_STYLESHEETS, CHROME_STYLESHEETS } = await import('../product/canvas.mjs');
+	const id = await firstId();
+	const body = await (await fetch(`${base}/${id}.svg`)).text();
+	const style = body.match(/<style>([\s\S]*?)<\/style>/)[1].trim();
+	assert.equal(style, drawingStyle(), 'the file carries the drawing style whole');
+	const selectors = style.split('\n').map((r) => r.slice(0, r.indexOf(' {')));
+	assert.ok(selectors.includes('.label') && selectors.includes('.frame') && selectors.includes('.zone-rect') && selectors.includes('.link'), 'control: the plugins\', the core\'s and the canvas\'s rules are in it');
+	const chrome = fs.readFileSync(new URL(`../${CHROME_STYLESHEETS[0]}`, import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+	const chromeSelectors = [...chrome.matchAll(/([^{}]+)\{/g)].map((m) => m[1].trim().replace(/\s+/g, ' '));
+	assert.ok(chromeSelectors.includes('html, body') && chromeSelectors.length > 50, 'control: the chrome has rules of its own');
+	assert.deepEqual(selectors.filter((s) => chromeSelectors.includes(s) || /^(html|body|header|button|input)\b/.test(s)), [], 'not one of them rides along');
+	assert.deepEqual([...style.matchAll(/var\(([^)]*)\)/g)].map((m) => m[0]).filter((v) => !v.includes(',')), [], 'every var() keeps a literal fallback');
+	assert.doesNotMatch(style, /var\(--tok-/, 'every colour token is written in');
+	assert.ok(PAGE_STYLESHEETS.includes('app/canvas.css'), 'control: the canvas\'s sheet is one the page loads');
+	assert.match(body, /<rect id="canvas" x="[-\d.]+" y="[-\d.]+" width="[\d.]+" height="[\d.]+"\/>/, 'the ground is the canvas, coloured by the canvas\'s rule');
+	const lines = [...body.matchAll(/<g id="link-[^"]*"><path d="[^"]*"( class="link"[^>]*)>/g)];
+	assert.ok(lines.length > 0, 'control: the file draws links, each a group named by its id with its line first');
+	for (const m of lines) assert.doesNotMatch(m[1], / stroke="/, 'a line carries no stroke of the export\'s own');
+	for (const m of body.matchAll(/<text class="label[^"]*"[^>]*>/g)) assert.doesNotMatch(m[0], / fill="/, 'a name carries no fill of the export\'s own');
+	const favicon = await (await fetch(`${base}/favicon.svg`)).text();
+	assert.equal(favicon.match(/<style>([\s\S]*?)<\/style>/)[1].trim(), drawingStyle(), 'the favicon is styled by the same sheets');
+});
+
+// H25.2 (B366): every sheet a page lists is served -- by the product's server and by the lab's. The lab served the product page's
+// sheets from a list typed in lab/server.mjs, and the canvas's sheet, split out at H25.2, was not on it: the parity probe found the
+// lab's canvas drawn at another size. Both servers now answer from the composition's list, and this asks each for each sheet.
+test('H25.2: every stylesheet the pages list is served, by the product\'s server and by the lab\'s', async () => {
+	const { PAGE_STYLESHEETS } = await import('../product/canvas.mjs');
+	const { spawn } = await import('node:child_process');
+	const net = await import('node:net');
+	const port = await new Promise((r) => { const s = net.createServer(); s.listen(0, '127.0.0.1', () => { const p = s.address().port; s.close(() => r(p)); }); });
+	const lab = spawn('node', ['lab/server.mjs'], { cwd: path.resolve(import.meta.dirname, '..'), env: { ...process.env, PORT: String(port) }, stdio: 'ignore' });
+	try {
+		for (let i = 0; i < 50; i++) { try { if ((await fetch(`http://127.0.0.1:${port}/health`)).ok) break; } catch { /* not up */ } await new Promise((r) => setTimeout(r, 100)); }
+		const hrefs = PAGE_STYLESHEETS.map((f) => (f.startsWith('app/') ? `/${f.slice(4)}` : `/${f}`));
+		assert.ok(hrefs.includes('/canvas.css') && hrefs.includes('/zones/zones.css'), 'control: the list holds the page\'s own sheets and the plugins\'');
+		for (const h of hrefs) {
+			for (const [who, origin] of [['the product', base], ['the lab', `http://127.0.0.1:${port}`]]) {
+				const r = await fetch(`${origin}${h}`);
+				assert.equal(r.status, 200, `${who} serves ${h}`);
+				assert.match(r.headers.get('content-type') ?? '', /text\/css/, `${who} serves ${h} as a stylesheet`);
+			}
+		}
+		assert.equal((await fetch(`http://127.0.0.1:${port}/nope.css`)).status, 404, 'control: the lab serves no sheet the list does not name');
+	} finally { lab.kill(); }
+});

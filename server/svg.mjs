@@ -4,15 +4,14 @@ Render a stored diagram as a SELF-CONTAINED SVG document (H2, B330, H22.5).
 Ruled H2 (2026-10-04): run mode and the download are ONE rendering, decided in one place in code. `svgDocument` drives the
 real `Renderer` (`app/src/renderer.js`) in `'run'` mode over `PRODUCT_CANVAS` (`product/canvas.mjs`) and a lightweight
 headless SVG tree, then serialises the rendered layers into a standalone `<svg xmlns="http://www.w3.org/2000/svg">` with
-`KERNEL_CSS`, `EXPORT_CSS` and the parts' `defs`. `export` therefore imports `renderer`, `product`, `lattice`, `document`,
-`primitives` and `colours` -- never a plugin directly.
+the page's own drawing stylesheets (`drawingStyle`, H25.2) and the parts' `defs`. `export` therefore imports `renderer`, `product`,
+`lattice`, `document`, `primitives` and `colours` -- never a plugin directly.
 */
 import { STD, L_STD } from '../kernel/spec.mjs';
-import { TOKENS, KERNEL_CSS } from '../kernel/theme.mjs';
 import { sharedDefs } from '../kernel/renderer.mjs';
 import { Renderer } from '../app/src/renderer.js';
 import fs from 'node:fs';
-import { PRODUCT_CANVAS, EXPORT_CSS, LINK_COLOURS } from '../product/canvas.mjs';
+import { PRODUCT_CANVAS, PAGE_STYLESHEETS, CHROME_STYLESHEETS } from '../product/canvas.mjs';
 import { COMPOSED_KINDS, readModel } from '../product/types.mjs';
 
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -32,6 +31,35 @@ function pageLayerOrder() {
 	if (!container) throw new Error('app/index.html lays out no <svg id="container">, whose order of layers the export stacks by');
 	pageLayers = [...container.matchAll(/<g id="([\w-]+)"/g)].map((m) => m[1]);
 	return pageLayers;
+}
+
+/*
+H25.2 (B366, D3): THE EXPORT IS STYLED BY THE PAGE'S OWN STYLESHEETS. It carried two copies of its own, `KERNEL_CSS` and
+`EXPORT_CSS`, and wrote a link's colour and a label's fill itself; the copies drifted from the page unseen (B361). Now its style is
+every sheet the page loads (product/canvas.mjs `PAGE_STYLESHEETS`) but the page's chrome -- which an SVG pasted inline into another
+page must never bring with it -- and the colour registries, whose colours are written in: each `var(--tok-...)` is replaced by its
+value, so the file stands alone and every `var()` left keeps a literal fallback. A token no registry declares is refused, not
+shipped. Comments go; the rules are the page's, word for word. Read once.
+*/
+let drawing = null;
+export function drawingStyle() {
+	if (drawing) return drawing;
+	const read = (f) => fs.readFileSync(new URL(`../${f}`, import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+	const tokens = new Map(), rules = [];
+	for (const f of PAGE_STYLESHEETS.filter((x) => !CHROME_STYLESHEETS.includes(x))) {
+		for (const m of read(f).matchAll(/([^{}]+)\{([^}]*)\}/g)) {
+			const selector = m[1].trim(), body = m[2].trim().replace(/\s+/g, ' ');
+			// a registry's rule: the colours, read and never shipped
+			if (selector === ':root') { for (const d of body.matchAll(/(--tok-[\w-]+)\s*:\s*([^;]+);/g)) tokens.set(d[1], d[2].trim()); continue; }
+			rules.push(`${selector.replace(/\s+/g, ' ')} { ${body} }`);
+		}
+	}
+	const css = rules.join('\n').replace(/var\((--tok-[\w-]+)\)/g, (all, name) => {
+		if (!tokens.has(name)) throw new Error(`the export's style names ${name}, which no colour registry the page loads declares`);
+		return tokens.get(name);
+	});
+	drawing = css;
+	return drawing;
 }
 
 function layerIdsOf(parts) {
@@ -128,7 +156,6 @@ function serializeNode(n, layerSet) {
 	if (n.tag === 'text' && !n.textContent) return '';
 	if ((n.attrs.class || '').split(/\s+/).includes('label-pill') && (!n.attrs.width || Number(n.attrs.width) === 0)) return '';
 	const outAttrs = { ...n.attrs };
-	if (n.tag === 'text' && !outAttrs.fill && (outAttrs.class || '').split(/\s+/).includes('label')) outAttrs.fill = TOKENS.label;
 	const attrs = Object.entries(outAttrs).map(([k, v]) => ` ${k}="${esc(v)}"`).join('');
 	const inner = n.textContent ? esc(n.textContent) : n.children.map((c) => serializeNode(c, layerSet)).join('');
 	const xml = inner ? `<${n.tag}${attrs}>${inner}</${n.tag}>` : `<${n.tag}${attrs}/>`;
@@ -141,15 +168,33 @@ function serializeNode(n, layerSet) {
 			const circles = n.children.filter((c) => c.tag === 'circle').map((c) => `<circle ${Object.entries({ cx, cy, ...c.attrs }).filter(([k]) => k !== 'class').map(([k, v]) => `${k}="${esc(v)}"`).join(' ')}/>`).join('');
 			return `<g id="${esc(id)}"><g${innerAttrs}>${circles}</g></g>`;
 		}
-		if (n.tag === 'path' && n.attrs.d) {
-			const { id, class: _c, d, ...rest } = n.attrs;
-			const stroke = 'data-down' in rest ? LINK_COLOURS.down : LINK_COLOURS.up;
-			// H24.8 (B361): its ends and corners as the painter left them, as on the page -- no rounding of the export's own
-			const pathAttrs = Object.entries({ fill: 'none', stroke, ...rest }).map(([k, v]) => ` ${k}="${esc(v)}"`).join('');
-			return `<g id="${esc(id)}"><path d="${esc(d)}"${pathAttrs}/></g>`;
-		}
 	}
 	return xml;
+}
+
+/*
+H25.2 (B366): A LINK IS WRITTEN AS ONE GROUP NAMED BY ITS ID -- its line as the painter drew it, its class kept, then the head and
+the leg that name it (\`data-head-of\`, \`data-leg-of\`) -- so the page's own rules style it as on the page: the down rule reaches
+the head as the line's next sibling (network/network.css), and nothing in the file is coloured by the export. The group keeps the
+\`<g id="link-...">\` the file has always drawn, which \`draw render --summary\` and \`draw parity\` count links by, so a CLI already
+installed reads a new file as it read an old one. The line gives its id to the group; the click twin stays out (\`data-link\`).
+*/
+function withCompanions(children) {
+	const out = [];
+	for (const c of children) {
+		const of = c.attrs['data-head-of'] ?? c.attrs['data-leg-of'];
+		const owner = of && out.find((x) => x.attrs?.id === of);
+		if (owner) { owner.companions.push(c); continue; }
+		// a line is a path the layer holds under an id -- a structure, naming no plugin's kind (tests/core-names-no-plugin.test.js U3)
+		if (c.tag === 'path' && c.attrs.id && c.attrs.d) out.push(Object.assign(Object.create(c), { companions: [] }));
+		else out.push(c);
+	}
+	return out;
+}
+function linkGroup(c, layerSet) {
+	const { id, d, ...rest } = c.attrs;
+	const line = `<path d="${esc(d)}"${Object.entries(rest).map(([k, v]) => ` ${k}="${esc(v)}"`).join('')}/>`;
+	return `<g id="${esc(id)}">${line}${c.companions.map((x) => serializeNode(x, layerSet)).join('')}</g>`;
 }
 
 function boundsOf(svg, L = L_STD, V = STD) {
@@ -196,6 +241,6 @@ export function svgDocument(doc, kinds = COMPOSED_KINDS, pad = 18) {
 	const { minX, minY, maxX, maxY } = boundsOf(svg);
 	const vbX = minX - pad, vbY = minY - pad, vbW = (maxX - minX) + 2 * pad, vbH = (maxY - minY) + 2 * pad;
 	const defs = sharedDefs(undefined, undefined, PRODUCT_CANVAS.map((p) => p.defs).filter(Boolean).join('\n'));
-	const items = svg.children.flatMap((layer) => layer.children.map((c) => serializeNode(c, layerSet))).filter(Boolean).join('');
-	return `<svg xmlns="http://www.w3.org/2000/svg" class="scene" viewBox="${vbX} ${vbY} ${vbW} ${vbH}">\n<style>${KERNEL_CSS}${EXPORT_CSS}</style>\n${defs}\n\t  <rect x="${vbX}" y="${vbY}" width="${vbW}" height="${vbH}" fill="${TOKENS.panel}"/>\n\t  ${items}\n\t</svg>`;
+	const items = svg.children.flatMap((layer) => withCompanions(layer.children).map((c) => (c.companions ? linkGroup(c, layerSet) : serializeNode(c, layerSet)))).filter(Boolean).join('');
+	return `<svg xmlns="http://www.w3.org/2000/svg" class="scene" viewBox="${vbX} ${vbY} ${vbW} ${vbH}">\n<style>\n${drawingStyle()}\n</style>\n${defs}\n\t  <rect id="canvas" x="${vbX}" y="${vbY}" width="${vbW}" height="${vbH}"/>\n\t  ${items}\n\t</svg>`;
 }

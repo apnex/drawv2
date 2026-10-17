@@ -1695,11 +1695,15 @@ const PARITY_PICTURE = `(isPage) => {
 	const root = isPage ? document.getElementById('container') : document.documentElement;
 	const layers = isPage ? [...root.children].filter((g) => g.tagName === 'g' && !['grid-nodes', 'grid-zones', 'snaplayer', 'movers', 'overlay'].includes(g.id)) : [root];
 	const entities = layers.flatMap((g) => [...g.children])
-		.filter((e) => !['style', 'defs'].includes(e.tagName) && !e.hasAttribute('data-link') && keyOf(e) && shown(e));
+		.filter((e) => !['style', 'defs'].includes(e.tagName) && !e.hasAttribute('data-link') && keyOf(e) && e.id !== 'canvas' && shown(e))
+		// RESTATED at H25.2 (B366): the file writes a link as one group, its line then the head and leg that name it; each companion is
+		// read as its own thing, after the line, as the page draws it
+		.flatMap((e) => [e, ...e.querySelectorAll('[data-head-of], [data-leg-of]')]);
+	const companion = (n) => n.hasAttribute('data-head-of') || n.hasAttribute('data-leg-of');
 	const drawn = (e) => {
 		const out = [];
 		const visit = (n) => {
-			if (!shown(n)) return;
+			if (!shown(n) || (n !== e && companion(n))) return;
 			if (DRAWN.includes(n.tagName)) {
 				const cs = getComputedStyle(n), look = {};
 				for (const p of n.tagName === 'text' ? [...PAINT, ...TYPE] : PAINT) look[p] = cs.getPropertyValue(p);
@@ -1717,7 +1721,10 @@ const PARITY_PICTURE = `(isPage) => {
 		visit(e);
 		return out;
 	};
-	return JSON.stringify(entities.map((e) => ({ key: keyOf(e), drawn: drawn(e) })));
+	// RESTATED at H25.2 (B366): the ground -- the page's canvas, and the file's since it is the canvas too -- compared by its paint,
+	// its size being each picture's own
+	const ground = document.getElementById('canvas'), gcs = ground && getComputedStyle(ground);
+	return JSON.stringify({ ground: gcs ? [gcs.fill, gcs.fillOpacity].join(' ') : null, entities: entities.map((e) => ({ key: keyOf(e), drawn: drawn(e) })) });
 }`;
 
 test('H24.8 (B361): the published SVG draws what view mode draws -- the same things stacked in the same order, each drawn element painted, set and placed alike', { skip: SKIP }, async () => {
@@ -1727,7 +1734,7 @@ test('H24.8 (B361): the published SVG draws what view mode draws -- the same thi
 		assert.ok(await until(page, `document.getElementById('node-fa00a1') && document.querySelector('[data-head-of]') ? 1 : 0`, 8000), 'precondition: the parity board loaded, its heads drawn');
 		await page.key('r');
 		assert.ok(await until(page, `document.getElementById('container').classList.contains('run-mode') || false`, 4000), 'precondition: view mode, entered by pressing r');
-		const viewed = JSON.parse(await page.eval(`(${PARITY_PICTURE})(true)`));
+		const viewedAll = JSON.parse(await page.eval(`(${PARITY_PICTURE})(true)`)), viewed = viewedAll.entities;
 
 		assert.equal((await fetch(`http://127.0.0.1:${port}/${PARITY_DIAGRAM}.svg`)).status, 200, 'precondition: the file is served');
 		file = await attach(`http://127.0.0.1:${port}/${PARITY_DIAGRAM}.svg`);
@@ -1740,7 +1747,9 @@ test('H24.8 (B361): the published SVG draws what view mode draws -- the same thi
 		const scale = await page.eval(`document.getElementById('container').getScreenCTM().a`);
 		assert.equal(await file.eval(`(() => { const r = document.documentElement, [, , w, h] = r.getAttribute('viewBox').split(/\\s+/).map(Number);
 			r.setAttribute('width', w * ${scale}); r.setAttribute('height', h * ${scale}); return Math.abs(r.getScreenCTM().a - ${scale}) < 1e-3; })()`), true, 'precondition: the file drawn at the page\'s scale');
-		const published = JSON.parse(await file.eval(`(${PARITY_PICTURE})(false)`));
+		const publishedAll = JSON.parse(await file.eval(`(${PARITY_PICTURE})(false)`)), published = publishedAll.entities;
+		assert.ok(viewedAll.ground, 'control: the page has its ground');
+		assert.equal(publishedAll.ground, viewedAll.ground, 'the file\'s ground is painted as the page\'s canvas is');
 
 		// control: the reading holds the whole board -- the devices, the panel, the junction, the zone, the links with their heads and legs
 		const keys = viewed.map((e) => e.key);

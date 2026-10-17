@@ -109,6 +109,7 @@ const findings = Object.fromEntries(Object.entries(detail).map(([k, v]) => [k, v
 for (const k of Object.keys(findings)) findings[k] = [...new Set(findings[k])].sort();
 
 if (verbose) {
+	console.log(`\n  stylesheets read: ${sheets.map((x) => x.name).join(', ')}`);
 	for (const [k, v] of Object.entries(findings)) {
 		console.log(`\n  ${k}: ${v.length}`);
 		for (const [key, said] of [...new Map(detail[k])].sort()) console.log(`    ${said}${COPIES.exceptions[k]?.[key] ? '   [ruled exception]' : ''}`);

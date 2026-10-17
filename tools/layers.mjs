@@ -1009,7 +1009,7 @@ H25.0 (B365) -- WHAT scan-copies READS BEYOND THE FOLDERS, AND THE COPIES IT LET
               each page's script, and the lab's server, which the lab's service runs
   owners      the part owning a stylesheet no part's folder holds: the page's own sheet, the colour registry generated from
               kernel/theme.mjs (tools/colour-tokens.mjs), the core primitives' sheet, and the simulation's, whose modules are listed
-              files in engine/ rather than a folder (H25.1)
+              files in engine/ rather than a folder (H25.1); and the canvas's, split from the page's chrome (H25.2)
   exceptions  per measure, each copy the director ruled may stand: `{ cites: [ruling], trigger }`, resolved by tools/exceptions.mjs.
               H25's exit: every finding in tools/copies-record.json is one of these
 The findings themselves are tools/copies-record.json, which may only shrink, inside tools/copies-ceiling.json, frozen when H25
@@ -1017,6 +1017,6 @@ opened (its hash is pinned in tests/scan-copies.test.js).
 */
 export const COPIES = {
 	entries: [...RULES.L7.roots, ...Object.values(PAGES).flatMap((p) => p.scripts.map((s) => `${p.base}${s}`)), 'lab/server.mjs'],
-	owners: { 'app/style.css': 'product-page', 'app/tokens.css': 'colours', 'kernel/primitives.css': 'primitives', 'engine/simulation.css': 'simulation' },
+	owners: { 'app/style.css': 'product-page', 'app/canvas.css': 'canvas', 'app/tokens.css': 'colours', 'kernel/primitives.css': 'primitives', 'engine/simulation.css': 'simulation' },
 	exceptions: {},
 };

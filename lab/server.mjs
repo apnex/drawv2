@@ -21,6 +21,7 @@ import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { fileWithin, sendFile, notFound } from '../server/static.mjs';
+import { PAGE_STYLESHEETS } from '../product/canvas.mjs';   // H25.2: the stylesheets a page loads, the product page's served from app/
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -58,12 +59,15 @@ function send(res, code, body) {
 }
 
 // a URL path to a file inside a mount, or null -- the mount's bound is `fileWithin` (server/static.mjs)
+const APP_SHEETS = new Set(PAGE_STYLESHEETS.filter((f) => f.startsWith('app/')).map((f) => f.slice('app'.length)));
+
 function resolveFile(pathname) {
 	if (pathname === '/' || pathname === '/index.html') return path.join(ROOT, 'lab/index.html');
 	if (pathname === '/lab.css') return path.join(ROOT, 'lab/lab.css');
 	if (pathname === '/seeds.json') return path.join(ROOT, 'lab/seeds.json');   // the fixed boards (data, not code)
-	if (pathname === '/style.css') return path.join(ROOT, 'app/style.css');
-	if (pathname === '/tokens.css') return path.join(ROOT, 'app/tokens.css');   // H15.23: the colours style.css reads
+	// H25.2 (B366): the product page's own sheets the composition names, served from app/ -- the chrome, the canvas's, the colour
+	// registry. They were a list typed here (style.css, tokens.css), and the canvas's sheet, split out at H25.2, was not on it
+	if (APP_SHEETS.has(pathname)) return path.join(ROOT, `app${pathname}`);
 	for (const [prefix, dir] of Object.entries(MOUNTS)) {
 		if (pathname.startsWith(prefix)) return fileWithin(path.join(ROOT, dir), pathname.slice(prefix.length));
 	}
