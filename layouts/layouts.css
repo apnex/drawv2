@@ -1,0 +1,6 @@
+/*
+THE LAYOUTS PLUGIN'S STYLESHEET -- the zone grid, shown while the layouts plugin's `zonegrid` mode is on (layouts/layout-canvas.mjs).
+H25.1 (B366): moved here from app/style.css word for word.
+*/
+
+#container.zonegrid #grid-zones { visibility: visible; }

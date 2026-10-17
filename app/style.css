@@ -347,26 +347,16 @@ of one-pixel drift that cost an evening.
 
 /* W4 — edit mode: a subtle accent border cues that editing aids (the socket grid) are showing */
 #container.edit-mode #canvas { stroke: var(--tok-link); stroke-width: 2; stroke-opacity: 0.5; }
-/* W5 — run mode: clickable content regions ACT. The transparent hit rect captures only in run mode,
-   so view/edit clicks pass through to the node for normal gestures. A green border cues run mode. */
-.clickable { pointer-events: none; }
-#container.run-mode .clickable { pointer-events: all; cursor: pointer; }
-#container.run-mode .clickable[data-input] { cursor: text; }   /* W6 — an editable input region */
-#container.run-mode .clickable:hover { fill: var(--tok-clickable-hover); }
+/* W5 -- a green border cues run mode (its clickable regions are the devices plugin's, devices/devices.css) */
 #container.run-mode #canvas { stroke: var(--tok-accent); stroke-width: 2; stroke-opacity: 0.5; }
 #kdefs { position: absolute; width: 0; height: 0; }
 
 /* ---- icon primitives (kernel art) ---- */
-.hollow { fill: var(--fill, var(--tok-hollow)); stroke: var(--icon, var(--tok-accent)); stroke-width: 2; }
-.solid  { fill: var(--icon, var(--tok-accent)); stroke: var(--icon, var(--tok-accent)); stroke-width: 0.2; }
-.icon   { transform: scale(0.3); }
 .frame  { fill: var(--fill, var(--tok-panel)); fill-opacity: var(--outer-fill-opacity, 1); stroke: var(--outer, var(--tok-accent)); }
-.socket { fill: none; stroke: var(--tok-socket); stroke-width: 0.6; stroke-dasharray: 2 2; }
 
 /* ---- node state (compose via CSS vars) ---- */
 .node { --icon: var(--tok-accent); --fill: var(--tok-panel); --outer: var(--tok-accent); cursor: move; }
 .node.hover { --icon: var(--tok-panel); --fill: var(--tok-accent); }
-.node.linkband { cursor: crosshair; }
 .node .select-box { display: none; fill: none; stroke: var(--tok-link); stroke-width: 2; pointer-events: none; }
 .node.selected .select-box { display: block; }
 .node.armed { --icon: var(--tok-panel); --fill: var(--tok-danger); --outer: var(--tok-danger); cursor: not-allowed; }
@@ -392,146 +382,13 @@ A text box that genuinely needs selectable content opts back in, and will have a
 */
 #container, #container text { user-select: none; -webkit-user-select: none; }
 
-/* ---- labels (UI-owned) ---- */
-/* B236 -- no font-size. A label's size is RULED (kernel STD.fontSize) and emitted as an
-   attribute, and a CSS rule silently beats one -- which is how the canvas drew 15 while the
-   export drew 13, from the moment B234 taught the export to draw labels at all. */
-.label { font-family: monospace; fill: var(--tok-label); user-select: none; text-anchor: middle; }
-.label.zone-label { text-anchor: start; }
-.label-pill { fill: var(--tok-panel); }
 
-/* ---- links (kernel colour; width is inline) ---- */
-.link { stroke: var(--tok-link); pointer-events: stroke; cursor: pointer; }
-.link-hit { stroke: transparent; fill: none; pointer-events: stroke; cursor: pointer; }   /* a link's click area, never seen (B268) */
-/* A DOWN link's colour is the network plugin's (network/network.css, from its own role), loaded BEFORE this sheet so
-   .selected and .armed below, which share its specificity, still win. */
-.link.selected { stroke: var(--tok-accent); }
-.link.armed { stroke: var(--tok-danger); cursor: not-allowed; }
-.link.replugging { opacity: 0.15; }
+
+/* the canvas's own live line while a link is drawn (the links themselves are the network's, network/network.css) */
 .link-live { stroke: var(--tok-link); stroke-width: 6; stroke-dasharray: 10 8; pointer-events: none; }
-/*
-H24.6 (B356) -- A DIRECTED LINK'S HEAD, drawn straight after its link (network/link-painter.mjs): hollow, and coloured as its
-link is in every state (H24.6-3), from the link element before it -- down and blocking in network/network.css. It takes no
-click: the link's twin beneath it does.
-*/
-/* and its leg -- the short piece from under the head's tip into the anchor, drawn straight after the head -- likewise (2026-10-16) */
-.link-head, .link-leg { fill: none; stroke: var(--tok-link); pointer-events: none; }
-.link.selected + .link-head, .link.selected + .link-head + .link-leg { stroke: var(--tok-accent); }
-.link.armed + .link-head, .link.armed + .link-head + .link-leg { stroke: var(--tok-danger); }
-.link.replugging + .link-head, .link.replugging + .link-head + .link-leg { opacity: 0.15; }
 
-/* ---- zones (kernel translucent fill; selection via var) ---- */
-.zone { --zstroke: var(--tok-zone-stroke); --zwidth: 1; }
-.zone.hover { --zwidth: 2; }
-.zone.selected { --zstroke: var(--tok-accent); }
-#container.zonegrid .zone { cursor: move; }
-.zone.armed { --zstroke: var(--tok-danger); cursor: not-allowed; }
-.zone.armed-clone { --zstroke: var(--tok-clone); cursor: copy; }
-.zone-rect { fill: var(--tok-zone-fill); fill-opacity: 0.13; stroke: var(--zstroke, var(--tok-zone-stroke)); stroke-opacity: 0.55; stroke-width: var(--zwidth, 1); }
 
-/* ---- groups (draw-only hull; nodes stay the interaction targets) ---- */
-.group { pointer-events: none; }
 
-/* ---- waypoints (routing pivots; selectable/movable like nodes) ---- */
-.waypoint { cursor: move; }
-/*
-B201 -- THE ANCHOR IS THE GRAB TARGET, because the anchor is the waypoint's extent.
-
-Both rings are fill:none or masked, so the whole disc must be hit-testable regardless of fill;
-that is what pointer-events:all buys. This was on `.wp-ring` alone, which was correct while the
-pad WAS the outer ring at r=20 -- B199 put the anchor outside it and left a measured dead zone at
-17-18px, between the pad's ink edge and the anchor's 2px stroke. Clicking there hit the bare svg,
-so an endpoint stopped arming and a bend could only be grabbed by its outline.
-
-On the anchor rather than on both: it is the outermost layer and its disc covers every rung
-beneath it, so one declaration makes the entire footprint grabbable and a future sub-type inherits
-that without having to ask.
-*/
-.wp-anchor { pointer-events: all; }
-.waypoint.hover .wp-anchor,
-.waypoint.hover .wp-ring { stroke-opacity: 1; }
-
-/*
-B202 -- THE ANCHOR IS AN AUTHORING AID, so run mode does not draw it.
-
-An anchor says "a link can reach this grid point", which is a statement to someone PLACING things.
-A person watching the diagram run does not need it and it competes with the movers for attention:
-run mode is the presentation surface, and the anchor is scaffolding that belongs to the surface
-underneath.
-
-`display: none` rather than opacity, and that is the substantive half. The anchor carries
-`pointer-events: all` for the whole waypoint (B201), so hiding it also removes the grab target --
-which is correct here and deliberate rather than incidental. Run mode is for watching, and a
-waypoint that can still be dragged while the diagram runs would be an authoring gesture leaking
-into it.
-
-Only the anchor. The endpoint pad stays, because a spawner has to remain visible and its armed and
-spawning states have to read; the grid dot stays, because it belongs to the grid rather than to the
-waypoint. A bend therefore becomes invisible in run mode except where the path bends through it,
-which is the honest rendering -- a bend IS pure authoring geometry, and in run mode a route that
-turns a corner is all there is to show.
-*/
-/* R-c (H18.21): run mode no longer hides this by stylesheet -- it draws the run picture, kernel/network-appearance.mjs RUN_PICTURE */
-
-/*
-B202 -- and a BEND leaves nothing behind but the grid it sits on.
-
-With the anchor gone a bend was still marking itself with a bright centre dot, which is the same
-authoring claim the anchor was making: "something is placed here". In run mode that is not true of
-a bend -- a bend is a corner the route turns, and the turn is already visible in the path.
-
-The dot is not removed so much as UNCOVERED. `#grid-nodes` draws a dim `#202020` circle at every
-snap point, and a waypoint draws its OWN circle at the same radius one layer above it (B200) --
-occluding rather than recolouring. Hiding the waypoint's copy reveals the grid dot underneath, so
-the bend reads as ordinary grid again rather than leaving a hole where a dot should be.
-
-ENDPOINTS KEEP THEIRS. An endpoint is not scaffolding in run mode: it is where movers enter the
-diagram, its pad stays clickable to arm a spawner, and `.spawning` and `.armed` recolour precisely
-this dot to say so. Hiding it there would remove the only indicator that a spawner is live.
-*/
-/* R-c (H18.21): run mode no longer hides this by stylesheet -- it draws the run picture, kernel/network-appearance.mjs RUN_PICTURE */
-.waypoint.linkband { cursor: crosshair; }
-.waypoint .select-box { display: none; fill: none; stroke: var(--tok-link); stroke-width: 2; pointer-events: none; }
-.waypoint.selected .select-box { display: block; }
-/*
-A waypoint on a SELECTED path takes the selection green, so the path and its anchors agree.
-
-`#aed581` is the same green `.link.selected` uses -- one selection colour, not a second one that
-drifts. Ranked above `.armed` deliberately: arming is a threat and must still shout red over a
-selection.
-*/
-.waypoint.on-selected-path .wp-ring { stroke: var(--tok-accent); stroke-opacity: 1; }
-.waypoint.on-selected-path .wp-dot { fill: var(--tok-accent); }
-/*
-H12.8 -- an armed spawner reads as armed in EVERY mode, and never moves in author view.
-
-GREEN, and a DIFFERENT green from `#aed581`. Blue was the first choice and was wrong for the reason
-the director gave: `TOKENS.waypoint` is already `#4fc3f7`, so an armed endpoint looked exactly like
-an unarmed one. But `#aed581` was not available either -- it already means `TOKENS.port` AND, since
-this morning, a selected path. A third meaning would be worse than the blue it replaced, and the
-ambiguity would bite hardest in author view, where an armed endpoint is PERSISTENT and a selection
-is TRANSIENT: the same colour would say two things with opposite lifetimes.
-
-Placed ABOVE `.armed` deliberately: arming a TOOL is a transient thing the person is doing right
-now and must still shout over this, which is a lasting property of the diagram. Same ordering
-reasoning as the selected-path highlight above.
-*/
-.waypoint.spawning .wp-ring { stroke: var(--tok-spawning); stroke-opacity: 1; stroke-width: 3; }
-.waypoint.spawning .wp-dot { fill: var(--tok-spawning); }
-/* a mover is presentation only: never a pointer target, so it cannot intercept a click meant for
-   the line it is riding, and no transition -- the compositor owns its motion via offset-path. */
-/*
-B172 -- the mover's look lives HERE, not in the document.
-
-Each spawner stores a `kind`; the class it resolves to carries the colour. That is what makes a
-change of mind one edit instead of a rewrite of every diagram that has a spawner -- the previous
-arrangement stored a hex per spawner and three repaints only ever reached newly armed ones.
-*/
-.mover { pointer-events: none; }
-.mover.packet { fill: var(--tok-packet); }
-.waypoint.armed .wp-ring { stroke: var(--tok-danger); stroke-opacity: 1; }
-.waypoint.armed .wp-dot { fill: var(--tok-danger); }
-/* (the waypoint hand's ghost rules went with its branch: no hand holds a waypoint -- C-e, H19.33) */
 
 /* ---- handles (zone resize + link re-plug) ---- */
 .handle { fill: var(--tok-link); stroke: var(--tok-panel); stroke-width: 2; }
@@ -543,15 +400,13 @@ arrangement stored a hex per spawner and three repaints only ever reached newly 
 .gridline { stroke: var(--tok-ink); stroke-width: 2; pointer-events: none; }
 .snapbox { rx: 6px; fill: var(--tok-snapbox); stroke: var(--tok-label); stroke-width: 4; pointer-events: none; }
 .marquee { rx: 2px; stroke: var(--tok-label); stroke-width: 2; stroke-dasharray: 8 6; fill: var(--tok-label); fill-opacity: 0.08; pointer-events: none; }
-/* A1 — text-box draw preview (hold 't' + drag) + the armed-tool cursor */
-.textbox-preview { rx: 5px; fill: var(--tok-panel); fill-opacity: 0.3; stroke: var(--tok-accent); stroke-width: 2; stroke-dasharray: 4 3; pointer-events: none; }
+/* A1 — the armed text tool's cursor (its draw preview is the devices plugin's, devices/devices.css) */
 #container.texttool { cursor: crosshair; }
 .datum { fill: none; stroke: var(--tok-datum); stroke-width: 2; pointer-events: none; }
 
 /* ---- grid dots ---- */
 #grid-nodes circle { fill: var(--tok-grid-dot); pointer-events: none; }
-#grid-zones { visibility: hidden; }
-#container.zonegrid #grid-zones { visibility: visible; }
+#grid-zones { visibility: hidden; }   /* shown with the zone grid by the layouts plugin, layouts/layouts.css */
 #grid-zones circle { fill: var(--tok-grid-dot); pointer-events: none; }
 
 /* ---- footer readout ---- */
@@ -728,21 +583,6 @@ that is readable the rest of the time.
 	max-width: calc(100% - var(--rail) - var(--rail-border)); text-align: center; color: var(--tok-caption); font-size: 19px;
 	white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; }
 
-/* the laser. A beam is instantaneous by ruling, so it has no travel animation to express -- what it
-   needs to read as is a connection that is either there or not. `pointer-events: none` matters more
-   than it looks: play places towers by pressing open ground, and a beam sweeping under the cursor
-   must never eat that press. */
-.beams { pointer-events: none; }
-.beam {
-	/* brighter, per the director. var(--tok-unreachable) is a muted material red that reads as a thin line rather
-	   than as energy; this is a hot core at full opacity with a saturated glow carrying the colour,
-	   which is how a beam reads as bright without becoming thick. */
-	stroke: var(--tok-beam);
-	stroke-width: 2.5;
-	stroke-linecap: round;
-	opacity: 1;
-	filter: drop-shadow(0 0 2px var(--tok-beam-glow)) drop-shadow(0 0 6px var(--tok-beam-core));
-}
 
 /* B178 -- the two rungs above `offline`. A stale tab is worse than a disconnected one, so these
    read as action-required rather than as a passive state. `unreachable` is the louder of the two

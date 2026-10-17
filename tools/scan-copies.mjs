@@ -92,19 +92,26 @@ const resolve = (from, spec) => {
 	const to = spec.startsWith('/') ? spec.slice(1) : path.posix.normalize(path.posix.join(path.posix.dirname(from), spec));
 	return /\.m?js$/.test(to) && exists(to) ? to : null;
 };
-const findings = {
-	'copied style rules': copiedStyleRules(sheets).map((x) => `${x.rule}  in ${x.in.join(' and ')}`),
-	'foreign style rules': foreignStyleRules(sheets, drawnBy, isPlugin).map((x) => `${x.sheet}: ${x.selector}  -- ${x.classes.join(', ')}`),
-	'styled names nothing draws': stylesDrawnByNoPart(sheets, drawnBy, idsWritten).map((x) => `${x.name} in ${x.in.join(', ')}`),
-	'copied lines': copiedLines(pagesAndSheets).flatMap((x) => x.lines.map((l) => `${x.files[0]} and ${x.files[1]}: ${l}`)),
-	'modules no entry reaches': modulesNoEntryReaches(COPIES.entries, modules, read, resolve),
+/*
+EACH FINDING IS NAMED BY THE FACT COPIED, not by where it sits: a copied rule by its selector and property, a foreign rule by its
+selector, a styled name by itself, a copied line by its pages and text, a module by its path. So moving a rule from one sheet to
+another renames nothing -- H25.1 moved the page's plugin rules into the plugins' sheets, and named by sheet each would have read as
+one copy removed and another added. Where each sits, and why, is the detail --verbose prints.
+*/
+const detail = {
+	'copied style rules': copiedStyleRules(sheets).map((x) => [x.rule, `${x.rule}  in ${x.in.join(' and ')}`]),
+	'foreign style rules': foreignStyleRules(sheets, drawnBy, isPlugin).map((x) => [x.selector, `${x.sheet}: ${x.selector}  -- ${x.classes.join(', ')}`]),
+	'styled names nothing draws': stylesDrawnByNoPart(sheets, drawnBy, idsWritten).map((x) => [x.name, `${x.name} in ${x.in.join(', ')}`]),
+	'copied lines': copiedLines(pagesAndSheets).flatMap((x) => x.lines.map((l) => [`${x.files[0]} and ${x.files[1]}: ${l}`, `${x.files[0]} and ${x.files[1]}: ${l}`])),
+	'modules no entry reaches': modulesNoEntryReaches(COPIES.entries, modules, read, resolve).map((m) => [m, m]),
 };
+const findings = Object.fromEntries(Object.entries(detail).map(([k, v]) => [k, v.map(([key]) => key)]));
 for (const k of Object.keys(findings)) findings[k] = [...new Set(findings[k])].sort();
 
 if (verbose) {
 	for (const [k, v] of Object.entries(findings)) {
 		console.log(`\n  ${k}: ${v.length}`);
-		for (const x of v) console.log(`    ${x}${COPIES.exceptions[k]?.[x] ? '   [ruled exception]' : ''}`);
+		for (const [key, said] of [...new Map(detail[k])].sort()) console.log(`    ${said}${COPIES.exceptions[k]?.[key] ? '   [ruled exception]' : ''}`);
 	}
 	// the foreign rules by the plugin whose class each styles -- a rule styling two plugins' classes counts for each (H25.0 review, finding 6)
 	const byPlugin = new Map();

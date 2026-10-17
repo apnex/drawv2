@@ -119,7 +119,7 @@ The anchored core's parts, declared once in `tools/layers.mjs` `PARTS` and rende
 | `layouts` | Declare a diagram's grids | plugin | `layouts/` | `lattice` |
 | `devices` | Compose a device onto an anchor | plugin | `devices/` | `colours`, `document`, `kind-contract`, `lattice`, `primitives` |
 | `network` | Connect anchors | plugin | `network/` | `colours`, `document`, `kind-contract`, `lattice`, `primitives`, `rules` |
-| `zones` | Bound regions of cells | plugin | `zones/` | `colours`, `kind-contract`, `lattice`, `layouts` |
+| `zones` | Bound regions of cells | plugin | `zones/` | `colours`, `kind-contract`, `lattice`, `layouts`, `primitives` |
 | `groups` | Name sets of anchors | plugin | `groups/` | `colours`, `document`, `kind-contract`, `lattice` |
 | `simulation` | Derive what the clock drives | plugin | `engine/kinds.mjs`, `engine/movers.mjs`, `engine/rules.mjs`, `engine/spawn-appearance.mjs`, `engine/spawners.mjs`, `engine/spawn-field.mjs`, `engine/spawn-runs.mjs`, `model/reveal.mjs`, `engine/mover-painter.mjs`, `engine/reveal-painter.mjs`, `engine/paintloop.mjs` | `devices`, `document`, `kind-contract`, `lattice`, `network` |
 | `product` | Compose the plugins into the product | composition | `product/` | `colours`, `devices`, `groups`, `kind-contract`, `lattice`, `layouts`, `network`, `simulation`, `zones` |
@@ -204,12 +204,12 @@ What each plugin brings to the page (`product/canvas.mjs`).
 | Part | Brings to the page |
 |---|---|
 | the product | `orders`, `deleteRanks` |
-| layouts | `places`, `grids` |
-| zones | `painters`, `places`, `presses`, `handles`, `keys`, `sizeStep`, `deleteRanks`, `describe`, `selectAll`, `labels`, `drawn`, `helpWords`, `tally` |
-| groups | `painters`, `keys`, `deleteRanks`, `follows`, `drawn` |
-| devices | `defs`, `bare`, `appearances`, `presses`, `hand`, `at`, `sizeStep`, `sizes`, `outlines`, `keys`, `describe`, `selectAll`, `labels`, `drawn`, `tally` |
-| network | `painters`, `appearances`, `presses`, `handles`, `at`, `deleteRanks`, `follows`, `describe`, `selectAll`, `reflects`, `drawn`, `runTargets`, `helpWords`, `linkDrag`, `tally` |
-| the simulation | `appearances`, `isSpawning` |
+| layouts | `stylesheets`, `places`, `grids` |
+| zones | `stylesheets`, `painters`, `places`, `presses`, `handles`, `keys`, `sizeStep`, `deleteRanks`, `describe`, `selectAll`, `labels`, `drawn`, `helpWords`, `tally` |
+| groups | `stylesheets`, `painters`, `keys`, `deleteRanks`, `follows`, `drawn` |
+| devices | `stylesheets`, `defs`, `bare`, `appearances`, `presses`, `hand`, `at`, `sizeStep`, `sizes`, `outlines`, `keys`, `describe`, `selectAll`, `labels`, `drawn`, `tally` |
+| network | `stylesheets`, `painters`, `appearances`, `presses`, `handles`, `at`, `deleteRanks`, `follows`, `describe`, `selectAll`, `reflects`, `drawn`, `runTargets`, `helpWords`, `linkDrag`, `tally` |
+| the simulation | `stylesheets`, `appearances`, `isSpawning` |
 <!-- END GENERATED: architecture-canvas -->
 
 ---
@@ -336,6 +336,7 @@ What `npm run gate` runs, before every commit and again before every push.
 | 18 | `node tools/gesture-table.mjs --check` |
 | 19 | `node tools/reaction-table.mjs --check` |
 | 20 | `node tools/colour-tokens.mjs --check` |
+| 21 | `node tools/stylesheets.mjs --check` |
 <!-- END GENERATED: architecture-gate -->
 
 ---

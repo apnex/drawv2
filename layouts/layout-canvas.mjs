@@ -41,4 +41,4 @@ const ZONE_GRID = grid('zone', { layer: 'grid-zones', r: 5, shownWith: 'shiftKey
 // its kind's parts size it -- the devices plugin a device, by its span; with no part answering, one cell (app/src/snap.js `placesOf`)
 const ANCHOR_PLACE = { kind: 'node', layout: 'node', ext: LAYOUT_TABLE.find((l) => l.name === 'node').ext, sizedBy: 'parts' };
 
-export const LAYOUTS_CANVAS = { owner: 'layouts', places: [ANCHOR_PLACE], grids: [NODE_GRID, ZONE_GRID] };
+export const LAYOUTS_CANVAS = { owner: 'layouts', stylesheets: ['layouts/layouts.css'], places: [ANCHOR_PLACE], grids: [NODE_GRID, ZONE_GRID] };

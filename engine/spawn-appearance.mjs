@@ -16,4 +16,4 @@ const SPAWNING = {
 const SPAWN_KEY = 'spawn';
 export const isSpawning = (entity) => !!(entity && entity[SPAWN_KEY]);
 
-export const SIMULATION_CANVAS = { owner: 'the simulation', appearances: [SPAWNING], isSpawning };
+export const SIMULATION_CANVAS = { owner: 'the simulation', stylesheets: ['engine/simulation.css'], appearances: [SPAWNING], isSpawning };

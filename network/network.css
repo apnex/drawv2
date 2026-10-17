@@ -1,14 +1,14 @@
 /*
 THE NETWORK PLUGIN'S STYLESHEET -- the rules for what only the network draws, coloured from its own roles
 (kernel/network-appearance.mjs NETWORK_COLOURS, generated into network/tokens.css). Loaded by a page that composes the
-network -- the lab, until promotion -- and loaded BEFORE app/style.css, whose .selected and .armed share these rules'
-specificity and must win.
+network. H25.1 (B366): its links' and waypoints' rules -- their looks and their states -- moved here from app/style.css word
+for word, in their order, after the down rules they must beat.
 
 A DOWN link -- no route over the pipes right now -- is orange as well as dotted (2026-09-29), and so is a link blocking the
 selected down link's way (2026-09-30): 8.8:1 on the canvas.
 */
 .link[data-down], .link.blocking { stroke: var(--tok-network-down); }
-/* H24.6: a directed link's head, drawn straight after it, and the leg after the head, take its colour (app/style.css holds the rest) */
+/* H24.6: a directed link's head, drawn straight after it, and the leg after the head, take its colour (its other states below) */
 .link[data-down] + .link-head, .link.blocking + .link-head,
 .link[data-down] + .link-head + .link-leg, .link.blocking + .link-head + .link-leg { stroke: var(--tok-network-down); }
 
@@ -28,3 +28,112 @@ holds no pipe, one rule with the download (kernel/network-appearance.mjs RUN_PIC
 
 /* a pipe an up link runs over is kept in the page and hidden: the link is drawn along it (network/host.mjs, 2026-10-02) */
 #pipes .pipe-of.under { display: none; }
+
+/* ---- links (kernel colour; width is inline) ---- */
+.link { stroke: var(--tok-link); pointer-events: stroke; cursor: pointer; }
+.link-hit { stroke: transparent; fill: none; pointer-events: stroke; cursor: pointer; }   /* a link's click area, never seen (B268) */
+/* A DOWN link's colour is declared above, from the network's own role, so .selected and .armed below, which share its
+   specificity, still win -- they came from app/style.css at H25.1, which loaded after this sheet for that reason. */
+.link.selected { stroke: var(--tok-accent); }
+.link.armed { stroke: var(--tok-danger); cursor: not-allowed; }
+.link.replugging { opacity: 0.15; }
+/*
+H24.6 (B356) -- A DIRECTED LINK'S HEAD, drawn straight after its link (network/link-painter.mjs): hollow, and coloured as its
+link is in every state (H24.6-3), from the link element before it -- down and blocking in network/network.css. It takes no
+click: the link's twin beneath it does.
+*/
+/* and its leg -- the short piece from under the head's tip into the anchor, drawn straight after the head -- likewise (2026-10-16) */
+.link-head, .link-leg { fill: none; stroke: var(--tok-link); pointer-events: none; }
+.link.selected + .link-head, .link.selected + .link-head + .link-leg { stroke: var(--tok-accent); }
+.link.armed + .link-head, .link.armed + .link-head + .link-leg { stroke: var(--tok-danger); }
+.link.replugging + .link-head, .link.replugging + .link-head + .link-leg { opacity: 0.15; }
+
+/* ---- waypoints (routing pivots; selectable/movable like nodes) ---- */
+.waypoint { cursor: move; }
+/*
+B201 -- THE ANCHOR IS THE GRAB TARGET, because the anchor is the waypoint's extent.
+
+Both rings are fill:none or masked, so the whole disc must be hit-testable regardless of fill;
+that is what pointer-events:all buys. This was on `.wp-ring` alone, which was correct while the
+pad WAS the outer ring at r=20 -- B199 put the anchor outside it and left a measured dead zone at
+17-18px, between the pad's ink edge and the anchor's 2px stroke. Clicking there hit the bare svg,
+so an endpoint stopped arming and a bend could only be grabbed by its outline.
+
+On the anchor rather than on both: it is the outermost layer and its disc covers every rung
+beneath it, so one declaration makes the entire footprint grabbable and a future sub-type inherits
+that without having to ask.
+*/
+.wp-anchor { pointer-events: all; }
+.waypoint.hover .wp-anchor,
+.waypoint.hover .wp-ring { stroke-opacity: 1; }
+
+/*
+B202 -- THE ANCHOR IS AN AUTHORING AID, so run mode does not draw it.
+
+An anchor says "a link can reach this grid point", which is a statement to someone PLACING things.
+A person watching the diagram run does not need it and it competes with the movers for attention:
+run mode is the presentation surface, and the anchor is scaffolding that belongs to the surface
+underneath.
+
+`display: none` rather than opacity, and that is the substantive half. The anchor carries
+`pointer-events: all` for the whole waypoint (B201), so hiding it also removes the grab target --
+which is correct here and deliberate rather than incidental. Run mode is for watching, and a
+waypoint that can still be dragged while the diagram runs would be an authoring gesture leaking
+into it.
+
+Only the anchor. The endpoint pad stays, because a spawner has to remain visible and its armed and
+spawning states have to read; the grid dot stays, because it belongs to the grid rather than to the
+waypoint. A bend therefore becomes invisible in run mode except where the path bends through it,
+which is the honest rendering -- a bend IS pure authoring geometry, and in run mode a route that
+turns a corner is all there is to show.
+*/
+/* R-c (H18.21): run mode no longer hides this by stylesheet -- it draws the run picture, kernel/network-appearance.mjs RUN_PICTURE */
+
+/*
+B202 -- and a BEND leaves nothing behind but the grid it sits on.
+
+With the anchor gone a bend was still marking itself with a bright centre dot, which is the same
+authoring claim the anchor was making: "something is placed here". In run mode that is not true of
+a bend -- a bend is a corner the route turns, and the turn is already visible in the path.
+
+The dot is not removed so much as UNCOVERED. `#grid-nodes` draws a dim `#202020` circle at every
+snap point, and a waypoint draws its OWN circle at the same radius one layer above it (B200) --
+occluding rather than recolouring. Hiding the waypoint's copy reveals the grid dot underneath, so
+the bend reads as ordinary grid again rather than leaving a hole where a dot should be.
+
+ENDPOINTS KEEP THEIRS. An endpoint is not scaffolding in run mode: it is where movers enter the
+diagram, its pad stays clickable to arm a spawner, and `.spawning` and `.armed` recolour precisely
+this dot to say so. Hiding it there would remove the only indicator that a spawner is live.
+*/
+/* R-c (H18.21): run mode no longer hides this by stylesheet -- it draws the run picture, kernel/network-appearance.mjs RUN_PICTURE */
+.waypoint.linkband { cursor: crosshair; }
+.waypoint .select-box { display: none; fill: none; stroke: var(--tok-link); stroke-width: 2; pointer-events: none; }
+.waypoint.selected .select-box { display: block; }
+/*
+A waypoint on a SELECTED path takes the selection green, so the path and its anchors agree.
+
+`#aed581` is the same green `.link.selected` uses -- one selection colour, not a second one that
+drifts. Ranked above `.armed` deliberately: arming is a threat and must still shout red over a
+selection.
+*/
+.waypoint.on-selected-path .wp-ring { stroke: var(--tok-accent); stroke-opacity: 1; }
+.waypoint.on-selected-path .wp-dot { fill: var(--tok-accent); }
+/*
+H12.8 -- an armed spawner reads as armed in EVERY mode, and never moves in author view.
+
+GREEN, and a DIFFERENT green from `#aed581`. Blue was the first choice and was wrong for the reason
+the director gave: `TOKENS.waypoint` is already `#4fc3f7`, so an armed endpoint looked exactly like
+an unarmed one. But `#aed581` was not available either -- it already means `TOKENS.port` AND, since
+this morning, a selected path. A third meaning would be worse than the blue it replaced, and the
+ambiguity would bite hardest in author view, where an armed endpoint is PERSISTENT and a selection
+is TRANSIENT: the same colour would say two things with opposite lifetimes.
+
+Placed ABOVE `.armed` deliberately: arming a TOOL is a transient thing the person is doing right
+now and must still shout over this, which is a lasting property of the diagram. Same ordering
+reasoning as the selected-path highlight above.
+*/
+.waypoint.spawning .wp-ring { stroke: var(--tok-spawning); stroke-opacity: 1; stroke-width: 3; }
+.waypoint.spawning .wp-dot { fill: var(--tok-spawning); }
+.waypoint.armed .wp-ring { stroke: var(--tok-danger); stroke-opacity: 1; }
+.waypoint.armed .wp-dot { fill: var(--tok-danger); }
+/* (the waypoint hand's ghost rules went with its branch: no hand holds a waypoint -- C-e, H19.33) */

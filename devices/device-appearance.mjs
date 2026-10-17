@@ -13,7 +13,7 @@ import { bareAnchor, typedNodes } from './device-shapes.mjs';
 import { makeWaypoint } from './make-node.mjs';
 import { waypointAt } from './occupancy.mjs';
 import { STD, L_STD } from '../kernel/spec.mjs';
-import { selBox, hexColor, showsSockets } from '../kernel/renderer.mjs';
+import { selBox, hexColor, showsSockets, nameLabel } from '../kernel/renderer.mjs';
 import { spanExtent } from '../kernel/geometry.mjs';
 import { TOKENS } from '../kernel/theme.mjs';
 import { GLYPH_BB, DEFAULT_GLYPH_BB, GLYPH_DEFS, isPanel, frameRadius, frameWidth, contentLayout } from './device-types.mjs';
@@ -127,8 +127,7 @@ const DEVICE = {
 		label(entity, g, { el }) {
 			if (contentSig(entity)) return;
 			const { sh } = spanExtent(entity.span);
-			el('rect', { class: 'label-pill', rx: 4, y: NODE_LABEL_Y - 13 + sh, height: STD.labelH }, g);
-			el('text', { class: 'label', y: NODE_LABEL_Y + sh, 'font-size': STD.fontSize }, g);
+			nameLabel(el, g, { pill: { rx: 4, y: NODE_LABEL_Y - 13 + sh, height: STD.labelH }, text: { y: NODE_LABEL_Y + sh, 'font-size': STD.fontSize } });   // H25.1: the core's label
 		},
 	},
 	selectBox: (entity) => { const { sw, sh } = spanExtent(entity.span); return spanSig(entity) ? selBox(L_STD, sw, sh) : SELECT_BOX; },
@@ -137,6 +136,6 @@ const DEVICE = {
 
 // the devices plugin's canvas part (C-a: the device's appearance on the anchor)
 // C-d: the text box's row; C-e: its hand, what a device covers, its size step under the canvas's Shift+arrow
-export const DEVICES_CANVAS = { owner: 'devices', defs: GLYPH_DEFS, bare: { make: makeWaypoint, at: waypointAt, of: bareAnchor }, appearances: [DEVICE], presses: DEVICE_PRESSES, hand: DEVICE_HAND, at: DEVICE_POINTS, sizeStep: DEVICE_SIZE_STEP, sizes: DEVICE_SIZES, outlines: DEVICE_OUTLINES,
+export const DEVICES_CANVAS = { owner: 'devices', stylesheets: ['devices/devices.css'], defs: GLYPH_DEFS, bare: { make: makeWaypoint, at: waypointAt, of: bareAnchor }, appearances: [DEVICE], presses: DEVICE_PRESSES, hand: DEVICE_HAND, at: DEVICE_POINTS, sizeStep: DEVICE_SIZE_STEP, sizes: DEVICE_SIZES, outlines: DEVICE_OUTLINES,
 	keys: DEVICE_KEYS, describe: DEVICE_DESCRIBE, selectAll: DEVICE_SELECT_ALL, labels: DEVICE_LABELS,
 	drawn: ['.node'], tally: { rank: 0, word: 'nodes', of: (model) => typedNodes(model).length } };   // C-f: what it draws; its count   // C-e: its key, `s`; how it reads, Ctrl+A; where its label edits

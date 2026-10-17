@@ -163,6 +163,12 @@ Each stage: tests first; the record lowered in its commit, which lists each find
    The pages list the composed parts' sheets in their served markup, in a fixed order generated from the composition and checked (mission-kit `P3`), the network's still before the page's own; the colour check reads the same list.
    The simulation's sheet sits beside its modules in `engine/`, named in its part's module list so the scanner knows its owner.
    Proves: foreign style rules in `app/style.css` at zero; the probe passes.
+   AMENDED 2026-10-17, as built (B368):
+   - a name's label is drawn by the core (`kernel/renderer.mjs` `nameLabel`) and styled by `kernel/primitives.css`, since the zones and devices plugins drew the same two elements -- names are a service a kind opts into (N5);
+   - the network's waypoint rules moved whole, the spawning ones with them, because their order decides which state wins on one waypoint (armed over spawning over a selected path), and splitting them across two sheets could keep only one of those orders; the two spawning rules stay counted as foreign, as does `#container.zonegrid .zone` in the zones' sheet, until H25.3 rules on them;
+   - `.waypoint.linkband` styles a state only devices declare, for devices -- dead, deleted in H25.3;
+   - the copy findings were named by the sheet each sat in, so a move read as a copy removed and another added; they are named by the fact copied now, and the ceiling was re-expressed from the tree H25 opened on, 120 findings where 128 were;
+   - 201 rules before and after, each word for word; the probe against be5c9c3 passed.
 2. **H25.2 -- the export and the favicon draw with the same stylesheets (D3).**
    `server/svg.mjs` builds its style from the composed parts' sheets and the canvas's own rules, every `var()` given a literal fallback from the colour registry; `serializeNode` stops writing colours of its own; `KERNEL_CSS` and `EXPORT_CSS` retire, and the favicon takes the devices plugin's sheet.
    `tests/run-picture.test.js`'s assertions on the export's attribute colours are restated to assert the colour the element computes.

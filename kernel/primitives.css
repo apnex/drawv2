@@ -1,0 +1,11 @@
+/*
+THE CORE'S STYLESHEET -- the look of what the core's primitives draw (kernel/renderer.mjs). H25.1 (B366): a name's label
+is drawn once, by `nameLabel`, for every kind that opts into names (N5); its rules moved here from app/style.css word for
+word, where they had styled the zones' and the devices' labels alike.
+*/
+
+/* B236 -- no font-size. A label's size is RULED (kernel STD.fontSize) and emitted as an
+   attribute, and a CSS rule silently beats one -- which is how the canvas drew 15 while the
+   export drew 13, from the moment B234 taught the export to draw labels at all. */
+.label { font-family: monospace; fill: var(--tok-label); user-select: none; text-anchor: middle; }
+.label-pill { fill: var(--tok-panel); }

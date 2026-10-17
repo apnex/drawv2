@@ -10,6 +10,7 @@ the K8 DOM corpus holds that.
 
 import { STD, L_STD } from '../kernel/spec.mjs';
 import { resolveRoles } from '../kernel/palette.mjs';
+import { nameLabel } from '../kernel/renderer.mjs';   // H25.1: a name's label is the core's
 
 // B338 (H21.8, N1): the zones plugin's colour roles over the core palette
 export const ZONE_COLOURS = { zoneFill: 'blueGrey300', zoneStroke: 'blueGrey200' };
@@ -41,8 +42,7 @@ const ZONE_PAINTER = {
 	create(entity, { el, applyLook, pillWidth, layer }) {
 		const g = el('g', { id: entity.id, class: 'zone' }, layer);
 		el('rect', { class: 'zone-rect', rx: ZONE_R }, g);
-		el('rect', { class: 'label-pill', rx: 4, height: STD.labelH }, g);
-		el('text', { class: 'label zone-label', 'font-size': STD.fontSize }, g);
+		nameLabel(el, g, { pill: { rx: 4, height: STD.labelH }, text: { 'font-size': STD.fontSize }, cls: 'zone-label' });   // H25.1: the core's label
 		applyLook(g, zoneLook(entity, pillWidth), ZONE_PARTS);
 		return g;
 	},
@@ -57,6 +57,6 @@ const ZONE_PLACE = { kind: 'zone', layout: 'zone', ext: ZONE_EXT, size: (zone) =
 // the zones plugin's canvas part: what it brings to the page (C-a: its painter; C-b its pick, on the painter; C-c its place;
 // C-d its press row over the shared box gesture, and its handles)
 // C-e: and its keys -- `z` -- and its size step under the canvas's Shift+arrow
-export const ZONES_CANVAS = { owner: 'zones', painters: [ZONE_PAINTER], places: [ZONE_PLACE], presses: ZONE_PRESSES, handles: ZONE_HANDLE_SPECS,
+export const ZONES_CANVAS = { owner: 'zones', stylesheets: ['zones/zones.css'], painters: [ZONE_PAINTER], places: [ZONE_PLACE], presses: ZONE_PRESSES, handles: ZONE_HANDLE_SPECS,
 	keys: ZONE_KEYS, sizeStep: ZONE_SIZE_STEP, deleteRanks: { zone: 1 }, describe: ZONE_DESCRIBE, selectAll: ZONE_SELECT_ALL, labels: ZONE_LABELS,
 	drawn: ['.zone'], helpWords: { zone: 'a zone' }, tally: { rank: 2, word: 'zones', of: (model) => model.all('zone').length } };   // C-f: what it draws, for run mode; its count   // a zone is deleted after a group, before a link

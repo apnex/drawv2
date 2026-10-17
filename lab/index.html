@@ -25,10 +25,19 @@ before composing.
 		<!-- no icon, said explicitly: without this Chrome asks for /favicon.ico, the lab answers 404, and every
 		     first page load logs an error -- which the behaviour matrix's invariant I5 caught as a real one -->
 		<link rel="icon" href="data:,">
-		<link rel="stylesheet" href="/tokens.css"><!-- the product's colour roles, generated (tools/colour-tokens.mjs) -->
-		<link rel="stylesheet" href="/network/tokens.css"><!-- the network plugin's colour roles -->
-		<link rel="stylesheet" href="/network/network.css"><!-- the network's rules: before style.css, whose .selected must win -->
+		<!-- H25.1: the composition's stylesheets, each part bringing its own, in order (the colour registry first, the page's own last) -->
+		<!-- BEGIN GENERATED: stylesheets. Run node tools/stylesheets.mjs --write; do not edit by hand (product/canvas.mjs PAGE_STYLESHEETS). -->
+		<link rel="stylesheet" href="/tokens.css">
+		<link rel="stylesheet" href="/kernel/primitives.css">
+		<link rel="stylesheet" href="/layouts/layouts.css">
+		<link rel="stylesheet" href="/zones/zones.css">
+		<link rel="stylesheet" href="/groups/groups.css">
+		<link rel="stylesheet" href="/devices/devices.css">
+		<link rel="stylesheet" href="/network/tokens.css">
+		<link rel="stylesheet" href="/network/network.css">
+		<link rel="stylesheet" href="/engine/simulation.css">
 		<link rel="stylesheet" href="/style.css">
+		<!-- END GENERATED: stylesheets -->
 		<link rel="stylesheet" href="/lab.css">
 	</head>
 	<body>

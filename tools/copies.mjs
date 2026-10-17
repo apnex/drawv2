@@ -190,8 +190,9 @@ export function stylesDrawnByNoPart(sheets, drawnBy, idsWritten = null) {
 	return [...out].map(([name, names]) => ({ name, in: [...names].sort() }));
 }
 
-// a line worth comparing: trimmed and not blank, every comment removed whole first -- so a comment put into a copy hides none of it
-const comparable = (text) => text.replace(/<!--[\s\S]*?-->/g, '').replace(/\/\*[\s\S]*?\*\//g, '').split('\n').map((l) => l.trim()).filter((l) => l && !/^(<!--|-->|\/\*|\*)/.test(l));
+// a line worth comparing: trimmed and not blank, every comment removed whole first -- so a comment put into a copy hides none of
+// it -- and a generated region left out, which its generator holds equal to its one master (H25.1, mission-kit P3)
+const comparable = (text) => text.replace(/<!-- BEGIN GENERATED: ([\w-]+)[\s\S]*?<!-- END GENERATED: \1 -->/g, '').replace(/<!--[\s\S]*?-->/g, '').replace(/\/\*[\s\S]*?\*\//g, '').split('\n').map((l) => l.trim()).filter((l) => l && !/^(<!--|-->|\/\*|\*)/.test(l));
 
 /*
 Lines one file repeats from another, `run` lines in a row or more, and at least `chars` characters in the run so that a few closing

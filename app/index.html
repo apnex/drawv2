@@ -4,10 +4,19 @@
 		<meta charset="utf-8">
 		<title>draw</title>
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg">
-		<link rel="stylesheet" href="/tokens.css"><!-- H15.23: the colour registry, generated from kernel/theme.mjs; before the sheet that reads it -->
-		<link rel="stylesheet" href="/network/tokens.css"><!-- V-b: the network plugin's colour roles, generated (tools/colour-tokens.mjs) -->
-		<link rel="stylesheet" href="/network/network.css"><!-- V-b: the network's rules -- before style.css, whose .selected must win -->
+		<!-- H25.1: the composition's stylesheets, each part bringing its own, in order (the colour registry first, the page's own last) -->
+		<!-- BEGIN GENERATED: stylesheets. Run node tools/stylesheets.mjs --write; do not edit by hand (product/canvas.mjs PAGE_STYLESHEETS). -->
+		<link rel="stylesheet" href="/tokens.css">
+		<link rel="stylesheet" href="/kernel/primitives.css">
+		<link rel="stylesheet" href="/layouts/layouts.css">
+		<link rel="stylesheet" href="/zones/zones.css">
+		<link rel="stylesheet" href="/groups/groups.css">
+		<link rel="stylesheet" href="/devices/devices.css">
+		<link rel="stylesheet" href="/network/tokens.css">
+		<link rel="stylesheet" href="/network/network.css">
+		<link rel="stylesheet" href="/engine/simulation.css">
 		<link rel="stylesheet" href="/style.css">
+		<!-- END GENERATED: stylesheets -->
 	</head>
 	<body>
 		<header id="menu">

@@ -24,6 +24,17 @@ node showed its socket always, in the editor and in every exported SVG.
 was already shared -- `selBox`, `contentLayout`, `spanExtent` are all imported by the client. What
 was duplicated is which element exists and when, which is structure rather than a formula.
 */
+/*
+H25.1 (B366): A NAME'S LABEL, drawn one way -- a pill behind the name's text. Names are a service a kind opts into (N5), and the
+zones and devices plugins each drew the label themselves, the same two elements in two places; so its look had no owner but the
+page's stylesheet, styling both plugins' classes. The label is the core's now, and its look is the core's stylesheet's
+(kernel/primitives.css). A caller passes the attributes it places them by, in its own order, and a class of its own for the text.
+*/
+export function nameLabel(el, g, { pill = {}, text = {}, cls = null } = {}) {
+	el('rect', { class: 'label-pill', ...pill }, g);
+	el('text', { class: cls ? `label ${cls}` : 'label', ...text }, g);
+}
+
 // sockets are an EDITING AID: absent from a clean export, present when the caller asks. The client
 // asks by being in edit mode, the exporter by passing `sockets` -- one rule, two ways of saying yes.
 export const showsSockets = (opts = {}) => !!opts.sockets;

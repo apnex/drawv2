@@ -1007,8 +1007,9 @@ export const SCANNER_ROOTS = {
 H25.0 (B365) -- WHAT scan-copies READS BEYOND THE FOLDERS, AND THE COPIES IT LETS STAND.
   entries     the production entries a module must be reached from to count as the product's: the three product roots (L7),
               each page's script, and the lab's server, which the lab's service runs
-  owners      the part owning a stylesheet no part's folder holds: the page's own sheet, and the colour registry generated from
-              kernel/theme.mjs (tools/colour-tokens.mjs)
+  owners      the part owning a stylesheet no part's folder holds: the page's own sheet, the colour registry generated from
+              kernel/theme.mjs (tools/colour-tokens.mjs), the core primitives' sheet, and the simulation's, whose modules are listed
+              files in engine/ rather than a folder (H25.1)
   exceptions  per measure, each copy the director ruled may stand: `{ cites: [ruling], trigger }`, resolved by tools/exceptions.mjs.
               H25's exit: every finding in tools/copies-record.json is one of these
 The findings themselves are tools/copies-record.json, which may only shrink, inside tools/copies-ceiling.json, frozen when H25
@@ -1016,6 +1017,6 @@ opened (its hash is pinned in tests/scan-copies.test.js).
 */
 export const COPIES = {
 	entries: [...RULES.L7.roots, ...Object.values(PAGES).flatMap((p) => p.scripts.map((s) => `${p.base}${s}`)), 'lab/server.mjs'],
-	owners: { 'app/style.css': 'product-page', 'app/tokens.css': 'colours' },
+	owners: { 'app/style.css': 'product-page', 'app/tokens.css': 'colours', 'kernel/primitives.css': 'primitives', 'engine/simulation.css': 'simulation' },
 	exceptions: {},
 };

@@ -59,3 +59,11 @@ const ANCHOR_ORDER = {
 
 // painters back to front on a full render: zones, group hulls, links -- and the anchors over them, by appearances
 export const PRODUCT_CANVAS = [ANCHOR_ORDER, LAYOUTS_CANVAS, ZONES_CANVAS, GROUPS_CANVAS, DEVICES_CANVAS, NETWORK_CANVAS, SIMULATION_CANVAS];
+
+/*
+H25.1 (B366, D1): THE STYLESHEETS A PAGE LOADS, in order -- the colour registry, the core's primitives, each composed part's own
+sheet in the order the parts compose, then the page's own (chrome and canvas). A plugin brings its look as it brings its painters
+(its part's `stylesheets`), and a page lists exactly these: tools/stylesheets.mjs writes them into app/index.html and
+lab/index.html and the gate checks they agree. Each part's sheet loads before the page's, as network/network.css always did.
+*/
+export const PAGE_STYLESHEETS = ['app/tokens.css', 'kernel/primitives.css', ...PRODUCT_CANVAS.flatMap((p) => p.stylesheets ?? []), 'app/style.css'];

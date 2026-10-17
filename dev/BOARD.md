@@ -1503,8 +1503,8 @@ Opened 2026-10-17 by the director (`dev/DECISIONS.md` H25): H22 closed against a
 |---|---|---|---|---|
 | H25.0 | Measure and audit: every kind of copy measured by a check in the gate at today's count, a count that may only fall; the findings written down, and a staged plan drafted from them, reviewed adversarially (H25.0) | **B365** | S3 | `DONE` |
 | H25.0b | The probe: a pinned set of documents rendered at two commits in three modes, the published SVGs, the favicon and every interaction state, compared pixel for pixel and style for style (H25.0b) | **B367** | S3 | `DONE` |
-| H25.1 | Each plugin brings its own stylesheet, its state rules with it, listed in the pages in a generated order (H25.1) | **B366** | S3 | `WIP` |
-| H25.2 | The export and the favicon draw with the same stylesheets; the export writes no colours of its own (H25.2) | **B366** | S3 | `TODO` |
+| H25.1 | Each plugin brings its own stylesheet, its state rules with it, listed in the pages in a generated order (H25.1) | **B368** | S3 | `DONE` |
+| H25.2 | The export and the favicon draw with the same stylesheets; the export writes no colours of its own (H25.2) | **B366** | S3 | `WIP` |
 | H25.3 | Dead and unseen styles deleted or made visible (H25.3) | **B366** | S4 | `TODO` |
 | H25.4 | One canvas layout, declared once and generated into both pages (H25.4) | **B366** | S4 | `TODO` |
 | H25.5 | One renderer: the old scene renderer deleted, its tests on the real one (H25.5) | **B366** | S3 | `TODO` |
