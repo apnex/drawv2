@@ -60,33 +60,10 @@ function networkBoard() {
 }
 /*
 H24.8 (B361): a board of its own for the published SVG's parity with view mode -- every thing a diagram draws whose look the two
-could disagree on: devices with their names, a zone with its name, a text panel, directed links with their heads and legs, a
-junction three links meet at, a link running beneath a device (charlie sits on alpha's way to bravo), and a link with no
-direction (alpha to delta), whose ends no head shapes.
+could disagree on. RESTATED at H25.0b (B366): the board is tools/probe/boards.mjs's, shared with the parity probe, and holds a down
+link with a head and a group, which H25.0's review found it lacked (finding 3).
 */
-const PARITY_DIAGRAM = '0000000000fa0001';
-function parityBoard() {
-	const device = (id, name, type, x, y, order) => ({ id, name, type, shape: 'square', x, y, order });
-	const link = (n, src, dst, direction = 'forward') => ({ id: `link-fa000${n}`, name: `l${n}`, src, dst, ...(direction ? { direction } : {}), order: n });
-	return {
-		meta: { id: PARITY_DIAGRAM, name: 'parity', version: 1, schema: 3 }, layouts: heldLayouts(),
-		nodes: [
-			device('node-fa00a1', 'alpha', 'router', -360, 0, 1),
-			device('node-fa00a2', 'bravo', 'host', 360, 0, 2),
-			device('node-fa00a3', 'charlie', 'host', 0, 0, 3),
-			device('node-fa00a4', 'delta', 'host', 0, 240, 4),
-			{ id: 'node-fa00b1', name: 'j', x: 0, y: -180, order: 5 },
-			{ id: 'node-fa00c1', name: 'note', type: 'text', shape: 'square', x: -360, y: -300, span: { cols: 5, rows: 1 }, order: 6,
-				content: [{ at: [0, 0], cols: 5, rows: 1, content: 'text', value: 'a note on the board', align: 'left', size: 11 }] },
-		],
-		links: [link(1, 'node-fa00a1', 'node-fa00a2'), link(2, 'node-fa00a4', 'node-fa00b1'), link(3, 'node-fa00a2', 'node-fa00b1'), link(4, 'node-fa00b1', 'node-fa00a1'),
-			link(5, 'node-fa00a1', 'node-fa00a4', null)],
-		pipes: [['node-fa00a1', 'node-fa00a2'], ['node-fa00a4', 'node-fa00b1'], ['node-fa00a2', 'node-fa00b1'], ['node-fa00b1', 'node-fa00a1'], ['node-fa00a1', 'node-fa00a4']]
-			.map(([x, y]) => pipeEntity(x, y, 'link')),
-		zones: [{ id: 'zone-fa0001', name: 'the zone', x: -450, y: -90, w: 900, h: 420, order: 1 }],
-		groups: [], selection: [],
-	};
-}
+import { PARITY_DIAGRAM, parityBoard } from '../tools/probe/boards.mjs';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 let dir = null, srv = null, chrome = null, tab = null, port = 0, cdp = 0, booted = null;
@@ -1755,12 +1732,21 @@ test('H24.8 (B361): the published SVG draws what view mode draws -- the same thi
 		assert.equal((await fetch(`http://127.0.0.1:${port}/${PARITY_DIAGRAM}.svg`)).status, 200, 'precondition: the file is served');
 		file = await attach(`http://127.0.0.1:${port}/${PARITY_DIAGRAM}.svg`);
 		assert.ok(await until(file, `document.documentElement.tagName === 'svg' && document.readyState === 'complete' ? 1 : 0`, 8000), 'precondition: the file opened as an image');
+		/*
+		H25.0b (B366): the file drawn at the page's scale. Opened on its own, an SVG scales to its window, so a taller diagram draws
+		smaller than the page draws it -- and text drawn at another pixel size rounds its box to another height (14 units against 16,
+		found when the board grew a row of devices). The comparison is of looks, so both are drawn at one scale.
+		*/
+		const scale = await page.eval(`document.getElementById('container').getScreenCTM().a`);
+		assert.equal(await file.eval(`(() => { const r = document.documentElement, [, , w, h] = r.getAttribute('viewBox').split(/\\s+/).map(Number);
+			r.setAttribute('width', w * ${scale}); r.setAttribute('height', h * ${scale}); return Math.abs(r.getScreenCTM().a - ${scale}) < 1e-3; })()`), true, 'precondition: the file drawn at the page\'s scale');
 		const published = JSON.parse(await file.eval(`(${PARITY_PICTURE})(false)`));
 
 		// control: the reading holds the whole board -- the devices, the panel, the junction, the zone, the links with their heads and legs
 		const keys = viewed.map((e) => e.key);
-		for (const k of ['node-fa00a1', 'node-fa00a3', 'node-fa00b1', 'node-fa00c1', 'zone-fa0001', 'link-fa0001', 'head of link-fa0001', 'leg of link-fa0001', 'link-fa0005']) assert.ok(keys.includes(k), `view mode draws ${k}`);
+		for (const k of ['node-fa00a1', 'node-fa00a3', 'node-fa00b1', 'node-fa00c1', 'zone-fa0001', 'group-fa0001', 'link-fa0001', 'head of link-fa0001', 'leg of link-fa0001', 'link-fa0005', 'link-fa0006', 'head of link-fa0006']) assert.ok(keys.includes(k), `view mode draws ${k}`);
 		assert.ok(!keys.includes('head of link-fa0005'), 'control: the link with no direction draws no head');
+		assert.ok(await page.eval(`document.getElementById('link-fa0006').hasAttribute('data-down')`), 'control: echo to foxtrot is down -- no pipe joins them');
 		assert.ok(viewed.flatMap((e) => e.drawn).filter((d) => d.tag === 'text').length >= 6, 'and its names and the panel\'s text');
 
 		assert.deepEqual(published.map((e) => e.key), keys, 'the file draws the same things, back to front, as view mode -- a device over the links that pass beneath it');

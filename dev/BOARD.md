@@ -1502,11 +1502,20 @@ Opened 2026-10-17 by the director (`dev/DECISIONS.md` H25): H22 closed against a
 | # | Item | Cites | Sev | State |
 |---|---|---|---|---|
 | H25.0 | Measure and audit: every kind of copy measured by a check in the gate at today's count, a count that may only fall; the findings written down, and a staged plan drafted from them, reviewed adversarially (H25.0) | **B365** | S3 | `DONE` |
-| H25.1 | Ratify the plan to remove every copy, and its decisions D1 to D6 -- the director's ruling owed -- then build its stages, H25.0b's probe first (H25.1) | **B366** | S3 | `WIP` |
+| H25.0b | The probe: a pinned set of documents rendered at two commits in three modes, the published SVGs, the favicon and every interaction state, compared pixel for pixel and style for style (H25.0b) | **B367** | S3 | `DONE` |
+| H25.1 | Each plugin brings its own stylesheet, its state rules with it, listed in the pages in a generated order (H25.1) | **B366** | S3 | `WIP` |
+| H25.2 | The export and the favicon draw with the same stylesheets; the export writes no colours of its own (H25.2) | **B366** | S3 | `TODO` |
+| H25.3 | Dead and unseen styles deleted or made visible (H25.3) | **B366** | S4 | `TODO` |
+| H25.4 | One canvas layout, declared once and generated into both pages (H25.4) | **B366** | S4 | `TODO` |
+| H25.5 | One renderer: the old scene renderer deleted, its tests on the real one (H25.5) | **B366** | S3 | `TODO` |
+| H25.6 | One name: `routeGeometry` renamed (H25.6) | **B366** | S5 | `TODO` |
+| H25.7 | Close: the architecture document reports every copy, generated (H25.7) | **B366** | S4 | `TODO` |
 
 **Exit:** every copy measure reads zero, or each remaining instance is an exception the director ruled, with its reason and trigger; view mode and the published SVG draw the director's diagrams pixel for pixel as before; no stored document changes.
 
 AMENDED 2026-10-17: H25.0 done -- 128 copies measured in the gate, a record that may only shrink inside a frozen ceiling; the audit and staged plan are `dev/design/unification/UNIFICATION-COMPLETE.md`, reviewed adversarially, its ratification owed (B366, under Decisions required).
+AMENDED 2026-10-17: the plan ratified with D1 to D6 as recommended (`dev/DECISIONS.md` H25-1); its stages are the items H25.0b to H25.7.
+AMENDED 2026-10-17: H25.0b done -- `tools/probe/parity.mjs` compares two commits pixel for pixel and style for style on the director's 19 pinned diagrams and the parity board, shown to pass against itself and to catch five planted changes where each shows (B367 closed).
 
 ---
 
@@ -1578,7 +1587,6 @@ B163, the last entry, was ratified and closed on 2026-10-01: the standing goals 
 
 | Row | Decision owed | Why it cannot be settled without you |
 |---|---|---|
-| **B366** | Ratify the plan to remove every measured copy (`dev/design/unification/UNIFICATION-COMPLETE.md`) and its decisions D1 to D6 | it sets seven stages of work that change nothing on screen, and each decision chooses where a plugin's look, the export's styles, the old renderer and two held copies end up |
 
 **R13 reads this table in both directions**, which is what `Held` has had since B123 and this section never did.\
 A row recording `RULING-OWED` must appear here, so a decision cannot wait unseen; an entry here must still be `RULING-OWED`, so a ruling that has landed cannot keep asserting itself.\

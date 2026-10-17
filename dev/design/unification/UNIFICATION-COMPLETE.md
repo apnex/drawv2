@@ -3,6 +3,7 @@
 > **Tier 3 -- a design of record, proposed.** Written 2026-10-17 against `d0684e9`, revised the same day after its adversarial review.
 > Facts about today's code are measured by `tools/scan-copies.mjs` and cited by file; judgements are marked as such.
 > Proposes; decides nothing. Section 9 lists what only the director can settle.
+> AMENDED 2026-10-17: ratified, D1 to D6 as recommended (`dev/DECISIONS.md` H25-1).
 
 ## 1. Status
 
@@ -156,6 +157,7 @@ Each stage: tests first; the record lowered in its commit, which lists each find
    A probe committed under `tools/probe/` renders a pinned document set at two commits -- a baseline and a candidate, each served from its own worktree -- in one browser build, and compares them pixel for pixel and style for style (section 7, criteria 4 and 5).
    The set: every diagram the director owns, read from production read-only and pinned by content hash at H25.0b, never written into this public repository; the browser parity board, extended with a down link carrying a head and a group; and a state board holding each interaction state.
    Proves: the probe passes at baseline against itself, and fails on a planted one-property change in each mode.
+   AMENDED 2026-10-17: built as `tools/probe/parity.mjs`, the boards in `tools/probe/boards.mjs`; passed against itself (94 pictures, 18 style readings) and reported five planted changes -- edit-mode sockets, the run-mode border, a link's armed state, the export's name pill, a hovered clickable -- each where it shows and nowhere else (B367).
 1. **H25.1 -- each plugin brings its own stylesheet (D1, D2).**
    The zones, groups, devices, layouts and simulation plugins each bring a stylesheet with their canvas part, as the network does; each plugin's rules move into it word for word, its elements' state rules with them (D2).
    The pages list the composed parts' sheets in their served markup, in a fixed order generated from the composition and checked (mission-kit `P3`), the network's still before the page's own; the colour check reads the same list.
