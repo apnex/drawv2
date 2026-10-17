@@ -147,8 +147,21 @@ test('H25.4: a copy typed of lines another page generates is found; comments are
 	assert.deepEqual(pages([own.begin, ...typed, own.end], [own.begin, ...typed, own.end]), [], 'control: the region in both pages, each generated, is no copy');
 	assert.deepEqual(pages([own.begin, ...typed, own.end], ['<template>', ...typed, '</template>']), typed, 'the same lines typed outside any region, in the other page, are');
 	assert.deepEqual(pages([own.begin, ...typed, '<p>one line more</p>', own.end], [own.begin, ...typed, own.end]), [...typed], 'a region holding its lines and one more is no region: what it holds is read');
-	// a region whose marker does not open its line is none -- and removing the one before it on the line must not make it one
-	assert.deepEqual(pages([other.begin, ...other.lines, other.end + own.begin, ...typed, own.end], [own.begin, ...typed, own.end]), typed, 'regions are found on the page as written');
+	// a region whose marker does not open its line is none -- and removing the one before it on the line must not make it one,
+	// in either region order (the fifth verifier's j1a: passing [other, own] as the scanner does)
+	assert.deepEqual(pages([other.begin, ...other.lines, other.end + own.begin, ...typed, own.end], [own.begin, ...typed, own.end]), typed, 'regions are found on the page as written (canvas first)');
+	const pagesOtherFirst = (a, b) => copiedLines([{ name: 'a.html', text: a.join('\n'), regions: [other, own] }, { name: 'b.html', text: b.join('\n'), regions: [other, own] }]).flatMap((x) => x.lines);
+	assert.deepEqual(pagesOtherFirst([other.begin, ...other.lines, other.end + own.begin, ...typed, own.end], [own.begin, ...typed, own.end]), typed, 'and in the scanner\'s order (stylesheets first)');
+	// the fifth verifier's z8 / COMBO-R: a comment left open before a region closes at the region's BEGIN in the browser, so the
+	// marker is not a whole comment and the region is not trusted -- removing the region before comments let that comment run on
+	// and swallow everything typed after it
+	assert.deepEqual(pages(['<!-- left open', other.begin, ...other.lines, other.end, ...typed], [other.begin, ...other.lines, other.end, ...typed]), [...other.lines, ...typed], 'a comment left open before a region swallows its BEGIN, not the lines typed after the region');
+	assert.deepEqual(pages(['<!-->', ...typed, '<!-- x -->'], typed), typed, '<!--> ends at once, so it hides nothing after it');
+	assert.deepEqual(pages(['<!-- a --!>', ...typed, '<!-- x -->'], typed), typed, 'and --!> closes its comment');
+	assert.deepEqual(pages(['<style><!--</style>', ...typed, '<p>--></p>'], typed), typed, '<!-- inside <style> opens no HTML comment');
+	assert.deepEqual(pages(['<textarea><!--</textarea>', ...typed, '<p>--></p>'], typed), typed, 'nor inside <textarea>');
+	assert.deepEqual(pages(['<svg><![CDATA[ > <!-- ]]></svg>', ...typed, '<p>--></p>'], typed), typed, 'nor inside an SVG CDATA section');
+	assert.deepEqual(pages(['<p x=a\'b>1 < 2 "</p>', ...typed.flatMap((l) => [l, '<!-- note -->'])], typed), typed, 'an unquoted quote or a stray < hides no comment between copied lines');
 	const sheets = (a, b) => copiedLines([{ name: 'a.css', text: a, regions: [] }, { name: 'b.css', text: b, regions: [] }]).flatMap((x) => x.lines);
 	const rules = ['#one { color: red; cursor: pointer; }', '#two { color: blue; cursor: move; }', '#three { color: green; }', '#four { color: black; }', '#five { color: white; }'];
 	assert.deepEqual(sheets(['/* <!-- */', ...rules, '/* --> */'].join('\n'), rules.join('\n')), rules, 'an HTML comment\'s opener inside a stylesheet\'s comment hides no rule');
@@ -159,6 +172,10 @@ test('H25.4: a copy typed of lines another page generates is found; comments are
 	assert.deepEqual(pages(['<p>/*</p>', ...typed, '<p>*/</p>'], typed), typed, 'nor a stylesheet comment\'s opener in a page\'s text');
 	assert.deepEqual(pages([typed.join('\r')], typed), typed, 'lines ended by a lone CR are lines');
 	assert.deepEqual(sheets(['* { box-sizing: border-box; margin: 0; }', ...rules.slice(0, 4)].join('\n'), ['* { box-sizing: border-box; margin: 0; }', ...rules.slice(0, 4)].join('\n'))[0], '* { box-sizing: border-box; margin: 0; }', 'and a line opening with * is compared like any other');
+	assert.deepEqual(sheets(['.u { background: url(/*); }', ...rules, '.v { background: url(*/); }'].join('\n'), rules.join('\n')).filter((l) => rules.includes(l)), rules, 'unquoted url(/*) opens no stylesheet comment');
+	assert.deepEqual(sheets(['.u { content: "\\\n/*"; }', ...rules, '.v { content: "*/"; }'].join('\n'), rules.join('\n')).filter((l) => rules.includes(l)), rules, 'nor a string continued over an escaped newline');
+	assert.deepEqual(sheets(['.u { content: "/*', ...rules, '.v { content: "*/"; }'].join('\n'), rules.join('\n')).filter((l) => rules.includes(l)), rules, 'a broken string ends at its newline');
+	assert.deepEqual(sheets(rules.join('\f'), rules.join('\n')), rules, 'and form feed ends a line in a stylesheet');
 });
 
 test('H25.4: the regions the measure trusts are the ones the generators write -- one definition', async () => {

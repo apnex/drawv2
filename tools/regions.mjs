@@ -6,7 +6,7 @@ declares each region -- its exact markers and the lines it holds -- for the gene
 leaves it out, so the two cannot disagree on what a region is.
 
 A REGION is a BEGIN marker, exactly, at the start of its line after whitespace only, the first END marker after it, and the
-lines between. The copy measure leaves one out of a page's typed lines only when it holds exactly the lines its generator writes,
+lines between -- each marker a whole comment as a browser reads the page (tools/markup.mjs). The copy measure leaves one out of a page's typed lines only when it holds exactly the lines its generator writes,
 found on the page as written; anything else is compared like any typed line, and every marker not opening or closing such a region
 is a stray. The other side of every comparison is read in full (tools/copies.mjs), so a region hides nothing typed elsewhere.
 
@@ -21,18 +21,23 @@ CORRECTED by H25.4's three verifiers: the copy measure left out any marked regio
 name; then any exact pair, wherever it stood -- in a stylesheet, or made by removing the region before it -- so typed lines hid
 from it. It now trusts a region only for holding what its generator writes.
 */
+import { htmlSpans } from './markup.mjs';   // where a page's comments are, as a browser reads them
+
 export const markersOf = (name, { tool, source }) => ({
 	begin: `<!-- BEGIN GENERATED: ${name}. Run node ${tool} --write; do not edit by hand (${source}). -->`,
 	end: `<!-- END GENERATED: ${name} -->`,
 });
 
 // where a page holds the region, as defined above, or null
-function regionAt(text, { begin, end }) {
+function regionAt(text, { begin, end }, comments = htmlSpans(text).comments) {
 	const at = text.indexOf(begin);
 	if (at < 0) return null;
 	const stop = text.indexOf(end, at + begin.length);
 	const indent = text.slice(text.lastIndexOf('\n', at) + 1, at);
 	if (stop < 0 || /\S/.test(indent)) return null;
+	// each marker a whole comment as a browser reads the page -- one swallowed by a comment left open above it is no marker
+	const whole = (a, b) => comments.some(([x, y]) => x === a && y === b);
+	if (!whole(at, at + begin.length) || !whole(stop, stop + end.length)) return null;
 	return { at, stop, indent };
 }
 
@@ -46,8 +51,9 @@ export function withRegion(html, region, where = 'the page') {
 // the regions a text holds exactly as their generators write them, as spans of the text given
 function exactSpans(text, regions) {
 	const spans = [];
+	const comments = regions.length ? htmlSpans(text).comments : [];
 	for (const r of regions) {
-		const found = regionAt(text, r);
+		const found = regionAt(text, r, comments);
 		if (!found) continue;
 		const held = text.slice(found.at + r.begin.length, found.stop).split('\n').map((l) => l.trim()).filter(Boolean);
 		const lines = r.lines.map((l) => l.trim()).filter(Boolean);

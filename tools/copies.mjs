@@ -16,6 +16,7 @@ that runs them over the tree, and holds each count to its record, is tools/scan-
 Each is a pure function of the text it is handed, so tests/scan-copies.test.js can plant a copy and watch it caught.
 */
 import { withoutRegions } from './regions.mjs';   // H25.4: a generated region left out by its exact markers
+import { htmlWithoutComments, cssWithoutComments } from './markup.mjs';   // H25.4: comments read as a browser reads them
 
 // a class name as the tree writes them: lower case, digits, single hyphens
 const CLASS_NAME = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
@@ -192,21 +193,18 @@ export function stylesDrawnByNoPart(sheets, drawnBy, idsWritten = null) {
 }
 
 /*
-THE LINES A FILE HOLDS, as a browser reads them: split at every line end it honours (CRLF, a lone CR, LF), each comment removed
-by the file's own language -- a stylesheet's slash-star comments outside its strings, a page's HTML comments outside its tags -- so a comment put
-into a copy hides none of it, and nothing that only looks like a comment in the other language hides a line; then trimmed, the
-blank ones dropped. `typed` leaves out the regions the file holds exactly as their generators write them (tools/regions.mjs,
-tools/page-regions.mjs); `full` keeps them.
-CORRECTED at H25.4 (B376), by four verifications: a marked region was left out however it was marked, then whatever a generated
-region held, then from both sides of a comparison -- so a copy typed in one page of lines the other generates matched nothing;
-and comments were removed in either language from every file, and lines split at LF alone, so an HTML comment's opener inside a
-stylesheet's comment or string, one in a page's attribute, or a lone CR between lines hid live copies (those two since H25.0).
+THE LINES A FILE HOLDS, as a browser reads them: each comment removed as the file's own tokenizer reads it (tools/markup.mjs -- a
+page's HTML comments, bogus comments and its style elements' stylesheet comments, outside its tags and raw text; a stylesheet's
+comments outside its strings and unquoted url()), so a comment put into a copy hides none of it and nothing that only looks
+like a comment hides a line; split at every line end the language honours; trimmed, the blank ones dropped. `typed` leaves out
+the regions the file holds exactly as their generators write them (tools/regions.mjs, tools/page-regions.mjs); `full` keeps them.
+CORRECTED at H25.4 (B376), by five verifications: a marked region was left out however it was marked, then whatever a generated
+region held, then from both sides of a comparison; comments were removed by regular expressions in either language from every
+file, and lines split at LF alone -- each let a typed copy hide.
 */
-const withoutCssComments = (t) => t.replace(/("(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*')|\/\*[\s\S]*?(?:\*\/|$)/g, (m, str) => str ?? '');
-const withoutHtmlComments = (t) => t.replace(/(<(?!!--)[^>"']*(?:(?:"[^"]*"|'[^']*')[^>"']*)*>)|<!--[\s\S]*?(?:-->|$)/g, (m, tag) => tag ?? '');
 function linesOf(file) {
-	const strip = file.name.endsWith('.css') ? withoutCssComments : withoutHtmlComments;
-	const split = (t) => strip(t).split(/\r\n|\r|\n/).map((l) => l.trim()).filter(Boolean);
+	const css = file.name.endsWith('.css');
+	const split = (t) => (css ? cssWithoutComments(t).split('\n') : htmlWithoutComments(t).split(/\r\n|\r|\n/)).map((l) => l.trim()).filter(Boolean);
 	return { name: file.name, typed: split(withoutRegions(file.text, file.regions ?? [])), full: split(file.text) };
 }
 
