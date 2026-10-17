@@ -19,7 +19,8 @@ import path from 'node:path';
 import { FOLDERS, PARTS, PAGES, COPIES, SCANNER_ROOTS } from './layers.mjs';
 import { classesPutOnElements, classesInMarkup, stylesheetsInSource, copiedStyleRules, foreignStyleRules, stylesDrawnByNoPart, copiedLines, modulesNoEntryReaches, styleRulesOf, judgeFindings, judgeExceptions } from './copies.mjs';
 import { exceptionFaults } from './exceptions.mjs';
-import { strayMarkers } from './regions.mjs';   // H25.4: the markers no region left out opens or closes
+import { strayMarkers } from './regions.mjs';
+import { markupFaults } from './markup.mjs';   // H25.4: refuses malformed comments/attributes/escapes in pages and sheets   // H25.4: the markers no region left out opens or closes
 import { PAGE_REGIONS } from './page-regions.mjs';   // H25.4: the regions the generators write into the pages
 
 const ROOT = path.resolve(import.meta.dirname, '..');
@@ -92,7 +93,7 @@ const idsWritten = new Set([
 // H25.4 (B376): a page's regions -- the only text the copied-lines measure leaves out, and only where a region holds exactly what its
 // generator writes (tools/regions.mjs); a stylesheet has none. Any other GENERATED marker, in a page or a sheet, is a fault.
 const pagesAndSheets = [...Object.keys(PAGES), ...sheetFiles].sort().map((f) => ({ name: f, text: read(f), regions: f in PAGES ? Object.values(PAGE_REGIONS) : [] }));
-const strays = pagesAndSheets.flatMap((f) => strayMarkers(f.text, f.regions).map((m) => `${f.name} holds a generated marker no generator writes -- ${m.slice(0, 90)}`));
+const strays = [...pagesAndSheets.flatMap((f) => strayMarkers(f.text, f.regions).map((m) => `${f.name} holds a generated marker no generator writes -- ${m.slice(0, 90)}`)), ...pagesAndSheets.flatMap(markupFaults)];
 const resolve = (from, spec) => {
 	const to = spec.startsWith('/') ? spec.slice(1) : path.posix.normalize(path.posix.join(path.posix.dirname(from), spec));
 	return /\.m?js$/.test(to) && exists(to) ? to : null;
