@@ -43,7 +43,7 @@ const HISTORICAL = new Set([
 Resolution is against the TRACKED tree, not the working tree.
 
 This scanner used `fs.existsSync` and therefore answered differently on different machines. It went
-green locally and red in CI on the first push (H7): README cites `secrets/google-credentials.json`
+green locally and red in CI on the first push (H7): README then cited `secrets/google-credentials.json`
 and `docs/` cites a seeded `diagrams/*.json`, both of which exist on the developer's disk and are
 GITIGNORED, so a fresh clone has neither. A guardrail whose answer depends on whose machine it runs
 on is not a guardrail — and a doc reference means "a reader who clones this can find it", which is

@@ -152,7 +152,7 @@ test('B6: createApp accepts an injected backend, and uses it instead of the disk
 	try {
 		await app.store.flushAll();
 		assert.ok(mem.size > 0, 'the seed went to the injected backend');
-		// the data dir may exist (secrets/examples paths resolve there) but must hold no diagram
+		// the data dir may exist (the examples path resolves there) but must hold no diagram
 		const onDisk = fs.existsSync(dataDir) ? fs.readdirSync(dataDir).filter((f) => f.endsWith('.json')) : [];
 		assert.deepEqual(onDisk, [], 'and nothing was written to the filesystem');
 	} finally {

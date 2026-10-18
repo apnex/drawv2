@@ -137,6 +137,7 @@ The `POST /api/v1/diagrams/:id/sync/slides` endpoint this section used to specif
 
 Recorded as removed rather than deleted outright, because a reader who meets `slides` in an old export or in the retired-meta list should be able to find out what it was and that it is gone.\
 AMENDED 2026-10-18 (H24.11): `RETIRED_META` and the stripping on read were deleted with the loader's repairs at H19.3 (`dev/COMMIT-DELETIONS.md`); the validator refuses `slides` as it refuses any meta key it does not know, and draw has evolved past alignment with Google Slides.
+
 ---
 
 ## Capability rulings, and what reversed them
