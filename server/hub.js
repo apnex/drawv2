@@ -83,7 +83,8 @@ export class Hub {
 	stops being reported without anything having to notice it dropped.
 
 	A human cannot decline to be observed (ruled 2026-08-23): the control surface is the grant and
-	the code, not the visibility. Declining to mint is how you decline to be watched.
+	the code, not the visibility. Declining to mint is how you decline to be watched. A seat on a
+	template is the exception, shown only to the person in it (`viewersFor` below, B384).
 	*/
 	viewers() {
 		const out = [];
@@ -157,11 +158,24 @@ B116/B114, B342 (H21.8) -- the one place agent activity and viewer presence are 
 Lives in the hub so the hub's sessions (`server/protocol.js`), the server (`server/app.js`) and REST (`server/rest.js`) all
 call it without the hub importing the REST door.
 */
+/*
+B384 (H24.14) -- the presence one principal may be shown, the one rule the pull, the snapshot and the push all apply.
+
+A seat on a diagram the principal can read, as B114 rules -- except a seat on a template, which is shown only to the person in
+it. Every principal reads a template, so B114 alone told everyone who sat on one, by email, a first-time user among them; and
+nobody works together on a template, since the first write forks a private copy, so the seat serves no one else. With
+authorization off every seat is shown, as everything is. A function over `hub.viewers()`, not a method, so anything shaped
+like a hub answers it.
+*/
+export function viewersFor(hub, store, principal) {
+	return hub.viewers().filter((v) => store.canRead(v.diagram, principal)
+		&& (!store.authz || !store.isTemplate(v.diagram) || v.principal === principal));
+}
+
 export function announceActivity(hub, store, locks) {
 	if (!hub) return;
 	const agents = locks ? locks.activity() : [];
 	hub.announceEach('agents', (s) => ({ agents: agents.filter((a) => store.canRead(a.diagram, s.principal)) }));
-	const viewers = hub.viewers();
-	hub.announceEach('viewers', (s) => ({ viewers: viewers.filter((v) => store.canRead(v.diagram, s.principal)) }));
+	hub.announceEach('viewers', (s) => ({ viewers: viewersFor(hub, store, s.principal) }));   // B384: on each receiver's terms
 }
 

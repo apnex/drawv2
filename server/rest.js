@@ -10,7 +10,7 @@ exactly one side writes at a time.
 import { layoutRecords } from '../layouts/layout-records.mjs';   // WD8 (H19.45): the list the agent API serves
 import { linksOf, linksAt, makeLink } from '../network/link-queries.mjs';   // which links meet an anchor: the network's (K13d)
 import { snapshotBody, changeBody, reversalBody } from './protocol.js';
-import { announceActivity } from './hub.js';   // B342 (H21.8): in the hub, so the hub does not import REST
+import { announceActivity, viewersFor } from './hub.js';   // B342 (H21.8): in the hub, so the hub does not import REST
 import { LAYOUTS, nearestAnchor, anchorAt } from '../kernel/geometry.mjs';
 import { NODE_EXT } from '../model/surface.mjs';
 import { makeZone } from '../zones/make-zone.mjs';   // the zones plugin's factory (O-b1)
@@ -471,8 +471,8 @@ export function handleRest(req, res, store, locks, hub, principal = null, sessio
 		*/
 		// B114: the mirror of `agents` -- who is WATCHING what, filtered the same way
 		if (parts[3] === 'viewers' && req.method === 'GET') {
-			const live = hub ? hub.viewers() : [];
-			return json(res, 200, { viewers: live.filter((v) => store.canRead(v.diagram, principal)) }), true;
+			// B384 (H24.14): the rule the snapshot and the push apply -- a seat on a template shown only to the person in it
+			return json(res, 200, { viewers: hub ? viewersFor(hub, store, principal) : [] }), true;
 		}
 		if (parts[3] === 'agents' && req.method === 'GET') {
 			const live = locks ? locks.activity() : [];

@@ -362,7 +362,8 @@ curl -s localhost:8080/api/v1/workspace/viewers
 ```
 
 A person cannot decline to be observed, and that is deliberate.\
-The control surface is the grant and the connection code: declining to mint one is how you decline to be watched, and an agent you have already authorised can see where you are working.
+The control surface is the grant and the connection code: declining to mint one is how you decline to be watched, and an agent you have already authorised can see where you are working.\
+A template is the exception: every principal reads one and nobody works together on one, since the first write forks a private copy, so a person on a template is shown to no one but themselves (B384, H24.14).
 
 Both lists are filtered by read access, on the push as well as the pull.\
 A caller learns about a diagram it could open anyway, and nothing about one it could not -- the document staying private and its existence leaking are different failures, and only the first was ever guarded.

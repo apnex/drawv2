@@ -2131,3 +2131,50 @@ test('B382: a reclaim announces the agent list to each session on its own terms'
 	assert.ok(ows.out.some((m) => m.cmd === 'agents' && m.body.agents.some((a) => a.diagram === secret)), 'the owner is (control)');
 });
 
+
+/*
+B384 (H24.14) -- presence on a template is shown to no one but the person there.
+
+Presence is filtered by read access (B114), and every principal reads a template, so every signed-in person and every agent was
+told who sat on one -- by email, and a first-time user lands on one. Nobody works together on a template, since the first write
+forks a private copy, so presence there serves no one. A session on a template is now shown only to its own principal, on the
+pull, the snapshot and the push alike; B114 stands for every other diagram; with authorization off everything is shown.
+*/
+async function presenceOnATemplate(authz) {
+	const store = new Store(tmp(), { flushMs: 3_600_000, authz, templatesDir: TEMPLATES });
+	await store.init();
+	const template = [...store.templates.keys()][0];
+	const mine = store.create('shared', null, OWNER).model.state.meta.id;
+	assert.equal(store.grant(mine, GUEST, 'read', OWNER), null);
+	const hub = new Hub();
+	const sit = (principal, diagram) => { const ws = fakeWs(); const s = new Session(ws, store, hub, null, principal); s.diagramId = diagram; return ws; };
+	const ws = { guestT: sit(GUEST, template), ownerT: sit(OWNER, template), ownerM: sit(OWNER, mine), strangerT: sit(STRANGER, template) };
+	return { store, hub, template, mine, ws };
+}
+const seats = (viewers) => viewers.map((v) => `${v.principal}@${v.diagram}`).sort();
+
+test('B384: presence on a template is told only to the person there -- the pull, the snapshot and the push', async () => {
+	const { store, hub, template, mine, ws } = await presenceOnATemplate(true);
+	const guestSees = [`${GUEST}@${template}`, `${OWNER}@${mine}`].sort();
+	const ownerSees = [`${OWNER}@${mine}`, `${OWNER}@${template}`].sort();
+
+	const pull = (principal) => {
+		const res = { code: 0, body: null, writeHead(code) { this.code = code; }, end(text) { this.body = JSON.parse(text); } };
+		handleRest({ url: '/api/v1/workspace/viewers', method: 'GET', headers: {} }, res, store, null, hub, principal, null);
+		return seats(res.body.viewers);
+	};
+	assert.deepEqual(pull(GUEST), guestSees, 'the guest: itself on the template and the owner on the diagram it reads -- no one else on the template');
+	assert.deepEqual(pull(OWNER), ownerSees, 'the owner: itself on both -- not the guest or the stranger on the template');
+
+	assert.deepEqual(seats(snapshotBody(store.get(mine), store, null, GUEST, hub).viewers), guestSees, 'the snapshot on the same terms');
+
+	const { announceActivity } = await import('../server/hub.js');
+	announceActivity(hub, store, null);
+	assert.deepEqual(seats(ws.guestT.last('viewers').body.viewers), guestSees, 'and the push');
+	assert.deepEqual(seats(ws.strangerT.last('viewers').body.viewers), [`${STRANGER}@${template}`], 'a stranger is told only of itself');
+});
+
+test('B384: with authorization off every seat is shown, a template\'s included (control)', async () => {
+	const { store, hub } = await presenceOnATemplate(false);
+	assert.equal(snapshotBody([...store.templates.values()][0], store, null, null, hub).viewers.length, 4);
+});

@@ -33,7 +33,7 @@ refused and the client is resynced read-only — it can never clobber the contro
 // the wire shape has one definition. `locked` tells a client, on any snapshot,
 // whether the diagram is currently Server-Locked (read-only for it).
 import crypto from 'node:crypto';
-import { announceActivity } from './hub.js';
+import { announceActivity, viewersFor } from './hub.js';
 import { NAME_MAX } from '../model/limits.mjs';   // truncates where validate.js rejects (B86)
 
 /*
@@ -117,7 +117,7 @@ export function snapshotBody(model, store, locks, principal = null, hub = null) 
 		// B382 (H24.12): on the receiver's terms, as B116 made the push -- an agent on a diagram it may not read is not named
 		agents: locks ? locks.activity().filter((a) => store.canRead(a.diagram, principal)) : [],
 		// B114: and who else is here. State, not events, for the same reason as `agents`.
-		viewers: hub ? hub.viewers().filter((v) => store.canRead(v.diagram, principal)) : []
+		viewers: hub ? viewersFor(hub, store, principal) : []   // B384 (H24.14): a seat on a template only to the person in it
 	};
 }
 
