@@ -20,7 +20,7 @@ Usage: node tools/scan-docrefs.mjs [--verbose]
 import fs from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
-import { FOLDERS, SCANNER_ROOTS } from './layers.mjs';
+import { SCANNER_ROOTS } from './layers.mjs';
 
 /*
 Files skipped WHOLE, and the bar for being one is now proportionality.
@@ -342,7 +342,7 @@ const docs = [];
 
 const PATHLIKE = /`([A-Za-z0-9_.\-/]+\.(?:js|mjs|md|json|sh|html|css|svg))(?:[:#][^`]*)?`/g;
 // in code, the common form carries no backticks; prefixes derived from FOLDERS so plugin folders are read too (H25.7)
-const BARE_ROOTS = [...new Set(['docs', 'dev', 'design', ...FOLDERS.map((f) => f.dir.split('/')[0])])].join('|');
+const BARE_ROOTS = [...new Set(['docs', 'dev', 'design', 'tests', ...SCANNER_ROOTS.dead.map((d) => d.split('/')[0])])].join('|');
 const BARE = new RegExp(`(?<![\\w/\`])((?:${BARE_ROOTS})\\/[A-Za-z0-9_.\\-/]+\\.(?:json|mjs|js|md|sh|html|css|svg))(?!\\w)`, 'g');
 
 function codeFiles(dir, out = []) {
