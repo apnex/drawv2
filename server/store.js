@@ -1105,6 +1105,11 @@ export class Store {
 		return this.templates.has(id) && (!this.authz || !!principal);
 	}
 
+	// B381 (H24.12): whether an id is a template's, which every principal may read and so which says nothing about a caller
+	isTemplate(id) {
+		return this.templates.has(id);
+	}
+
 	canWrite(id, principal) {
 		if (!this.authz) return true;
 		const level = this.access(id, principal);

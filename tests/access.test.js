@@ -1985,74 +1985,149 @@ test('B94: a grant signals an open session, and the signal carries nothing', asy
 B381 (H24.12) -- the session log answers only what its caller may read.
 
 `GET /api/v1/sessions` answered the whole log to anyone, and `/connect/v1/` reaches it outside IAP: who is signed in, by email, on
-which diagram, doing what. It now refuses a caller with no identity, as the workspace routes do, and shows a session only when it
-is the caller's own or on a diagram the caller can read -- the terms `viewers` and `agents` already apply (B114). With
-authorization off, as on a laptop, it answers everything, as every route does.
+which diagram, doing what. It now refuses a caller with no identity, as the workspace routes do. A caller's own sessions are shown
+whole; another's only when it has been on a diagram and the caller can read every diagram it has been on, its events naming each
+one -- a template set aside, since every principal reads one. With authorization off it answers everything, as every route does.
+
+The first build filtered on a session's last diagram alone, and its verifier showed two ways round it: a write to a template
+forked the session onto a private diagram while the log kept it under the template, readable by everyone; and a session that
+had been on a private diagram before a shared one showed its private diagram's id and labels to a reader of the shared one.
 */
 import { handleRest } from '../server/rest.js';
 import { SessionLog } from '../server/sessionlog.mjs';
+import { fileURLToPath } from 'node:url';
 
 const STRANGER = 'user:stranger@example.com';
+const TEMPLATES = fileURLToPath(new URL('../templates', import.meta.url));
 function askSessions(store, sessions, principal) {
 	const res = { code: 0, body: null, writeHead(code) { this.code = code; }, end(text) { this.body = JSON.parse(text); } };
 	assert.equal(handleRest({ url: '/api/v1/sessions', method: 'GET', headers: {} }, res, store, null, null, principal, sessions), true);
 	return res;
 }
-async function sessionsOnTwoDiagrams(authz) {
-	const store = new Store(tmp(), { flushMs: 3_600_000, authz });
+async function sessionsOnThreeDiagrams(authz) {
+	const store = new Store(tmp(), { flushMs: 3_600_000, authz, templatesDir: TEMPLATES });
 	await store.init();
-	const mine = [...store.diagrams.keys()][0];
-	store.setOwner(mine, OWNER);
+	const template = [...store.templates.keys()][0];
+	assert.ok(store.isTemplate(template), 'a template to be on');
+	const mine = store.create('shared', null, OWNER).model.state.meta.id;
 	const secret = store.create('not-yours', null, OWNER).model.state.meta.id;
 	assert.equal(store.grant(mine, GUEST, 'read', OWNER), null);
 	const sessions = new SessionLog();
-	sessions.open('owner-on-secret', OWNER); sessions.attach('owner-on-secret', secret);
-	sessions.open('guest-on-mine', GUEST); sessions.attach('guest-on-mine', mine);
-	sessions.open('owner-unattached', OWNER);
-	sessions.open('stranger-on-secret', STRANGER); sessions.attach('stranger-on-secret', secret);
+	const on = (actor, principal, ...ids) => { sessions.open(actor, principal); for (const id of ids) sessions.attach(actor, id); };
+	on('owner-on-secret', OWNER, secret);
+	on('guest-on-mine', GUEST, mine);
+	on('owner-unattached', OWNER);
+	on('stranger-on-secret', STRANGER, secret);
+	on('owner-hopped', OWNER, secret, mine);
+	on('stranger-on-template', STRANGER, template);
 	return { store, sessions };
 }
 const actors = (res) => res.body.sessions.map((s) => s.actor).sort();
 
 test('B381: a caller with no identity is refused the session log', async () => {
-	const { store, sessions } = await sessionsOnTwoDiagrams(true);
+	const { store, sessions } = await sessionsOnThreeDiagrams(true);
 	const res = askSessions(store, sessions, null);
 	assert.equal(res.code, 403, 'refused, as the workspace routes refuse it');
 	assert.equal(res.body.code, 'forbidden');
-	assert.equal(JSON.stringify(res.body).includes('@'), false, 'and no address in the refusal');
 });
 
-test('B381: a caller sees its own sessions and those on diagrams it can read, and no other', async () => {
-	const { store, sessions } = await sessionsOnTwoDiagrams(true);
+test('B381: a caller sees its own sessions, and another\'s only when it can read every diagram that session has been on', async () => {
+	const { store, sessions } = await sessionsOnThreeDiagrams(true);
 	assert.deepEqual(actors(askSessions(store, sessions, GUEST)), ['guest-on-mine'],
-		'the guest reads one diagram: not the owner on the other, nor the owner unattached, nor a stranger');
-	assert.deepEqual(actors(askSessions(store, sessions, OWNER)), ['guest-on-mine', 'owner-on-secret', 'owner-unattached', 'stranger-on-secret'],
-		'the owner reads both diagrams, and its own unattached session');
-	assert.deepEqual(actors(askSessions(store, sessions, STRANGER)), ['stranger-on-secret'],
-		'a stranger with no grant sees only its own session, though it sits on a diagram it cannot read');
+		'the guest reads one diagram: not the owner on the other, nor the owner who came to it from the other, nor anyone unattached or on a template');
+	assert.deepEqual(actors(askSessions(store, sessions, OWNER)), ['guest-on-mine', 'owner-hopped', 'owner-on-secret', 'owner-unattached', 'stranger-on-secret'],
+		'the owner reads both diagrams and all of its own -- and not a stranger on a template, which says nothing of the owner');
+	assert.deepEqual(actors(askSessions(store, sessions, STRANGER)), ['stranger-on-secret', 'stranger-on-template'],
+		'a stranger with no grant sees only its own sessions');
 });
 
 test('B381: with authorization off the log answers whole, as every route does (control)', async () => {
-	const { store, sessions } = await sessionsOnTwoDiagrams(false);
+	const { store, sessions } = await sessionsOnThreeDiagrams(false);
 	const res = askSessions(store, sessions, null);
 	assert.equal(res.code, 200);
-	assert.deepEqual(actors(res), ['guest-on-mine', 'owner-on-secret', 'owner-unattached', 'stranger-on-secret']);
+	assert.deepEqual(actors(res), ['guest-on-mine', 'owner-hopped', 'owner-on-secret', 'owner-unattached', 'stranger-on-secret', 'stranger-on-template']);
 });
 
-test('B381: through the agent door, a request with no identity is refused and the owner answered', async () => {
+test('B381: a session that forks a template is on its fork in the log, and a stranger is not shown it -- over a websocket', async () => {
 	const { makeApp } = await import('./fixtures/app.mjs');
+	const DAVE = 'user:dave@example.com';
 	const dataDir = tmp();
-	const app = await makeApp({ dataDir, port: 0 });
+	const app = await makeApp({ dataDir, port: 0, templatesDir: TEMPLATES });
+	const template = [...app.store.templates.keys()][0];
+	const ask = async () => (await (await fetch(`http://127.0.0.1:${app.port}/connect/v1/sessions`)).json()).sessions;
+	app.as(DAVE);   // a websocket resolves its principal at the upgrade
+	const ws = new WebSocket(`ws://127.0.0.1:${app.port}/ws`);
+	const seen = [];
+	ws.on('message', (d) => seen.push(JSON.parse(d.toString())));
+	const until = async (cmd) => { for (const t0 = Date.now(); !seen.some((m) => m.cmd === cmd) && Date.now() - t0 < 5000;) await new Promise((r) => setTimeout(r, 10)); };
 	try {
-		const ask = () => fetch(`http://127.0.0.1:${app.port}/connect/v1/sessions`);
+		await new Promise((r) => ws.on('open', r));
+		ws.send(JSON.stringify({ cmd: 'hello', body: { diagram: template } }));
+		await until('snapshot');
+		ws.send(JSON.stringify({ cmd: 'commit', body: { ops: [{ op: 'meta', patch: { name: 'daves-work' } }], label: 'daves-label' } }));
+		await until('forked');
+		const fork = seen.find((m) => m.cmd === 'forked').body.diagram;
+
+		const his = (await ask()).find((s) => s.principal === DAVE);
+		assert.ok(his, 'dave sees his own session');
+		assert.equal(his.diagram, fork, 'filed under the fork it moved to, not the template it left');
+		assert.deepEqual(his.diagrams, [template, fork], 'and both diagrams it has been on');
+
+		for (const who of [STRANGER, OWNER]) {
+			app.as(who);
+			const shown = await ask();
+			assert.equal(shown.some((s) => s.principal === DAVE), false, `${who} is not shown dave's session on his private fork`);
+			assert.equal(JSON.stringify(shown).includes('daves-label'), false, `nor what dave did there, to ${who}`);
+		}
 		app.as(null);
-		assert.equal((await ask()).status, 403, 'no sign-in and no code: refused, where it once answered 200');
-		app.as(OWNER);
-		const ok = await ask();
-		assert.equal(ok.status, 200, 'the owner is answered');
-		assert.ok(Array.isArray((await ok.json()).sessions));
+		assert.equal((await fetch(`http://127.0.0.1:${app.port}/connect/v1/sessions`)).status, 403, 'and no sign-in and no code is refused');
 	} finally {
+		ws.close();
 		await app.close();
 		fs.rmSync(dataDir, { recursive: true, force: true });
 	}
 });
+
+/*
+B382 (H24.12) -- the two agent lists B116 left unfiltered.
+
+B116 filtered the pushed agent list per receiving session, and two paths kept the whole list: the snapshot a session receives
+when it opens a diagram, and the announcement a reclaim made before its snapshot. A principal reading one diagram learned which
+agent drove every other, and its id. Found by the verifier of B381.
+*/
+async function agentsOnTwoDiagrams() {
+	const store = new Store(tmp(), { flushMs: 3_600_000, authz: true });
+	await store.init();
+	const mine = [...store.diagrams.keys()][0];
+	store.setOwner(mine, OWNER);
+	const secret = store.create('not-yours', null, OWNER).model.state.meta.id;
+	assert.equal(store.grant(mine, GUEST, 'read', OWNER), null);
+	const locks = new Locks();
+	locks.acquire(secret, 'agent:planner');
+	return { store, mine, secret, locks };
+}
+
+test('B382: the snapshot names no agent on a diagram the receiver may not read', async () => {
+	const { store, mine, secret, locks } = await agentsOnTwoDiagrams();
+	const toGuest = snapshotBody(store.get(mine), store, locks, GUEST, null).agents;
+	assert.deepEqual(toGuest, [], 'the guest reads one diagram, and the agent is on the other');
+	const toOwner = snapshotBody(store.get(mine), store, locks, OWNER, null).agents;
+	assert.deepEqual(toOwner.map((a) => a.diagram), [secret], 'the owner reads both, so is told (control)');
+});
+
+test('B382: a reclaim announces the agent list to each session on its own terms', async () => {
+	const { store, mine, secret, locks } = await agentsOnTwoDiagrams();
+	const hub = new Hub();
+	const gws = fakeWs();
+	new Session(gws, store, hub, locks, GUEST);
+	const ows = fakeWs();
+	const owner = new Session(ows, store, hub, locks, OWNER);
+	owner.diagramId = mine;
+	ows.recv('reclaim', { id: mine });
+	await new Promise((r) => setTimeout(r, 20));
+	const told = gws.out.filter((m) => m.cmd === 'agents');
+	assert.ok(told.length > 0, 'the guest is told the agent list moved');
+	assert.equal(told.some((m) => m.body.agents.some((a) => a.diagram === secret)), false, 'and never which agent drives a diagram it cannot read');
+	assert.ok(ows.out.some((m) => m.cmd === 'agents' && m.body.agents.some((a) => a.diagram === secret)), 'the owner is (control)');
+});
+

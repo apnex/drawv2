@@ -114,7 +114,8 @@ export function snapshotBody(model, store, locks, principal = null, hub = null) 
 		nothing, and the ruling is explicit that a state is still there when the operator next
 		looks. That is the whole reason it is not a toast.
 		*/
-		agents: locks ? locks.activity() : [],
+		// B382 (H24.12): on the receiver's terms, as B116 made the push -- an agent on a diagram it may not read is not named
+		agents: locks ? locks.activity().filter((a) => store.canRead(a.diagram, principal)) : [],
 		// B114: and who else is here. State, not events, for the same reason as `agents`.
 		viewers: hub ? hub.viewers().filter((v) => store.canRead(v.diagram, principal)) : []
 	};
@@ -214,6 +215,19 @@ function ackBody(change, store, id, txnId) {
 }
 
 export class Session {
+	/*
+	B381 (H24.12) -- every move of this session's diagram reaches the session log through this one setter: the snapshot, the
+	fork a write to a template makes, a reconnect's resume and the hub's retarget. The log decides who may read a session by the
+	diagrams it has been on, and a move told to it in one place and not another is how a forked session stayed filed under
+	its template, readable by every principal.
+	*/
+	#diagramId = null;
+	get diagramId() { return this.#diagramId; }
+	set diagramId(id) {
+		this.#diagramId = id;
+		if (id) this.sessions?.attach(this.actor, id);
+	}
+
 	constructor(ws, store, hub = null, locks = null, principal = null, sessions = null) {
 		// a stable per-session identity: the `actor` on every Change it authors, and what lets
 		// undo tell 'my own last change' from 'someone else's'
@@ -256,9 +270,8 @@ export class Session {
 	}
 
 	snapshot(model) {
+		// B182 -- which document this session is on, so a report can be read per diagram: the setter tells the log (B381)
 		this.diagramId = model.state.meta.id;
-		// B182 -- which document this session is on, so a report can be read per diagram
-		this.sessions?.attach(this.actor, this.diagramId);
 		this.sessions?.note(this.actor, 'open-diagram', { id: this.diagramId });
 		announceActivity(this.hub, this.store, this.locks);   // B114: presence moved
 		this.send('snapshot', snapshotBody(model, this.store, this.locks, this.principal, this.hub));
@@ -513,7 +526,8 @@ export class Session {
 				if (this.locks) this.locks.reclaim(id);
 				if (this.hub) {
 					this.hub.broadcast(id, 'lock', { owner: 'client' });
-					if (this.locks) this.hub.announce('agents', { agents: this.locks.activity() });
+					// B382 (H24.12): each session on its own terms (B116), where this once sent every session the whole list
+					announceActivity(this.hub, this.store, this.locks);
 				}
 				return this.snapshot(model);
 			}

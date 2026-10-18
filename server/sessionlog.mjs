@@ -42,7 +42,7 @@ export class SessionLog {
 	gap -- there is no identity then, and inventing one would make a single-tenant run look otherwise.
 	*/
 	open(actor, principal, now = Date.now()) {
-		const rec = { actor, principal: principal || null, opened: now, closed: null, first: [], events: [], counts: {} };
+		const rec = { actor, principal: principal || null, opened: now, closed: null, diagrams: [], first: [], events: [], counts: {} };
 		this.#live.set(actor, rec);
 		this.note(actor, 'open', principal ? { as: principal } : null, now);
 		return rec;
@@ -84,9 +84,13 @@ export class SessionLog {
 	which returns SHAPED COPIES, so it set the diagram on a throwaway object and every row read `-`.
 	An instrument that quietly reports nothing is worse than none, because it is believed.
 	*/
+	// B381 (H24.12): and every diagram it has been on, which its events may name and so which decide who may read it -- bounded
+	// by the diagrams there are
 	attach(actor, diagramId) {
 		const rec = this.#live.get(actor);
-		if (rec) rec.diagram = diagramId;
+		if (!rec) return;
+		rec.diagram = diagramId;
+		if (!rec.diagrams.includes(diagramId)) rec.diagrams.push(diagramId);
 	}
 
 	// the socket went away. Moved to the past ring rather than dropped, because a session that
@@ -115,7 +119,7 @@ export class SessionLog {
 			const secs = ((r.closed || now) - r.opened) / 1000;
 			const commits = r.counts.commit || 0;
 			return {
-				actor: r.actor, principal: r.principal, diagram: r.diagram || null,
+				actor: r.actor, principal: r.principal, diagram: r.diagram || null, diagrams: [...r.diagrams],
 				live: r.closed === null,
 				openedMs: Math.round((r.closed || now) - r.opened),
 				counts: { ...r.counts },

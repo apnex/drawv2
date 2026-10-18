@@ -416,12 +416,17 @@ export function handleRest(req, res, store, locks, hub, principal = null, sessio
 		/*
 		B381 (H24.12) -- only what the caller may read. The log names who is signed in, by email, and which diagram each session
 		is on, and this route is reached through `/connect` outside IAP, where it answered anyone. A caller with no identity is
-		refused, as the workspace routes refuse one; a session is shown when it is the caller's own or on a diagram the caller can
-		read -- the terms `viewers` and `agents` already apply (B114). With authorization off, `canRead` answers yes, so a laptop
-		sees everything, as on every route.
+		refused, as the workspace routes refuse one. A session is shown whole when it is the caller's own; another's, only when
+		it has been on a diagram and the caller can read every diagram it has been on, because its events name each of them and
+		the commits it made there. A template is set aside: every principal reads one, so it says nothing about the caller, and a
+		write to it forks a diagram the session is then on. With authorization off it answers whole, as every route does.
 		*/
 		if (store.authz && !principal) return json(res, 403, { error: 'forbidden: no identity', code: 'forbidden' }), true;
-		const mayRead = (s) => !store.authz || (principal && s.principal === principal) || (s.diagram !== null && store.canRead(s.diagram, principal));
+		const readsAll = (s) => {
+			const been = s.diagrams.filter((id) => !store.isTemplate(id));
+			return been.length > 0 && been.every((id) => store.canRead(id, principal));
+		};
+		const mayRead = (s) => !store.authz || (principal && s.principal === principal) || readsAll(s);
 		// otherwise whole: the ring is bounded at 40 sessions, and one route with no query parameters is a route `scan-cli` can
 		// actually prove. Selection belongs to the caller.
 		return json(res, 200, { sessions: sessions ? sessions.report().filter(mayRead) : [] }), true;
