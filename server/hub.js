@@ -144,6 +144,8 @@ export class Hub {
 	broadcast(diagramId, cmd, body, except = null) {
 		this.sessions.forEach((s) => {
 			if (s.diagramId !== diagramId || s === except) return;
+			// B385 (H24.15): read access checked at every send -- a session that has lost it leaves the diagram and is sent nothing of it
+			if (s.store && !s.store.canRead(diagramId, s.principal)) return void s.leaveUnreadable?.();
 			try {
 				s.send(cmd, body);
 			} catch (err) {
@@ -170,6 +172,19 @@ like a hub answers it.
 export function viewersFor(hub, store, principal) {
 	return hub.viewers().filter((v) => store.canRead(v.diagram, principal)
 		&& (!store.authz || !store.isTemplate(v.diagram) || v.principal === principal));
+}
+
+/*
+B385 (H24.15) -- access moved. Every session on a diagram its principal can no longer read leaves it first, so its re-open asks
+for where it now is; then every session is told to ask again, contentless (B94). The one call every door makes when a grant, a
+workspace grant or publication changes, where each sent the signal alone.
+*/
+export function announceAccess(hub) {
+	if (!hub) return;
+	hub.sessions?.forEach((s) => {
+		if (s.diagramId && s.store && !s.store.canRead(s.diagramId, s.principal)) s.leaveUnreadable?.();
+	});
+	hub.announce('access', {});
 }
 
 export function announceActivity(hub, store, locks) {

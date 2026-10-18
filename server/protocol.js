@@ -277,6 +277,18 @@ export class Session {
 		this.send('snapshot', snapshotBody(model, this.store, this.locks, this.principal, this.hub));
 	}
 
+	/*
+	B385 (H24.15) -- this session may no longer read the diagram it is on, so it leaves it at once: for the first diagram its
+	principal can still read, as a deleted diagram's sessions do (B130), or for none, told why. Called when access moves and at
+	every send to a diagram (`server/hub.js`), so nothing of the old diagram reaches it afterwards, whatever the client does.
+	*/
+	leaveUnreadable() {
+		this.diagramId = null;
+		const next = this.store.first(this.principal);
+		if (!next) return this.error('access to this diagram ended, and no other diagram is readable by you', 'access-lost');
+		return this.snapshot(next);
+	}
+
 	current() {
 		return this.diagramId ? this.store.get(this.diagramId) : null;
 	}

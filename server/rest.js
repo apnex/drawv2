@@ -10,7 +10,7 @@ exactly one side writes at a time.
 import { layoutRecords } from '../layouts/layout-records.mjs';   // WD8 (H19.45): the list the agent API serves
 import { linksOf, linksAt, makeLink } from '../network/link-queries.mjs';   // which links meet an anchor: the network's (K13d)
 import { snapshotBody, changeBody, reversalBody } from './protocol.js';
-import { announceActivity, viewersFor } from './hub.js';   // B342 (H21.8): in the hub, so the hub does not import REST
+import { announceActivity, announceAccess, viewersFor } from './hub.js';   // B342 (H21.8): in the hub, so the hub does not import REST
 import { LAYOUTS, nearestAnchor, anchorAt } from '../kernel/geometry.mjs';
 import { NODE_EXT } from '../model/surface.mjs';
 import { makeZone } from '../zones/make-zone.mjs';   // the zones plugin's factory (O-b1)
@@ -824,7 +824,7 @@ async function handleWorkspace(req, res, store, parts, principal, hub) {
 		To EVERY session, not to those on this diagram: the person just granted access is very
 		likely looking at something else, and their picker is the surface that has to change.
 		*/
-		if (hub) hub.announce('access', {});
+		announceAccess(hub);   // B385 (H24.15): who lost access leaves first, then everyone asks again
 		return json(res, 200, { owner: principal, grants: store.workspaceGrants(principal) });
 	}
 	if (req.method === 'DELETE' && parts.length === 5) {
@@ -849,7 +849,7 @@ async function handleWorkspace(req, res, store, parts, principal, hub) {
 		To EVERY session, not to those on this diagram: the person just granted access is very
 		likely looking at something else, and their picker is the surface that has to change.
 		*/
-		if (hub) hub.announce('access', {});
+		announceAccess(hub);   // B385 (H24.15): who lost access leaves first, then everyone asks again
 		return json(res, 200, { owner: principal, grants: store.workspaceGrants(principal) });
 	}
 	return json(res, 405, { error: 'workspace grants: GET to read, POST { principal, level } to grant, DELETE .../grants/<principal> to revoke' });
@@ -1037,7 +1037,7 @@ async function handleWrite(req, res, store, locks, hub, parts, principal) {
 			To EVERY session, not to those on this diagram: the person just granted access is very
 			likely looking at something else, and their picker is the surface that has to change.
 			*/
-			if (hub) hub.announce('access', {});
+			announceAccess(hub);   // B385 (H24.15): who lost access leaves first, then everyone asks again
 			return json(res, 200, { grants: { ...store.get(id).state.meta.grants } });
 		}
 		// the principal is percent-encoded in the path: it carries a colon, and an address carries
@@ -1065,7 +1065,7 @@ async function handleWrite(req, res, store, locks, hub, parts, principal) {
 			To EVERY session, not to those on this diagram: the person just granted access is very
 			likely looking at something else, and their picker is the surface that has to change.
 			*/
-			if (hub) hub.announce('access', {});
+			announceAccess(hub);   // B385 (H24.15): who lost access leaves first, then everyone asks again
 			// H9.4c: removing the diagram entry is not the same as removing access -- a workspace
 			// grant on this diagram's owner survives it. Report what the principal can still do, so
 			// "revoked" is never inferred from the absence of a row.
@@ -1085,7 +1085,7 @@ async function handleWrite(req, res, store, locks, hub, parts, principal) {
 			const err = store.setPublic(id, body.public, principal);
 			if (err) return json(res, /^only the owner/.test(err) ? 403 : 422, { error: err, code: /^only the owner/.test(err) ? 'forbidden' : 'public-rejected' });
 			await store.flush(id);
-			if (hub) hub.announce('access', {});
+			announceAccess(hub);   // B385 (H24.15): who lost access leaves first, then everyone asks again
 			return json(res, 200, { id, public: Boolean(store.get(id).state.meta.public) });
 		}
 		return json(res, 405, { error: 'public: PUT { public: boolean } to publish or unpublish' });

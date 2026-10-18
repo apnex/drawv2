@@ -2178,3 +2178,116 @@ test('B384: with authorization off every seat is shown, a template\'s included (
 	const { store, hub } = await presenceOnATemplate(false);
 	assert.equal(snapshotBody([...store.templates.values()][0], store, null, null, hub).viewers.length, 4);
 });
+
+/*
+B385 (H24.15) -- a reader whose access ends leaves the diagram at once, and nothing of it reaches the reader afterwards.
+
+A revoke told every session "access moved, ask again" (B94), and draw's page asks again by re-opening its diagram; the server
+refused the re-open and left the session on the diagram, so every later change -- its operations and its label -- still reached the
+revoked reader. Now a session that may no longer read its diagram leaves it for the first diagram its principal can still read, as a
+deleted diagram's sessions do (B130), or for none, told why: when access moves, before the signal, and at every send to a diagram,
+so no later path that ends access can leave a reader behind.
+*/
+async function aReaderAndAnOwner() {
+	const store = new Store(tmp(), { flushMs: 3_600_000, authz: true });
+	await store.init();
+	const id = store.create('shared', null, OWNER).model.state.meta.id;
+	const own = store.create('the-guests-own', null, GUEST).model.state.meta.id;
+	assert.equal(store.grant(id, GUEST, 'read', OWNER), null);
+	const hub = new Hub();
+	const gws = fakeWs(); const guest = new Session(gws, store, hub, null, GUEST);
+	const ows = fakeWs(); new Session(ows, store, hub, null, OWNER);
+	gws.recv('open', { id }); ows.recv('open', { id });
+	await new Promise((r) => setTimeout(r, 20));
+	assert.equal(guest.diagramId, id, 'the guest is on the shared diagram');
+	const edit = async (label) => { ows.recv('commit', { ops: [{ op: 'meta', patch: { name: label } }], label, txnId: label }); await new Promise((r) => setTimeout(r, 20)); };
+	const changesTo = (ws, from) => ws.out.slice(from).filter((m) => m.cmd === 'change');
+	return { store, hub, id, own, guest, gws, edit, changesTo };
+}
+
+test('B385: when access moves, a reader who lost it leaves the diagram for one it can read, and receives none of its changes', async () => {
+	const { store, hub, id, own, guest, gws, edit, changesTo } = await aReaderAndAnOwner();
+	await edit('while-granted');
+	assert.equal(changesTo(gws, 0).length, 1, 'a granted reader receives the change (control)');
+	const { announceAccess } = await import('../server/hub.js');
+	assert.equal(store.revoke(id, GUEST, OWNER), null);
+	const from = gws.out.length;
+	announceAccess(hub);
+	assert.equal(guest.diagramId, own, 'moved at once to the diagram it can still read');
+	assert.equal(gws.out.slice(from).find((m) => m.cmd === 'snapshot')?.body.doc.meta.id, own, 'and sent its snapshot');
+	const access = gws.out.slice(from).findIndex((m) => m.cmd === 'access');
+	const snapshot = gws.out.slice(from).findIndex((m) => m.cmd === 'snapshot');
+	assert.ok(snapshot > -1 && access > snapshot, 'moved before it is told to ask again, so its re-open asks for where it is');
+	const after = gws.out.length;
+	gws.recv('open', { id });   // the page asking again for the diagram it was on
+	await edit('after-revoke');
+	assert.deepEqual(changesTo(gws, after), [], 'no change of the diagram reaches it');
+	assert.equal(JSON.stringify(gws.out.slice(after)).includes('after-revoke'), false, 'nor its label, anywhere');
+});
+
+test('B385: at every send -- a reader whose access ended without the signal is moved off and sent nothing', async () => {
+	const { store, id, own, guest, gws, edit, changesTo } = await aReaderAndAnOwner();
+	assert.equal(store.revoke(id, GUEST, OWNER), null);   // no announcement: any path that ends access without one
+	const from = gws.out.length;
+	await edit('unannounced');
+	assert.deepEqual(changesTo(gws, from), [], 'the change does not reach it');
+	assert.equal(guest.diagramId, own, 'and it is moved to the diagram it can read');
+});
+
+test('B385: a reader left with nothing readable is told why, and is on no diagram', async () => {
+	const store = new Store(tmp(), { flushMs: 3_600_000, authz: true });
+	await store.init();
+	const id = store.create('shared', null, OWNER).model.state.meta.id;
+	assert.equal(store.grant(id, STRANGER, 'read', OWNER), null);
+	const hub = new Hub();
+	const sws = fakeWs(); const stranger = new Session(sws, store, hub, null, STRANGER);
+	sws.recv('open', { id });
+	await new Promise((r) => setTimeout(r, 20));
+	assert.equal(store.revoke(id, STRANGER, OWNER), null);
+	const { announceAccess } = await import('../server/hub.js');
+	const from = sws.out.length;
+	announceAccess(hub);
+	assert.equal(stranger.diagramId, null, 'on no diagram');
+	assert.equal(sws.out.slice(from).find((m) => m.cmd === 'error')?.body.code, 'access-lost', 'and told why');
+});
+
+test('B385: over HTTP and websockets -- an owner revokes a reader, and the reader\'s open tab leaves the diagram and hears nothing more of it', async () => {
+	const t = await grantable();
+	const sockets = [];
+	const connect = async (who) => {
+		t.as(who);   // a websocket resolves its principal at the upgrade
+		const ws = new WebSocket(`ws://127.0.0.1:${t.app.port}/ws`);
+		const seen = [];
+		ws.on('message', (d) => seen.push(JSON.parse(d.toString())));
+		await new Promise((r) => ws.on('open', r));
+		sockets.push(ws);
+		return { ws, seen, send: (cmd, body) => ws.send(JSON.stringify({ cmd, body })) };
+	};
+	const until = async (ok) => { for (const t0 = Date.now(); !ok() && Date.now() - t0 < 5000;) await new Promise((r) => setTimeout(r, 10)); };
+	try {
+		t.as(OWNER);
+		await fetch(`${t.base}/grants`, { method: 'POST', body: JSON.stringify({ principal: GUEST, level: 'read' }) });
+		const guest = await connect(GUEST);
+		guest.send('open', { id: t.id });
+		await until(() => guest.seen.some((m) => m.cmd === 'snapshot'));
+		const owner = await connect(OWNER);
+		owner.send('open', { id: t.id });
+		await until(() => owner.seen.some((m) => m.cmd === 'snapshot'));
+
+		t.as(OWNER);
+		const from = guest.seen.length;
+		assert.equal((await fetch(`${t.base}/grants/${encodeURIComponent(GUEST)}`, { method: 'DELETE' })).status, 200);
+		await until(() => guest.seen.slice(from).some((m) => m.cmd === 'access'));
+		assert.equal(guest.seen.slice(from).find((m) => m.cmd === 'error')?.body.code, 'access-lost',
+			'the reader, with nothing else readable, is told it lost access before it is told to ask again');
+
+		const after = guest.seen.length;
+		owner.send('commit', { ops: [{ op: 'meta', patch: { name: 'after-the-revoke' } }], label: 'after-the-revoke', txnId: 'r1' });
+		await until(() => owner.seen.some((m) => m.cmd === 'ack'));
+		await new Promise((r) => setTimeout(r, 50));
+		assert.equal(JSON.stringify(guest.seen.slice(after)).includes('after-the-revoke'), false, 'and hears nothing of the next change');
+	} finally {
+		for (const ws of sockets) ws.close();
+		await t.close();
+	}
+});

@@ -193,7 +193,9 @@ Client -> server:
 - failures answer `{cmd:"error", body:{message, code, txnId}}`; sessions survive any payload
 
 Server -> client, unprompted: `{cmd:"change", body:{..., ops}}` - every accepted transaction is broadcast to the other sessions on that diagram, so a second tab and an agent write converge without refetching.\
-`{cmd:"lock", body:{owner}}` on a Server-Locked handoff.
+`{cmd:"lock", body:{owner}}` on a Server-Locked handoff.\
+An `access` message, its body empty, when a grant, a workspace grant or publication changes -- contentless, so each session asks again for what it may now see (B94).\
+A session whose principal can no longer read its diagram leaves it first, for the first diagram it can still read, or for none with an `access-lost` error, and nothing of the old diagram is sent to it afterwards -- checked when access moves and at every send (B385, H24.15).
 
 Server: validates (janitor-lite: field whitelists, ranges, referential integrity, collection caps), commits through ONE write path, debounce-writes JSON to `diagrams/<id>.json` (200ms pulse, atomic tmp+rename).\
 Deletes cascade server-side too, so a persisted document always reloads.\
