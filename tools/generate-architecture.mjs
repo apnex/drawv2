@@ -34,7 +34,7 @@ Usage: node tools/generate-architecture.mjs [--check] [--doc <path>]
 import fs from 'node:fs';
 import path from 'node:path';
 import { LAYER_DUTY, ALLOWED, LAYER, RATCHETS, RATCHET_REASONS, PARTS as DECLARED_PARTS, KIND_MAY_CONSUME, NOT_PARTS,
-	ALIGNMENT as DECLARED_ALIGNMENT, MISSION_KIT, MISSION_KIT_READ, COPIES } from './layers.mjs';
+	ALIGNMENT as DECLARED_ALIGNMENT, MISSION_KIT, MISSION_KIT_READ, COPIES, SCANNER_ROOTS } from './layers.mjs';
 import { readRows } from './records.mjs';
 import { productKinds } from '../product/kinds.mjs';
 import { NETWORK_ROWS } from '../network/kinds.mjs';
@@ -134,8 +134,7 @@ const justification = sectionOf('2. Justification chain');
 const chainAboveModel = justification.split('\n**Model.**')[0].trim();
 const ROWS = readRows(read('dev/BACKLOG.md'));
 // ---- parts: every product module in exactly one part; the imports between parts, derived; those the target does not allow
-const PRODUCT_DIRS = ['kernel', 'engine', 'model', 'app/src', 'server', 'cli', 'planner', 'network', 'layouts', 'zones', 'groups', 'devices', 'product', 'lab'];
-const productModules = PRODUCT_DIRS.flatMap((d) => walk(d)).sort();
+const productModules = SCANNER_ROOTS.copies.flatMap((d) => walk(d)).sort();
 const partOf = new Map();
 const partFaults = [];
 for (const [name, p] of Object.entries(PARTS)) {

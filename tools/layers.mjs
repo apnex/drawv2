@@ -604,8 +604,8 @@ When a rule's record empties, delete its keys; the rule stays.
        lines; 2 of them are kernel/README.md:29 and a comment in kernel/index.mjs:4, so 123 are code:
        81 static and 42 dynamic. K2a-K2c empty it
   L5   `module:name` from RULES.L5.names; L5p from its pattern. Every L5 name and 14 of the 15 L5p
-       names were exports of kernel/geometry.mjs, which K13a split (done); the one left is routeGeometry
-       in kernel/router.mjs. Model's link methods were not exports, and moved at K13d
+       names were exports of kernel/geometry.mjs, which K13a split (done); the last, routeGeometry in
+       kernel/router.mjs, was renamed pathGeometry at H25.6. Model's link methods moved at K13d
   L7k  consumer lines per file (see RULES.L7k)
   L9   `module:primitive`: none since V-d -- the browser previews with the planner (PL-6)
   L11  window/globalThis reads per canvas module: the label editor's three
