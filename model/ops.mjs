@@ -49,9 +49,7 @@ export function applyOps(model, ops) {
 	}
 }
 
-// meta is config, not an entity: no id, and only the keys a user can author. The Slides binding was
-// the user-pasted deck; presentationId/pageId are STATUS, written by the server after a push
-// removed with the feature; `name` is what remains.
+// meta is config, not an entity: no id, and only the keys a user can author -- `name` and `plugins`.
 function applyMeta(model, patch) {
 	const meta = model.state.meta;
 	if (patch.name !== undefined) meta.name = patch.name;

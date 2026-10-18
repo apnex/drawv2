@@ -1,5 +1,5 @@
 # draw — the whole product in one image: editor + persistence websocket +
-# read-only REST + Slides push + the `draw` CLI. One container is the default
+# read-only REST + the `draw` CLI. One container is the default
 # deployment. Run API-only (no editor) with: -e CLIENT_DIR=/none
 FROM node:22-alpine
 

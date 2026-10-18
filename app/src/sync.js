@@ -1001,11 +1001,11 @@ export class Sync {
 	}
 
 	/*
-	Renaming a diagram and binding a deck are CHANGES — config the user authored — so they go
+	Renaming a diagram is a CHANGE — config the user authored — so it goes
 	through the commit boundary like every other one: applied locally, submitted as a `meta` op,
 	broadcast to the other tabs, undoable.
 
-	They used to be a `meta` command of their own. That command's server case was deleted at CS3a
+	It used to be a `meta` command of its own. That command's server case was deleted at CS3a
 	when meta became an op, and nothing noticed for two milestones: every rename was answered
 	`unknown cmd: meta` and dropped. Found by `tests/spec.test.js`, which derives the wire
 	vocabulary from the server's own dispatch rather than trusting the document.

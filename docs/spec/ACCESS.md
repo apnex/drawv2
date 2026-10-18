@@ -199,10 +199,9 @@ It costs one field and is painful to retrofit, which is the argument for it; it 
 
 ## Where the ACL lives, and why it is not a commit
 
-In `meta`, written the way `bindSlides` writes -- `store.js:321` assigns to `model.state.meta.slides` and calls `markDirty(id)`, deliberately bypassing `commit()`.\
-`server.test.js:284` pins the category: *"the Slides binding is STATUS the server records -- not a change, and not the client's to send"*.
+In `meta`, written by the store directly -- `setOwner` and `grant` (`server/store.js:1318-1338`) assign to `model.state.meta` and call `markDirty(id)`, deliberately bypassing `commit()`.
 
-The reason this matters for an ACL is sharper than symmetry.\
+The reason is security, not tidiness.\
 `store.js:359` flushes `serialize(model.toJSON(), entry.log)`, the document **and** the log, on every write.\
 An ACL change routed through `commit()` would therefore be undoable -- and undo silently restoring access for someone just revoked is a security failure, not a usability quirk.\
 Bypassing `commit()` avoids it by construction rather than by a rule someone has to remember.

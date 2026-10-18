@@ -39,6 +39,7 @@ Purpose belongs to [`../VISION.md`](../VISION.md), the live plan to [`BOARD.md`]
    every live file and its discriminator role passes to `meta.schema: 1`. There
    are no legacy documents left: all 17 were migrated by
    `tools/migrate-version.mjs`, verified per-entity.
+   *(Amended 2026-10-18, H24.11)* - the mapping onto a Google Slide is retired: draw has evolved past alignment with Google Slides, by the director's ruling, and the Slides feature itself was purged in two phases (`dev/COMMIT-DELETIONS.md`).
 2. **Interaction**: modern conventions. Left-click select, drag from palette to create,
    Delete key deletes, marquee select.
    *(Amended 2026-06-12)* - **two-button gestures** (v1 convention restored): left-drag
@@ -2147,3 +2148,9 @@ Director: "continue as per recommendation"\
 Shown: dev/BACKLOG.md@6d365a3\
 Affects: tools/layers.mjs, network/network.css, zones/zones.css\
 Recorder: shown, with a picture of a waypoint in each state and pair of states, that the network's sheet colours a spawner by the simulation's `spawning` because the order of the waypoint's states in one sheet decides which wins (green over a selected path, red when armed over green), and that the zones' sheet gives a zone the move cursor under the layouts plugin's zone grid; that moving either into the other plugin's sheet only reverses which plugin is named, the measure counting it the same. Offered: rule both exceptions, each with its reason and a trigger (recommended); redesign the spawner's colouring so each plugin declares its waypoint state and its rank as data -- about half a day as its own stage, changing how selected, spawner and armed are decided, and the moment to make the spawner easier to see -- with the zone cursor an exception; or leave them unruled, which H25's exit refuses. The director chose the recommendation: both exceptions (`tools/layers.mjs` `COPIES.exceptions`, each citing this ruling, with its trigger), H25.3 shipped to production, and H25.4 next.
+
+**H24.11 -- draw names Google Slides nowhere live: its descriptions, its public pages, its current docs and its code; the records keep theirs -- 2026-10-18 (B380).**\
+Director: "Draw has evolved past alignment with Google slides, and indeed we should remove reference to Google slides in both the repo description and anywhere else."; then "continue"\
+Shown: package.json@6b2f5bf\
+Affects: tests/retired-slides.test.js, docs/spec/TRANSACTIONS.md, dev/design/widgets/DESIGN.md\
+Recorder: while reasoning with the recorder about making the canvas and the input system sovereign components, the director said draw had evolved past alignment with Google Slides and asked for every reference to go, the repository's description included. Shown that the feature itself was purged in two phases and only mentions remained -- the GitHub and `package.json` descriptions, the public About, Privacy and Terms pages, the `Dockerfile` header, current spec text, comments, the control-bar fixture's Slides cluster and test names -- and told that the records written while it existed would keep theirs under mission-kit's frozen-history rule (RU2), decision 1's slide mapping amended rather than rewritten, the director answered "continue". So: every live mention in the tree removed and held out by `tests/retired-slides.test.js`, which lists the records that keep theirs and why; `docs/spec/TRANSACTIONS.md` and the widgets design each carry a dated amendment; the GitHub description and the public pages, which live outside the tree, change with it.

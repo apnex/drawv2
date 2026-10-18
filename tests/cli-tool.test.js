@@ -815,8 +815,8 @@ test('B135: with no HOME in the injected env, the real home is never touched', a
 /*
 GR18 -- the verb list in CLI.md is DERIVED, and checked.
 
-It drifted for two milestones with nothing to notice. The block advertised a `push` verb for Slides,
-which had been purged in both phases, and an `agents` verb whose real name is `who`, while omitting
+It drifted for two milestones with nothing to notice. The block advertised a `push` verb whose feature
+had been purged in both phases, and an `agents` verb whose real name is `who`, while omitting
 nine that existed -- `about`, `zone contents`, `link path`, `panel`, `near`, `place`, `access`,
 `workspace grants`, `workspace revoke`. Three of those were written the same day the doc was last
 edited.

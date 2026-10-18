@@ -530,11 +530,7 @@ A grant naming a diagram wins over a grant naming its owner, so a workspace gran
 The consequence is worth stating plainly: revoking a diagram grant from someone who also holds a workspace grant does not remove their access, it returns them to the workspace level, and the revoke response carries an `effective` field saying what remains.\
 A leaked workspace credential costs everything that owner holds, which is the price of not having a person in the loop.
 
-An idle lock auto-expires so a crashed controller never strands a diagram.\
-Actions act on the outside world rather than the model, so they take no lock:
-```sh
-curl -s -X POST localhost:8080/api/v1/diagrams/<id>/sync/slides
-```
+An idle lock auto-expires so a crashed controller never strands a diagram.
 
 Any diagram also renders to a self-contained SVG by adding `.svg` to its deep link:
 ```sh

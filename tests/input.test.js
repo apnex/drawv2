@@ -1373,8 +1373,7 @@ crosses onto the palette or the header. The handler was bound to the canvas alon
 menu opened over every panel beside it.
 
 The fix must not be a blanket handler: right-click carries paste and the spell-checker inside a
-text field, and this application has several -- the diagram name, the Slides URL, the F2 label
-editor, and the two principal fields in the access panel. Both directions are asserted, because
+text field, and this application has several -- the diagram name, the F2 label editor, and the two principal fields in the access panel. Both directions are asserted, because
 suppressing everywhere would pass a test that only checked the palette.
 */
 test('B75: right-click is suppressed on panels, and left alone in a text field', () => {

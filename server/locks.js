@@ -21,7 +21,7 @@ export class Locks {
 	back. The timer only matters for a controller that has crashed while nobody is watching.
 
 	It used to default to sixty seconds, which is a browser's rhythm -- a client writing continuously
-	never lapses, because `heartbeat` slides the deadline on every write. An agent's rhythm is a
+	never lapses, because `heartbeat` moves the deadline on with every write. An agent's rhythm is a
 	burst of writes and then a pause to decide what to draw next, and that pause routinely runs past
 	a minute, so the slot was taken away for thinking rather than for stopping. Authoring the
 	reference topology lost it twice in the gaps and never once during the work.

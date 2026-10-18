@@ -158,8 +158,8 @@ function refusalForOlderSchema(doc) {
 
 /*
 Meta is REBUILT from a stored document on every load, keeping only the keys the store owns: an unknown key is dropped, and
-an owner or grants are taken only from a trusted file (H9.1). It is how the estate once shed `meta.slides`; the loader's
-other repairs went with the migration (B291).
+an owner or grants are taken only from a trusted file (H9.1); the loader's repairs of older files went with the migration
+(B291).
 */
 function cleanMeta(id, meta = {}, trusted = false) {
 	const str = (v) => typeof v === 'string' ? v.slice(0, 512) : '';
@@ -266,7 +266,7 @@ export class Store {
 				this.install(doc.meta.id, doc, Log.from(log, doc.meta.version), file);
 				// only the filename-canonicalisation case dirties on boot; a clean load rewrites nothing
 				// a filename that does not match, or a retired key removed above: either way the file
-				// on disk is not what we now hold, so write it back once (Slides Phase 2)
+				// on disk is not what we now hold, so write it back once
 				// WD-b1 (H19.45): and a completed one -- written back holding its layouts
 				if (file !== `${doc.meta.id}.json` || completed) this.markDirty(doc.meta.id);
 			} catch (e) {

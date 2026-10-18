@@ -3,6 +3,8 @@
 > **Status: CANDIDATE -- authored, mocking examples before execution.** The arc is in the substrate
 > (`model/arc-catalog.json` + `arc.sysml`, summit `S_diagramAsUI`); no production code yet.
 > Companions: `preview.html` (the 4-option comparison) / `rationale.json` (per-approach detail).
+>
+> AMENDED 2026-10-18 (H24.11, B380): the Slides cluster this design and its mockups draw in the control bar belongs to a feature since deleted; draw has evolved past alignment with Google Slides (`dev/DECISIONS.md` H24.11).
 
 ---
 

@@ -4,7 +4,6 @@
 // behind with the mocks it produced. Consumed by tests/span.test.js.
 
 const C = 60;          // pitch (cell -> px); the doc is px, center-origin
-const ACT = '#4fc3f7';  // the 'active' accent used by the slides cluster
 
 import { heldLayouts } from './composed.mjs';   // WD-b1: the two layouts a schema 3 document holds
 export function controlBarDoc() {
@@ -18,9 +17,7 @@ export function controlBarDoc() {
 			{ at: [7, 0], cols: 2, content: 'text', value: 'open ▾', align: 'center', outline: true, action: 'diagram-open' }, // open list
 			{ at: [9, 0], content: 'text', value: '+', align: 'center', outline: true, action: 'diagram-new' },                 // new
 			{ at: [10, 0], content: 'text', value: '×', align: 'center', outline: true, action: 'diagram-del' },           // delete
-			{ at: [12, 0], cols: 2, content: 'text', value: 'slides', align: 'left', fill: '#9fb0c0' },  // slides input: label
-			{ at: [14, 0], cols: 4, content: 'text', value: 'docs…/d/1A', align: 'left', outline: true, accent: ACT, input: true }, // value (editable)
-			{ at: [18, 0], cols: 2, content: 'text', value: '⇑ slides', align: 'center', outline: true, accent: ACT, action: 'slides-push' }, // push
+			// RESTATED (H24.11, B380): the cluster at cells 12 to 19 pushed to a deleted feature, and went with its mentions
 			{ at: [21, 0], content: 'text', value: '?', align: 'center', outline: true, action: 'help' },                // help
 			{ at: [22, 0], cols: 2, content: 'text', value: 'online', align: 'center', outline: true, bg: '#aed581', fill: '#101010', rx: 13 } // status pill
 		]

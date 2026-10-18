@@ -184,7 +184,8 @@ test('W5: a clickable region renders a transparent hit rect with data-action; th
 	assert.match(svg, /<rect class="clickable" data-action="diagram-new"[^>]*fill="transparent"\/>/);
 	assert.equal((svg.match(/class="clickable"/g) || []).length, 1, 'only the region with an action is clickable');
 	const base = { id: 'node-000041', name: 'p', type: 'host', shape: 'square', x: 0, y: 0 };
-	assert.equal(validateEntity('node', { ...base, content: [{ content: 'text', value: 'x', action: 'slides-push' }] }), null);
+	// RESTATED (H24.11, B380): any safe action name serves; the one here belonged to a deleted feature
+	assert.equal(validateEntity('node', { ...base, content: [{ content: 'text', value: 'x', action: 'diagram-open' }] }), null);
 	assert.match(validateEntity('node', { ...base, content: [{ content: 'text', action: 'DROP thing' }] }), /node\.content/, 'unsafe action rejected (not [a-z0-9-])');
 });
 
@@ -192,7 +193,8 @@ test('W5: the control-bar buttons carry actions and the document stays valid', (
 	const doc = controlBarDoc();
 	const bar = doc.nodes.find((n) => n.id === 'node-ba0001');
 	const actions = bar.content.filter((r) => r.action).map((r) => r.action).sort();
-	assert.deepEqual(actions, ['diagram-del', 'diagram-new', 'diagram-open', 'help', 'slides-push']);
+	// RESTATED (H24.11, B380): the fixture's push button went with the deleted feature it pushed to
+	assert.deepEqual(actions, ['diagram-del', 'diagram-new', 'diagram-open', 'help']);
 	assert.equal(validateDoc(doc), null, 'a control bar with clickable buttons is a valid, persistable document');
 });
 
@@ -229,7 +231,8 @@ test('W6: the control-bar input values are editable (input:true)', () => {
 	const doc = controlBarDoc();
 	const bar = doc.nodes.find((n) => n.id === 'node-ba0001');
 	const inputs = bar.content.filter((r) => r.input).map((r) => r.value).sort();
-	assert.deepEqual(inputs, ['docs…/d/1A', 'scene-1']);
+	// RESTATED (H24.11, B380): the second input held the address of a deleted feature, and went with its mentions
+	assert.deepEqual(inputs, ['scene-1']);
 	assert.equal(validateDoc(doc), null);
 });
 
@@ -341,14 +344,15 @@ test('W3: the control bar is ONE panel + content regions, rendered by the real k
 	const doc = controlBarDoc();
 	const bar = doc.nodes.find((n) => n.id === 'node-ba0001');
 	assert.deepEqual(bar.span, { cols: 24, rows: 1 }, 'ONE panel (the locked control-bar decision)');
-	assert.equal(bar.content.length, 11, 'the 11 #menu controls as content regions');
+	// RESTATED (H24.11, B380): 8 regions, the three of a deleted feature's cluster gone with its mentions
+	assert.equal(bar.content.length, 8, 'the 8 #menu controls as content regions');
 	assert.equal(validateEntity('node', bar), null, 'the bar node passes the server gate');
 	assert.equal(validateDoc(doc), null, 'the whole control-bar document is valid (real, persistable)');
 	// production render path: server/svg.mjs svgDocument
 	const svg = groupSvg(svgDocument(doc).split('</defs>').pop(), 'node-ba0001');
 	assert.match(svg, /data-span="24x1"/, '24-cell wide footprint');
 	assert.match(svg, /<rect [^>]*class="frame" x="-20" y="-20" width="1420"/);   // 24 cols: 23·60 + 40
-	for (const v of ['draw', 'scene-1', 'open ▾', 'slides', 'online']) assert.ok(svg.includes('>' + v + '<'), `renders "${v}"`);
+	for (const v of ['draw', 'scene-1', 'open ▾', 'online']) assert.ok(svg.includes('>' + v + '<'), `renders "${v}"`);
 	assert.match(svg, /rx="13"/);                          // the status pill
 	assert.match(svg, /fill="#aed581"/);                  // brand text / pill fill
 });

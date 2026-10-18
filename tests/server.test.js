@@ -250,8 +250,7 @@ test('I11: `create {doc}` mints the id, and a body `version` is ignored', async 
 Renaming a diagram is a CHANGE, not a command of its own.
 
 `case 'meta'` was deleted at CS3a when meta became an op, and the browser kept sending `meta` for
-two milestones — every rename and every pasted Slides URL was answered `unknown cmd: meta` and
-dropped. Found by tests/spec.test.js, which derives the wire vocabulary from the server's own
+two milestones — every rename was answered `unknown cmd: meta` and dropped. Found by tests/spec.test.js, which derives the wire vocabulary from the server's own
 dispatch instead of trusting the document.
 */
 test('a rename is an undoable, broadcast change — not a side-channel command', async () => {
@@ -313,7 +312,8 @@ test('create and open switch diagrams; meta rename persists', async () => {
 	c.close();
 });
 
-test('REST surface: 404s, read-only enforcement, slides placeholder', async () => {
+// CORRECTED (H24.11, B380): the name promised a placeholder for a deleted feature that the body never checked
+test('REST surface: 404s and read-only enforcement', async () => {
 	assert.equal((await get('/api/v1/diagrams/diagram-nope00')).status, 404);
 	assert.equal((await get('/api/v1/nonsense')).status, 404);
 

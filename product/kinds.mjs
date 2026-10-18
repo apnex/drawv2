@@ -29,7 +29,7 @@ import { SPAWN_FIELDS } from '../engine/spawn-field.mjs';
 
 // a drawing order is a positive integer; the ceiling only keeps it an exact one (F-d)
 const ORDER_MAX = Number.MAX_SAFE_INTEGER;
-// center-origin coordinates: [0,0] is the canvas/slide center
+// center-origin coordinates: [0,0] is the canvas center
 /*
 B113 -- the server bounds what the client clamps to, and until now it did not.
 

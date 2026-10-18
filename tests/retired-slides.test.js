@@ -1,0 +1,64 @@
+/*
+H24.11 (B380) -- draw names Google Slides nowhere live.
+
+The Slides feature was purged in two phases (dev/COMMIT-DELETIONS.md), and the director ruled that draw has evolved past alignment
+with Google Slides, its mentions to go from the repository's description and everywhere else (dev/DECISIONS.md H24.11). The
+descriptions, the current spec text, the comments, the control-bar fixture and the test names no longer name it.
+
+The records written while the feature existed keep their mentions, because a record is frozen at authorship and amended rather
+than rewritten (mission-kit RU2); each is listed below with why. A mention anywhere else fails, and so does a listed record that no
+longer mentions it, so the list stays exactly the records that do.
+*/
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import { execFileSync } from 'node:child_process';
+
+const root = path.resolve(import.meta.dirname, '..');
+
+// the word, singular or plural, whole -- `slides-push` included, `slider` and `backslides` not
+const MENTION = /\bslides?\b/i;
+
+const RECORDS = {
+	'dev/BACKLOG.md': 'the durable record, append-and-close: rows written while the feature existed, and B380, which removed its mentions',
+	'dev/BOARD.md': 'closed items H4.6, H7.3 and H8.3, and H24.11, which removed the mentions',
+	'dev/DECISIONS.md': 'rulings recorded while the feature existed; decision 1 amended by H24.11',
+	'dev/COMMIT-DELETIONS.md': 'the record of what the purge deleted',
+	'dev/COMMIT-DELIVERY.md': 'the CS1 to CS6 delivery record',
+	'dev/history/COMMIT-AUDIT.md': 'a verbatim audit of its time',
+	'dev/design/widgets/DESIGN.md': 'the diagram-as-UI design as authored, marked by a dated amendment',
+	'dev/design/widgets/control-bar.html': 'a mockup of that design, as authored',
+	'dev/design/widgets/control-bar-live.html': 'a mockup of that design, as authored',
+	'dev/design/widgets/preview.html': 'the comparison of that design, as authored',
+	'dev/design/widgets/rationale.json': 'the detail of that design, as authored',
+	'dev/design/unification/UNIFICATION-COMPLETE.md': 'the H25 delta record, naming the dead style rules H25.3 deleted',
+	'docs/spec/TRANSACTIONS.md': 'locked rulings, changed only by a dated amendment in the file; the Slides binding marked retired by one',
+	'tools/copies-ceiling.json': 'the frozen ceiling of H25.0, its hash pinned by tests/scan-copies.test.js',
+	'tools/scan-docrefs.mjs': 'allows the purged paths the records above cite',
+	'tests/retired-slides.test.js': 'this guard',
+};
+
+const BINARY = new Set(['.png']);
+
+function filesMentioning() {
+	const tracked = execFileSync('git', ['ls-files'], { cwd: root, encoding: 'utf8' }).split('\n').filter(Boolean);
+	return tracked.filter((f) => !BINARY.has(path.extname(f)) && fs.existsSync(path.join(root, f))
+		&& MENTION.test(fs.readFileSync(path.join(root, f), 'utf8')));
+}
+
+test('B380: the measure sees the word whole, and passes over words that only contain it (control)', () => {
+	for (const said of ['pushes to Google Slides', 'action: \'slides-push\'', 'maps 1:1 to a slide.', 'meta.slides']) {
+		assert.equal(MENTION.test(said), true, said);
+	}
+	for (const not of ['a slider', 'backslides', 'slideshow', 'sliding']) assert.equal(MENTION.test(not), false, not);
+});
+
+test('B380: no tracked file outside the records mentions Slides', () => {
+	assert.deepEqual(filesMentioning().filter((f) => !(f in RECORDS)), []);
+});
+
+test('B380: every record listed still mentions Slides, so the list holds no stale entry', () => {
+	const mentioning = new Set(filesMentioning());
+	assert.deepEqual(Object.keys(RECORDS).filter((f) => !mentioning.has(f)), []);
+});

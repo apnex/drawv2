@@ -756,7 +756,7 @@ test('B142: a pause between bursts does not cost the slot', () => {
 	assert.equal(locks.locked('0000000000bb0001'), true, 'ninety seconds of thinking used to lose it');
 	assert.equal(locks.verify('0000000000bb0001', held.token), true, 'and the token still writes');
 
-	assert.equal(locks.heartbeat('0000000000bb0001', held.token), true, 'a write slides it again');
+	assert.equal(locks.heartbeat('0000000000bb0001', held.token), true, 'a write extends it again');
 	t += 14 * 60_000;
 	assert.equal(locks.locked('0000000000bb0001'), true, 'still inside the backstop');
 	t += 2 * 60_000;

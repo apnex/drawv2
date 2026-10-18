@@ -3,7 +3,7 @@ Readout — live coordinate display. One source of truth, mounted into any
 number of DOM elements (placement comparison). Content by priority:
 active gesture (drag target / box dims) > selection > snapped cursor.
 A two-entity selection also reads its center-to-center Δ and length (a tape measure).
-Units: model px, or cm under the 19.2cm metric deck standard (÷100);
+Units: model px, or cm at 100 px to the centimetre (÷100);
 clicking any mount toggles, persisted.
 */
 

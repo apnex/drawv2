@@ -338,11 +338,7 @@ export class Model {
 		if (doc.meta) {
 			// grants REPLACE rather than merge: a revoked principal must not survive a reload by
 			// hiding in the previous state, which a spread of the old over the new would allow.
-			// Slides Phase 1: `slides` is dropped rather than merged. A document written before the
-			// purge still carries the key, and spreading `doc.meta` would carry it back into a model
-			// the field no longer belongs to -- which is how it survived the first pass of this purge.
-			const { slides: _retired, ...incoming } = doc.meta;
-			this.state.meta = { ...this.state.meta, ...incoming, grants: { ...(doc.meta.grants || {}) }, public: Boolean(doc.meta.public), plugins: Array.isArray(doc.meta.plugins) ? [...doc.meta.plugins] : [...(this.kinds.plugins ?? [])] };
+			this.state.meta = { ...this.state.meta, ...doc.meta, grants: { ...(doc.meta.grants || {}) }, public: Boolean(doc.meta.public), plugins: Array.isArray(doc.meta.plugins) ? [...doc.meta.plugins] : [...(this.kinds.plugins ?? [])] };
 		}
 		// model-state (status): restore the authoritative selection, reconciled to the config loaded
 		// above (tolerate-stale: drop ids that aren't a live selectable entity). Before emit. (MS1)

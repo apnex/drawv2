@@ -61,7 +61,7 @@ test('a template carries no owner, no grants, no selection and no history', () =
 		assert.equal(doc.selection, undefined, `${f}: the selection was the author's`);
 		assert.equal(doc.meta.version, 0, `${f}: a template has no history`);
 		assert.equal('log' in doc, false, `${f}: no log block -- nobody wants a stranger's undo stack`);
-		assert.equal('slides' in doc.meta, false, `${f} still carries meta.slides after the purge`);
+		// RESTATED (H24.11, B380): a retired meta key is refused by the validation above, which every template passes
 	}
 });
 

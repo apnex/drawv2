@@ -189,7 +189,6 @@ The second axis from the original framing; almost entirely undecided.
   or only when selected; how group/zone geometry recomputes as nodes move.
 - **Hit-testing for squares**; **zone adjacency/overlap rules** (may two zones
   overlap? may a node sit in several zones?).
-- **Slides push for shapes** (square -> RECTANGLE) - separate "Wave B".
 
 ---
 

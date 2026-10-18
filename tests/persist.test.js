@@ -534,17 +534,18 @@ test('B83: a clean document counts nothing — the check is not always red', asy
 });
 
 /*
-Slides Phase 2 -- the schema refuses the retired key. The loader once stripped it from a file written before the purge, so
-that file still opened; that repair went with the migration (B291), since every stored document is schema 2 and none
-carries it.
+The schema refuses a meta key it does not know -- a retired one included, which is how a deleted feature's key stays out of
+every stored document. The loader once stripped such a key from a file written before its feature was purged; that repair
+went with the migration (B291).
+RESTATED (H24.11, B380): the key is named for what it is, not for the feature it once belonged to.
 */
-test('Phase 2: the schema refuses meta.slides', async () => {
+test('the schema refuses a meta key it does not know', async () => {
 	const { validateDoc } = await import('./fixtures/composed.mjs');
 	// RESTATED at WD-b1 (H19.45): schema 3 -- a document holds its two layouts (tests/fixtures/composed.mjs `heldLayouts`)
 	const doc = { meta: { id: '000000000051de52', name: 'legacy', version: 0, schema: 3, owner: '', grants: {},
-		slides: { url: 'https://docs.google.com/x', presentationId: 'p', pageId: 'g' } },
+		retired: { url: 'https://example.com/x' } },
 		nodes: [], pipes: [], links: [], zones: [], groups: [], selection: [] };
-	assert.match(validateDoc(doc), /unknown meta key: slides/, 'the validator no longer knows the name of the deleted feature');
+	assert.match(validateDoc(doc), /unknown meta key: retired/, 'a key the schema does not name is refused, not carried');
 });
 
 /*

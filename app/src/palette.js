@@ -1,6 +1,6 @@
 /*
 Palette — HTML sidebar of node types. Lives OUTSIDE the SVG canvas so the
-1920x1080 surface stays 100% diagram (it maps 1:1 to a slide). Dragging an
+1920x1080 surface stays 100% diagram. Dragging an
 item onto the canvas creates a node (ghost + crosshair feedback during drag).
 
 K7 (H17): it is a VIEW of the held tools, not their owner. The stamp hand, the text tool and the hand's ghost live in
