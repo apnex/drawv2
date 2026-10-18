@@ -1532,6 +1532,7 @@ AMENDED 2026-10-17: H25.4 live in production (`b6e9bc2`), the published diagram 
 AMENDED 2026-10-17: H25.5 done -- the old scene renderer's four modules and their dead scene helpers deleted, all seven test files moved onto the real renderer with zero tests deleted, `NOT_PARTS` empty, and `server/routes.mjs` recorded as a ruled exception (B378 closed). Copy findings standing: 4, all 4 of them ruled exceptions.
 AMENDED 2026-10-18: H25.5 live in production (`c54329c`), the published diagram and the favicon byte-identical before and after; H25.6 done -- `routeGeometry` renamed `pathGeometry` across `kernel/router.mjs` and its callers, emptying `RATCHETS.L5p` (B379 closed).
 AMENDED 2026-10-18: H25.7 done -- `docs/ARCHITECTURE.md` carries the generated `architecture-copies` section, `docs/ARCHITECTURE-TARGET.md` 8.1 and 8.2 state that copies are measured, `SCANNER_ROOTS.docrefs` is derived from `FOLDERS`, and every exit criterion of `dev/design/unification/UNIFICATION-COMPLETE.md` section 7 holds (B366 closed; H25 closed).
+AMENDED 2026-10-18: H25.6 and H25.7 live in production (`88ab283`), at the director's "continue"; the published diagram and the favicon byte-identical before and after.
 
 ---
 
