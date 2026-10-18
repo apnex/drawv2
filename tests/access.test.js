@@ -2358,6 +2358,14 @@ test('B393: a write naming the diagram its session was moved off is refused, and
 	const { announceAccess } = await import('../server/hub.js');
 	announceAccess(hub);
 	assert.equal(guest.diagramId, own, 'moved to the diagram it can still write');
+	// something on the diagram it moved to that a misplaced undo or selection would change
+	assert.equal(store.commit(own, { ops: [{ op: 'put', kind: 'node', entity: node('node-ab0001', 120) }], label: 'own-history' }, 'client', 'elsewhere', GUEST).ok, true);
+	const versionOfOwn = () => store.log(own).version;
+	const before = versionOfOwn();
+	assert.ok(before > 0, 'the diagram it moved to has a change an undo could reverse');
+	assert.equal(store.setSelection(own, [], GUEST), null);
+	const selectionOfOwn = () => JSON.stringify([...store.get(own).state.selection]);   // a Set
+	const selectedBefore = selectionOfOwn();
 	const nameOfOwn = () => store.get(own).state.meta.name;
 	const answers = async (cmd, body) => { const from = gws.out.length; gws.recv(cmd, body); await new Promise((r) => setTimeout(r, 20)); return gws.out.slice(from); };
 
@@ -2365,12 +2373,51 @@ test('B393: a write naming the diagram its session was moved off is refused, and
 	assert.equal(late.find((m) => m.cmd === 'error')?.body.code, 'moved', 'the edit made on the diagram it left is refused, named');
 	assert.equal(late.find((m) => m.cmd === 'error')?.body.txnId, 'late-1', 'with its txnId, so the page drops it from its outbox');
 	assert.equal(nameOfOwn(), 'the-guests-own', 'and lands nowhere -- not on the diagram the session was moved to');
-	for (const [cmd, body] of [['undo', { diagram: shared, expect: 0, txnId: 'u' }], ['redo', { diagram: shared, expect: 0, txnId: 'r' }], ['select', { diagram: shared, ids: [] }]]) {
+	for (const [cmd, body] of [['undo', { diagram: shared, expect: before, txnId: 'u' }], ['redo', { diagram: shared, expect: before, txnId: 'r' }], ['select', { diagram: shared, ids: ['node-ab0001'] }]]) {
 		assert.equal((await answers(cmd, body)).find((m) => m.cmd === 'error')?.body.code, 'moved', `a ${cmd} made on the diagram it left is refused`);
 	}
+	assert.equal(versionOfOwn(), before, 'no undo or redo touched the diagram it moved to');
+	assert.equal(selectionOfOwn(), selectedBefore, 'nor did the selection');
 
 	const here = await answers('commit', { diagram: own, ops: [{ op: 'meta', patch: { name: 'drawn-here' } }], label: 'here', txnId: 'here-1' });
 	assert.ok(here.some((m) => m.cmd === 'ack'), 'a write naming the diagram the session is on is taken (control)');
 	const bare = await answers('commit', { ops: [{ op: 'meta', patch: { name: 'named-nothing' } }], label: 'bare', txnId: 'bare-1' });
 	assert.ok(bare.some((m) => m.cmd === 'ack'), 'and one naming no diagram, as before');
+});
+
+/*
+B393 (H24.18) -- and a template's fork: a write naming the template the session just forked lands on the fork.
+
+The first write to a template forks it and moves the session to the fork (H9.9). A page sends its next write before it hears
+`forked` -- a nudge and the edit after it go out in one tick -- so that write names the template. It was made on the template the
+fork replaces, so it is taken on the fork, as H9.9 promises; a template is never deleted or revoked, so nothing is misplaced. Once
+the session moves on to another diagram, a write naming the template is refused like any other.
+*/
+test('B393: a write naming the template the session just forked lands on the fork, and only while the session is on it', async () => {
+	const store = new Store(tmp(), { flushMs: 3_600_000, authz: true, templatesDir: TEMPLATES });
+	await store.init();
+	const template = [...store.templates.keys()][0];
+	const elsewhere = store.create('elsewhere', null, GUEST).model.state.meta.id;
+	const hub = new Hub();
+	const ws = fakeWs(); const s = new Session(ws, store, hub, null, GUEST);
+	ws.recv('open', { id: template });
+	await new Promise((r) => setTimeout(r, 20));
+	const forksBefore = store.list(GUEST).filter((e) => !e.template).length;
+	ws.recv('commit', { diagram: template, ops: [{ op: 'meta', patch: { name: 'first' } }], label: 'first', txnId: 'f1' });
+	ws.recv('commit', { diagram: template, ops: [{ op: 'meta', patch: { name: 'second' } }], label: 'second', txnId: 'f2' });
+	await new Promise((r) => setTimeout(r, 30));
+	const fork = ws.out.find((m) => m.cmd === 'forked')?.body.diagram;
+	assert.ok(fork, 'the first write forked the template');
+	assert.equal(ws.out.filter((m) => m.cmd === 'error').length, 0, 'the second write, naming the template, is not refused');
+	assert.equal(store.get(fork).state.meta.name, 'second', 'it landed on the fork');
+	assert.equal(store.list(GUEST).filter((e) => !e.template).length, forksBefore + 1, 'one fork, not two');
+
+	ws.recv('open', { id: elsewhere });
+	await new Promise((r) => setTimeout(r, 20));
+	const from = ws.out.length;
+	ws.recv('commit', { diagram: template, ops: [{ op: 'meta', patch: { name: 'late' } }], label: 'late', txnId: 'f3' });
+	await new Promise((r) => setTimeout(r, 20));
+	assert.equal(ws.out.slice(from).find((m) => m.cmd === 'error')?.body.code, 'moved', 'once the session has moved on, a write naming the template is refused');
+	assert.equal(s.diagramId, elsewhere);
+	assert.equal(store.get(fork).state.meta.name, 'second', 'and the fork is untouched');
 });

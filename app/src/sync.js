@@ -755,6 +755,9 @@ export class Sync {
 			before the load, because ending the gesture releases whatever is still held.
 			*/
 			for (const held of older ?? this.deferred.splice(0)) if (held.cmd === 'ack') this.applyAck(held.body || {});
+			// B393 (H24.18): a coalescing window still open is the old document's -- it goes now, naming the diagram it was made on,
+			// rather than closing after the load and naming the one the session was moved to
+			this.changes.flush?.();
 			this.cancelGesture?.();                         // on the old document (bindGestureDefer)
 			const same = this.diagramId === doc.meta.id;   // before it is reassigned below
 			this.loading = true;

@@ -286,10 +286,13 @@ export class Session {
 	B393 (H24.18) -- a write names the diagram it was made on (the page sends it with every commit, undo, redo and selection); one
 	made on a diagram this session has since left -- moved off a deleted diagram, or one it lost access to -- is refused with
 	`moved` and lands nowhere, where it once landed on the diagram the session was moved to. A write naming no diagram is taken
-	as before.
+	as before; and so is one naming the template this session forked while it is on the fork.
 	*/
 	madeElsewhere(body) {
 		if (body?.diagram == null || body.diagram === this.diagramId) return false;
+		// the template this session forked, while it is on the fork: a write the page sent before it heard `forked`, taken on the
+		// fork as H9.9 promises -- a template is never deleted or revoked, so nothing can be misplaced by it
+		if (this.fork && body.diagram === this.fork.from && this.diagramId === this.fork.to) return false;
 		this.sessions?.note(this.actor, 'refused', { why: 'moved', label: body.label ?? null });
 		this.error('refused: this write was made on a diagram this session has since left', 'moved', body.txnId);
 		return true;
@@ -431,6 +434,8 @@ export class Session {
 				id and its URL can follow.
 				*/
 				if (res.forkedTo) {
+					// B393 (H24.18): a write the page sent before it hears `forked` names the template; it lands on the fork (madeElsewhere)
+					this.fork = { from: this.diagramId, to: res.forkedTo };
 					this.diagramId = res.forkedTo;
 					this.send('forked', { from: body.from ?? null, diagram: res.forkedTo });
 				}

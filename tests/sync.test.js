@@ -446,3 +446,36 @@ test('B393: a gesture\'s commit sent while another diagram\'s snapshot is held n
 	const commit = t.sent.find((x) => x.cmd === 'commit');
 	assert.equal(commit.body.diagram, '0000000000aaa001', 'the diagram the gesture was drawn on, not the one the session moved to');
 });
+
+test('B393: an outbox restored after a reload names the diagram it was saved for', () => {
+	const saved = new Map([['draw.outbox', JSON.stringify({ diagram: '0000000000aaa001', msgs: [{ ops: [{ op: 'meta', patch: { name: 'kept' } }], label: 'kept', txnId: 'kept-1' }] })]]);
+	const before = globalThis.localStorage;
+	globalThis.localStorage = { getItem: (k) => saved.get(k) ?? null, setItem: (k, v) => saved.set(k, v), removeItem: (k) => saved.delete(k) };
+	try {
+		const t = deferrable();
+		// a restored change is re-planned on the snapshot's board before it is resent (V-d)
+		Object.assign(t.sync.changes, { applyLocally: (ops) => ops, openWindowOps: () => [] });
+		t.recv(snap('0000000000aaa001', 1));
+		const commit = t.sent.find((x) => x.cmd === 'commit' && x.body.label === 'kept');
+		assert.ok(commit, 'the restored change is sent');
+		assert.equal(commit.body.diagram, '0000000000aaa001', 'naming the diagram it was saved for');
+	} finally { globalThis.localStorage = before; }
+});
+
+test('B393: a coalescing window still open when another diagram\'s snapshot lands goes out first, naming the diagram it was made on', () => {
+	const sent = [];
+	let recv;
+	const net = { status: 'open', subscribe(fn) { recv = fn; }, onStatus() {}, isOpen: () => true, send: (cmd, body) => { sent.push({ cmd, body }); return true; } };
+	const model = new Model();
+	let pending = null;
+	let sync = null;
+	const history = { clear() {}, setCounts() {}, openWindowOps: () => [], state: { version: 0 },
+		flush() { if (pending) { const p = pending; pending = null; sync.submit(p); } } };
+	sync = new Sync({ model, net, history, selection: new Selection(model) });
+	recv(snap('0000000000aaa001', 1));
+	pending = { ops: [{ op: 'meta', patch: { name: 'nudged' } }], label: 'nudge' };   // a window not yet closed
+	recv(snap('0000000000bbb002', 2));   // the session moved, and nothing holds this snapshot
+	const commit = sent.find((x) => x.cmd === 'commit' && x.body.label === 'nudge');
+	assert.ok(commit, 'the open window went out before the other diagram was loaded');
+	assert.equal(commit.body.diagram, '0000000000aaa001', 'naming the diagram it was made on, so the server refuses it there');
+});
