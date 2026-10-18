@@ -413,9 +413,18 @@ export function handleRest(req, res, store, locks, hub, principal = null, sessio
 	*/
 	if (parts[1] === 'v1' && parts[2] === 'sessions' && parts.length === 3) {
 		if (req.method !== 'GET') return json(res, 405, { error: 'sessions: GET' }), true;
-		// whole and unfiltered: the ring is bounded at 40 sessions, and one route with no query
-		// parameters is a route `scan-cli` can actually prove. Selection belongs to the caller.
-		return json(res, 200, { sessions: sessions ? sessions.report() : [] }), true;
+		/*
+		B381 (H24.12) -- only what the caller may read. The log names who is signed in, by email, and which diagram each session
+		is on, and this route is reached through `/connect` outside IAP, where it answered anyone. A caller with no identity is
+		refused, as the workspace routes refuse one; a session is shown when it is the caller's own or on a diagram the caller can
+		read -- the terms `viewers` and `agents` already apply (B114). With authorization off, `canRead` answers yes, so a laptop
+		sees everything, as on every route.
+		*/
+		if (store.authz && !principal) return json(res, 403, { error: 'forbidden: no identity', code: 'forbidden' }), true;
+		const mayRead = (s) => !store.authz || (principal && s.principal === principal) || (s.diagram !== null && store.canRead(s.diagram, principal));
+		// otherwise whole: the ring is bounded at 40 sessions, and one route with no query parameters is a route `scan-cli` can
+		// actually prove. Selection belongs to the caller.
+		return json(res, 200, { sessions: sessions ? sessions.report().filter(mayRead) : [] }), true;
 	}
 	if (parts[1] === 'v1' && parts[2] === 'health' && parts.length === 3) {
 		if (req.method !== 'GET') return json(res, 405, { error: 'health: GET' }), true;

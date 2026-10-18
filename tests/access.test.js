@@ -1980,3 +1980,79 @@ test('B94: a grant signals an open session, and the signal carries nothing', asy
 		}
 	} finally { ws.close(); await t.close(); }
 });
+
+/*
+B381 (H24.12) -- the session log answers only what its caller may read.
+
+`GET /api/v1/sessions` answered the whole log to anyone, and `/connect/v1/` reaches it outside IAP: who is signed in, by email, on
+which diagram, doing what. It now refuses a caller with no identity, as the workspace routes do, and shows a session only when it
+is the caller's own or on a diagram the caller can read -- the terms `viewers` and `agents` already apply (B114). With
+authorization off, as on a laptop, it answers everything, as every route does.
+*/
+import { handleRest } from '../server/rest.js';
+import { SessionLog } from '../server/sessionlog.mjs';
+
+const STRANGER = 'user:stranger@example.com';
+function askSessions(store, sessions, principal) {
+	const res = { code: 0, body: null, writeHead(code) { this.code = code; }, end(text) { this.body = JSON.parse(text); } };
+	assert.equal(handleRest({ url: '/api/v1/sessions', method: 'GET', headers: {} }, res, store, null, null, principal, sessions), true);
+	return res;
+}
+async function sessionsOnTwoDiagrams(authz) {
+	const store = new Store(tmp(), { flushMs: 3_600_000, authz });
+	await store.init();
+	const mine = [...store.diagrams.keys()][0];
+	store.setOwner(mine, OWNER);
+	const secret = store.create('not-yours', null, OWNER).model.state.meta.id;
+	assert.equal(store.grant(mine, GUEST, 'read', OWNER), null);
+	const sessions = new SessionLog();
+	sessions.open('owner-on-secret', OWNER); sessions.attach('owner-on-secret', secret);
+	sessions.open('guest-on-mine', GUEST); sessions.attach('guest-on-mine', mine);
+	sessions.open('owner-unattached', OWNER);
+	sessions.open('stranger-on-secret', STRANGER); sessions.attach('stranger-on-secret', secret);
+	return { store, sessions };
+}
+const actors = (res) => res.body.sessions.map((s) => s.actor).sort();
+
+test('B381: a caller with no identity is refused the session log', async () => {
+	const { store, sessions } = await sessionsOnTwoDiagrams(true);
+	const res = askSessions(store, sessions, null);
+	assert.equal(res.code, 403, 'refused, as the workspace routes refuse it');
+	assert.equal(res.body.code, 'forbidden');
+	assert.equal(JSON.stringify(res.body).includes('@'), false, 'and no address in the refusal');
+});
+
+test('B381: a caller sees its own sessions and those on diagrams it can read, and no other', async () => {
+	const { store, sessions } = await sessionsOnTwoDiagrams(true);
+	assert.deepEqual(actors(askSessions(store, sessions, GUEST)), ['guest-on-mine'],
+		'the guest reads one diagram: not the owner on the other, nor the owner unattached, nor a stranger');
+	assert.deepEqual(actors(askSessions(store, sessions, OWNER)), ['guest-on-mine', 'owner-on-secret', 'owner-unattached', 'stranger-on-secret'],
+		'the owner reads both diagrams, and its own unattached session');
+	assert.deepEqual(actors(askSessions(store, sessions, STRANGER)), ['stranger-on-secret'],
+		'a stranger with no grant sees only its own session, though it sits on a diagram it cannot read');
+});
+
+test('B381: with authorization off the log answers whole, as every route does (control)', async () => {
+	const { store, sessions } = await sessionsOnTwoDiagrams(false);
+	const res = askSessions(store, sessions, null);
+	assert.equal(res.code, 200);
+	assert.deepEqual(actors(res), ['guest-on-mine', 'owner-on-secret', 'owner-unattached', 'stranger-on-secret']);
+});
+
+test('B381: through the agent door, a request with no identity is refused and the owner answered', async () => {
+	const { makeApp } = await import('./fixtures/app.mjs');
+	const dataDir = tmp();
+	const app = await makeApp({ dataDir, port: 0 });
+	try {
+		const ask = () => fetch(`http://127.0.0.1:${app.port}/connect/v1/sessions`);
+		app.as(null);
+		assert.equal((await ask()).status, 403, 'no sign-in and no code: refused, where it once answered 200');
+		app.as(OWNER);
+		const ok = await ask();
+		assert.equal(ok.status, 200, 'the owner is answered');
+		assert.ok(Array.isArray((await ok.json()).sessions));
+	} finally {
+		await app.close();
+		fs.rmSync(dataDir, { recursive: true, force: true });
+	}
+});
