@@ -91,13 +91,13 @@ async function serve(name, commit) {
 		worktrees.push(root);
 		fs.symlinkSync(path.join(ROOT, 'node_modules'), path.join(root, 'node_modules'));
 	}
-	const data = path.join(OUT, `data-${name}`), secrets = path.join(OUT, `secrets-${name}`);
-	fs.mkdirSync(data, { recursive: true }); fs.mkdirSync(secrets, { recursive: true });
+	const data = path.join(OUT, `data-${name}`);
+	fs.mkdirSync(data, { recursive: true });
 	for (const d of docs) fs.writeFileSync(path.join(data, `${d.meta.id}.json`), JSON.stringify(d));
 	const port = await freePort(), labPort = await freePort();
 	// a minimal environment: no identity source, so the server runs open as on a laptop, and every diagram's SVG is served
 	const env = { PATH: process.env.PATH, HOME: process.env.HOME };
-	start('node', ['server/server.js'], { cwd: root, env: { ...env, PORT: String(port), DATA_DIR: data, SECRETS_DIR: secrets } });
+	start('node', ['server/server.js'], { cwd: root, env: { ...env, PORT: String(port), DATA_DIR: data } });
 	start('node', ['lab/server.mjs'], { cwd: root, env: { ...env, PORT: String(labPort) } });
 	await until(async () => (await fetch(`http://127.0.0.1:${port}/health`)).ok, 20000, `the ${name} server answering`);
 	await until(async () => (await fetch(`http://127.0.0.1:${labPort}/health`)).ok, 20000, `the ${name} lab answering`);

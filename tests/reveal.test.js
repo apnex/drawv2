@@ -322,7 +322,7 @@ test('a beat authored through the CLI reaches the document, end to end', async (
 	const { main } = await import('../cli/draw.mjs');
 	const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-beat-'));
 	const home = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-bhome-'));
-	const app = await makeApp({ dataDir, secretsDir: dataDir, port: 0 });
+	const app = await makeApp({ dataDir, port: 0 });
 	const host = `http://127.0.0.1:${app.port}`;
 	const run = async (...argv) => {
 		const out = [];

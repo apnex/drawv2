@@ -22,7 +22,7 @@ import { inventory } from '../tools/routes.mjs';
 
 test('B119: every declared route and method is answered by the running server', async () => {
 	const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-routes-'));
-	const app = await makeApp({ dataDir, secretsDir: dataDir, port: 0 });
+	const app = await makeApp({ dataDir, port: 0 });
 	const base = `http://127.0.0.1:${app.port}/api/v1`;
 	try {
 		const list = await (await fetch(`${base}/diagrams`)).json();

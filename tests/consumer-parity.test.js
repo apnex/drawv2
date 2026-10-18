@@ -95,7 +95,7 @@ test('R-e: the read composition answers every link as the lab\'s tab does -- pat
 test('R-e: REST and the CLI answer every link as the lab\'s tab does', async () => {
 	const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'parity-')), home = fs.mkdtempSync(path.join(os.tmpdir(), 'parity-home-'));
 	fs.writeFileSync(path.join(dataDir, `${ID}.json`), serialize(board(), null));
-	const app = await makeApp({ dataDir, secretsDir: dataDir, port: 0 });
+	const app = await makeApp({ dataDir, port: 0 });
 	const run = async (...argv) => { const out = []; await main([...argv, '--host', `http://127.0.0.1:${app.port}`], { HOME: home }, (s) => out.push(s)); return out.join(''); };
 	try {
 		const tab = lab();

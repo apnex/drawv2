@@ -187,8 +187,8 @@ Client -> server:
 - diagram management: `open {id}`, `reclaim {id?}`,
   `delete {id}` (answers with a snapshot of a surviving diagram; the store
   reseeds the example rather than ever going empty), `list {}`.
-  Renaming a diagram and binding a deck are CHANGES, so they travel as a `meta` op inside a
-  `commit` - undoable and broadcast like any other.
+  Renaming a diagram is a CHANGE, so it travels as a `meta` op inside a `commit` - undoable and
+  broadcast like any other.
 - failures answer `{cmd:"error", body:{message, code, txnId}}`; sessions survive any payload
 
 Server -> client, unprompted: `{cmd:"change", body:{..., ops}}` - every accepted transaction is broadcast to the other sessions on that diagram, so a second tab and an agent write converge without refetching.\

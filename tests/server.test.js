@@ -11,7 +11,7 @@ let app, base, dataDir;
 
 before(async () => {
 	dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-test-'));
-	app = await makeApp({ dataDir, secretsDir: dataDir, port: 0 });
+	app = await makeApp({ dataDir, port: 0 });
 	base = `http://localhost:${app.port}`;
 });
 
@@ -460,7 +460,7 @@ test('REGRESSION: bare del-node cascades links and groups server-side (doc alway
 
 	// the persisted doc must reload after a restart
 	await app.close();
-	app = await makeApp({ dataDir, secretsDir: dataDir, port: 0 });
+	app = await makeApp({ dataDir, port: 0 });
 	base = `http://localhost:${app.port}`;
 	assert.equal((await get(`/api/v1/diagrams/${diagramId}`)).status, 200, 'doc survived restart');
 	c.close();
@@ -480,7 +480,7 @@ test('R2: ws select persists the selection (model-state) and survives a restart'
 	assert.deepEqual([...doc.selection].sort(), ['node-5e1e01', 'node-5e1e02'], 'selection persisted in the doc');
 	// survives a restart (the user's "refresh keeps my selection", server-side)
 	await app.close();
-	app = await makeApp({ dataDir, secretsDir: dataDir, port: 0 });
+	app = await makeApp({ dataDir, port: 0 });
 	base = `http://localhost:${app.port}`;
 	doc = (await get(`/api/v1/diagrams/${diagramId}`)).body;
 	assert.deepEqual([...doc.selection].sort(), ['node-5e1e01', 'node-5e1e02'], 'selection survived the restart');
@@ -561,7 +561,7 @@ test('R3: REST PUT /selection sets the authoritative selection, broadcasts to vi
 
 	// survives a restart (outside the lock scope — releasing the lock does not touch the selection)
 	await app.close();
-	app = await makeApp({ dataDir, secretsDir: dataDir, port: 0 });
+	app = await makeApp({ dataDir, port: 0 });
 	base = `http://localhost:${app.port}`;
 	assert.deepEqual([...(await get(`/api/v1/diagrams/${id}`)).body.selection].sort(),
 		['node-3a3a01', 'node-3a3a02'], 'selection survived the restart');
@@ -657,7 +657,7 @@ however the principal is threaded into it.
 */
 test('B130: two viewers of a deleted diagram each land on a survivor THEY may read', async () => {
 	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-b130-'));
-	const app2 = await makeApp({ dataDir: dir, secretsDir: dir, port: 0 });
+	const app2 = await makeApp({ dataDir: dir, port: 0 });
 	const sock = (principal) => {
 		app2.as(principal);
 		const ws = new WebSocket(`ws://localhost:${app2.port}/ws`);
@@ -1074,7 +1074,7 @@ test('corrupt and invalid files in the data dir are skipped at boot', async () =
 	};
 	fs.writeFileSync(path.join(dir, '0000000000aaaa11.json'), JSON.stringify(good));
 
-	const app2 = await makeApp({ dataDir: dir, secretsDir: dir, port: 0 });
+	const app2 = await makeApp({ dataDir: dir, port: 0 });
 	const list = await (await fetch(`http://localhost:${app2.port}/api/v1/diagrams`)).json();
 	assert.equal(list.length, 1);
 	assert.equal(list[0].id, '0000000000aaaa11');
@@ -1163,7 +1163,7 @@ test('delete removes a diagram, its file, and hands the session a survivor', asy
 
 test('deleting the last diagram reseeds the example (store never goes empty)', async () => {
 	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-lastdel-'));
-	const app2 = await makeApp({ dataDir: dir, secretsDir: dir, port: 0 });
+	const app2 = await makeApp({ dataDir: dir, port: 0 });
 	const base2 = `http://localhost:${app2.port}`;
 
 	const ws = new WebSocket(`ws://localhost:${app2.port}/ws`);
@@ -1203,7 +1203,7 @@ test('server restart reloads persisted state from disk', async () => {
 	c.close();
 
 	await app.close(); // flushes
-	app = await makeApp({ dataDir, secretsDir: dataDir, port: 0 });
+	app = await makeApp({ dataDir, port: 0 });
 	base = `http://localhost:${app.port}`;
 
 	const rest = await get(`/api/v1/diagrams/${diagramId}/nodes/node-ffff01`);

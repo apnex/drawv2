@@ -22,7 +22,7 @@ const j = async (u, o) => {
 
 test.before(async () => {
 	dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-undo-'));
-	app = await makeApp({ dataDir, secretsDir: dataDir, port: 0 });
+	app = await makeApp({ dataDir, port: 0 });
 	base = `http://localhost:${app.port}`;
 });
 test.after(() => { app?.close?.(); fs.rmSync(dataDir, { recursive: true, force: true }); });

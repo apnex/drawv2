@@ -273,8 +273,6 @@ const ALLOW = {
 	'dev/BACKLOG.md:secrets/google-credentials.json': 'B49 cites the paths that exposed the defect AS ITS EVIDENCE — same as B31 below',
 	'dev/BACKLOG.md:secrets/google-token.json': 'as above (B49 evidence)',
 	'dev/BACKLOG.md:diagrams/diagram-000001.json': 'as above (B49 evidence)',
-	'docs/slides-setup.md:secrets/google-credentials.json': 'runtime, gitignored: the user downloads it during OAuth setup - the doc is telling them where to put it',
-	'docs/slides-setup.md:secrets/google-token.json': 'runtime, gitignored: written by the OAuth flow on first authorization',
 	'docs/spec/TRANSACTIONS.md:diagrams/diagram-000001.json': 'runtime, gitignored: the store seeds diagrams/ from examples/ on first boot',
 	'dev/DECISIONS.md:.refs/draw/index.html': 'moved with Borrowed mechanisms when SCOPE.md was split; the lineage clones are a local research checkout, never committed',
 	'docs/spec/SCOPE.md:.refs/draw/index.html': 'the draw lineage clones are a local research checkout, never committed (SCOPE names them as such)',

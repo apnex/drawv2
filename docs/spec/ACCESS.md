@@ -202,7 +202,7 @@ It costs one field and is painful to retrofit, which is the argument for it; it 
 In `meta`, written by the store directly -- `setOwner` and `grant` (`server/store.js:1318-1338`) assign to `model.state.meta` and call `markDirty(id)`, deliberately bypassing `commit()`.
 
 The reason is security, not tidiness.\
-`store.js:359` flushes `serialize(model.toJSON(), entry.log)`, the document **and** the log, on every write.\
+`server/store.js:1392` flushes `serialize(entry.model.toJSON(), entry.log)`, the document **and** the log, on every write.\
 An ACL change routed through `commit()` would therefore be undoable -- and undo silently restoring access for someone just revoked is a security failure, not a usability quirk.\
 Bypassing `commit()` avoids it by construction rather than by a rule someone has to remember.
 

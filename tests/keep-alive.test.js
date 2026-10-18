@@ -60,7 +60,7 @@ test('B164: a request sent on an idle connection, then a stall past the server\'
 
 test('B164: every server a test makes holds an idle connection for a minute, and no test makes one around the fixture', async () => {
 	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-keepalive-'));
-	const app = await makeApp({ dataDir: dir, secretsDir: dir, port: 0 });
+	const app = await makeApp({ dataDir: dir, port: 0 });
 	try {
 		assert.equal(app.server.keepAliveTimeout, TEST_KEEP_ALIVE_MS);
 	} finally {

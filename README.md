@@ -96,7 +96,7 @@ docker rmi draw
 Diagram data lives outside the image, so it survives that.\
 Delete it deliberately:
 ```sh
-rm -rf diagrams secrets
+rm -rf diagrams
 ```
 
 ---

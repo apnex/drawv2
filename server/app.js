@@ -107,7 +107,7 @@ export function sweepLocks(locks, hub, store) {
 	return freed;
 }
 
-export async function createApp({ dataDir, secretsDir, port = 8080, clientDir, host, templatesDir = null, examplesDir = null, pingMs = PING_MS, files = null, authz = true, owner = '', principalOf = null, domains = [], origins = '', lockTtlMs = 0 } = {}) {
+export async function createApp({ dataDir, port = 8080, clientDir, host, templatesDir = null, examplesDir = null, pingMs = PING_MS, files = null, authz = true, owner = '', principalOf = null, domains = [], origins = '', lockTtlMs = 0 } = {}) {
 	const root = path.dirname(fileURLToPath(import.meta.url));
 	// DEFAULT is the kernel-rendered thin UI (app/). The legacy client was retired (CL5); it lives
 	// only on the app-v1 branch now. CLIENT_DIR can still point at a custom static dir if ever needed.
@@ -124,8 +124,6 @@ export async function createApp({ dataDir, secretsDir, port = 8080, clientDir, h
 	const devicesDir = path.resolve(root, '..', 'devices'); // O-e1 (H19.21): the devices plugin, which the product page composes (mounted at /devices)
 	const productDir = path.resolve(root, '..', 'product'); // O-d (H19.22): the product's composition, which the page imports (mounted at /product)
 	const data = path.resolve(dataDir || path.join(root, '..', 'diagrams'));
-	// credentials live OUTSIDE the diagram data dir: the data volume must carry no secrets
-	const secrets = path.resolve(secretsDir || path.join(root, '..', 'secrets'));
 	// examplesDir is null unless the caller supplies one — only server/server.js does, so a test
 	// that constructs an app gets the single programmatic seed, not whatever ships in examples/.
 	// `files` null means the Store picks its filesystem default; server.js supplies gcsFiles when

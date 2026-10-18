@@ -72,6 +72,8 @@ New, sovereign, already reachable in the browser: `model/` is mounted at `/model
 | `del` | `{op:'del', kind, id}` | by id; the entity lives in the inverse |
 | `meta` | `{op:'meta', patch}` | `{name?, slides:{url?}}` - config meta only (D15) |
 
+AMENDED 2026-10-18 (H24.11): the `meta` patch is `{name?, plugins?}` (`model/ops.mjs` `applyMeta`); `slides` is retired with its feature.
+
 `del` drops the `{entity:{id}}` wrapper the current wire mutation carries (`server/validate.js:118-122` `[V]`).\
 Request shape and op shape become the same shape.
 
@@ -145,9 +147,12 @@ setSelection(id, ids)                       // STATUS: persisted, not logged, no
 bindSlides(id, {presentationId, pageId})    // STATUS: same
 ```
 
+AMENDED 2026-10-18 (H24.11): `bindSlides` is deleted with its feature.
+
 `markDirty` moves out of `model.onChange` and into the commit return.\
 The store stops subscribing to the Model (`server/store.js:160`, `:179` deleted `[V]`).\
-Only an accepted Change, a selection write or a Slides-binding write dirties a diagram.
+Only an accepted Change, a selection write or a Slides-binding write dirties a diagram.\
+AMENDED 2026-10-18 (H24.11): the Slides-binding write went with its feature.
 
 The browser's entire history state becomes **two booleans and a label** - `canUndo`, `canRedo`, `undoLabel` - delivered on every `ack` and every `change`.
 
@@ -381,10 +386,12 @@ Lands at **CS3**, so the verb never goes live without its precondition (**GR11**
 | **Config** | every entity op, `meta.name`, `meta.slides.url` | yes | yes | yes |
 | **Status** | `selection`, `meta.slides.presentationId/pageId` | no | no | no |
 
+AMENDED 2026-10-18 (H24.11): `meta.slides` is retired with its feature; config meta is `meta.name` and `meta.plugins`, and status holds no Slides binding.
+
 `version` is a **config** watermark, not a file-bytes watermark: status writes change the file without moving it, by design.\
 A rename **is** undoable - and routing it through a transaction fixes the defect that a rename has never moved `rev`, because `patchMeta` assigns meta directly and never calls `emit()` (`server/store.js:276-285` `[V]`).
 
-**Consequence:** Ctrl+Z immediately after pasting a Slides URL clears the field.\
+**Consequence:** Ctrl+Z immediately after pasting a Slides URL clears the field (AMENDED 2026-10-18, H24.11: that field went with its feature; the rule below holds for every header field).\
 Accepted: `onKeyDown` returns early for `INPUT`/`TEXTAREA`/`SELECT` (`app/src/input.js:1365-1366` `[V]`), so a focused header field keeps its own undo - pinned by a test rather than left as an accident.
 
 ### D16 - Module placement - no sovereignty changes [LOCKED]

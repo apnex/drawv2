@@ -57,8 +57,7 @@ A workspace is the SET OF DIAGRAMS OWNED BY A PRINCIPAL, so a grant naming an ow
 a diagram -- it is about all of them, including ones not created yet, which is the whole point:
 per-diagram grants put a person in the loop for every diagram an agent makes.
 
-The name deliberately does not match `FILE`, so `init()` will not try to parse it as a diagram, and
-it does not collide with the Google credential files that share the data dir (`google-*.json`).
+The name deliberately does not match `FILE`, so `init()` will not try to parse it as a diagram.
 */
 const ACCESS_FILE = 'access.json';
 // H9.5: the third kind of persisted thing, after diagrams and access.json. ACCESS.md called a
@@ -237,8 +236,7 @@ export class Store {
 	async init() {
 		let candidates = 0;   // the backend created its own storage when it was constructed
 		const failures = [];
-		// the data dir is shared with Google OAuth credential/token files:
-		// only diagram-named json is ours to parse
+		// only diagram-named json is ours to parse: the data dir holds the access file too
 		for (const file of await this.files.list()) {
 			if (!FILE.test(file)) continue;
 			candidates++;
@@ -265,8 +263,7 @@ export class Store {
 				// unreadable still knows which version it is (CS5 stamps it into meta).
 				this.install(doc.meta.id, doc, Log.from(log, doc.meta.version), file);
 				// only the filename-canonicalisation case dirties on boot; a clean load rewrites nothing
-				// a filename that does not match, or a retired key removed above: either way the file
-				// on disk is not what we now hold, so write it back once
+				// a filename that does not match: the file on disk is not what we now hold, so write it back once
 				// WD-b1 (H19.45): and a completed one -- written back holding its layouts
 				if (file !== `${doc.meta.id}.json` || completed) this.markDirty(doc.meta.id);
 			} catch (e) {

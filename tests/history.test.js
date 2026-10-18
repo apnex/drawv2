@@ -200,7 +200,7 @@ test('D21: a run STOPS at a different actor — you cannot sweep away someone el
 test('a stale `expect` answers with WHAT MOVED, so the caller can reconcile instead of refetching', async () => {
 	const { makeApp } = await import('./fixtures/app.mjs');
 	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-409-'));
-	const app = await makeApp({ dataDir: dir, secretsDir: dir, port: 0 });
+	const app = await makeApp({ dataDir: dir, port: 0 });
 	const base = `http://localhost:${app.port}`;
 	try {
 		const id = (await (await fetch(`${base}/api/v1/diagrams`)).json())[0].id;

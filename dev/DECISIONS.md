@@ -83,6 +83,7 @@ Purpose belongs to [`../VISION.md`](../VISION.md), the live plan to [`BOARD.md`]
 3. **Group**: logical member set `{id, name, members[]}` - select/move as one. No visual of its
    own (zones cover visual regions).
    persisted in diagram meta. Push is an explicit button (commit/push), one-way.
+   *(Amended 2026-10-18, H24.11)* - the line above is what remained of decision 4, the push to Google Slides, retired with its feature.
 5. **Ownership**: unidirectional. The client owns all model mutations during a session; the
    server is persistence-of-record and read-only to everyone else (REST). Single writer -
    no convergence machinery, no conflict resolution.
@@ -134,7 +135,8 @@ Retired.\
 `slides` is the sole entry in `RETIRED_META` in `server/store.js`: the key is stripped from every document on read, so no diagram carries it and nothing writes it.\
 The `POST /api/v1/diagrams/:id/sync/slides` endpoint this section used to specify does not exist in `server/routes.mjs`.
 
-Recorded as removed rather than deleted outright, because a reader who meets `slides` in an old export or in the retired-meta list should be able to find out what it was and that it is gone.
+Recorded as removed rather than deleted outright, because a reader who meets `slides` in an old export or in the retired-meta list should be able to find out what it was and that it is gone.\
+AMENDED 2026-10-18 (H24.11): `RETIRED_META` and the stripping on read were deleted with the loader's repairs at H19.3 (`dev/COMMIT-DELETIONS.md`); the validator refuses `slides` as it refuses any meta key it does not know, and draw has evolved past alignment with Google Slides.
 ---
 
 ## Capability rulings, and what reversed them

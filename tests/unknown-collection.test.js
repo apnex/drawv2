@@ -41,7 +41,7 @@ test('B307: a plugin\'s collection on a composition without the plugin is refuse
 
 test('B307: an agent posting the old shape -- waypoints, no schema -- is refused, saying why, where it was told "created"', async () => {
 	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-b307-'));
-	const app = await makeApp({ dataDir: dir, secretsDir: dir, port: 0 });
+	const app = await makeApp({ dataDir: dir, port: 0 });
 	try {
 		const r = await fetch(`http://localhost:${app.port}/api/v1/diagrams`, { method: 'POST', headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ name: 'agent', doc: { meta: { name: 'agent' }, nodes: [{ id: 'node-0e0001', name: 'r1', type: 'router', x: 0, y: 0 }],

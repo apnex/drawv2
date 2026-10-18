@@ -23,7 +23,7 @@ import { makeApp } from './fixtures/app.mjs';
 let app, base, dataDir;
 before(async () => {
 	dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-svg-'));
-	app = await makeApp({ dataDir, secretsDir: dataDir, port: 0 });
+	app = await makeApp({ dataDir, port: 0 });
 	base = `http://127.0.0.1:${app.port}`;
 });
 after(async () => {
@@ -91,7 +91,7 @@ test('H23: a private diagram answers 404 to an unauthenticated SVG request; publ
 	const home = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-h23-home-'));
 	let currentPrincipal = 'user:owner@example.com';
 	const srv = await createApp({
-		dataDir: dir, secretsDir: dir, port: 0, authz: true, owner: 'user:owner@example.com',
+		dataDir: dir, port: 0, authz: true, owner: 'user:owner@example.com',
 		principalOf: async () => currentPrincipal,
 	});
 	const url = `http://127.0.0.1:${srv.port}`;

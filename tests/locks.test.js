@@ -102,7 +102,7 @@ const H = (token) => ({ 'Content-Type': 'application/json', ...(token ? { 'X-Dra
 
 before(async () => {
 	dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-lock-'));
-	app = await makeApp({ dataDir, secretsDir: dataDir, port: 0 });
+	app = await makeApp({ dataDir, port: 0 });
 	base = `http://127.0.0.1:${app.port}`;
 });
 after(async () => {
@@ -716,7 +716,7 @@ that a passing unit test meant the field arrived.
 */
 test('B140: the lock response reports whether it renewed or acquired', async () => {
 	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-renew-'));
-	const app = await makeApp({ dataDir: dir, secretsDir: dir, port: 0 });
+	const app = await makeApp({ dataDir: dir, port: 0 });
 	const base = `http://127.0.0.1:${app.port}/api/v1`;
 	try {
 		const id = (await (await fetch(`${base}/diagrams`)).json())[0].id;

@@ -21,7 +21,7 @@ const RECORDS = structuredClone(LAYOUT_TABLE).map((l) => ({ ...l, ext: { ...l.ex
 let app, base, dataDir;
 before(async () => {
 	dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-layouts-api-'));
-	app = await makeApp({ dataDir, secretsDir: dataDir, port: 0 });
+	app = await makeApp({ dataDir, port: 0 });
 	base = `http://localhost:${app.port}`;
 });
 after(async () => {

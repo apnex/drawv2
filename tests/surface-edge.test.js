@@ -77,7 +77,7 @@ test('B27: a document holding a zone or a panel past the edge is refused at the 
 
 test('B27: an agent\'s commit through REST is refused, naming the zone and the edge', async () => {
 	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-edge-'));
-	const app = await makeApp({ dataDir: dir, secretsDir: dir, port: 0 });
+	const app = await makeApp({ dataDir: dir, port: 0 });
 	try {
 		const base = `http://localhost:${app.port}`;
 		const id = (await (await fetch(`${base}/api/v1/diagrams`)).json())[0].id;

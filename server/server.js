@@ -20,7 +20,6 @@ function flag(name, fallback) {
 const port = Number(process.env.PORT || flag('port', 8080));
 const dataDir = process.env.DATA_DIR || flag('data', undefined);
 const clientDir = process.env.CLIENT_DIR || flag('client', undefined);
-const secretsDir = process.env.SECRETS_DIR || flag('secrets', undefined);
 const host = process.env.HOST || flag('host', undefined);
 // The example corpus, shipped in the repo and copied into the data dir on FIRST boot only. The
 // data dir is runtime state (gitignored, a mounted bucket in production); examples/ is content.
@@ -80,7 +79,7 @@ if (bucket) console.log(`[ draw ] persistence: gs://${bucket}`);
 // the source IS the identity argument, so there is nothing left to test in place of passing it.
 // H9.28: ALLOW_ORIGINS is an escape hatch, not the main path. Same-origin is recognised without
 // configuration by matching the Host header, which is what the editor always produces.
-const app = await createApp({ port, dataDir, secretsDir, clientDir, host, examplesDir, templatesDir, files, authz: Boolean(source), principalOf: source?.principalOf ?? null, owner, domains, origins: process.env.ALLOW_ORIGINS || '', lockTtlMs: Number(process.env.LOCK_TTL_MS) || 0 });
+const app = await createApp({ port, dataDir, clientDir, host, examplesDir, templatesDir, files, authz: Boolean(source), principalOf: source?.principalOf ?? null, owner, domains, origins: process.env.ALLOW_ORIGINS || '', lockTtlMs: Number(process.env.LOCK_TTL_MS) || 0 });
 if (source) {
 	console.log(domains.length
 		? `[ draw ] sign-in restricted to ${domains.join(', ')}`

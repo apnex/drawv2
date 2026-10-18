@@ -21,7 +21,7 @@ let app, dataDir, home, host;
 before(async () => {
 	dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-parity-'));
 	home = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-parity-home-'));
-	app = await makeApp({ dataDir, secretsDir: dataDir, port: 0 });
+	app = await makeApp({ dataDir, port: 0 });
 	host = `http://127.0.0.1:${app.port}`;
 });
 after(async () => { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); fs.rmSync(home, { recursive: true, force: true }); });

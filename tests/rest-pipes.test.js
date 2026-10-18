@@ -16,7 +16,7 @@ const json = async (p) => (await api(p)).json();
 
 before(async () => {
 	dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-rest-pipes-'));
-	app = await makeApp({ dataDir, secretsDir: dataDir, port: 0 });
+	app = await makeApp({ dataDir, port: 0 });
 	base = `http://127.0.0.1:${app.port}`;
 	id = (await (await fetch(`${base}/api/v1/diagrams`)).json())[0].id;
 	token = (await (await fetch(`${base}/api/v1/diagrams/${id}/lock`, { method: 'POST' })).json()).token;

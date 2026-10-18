@@ -27,7 +27,7 @@ let app, host, dataDir, home;
 async function boot() {
 	dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-cli-'));
 	home = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-home-'));
-	app = await makeApp({ dataDir, secretsDir: dataDir, port: 0 });
+	app = await makeApp({ dataDir, port: 0 });
 	host = `http://127.0.0.1:${app.port}`;
 }
 const run = async (...argv) => {
@@ -1429,7 +1429,7 @@ test('H9.9: a write to a template is announced, and the context follows the fork
 	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-tplcli-'));
 	const hm = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-tplhome-'));
 	const templatesDir = fileURLToPath(new URL('../templates', import.meta.url));
-	const a = await makeApp({ dataDir: dir, secretsDir: dir, port: 0, templatesDir });
+	const a = await makeApp({ dataDir: dir, port: 0, templatesDir });
 	const h = `http://127.0.0.1:${a.port}`;
 	const err = [];
 	const realWrite = process.stderr.write.bind(process.stderr);

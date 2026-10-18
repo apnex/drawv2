@@ -193,7 +193,7 @@ fork; what these prove is that the caller can find out, and that the second writ
 */
 test('H9.9: a session rebinds to its fork, so a second write does not fork again', async () => {
 	const dir = tmp();
-	const app = await makeApp({ dataDir: dir, secretsDir: dir, port: 0, templatesDir: TEMPLATES });
+	const app = await makeApp({ dataDir: dir, port: 0, templatesDir: TEMPLATES });
 	const tplId = shipped()[0][1].meta.id;
 	const started = shipped()[0][1].nodes.length;
 	const ws = new WebSocket(`ws://localhost:${app.port}/ws`);
