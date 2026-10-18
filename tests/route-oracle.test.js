@@ -20,7 +20,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { routeGeometry, roundedPath, pathLength, pointAtDistance } from '../kernel/router.mjs';
+import { pathGeometry, roundedPath, pathLength, pointAtDistance } from '../kernel/router.mjs';
 import { teardown } from './fixtures/teardown.mjs';
 import { CHROME, NO_CHROME, launchChrome } from './fixtures/chrome.mjs';   // one launch config for every harness
 
@@ -83,7 +83,7 @@ after(() => teardown([chrome], dir));
 test('H12.2: kernel route length agrees with the length the browser measures', { skip: NO_CHROME }, () => {
 	let worst = 0;
 	CASES.forEach((c, i) => {
-		const mine = pathLength(routeGeometry(c.pts, 20, c.close));
+		const mine = pathLength(pathGeometry(c.pts, 20, c.close));
 		const rel = Math.abs(browser[i].L - mine) / browser[i].L;
 		worst = Math.max(worst, rel);
 		assert.ok(rel < 0.001, `${c.label}: kernel ${mine} vs browser ${browser[i].L} (${(rel * 100).toFixed(4)}%)`);
@@ -94,7 +94,7 @@ test('H12.2: kernel route length agrees with the length the browser measures', {
 test('H12.2: kernel sampling puts a point where the browser puts it', { skip: NO_CHROME }, () => {
 	let worst = 0, where = '';
 	CASES.forEach((c, i) => {
-		const geo = routeGeometry(c.pts, 20, c.close), L = pathLength(geo);
+		const geo = pathGeometry(c.pts, 20, c.close), L = pathLength(geo);
 		SAMPLES.forEach((f, j) => {
 			const mine = pointAtDistance(geo, L * f), b = browser[i].pts[j];
 			const off = Math.hypot(mine[0] - b[0], mine[1] - b[1]);

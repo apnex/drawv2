@@ -264,7 +264,7 @@ object keyed by module keeps the last of two entries silently (the attack's A23)
 export const LAYER = {
 	core: [
 		'kernel/spec.mjs', 'kernel/theme.mjs',
-		'kernel/router.mjs',     // path geometry on the grid (rounded turns, snap); its `routeGeometry` name is in RATCHETS.L5p, with its reason
+		'kernel/router.mjs',     // path geometry on the grid (rounded turns, pathGeometry, pathLength, pointAtDistance)
 		'kernel/input-rules.mjs', // the Rules engine: tenants' rows, uniform guards, one match or none (dev/RULES.md section 11); names no tenant
 		'kernel/geometry.mjs',   // the grid and cell arithmetic; its link roles and appearance left for the network layer at K13a
 		'kernel/renderer.mjs',   // frame and selection primitives the canvas draws with; the SVG scene half left at K11
@@ -619,8 +619,8 @@ export const RATCHETS = {
 	},
 	L5: {
 	},
+	// H25.6 (B379, D6 of H25-1): empty -- routeGeometry renamed pathGeometry
 	L5p: {
-		'kernel/router.mjs:routeGeometry': 1,   // its reason and trigger: RATCHET_REASONS.L5p
 	},
 	L7k: {
 		// PL-5 lowered model/model.mjs, server/rest.js, server/store.js and planner/validate.js to 0: they read model/shape.mjs
@@ -666,9 +666,6 @@ every cited id must resolve (tools/exceptions.mjs).
 */
 export const RATCHET_REASONS = {
 	L5p: {
-		'kernel/router.mjs:routeGeometry': { cites: [],
-			reason: 'a generic polyline\'s geometry -- rounded turns, the one path the movers and the renderer walk -- named for one consumer, the route',
-			trigger: 'kernel/router.mjs is next changed: rename it then' },
 	},
 	L7k: {
 		'cli/verbs.mjs': { cites: ['from B138', 'H21.3'],

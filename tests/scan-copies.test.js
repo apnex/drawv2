@@ -15,7 +15,7 @@ import crypto from 'node:crypto';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { classesPutOnElements, classesInMarkup, stylesheetsInSource, copiedStyleRules, foreignStyleRules, stylesDrawnByNoPart, copiedLines, modulesNoEntryReaches, judgeFindings, judgeExceptions } from '../tools/copies.mjs';
-import { FOLDERS, SCANNER_ROOTS, COPIES, NOT_PARTS } from '../tools/layers.mjs';
+import { FOLDERS, SCANNER_ROOTS, COPIES, NOT_PARTS, RATCHETS } from '../tools/layers.mjs';
 
 const root = path.resolve(import.meta.dirname, '..');
 const read = (f) => fs.readFileSync(path.join(root, f), 'utf8');
@@ -269,8 +269,9 @@ test('H25.1: the page\'s stylesheet styles no class only a plugin draws, and eve
 	}
 });
 
-test('H25.5: the old scene renderer is gone -- NOT_PARTS is empty, and every recorded copy finding is a ruled exception', () => {
+test('H25.5 / H25.6: the old scene renderer is gone -- NOT_PARTS and RATCHETS.L5p are empty, and every recorded copy finding is a ruled exception', () => {
 	assert.deepEqual(NOT_PARTS, {}, 'every module in the product belongs to a part');
+	assert.deepEqual(RATCHETS.L5p, {}, 'the core exports no name matching the network pattern (routeGeometry renamed pathGeometry)');
 	const record = JSON.parse(read('tools/copies-record.json'));
 	assert.deepEqual(record['modules no entry reaches'], ['server/routes.mjs'], 'only the ruled REST route list remains unreached');
 	for (const [k, v] of Object.entries(record)) {

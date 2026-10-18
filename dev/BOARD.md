@@ -1510,7 +1510,7 @@ Opened 2026-10-17 by the director (`dev/DECISIONS.md` H25): H22 closed against a
 | H25.3b | The style rules that name another plugin's word ruled: the spawner's two, the zone grid's cursor (H25.3b) | **B374** | S4 | `DONE` |
 | H25.4 | One canvas layout, declared once and generated into both pages (H25.4) | **B376** | S4 | `DONE` |
 | H25.5 | One renderer: the old scene renderer deleted, its tests on the real one (H25.5) | **B378** | S3 | `DONE` |
-| H25.6 | One name: `routeGeometry` renamed (H25.6) | **B366** | S5 | `TODO` |
+| H25.6 | One name: `routeGeometry` renamed (H25.6) | **B379** | S5 | `DONE` |
 | H25.7 | Close: the architecture document reports every copy, generated (H25.7) | **B366** | S4 | `TODO` |
 
 **Exit:** every copy measure reads zero, or each remaining instance is an exception the director ruled, with its reason and trigger; view mode and the published SVG draw the director's diagrams pixel for pixel as before; no stored document changes.\
@@ -1530,6 +1530,7 @@ AMENDED 2026-10-17: H25.3 live in production (`6d365a3`), the published diagram 
 AMENDED 2026-10-17: H25.4 done -- the canvas's layout declared once in the composition and written into both pages, the lab and the export reading the declaration (B376 closed). Copy findings standing: 8 -- three ruled exceptions, and the five modules no entry reaches.
 AMENDED 2026-10-17: H25.4 live in production (`b6e9bc2`), the published diagram and the favicon byte-identical before and after.
 AMENDED 2026-10-17: H25.5 done -- the old scene renderer's four modules and their dead scene helpers deleted, all seven test files moved onto the real renderer with zero tests deleted, `NOT_PARTS` empty, and `server/routes.mjs` recorded as a ruled exception (B378 closed). Copy findings standing: 4, all 4 of them ruled exceptions.
+AMENDED 2026-10-18: H25.5 live in production (`c54329c`), the published diagram and the favicon byte-identical before and after; H25.6 done -- `routeGeometry` renamed `pathGeometry` across `kernel/router.mjs` and its callers, emptying `RATCHETS.L5p` (B379 closed).
 
 ---
 

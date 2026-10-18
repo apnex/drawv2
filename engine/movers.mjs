@@ -35,7 +35,7 @@ addition possible without a rewrite, which is why a mover carries `spawnerId` an
 index into whatever array happened to be built this frame.
 */
 
-import { routeGeometry, pathLength, pointAtDistance } from '../kernel/router.mjs';
+import { pathGeometry, pathLength, pointAtDistance } from '../kernel/router.mjs';
 import { STD } from '../kernel/spec.mjs';
 
 /*
@@ -71,7 +71,7 @@ handing over a description; that adapter is somebody else's one concern.
 */
 export function prepareSpawner(spawner) {
 	const { pts, closed = false, radius = 20 } = spawner || {};
-	const geo = routeGeometry(pts, radius, closed);
+	const geo = pathGeometry(pts, radius, closed);
 	// `pxSpeed` is the only speed anything below uses; `speed` stays as authored so a caller
 	// reading a prepared spawner back sees the number it supplied rather than a derived one.
 	const pxSpeed = typeof spawner?.speed === 'number' ? spawner.speed * PITCH : 0;

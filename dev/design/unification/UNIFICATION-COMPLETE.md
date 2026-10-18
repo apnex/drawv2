@@ -203,6 +203,7 @@ Each stage: tests first; the record lowered in its commit, which lists each find
 6. **H25.6 -- one name.**
    `routeGeometry` is renamed for what it computes.
    Proves: ratchet L5p empty.
+   AMENDED 2026-10-18, as built (B379): renamed `pathGeometry` in `kernel/router.mjs` (beside `roundedPath`, `pathLength` and `pointAtDistance`) and its callers (`engine/movers.mjs`, `network/link-head.mjs`, `tests/movers.test.js`, `tests/route-oracle.test.js`); `RATCHETS.L5p` and `RATCHET_REASONS.L5p` are empty.
 7. **H25.7 -- close.**
    `docs/ARCHITECTURE.md` gains a generated section listing each measure and its findings; `docs/ARCHITECTURE-TARGET.md` 8.2 states that copies are measured; `SCANNER_ROOTS.docrefs` is derived from the manifest's folders; B365 closes.
 

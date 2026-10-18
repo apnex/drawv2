@@ -302,7 +302,6 @@ The layer manifest's decoupling ratchets, each with its reason and when it ends 
 <!-- BEGIN GENERATED: architecture-exceptions. Run tools/generate-architecture.mjs; do not edit by hand. -->
 | Ratchet | Where | Count | Why it holds | Ends when |
 |---|---|---|---|---|
-| L5p | `kernel/router.mjs:routeGeometry` | 1 | a generic polyline's geometry -- rounded turns, the one path the movers and the renderer walk -- named for one consumer, the route | kernel/router.mjs is next changed: rename it then |
 | L7k | `cli/verbs.mjs` | 7 | the CLI's static imports stay inside cli/ so an installed copy runs (B138), so its verbs list the kinds themselves | the CLI learns the kinds from the server |
 <!-- END GENERATED: architecture-exceptions -->
 

@@ -55,7 +55,7 @@ It matters more than it looks. BEND_R is 20 on a 40px grid, so a consumer that w
 anchor polyline instead would swing wide of the DRAWN line by up to ~8px at every bend -- a
 visible departure from the very line it is supposed to be following.
 */
-export function routeGeometry(pts, radius = 20, close = false) {
+export function pathGeometry(pts, radius = 20, close = false) {
 	if (!pts || pts.length < 2) return [];
 	if (pts.length === 2 && !close) return [{ kind: 'line', a: pts[0], b: pts[1] }];
 	const n = pts.length;
@@ -89,7 +89,7 @@ export function routeGeometry(pts, radius = 20, close = false) {
 // waypoints (px) → SVG path `d` with rounded corners. radius clamps per-corner to half each
 // adjacent segment so corners never overshoot or collide on short runs.
 export function roundedPath(pts, radius = 20, close = false) {
-	const geo = routeGeometry(pts, radius, close);
+	const geo = pathGeometry(pts, radius, close);
 	if (!geo.length) return '';
 	// A closed path's final run home is drawn by `Z`, so the string skips that segment while the
 	// traversable list keeps it -- a mover still has to walk it.

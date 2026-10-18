@@ -21,7 +21,7 @@ An anchor's outline is declared by whoever draws the anchor -- the devices plugi
 ring: a circle of the frame's extent, 20.
 */
 import { L_STD, BEND_R } from '../kernel/spec.mjs';
-import { routeGeometry } from '../kernel/router.mjs';
+import { pathGeometry } from '../kernel/router.mjs';
 import { linkMarker, linkWidth } from './appearance.mjs';   // which end the flow arrives at, and the line's width -- the appearance's answers
 
 export const HEAD_OUTLINE = 4;                      // the hollow head's outline (H24.6-2b)
@@ -57,7 +57,7 @@ started at `lineOffset`), and the leg from inside the tip into the anchor (`legD
 */
 export function linkHead({ points, closed = false, which, width, outlines = {} }) {
 	if (!which || !points || points.length < 2) return null;
-	const geo = routeGeometry(points, BEND_R, closed);
+	const geo = pathGeometry(points, BEND_R, closed);
 	if (!geo.length) return null;
 	const n = points.length;
 	// the straight run the head sits on, the end of it the flow arrives at, and the anchor it points into

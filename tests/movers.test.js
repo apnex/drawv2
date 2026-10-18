@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { posix } from 'node:path';
 import { LAYER } from '../tools/layers.mjs';   // K16: the guard's roots are the manifest's simulation layer
-import { routeGeometry, roundedPath, pathLength, pointAtDistance } from '../kernel/router.mjs';
+import { pathGeometry, roundedPath, pathLength, pointAtDistance } from '../kernel/router.mjs';
 import { prepareSpawner, moversAt, positionOf, MAX_MOVERS_PER_SPAWNER } from '../engine/movers.mjs';
 import { STD } from '../kernel/spec.mjs';
 
@@ -21,10 +21,10 @@ const CELLS = (px) => px / STD.pitch;
 // The string and the measurement must be built from the SAME list, or the corner rule exists twice
 // and the two copies drift the first time the radius changes.
 
-const L = (pts, close = false) => pathLength(routeGeometry(pts, 20, close));
+const L = (pts, close = false) => pathLength(pathGeometry(pts, 20, close));
 
 test('H12.1: a route decomposes into the lines and quadratic corners the path is drawn from', () => {
-	const geo = routeGeometry([[0, 0], [200, 0], [200, 200]], 20, false);
+	const geo = pathGeometry([[0, 0], [200, 0], [200, 200]], 20, false);
 	assert.deepEqual(geo.map((g) => g.kind), ['line', 'quad', 'line']);
 	// the corner's control point IS the vertex it turns around
 	assert.deepEqual(geo[1].c, [200, 0]);
@@ -34,12 +34,12 @@ test('H12.1: a route decomposes into the lines and quadratic corners the path is
 });
 
 test('H12.1: a two-point route is one line and carries no corner', () => {
-	assert.deepEqual(routeGeometry([[0, 0], [100, 0]], 20, false), [{ kind: 'line', a: [0, 0], b: [100, 0] }]);
+	assert.deepEqual(pathGeometry([[0, 0], [100, 0]], 20, false), [{ kind: 'line', a: [0, 0], b: [100, 0] }]);
 });
 
 test('H12.1: a closed route keeps its run home, which the string draws as Z', () => {
 	const pts = [[0, 0], [80, 0], [80, 80], [0, 80]];
-	const geo = routeGeometry(pts, 20, true);
+	const geo = pathGeometry(pts, 20, true);
 	// four corners, four connecting runs -- INCLUDING the last one back to the start
 	assert.equal(geo.filter((g) => g.kind === 'quad').length, 4);
 	assert.equal(geo.filter((g) => g.kind === 'line').length, 4);
@@ -51,7 +51,7 @@ test('H12.1: a closed route keeps its run home, which the string draws as Z', ()
 
 test('H12.1: the radius clamps per corner, so a short run cannot overshoot', () => {
 	// a 10px run cannot carry a 20px corner from both ends
-	const geo = routeGeometry([[0, 0], [10, 0], [10, 10]], 20, false);
+	const geo = pathGeometry([[0, 0], [10, 0], [10, 10]], 20, false);
 	const quad = geo.find((g) => g.kind === 'quad');
 	assert.deepEqual(quad.a, [5, 0]);      // half the adjacent run, not the full radius
 	assert.deepEqual(quad.b, [10, 5]);
@@ -68,12 +68,12 @@ test('H12.1: a corner is SHORTER than going to the vertex and back -- the drawn 
 test('H12.1: length is the sum of the parts, and a degenerate route measures zero', () => {
 	assert.equal(L([[0, 0], [100, 0]]), 100);
 	assert.equal(L([[0, 0], [0, 300]]), 300);
-	assert.equal(pathLength(routeGeometry([[5, 5]], 20, false)), 0);
-	assert.equal(pathLength(routeGeometry(null, 20, false)), 0);
+	assert.equal(pathLength(pathGeometry([[5, 5]], 20, false)), 0);
+	assert.equal(pathLength(pathGeometry(null, 20, false)), 0);
 });
 
 test('H12.1: sampling walks the route and clamps at both ends rather than returning NaN', () => {
-	const geo = routeGeometry([[0, 0], [100, 0]], 20, false);
+	const geo = pathGeometry([[0, 0], [100, 0]], 20, false);
 	assert.deepEqual(pointAtDistance(geo, 25), [25, 0]);
 	assert.deepEqual(pointAtDistance(geo, -5), [0, 0]);       // before the start
 	assert.deepEqual(pointAtDistance(geo, 999), [100, 0]);    // past the end
@@ -81,7 +81,7 @@ test('H12.1: sampling walks the route and clamps at both ends rather than return
 });
 
 test('H12.1: a sample midway round a corner is ON the corner, not at the vertex', () => {
-	const geo = routeGeometry([[0, 0], [200, 0], [200, 200]], 20, false);
+	const geo = pathGeometry([[0, 0], [200, 0], [200, 200]], 20, false);
 	const mid = pointAtDistance(geo, pathLength(geo) / 2);
 	assert.ok(Math.hypot(mid[0] - 200, mid[1] - 0) > 1, 'must not sit on the vertex');
 	assert.ok(mid[0] < 200 + 0.01 && mid[1] > -0.01, 'must stay inside the turn');
