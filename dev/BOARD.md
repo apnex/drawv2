@@ -1511,6 +1511,7 @@ AMENDED 2026-10-18: H24.15 verified -- its verifier found that the move lets an 
 AMENDED 2026-10-18: H24.18 done -- every write names the diagram it was made on, and the server refuses one made on a diagram the session has left, so an edit in flight when its session is moved is dropped rather than misplaced, after a delete as after a revoke (`dev/DECISIONS.md` H24.18, B393 closed). H24.14, H24.15 and H24.18 ship together.
 AMENDED 2026-10-18: H24.18's first build failed its verification -- a template's fork lost the page's next write, which named the template -- and is fixed: such a write lands on the fork while the session is on it; an open coalescing window is sent before a snapshot loads (B393).
 AMENDED 2026-10-18: the second build failed its verification as well -- sending the window before every snapshot put it ahead of a change the server had lost (D29) -- and is fixed: the window goes first only before another diagram's snapshot and on a switch (B393).
+AMENDED 2026-10-18: H24.18's third build verified, every earlier probe rerun; two older gaps it found held with triggers -- a read-only snapshot under an open window (B395) and `forked` dropping a queued undo (B396).
 
 ---
 
@@ -1603,6 +1604,8 @@ Scored so the comparison is a judgement, not an omission.\
 | **B390** | S4 | `snap-grid`'s radial, hex and isometric grids (H26-1) | an app needs a grid that is not square. |
 | **B391** | S4 | Draw on Node 24 (H26-2) | a component draw consumes needs Node 24, or Node 22 reaches the end of its maintenance, April 2027. |
 | **B394** | S4 | The page's answer to `access-lost` (H24.15) | the image ships no template, or `Store#first` stops falling back to one. |
+| **B395** | S4 | A read-only snapshot under an open coalescing window keeps an unsent edit (H24.18) | a person reports an edit that vanished on reload after a lock or a change of access, or the next change to how a snapshot replays the outbox. |
+| **B396** | S4 | `forked` drops an undo and a commit queued behind the forking write (H24.18) | a person reports an edit lost in the first moments on a template, or the next change to the `forked` handler. |
 | **B344** | S4 | OD-1: a diagram kept in mission-kit's entity-store | the director selects it, or entity-store's record rules the adjustments it needs -- an asynchronous durable storage port, and names optional per kind. |
 | **B345** | S4 | OD-2: clients reaching the server over agp | OD-1 is ruled, entity-api is certified, and its follows are unparked (zorg's D15). |
 | **B347** | S4 | The towerless-combat timing test failed once under machine load | it fails a second time, or B333's flake ledger is built. |

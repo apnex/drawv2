@@ -499,3 +499,22 @@ test('B393: a window open on a diagram the person switches away from goes out, n
 	assert.ok(commit, 'switching diagrams sends the open window first');
 	assert.equal(commit.body.diagram, '0000000000aaa001', 'naming the diagram it was made on');
 });
+
+test('B393: a window open when the person creates a diagram goes out first, naming the diagram it was made on', () => {
+	const sent = [];
+	let recv;
+	const net = { status: 'open', subscribe(fn) { recv = fn; }, onStatus() {}, isOpen: () => true, send: (cmd, body) => { sent.push({ cmd, body }); return true; } };
+	const model = new Model();
+	let pending = null;
+	let sync = null;
+	const history = { clear() {}, setCounts() {}, openWindowOps: () => [], state: { version: 0 },
+		flush() { if (pending) { const p = pending; pending = null; sync.submit(p); } } };
+	sync = new Sync({ model, net, history, selection: new Selection(model) });
+	recv(snap('0000000000aaa001', 1));
+	pending = { ops: [{ op: 'meta', patch: { name: 'nudged' } }], label: 'nudge' };
+	sync.createDiagram();
+	const at = (cmd, label) => sent.findIndex((x) => x.cmd === cmd && (!label || x.body.label === label));
+	assert.ok(at('commit', 'nudge') > -1, 'the open window went out');
+	assert.ok(at('commit', 'nudge') < at('create'), 'before the create');
+	assert.equal(sent[at('commit', 'nudge')].body.diagram, '0000000000aaa001', 'naming the diagram it was made on');
+});
