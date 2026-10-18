@@ -172,17 +172,18 @@ AMENDED 2026-10-10 (WD-b1, H19.45): `meta.schema` is 3, which adds the diagram's
 
 Client -> server:
 - `{cmd:"hello", body:{diagram?}}` -> `{cmd:"snapshot", body:{doc, diagrams, locked, version, canUndo, canRedo}}`
-- `{cmd:"commit", body:{ops, label?, expect?, txnId?}}` -> `{cmd:"ack", body:{seq, from, version,
+- `{cmd:"commit", body:{ops, label?, expect?, txnId?, diagram?}}` -> `{cmd:"ack", body:{seq, from, version,
   durableVersion, canUndo, canRedo, ops, acked}}`. One request is one TRANSACTION: a whole
   gesture, not one entity. `expect` is an optional compare-and-swap precondition.
-- `{cmd:"undo"|"redo", body:{expect, txnId?}}` -> ack carrying the ops to apply
+- `{cmd:"undo"|"redo", body:{expect, txnId?, diagram?}}` -> ack carrying the ops to apply
+- `diagram`, on a commit, an undo, a redo or a select, names the diagram the write was made on; a write naming a diagram other than the one the session is on is refused with the code `moved` and applied nowhere, so an edit in flight when its session is moved off a diagram -- deleted, or one it lost access to -- is dropped, not applied to the diagram it was moved to. Draw's page always sends it; a write without it is taken as before (B393, H24.18).
 - `{cmd:"resume", body:{diagram, version}}` - reconnect. The client states what it BELIEVES it
   holds; the server answers `{cmd:"sync", body:{version, canUndo, canRedo, locked}}` if they are
   in step, a snapshot if the client is behind, or a snapshot carrying `rewound:{from,to}` if the
   client is ahead. **The client never sends a document to overwrite one.**
 - `{cmd:"create", body:{name?, doc?}}` - `doc` is the only whole-document path a client has, and
   it can only CREATE: the server mints the id and ignores `doc.meta.id`
-- `{cmd:"select", body:{ids}}` -> `ack`, and the server broadcasts `{cmd:"selection", body:{ids, actor}}`
+- `{cmd:"select", body:{ids, diagram?}}` -> `ack`, and the server broadcasts `{cmd:"selection", body:{ids, actor}}`
   to the other sessions on that diagram. Selection is model-state, not a change: no version bump, not
   undoable - but it IS a first-class event, because it is what lets a human watch an agent work.
 - diagram management: `open {id}`, `reclaim {id?}`,

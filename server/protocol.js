@@ -282,6 +282,19 @@ export class Session {
 	principal can still read, as a deleted diagram's sessions do (B130), or for none, told why. Called when access moves and at
 	every send to a diagram (`server/hub.js`), so nothing of the old diagram reaches it afterwards, whatever the client does.
 	*/
+	/*
+	B393 (H24.18) -- a write names the diagram it was made on (the page sends it with every commit, undo, redo and selection); one
+	made on a diagram this session has since left -- moved off a deleted diagram, or one it lost access to -- is refused with
+	`moved` and lands nowhere, where it once landed on the diagram the session was moved to. A write naming no diagram is taken
+	as before.
+	*/
+	madeElsewhere(body) {
+		if (body?.diagram == null || body.diagram === this.diagramId) return false;
+		this.sessions?.note(this.actor, 'refused', { why: 'moved', label: body.label ?? null });
+		this.error('refused: this write was made on a diagram this session has since left', 'moved', body.txnId);
+		return true;
+	}
+
 	leaveUnreadable() {
 		this.diagramId = null;
 		const next = this.store.first(this.principal);
@@ -387,6 +400,7 @@ export class Session {
 			case 'commit': {
 				const model = this.current();
 				if (!model) return this.error('no diagram open (send hello first)');
+				if (this.madeElsewhere(body)) return;   // B393 (H24.18)
 				if (this.rejectIfLocked(this.diagramId)) return;
 				if (this.tooFast()) {
 					this.sessions?.note(this.actor, 'refused', { why: 'rate-limited', label: body.label || null });
@@ -448,6 +462,7 @@ export class Session {
 			case 'redo': {
 				const model = this.current();
 				if (!model) return this.error('no diagram open (send hello first)');
+				if (this.madeElsewhere(body)) return;   // B393 (H24.18)
 				if (this.rejectIfLocked(this.diagramId)) return;
 				const log = this.store.log(this.diagramId);
 				// D14/GR11: undo's target is IMPLICIT — the top of a shared ring another writer may
@@ -511,6 +526,7 @@ export class Session {
 				// model-state (status): the authoritative selection. Mirrors meta — lock-gated, no version bump.
 				const model = this.current();
 				if (!model) return this.error('no diagram open (send hello first)');
+				if (this.madeElsewhere(body)) return;   // B393 (H24.18)
 				if (this.rejectIfLocked(this.diagramId)) return;
 				const err = this.store.setSelection(this.diagramId, body.ids, this.principal);
 				if (err) return this.error(`select rejected: ${err}`);

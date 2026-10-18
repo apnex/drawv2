@@ -2336,3 +2336,41 @@ test('B385: over HTTP and websockets -- an owner revokes a workspace grant, and 
 		await t.close();
 	}
 });
+
+/*
+B393 (H24.18) -- a write made on a diagram the session has left is refused, and lands nowhere.
+
+The page names the diagram each write was made on (tests/sync.test.js); the server refuses a commit, an undo, a redo or a selection
+naming a diagram other than the one the session is on, with the code `moved`, so an edit in flight when its session was moved is
+dropped rather than applied to the diagram it was moved to. A write naming no diagram is taken as before.
+*/
+test('B393: a write naming the diagram its session was moved off is refused, and the diagram it was moved to is untouched', async () => {
+	const store = new Store(tmp(), { flushMs: 3_600_000, authz: true });
+	await store.init();
+	const own = store.create('the-guests-own', null, GUEST).model.state.meta.id;
+	const shared = store.create('shared', null, OWNER).model.state.meta.id;
+	assert.equal(store.grant(shared, GUEST, 'write', OWNER), null);
+	const hub = new Hub();
+	const gws = fakeWs(); const guest = new Session(gws, store, hub, null, GUEST);
+	gws.recv('open', { id: shared });
+	await new Promise((r) => setTimeout(r, 20));
+	assert.equal(store.revoke(shared, GUEST, OWNER), null);
+	const { announceAccess } = await import('../server/hub.js');
+	announceAccess(hub);
+	assert.equal(guest.diagramId, own, 'moved to the diagram it can still write');
+	const nameOfOwn = () => store.get(own).state.meta.name;
+	const answers = async (cmd, body) => { const from = gws.out.length; gws.recv(cmd, body); await new Promise((r) => setTimeout(r, 20)); return gws.out.slice(from); };
+
+	const late = await answers('commit', { diagram: shared, ops: [{ op: 'meta', patch: { name: 'drawn-on-shared' } }], label: 'late', txnId: 'late-1' });
+	assert.equal(late.find((m) => m.cmd === 'error')?.body.code, 'moved', 'the edit made on the diagram it left is refused, named');
+	assert.equal(late.find((m) => m.cmd === 'error')?.body.txnId, 'late-1', 'with its txnId, so the page drops it from its outbox');
+	assert.equal(nameOfOwn(), 'the-guests-own', 'and lands nowhere -- not on the diagram the session was moved to');
+	for (const [cmd, body] of [['undo', { diagram: shared, expect: 0, txnId: 'u' }], ['redo', { diagram: shared, expect: 0, txnId: 'r' }], ['select', { diagram: shared, ids: [] }]]) {
+		assert.equal((await answers(cmd, body)).find((m) => m.cmd === 'error')?.body.code, 'moved', `a ${cmd} made on the diagram it left is refused`);
+	}
+
+	const here = await answers('commit', { diagram: own, ops: [{ op: 'meta', patch: { name: 'drawn-here' } }], label: 'here', txnId: 'here-1' });
+	assert.ok(here.some((m) => m.cmd === 'ack'), 'a write naming the diagram the session is on is taken (control)');
+	const bare = await answers('commit', { ops: [{ op: 'meta', patch: { name: 'named-nothing' } }], label: 'bare', txnId: 'bare-1' });
+	assert.ok(bare.some((m) => m.cmd === 'ack'), 'and one naming no diagram, as before');
+});

@@ -410,3 +410,39 @@ test('B178: a retire message reaches the watchdog and is said out loud', () => {
 	assert.deepEqual(retired, ['a newer revision is live']);
 	assert.match(String(sync.said&&sync.said.text), /newer revision/, 'the operator is told why the page is about to change');
 });
+
+/*
+B393 (H24.18) -- every write names the diagram it was made on.
+
+The server writes to the diagram a session is on now, and a session can be moved -- off a deleted diagram, or one its principal
+can no longer read -- while the page holds the unrequested snapshot under a live gesture and sends that gesture's commit first, so
+the edit landed on the diagram the session was moved to. A commit, an undo, a redo and a selection now carry the diagram they were
+made on, and the server refuses one that does not match (tests/access.test.js).
+*/
+test('B393: a commit, an undo, a redo and a selection each name the diagram they were made on', () => {
+	// each from a fresh tab: a verb waits behind an unanswered commit (H19.15), so one tab would send only the first
+	const writes = {
+		commit: (sync) => sync.submit({ ops: [{ op: 'meta', patch: { name: 'x' } }], label: 'rename' }),
+		undo: (sync) => sync.submit({ verb: 'undo', expect: 1 }),
+		redo: (sync) => sync.submit({ verb: 'redo', expect: 0 }),
+		select: (sync) => { sync.selectionDirty = true; sync.flush(); },
+	};
+	for (const [cmd, write] of Object.entries(writes)) {
+		const t = deferrable();
+		t.recv(snap('0000000000aaa001', 1));
+		write(t.sync);
+		const m = t.sent.find((x) => x.cmd === cmd);
+		assert.ok(m, `a ${cmd} was sent`);
+		assert.equal(m.body.diagram, '0000000000aaa001', `the ${cmd} names the diagram it was made on`);
+	}
+});
+
+test('B393: a gesture\'s commit sent while another diagram\'s snapshot is held names the diagram it was drawn on', () => {
+	const t = deferrable();
+	t.recv(snap('0000000000aaa001', 1));
+	t.gesture(true);
+	t.recv(snap('0000000000bbb002', 2));   // the session was moved; the page holds the snapshot under the gesture
+	t.sync.submit({ ops: [{ op: 'meta', patch: { name: 'drawn-on-a' } }], label: 'the gesture' });
+	const commit = t.sent.find((x) => x.cmd === 'commit');
+	assert.equal(commit.body.diagram, '0000000000aaa001', 'the diagram the gesture was drawn on, not the one the session moved to');
+});

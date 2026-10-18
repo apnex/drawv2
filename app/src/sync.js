@@ -208,9 +208,12 @@ export class Sync {
 		if (this.readOnly) return;                     // read-only: Server-Locked, or no write grant
 		if (!this.hydrated) return;
 		const txnId = request.txnId || `${this.txnPrefix}-${++this.txn}`;
+		// B393 (H24.18): every write names the diagram it was made on, so the server can refuse one made on a diagram the session
+		// has since been moved off -- a held snapshot means the gesture's commit goes out before the page learns of the move
+		const diagram = this.diagramId;
 		const msg = request.verb
-			? { verb: request.verb, expect: request.expect, to: request.to ?? null, txnId }
-			: { ops: request.ops, label: request.label, txnId, applied: request.applied ?? request.ops };   // what the tab applied (V-d)
+			? { verb: request.verb, expect: request.expect, to: request.to ?? null, txnId, diagram }
+			: { ops: request.ops, label: request.label, txnId, applied: request.applied ?? request.ops, diagram };   // what the tab applied (V-d)
 		this.outbox.push(msg);
 		this.persistOutbox();
 		this.drain();
@@ -240,8 +243,8 @@ export class Sync {
 			if (msg.verb && this.outbox.slice(0, i).some((m) => m.sent && !m.answered)) { msg.waited = true; return; }
 			if (msg.verb && msg.waited) msg.expect = this.changes.state.version;
 			const ok = msg.verb
-				? this.net.send(msg.verb, { expect: msg.expect, ...(msg.to != null ? { to: msg.to } : {}), txnId: msg.txnId })
-				: this.net.send('commit', { ops: msg.ops, label: msg.label, txnId: msg.txnId });
+				? this.net.send(msg.verb, { expect: msg.expect, ...(msg.to != null ? { to: msg.to } : {}), txnId: msg.txnId, ...(msg.diagram ? { diagram: msg.diagram } : {}) })
+				: this.net.send('commit', { ops: msg.ops, label: msg.label, txnId: msg.txnId, ...(msg.diagram ? { diagram: msg.diagram } : {}) });
 			if (!ok) return;                            // socket closed mid-drain; retry on reconnect
 			msg.sent = true;
 			msg.attempted = true;   // since the last snapshot -- what B183 counts (replayOutbox)
@@ -312,7 +315,7 @@ export class Sync {
 			const txnId = m.txnId || `${this.txnPrefix}-r${++this.txn}`;
 			const answered = m.answered === true ? { answered: true, version: Number.isInteger(m.version) ? m.version : undefined } : {};
 			// `applied` is not trusted across a reload: the board is a fresh snapshot, and replay re-plans on it (V-d)
-			this.outbox.push({ ops: m.ops, label: m.label, txnId, tries: Number(m.tries) || 0, ...answered });
+			this.outbox.push({ ops: m.ops, label: m.label, txnId, tries: Number(m.tries) || 0, ...answered, diagram: diagramId });   // B393: the diagram it was saved for
 		}
 	}
 
@@ -415,7 +418,7 @@ export class Sync {
 		if (!this.net.isOpen() || !this.hydrated) return;
 		this.drain();
 		if (this.selectionDirty) {
-			this.net.send('select', { ids: this.selection.list() }); // after the entity queue
+			this.net.send('select', { ids: this.selection.list(), ...(this.diagramId ? { diagram: this.diagramId } : {}) }); // after the entity queue; B393: its diagram
 			this.selectionDirty = false;
 		}
 	}
