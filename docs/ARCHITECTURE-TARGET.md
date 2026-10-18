@@ -287,12 +287,13 @@ A named entity's name is unique across every named kind (N5).
 
 - **The gate** proves the layers, the parts and their consumes, the kinds' composition, the records, every test, and that both architecture documents say what the code declares; it measures the parts' imports at module level, so an import of a plugin's query and of its factory look alike.
 - **The ratchets** hold what shared code may name of a plugin, each exception with its reason and its trigger.
+- **The copy and twin measures** (`tools/scan-copies.mjs`, `tools/scan-twins.mjs`) hold copied style rules, foreign style rules, undrawn styled names, copied page or stylesheet lines, unreached product modules and shared arithmetic at zero or to an exception the director ruled, with its reason and its trigger (`H25`).
 - **The corpora and the behaviour matrix** hold behaviour equal across changes and across both pages.
 - **The sync fuzz** holds a tab converged with the server under reorder and disconnect.
 
 ### 8.2 Divergence -- what this states and the current instant does not
 
-**Measured:** every import in the code between two parts that the target's consumes do not allow is listed, generated, in the current document's section "Part divergence" (now zero).\
+**Measured:** every import in the code between two parts that the target's consumes do not allow is listed, generated, in the current document's section "Part divergence" (now zero); and every copied fact across the five copy measures (`tools/copies-record.json`) is listed, generated, in the current document's section "Recorded exceptions", each standing entry a ruled exception (`H25`).\
 **Listed by hand:** none -- every divergence recorded here at ratification (`B332`, `B338`, `B248`, `B330`, `B329`, `B328`) is closed (`H21.8`, `H22`).
 
 ---

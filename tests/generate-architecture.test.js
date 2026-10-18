@@ -26,7 +26,7 @@ test('H21.6: docs/ARCHITECTURE.md says what the code declares -- the control', (
 	assert.equal(r.status, 0, r.stdout);
 	const doc = fs.readFileSync(path.join(ROOT, 'docs/ARCHITECTURE.md'), 'utf8');
 	assert.match(doc, /^---\ninstant: current\n/, 'the current instant, declared');
-	for (const name of ['layers', 'kinds', 'canvas', 'compositions', 'doors', 'exceptions', 'gate', 'parts', 'part-divergence', 'justification']) assert.ok(doc.includes(`BEGIN GENERATED: architecture-${name}.`), name);
+	for (const name of ['layers', 'kinds', 'canvas', 'compositions', 'doors', 'exceptions', 'copies', 'gate', 'parts', 'part-divergence', 'justification']) assert.ok(doc.includes(`BEGIN GENERATED: architecture-${name}.`), name);
 	assert.match(doc, /\| `link` \| the network \|/, 'the link is the network\'s kind, read from its row');
 });
 

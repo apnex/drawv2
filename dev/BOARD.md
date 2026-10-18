@@ -1495,7 +1495,7 @@ AMENDED 2026-10-16: H24.9 done and live -- production runs `bc6d9cf`, shipped at
 
 ---
 
-## H25 -- unification, completed: every copied fact measured, then each copy removed - `WIP`
+## H25 -- unification, completed: every copied fact measured, then each copy removed - `DONE`
 
 Opened 2026-10-17 by the director (`dev/DECISIONS.md` H25): H22 closed against a measure that counts imports between parts, and copied facts drifted unseen (B361); measure every copy first, then remove each by a staged plan, reviewed and ratified before its build.
 
@@ -1511,7 +1511,7 @@ Opened 2026-10-17 by the director (`dev/DECISIONS.md` H25): H22 closed against a
 | H25.4 | One canvas layout, declared once and generated into both pages (H25.4) | **B376** | S4 | `DONE` |
 | H25.5 | One renderer: the old scene renderer deleted, its tests on the real one (H25.5) | **B378** | S3 | `DONE` |
 | H25.6 | One name: `routeGeometry` renamed (H25.6) | **B379** | S5 | `DONE` |
-| H25.7 | Close: the architecture document reports every copy, generated (H25.7) | **B366** | S4 | `TODO` |
+| H25.7 | Close: the architecture document reports every copy, generated (H25.7) | **B366** | S4 | `DONE` |
 
 **Exit:** every copy measure reads zero, or each remaining instance is an exception the director ruled, with its reason and trigger; view mode and the published SVG draw the director's diagrams pixel for pixel as before; no stored document changes.\
 AMENDED 2026-10-17 by the director (`dev/DECISIONS.md` H25-3): correctness and quality come first -- every pixel that differs from before is explained and judged correct, rather than none differing.
@@ -1531,6 +1531,7 @@ AMENDED 2026-10-17: H25.4 done -- the canvas's layout declared once in the compo
 AMENDED 2026-10-17: H25.4 live in production (`b6e9bc2`), the published diagram and the favicon byte-identical before and after.
 AMENDED 2026-10-17: H25.5 done -- the old scene renderer's four modules and their dead scene helpers deleted, all seven test files moved onto the real renderer with zero tests deleted, `NOT_PARTS` empty, and `server/routes.mjs` recorded as a ruled exception (B378 closed). Copy findings standing: 4, all 4 of them ruled exceptions.
 AMENDED 2026-10-18: H25.5 live in production (`c54329c`), the published diagram and the favicon byte-identical before and after; H25.6 done -- `routeGeometry` renamed `pathGeometry` across `kernel/router.mjs` and its callers, emptying `RATCHETS.L5p` (B379 closed).
+AMENDED 2026-10-18: H25.7 done -- `docs/ARCHITECTURE.md` carries the generated `architecture-copies` section, `docs/ARCHITECTURE-TARGET.md` 8.1 and 8.2 state that copies are measured, `SCANNER_ROOTS.docrefs` is derived from `FOLDERS`, and every exit criterion of `dev/design/unification/UNIFICATION-COMPLETE.md` section 7 holds (B366 closed; H25 closed).
 
 ---
 

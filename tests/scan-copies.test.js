@@ -220,6 +220,7 @@ test('H25.0: the duplicate scanners read every folder scan-layers walks but the 
 	for (const d of ['network', 'devices', 'zones', 'groups', 'layouts', 'product', 'lab', 'cli']) assert.ok(product.includes(d), `control: ${d} is a folder scan-layers walks`);
 	assert.deepEqual(SCANNER_ROOTS.twins, product, 'scan-twins compares every product folder (it read six, none a plugin\'s)');
 	assert.deepEqual(SCANNER_ROOTS.copies, product, 'scan-copies looks in every product folder');
+	assert.deepEqual(SCANNER_ROOTS.docrefs, product, 'scan-docrefs reads every product folder (H25.7)');
 	// RESTATED at H25.3b (B374) and H25.5 (B378, D5 of H25-1): the three foreign style rules and the REST route list
 	assert.deepEqual(Object.fromEntries(Object.entries(COPIES.exceptions).map(([k, v]) => [k, Object.keys(v).sort()])), { 'foreign style rules': ['#container.zonegrid .zone', '.waypoint.spawning .wp-dot', '.waypoint.spawning .wp-ring'], 'modules no entry reaches': ['server/routes.mjs'] }, 'the copies ruled to stand, and no others');
 	for (const x of Object.values(COPIES.exceptions).flatMap((m) => Object.values(m))) assert.ok((x.cites.includes('H25-4') || x.cites.includes('H25-1')) && x.trigger.length > 20, 'each cites its ruling and says what reopens it');

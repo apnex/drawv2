@@ -34,7 +34,7 @@ Usage: node tools/generate-architecture.mjs [--check] [--doc <path>]
 import fs from 'node:fs';
 import path from 'node:path';
 import { LAYER_DUTY, ALLOWED, LAYER, RATCHETS, RATCHET_REASONS, PARTS as DECLARED_PARTS, KIND_MAY_CONSUME, NOT_PARTS,
-	ALIGNMENT as DECLARED_ALIGNMENT, MISSION_KIT, MISSION_KIT_READ } from './layers.mjs';
+	ALIGNMENT as DECLARED_ALIGNMENT, MISSION_KIT, MISSION_KIT_READ, COPIES } from './layers.mjs';
 import { readRows } from './records.mjs';
 import { productKinds } from '../product/kinds.mjs';
 import { NETWORK_ROWS } from '../network/kinds.mjs';
@@ -100,9 +100,21 @@ const doors = [`**REST** -- ${ROUTES.length} routes (\`server/routes.mjs\`):`, '
 	`**The websocket** -- ${ws.length} commands a tab sends (\`server/protocol.js\`): ${list(ws)}.`, '',
 	`**The CLI** -- ${VERBS.length} verbs (\`cli/verbs.mjs\`):`, '', cli].join('\n');
 
-// ---- exceptions: the decoupling ratchets' records
+// ---- exceptions: the decoupling ratchets' records, and the copy measures' findings (H25.7, B365)
 const exceptions = table(['Ratchet', 'Where', 'Count', 'Why it holds', 'Ends when'],
 	Object.entries(RATCHET_REASONS).flatMap(([rule, entries]) => Object.entries(entries).map(([key, e]) => [rule, `\`${key}\``, RATCHETS[rule]?.[key] ?? 0, e.reason, e.trigger])));
+const copiesRecord = JSON.parse(read('tools/copies-record.json'));
+const copies = table(['Measure', 'Standing', 'Findings'],
+	Object.entries(copiesRecord).map(([measure, items]) => [
+		measure,
+		items.length,
+		items.length
+			? items.map((item) => {
+				const ex = COPIES.exceptions[measure]?.[item];
+				return `\`${item}\`${ex ? ` (${ex.cites.join(', ')}; ends when ${ex.trigger})` : ''}`;
+			}).join('; ')
+			: '--',
+	]));
 
 // ---- the gate
 const steps = JSON.parse(read('package.json')).scripts.gate.split(/\s*&&\s*/).map((s) => (s === 'npm test' ? 'node --test tests/*.test.js' : s));
@@ -213,7 +225,7 @@ for (const line of runTime.split('\n').filter((l) => l.startsWith('- **'))) {
 	for (const t of tests) if (!fs.existsSync(path.join(ROOT, t))) partFaults.push(`the current run time cites ${t}, which does not exist`);
 }
 
-const REGIONS = { layers, kinds, canvas, compositions, doors, exceptions, gate, parts, 'part-divergence': divergence, justification: chainAboveModel };
+const REGIONS = { layers, kinds, canvas, compositions, doors, exceptions, copies, gate, parts, 'part-divergence': divergence, justification: chainAboveModel };
 // ---- the alignment register (A-0): parts that exist, names MISSION_KIT holds, no entry of MISSION_KIT left unreferenced
 for (const [part, a] of Object.entries(ALIGNMENT)) {
 	if (!PARTS[part]) partFaults.push(`ALIGNMENT names ${part}, which is no part`);

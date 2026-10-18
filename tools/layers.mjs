@@ -987,7 +987,7 @@ const PRODUCT_FOLDERS = FOLDERS.map((f) => f.dir).filter((d) => d !== 'tools' &&
 export const SCANNER_ROOTS = {
 	dead: ['kernel', 'engine', 'model', 'app/src', 'server', 'planner', 'tools', 'cli', 'lab', 'network', 'layouts', 'zones', 'groups', 'devices', 'product'],   // scan-dead PROD: where a consumer counts as production
 	deadMethods: ['server', 'planner', 'model', 'engine', 'kernel'],                 // scan-dead METHOD_SCOPE: where a public method must have a caller
-	docrefs: ['kernel', 'engine', 'model', 'app/src', 'server', 'planner', 'cli', 'layouts', 'zones', 'groups', 'devices', 'product'],     // scan-docrefs CODE_ROOTS: code whose comments cite paths
+	docrefs: PRODUCT_FOLDERS,   // H25.7 (B365): every product folder, derived from FOLDERS so lab/ and network/ are read too
 	// H25.0 (B365): every product folder, read from FOLDERS, so a new plugin's folder is compared without an edit here. It was
 	// the six folders the product had when the scanner was written, and read none of the plugins' folders
 	twins: PRODUCT_FOLDERS,     // scan-twins ROOTS: where shared arithmetic is compared

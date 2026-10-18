@@ -3,7 +3,8 @@
 > **Tier 3 -- a design of record, proposed.** Written 2026-10-17 against `d0684e9`, revised the same day after its adversarial review.
 > Facts about today's code are measured by `tools/scan-copies.mjs` and cited by file; judgements are marked as such.
 > Proposes; decides nothing. Section 9 lists what only the director can settle.
-> AMENDED 2026-10-17: ratified, D1 to D6 as recommended (`dev/DECISIONS.md` H25-1).
+> AMENDED 2026-10-17: ratified, D1 to D6 as recommended (`dev/DECISIONS.md` H25-1); D3 amended to option A (`H25-2`); no-visible-change fence lifted for correctness and quality (`H25-3`); three foreign style rules ruled exceptions (`H25-4`).
+> AMENDED 2026-10-18: delivered and closed (`B365`, `B366`).
 
 ## 1. Status
 
@@ -206,6 +207,7 @@ Each stage: tests first; the record lowered in its commit, which lists each find
    AMENDED 2026-10-18, as built (B379): renamed `pathGeometry` in `kernel/router.mjs` (beside `roundedPath`, `pathLength` and `pointAtDistance`) and its callers (`engine/movers.mjs`, `network/link-head.mjs`, `tests/movers.test.js`, `tests/route-oracle.test.js`); `RATCHETS.L5p` and `RATCHET_REASONS.L5p` are empty.
 7. **H25.7 -- close.**
    `docs/ARCHITECTURE.md` gains a generated section listing each measure and its findings; `docs/ARCHITECTURE-TARGET.md` 8.2 states that copies are measured; `SCANNER_ROOTS.docrefs` is derived from the manifest's folders; B365 closes.
+   AMENDED 2026-10-18, as built (B365, B366): `tools/generate-architecture.mjs` generates `architecture-copies` into `docs/ARCHITECTURE.md` section 11 from `tools/copies-record.json` and `COPIES.exceptions`; `docs/ARCHITECTURE-TARGET.md` 8.1 and 8.2 state that copies are measured; `SCANNER_ROOTS.docrefs` is `PRODUCT_FOLDERS`, derived from `FOLDERS`; `B366` and `H25` close.
 
 ---
 

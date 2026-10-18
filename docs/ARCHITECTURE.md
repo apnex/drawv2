@@ -305,6 +305,18 @@ The layer manifest's decoupling ratchets, each with its reason and when it ends 
 | L7k | `cli/verbs.mjs` | 7 | the CLI's static imports stay inside cli/ so an installed copy runs (B138), so its verbs list the kinds themselves | the CLI learns the kinds from the server |
 <!-- END GENERATED: architecture-exceptions -->
 
+The five copy measures (`tools/scan-copies.mjs`, `tools/copies-record.json`), each standing finding a ruled exception in `tools/layers.mjs` `COPIES.exceptions`:
+
+<!-- BEGIN GENERATED: architecture-copies. Run tools/generate-architecture.mjs; do not edit by hand. -->
+| Measure | Standing | Findings |
+|---|---|---|
+| copied style rules | 0 | -- |
+| foreign style rules | 3 | `#container.zonegrid .zone` (H25-4; ends when a kind other than the zone takes its pointer from the zone grid, or zones stop being placed on the layouts plugin's zone layout); `.waypoint.spawning .wp-dot` (H25-4; ends when a second plugin puts a state on a waypoint, or the director asks for the spawner to be easier to see -- either redesigns how a waypoint's states are decided, in one sheet or as data); `.waypoint.spawning .wp-ring` (H25-4; ends when a second plugin puts a state on a waypoint, or the director asks for the spawner to be easier to see -- either redesigns how a waypoint's states are decided, in one sheet or as data) |
+| styled names nothing draws | 0 | -- |
+| copied lines | 0 | -- |
+| modules no entry reaches | 1 | `server/routes.mjs` (H25-1; ends when the router dispatches from server/routes.mjs directly, or a route is next added or changed) |
+<!-- END GENERATED: architecture-copies -->
+
 ---
 
 ## 12. Verification -- the gate
