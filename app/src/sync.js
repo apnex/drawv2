@@ -755,11 +755,13 @@ export class Sync {
 			before the load, because ending the gesture releases whatever is still held.
 			*/
 			for (const held of older ?? this.deferred.splice(0)) if (held.cmd === 'ack') this.applyAck(held.body || {});
-			// B393 (H24.18): a coalescing window still open is the old document's -- it goes now, naming the diagram it was made on,
-			// rather than closing after the load and naming the one the session was moved to
-			this.changes.flush?.();
-			this.cancelGesture?.();                         // on the old document (bindGestureDefer)
 			const same = this.diagramId === doc.meta.id;   // before it is reassigned below
+			// B393 (H24.18): a coalescing window still open on a DIFFERENT diagram is the old document's -- it goes now, naming the
+			// diagram it was made on, rather than closing after the load and naming the one the session was moved to. On the same
+			// diagram it stays open: the replay below re-applies it over the snapshot and it closes in its turn, after any answered
+			// request the server lost (D29), so the server keeps the later edit
+			if (!same) this.changes.flush?.();
+			this.cancelGesture?.();                         // on the old document (bindGestureDefer)
 			this.loading = true;
 			this.model.load(doc); // model.load now restores the authoritative selection from doc.selection (R2) — no clear
 			this.loading = false;
@@ -977,6 +979,7 @@ export class Sync {
 	openDiagram(id) {
 		if (id === this.model.state.meta.id) return;
 		if (!this.net.isOpen() || !this.hydrated) return this.emitState({}); // can't switch offline
+		this.changes.flush?.();   // B393 (H24.18): a coalescing window open on this diagram goes now, while it is still this one's
 		this.flush(); // don't lose the current pulse window's edits
 		this.hydrated = false;
 		this.expectLoad = true;
@@ -988,6 +991,7 @@ export class Sync {
 
 	createDiagram() {
 		if (!this.net.isOpen() || !this.hydrated) return this.emitState({});
+		this.changes.flush?.();   // B393 (H24.18): a coalescing window open on this diagram goes now, while it is still this one's
 		this.flush();
 		this.hydrated = false;
 		this.expectLoad = true;

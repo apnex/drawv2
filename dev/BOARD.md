@@ -1510,6 +1510,7 @@ AMENDED 2026-10-18: H24.15 done -- a reader whose access ends leaves the diagram
 AMENDED 2026-10-18: H24.15 verified -- its verifier found that the move lets an edit in flight land on the diagram the session was moved to, as a delete already did (H24.18, B393), owed the director's remedy before H24.14 and H24.15 ship; and that a session with nothing readable has no page answer, unreachable while templates ship (B394, held).
 AMENDED 2026-10-18: H24.18 done -- every write names the diagram it was made on, and the server refuses one made on a diagram the session has left, so an edit in flight when its session is moved is dropped rather than misplaced, after a delete as after a revoke (`dev/DECISIONS.md` H24.18, B393 closed). H24.14, H24.15 and H24.18 ship together.
 AMENDED 2026-10-18: H24.18's first build failed its verification -- a template's fork lost the page's next write, which named the template -- and is fixed: such a write lands on the fork while the session is on it; an open coalescing window is sent before a snapshot loads (B393).
+AMENDED 2026-10-18: the second build failed its verification as well -- sending the window before every snapshot put it ahead of a change the server had lost (D29) -- and is fixed: the window goes first only before another diagram's snapshot and on a switch (B393).
 
 ---
 

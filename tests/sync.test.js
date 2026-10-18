@@ -479,3 +479,23 @@ test('B393: a coalescing window still open when another diagram\'s snapshot land
 	assert.ok(commit, 'the open window went out before the other diagram was loaded');
 	assert.equal(commit.body.diagram, '0000000000aaa001', 'naming the diagram it was made on, so the server refuses it there');
 });
+
+test('B393: a window open on a diagram the person switches away from goes out, naming the diagram it was made on (control: the same diagram keeps it open)', () => {
+	const sent = [];
+	let recv;
+	const net = { status: 'open', subscribe(fn) { recv = fn; }, onStatus() {}, isOpen: () => true, send: (cmd, body) => { sent.push({ cmd, body }); return true; } };
+	const model = new Model();
+	let pending = null;
+	let sync = null;
+	const history = { clear() {}, setCounts() {}, openWindowOps: () => [], state: { version: 0 },
+		flush() { if (pending) { const p = pending; pending = null; sync.submit(p); } } };
+	sync = new Sync({ model, net, history, selection: new Selection(model) });
+	recv(snap('0000000000aaa001', 1));
+	pending = { ops: [{ op: 'meta', patch: { name: 'nudged' } }], label: 'nudge' };
+	recv(snap('0000000000aaa001', 1));   // a resync of the same diagram
+	assert.ok(pending, 'a snapshot of the same diagram leaves the window open (D29 replays it in its turn)');
+	sync.openDiagram('0000000000bbb002');
+	const commit = sent.find((x) => x.cmd === 'commit' && x.body.label === 'nudge');
+	assert.ok(commit, 'switching diagrams sends the open window first');
+	assert.equal(commit.body.diagram, '0000000000aaa001', 'naming the diagram it was made on');
+});

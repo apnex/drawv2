@@ -392,3 +392,57 @@ test('B148: a rejected commit is removed from disk, not only from memory', () =>
 	assert.deepEqual(only(next.sent, 'commit'), [],
 		'a command the server can never accept does not come back on the next load');
 });
+
+/*
+B393 (H24.18) -- a server that lost an answered change, and a nudge window still open as its snapshot lands.
+
+The window is sent before a snapshot loads only when the snapshot is of another diagram: on the same diagram it stays open, is
+re-applied over the snapshot and closes in its turn, after the answered request the server lost is resent (D29), so the later
+edit is the one both sides keep. Flushing it on every snapshot sent it ahead of the lost request, and the server ended a step
+behind the tab with nothing to say so -- found by the verifier of H24.18's second build.
+*/
+test('B393: a lost answered change and an open nudge window -- the server and the tab both keep the later edit', async () => {
+	storage.clear();
+	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-b393-'));
+	const tick = (ms = 20) => new Promise((r) => setTimeout(r, ms));
+	try {
+		let store = await openStore(dir, { flushMs: 3_600_000 });
+		const id = store.list(OWNER)[0].id;
+		assert.equal(store.commit(id, { label: 'seed', ops: [{ op: 'put', kind: 'node', entity: node('node-5a3e01', 60, 60) }] }, 'client', 'seed', OWNER).ok, true);
+		await store.flushAll();
+		const t = tab();
+		const connect = () => {
+			const handlers = {};
+			new Session({ readyState: 1, on(ev, fn) { handlers[ev] = fn; }, send: (text) => t.net.recv(JSON.parse(text)) }, store, null, null, OWNER);
+			t.net.send = function send(cmd, body) {
+				if (!this.open) return false;
+				t.sent.push({ cmd, body });
+				handlers.message(Buffer.from(JSON.stringify({ cmd, body })));
+				return true;
+			};
+		};
+		connect();
+		t.sync.expectLoad = true;
+		t.net.send('open', { id });
+		await tick(60);
+		const move = (x) => ({ label: 'move', entries: [{ op: 'set', kind: 'node', id: 'node-5a3e01', after: { x, y: 60 } }] });
+		t.changes.commit(move(120));   // answered, never flushed
+		await tick(60);
+
+		t.net.open = false;
+		t.sync.onStatus('closed');
+		store = await openStore(dir, { flushMs: 3_600_000 });   // the restart loses it
+		assert.equal(store.get(id).get('node', 'node-5a3e01').x, 60, 'the restart lost the answered move');
+		t.changes.amend(move(180));   // a nudge, its window still open as the tab reconnects
+		assert.ok(t.changes.window, 'the window is open');
+
+		connect();
+		t.net.open = true;
+		t.sync.onStatus('open');
+		await tick(1200);   // past the window's close
+		assert.equal(t.model.get('node', 'node-5a3e01').x, 180, 'the tab holds the later edit');
+		assert.equal(store.get(id).get('node', 'node-5a3e01').x, 180, 'and so does the server');
+	} finally {
+		fs.rmSync(dir, { recursive: true, force: true });
+	}
+});
