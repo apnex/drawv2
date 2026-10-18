@@ -55,7 +55,7 @@ A removed diagram is recoverable while the backend's delete window lasts, and tw
 
 `GET /api/v1/sessions` answers `{ sessions[] }` -- what each client DID, not what the document became.\
 Each entry carries the actor, principal, the diagram it is on and every diagram it has been on, whether it is still live, its counts of commits and refusals, and a bounded narrative of recent events.\
-With authorization on, a caller with no identity is refused, a caller's own sessions are shown, and another's only when the caller can read every diagram it has been on, templates aside (B381, H24.12).\
+With authorization on, a caller with no identity is refused, a caller's own sessions are shown, and another's only when it has been on a diagram other than a template and the caller can read every such diagram it has been on (B381, H24.12).\
 What a caller may read is answered whole, as everything is with authorization off -- bounded at 40 sessions by construction -- and `draw sessions --hot n` selects a runaway client from it.\
 Held in memory and bounded on both axes, so it is a troubleshooting instrument rather than state anything may depend on.\
 It exists because an agent asked the director to read a browser console during an incident, which is the anti-pattern **A5** names in its own rationale (**B182**).
