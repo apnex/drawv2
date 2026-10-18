@@ -1486,6 +1486,7 @@ Opened 2026-10-15 by the director (`dev/DECISIONS.md` H24): smaller UI, UX and p
 | H24.15 | A reader whose grant is revoked keeps receiving changes while its socket stays open (H24.15) | **B385** | S3 | `DONE` |
 | H24.16 | Draw's page files go uncompressed and uncached, about 974 KB on every visit (H24.16) | **B386** | S4 | `TODO` |
 | H24.17 | The session log can show another's session live on a template, which the presence lists now hide (H24.17) | **B392** | S4 | `TODO` |
+| H24.18 | An edit in flight when its session is moved -- off a deleted diagram, or one it lost access to -- lands on the diagram it was moved to (H24.18) | **B393** | S2 | `TODO` |
 
 **Exit:** each item the director names is done or ruled, and deployed.
 
@@ -1506,6 +1507,7 @@ AMENDED 2026-10-18: H24.12's second build verified; its verifier found two older
 AMENDED 2026-10-18: H24.11 and H24.12 live in production (`866b6f4`), at the director's "continue with recommendation"; the published diagram and the favicon byte-identical before and after, the session log refusing an anonymous caller; the corrected About, Privacy and Terms pages published, the GitHub description and topics changed (B380 closed). H24.13 to H24.15 wait on the director.
 AMENDED 2026-10-18: H24.14 done -- a seat on a template is shown only to the person in it, by one rule the pull, the snapshot and the push share (`dev/DECISIONS.md` H24.14, B384 closed). Its verifier found the session log able to show such a seat to a caller entitled to see that person elsewhere, registered for the director (H24.17, B392).
 AMENDED 2026-10-18: H24.15 done -- a reader whose access ends leaves the diagram at once for one it can read, and nothing of the old diagram reaches it, checked when access moves and at every send (`dev/DECISIONS.md` H24.15, B385 closed); the defect was worse than recorded, reaching draw's own page.
+AMENDED 2026-10-18: H24.15 verified -- its verifier found that the move lets an edit in flight land on the diagram the session was moved to, as a delete already did (H24.18, B393), owed the director's remedy before H24.14 and H24.15 ship; and that a session with nothing readable has no page answer, unreachable while templates ship (B394, held).
 
 ---
 
@@ -1597,6 +1599,7 @@ Scored so the comparison is a judgement, not an omission.\
 | **B389** | S4 | A fifth component: marquee, resize handles, drag-to-move with a preview (H26-1) | a second app needs marquee selection, resize handles or drag-to-move with a preview. |
 | **B390** | S4 | `snap-grid`'s radial, hex and isometric grids (H26-1) | an app needs a grid that is not square. |
 | **B391** | S4 | Draw on Node 24 (H26-2) | a component draw consumes needs Node 24, or Node 22 reaches the end of its maintenance, April 2027. |
+| **B394** | S4 | The page's answer to `access-lost` (H24.15) | the image ships no template, or `Store#first` stops falling back to one. |
 | **B344** | S4 | OD-1: a diagram kept in mission-kit's entity-store | the director selects it, or entity-store's record rules the adjustments it needs -- an asynchronous durable storage port, and names optional per kind. |
 | **B345** | S4 | OD-2: clients reaching the server over agp | OD-1 is ruled, entity-api is certified, and its follows are unparked (zorg's D15). |
 | **B347** | S4 | The towerless-combat timing test failed once under machine load | it fails a second time, or B333's flake ledger is built. |

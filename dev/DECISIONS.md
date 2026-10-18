@@ -2202,3 +2202,9 @@ Director: "continue"\
 Shown: dev/BACKLOG.md@27d066a\
 Affects: server/protocol.js, server/hub.js, server/rest.js, docs/spec/API.md\
 Recorder: shown H24.14 done and verified, its leftover registered (B392), and the second item, worse than recorded: a revoke tells every session to ask again, draw's page asks by re-opening its diagram, the server refuses and leaves the session on the diagram, and the owner's next change reached the revoked guest, its content and label with it -- reproduced locally. Offered: move the tab off at once, to the first diagram the person can still read as a deleted diagram's tabs move, and check access at every send so no later change reaches a tab that cannot read it (recommended), then ship H24.14 and H24.15 together; only stop the changes, the tab left on its error; or leave it. The director chose the recommendation.
+
+**H24-1 -- the full gate runs once per change, at the push; a commit is checked by the tests it touches and the record scanners -- 2026-10-18.**\
+Director: "drop the duplicate run. continue"\
+Shown: package.json@371785a\
+Affects: README.md\
+Recorder: asked how long the full gate takes, the director was told: the 2,276 tests ran 201 to 360 seconds that day, the slowest while another agent ran zorg's tests on the machine, and the scanners after them about 64 seconds, so one gate takes about 4.5 to 7 minutes -- not the 11 the recorder had been quoting -- and every change ran it twice, once before its commit by the recorder's own practice and again in the pre-push hook. Offered: drop the duplicate run, letting the pre-push gate be the one full check; run the tests in parallel; or split fast tests from slow. The director chose to drop the duplicate. So: before a commit, the tests the change touches and the record scanners (`scan-board`, `scan-triggers`, `scan-designs`, `scan-docrefs`, the style checks); the push runs the whole gate, and nothing reaches the lab or production without it.

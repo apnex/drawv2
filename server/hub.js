@@ -6,6 +6,8 @@ server-originated messages out, keeping that capability isolated.
 
 Sovereign: zero imports. It speaks a narrow duck-typed Session interface —
 each session exposes `.diagramId` (which diagram it views) and `.send(cmd, body)`.
+B385 (H24.15): and, where it has them, `.store`, `.principal` and `.leaveUnreadable()`, so a send
+to a diagram asks first whether each session may still read it.
 */
 
 export class Hub {
@@ -26,8 +28,8 @@ export class Hub {
 
 	`broadcast` cannot do this: it sends ONE body to many sessions, and a snapshot is per-principal
 	-- what a session may be shown depends on who it is. So the caller supplies a builder and this
-	supplies the sessions, which keeps the authorization decision at the caller and leaves the Hub
-	a registry.
+	supplies the sessions, which keeps the authorization decision at the caller. (Since B385 the Hub
+	makes one decision itself: `broadcast` sends nothing to a session that may no longer read the diagram.)
 
 	A builder returning null means this session may not read the survivor, and it is left alone
 	rather than being handed something it is not entitled to. It will discover the deletion the next
@@ -145,8 +147,8 @@ export class Hub {
 		this.sessions.forEach((s) => {
 			if (s.diagramId !== diagramId || s === except) return;
 			// B385 (H24.15): read access checked at every send -- a session that has lost it leaves the diagram and is sent nothing of it
-			if (s.store && !s.store.canRead(diagramId, s.principal)) return void s.leaveUnreadable?.();
 			try {
+				if (s.store && !s.store.canRead(diagramId, s.principal)) return void s.leaveUnreadable?.();
 				s.send(cmd, body);
 			} catch (err) {
 				console.warn(`[ hub ] session send failed: ${err.message}`);
@@ -182,7 +184,11 @@ workspace grant or publication changes, where each sent the signal alone.
 export function announceAccess(hub) {
 	if (!hub) return;
 	hub.sessions?.forEach((s) => {
-		if (s.diagramId && s.store && !s.store.canRead(s.diagramId, s.principal)) s.leaveUnreadable?.();
+		try {
+			if (s.diagramId && s.store && !s.store.canRead(s.diagramId, s.principal)) s.leaveUnreadable?.();
+		} catch (err) {
+			console.warn(`[ hub ] moving a session off a diagram it lost failed: ${err.message}`);
+		}
 	});
 	hub.announce('access', {});
 }

@@ -2278,14 +2278,59 @@ test('B385: over HTTP and websockets -- an owner revokes a reader, and the reade
 		const from = guest.seen.length;
 		assert.equal((await fetch(`${t.base}/grants/${encodeURIComponent(GUEST)}`, { method: 'DELETE' })).status, 200);
 		await until(() => guest.seen.slice(from).some((m) => m.cmd === 'access'));
-		assert.equal(guest.seen.slice(from).find((m) => m.cmd === 'error')?.body.code, 'access-lost',
-			'the reader, with nothing else readable, is told it lost access before it is told to ask again');
+		const told = guest.seen.slice(from).map((m) => (m.cmd === 'error' ? m.body.code : m.cmd));
+		assert.ok(told.includes('access-lost'), 'the reader, with nothing else readable, is told it lost access');
+		assert.ok(told.indexOf('access-lost') < told.indexOf('access'), 'before it is told to ask again');
 
 		const after = guest.seen.length;
 		owner.send('commit', { ops: [{ op: 'meta', patch: { name: 'after-the-revoke' } }], label: 'after-the-revoke', txnId: 'r1' });
 		await until(() => owner.seen.some((m) => m.cmd === 'ack'));
 		await new Promise((r) => setTimeout(r, 50));
 		assert.equal(JSON.stringify(guest.seen.slice(after)).includes('after-the-revoke'), false, 'and hears nothing of the next change');
+	} finally {
+		for (const ws of sockets) ws.close();
+		await t.close();
+	}
+});
+
+test('B385: over HTTP and websockets -- an owner revokes a workspace grant, and the reader\'s open tab leaves the owner\'s diagram', async () => {
+	const t = await grantable();
+	const sockets = [];
+	const connect = async (who) => {
+		t.as(who);
+		const ws = new WebSocket(`ws://127.0.0.1:${t.app.port}/ws`);
+		const seen = [];
+		ws.on('message', (d) => seen.push(JSON.parse(d.toString())));
+		await new Promise((r) => ws.on('open', r));
+		sockets.push(ws);
+		return { seen, send: (cmd, body) => ws.send(JSON.stringify({ cmd, body })) };
+	};
+	const until = async (ok) => { for (const t0 = Date.now(); !ok() && Date.now() - t0 < 5000;) await new Promise((r) => setTimeout(r, 10)); };
+	const workspace = `http://127.0.0.1:${t.app.port}/api/v1/workspace/grants`;
+	try {
+		t.as(OWNER);
+		assert.equal((await fetch(workspace, { method: 'POST', body: JSON.stringify({ principal: GUEST, level: 'read' }) })).status, 200);
+		const guest = await connect(GUEST);
+		guest.send('open', { id: t.id });
+		await until(() => guest.seen.some((m) => m.cmd === 'snapshot'));
+		assert.equal(guest.seen.find((m) => m.cmd === 'snapshot').body.doc.meta.id, t.id, 'the workspace grant lets the reader open the owner\'s diagram');
+		const owner = await connect(OWNER);
+		owner.send('open', { id: t.id });
+		await until(() => owner.seen.some((m) => m.cmd === 'snapshot'));
+
+		t.as(OWNER);
+		const from = guest.seen.length;
+		assert.equal((await fetch(`${workspace}/${encodeURIComponent(GUEST)}`, { method: 'DELETE' })).status, 200);
+		await until(() => guest.seen.slice(from).some((m) => m.cmd === 'access'));
+		const told = guest.seen.slice(from).map((m) => (m.cmd === 'error' ? m.body.code : m.cmd));
+		assert.ok(told.includes('access-lost') && told.indexOf('access-lost') < told.indexOf('access'),
+			'moved off before it is told to ask again, though the next change would also have caught it');
+
+		const after = guest.seen.length;
+		owner.send('commit', { ops: [{ op: 'meta', patch: { name: 'after-the-workspace-revoke' } }], label: 'after-the-workspace-revoke', txnId: 'w1' });
+		await until(() => owner.seen.some((m) => m.cmd === 'ack'));
+		await new Promise((r) => setTimeout(r, 50));
+		assert.equal(JSON.stringify(guest.seen.slice(after)).includes('after-the-workspace-revoke'), false, 'and hears nothing of the next change');
 	} finally {
 		for (const ws of sockets) ws.close();
 		await t.close();

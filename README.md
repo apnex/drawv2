@@ -80,8 +80,8 @@ The suite is `node:test`, covering the model, the server, and the CLI:
 npm test
 ```
 
-`npm run gate` is the full promotion proof: the suite plus six source scanners that hold the architectural boundaries.\
-It runs on every push, both as a local pre-push hook and in CI.
+`npm run gate` is the full promotion proof: the suite plus the scanners that hold the architectural boundaries and the records.\
+It runs on every push, both as a local pre-push hook and in CI, and once per change: a commit is checked by the tests it touches and the record scanners, and the push runs the whole (H24-1).
 
 ---
 
