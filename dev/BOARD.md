@@ -1484,6 +1484,7 @@ Opened 2026-10-15 by the director (`dev/DECISIONS.md` H24): smaller UI, UX and p
 | H24.13 | The agent door maps more than its two named prefixes, and a path's dots are resolved after it is matched (H24.13) | **B383** | S4 | `TODO` |
 | H24.14 | Presence on a template is told to every principal, the sitter's email with it (H24.14) | **B384** | S3 | `TODO` |
 | H24.15 | A reader whose grant is revoked keeps receiving changes while its socket stays open (H24.15) | **B385** | S3 | `TODO` |
+| H24.16 | Draw's page files go uncompressed and uncached, about 974 KB on every visit (H24.16) | **B386** | S4 | `TODO` |
 
 **Exit:** each item the director names is done or ruled, and deployed.
 
@@ -1546,6 +1547,24 @@ AMENDED 2026-10-18: H25.6 and H25.7 live in production (`88ab283`), at the direc
 
 ---
 
+## H26 -- sovereign canvas and input components: four repositories that know nothing of draw, a second app on them, and draw rebuilt on them - `TODO`
+
+Opened 2026-10-18 by the director (`dev/DECISIONS.md` H26): the canvas and the input system become sovereign components, each in its own repository and registered in mission-kit, with no knowledge of draw; their seams cleaned, hardened and deduplicated; draw re-integrated on them; and the canvas able to pan and zoom. The four, and the gesture tester as the second app, are H26-1; their form -- public repositories, TypeScript, released by their own CI on GitHub, draw unbuilt and loading them through a generated import map -- is H26-2; the order below is H26-3.
+
+| # | Item | Cites | Sev | State |
+|---|---|---|---|---|
+| H26.0 | Design of record: each component's duty and contract, what draw supplies to each, the vocabulary check in each gate, the repository template, the release workflow, draw's generated import map and the tester's scope; checked against the axioms (M7), reviewed by several model families (context-lab), ratified with each component's vision (H26.0) | **B346** | S3 | `TODO` |
+| H26.1 | `snap-grid`: the grid's arithmetic out of draw into its own repository, released, and draw on it -- the pipeline proven on the smallest (H26.1) | feature | S3 | `TODO` |
+| H26.2 | `input-binding`: the rule matcher and the gesture lifecycle out of draw, draw's rules supplied as data (H26.2) | **B274** | S3 | `TODO` |
+| H26.3 | `input-capture`: device events into input facts, the hit test and the coordinates supplied by the app (H26.3) | feature | S3 | `TODO` |
+| H26.4 | `vector-scene`: the drawing loop, its layers and what lies under a point out of draw, draw's painters supplied (H26.4) | feature | S3 | `TODO` |
+| H26.5 | The gesture tester at `input.apnex.io`, built from the four alone, after a fresh agent tries to build it from the contracts (H26.5) | feature | S3 | `TODO` |
+| H26.6 | Pan and zoom: in `vector-scene`, then the tester, then draw -- overturning decision 1 and firing B289 and B325, ruled when reached (H26.6) | feature | S3 | `TODO` |
+
+**Exit:** each of the four components in its own public repository, released by its own CI, free of draw's words by a check in its gate, and registered in mission-kit; draw running on all four, its gate passing and the probe unchanged except where a ruling changes what is drawn; the gesture tester live at `input.apnex.io`, built from the four alone.
+
+---
+
 ## Held -- on the record, not on the board
 
 Open `BACKLOG` rows whose trigger has not fired.\
@@ -1558,7 +1577,6 @@ Scored so the comparison is a judgement, not an omission.\
 | **B33** | S3 | The residue after H9.28: authentication and read-gating exist, the row's remaining half does not | any requirement for a second human writer on one diagram. |
 | **B178** | S3 | Authority at N instances -- the IDLE case, where nobody writes so no conflict proves who owns a diagram. The collision half shipped (H13.11) | deliberately scaling past one instance -- the director's ruling of 2026-09-04. |
 | **B289** | S4 | Unload what is out of view on an infinite canvas: elements leave the page off-screen and return on-screen, the model untouched | the infinite canvas is designed, or a board's element count measurably slows the page. |
-| **B274** | S4 | The gesture system as a shared component: its neutral core, draw as its first tenant, narrow `exports` entry points | a second app needs gesture input. |
 | **B127** | S4 | Parallel connections between two containers: superseded by the network model, designed with B256 | B256 is opened -- concurrent links on one pipe are designed. |
 | **B326** | S4 | The agent door's throttle refuses with no log an operator reads (no load-balancer logging on its backend) | an agent reports a 429 from the agent door, or a flood is suspected, or the throttle's threshold is next changed. |
 | **B324** | S4 | The palette drop test's page reloaded once, cause not caught; its leftover tabs are closed and its failure now names how the page was loaded and why | the drop test, or any browser test, fails again on a reloaded page. |
@@ -1570,10 +1588,14 @@ Scored so the comparison is a judgement, not an omission.\
 | **B335** | S4 | The other allow lists' reasons (scan-dead, scan-cli, rebuild-debt) cite nothing a check reads | a reason in one of those lists is found citing finished work. |
 | **B336** | S4 | Four specifications' status banners below their titles are unchecked | one of those specifications' status lines is found false. |
 | **B337** | S5 | The Held table's severity is typed on the board, not read from the register (AR3) | the triage scale is next changed, or a Held severity is found disagreeing with its row's finding. |
-| **B343** | S3 | Which of drawv2's parts become mission-kit components, reasoned with agp's and zorg's own | the director starts it. |
+| **B343** | S3 | Which of drawv2's parts become mission-kit components, reasoned with agp's and zorg's own | the director starts it for a part other than the canvas and the input system. |
+| **B387** | S4 | A bundler for draw's pages (H26-2) | TypeScript is wanted in draw's own code, or the page's load time is shown to be a problem once B386's compression and caching are in place. |
+| **B388** | S5 | The components on the npm registry (H26-2) | an app outside this organisation's repositories, or one that needs a version range rather than an exact file, depends on a component. |
+| **B389** | S4 | A fifth component: marquee, resize handles, drag-to-move with a preview (H26-1) | a second app needs marquee selection, resize handles or drag-to-move with a preview. |
+| **B390** | S4 | `snap-grid`'s radial, hex and isometric grids (H26-1) | an app needs a grid that is not square. |
+| **B391** | S4 | Draw on Node 24 (H26-2) | a component draw consumes needs Node 24, or Node 22 reaches the end of its maintenance, April 2027. |
 | **B344** | S4 | OD-1: a diagram kept in mission-kit's entity-store | the director selects it, or entity-store's record rules the adjustments it needs -- an asynchronous durable storage port, and names optional per kind. |
 | **B345** | S4 | OD-2: clients reaching the server over agp | OD-1 is ruled, entity-api is certified, and its follows are unparked (zorg's D15). |
-| **B346** | S4 | OD-3: mission-kit's components reaching the page and the installed CLI | a ruling puts a mission-kit component in the page, the lab or the CLI. |
 | **B347** | S4 | The towerless-combat timing test failed once under machine load | it fails a second time, or B333's flake ledger is built. |
 | **B282** | S3 | Anchors along a wide device, and which one a link ends at (WD1; the pack half closed at H21.3) | a wide device needs links at more than one point (WD1). |
 | **B325** | S4 | A diagram varies its grids -- its own extent, then its own pitch and offset (WD7) | the infinite canvas and scrolling are designed (B289's trigger), or a diagram needs a grid unlike the others. |
