@@ -1485,6 +1485,7 @@ Opened 2026-10-15 by the director (`dev/DECISIONS.md` H24): smaller UI, UX and p
 | H24.14 | Presence on a template is told to every principal, the sitter's email with it (H24.14) | **B384** | S3 | `DONE` |
 | H24.15 | A reader whose grant is revoked keeps receiving changes while its socket stays open (H24.15) | **B385** | S3 | `TODO` |
 | H24.16 | Draw's page files go uncompressed and uncached, about 974 KB on every visit (H24.16) | **B386** | S4 | `TODO` |
+| H24.17 | The session log can show another's session live on a template, which the presence lists now hide (H24.17) | **B392** | S4 | `TODO` |
 
 **Exit:** each item the director names is done or ruled, and deployed.
 
@@ -1503,7 +1504,7 @@ AMENDED 2026-10-18: H24.12 registered -- the verifier of H24.11 found the sessio
 AMENDED 2026-10-18: H24.12 done -- the session log refuses a caller with no identity, and shows another's session only to a caller who can read every diagram that session has been on, as the director chose (`dev/DECISIONS.md` H24.12); the first build failed its verification, which also found two agent lists B116 left unfiltered, now filtered (B381, B382 closed). It ships with H24.11, and the public pages are published with them. H24.13 registered: the agent door is wider than its comment says (B383), its remedy the director's to choose.
 AMENDED 2026-10-18: H24.12's second build verified; its verifier found two older gaps, registered for the director: presence on a template told to every principal (H24.14, B384) and a revoked reader's open socket still receiving changes (H24.15, B385).
 AMENDED 2026-10-18: H24.11 and H24.12 live in production (`866b6f4`), at the director's "continue with recommendation"; the published diagram and the favicon byte-identical before and after, the session log refusing an anonymous caller; the corrected About, Privacy and Terms pages published, the GitHub description and topics changed (B380 closed). H24.13 to H24.15 wait on the director.
-AMENDED 2026-10-18: H24.14 done -- a seat on a template is shown only to the person in it, by one rule the pull, the snapshot and the push share (`dev/DECISIONS.md` H24.14, B384 closed).
+AMENDED 2026-10-18: H24.14 done -- a seat on a template is shown only to the person in it, by one rule the pull, the snapshot and the push share (`dev/DECISIONS.md` H24.14, B384 closed). Its verifier found the session log able to show such a seat to a caller entitled to see that person elsewhere, registered for the director (H24.17, B392).
 
 ---
 
