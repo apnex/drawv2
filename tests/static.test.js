@@ -86,7 +86,9 @@ async function responder() {
 		});
 		req.on('error', reject); req.end();
 	});
-	return { dir, ask, write: (name, text) => fs.writeFileSync(path.join(dir, name), text), close: () => new Promise((r) => server.close(r)) };
+	return { dir, ask, write: (name, text) => fs.writeFileSync(path.join(dir, name), text),
+		backdate: (name, when) => fs.utimesSync(path.join(dir, name), when, when),
+		close: () => new Promise((r) => server.close(() => { fs.rmSync(dir, { recursive: true, force: true }); r(); })) };
 }
 const MODULE = `// a module large enough to be worth compressing\n${'export const word = "compressible";\n'.repeat(200)}`;
 
@@ -141,9 +143,14 @@ test('B386: a file is never kept -- no-store on every answer, no tag to ask with
 		assert.equal(first.headers.etag, undefined, 'no tag, so nothing invites a browser to keep it');
 		const asked = await r.ask('/m.mjs', { 'Accept-Encoding': 'br', 'If-None-Match': '*' });
 		assert.equal(asked.status, 200, 'a request that asks whether it changed is answered in full');
-		assert.ok(asked.body.length > 0);
-		const changed = MODULE.replace('compressible', 'Compressible');   // the same length, written at once
+		assert.equal(zlib.brotliDecompressSync(asked.body).toString(), MODULE, 'the kept coding, decoded, is the file');
+		for (let i = 0; i < 2; i++) assert.equal(zlib.gunzipSync((await r.ask('/m.mjs', { 'Accept-Encoding': 'gzip' })).body).toString(), MODULE, 'and so is the other, made and then kept');
+		const changed = MODULE.replace('compressible', 'Compressible');   // the same length, and the old modified time put back
+		const when = new Date(Date.now() - 60_000);
+		r.backdate('m.mjs', when);
+		await r.ask('/m.mjs', { 'Accept-Encoding': 'br' });
 		r.write('m.mjs', changed);
+		r.backdate('m.mjs', when);
 		const after = await r.ask('/m.mjs', { 'Accept-Encoding': 'br' });
 		assert.equal(zlib.brotliDecompressSync(after.body).toString(), changed, 'the new content, never the coding of the old');
 		assert.equal((await r.ask('/m.mjs')).body.toString(), changed, 'and as it is');

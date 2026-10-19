@@ -57,8 +57,8 @@ It was sent as written, so every visit downloaded the page's files at full size,
 `no-store`: a browser keeping a module, even one it asks about on every use, runs the old one after a deploy when the page is
 reached by Back or a restored session -- it does not ask then -- and the page's version check cannot see it (H24.16's first build,
 refused by its verification). Keeping files waits for versioned addresses (B398).
-The coded bytes are kept with a hash of the file's content, so each is made once per content per process and a changed file is
-never answered with the coding of its old content.
+The coded bytes are kept with a hash of the file's content, so each is made once per content per process -- or a few times, if
+several first requests arrive at once -- and a changed file is never answered with the coding of its old content.
 */
 const COMPRESSIBLE = /^(text\/|image\/svg\+xml|application\/json)/;
 const WORTH_COMPRESSING = 512;

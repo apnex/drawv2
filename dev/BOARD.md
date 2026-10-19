@@ -1603,7 +1603,7 @@ Scored so the comparison is a judgement, not an omission.\
 | **B336** | S4 | Four specifications' status banners below their titles are unchecked | one of those specifications' status lines is found false. |
 | **B337** | S5 | The Held table's severity is typed on the board, not read from the register (AR3) | the triage scale is next changed, or a Held severity is found disagreeing with its row's finding. |
 | **B343** | S3 | Which of drawv2's parts become mission-kit components, reasoned with agp's and zorg's own | the director starts it for a part other than the canvas and the input system. |
-| **B387** | S4 | A bundler for draw's pages (H26-2) | TypeScript is wanted in draw's own code, or the page's load time is shown to be a problem once B386's compression and caching are in place. |
+| **B387** | S4 | A bundler for draw's pages (H26-2) | TypeScript is wanted in draw's own code, or the page's load time is shown to be a problem with B386's compression in place. |
 | **B388** | S5 | The components on the npm registry (H26-2) | an app outside this organisation's repositories, or one that needs a version range rather than an exact file, depends on a component. |
 | **B389** | S4 | A fifth component: marquee, resize handles, drag-to-move with a preview (H26-1) | a second app needs marquee selection, resize handles or drag-to-move with a preview. |
 | **B390** | S4 | `snap-grid`'s radial, hex and isometric grids (H26-1) | an app needs a grid that is not square. |
