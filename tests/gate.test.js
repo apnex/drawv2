@@ -685,12 +685,15 @@ test('H9.7/B101: the agent door is stripped at ingress and nothing below can see
 	of door-blind code is now everything except the four lines that do the stripping.
 	*/
 	const app = read('server/app.js');
-	assert.deepEqual(words(app), ['connect', 'connect'],
-		'the ONLY two mentions in app.js are the two path literals in AGENT_DOOR -- even the names '
-		+ 'that apply it (AGENT_DOOR, throughTheAgentDoor) do not carry the word, so a third hit is '
+	// RESTATED (H24.13, B383): three -- the two entries and the door's bare prefix, by which the door recognises a request that
+	// arrived through it and names nothing it opens onto, and refuses it
+	assert.deepEqual(words(app), ['connect', 'connect', 'connect'],
+		'the ONLY mentions in app.js are the two path literals in AGENT_DOOR and the bare DOOR -- even the names '
+		+ 'that apply it (AGENT_DOOR, throughTheAgentDoor) do not carry the word, so a fourth hit is '
 		+ 'either a new door entry or code branching on the prefix, and both must be looked at');
 	assert.match(strip(app), /const AGENT_DOOR = \[/, 'the door is a table, so its entries can be counted');
-	assert.match(strip(app), /req\.url = throughTheAgentDoor\(req\.url\);/, 'and it is applied to the URL itself');
+	assert.match(strip(app), /const DOOR = '\/connect\/';/, 'its bare prefix is named once');
+	assert.match(strip(app), /const through = throughTheAgentDoor\(req\.url\);[\s\S]{0,300}req\.url = through;/, 'and it is applied to the URL itself');
 
 	// every other file must be unable to tell -- authorization is on the principal alone
 	for (const f of ['server/rest.js', 'server/store.js', 'server/protocol.js', 'server/identity.mjs']) {
@@ -700,7 +703,7 @@ test('H9.7/B101: the agent door is stripped at ingress and nothing below can see
 
 	// the strip must precede BOTH identity and routing, or something above could branch on the raw prefix
 	const code = strip(app);
-	const door = code.indexOf('req.url = throughTheAgentDoor');
+	const door = code.indexOf('throughTheAgentDoor(req.url)');
 	assert.ok(door > -1);
 	assert.ok(door < code.indexOf('identify(req.headers)'), 'stripped before the principal is resolved');
 	assert.ok(door < code.indexOf('handleRest('), 'stripped before anything routes');

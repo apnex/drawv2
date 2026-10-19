@@ -412,8 +412,11 @@ It opens on exactly two paths, and widening it is a deliberate act rather than a
 ```text
 /connect/v1/...      ->  /api/v1/...      the REST surface
 /connect/svg/<id>.svg -> /<id>.svg        the rendered picture
+/connect/svg/favicon.svg -> /favicon.svg the favicon
 /<id>.svg            ->  /<id>.svg        the rendered picture (outside IAP, H23)
 ```
+
+A path is normalised before the door decides -- dot segments resolved, `%2e` among them -- and a request that arrived through the door and names nothing above is answered 404, never served as if it had come the other way (B383, H24.13).
 
 The picture is the same route the editor links to, so an agent can fetch a render of what it just drew:
 ```sh

@@ -1481,7 +1481,7 @@ Opened 2026-10-15 by the director (`dev/DECISIONS.md` H24): smaller UI, UX and p
 | H24.10 | A published diagram's address was written into this public repository's records: removed from the tree; no new address and no rewrite, by ruling (H24.10) | **B363** | S2 | `DONE` |
 | H24.11 | Google Slides named nowhere live -- the descriptions, the public pages, current docs, comments and tests; the records keep theirs (H24.11) | **B380** | S5 | `DONE` |
 | H24.12 | The session log is readable without a sign-in or a code, through the agent door: who is signed in, on which diagram; and two agent lists B116 left unfiltered (H24.12) | **B381**, **B382** | S2 | `DONE` |
-| H24.13 | The agent door maps more than its two named prefixes, and a path's dots are resolved after it is matched (H24.13) | **B383** | S4 | `TODO` |
+| H24.13 | The agent door maps more than its two named prefixes, and a path's dots are resolved after it is matched (H24.13) | **B383** | S4 | `DONE` |
 | H24.14 | Presence on a template is told to every principal, the sitter's email with it (H24.14) | **B384** | S3 | `DONE` |
 | H24.15 | A reader whose grant is revoked keeps receiving changes while its socket stays open (H24.15) | **B385** | S3 | `DONE` |
 | H24.16 | Draw's page files go uncompressed and uncached, about 974 KB on every visit (H24.16) | **B386** | S4 | `TODO` |
@@ -1513,6 +1513,7 @@ AMENDED 2026-10-18: H24.18's first build failed its verification -- a template's
 AMENDED 2026-10-18: the second build failed its verification as well -- sending the window before every snapshot put it ahead of a change the server had lost (D29) -- and is fixed: the window goes first only before another diagram's snapshot and on a switch (B393).
 AMENDED 2026-10-18: H24.18's third build verified, every earlier probe rerun; two older gaps it found held with triggers -- a read-only snapshot under an open window (B395) and `forked` dropping a queued undo (B396).
 AMENDED 2026-10-18: H24.14, H24.15 and H24.18 live in production (`e7fa02c`), at the director's "continue"; the published diagram and the favicon byte-identical before and after, the probe unchanged against the previous production. H24.13, H24.16 and H24.17 wait on the director.
+AMENDED 2026-10-18: H24.13 done -- the agent door decides on the normalised path, refuses whatever arrived through it and names nothing it opens onto, and opens its picture entry onto a picture and the favicon alone (`dev/DECISIONS.md` H24.13, B383 closed).
 
 ---
 

@@ -67,7 +67,8 @@ including the picture -- were door-aware.
 
 The map is explicit rather than a blanket strip of `/connect`. A blanket strip would put every
 route this file grows behind the IAP-free backend the moment somebody added one, silently, which is
-a footgun wearing a door's clothes. Two entries today; a third is a deliberate act.
+a footgun wearing a door's clothes. Two entries today; a third is a deliberate act. B383 (H24.13): and the picture entry opens onto
+a picture and the favicon alone, the path normalised before the door decides (`throughTheAgentDoor`).
 
 None of this authorizes anything. Authentication happens after this point and authorization after
 that, on the principal alone -- a request through the door with no valid code carries no principal,
@@ -75,14 +76,31 @@ and the store refuses it exactly as it refuses one that slipped past IAP.
 */
 const AGENT_DOOR = [
 	['/connect/v1/', '/api/v1/'],   // the REST surface (H9.6)
-	['/connect/svg/', '/'],         // the rendered picture through the agent door (B101, H23)
+	['/connect/svg/', '/'],         // the rendered picture through the agent door (B101, H23) -- only a picture or the favicon
 ];
+// B383 (H24.13): every path the load balancer routes past IAP begins so, and what the picture entry is for
+const DOOR = '/connect/';
+const PICTURE = /^\/(?:[0-9a-f]{16}|favicon)\.svg$/;
 
+/*
+B383 (H24.13) -- the path the door hands on, or null for a request it refuses.
+
+NORMALISED FIRST: the URL parser resolves dot segments, `%2e` among them, so the door decides on the path every handler below will
+read -- it matched the raw text once, and `/connect/v1/%2e%2e/%2e%2e/<x>` reached any route. A request that arrived through the door
+(its raw or its normalised path under `DOOR`) and names nothing the door opens onto is refused, never served as if it had come
+the other way; and the picture entry opens onto a diagram's picture and the favicon alone, where it opened onto the whole page.
+*/
 function throughTheAgentDoor(rawUrl) {
+	let at;
+	try { at = new URL(rawUrl, 'http://localhost'); } catch { return rawUrl; }
+	if (!rawUrl.startsWith(DOOR) && !at.pathname.startsWith(DOOR)) return rawUrl;
 	for (const [door, real] of AGENT_DOOR) {
-		if (rawUrl.startsWith(door)) return real + rawUrl.slice(door.length);
+		if (!at.pathname.startsWith(door)) continue;
+		const path = real + at.pathname.slice(door.length);
+		if (real === '/' && !PICTURE.test(path)) return null;
+		return path + at.search;
 	}
-	return rawUrl;
+	return null;
 }
 
 /*
@@ -227,7 +245,12 @@ export async function createApp({ dataDir, port = 8080, clientDir, host, templat
 	const hasProduct = fs.existsSync(productDir);
 
 	const server = http.createServer(async (req, res) => {
-		req.url = throughTheAgentDoor(req.url);
+		const through = throughTheAgentDoor(req.url);
+		if (through === null) {   // B383 (H24.13): through the door to something it does not open onto
+			res.writeHead(404, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+			return res.end(JSON.stringify({ error: 'not found' }) + '\n');
+		}
+		req.url = through;
 		const url = new URL(req.url, 'http://localhost');
 		// resolved here rather than inside the router, so every REST handler receives a principal
 		// and none of them reads a header (ACCESS.md -- one boundary)

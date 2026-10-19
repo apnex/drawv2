@@ -905,6 +905,61 @@ test('B101: the agent door is not a blanket strip -- it opens onto two paths, no
 	}
 });
 
+/*
+B383 (H24.13) -- through the agent door, only what it opens onto: the REST surface, a diagram's picture and the favicon.
+
+The picture entry mapped `/connect/svg/` onto the root, so the whole page -- its index, its modules, its deep links -- came through
+the IAP-free backend; and the door matched the raw text before the URL parser resolved dot segments, so `/connect/v1/%2e%2e/%2e%2e/x`
+reached any route. Nothing private was exposed, because every route decides on the principal, but a route added later that forgot to
+would have been reachable without a sign-in. The door now normalises a path before it decides, refuses anything that arrived through
+it and names nothing it opens onto, and lets the picture entry through only to a diagram's picture and the favicon.
+*/
+test('B383: through the agent door, only the REST surface, a picture and the favicon -- dots and encodings resolved first', async () => {
+	const id = (await get('/api/v1/diagrams')).body[0].id;
+	const refused = [
+		'/connect/svg/', `/connect/svg/${id}`, '/connect/svg/index.html', '/connect/svg/app/src/main.js', '/connect/svg/kernel/geometry.mjs',
+		'/connect/svg/health', '/connect/svg/api/v1/diagrams',
+		'/connect/v1/%2e%2e/%2e%2e/index.html', '/connect/v1/%2E%2E/%2e%2e/kernel/geometry.mjs', '/connect/v1/%2e%2e/%2e%2e/health',
+		'/connect/v1/..%2f..%2findex.html', '/connect/%2e%2e/index.html', '/connect/svg/%2e%2e/index.html', '/connect/svg/../app/src/main.js',
+	];
+	// sent as written: fetch resolves dot segments itself before it sends, so it could never put one on the wire
+	const { request } = await import('node:http');
+	const raw = (p) => new Promise((resolve, reject) => {
+		const req = request({ host: 'localhost', port: app.port, path: p, method: 'GET' }, (res) => { res.resume(); res.on('end', () => resolve(res.statusCode)); });
+		req.on('error', reject);
+		req.end();
+	});
+	assert.equal(await raw('/index.html'), 200, 'the raw request reaches the server as written (control)');
+	for (const p of refused) {
+		const status = await raw(p);
+		assert.equal(status, 404, `${p} answered ${status}: the door opened onto something it is not for`);
+	}
+	assert.equal(await raw('/connect/v1/diagrams/../types'), 200, 'a dot segment that stays on the REST surface, sent as written');
+	assert.equal(await raw(`/x/%2e%2e/connect/svg/${id}.svg`), 200, 'a path that resolves into the door is the door, as every handler would read it');
+	assert.equal(await raw('/x/%2e%2e/connect/svg/index.html'), 404, 'and is refused what the door does not open onto');
+	// what the door is for (controls)
+	assert.equal((await fetch(`${base}/connect/v1/diagrams`)).status, 200, 'the REST surface');
+	const nearest = await (await fetch(`${base}/connect/v1/diagrams/${id}/layouts/node/nearest?x=61&y=59`)).json();
+	assert.deepEqual([nearest.x, nearest.y], [60, 60], 'with its query kept: the anchor nearest the point it names, not the origin');
+	assert.equal((await fetch(`${base}/connect/v1/health`)).status, 200, 'its health');
+	assert.equal((await fetch(`${base}/connect/svg/${id}.svg`)).status, 200, 'a diagram\'s picture');
+	assert.equal((await fetch(`${base}/connect/svg/favicon.svg`)).status, 200, 'the favicon');
+	// and the same paths without the door are untouched
+	assert.equal((await fetch(`${base}/index.html`)).status, 200);
+	assert.equal((await fetch(`${base}/kernel/geometry.mjs`)).status, 200);
+	// a websocket cannot be opened through the door either -- the upgrade sent as written, as a WebSocket client would resolve it
+	const upgrade = (p) => new Promise((resolve, reject) => {
+		const req = request({ host: 'localhost', port: app.port, path: p, headers: { Connection: 'Upgrade', Upgrade: 'websocket',
+			'Sec-WebSocket-Version': '13', 'Sec-WebSocket-Key': 'dGhlIHNhbXBsZSBub25jZQ==' } });
+		req.on('upgrade', (res, socket) => { socket.destroy(); resolve(101); });
+		req.on('response', (res) => { res.resume(); resolve(res.statusCode); });
+		req.on('error', reject);
+		req.end();
+	});
+	assert.equal(await upgrade('/ws'), 101, 'an upgrade to the websocket path opens (control)');
+	assert.notEqual(await upgrade('/connect/v1/%2e%2e/%2e%2e/ws'), 101, 'an upgrade through the door does not');
+});
+
 test('B102: an agent that lost its token can see when the lock frees', async () => {
 	const id = (await get('/api/v1/diagrams')).body[0].id;
 
