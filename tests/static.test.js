@@ -50,7 +50,8 @@ test('K9, K4: the lab serves its mounts, the planner whole, and nothing else, ho
 			const r = await ask(p);
 			assert.equal(r.status, 200, p);
 			assert.match(r.type, /^text\/javascript/, p);
-			assert.equal(r.cache, 'no-store', p);
+			// RESTATED (H24.16, B386): kept and asked about on every use, where it was never kept -- still never served stale
+			assert.equal(r.cache, 'no-cache', p);
 		}
 		// K4 (H17-D5): `server/` is not served at all -- the store, identity and anchor above all, and its old planner path too
 		for (const p of ['/server/store.js', '/server/identity.mjs', '/server/anchor.mjs', '/server/txn.mjs', '/kernel/../server/store.js',
@@ -61,4 +62,94 @@ test('K9, K4: the lab serves its mounts, the planner whole, and nothing else, ho
 		}
 		assert.equal((await ask('/kernel/geometry.mjs', 'POST')).status, 405, 'and it takes no writes');
 	} finally { await stopProcess(srv); }
+});
+
+/*
+B386 (H24.16) -- the responder sends a file compressed, and lets the browser keep it while checking for changes.
+
+Every file went uncompressed and `no-store`, so each visit downloaded the page's 134 modules again, about 974 KB. A file now goes
+brotli or gzip as the request accepts, the same bytes once decoded; it carries an ETag and `no-cache`, so the browser keeps it and
+asks each time whether it changed, and an unchanged file is answered 304 with no body -- a deploy still reaches every tab at once,
+because the question is always asked. Driven through the responder itself, over a folder of the test's own, so a changed file
+can be shown changing its tag.
+*/
+async function responder() {
+	const fs = await import('node:fs');
+	const os = await import('node:os');
+	const http = await import('node:http');
+	const { sendFile } = await import('../server/static.mjs');
+	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-static-'));
+	const server = http.createServer((req, res) => sendFile(req, res, fileWithin(dir, new URL(req.url, 'http://x').pathname)));
+	await new Promise((r) => server.listen(0, '127.0.0.1', r));
+	const ask = (p, headers = {}, method = 'GET') => new Promise((resolve, reject) => {
+		const req = http.request({ host: '127.0.0.1', port: server.address().port, path: p, method, headers }, (res) => {
+			const parts = []; res.on('data', (c) => parts.push(c)); res.on('end', () => resolve({ status: res.statusCode, headers: res.headers, body: Buffer.concat(parts) }));
+		});
+		req.on('error', reject); req.end();
+	});
+	return { dir, ask, write: (name, text) => fs.writeFileSync(path.join(dir, name), text), close: () => new Promise((r) => server.close(r)) };
+}
+const MODULE = `// a module large enough to be worth compressing\n${'export const word = "compressible";\n'.repeat(200)}`;
+
+test('B386: a file goes brotli or gzip as the request accepts -- the same bytes decoded -- and as it is when nothing is accepted', async () => {
+	const zlib = await import('node:zlib');
+	const r = await responder();
+	try {
+		r.write('m.mjs', MODULE);
+		const br = await r.ask('/m.mjs', { 'Accept-Encoding': 'gzip, deflate, br' });
+		assert.equal(br.headers['content-encoding'], 'br', 'brotli when the request accepts it');
+		assert.equal(zlib.brotliDecompressSync(br.body).toString(), MODULE, 'and it decodes to the file');
+		assert.ok(br.body.length < MODULE.length / 4, 'much smaller than the file');
+		const gz = await r.ask('/m.mjs', { 'Accept-Encoding': 'gzip' });
+		assert.equal(gz.headers['content-encoding'], 'gzip', 'gzip when that is what it accepts');
+		assert.equal(zlib.gunzipSync(gz.body).toString(), MODULE);
+		const refusedBr = await r.ask('/m.mjs', { 'Accept-Encoding': 'br;q=0, gzip' });
+		assert.equal(refusedBr.headers['content-encoding'], 'gzip', 'a coding the request refuses with q=0 is not sent');
+		const plain = await r.ask('/m.mjs');
+		assert.equal(plain.headers['content-encoding'], undefined, 'nothing accepted, nothing encoded');
+		assert.equal(plain.body.toString(), MODULE);
+		for (const res of [br, gz, plain]) {
+			assert.match(res.headers['content-type'], /^text\/javascript/);
+			assert.equal(res.headers.vary, 'Accept-Encoding', 'a cache keeps one copy per coding');
+			assert.equal(Number(res.headers['content-length']), res.body.length);
+		}
+	} finally { await r.close(); }
+});
+
+test('B386: the browser keeps a file and asks whether it changed -- 304 while it has not, the new file once it has', async () => {
+	const r = await responder();
+	try {
+		r.write('m.mjs', MODULE);
+		const first = await r.ask('/m.mjs', { 'Accept-Encoding': 'br' });
+		assert.equal(first.headers['cache-control'], 'no-cache', 'kept, and asked about on every use -- never served stale');
+		const tag = first.headers.etag;
+		assert.match(tag, /^"[^"]+"$/, 'a strong tag');
+		const again = await r.ask('/m.mjs', { 'Accept-Encoding': 'br', 'If-None-Match': tag });
+		assert.equal(again.status, 304, 'unchanged: 304');
+		assert.equal(again.body.length, 0, 'with no body');
+		assert.equal(again.headers.etag, tag);
+		assert.equal((await r.ask('/m.mjs', { 'Accept-Encoding': 'gzip', 'If-None-Match': `W/${tag}` })).status, 304, 'the same file in another coding, asked weakly, is unchanged too');
+		assert.equal((await r.ask('/m.mjs', { 'If-None-Match': '"something-else"' })).status, 200, 'a tag it does not hold is answered in full (control)');
+
+		r.write('m.mjs', `${MODULE}// changed by a deploy\n`);
+		const changed = await r.ask('/m.mjs', { 'If-None-Match': tag });
+		assert.equal(changed.status, 200, 'changed: answered in full');
+		assert.notEqual(changed.headers.etag, tag, 'under a new tag');
+		assert.match(changed.body.toString(), /changed by a deploy/);
+	} finally { await r.close(); }
+});
+
+test('B386: HEAD carries the headers and no body; a missing file is still never kept', async () => {
+	const r = await responder();
+	try {
+		r.write('m.mjs', MODULE);
+		const head = await r.ask('/m.mjs', { 'Accept-Encoding': 'br' }, 'HEAD');
+		assert.equal(head.status, 200);
+		assert.equal(head.headers['content-encoding'], 'br');
+		assert.ok(head.headers.etag);
+		assert.equal(head.body.length, 0);
+		const missing = await r.ask('/nothing.mjs');
+		assert.equal(missing.status, 404);
+		assert.equal(missing.headers['cache-control'], 'no-store', 'a 404 is not kept');
+	} finally { await r.close(); }
 });
