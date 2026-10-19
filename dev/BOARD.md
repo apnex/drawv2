@@ -1515,6 +1515,7 @@ AMENDED 2026-10-18: H24.18's third build verified, every earlier probe rerun; tw
 AMENDED 2026-10-19: H24.14, H24.15 and H24.18 live in production (`e7fa02c`), at the director's "continue"; the published diagram and the favicon byte-identical before and after, the probe unchanged against the previous production. H24.13, H24.16 and H24.17 wait on the director.
 AMENDED 2026-10-19: H24.13 done -- the agent door decides on the normalised path, refuses whatever arrived through it and names nothing it opens onto, and opens its picture entry onto a picture and the favicon alone (`dev/DECISIONS.md` H24.13, B383 closed).
 AMENDED 2026-10-19: H24.13 verified; from its notes the door also reads an absolute-form target and a backslash as the parser does, its test asserts the door's own 404, and an unreadable target's unanswered request is held (B397). The records dated 2026-10-18 since local midnight are corrected to 2026-10-19.
+AMENDED 2026-10-19: H24.13 live in production (`2512538`), at the director's "continue"; the published diagram and the favicon byte-identical before and after. H24.16 and H24.17 wait on the director.
 
 ---
 
