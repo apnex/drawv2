@@ -1512,6 +1512,7 @@ AMENDED 2026-10-18: H24.18 done -- every write names the diagram it was made on,
 AMENDED 2026-10-18: H24.18's first build failed its verification -- a template's fork lost the page's next write, which named the template -- and is fixed: such a write lands on the fork while the session is on it; an open coalescing window is sent before a snapshot loads (B393).
 AMENDED 2026-10-18: the second build failed its verification as well -- sending the window before every snapshot put it ahead of a change the server had lost (D29) -- and is fixed: the window goes first only before another diagram's snapshot and on a switch (B393).
 AMENDED 2026-10-18: H24.18's third build verified, every earlier probe rerun; two older gaps it found held with triggers -- a read-only snapshot under an open window (B395) and `forked` dropping a queued undo (B396).
+AMENDED 2026-10-18: H24.14, H24.15 and H24.18 live in production (`e7fa02c`), at the director's "continue"; the published diagram and the favicon byte-identical before and after, the probe unchanged against the previous production. H24.13, H24.16 and H24.17 wait on the director.
 
 ---
 
