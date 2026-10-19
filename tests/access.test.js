@@ -2020,6 +2020,7 @@ async function sessionsOnThreeDiagrams(authz) {
 	on('stranger-on-secret', STRANGER, secret);
 	on('owner-hopped', OWNER, secret, mine);
 	on('stranger-on-template', STRANGER, template);
+	on('guest-then-template', GUEST, mine, template);   // B392: on a diagram the owner reads, then moved to a template
 	return { store, sessions };
 }
 const actors = (res) => res.body.sessions.map((s) => s.actor).sort();
@@ -2033,10 +2034,12 @@ test('B381: a caller with no identity is refused the session log', async () => {
 
 test('B381: a caller sees its own sessions, and another\'s only when it can read every diagram that session has been on', async () => {
 	const { store, sessions } = await sessionsOnThreeDiagrams(true);
-	assert.deepEqual(actors(askSessions(store, sessions, GUEST)), ['guest-on-mine'],
+	// RESTATED (H24.17, B392): the fixture gains a guest session moved to a template, which the guest sees as its own
+	assert.deepEqual(actors(askSessions(store, sessions, GUEST)), ['guest-on-mine', 'guest-then-template'],
 		'the guest reads one diagram: not the owner on the other, nor the owner who came to it from the other, nor anyone unattached or on a template');
 	assert.deepEqual(actors(askSessions(store, sessions, OWNER)), ['guest-on-mine', 'owner-hopped', 'owner-on-secret', 'owner-unattached', 'stranger-on-secret'],
-		'the owner reads both diagrams and all of its own -- and not a stranger on a template, which says nothing of the owner');
+		'the owner reads both diagrams and all of its own -- and not a stranger on a template, which says nothing of the owner, '
+		+ 'nor the guest now on a template, though it reads the diagram the guest was on before (B392: as the presence lists hide that seat)');
 	assert.deepEqual(actors(askSessions(store, sessions, STRANGER)), ['stranger-on-secret', 'stranger-on-template'],
 		'a stranger with no grant sees only its own sessions');
 });
@@ -2045,7 +2048,7 @@ test('B381: with authorization off the log answers whole, as every route does (c
 	const { store, sessions } = await sessionsOnThreeDiagrams(false);
 	const res = askSessions(store, sessions, null);
 	assert.equal(res.code, 200);
-	assert.deepEqual(actors(res), ['guest-on-mine', 'owner-hopped', 'owner-on-secret', 'owner-unattached', 'stranger-on-secret', 'stranger-on-template']);
+	assert.deepEqual(actors(res), ['guest-on-mine', 'guest-then-template', 'owner-hopped', 'owner-on-secret', 'owner-unattached', 'stranger-on-secret', 'stranger-on-template']);
 });
 
 test('B381: a session that forks a template is on its fork in the log, and a stranger is not shown it -- over a websocket', async () => {

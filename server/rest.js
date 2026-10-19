@@ -420,9 +420,12 @@ export function handleRest(req, res, store, locks, hub, principal = null, sessio
 		it has been on a diagram and the caller can read every diagram it has been on, because its events name each of them and
 		the commits it made there. A template is set aside: every principal reads one, so it says nothing about the caller, and a
 		write to it forks a diagram the session is then on. With authorization off it answers whole, as every route does.
+		B392 (H24.17): and another's session is not shown while it sits on a template, as the presence lists show that seat to no
+		one but the person in it (H24.14) -- whatever diagrams it was on before.
 		*/
 		if (store.authz && !principal) return json(res, 403, { error: 'forbidden: no identity', code: 'forbidden' }), true;
 		const readsAll = (s) => {
+			if (s.diagram && store.isTemplate(s.diagram)) return false;   // B392: on a template now
 			const been = s.diagrams.filter((id) => !store.isTemplate(id));
 			return been.length > 0 && been.every((id) => store.canRead(id, principal));
 		};

@@ -2240,3 +2240,9 @@ Director: "continue"\
 Shown: server/static.mjs@d1bfb1f\
 Affects: server/static.mjs, dev/BACKLOG.md\
 Recorder: told that H24.16 as built had failed its independent check: the promise that the browser asks on every use, so a deploy reaches every tab at once, holds for visits and reloads but not for the Back button or tabs restored after a browser restart, which Chrome loads from its kept copies without asking -- reproduced, the old code running and the server asked for nothing, where production's setting loads the new code -- and that the page's version check cannot catch it, taking the server's version from its connection; nothing pushed or deployed. Offered: compress only, keeping "don't keep" -- about 407 KB on every visit where 1,041 KB went, never stale -- with keeping files left for H26's versioned addresses (recommended); keep caching and add a script that reloads once after Back or a restore, its labelling confirmed in Chrome and inferred elsewhere; or leave it. The director chose the recommendation.
+
+**H24.17 -- the session log hides another's session while it sits on a template, as the presence lists do -- 2026-10-19 (B392).**\
+Director: "continue."\
+Shown: dev/BACKLOG.md@f39bd43\
+Affects: server/rest.js, docs/spec/API.md\
+Recorder: shown H24.16 live, and the last small item: since H24.14 the presence lists show a person on a template to no one but themselves, while the session log, an agent's troubleshooting tool, still showed one with their email when they had been on a diagram the caller reads and then moved that tab to a template -- seen only by those already allowed to see the person on the earlier diagram. Offered: hide a session while it is on a template, matching the presence lists (recommended); show it with the template blanked, still revealing the person is online; or leave it. The director chose the recommendation.
