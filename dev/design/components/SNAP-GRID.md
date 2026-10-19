@@ -5,7 +5,7 @@ It designs `snap-grid`, the smallest of the four components H26-1 named, and the
 The other three components and the gesture tester's scope are later pieces, each brought to the director on its own.
 
 **Standing:** a design under review; nothing in it is built until the director ratifies it.\
-Revision 3, after the second multi-family reading (section 10); revision 1 was `0c59572`, revision 2 `fe8c25f`.
+Revision 4, after the third multi-family reading (section 10); revision 1 was `0c59572`, revision 2 `fe8c25f`, revision 3 `2cbd907`.
 
 ---
 
@@ -108,7 +108,8 @@ Every function validates its arguments before it computes.\
 A point may be any object, of any prototype, with number properties `x` and `y`, because consumers pass what they hold -- draw passes `DOMPoint`s and its own entities; a position, a region, a view and an options argument are plain objects (SG1) holding the properties their forms name and no other, an options argument any of its properties or none.\
 A malformed argument -- a point that is not an object with number `x` and `y`, a position not of the shape's form, a region or view not of section 3.2's form, an option out of range, a direction the grid does not list -- throws a `TypeError` whose message begins with the function's name.\
 A well-formed position that is not representable, given to `pointOf` or `span`, throws a `RangeError`.\
-A point or a rect with a coordinate that is a number but not finite, or outside the shape's domain, is well formed: `nearest` and `positionAt` answer `null` for such a point, and `enclosing` for such a rect.\
+A rect is malformed when `x`, `y`, `w` or `h` is not a number, or `w` or `h` is less than 0; its edges are `x`, `y`, `x + w` and `y + h` as binary64 computes them.\
+A point with a coordinate that is a number but not finite, or outside the shape's domain, is well formed, and `nearest` and `positionAt` answer `null` for it; so is a rect with such an edge, and `enclosing` answers `null` for it.\
 `openGrid` never throws for any declaration; it throws a `TypeError` only for malformed `options`.
 
 **What is returned.**\
@@ -166,7 +167,7 @@ On a square grid: `{ x: col * pitch + origin.x + 0, y: row * pitch + origin.y + 
 **SG5 -- Exactly on.**\
 `grid.positionAt(point)` returns `n = grid.nearest(point)` when `grid.pointOf(n)` has exactly the point's `x` and `y` (`===`), and `null` otherwise.\
 Defined through `nearest` and `pointOf`, it means the same for every shape, and needs no tolerance.\
-Draw's test, `(v - origin) % pitch === 0` on each axis, agrees with it for every integer coordinate in the domain, which is every coordinate draw's snapping makes.\
+Draw's test, `(v - origin) % pitch === 0` on each axis, agrees with it for every integer coordinate in the domain -- every coordinate draw's snapping makes -- on a grid with no bounds, and within the bounds on one with them; beyond the bounds `positionAt` answers `null` where draw's test, which knows no bounds, can pass.\
 It disagrees where `v - origin` rounds: on the zone grid it accepts `x = -30 + 2^-48`, one rounding from a lattice point, which `positionAt` refuses; that is one of the differences D1 makes in draw (section 6.3).
 
 **SG6 -- In view.**\
@@ -175,7 +176,7 @@ It disagrees where `v - origin` rounds: on the zone grid it accepts `x = -30 + 2
 `options.minSpacing`, default 0, is a finite number at least 0: the least distance on screen between neighbouring positions offered.\
 `options.max`, default 10000, is a safe integer at least 1: the most positions returned.\
 On a square grid:
-- an index range on each axis is the offered indices whose coordinate lies in the region, from `x` to `x + w` (or `y` to `y + h`) as binary64 computes them, edges included, computed exactly (SG2) -- possibly empty;
+- an index range on each axis is the offered indices whose coordinate lies in the region, from `x` to `x + w` (or `y` to `y + h`) as binary64 computes them, edges included, computed exactly (SG2) -- possibly empty; an edge beyond the domain may be clamped to it first, which changes no answer, since no offered position lies beyond it;
 - the stride is the least power of two `s`, from 1 to 2^52, at which `pitch * view.scale * s >= options.minSpacing` in binary64, or 2^52 when none is;
 - a position is returned when both its indices are in range and divisible by the stride, tested as `i % s === 0`;
 - the number returned is counted before anything is made, as the product of the two axes' counts, an axis counting 0 when its range is empty and otherwise `floor(hi / s) - ceil(lo / s) + 1`;
@@ -202,7 +203,7 @@ So `span(p, p).through` is the rect of `p`'s point with `w` and `h` 0, and `span
 
 **SG9 -- Enclosing.**\
 `grid.enclosing(rect)` returns a block `{ from, to }` of offered positions, or `null`.\
-Where some block's `through` contains the rect, it is the smallest such block; where none does, the shape's rule says what it answers; and it is `null` for a rect with a coordinate that is not finite or lies outside the domain.\
+Where some block's `through` contains the rect, it is the smallest such block; where none does, the shape's rule says what it answers; and it is `null` for a rect with an edge that is not finite or lies outside the domain (section 3.3).\
 On a square grid, on each axis: `from` is `floor((min - origin) / pitch)` and `to` is `ceil((max - origin) / pitch)`, computed exactly (SG2), each clamped to the least and greatest offered index, then `+ 0`, where `min` and `max` are the rect's edges; so a rect reaching past the offered positions gives the block clamped to them, and a rect wholly beyond one side gives a block of the one edge position there.\
 This is draw's zone wrap (`zones/zone-keys.mjs:28-33`) as a question any shape can answer.
 
@@ -212,11 +213,26 @@ The package imports no other package and no module particular to one runtime, so
 
 **SG11 -- Shapes are adapters, proved by a kit.**\
 A shape is a frozen object `{ name, open }`, `name` a non-empty string and `open(declaration)` returning what `openGrid` returns for it, its grid offering everything SG2 to SG9 name: `declaration`, `directions`, `opposite`, `offers`, `nearest`, `pointOf`, `positionAt`, `inView`, `next`, `span`, `regionContains` and `enclosing`.\
-Each shape defines its own domain and its own representable positions; a square grid's are integers within 2^50, a shape on circles has points that are not integers, and `positionAt` means the same for both because it is defined through `nearest` and `pointOf` (SG5).
+Each shape defines its own domain and its own representable positions: a square grid's domain is every coordinate within 2^50, fraction or not, and its representable positions are those whose points lie in it, their indices reaching 2^51; a shape on a circle has points that are not integers; and `positionAt` means the same for both, because it is defined through `nearest` and `pointOf` (SG5).
 
 `checkGridShape(shape, cases)` judges, over each case, the checks section 4 marks *kit* -- those that need nothing but the port and a rect, whose membership the kit computes itself -- and returns a frozen array of failures, empty when none.\
 A case is `{ name, declaration, points, positions, views, blocks, rects }`: a declaration the shape admits, and the arguments to judge over -- points, positions, `{ view, options }` pairs, `[from, to]` pairs, and rects that some block's `through` contains.\
-A failure is `{ invariant, case, args, got }`: the invariant's number, as `'I1'`, the case's name, the arguments, and what the grid answered, or `{ thrown: <message> }` when it threw; failures are ordered by case, then by invariant, then by the order the arguments were given; a declaration the shape refuses is one failure, `{ invariant: 'open', case, args: [declaration], got: problems }`.\
+A failure is `{ invariant, case, args, got }`: the invariant's number, as `'I1'`, the case's name, the arguments, and what was seen.\
+The kit judges the cases in the array's order, and within a case the invariants in the order `open`, I1 to I8, each over the arguments the table below names, in the order the case gives them.\
+It records one failure for each argument tuple that fails any of its invariant's checks, `got` being what the first failing check -- in the order section 4's row states them -- saw, or `{ thrown: <message> }` when a call threw, which ends that tuple's checks.\
+A declaration the shape refuses is the case's one failure, `{ invariant: 'open', case, args: [declaration], got: problems }`.
+
+| Invariant | Judged over, in order | `args` |
+|---|---|---|
+| `open` | the case's declaration | `[declaration]` |
+| I1 | each case position `offers` accepts | `[position]` |
+| I2, I3 | each case point | `[point]` |
+| I4 | each view pair; then each two view pairs, the earlier first, whose regions are equal and whose strides differ, `got` the first position of the greater stride's answer missing from the other's | `[view, options]`; `[pair, pair]` |
+| I5 | the grid's directions, once; then each case position `offers` accepts, with each direction in the order of `directions` | `[]`; `[position, direction]` |
+| I6 | each block; then each case position | `[from, to]`; `[position]` |
+| I7 | each call the other invariants made, in the order they made it, made again; listed in its place among the invariants | `[name, ...arguments]` |
+| I8 | each case rect | `[rect]` |
+
 What the kit cannot check through the port -- that a nearest position is nearest among every position, that `inView` misses none and orders them as its shape says, that neighbours' cells share an edge, that a span is the smallest, that an enclosing block cannot shrink -- each shape proves in its own tests, against its formulas (section 4).
 
 `square` is proved by the kit and by its own tests in `snap-grid`; so is `ring-test`, a shape in the tests alone, which exists to show that the port and the kit are not square by accident -- one index, two directions that wrap, points that are not integers, and regions that are not rects (appendix C).
@@ -284,7 +300,7 @@ A square grid's exact answer never loses that comparison: its distance on each a
 **Acceptance for H26.1, draw on `snap-grid`:**
 1. `snap-grid` is released from its repository by its CI, and draw's lockfile pins the release file by its hash.
 2. Every site appendix B marks *moves* asks `snap-grid`, on the grid the row names; every site marked *stays* reads the pitch, origin and extent from a declaration, never from `STD.pitch`, `LAYOUTS` or a literal; every site marked *kept* keeps its behaviour exactly and cites its backlog row.
-3. `kernel/geometry.mjs` no longer exports `px`, `cellOf`, `LAYOUTS`, `onLayout`, `snapLayout`, `cellOn`, `pxOn`, `nearestAnchor`, `anchorAt` or `spanExtent`; `app/src/snap.js` no longer holds `clamped`, `snapNode` or `HALF`; `zones/zone-gestures.mjs` no longer holds `snapZone`; a test in draw finds none of them, and finds `Math.round`, `Math.floor` or `Math.ceil` over a pitch only at the sites appendix B marks *stays*.
+3. `kernel/geometry.mjs` no longer exports `px`, `cellOf`, `LAYOUTS`, `onLayout`, `snapLayout`, `cellOn`, `pxOn`, `nearestAnchor`, `anchorAt` or `spanExtent`; `app/src/snap.js` no longer holds `clamped` or `HALF`, and its `snapNode` and `snapIn` only ask `snap-grid`; `zones/zone-gestures.mjs` no longer holds `snapZone`; a test in draw finds none of them, and finds `Math.round`, `Math.floor` or `Math.ceil` over a pitch only at the sites appendix B marks *stays*.
 4. Before anything is deleted, a test in draw runs each old function and its replacement side by side over a sweep of points and positions for both grids, bounded and unbounded, and finds no difference, `-0` told apart, beyond those section 6.3 lists as changed, each of which the sweep holds with both answers; I10's corpus is what it writes.
 5. Draw's full gate passes; the probe against production, each side on its own dependencies, finds no pixel or style changed; the REST answers for `nearest` and `anchors` are byte-identical before and after for a sweep of queries, except those section 6.3 rules -- coordinates beyond the domain and an inherited name among them; placing a text box stores the same origin and span as before; every stored diagram on the lab and in production loads, none skipped; and an independent verifier passes the move.
 6. The product page, the lab page, the server and the export load the one release: the pages through the import map (section 7.6), Node by name.
@@ -293,24 +309,24 @@ A square grid's exact answer never loses that comparison: its distance on each a
 
 ## 5. What draw supplies, and what stays draw's
 
-**Draw opens four grids,** each through one function of the core's `lattice` part, `latticeGrids(record)`, which takes a record of the layouts plugin's form, `{ pitch, offset, ext }`, and returns the grid bounded by its extent and the grid with no bounds, refusing loudly, with its problems, at load:
+**Draw opens four grids,** through two functions of the core's `lattice` part: `latticeGrids(record)` takes a record of the layouts plugin's form, `{ pitch, offset, ext }`, and returns the grid bounded by its extent and the grid with no bounds, refusing loudly, with its problems, at load; `nodeGridWithin(ext)` is `latticeGrids` of the node grid's own pitch and origin with the extent its caller gives.
 
 | Grid | Declaration | Opened by | Used for |
 |---|---|---|---|
-| node, unbounded | `{ shape: 'square', pitch, origin: { x: 0, y: 0 } }`, the pitch `STD.pitch` | the lattice, as `NODE_GRID` | the relation index, field validation (lengths and positions), spans, the steps and the walk |
-| node, bounded | the same with `bounds: { min: { x: -ext.x, y: -ext.y }, max: { x: ext.x, y: ext.y } }` from the node record | the layouts plugin, from its table | canvas snapping, through the anchor's place; free anchors |
-| zone, bounded | from the zone record, as the node | the layouts plugin, from its table | canvas snapping of zones, through the zone's place; the wrap; corner steps |
-| zone, unbounded | the same with no `bounds` | the layouts plugin, from its table | field validation |
+| node, unbounded | `{ shape: 'square', pitch, origin: { x: 0, y: 0 } }`, the pitch `STD.pitch` | the lattice, as `NODE_GRID` | the relation index, field validation (lengths and positions), spans, the steps and the walk, the REST routes |
+| node, bounded | the same with `bounds: { min: { x: -ext.x, y: -ext.y }, max: { x: ext.x, y: ext.y } }`, `ext` being `NODE_EXT` | `nodeGridWithin(NODE_EXT)`, by each part that needs it | canvas snapping; free anchors |
+| zone, bounded | from the zone record, as the node | the layouts plugin, from its table, as `ZONE_GRIDS` | canvas snapping of zones, through the zone's place; the wrap; corner steps |
+| zone, unbounded | the same with no `bounds` | the layouts plugin, as `ZONE_GRIDS` | field validation; the REST routes |
 
-Where each is opened follows draw's layer rules, which revision 2's single opener in the layouts plugin broke (section 10.2):
-- only the `lattice` part imports `snap-grid` (section 7.7); it opens the unbounded node grid from `STD.pitch` and origin 0, the one grid that the core, the devices plugin, the simulation and the canvas need and reach without a plugin, since none of them may import `layouts/`; and it opens no grid needing `NODE_EXT`, because `kernel/` and `model/` import nothing from each other (L3);
-- the layouts plugin builds its two records as today, the node's offset read from `NODE_GRID`'s declaration and the zone's -- half a pitch -- stated in its table rather than in the kernel, and opens the other three grids from them at load, as `LAYOUT_GRIDS`;
-- the canvas never imports `layouts/` (`tests/canvas-names-no-plugin.test.js`): each place carries its bounded grid -- the anchor's place from the layouts plugin, the zone's from the zones plugin -- and the canvas snaps through the place;
-- the REST routes and the drawn grid hold a diagram, and open from its records, `latticeGrids(layoutNamed(model, name))`: an unknown name is refused 404 by the table, and a missing record answers as the layouts list does today, 500 `layout-missing`.
+Where each is opened follows draw's layer rules and its parts' declared consumes, which revisions 2 and 3 broke (sections 10.2 and 10.3):
+- only the `lattice` part imports `snap-grid` (section 7.7), and every other part consumes `lattice` already; `kernel/` and `model/` import nothing from each other (L3), so the kernel cannot read `NODE_EXT`, and a part that needs the bounded node grid -- the canvas, the placement part, the layouts plugin's anchor place -- opens it with `nodeGridWithin(NODE_EXT)`, one function over one declaration, each opening equal to the others;
+- the layouts plugin builds its two records as today, the node's pitch and offset read from `NODE_GRID`'s declaration and the zone's offset -- half a pitch -- stated in its table rather than in the kernel, and opens the zone's two grids from its record at load;
+- the canvas never imports `layouts/` (`tests/canvas-names-no-plugin.test.js`): each place keeps its `layout` name and its `ext` and gains its bounded grid -- the anchor's from `nodeGridWithin`, the zone's from `ZONE_GRIDS` -- `placesOf` refusing a place whose grid's bounds are not its `ext`; `snapIn` asks the place's grid, and `snapNode`, which has no place in hand, asks `nodeGridWithin(NODE_EXT)` through `app/src/snap.js`, as the palette and every gesture already call it;
+- the REST routes look a name up in the layouts table and ask that name's grid with no bounds, `NODE_GRID` or the zone's, as today they ask the kernel's, reading no record; the drawn grid opens from the diagram's records, `latticeGrids(layoutNamed(model, name))`, as today it reads them.
 
-A grid opened at load and one opened from a diagram's record are the same grid, because WD7 holds every diagram's records to the table's values and the layouts kind refuses any other.\
+A grid opened from the table and one opened from a diagram's record are the same grid, because WD7 holds every diagram's records to the table's values and the layouts kind refuses any other.\
 So nothing is rebuilt when a diagram loads, and a relation index is attached to each model as today, the injected `cellOf` replaced by `NODE_GRID`'s `nearest`.\
-The day a diagram may vary its grids, every caller that opens at load must take its grids from the diagram instead: that is WD7's programmability, which H26.6's pan and zoom brings, and it fires B325.
+The day a diagram may vary its grids, every caller that opens from the table must take its grids from the diagram instead: that is WD7's programmability, which H26.6's pan and zoom brings, and it fires B325.
 
 The REST anchor list keeps its index range exactly -- the node extent's indices for both grids, through `pointOf` on the unbounded grid -- because that range is today's behaviour, defect or not (section 6.3).
 
@@ -340,7 +356,7 @@ I10 holds `snap-grid` to draw's arithmetic as square-grid cases; acceptance step
 - **Ties.** Both round half toward the greater; the zone wrap's floor and ceiling become SG9, which floors and ceils the same way.
 - **`-0`.** Every draw caller normalises it except `px`, which no product module calls and which is deleted.
 - **Fractions one rounding from an edge.** Draw rounds `v - origin` before it divides, and `snap-grid` is exact (SG2). They agree for every integer coordinate, and for every other one except a coordinate within one rounding of a cell's edge or a lattice point -- about 10^-14 at draw's scale -- where draw gives the farther position, or accepts a point off the lattice as on it (6.3).
-- **Non-finite input, and beyond the domain.** `snapNode` passes `NaN` through and clamps `Infinity` to the edge; `nearest` answers `null`. No canvas caller and no validated field can pass either, or reach 2^50 -- pointer events and validated fields are finite and within the extent -- and the parity is stated for them only; the REST route can, and is ruled (6.3).
+- **Non-finite input, and beyond the domain.** `snapNode` passes `NaN` through and clamps `Infinity` to the edge; `nearest` answers `null`. No canvas caller and no validated field can pass either, or come near 2^50 -- pointer events and validated fields are finite and within the extent -- and the parity is stated for them only; the REST route can, and is ruled (6.3).
 
 ### 6.3 Defects the inventory found, and what H26.1 changes
 
@@ -354,7 +370,7 @@ H26.1 is an extraction: it keeps every behaviour of draw's, defects included, ex
 **Changed by H26.1:**
 - a layout named by an inherited property answers 200 with nulls instead of 404 -- `GET .../layouts/constructor/nearest?x=0&y=0` answers `layout: "Object"`, measured (`server/rest.js:645`); looked up in the layouts table, an unknown name is refused 404 (section 5; B401, ruled with H26.1);
 - a coordinate within one rounding of a cell's edge or a lattice point is decided exactly: on the zone grid a pointer at `x = -60 - 2^-47` snaps to -90, where draw snaps it to -30, and a zone stored at `x = -30 + 2^-48`, which draw's check accepts today, is refused, both measured (D1);
-- the REST `nearest` route answers a coordinate beyond 2^50 in magnitude 422 `bad-query`, as it answers one that is not finite, where today it answers a position its float arithmetic garbles -- `x = 9007199254740991` gives `x = 9007199254741020`, measured (D1).
+- the REST `nearest` route answers a coordinate beyond 2^49 in magnitude 422 `bad-query`, as it answers one that is not finite: beyond 2^53 today's answer is garbled by its float arithmetic -- `x = 9007199254740991` gives `x = 9007199254741020` -- and near 2^50 the exact nearest position can lie outside the domain, where `nearest` clamps -- on the zone grid `x = 2^50` gives `x = 1125899906842650` today, which is exact, and would give `1125899906842590`; refusing beyond 2^49 leaves every accepted query a nearest position well inside the domain, so no accepted answer changes, all measured (D1).
 
 ---
 
@@ -440,7 +456,7 @@ It writes one entry per export -- never a trailing-slash prefix, which would map
 
 It refuses an `exports` form it does not support -- conditions other than `types` and `default`, patterns, or a target outside `dist/` -- rather than guessing.\
 The region sits in `<head>` before every module script and every `modulepreload`, and is the page's only import map.\
-It is registered as every generated page region is, in `PAGE_REGIONS` and `COPIES.generated`, so `scan-copies` neither calls its markers stray nor counts the lines the two pages share as a copy; the generator, as every tool, begins `#!/usr/bin/env node` and is executable.\
+It is registered as every generated page region is, in `PAGE_REGIONS` and `COPIES.generated`, so `scan-copies` neither calls its markers stray nor counts the lines the two pages share as a copy, and `tests/scan-copies.test.js`, which names the regions and their generators, is restated with it; the generator, as every tool, begins `#!/usr/bin/env node` and is executable, and its `--check` joins the gate's script, the generated gate region of `docs/ARCHITECTURE.md` regenerated with it.\
 `scan-layers`' rule L6, which refuses every inline `<script>`, admits exactly this one: a `type="importmap"` script inside the generated region whose content the generator's `--check` holds; every other inline script is still refused.
 
 **A vendor mount.**\
@@ -468,7 +484,7 @@ Draw's own files have the same window today -- a page from one revision, its mod
 `tools/layers.mjs` gains `COMPONENTS`: each component draw consumes, the parts that may import it, and the ruling that admits it -- for `snap-grid`, the `lattice` part alone, every other part asking the grids the lattice and the layouts plugin open (section 5).\
 `scan-layers` allows an import of a component only from those parts, resolving the package and its subpaths as it resolves `DEPENDENCIES` today, and the generated architecture shows each part's components beside its consumes.\
 The records that name what H26.1 deletes change in the commit that deletes it: the deleted exports join `UNUSED_EXPORTS`' `retired` list and leave its `list`; `scan-dead`'s three allowances for `cellOn`, `pxOn` and `px` go, so none outlives its reason; `kernel/geometry.mjs`'s entry in the record of `tests/core-names-no-plugin.test.js` goes, the zone's offset having left the kernel; and every test that imports a deleted name follows its subject.\
-The mission-kit register moves `snap-grid` from a candidate to a component draw composes, under the `lattice` part, the reading date renewed.
+The register of mission-kit's components in `tools/layers.mjs` gains `snap-grid` in `MISSION_KIT`, as a component draw composes, and `ALIGNMENT` aligns the `lattice` part to it, the reading date renewed; `docs/ARCHITECTURE.md` and `docs/ARCHITECTURE-TARGET.md` are regenerated in the same commit.
 
 ---
 
@@ -478,7 +494,7 @@ Each is offered with a recommendation; they may be ratified together, or one at 
 
 | # | Decision | Recommendation, and why |
 |---|---|---|
-| D1 | A square declaration is an integer `pitch`, an integer `origin` and optional integer `bounds` -- one pitch for both axes, every value within 2^50 -- and every answer is exact | yes: draw's grids and the keyboard need nothing else; integers within 2^50 keep every intermediate value exact, and computing a fraction's rounding exactly costs a few lines, so `positionAt` needs no tolerance and the nearest position is the nearest. It changes draw only where draw's float arithmetic is wrong -- within one rounding of a cell's edge or a lattice point, and beyond 2^50 (section 6.3); fractional or per-axis pitches wait for a consumer (P4) |
+| D1 | A square declaration is an integer `pitch`, an integer `origin` and optional integer `bounds` -- one pitch for both axes, every value within 2^50 -- and every answer is exact | yes: draw's grids and the keyboard need nothing else; integers within 2^50 keep every intermediate value exact, and computing a fraction's rounding exactly costs a few lines, so `positionAt` needs no tolerance and the nearest position is the nearest. It changes draw where draw's float arithmetic is wrong -- within one rounding of a cell's edge or a lattice point -- and refuses REST queries beyond 2^49, where the domain's edge would otherwise move an answer (section 6.3); fractional or per-axis pitches wait for a consumer (P4) |
 | D2 | Positions in each shape's own integer coordinates, and directions each shape names and pairs -- `-x`, `+x`, `-y`, `+y` on a square grid | yes: a radial grid has no x, and names tied to the axes say nothing of which way is up, which is the consumer's |
 | D3 | `span` answers both `through` the points and `covering` the cells | yes: draw needs the first, the keyboard the second |
 | D4 | Thinning by powers of two counted from position 0 | yes: zooming out drops positions and never moves one, so a drawn grid does not shimmer |
@@ -494,7 +510,7 @@ Each is offered with a recommendation; they may be ratified together, or one at 
 ## 9. Axiom alignment audit (M7)
 
 **Identity.**\
-H26.0 part 1 at revision 3, audited in three layers, because the shared parts bring state the library does not:
+H26.0 part 1 at revision 4, audited in three layers, because the shared parts bring state the library does not:
 - the library: `snap-grid` holds no state, coordinates no actors and runs no model, so it brings no trait and the floor binds it;
 - the release process: tags, drafts and published releases, state held on GitHub;
 - the consumer: draw, stateful, multi-agent and autonomous as `MISSION-KIT-ALIGNMENT.md` section 5 reads it, to which the design adds installed versions, browser caches and deploys.
@@ -502,7 +518,8 @@ H26.0 part 1 at revision 3, audited in three layers, because the shared parts br
 **Verdict.**\
 Revision 1 was `revise-before-implementation`: its contract left builders room to differ, its inventory missed sites, and its parity and deployment claims went beyond their evidence (section 10.1).\
 Revision 2 was `revise-before-implementation` as well: its exactness was false near 2^53 and for fractions, its grids were opened where draw's layer rules forbid, and its deployment claims stopped short of a deploy in flight (section 10.2).\
-Revision 3 is `pass, with guardrails`, its standing confirmed or not by a third reading.
+Revision 3 was `revise-before-implementation` too: its test shape rejected its own points, its kit's failure list was not determined, a REST answer moved at the domain's edge unnamed, and the placement part was sent to an import its consumes forbid (section 10.3).\
+Revision 4 is `pass, with guardrails`, its standing confirmed or not by a fourth reading.
 
 | Layer | Axiom | Weight | How the design stands |
 |---|---|---|---|
@@ -511,7 +528,7 @@ Revision 3 is `pass, with guardrails`, its standing confirmed or not by a third 
 | release | A8 Gated Recursive Integrity | load-bearing | The gate and the consumer test run before the draft; the download-and-compare runs before publishing; the lockfile's hash proves draw runs the file the release made. |
 | release | A1 Sovereign State Transparency | supporting | A release's state -- draft or published -- is GitHub's and readable there; a failed run leaves a draft the next run replaces, never a published release changed. |
 | release | A7 Resilient Agentic Operations | supporting | One run at a time per repository; an interrupted run leaves a draft; a fix is a new version (7.4). |
-| consumer | A5 Perceptual Parity | load-bearing | The page, the lab and the server run one implementation; the grids they ask are declared per use and opened in two places by one function (section 5), so where they differ they differ by declaration, not by drift. |
+| consumer | A5 Perceptual Parity | load-bearing | The page, the lab and the server run one implementation; the grids they ask are declared per use and opened through the lattice's two functions alone (section 5), so where they differ they differ by declaration, not by drift. |
 | consumer | A8 Gated Recursive Integrity | load-bearing | Draw's gate, the side-by-side test, the REST sweep, the probe with each side on its own dependencies, and a verifier prove the move; the behaviours it changes are named and ruled (6.3). |
 | consumer | A9 Chaos-Validated Deployment | supporting | Tested, not assumed: a release run interrupted after drafting, a file whose hash differs (`npm ci` refuses it), a version the vendor mount does not hold (404), a page reached by Back and by a restored session across a deploy with the mixed cache policies D7 sets, and a cold load in flight across a deploy, whose 404 is registered (B403). |
 | all | A14 Compounding Learning | supporting | The corpus and the oracle turn draw's arithmetic and its errors into tests any later shape or consumer runs; the inventory's defects are registered, not fixed in passing. |
@@ -532,7 +549,7 @@ Revision 3 is `pass, with guardrails`, its standing confirmed or not by a third 
 - G4: no release is replaced; draw's lockfile is the only way a version reaches draw.
 - G5: the import map is generated and checked, L6 admitting it alone; a page never names a component's address by hand.
 - G6: H26.1 changes no behaviour except those section 6.3 names as changed, each ruled with it.
-- G7: every grid is `NODE_GRID` or is opened through `latticeGrids`, and only the `lattice` part imports `snap-grid` (sections 5 and 7.7).
+- G7: every grid is `NODE_GRID` or is opened through `latticeGrids` or `nodeGridWithin`, and only the `lattice` part imports `snap-grid` (sections 5 and 7.7).
 - G8: the probe runs each side on its own lockfile's dependencies, and asserts each side's component version before it measures.
 
 **Closeout hooks.**\
@@ -610,7 +627,30 @@ It reported 43 findings.\
 | a:F20 | `CONTRACT.md`'s headings | **Clarified.** SC6's six headings, in order (7.1). |
 | o:F14 | the M7 audit left out the release process's and draw's state | **Fixed.** Section 9 audits three layers, and records revision 2's verdict as `revise-before-implementation`. |
 | o:F15 | reading 1's rejected findings carried no reasons | **Fixed.** Section 10.1 gives each its reason. |
-| x:F1, x:F3 | SG1's order of unknown and missing; SG5 to be limited to the node grid | **Not changed**, as `o` found: SG1 orders unknown before missing, and SG5 is restated with its counterexample on the zone grid itself. |
+| x:F1 | SG1's order of unknown and missing | **Not changed**, as `o` found: SG1 orders unknown before missing. |
+| x:F3 | SG5 to be limited to the node grid, and to grids without bounds | **Not changed** in revision 3, as `o` found for the zone grid; its objection about bounds was right, as reading 3 showed (o:F5 there), and revision 4 limits SG5's comparison to the bounds. |
+
+### 10.3 Reading 3 -- 2026-10-20, of revision 3 at `2cbd907`
+
+Read as before, by `a`, `x` and `o`, the two earlier readings and the prototype mounted for it, kept whole at `~/taceng/drawv2-eval-runs/h26-readings/reading-3/`.\
+It reported 27 findings.\
+`o` verified the others', supporting 6 and refuting 10; `a` and `x` returned no verdicts on `o`'s 11; every finding was read against the code here, and every counterexample was run.
+
+| Findings | What they said | Disposition |
+|---|---|---|
+| a:F1, a:F2, o:F2, o:F3, o:F6, o:F7 | `ring-test`'s angle test rejects its own endpoints; the centre's tie is not slot 0; its cells exclude the centre; its stride does not keep the spacing round the ring; its enclosing holds rects with area | **Fixed.** Appendix C defines every region through the shape's own `nearest` and `positionAt`, its stride by the least distance among the positions returned, and its enclosing for zero-size rects alone; the claim about the centre is gone. `o` refuted a:F1's numbers, but o:F2 found the same fault with its own. |
+| a:F4 | a rect's domain judged by its fields or by its edges | **Fixed.** By its edges, `x + w` and `y + h` as binary64 computes them; and a rect is malformed for a field that is not a number or a negative size (3.3). |
+| a:F5, o:F11 | the kit's failure list is not determined | **Fixed.** SG11's table: what each invariant is judged over, its `args`, one failure per tuple, `got` from the first failing check, cases in the array's order. |
+| o:F1 | REST answers move at the domain's edge, for integer queries inside it | **Fixed.** The REST route refuses queries beyond 2^49, so every accepted query's nearest position lies inside the domain and keeps today's answer; named in 6.3 and D1. |
+| o:F4 | the placement part may not import the layouts plugin | **Fixed.** `nodeGridWithin(NODE_EXT)` in the lattice opens the bounded node grid for every part that needs it (section 5). |
+| o:F10 | a missing record would change the REST routes' answers | **Fixed.** The REST routes ask the table's grids, as they ask the kernel's today, reading no record (section 5). |
+| o:F5 | SG5's comparison with draw's test ignores bounds | **Fixed.** Limited to the bounds (SG5); x:F3's disposition in 10.2 corrected. |
+| o:F8 | SG11 bounded square indices to 2^50 | **Fixed.** The domain bounds coordinates; indices reach 2^51 (SG11). |
+| a:F6, a:F7, o:F9, a:F10 | places lose `layout` and `ext`; the palette has no place; the snap box needs the place's grid; the walk passes `null` to `next` | **Fixed** in section 5 and appendix B: places keep `layout` and `ext` beside their grid; `snapNode` asks `nodeGridWithin(NODE_EXT)` beneath its callers, the palette among them; the snap box stays draw's drawing; the walk finds nothing from an off-lattice reference, as today. |
+| a:F8, a:F9 | the scan-copies test and the generated architecture; `snap-grid` is not in draw's register | **Fixed.** 7.6 and 7.7 name the test, the regenerated documents, and `MISSION_KIT` and `ALIGNMENT` gaining it. |
+| a:F3 | `inView` over a region beyond the domain | **Clarified.** `o` found SG6 determinate; it now says an edge beyond the domain may be clamped first, which changes no answer. |
+| a:F11 | the release workflow's API calls | **Not changed**, as `o` found: 7.4 states what the workflow must do, and prescribes no call that would fail. |
+| x:F1, x:F2, x:F3, x:F4, x:F5 | the stride cap; `x + w` in binary64; enclosing beyond the bounds; I4's order; missed callers | **Not changed**, as `o` found: indices reach 2^51, so 2^52 holds; `x + w` is specified as binary64 computes it; SG9 states the clamping; I4's order is a shape check; no caller was named. |
 
 ---
 
@@ -652,18 +692,18 @@ From the inventory of `0c59572`: product code, and the records that name it; tes
 
 | Site | Today | H26.1 |
 |---|---|---|
-| `kernel/geometry.mjs:7,12,34-67,108-111` | `px`, `cellOf`, `LAYOUTS`, `onLayout`, `snapLayout`, `cellOn`, `pxOn`, `nearestAnchor`, `anchorAt`, `spanExtent` | deleted; `latticeGrids` and `NODE_GRID` added (section 5), the zone's offset leaving for the layouts table; `gridDot`, `groupHull` stay |
+| `kernel/geometry.mjs:7,12,34-67,108-111` | `px`, `cellOf`, `LAYOUTS`, `onLayout`, `snapLayout`, `cellOn`, `pxOn`, `nearestAnchor`, `anchorAt`, `spanExtent` | deleted; `latticeGrids`, `nodeGridWithin` and `NODE_GRID` added (section 5), the zone's offset leaving for the layouts table; `gridDot`, `groupHull` stay |
 | `kernel/spec.mjs:10,36` | `pitch: 60`; `cell.ext`, unused | the pitch stays the layout table's source (WD7); `cell.ext` deleted |
-| `layouts/layout-table.mjs`, `layout-records.mjs` | the records | plumbing: the table states the zone's offset and reads the node's from `NODE_GRID`; `LAYOUT_GRIDS` opens three grids from it at load; `layoutNamed` serves the callers that open from a diagram's records |
-| `layouts/layout-canvas.mjs:26-35,42` | `latticePoints`; the anchor's place | moves: `inView` on the bounded grid opened from the diagram's record, region the extent, scale 1; the anchor's place carries `LAYOUT_GRIDS.node.bounded` |
-| `app/src/snap.js:14-34,146-151` | `GAP`, `HALF`, `clamped`, `snapNode`, `snapIn` | moves: `nearest` on the place's grid; `HALF`, `clamped` and `snapNode` deleted |
+| `layouts/layout-table.mjs`, `layout-records.mjs` | the records | plumbing: the table states the zone's offset and reads the node's pitch and offset from `NODE_GRID`; `ZONE_GRIDS` opens the zone's two grids from it at load; `layoutNamed` serves the drawn grid, which opens from a diagram's records |
+| `layouts/layout-canvas.mjs:26-35,42` | `latticePoints`; the anchor's place | moves: `inView` on the bounded grid opened from the diagram's record, region the extent, scale 1; the anchor's place gains `nodeGridWithin(NODE_EXT)` beside its `layout` and `ext` |
+| `app/src/snap.js:14-34,146-151` | `GAP`, `HALF`, `clamped`, `snapNode`, `snapIn` | moves: `snapIn` asks the place's grid, `snapNode` asks `nodeGridWithin(NODE_EXT)`, each `pointOf(nearest(pos))`; `HALF` and `clamped` deleted |
 | `app/src/snap.js:66-94` | `clampDelta`, `snappedDelta` | stays (the clamp and its quantisation by the declared pitch); the base's snap moves |
-| `app/src/snap.js:112-143` | `placesOf`, `gridsOf` | plumbing: a place carries its grid, refused when it carries none |
-| `app/src/input.js` (`snapNode` x14, `snapIn` x5, `GAP` x4) | readouts, ghosts, stamps, boxes, waypoints, Ctrl+D step | moves: `nearest` on the grid of the anchor's place, or of the place in hand; the Ctrl+D step and readout deltas stay (lengths) |
+| `app/src/snap.js:112-143` | `placesOf`, `gridsOf` | plumbing: a place keeps `layout` and `ext` and carries its grid, refused when it carries none or its grid's bounds are not its `ext`; `gridsOf` still matches by `layout` |
+| `app/src/input.js` (`snapNode` x14, `snapIn` x5, `GAP` x4) | readouts, ghosts, stamps, boxes, waypoints, Ctrl+D step | unchanged at the call sites, `snapNode` and `snapIn` moving beneath them; the Ctrl+D step and readout deltas stay (lengths) |
 | `app/src/commands.js:241` | nudge through `clampDelta` | stays (a multi-selection moves as one) |
-| `app/src/palette.js:157` | `snapNode` | moves: `nearest` on the grid of the anchor's place |
+| `app/src/palette.js:157` | `snapNode` | unchanged, `snapNode` moving beneath it |
 | `app/src/compose-canvas.js:56,76`, `lab/src/root.js:93` | inject `cellOf`; crosshair `GAP` | moves: the relation index is given `NODE_GRID`'s `nearest`; the crosshair reads `NODE_GRID`'s pitch |
-| `app/src/painter.js:44-48` | the snap box, one cell | moves: `span(p, p).covering` on the place's grid |
+| `app/src/painter.js:44-48`, `app/src/tools.js:90` | the snap box, a pitch wide about the snapped point | stays: a drawing about a point on either grid, the pitch read from `NODE_GRID`'s declaration |
 | `app/src/overlay.js:24` | `CANVAS`, `GAP` imported, unused | plumbing: deleted |
 | `engine/relations.mjs:18-22,80`, `engine/store.mjs:11-12` | keys by `cellOf` | moves: the injected `cellOf` becomes `nearest`, so `engine/` still imports no kernel module; keys stay `col,row` strings and `atCell` stays `[col, row]` |
 | `engine/movers.mjs:77`, `engine/rules.mjs:69`, `engine/spawners.mjs:71` | speeds, ranges, lengths in pitches (a literal `60` in spawners) | stays, reading the pitch from `NODE_GRID`'s declaration |
@@ -671,7 +711,7 @@ From the inventory of `0c59572`: product code, and the records that name it; tes
 | `model/surface.mjs:7,14` | `NODE_EXT`; `anchorCellsWithin` | stays; the zone cap kept (6.3) |
 | `model/model.mjs:232-235`, `model/invariants.mjs:81-89` | occupancy by exact coordinates | stays (exact equality is the point) |
 | `product/kinds.mjs:72,82,87-88` | `onLayout` per field; the cap | moves: `positionAt` on `NODE_GRID`, one axis with the other held at the origin; the extent check stays first; the cap stays |
-| `zones/zone-kind.mjs:26,42-45,55` | `onLayout` for positions and lengths; the cap | moves: positions on `LAYOUT_GRIDS.zone.unbounded`, lengths on `NODE_GRID` (origin 0, so a length is a coordinate); the extent check stays first; the cap kept (6.3) |
+| `zones/zone-kind.mjs:26,42-45,55` | `onLayout` for positions and lengths; the cap | moves: positions on `ZONE_GRIDS.unbounded`, lengths on `NODE_GRID` (origin 0, so a length is a coordinate); the extent check stays first; the cap kept (6.3) |
 | `zones/zone-gestures.mjs:17-26,56-64` | `snapZone`; corner steps | moves: `nearest` on the bounded zone grid; where the snapped corner shares the fixed corner's column -- on the zone lattice, today's `< MIN_ZONE` -- it becomes `next(fixed, '+x')`, or `next(fixed, '-x')` where that is `null`, and the same for rows; `MIN_ZONE`, read nowhere else, goes |
 | `zones/zone-keys.mjs:17-34` | the wrap's floor and ceiling | moves: `enclosing` on the bounded zone grid of the selection's bounds grown by half a pitch (D10); the growth and the one-cell minimum stay |
 | `zones/zone-keys.mjs:43-47`, `zones/zone-painter.mjs:53` | resize by a pitch; the zone's place | stays (a length step); the place names the bounded zone grid |
@@ -681,14 +721,16 @@ From the inventory of `0c59572`: product code, and the records that name it; tes
 | `devices/device-size.mjs:22-24` | positions to the edge; the span count | the count to the edge moves: the column (or row) of `nearest` of the extent's corner less the device's, plus one, on `NODE_GRID`; the step and `SPAN_MAX` stay |
 | `devices/device-gestures.mjs:13-21` | `frameSpan`: the frame, its origin and its counts | moves: the two snapped corners' positions on `NODE_GRID` give the origin, the least corner's point, and the counts, the index differences plus one; `span(...).through` grown by the frame margin, which stays, gives the frame |
 | `devices/device-types.mjs:159-162` | content regions in a device's own frame | stays |
-| `server/rest.js:14,645,655` | `LAYOUTS[name]`, `nearestAnchor` | moves: the name looked up in the layouts table, an unknown one refused 404 (6.3); `nearest` on the unbounded grid opened from the diagram's record, a missing record 500 `layout-missing`; a coordinate beyond the domain 422 (6.3) |
-| `server/rest.js:663-665` | anchors over the node index range, both grids | moves: `pointOf` on the unbounded grid opened from the record, over the same range; the zone list kept (6.3) |
-| `server/anchor.mjs:29,37,62-68,139-140` | free anchors; the walk | moves: `inView` on `LAYOUT_GRIDS.node.bounded`, each entry mapped back to today's `{ layout, cx, cy, x, y }`; the walk steps with `next` on `NODE_GRID` from `positionAt(ref)`, the free set deciding as today; the free and occupancy decisions stay |
+| `server/rest.js:14,645,655` | `LAYOUTS[name]`, `nearestAnchor` | moves: the name looked up in the layouts table, an unknown one refused 404 (6.3); `nearest` on that name's grid with no bounds, `NODE_GRID` or `ZONE_GRIDS.unbounded`; a coordinate beyond 2^49 refused 422 (6.3) |
+| `server/rest.js:663-665` | anchors over the node index range, both grids | moves: `pointOf` on that name's grid with no bounds, over the same range; the zone list kept (6.3) |
+| `server/anchor.mjs:29,37,62-68,139-140` | free anchors; the walk | moves: `inView` on `nodeGridWithin(NODE_EXT)`, the placement part consuming only `lattice`, each entry mapped back to today's `{ layout, cx, cy, x, y }`; the walk steps with `next` on `NODE_GRID` from `positionAt(ref)`, the free set deciding as today, and finds nothing, as today, when `ref` is off the lattice and `positionAt` is `null`; the free and occupancy decisions stay |
 | `server/anchor.mjs:75-84,112-113,145` | nearest free anchor; zone filter | stays (occupancy policy over `snap-grid`'s positions) |
 | `server/store.js:12,17` | `NODE_EXT` imported, unused | plumbing: deleted |
 | `cli/verbs.mjs:1898,2096,2264-2267` | literal `30`, `60` | out of H26.1, registered (section 5; B402) |
 | `network/appearance.mjs:239`, `groups/group-painter.mjs:23-26` | the dot's radius; group hulls | stays |
-| `tools/layers.mjs` | `DEPENDENCIES`, `UNUSED_EXPORTS` | plumbing: `COMPONENTS` added; the deleted exports retired (7.7) |
+| `tools/layers.mjs` | `UNUSED_EXPORTS`, `MISSION_KIT`, `ALIGNMENT` | plumbing: `COMPONENTS` added; the deleted exports retired; `snap-grid` registered and aligned to `lattice` (7.7) |
+| `tests/canvas-places.test.js`, `tests/layouts-canvas.test.js`, `tests/scan-copies.test.js` | the places' fields; the generated regions | restated: places carry grids; the import-map region joins the list (7.6) |
+| `docs/ARCHITECTURE.md`, `docs/ARCHITECTURE-TARGET.md` | generated | regenerated with the manifest and the gate (7.6, 7.7) |
 | `tools/scan-dead.mjs:55-57` | allowances for `cellOn`, `pxOn`, `px` | plumbing: deleted with their exports (7.7) |
 | `tests/core-names-no-plugin.test.js:74-76` | `kernel/geometry.mjs`'s recorded count of 4 | plumbing: deleted, the zone's offset and the layout names having left the kernel (7.7) |
 
@@ -697,16 +739,17 @@ From the inventory of `0c59572`: product code, and the records that name it; tes
 ## Appendix C -- `ring-test`, the shape in the tests alone
 
 A shape `snap-grid`'s tests open through `options.shapes`, never exported, to show that the port and the kit hold for a grid that is not square (D5).\
-It is computed in binary64 by the expressions below and nowhere else, so it agrees with itself; it proves the port, not precision.
+Its points are computed in binary64 by one expression, and every other answer -- its regions among them -- is defined through its own `nearest` and `positionAt`, so no two of its answers can disagree by a rounding; it proves the port, not geometry or precision.\
+Revision 3 defined its regions by angles and radii, and the third reading showed them rejecting the shape's own points by a rounding (section 10.3).
 
 - **Declaration:** `{ shape: 'ring-test', centre, radius, slots }`: `centre` of `origin`'s form with integers of magnitude at most 2^30, `radius` an integer from 1 to 2^30, and `slots` an integer from 3 to 64; refused as SG1 refuses, step 7 never applying.
 - **Domain:** every point whose coordinates have magnitude at most 2^40.
 - **Positions:** `{ slot }`, a plain object of exactly `slot`, a safe integer; representable and offered when `0 <= slot < slots`.
-- **Points:** `pointOf({ slot })` is `{ x: centre.x + radius * Math.cos(a) + 0, y: centre.y + radius * Math.sin(a) + 0 }`, with `a = 2 * Math.PI * slot / slots`.
-- **Nearest:** the offered position least distant from the point, the distance `(q.x - p.x) ** 2 + (q.y - p.y) ** 2`, ties to the lower slot, so the centre goes to slot 0; `positionAt` is SG5's.
+- **Points:** `pointOf({ slot })` is `{ x: centre.x + radius * Math.cos(a) + 0, y: centre.y + radius * Math.sin(a) + 0 }`, with `a = 2 * Math.PI * slot / slots`; `Math.cos` and `Math.sin` may differ in their last bit between engines, so the shape agrees with itself within one engine, which is where the kit runs it.
+- **Nearest:** the offered position least distant from the point, the distance `(q.x - p.x) ** 2 + (q.y - p.y) ** 2` as the kit measures it, ties to the lower slot; `positionAt` is SG5's.
 - **Directions:** `-slot` and `+slot`, each the other's opposite, a step of one slot, wrapping from `slots - 1` to 0 and back.
-- **Regions:** a rect, and a wedge `{ kind: 'wedge', cx, cy, r0, r1, a0, a1 }`, which holds a point when `r0 <= d <= r1` and `((t - a0) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) <= a1 - a0`, where `d` is `Math.hypot(x - cx, y - cy)` and `t` is `Math.atan2(y - cy, x - cx)`, plus `2 * Math.PI` when negative.
-- **Cells:** a position's cell is the wedge from the centre between the angles halfway to its neighbours, `r0` 0 and `r1` `Infinity` -- exactly its nearest region, since the bisector of two points on one circle passes through its centre.
-- **Span:** a block runs from the lesser slot to the greater, never across slot 0; `through` is the wedge whose `r0` and `r1` are the least and greatest `d` of the block's points and whose `a0` and `a1` are the least and greatest `t`, so the block's own points lie in it however the cosines round; `covering` is the wedge with `r0` 0, `r1` `Infinity`, `a0` the lesser slot's angle less `Math.PI / slots` and `a1` the greater's plus it.
-- **In view:** the offered positions whose point lies in the view's rect, a position returned when `slot % s === 0`, ordered by slot; the stride `s` is the least power of two from 1 to 2^52 at which `2 * radius * Math.sin(Math.PI / slots) * view.scale * s >= options.minSpacing`, or 2^52, doubled while more than `options.max` would be returned.
-- **Enclosing:** the block found by searching every block, fewest positions first and then the lesser first slot, for one whose `through` holds the rect's four corners; `null` when none does, which is so for every rect with area, a ring's `through` being an arc.
+- **Regions:** a rect; `{ kind: 'ring-points', from, to }`, which holds a point when `positionAt` of it is a slot from `from` to `to`; and `{ kind: 'ring-cells', from, to }`, which holds a point when `nearest` of it is a slot from `from` to `to`.
+- **Cells:** a position's cell is the points whose nearest it is, `ring-cells` from its slot to its slot.
+- **Span:** a block runs from the lesser slot to the greater, never across slot 0; `through` is `ring-points` and `covering` is `ring-cells` over its slots, each the smallest region holding the block's points or its cells, by its definition.
+- **In view:** the offered positions whose point lies in the view's rect, a position returned when `slot % s === 0`, ordered by slot; the stride `s` is the least power of two from 1 to 2^52 at which the least distance between two positions returned, times `view.scale`, is at least `options.minSpacing` -- one position or none counting as far enough apart -- doubled while more than `options.max` would be returned; doubling only removes positions, so the least distance never falls and the least stride is well defined.
+- **Enclosing:** a rect whose `w` and `h` are both 0 and whose corner is a position's point gives the block of that one position; every other rect in the domain gives `null`, since no block's `through`, a set of points, holds a rect with area or a point that is no position's.
