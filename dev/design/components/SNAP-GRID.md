@@ -5,7 +5,7 @@ It designs `snap-grid`, the smallest of the four components H26-1 named, and the
 The other three components and the gesture tester's scope are later pieces, each brought to the director on its own.
 
 **Standing:** a design under review; nothing in it is built until the director ratifies it.\
-Revision 5, after the fourth multi-family reading (section 10); revision 1 was `0c59572`, revision 2 `fe8c25f`, revision 3 `2cbd907`, revision 4 `1d8a592`.
+Revision 6, after four full multi-family readings and a confirming one (section 10); revision 1 was `0c59572`, revision 2 `fe8c25f`, revision 3 `2cbd907`, revision 4 `1d8a592`, revision 5 `6d4e877`.
 
 ---
 
@@ -220,7 +220,8 @@ A case is `{ name, declaration, points, positions, views, blocks, rects }`: a de
 A failure is `{ invariant, case, args, got }`: the invariant's number, as `'I1'`, the case's name, the arguments, and what the kit saw.\
 The kit judges the cases in the array's order, and within a case the invariants in the order `open`, I1 to I8, each over the arguments the table below names, in the order the case gives them.\
 It records one failure for each argument tuple that fails any of its invariant's checks, a call that throws failing its tuple and ending that tuple's checks.\
-So two conforming kits list the same failures in the same order, with the same `invariant`, `case` and `args`; `got` is a diagnostic -- the answer that failed, or `{ thrown: <message> }` -- and its form is not part of the contract.\
+So, for a shape whose every answer depends only on its declaration and its arguments, two conforming kits list the same failures in the same order, with the same `invariant`, `case` and `args`; `got` is a diagnostic -- the answer that failed, or `{ thrown: <message> }` -- and its form is not part of the contract.\
+A shape whose answers depend on how often or in what order it is asked is broken whatever a kit lists; a kit samples, and cannot always see it -- I7 catches what a repeated call shows -- so two kits, making their other calls in different orders, may list different failures for it, or one none.\
 A declaration the shape refuses is the case's one failure, `{ invariant: 'open', case, args: [declaration], got: problems }`.
 
 | Invariant | Judged over, in order | `args` |
@@ -521,7 +522,8 @@ Revision 1 was `revise-before-implementation`: its contract left builders room t
 Revision 2 was `revise-before-implementation` as well: its exactness was false near 2^53 and for fractions, its grids were opened where draw's layer rules forbid, and its deployment claims stopped short of a deploy in flight (section 10.2).\
 Revision 3 was `revise-before-implementation` too: its test shape rejected its own points, its kit's failure list was not determined, a REST answer moved at the domain's edge unnamed, and the placement part was sent to an import its consumes forbid (section 10.3).\
 Revision 4 was `revise-before-implementation` once more, its faults narrowed to the test shape's cells and enclosing, the kit's failure list, and a clamping clause revision 4 itself added (section 10.4).\
-Revision 5 is `pass, with guardrails`.
+Revision 5 had a fifth reading, scoped to its changes, which found no fault in the square grid or in draw's side, and two in the test shape's cells and the kit's determinism claim, each answered in revision 6 by narrowing a claim rather than adding mechanism (section 10.5).\
+Revision 6 is `pass, with guardrails`.
 
 | Layer | Axiom | Weight | How the design stands |
 |---|---|---|---|
@@ -676,6 +678,16 @@ It reported 20 findings, against 27, 43 and 48 before; two touch the square grid
 | a:F3, a:F5 | L6's test copy lacks `node_modules`; `null` options and getters | **Not changed**, as `o` found: L6 checks the region's structure and the generator's `--check` its content, so neither reads installed packages in that test; options must be plain objects of valid values, which excludes `null` and present `undefined`. |
 | x:F1, x:F2, x:F3, x:F5 | the stride cap; `x + w`; the rect's domain; missed callers | **Not changed**, as `o` found, each answered by revision 3 or 4. |
 
+### 10.5 Reading 5 -- 2026-10-20, of revision 5 at `6d4e877`, confirming
+
+A reading scoped to revision 5's changes and section 10.4's dispositions, by `a` and `o`, kept whole at `~/taceng/drawv2-eval-runs/h26-readings/reading-5/`.\
+`a` verified every row of 10.4, ran the numerical claims, and found nothing; `o` reported two findings, which `a` did not verify.
+
+| Findings | What they said | Disposition |
+|---|---|---|
+| o:F1 | `ring-test`'s cells, made by a rounded distance, are not the geometric cells its text claimed: a point the rounding ties is in two cells though exactly nearer one, and the centre with three slots is in one cell only | **Fixed** by narrowing: appendix C claims only what its definitions make true -- cells of the rounded distance, no centre tie, no shared edge -- and says the shape exists for the kit, not as a geometry. |
+| o:F2 | a shape that answers differently on its fifth call makes two kits' failure lists differ, since only I7's calls are scheduled | **Fixed** by narrowing: the determinism SG11 promises is for shapes whose answers depend only on their arguments; a shape that is not is broken whatever a kit lists, and a kit, which samples, cannot always see it. Scheduling every call of every check was the alternative, and buys determinism only for shapes already broken. |
+
 ---
 
 ## Appendix A -- `snap-grid`'s vision, the draft put to the director
@@ -773,7 +785,8 @@ Revision 3 defined its regions by angles and radii, and the third reading showed
 - **Nearest:** the offered position least distant from the point, the distance `(q.x - p.x) ** 2 + (q.y - p.y) ** 2` as the kit measures it, ties to the lower slot; `positionAt` is SG5's.
 - **Directions:** `-slot` and `+slot`, each the other's opposite, a step of one slot, wrapping from `slots - 1` to 0 and back.
 - **Regions:** a rect; `{ kind: 'ring-points', from, to }`, which holds a point when `positionAt` of it is a slot from `from` to `to`; and `{ kind: 'ring-cells', from, to }`, which holds a point in the domain when some slot from `from` to `to` has no offered slot strictly nearer to it, by Nearest's distance.
-- **Cells:** a position's cell is the points in the domain no offered position is strictly nearer to, `ring-cells` from its slot to its slot: closed, so a point equally near two positions -- the centre among them -- lies in both cells, and neighbours' cells share the ray between them; `nearest`'s tie to the lower slot chooses among cells and makes none smaller.
+- **Cells:** a position's cell is the points in the domain no offered position is strictly nearer to, by Nearest's distance, `ring-cells` from its slot to its slot; a point that distance calls equally near two positions lies in both cells, and `nearest`'s tie to the lower slot chooses among them without making either smaller.\
+  That distance is rounded, so these are the cells of a rounded distance, close to the geometric ones and not exactly them; `ring-test` exists for the kit's checks, not as a geometry, and of section 4's shape checks it proves those its definitions make true -- nearest among every position, completeness and order in view, smallest spans -- and claims no shared edge between cells.
 - **Span:** a block runs from the lesser slot to the greater, never across slot 0; `through` is `ring-points` and `covering` is `ring-cells` over its slots, each the smallest region holding the block's points or its cells, by its definition.
 - **In view:** the offered positions whose point lies in the view's rect, a position returned when `slot % s === 0`, ordered by slot; the stride `s` is the least power of two from 1 to 2^52 at which, for every two positions returned, `Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2) * view.scale >= options.minSpacing` over their points -- one position or none counting as far enough apart -- doubled while more than `options.max` would be returned; doubling only removes positions, so the least distance never falls and the least stride is well defined.
 - **Enclosing:** a rect whose edges as binary64 computes them meet in one point -- `x + w === x` and `y + h === y`, whatever `w` and `h` are -- and whose point is a position's gives the block of that one position; every other rect in the domain gives `null`, since no block's `through`, a set of points, holds more than one point or a point that is no position's.
