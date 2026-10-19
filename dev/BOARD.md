@@ -1516,7 +1516,7 @@ AMENDED 2026-10-19: H24.14, H24.15 and H24.18 live in production (`e7fa02c`), at
 AMENDED 2026-10-19: H24.13 done -- the agent door decides on the normalised path, refuses whatever arrived through it and names nothing it opens onto, and opens its picture entry onto a picture and the favicon alone (`dev/DECISIONS.md` H24.13, B383 closed).
 AMENDED 2026-10-19: H24.13 verified; from its notes the door also reads an absolute-form target and a backslash as the parser does, its test asserts the door's own 404, and an unreadable target's unanswered request is held (B397). The records dated 2026-10-18 since local midnight are corrected to 2026-10-19.
 AMENDED 2026-10-19: H24.13 live in production (`2512538`), at the director's "continue"; the published diagram and the favicon byte-identical before and after. H24.16 and H24.17 wait on the director.
-AMENDED 2026-10-19: H24.16 done -- the page's files go compressed, and the browser keeps them while it asks whether they changed: a first visit sends about 386 KB where it sent 984 KB, a repeat visit headers alone (`dev/DECISIONS.md` H24.16, B386 closed).
+AMENDED 2026-10-19: H24.16 done -- the page's files go compressed and are never kept: every visit sends about 407 KB where it sent 1,041 KB (`dev/DECISIONS.md` H24.16-1, B386 closed). The first build also let the browser keep them, and its verification found Back and a restored session running old code after a deploy; keeping files is held for H26's versioned addresses (B398).
 
 ---
 
@@ -1612,6 +1612,7 @@ Scored so the comparison is a judgement, not an omission.\
 | **B395** | S4 | A read-only snapshot under an open coalescing window keeps an unsent edit (H24.18) | a person reports an edit that vanished on reload after a lock or a change of access, or the next change to how a snapshot replays the outbox. |
 | **B396** | S4 | `forked` drops an undo and a commit queued behind the forking write (H24.18) | a person reports an edit lost in the first moments on a template, or the next change to the `forked` handler. |
 | **B397** | S4 | An unreadable request target gets no answer, its handler's error unhandled (H24.13) | a hung request or an unhandled rejection from the request handler is seen in production's log, or the next change to how the request handler reads its URL. |
+| **B398** | S4 | The browser keeps draw's files only under versioned addresses (H24.16-1) | H26's import map gives each module a versioned address, or the page's load time is shown to be a problem with compression in place. |
 | **B344** | S4 | OD-1: a diagram kept in mission-kit's entity-store | the director selects it, or entity-store's record rules the adjustments it needs -- an asynchronous durable storage port, and names optional per kind. |
 | **B345** | S4 | OD-2: clients reaching the server over agp | OD-1 is ruled, entity-api is certified, and its follows are unparked (zorg's D15). |
 | **B347** | S4 | The towerless-combat timing test failed once under machine load | it fails a second time, or B333's flake ledger is built. |

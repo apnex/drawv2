@@ -50,8 +50,7 @@ test('K9, K4: the lab serves its mounts, the planner whole, and nothing else, ho
 			const r = await ask(p);
 			assert.equal(r.status, 200, p);
 			assert.match(r.type, /^text\/javascript/, p);
-			// RESTATED (H24.16, B386): kept and asked about on every use, where it was never kept -- still never served stale
-			assert.equal(r.cache, 'no-cache', p);
+			assert.equal(r.cache, 'no-store', p);   // never kept (H24.16-1): a kept module runs stale after Back or a restore
 		}
 		// K4 (H17-D5): `server/` is not served at all -- the store, identity and anchor above all, and its old planner path too
 		for (const p of ['/server/store.js', '/server/identity.mjs', '/server/anchor.mjs', '/server/txn.mjs', '/kernel/../server/store.js',
@@ -65,13 +64,13 @@ test('K9, K4: the lab serves its mounts, the planner whole, and nothing else, ho
 });
 
 /*
-B386 (H24.16) -- the responder sends a file compressed, and lets the browser keep it while checking for changes.
+B386 (H24.16, H24.16-1) -- the responder sends a file compressed, and never lets the browser keep it.
 
-Every file went uncompressed and `no-store`, so each visit downloaded the page's 134 modules again, about 974 KB. A file now goes
-brotli or gzip as the request accepts, the same bytes once decoded; it carries an ETag and `no-cache`, so the browser keeps it and
-asks each time whether it changed, and an unchanged file is answered 304 with no body -- a deploy still reaches every tab at once,
-because the question is always asked. Driven through the responder itself, over a folder of the test's own, so a changed file
-can be shown changing its tag.
+Every file went uncompressed, so each visit downloaded the page's files at full size. A file now goes brotli or gzip as the request
+accepts, the same bytes once decoded, and stays `no-store`: the first build let the browser keep files and ask on every use, and
+its verification found Chrome running the old modules after a deploy when the page is reached by Back or a restored session, which
+do not ask. RESTATED (H24.16-1): the test of keeping is now the test of never keeping. Driven through the responder itself, over a
+folder of the test's own, so a changed file can be shown served at once.
 */
 async function responder() {
 	const fs = await import('node:fs');
@@ -103,8 +102,9 @@ test('B386: a file goes brotli or gzip as the request accepts -- the same bytes 
 		const gz = await r.ask('/m.mjs', { 'Accept-Encoding': 'gzip' });
 		assert.equal(gz.headers['content-encoding'], 'gzip', 'gzip when that is what it accepts');
 		assert.equal(zlib.gunzipSync(gz.body).toString(), MODULE);
-		const refusedBr = await r.ask('/m.mjs', { 'Accept-Encoding': 'br;q=0, gzip' });
-		assert.equal(refusedBr.headers['content-encoding'], 'gzip', 'a coding the request refuses with q=0 is not sent');
+		for (const refusing of ['br;q=0, gzip', 'br;Q=0, gzip', 'br;q=0.0, gzip']) {
+			assert.equal((await r.ask('/m.mjs', { 'Accept-Encoding': refusing })).headers['content-encoding'], 'gzip', `"${refusing}" refuses brotli`);
+		}
 		const plain = await r.ask('/m.mjs');
 		assert.equal(plain.headers['content-encoding'], undefined, 'nothing accepted, nothing encoded');
 		assert.equal(plain.body.toString(), MODULE);
@@ -116,37 +116,48 @@ test('B386: a file goes brotli or gzip as the request accepts -- the same bytes 
 	} finally { await r.close(); }
 });
 
-test('B386: the browser keeps a file and asks whether it changed -- 304 while it has not, the new file once it has', async () => {
+test('B386: text of every kind is compressed, a small file and a picture are sent as they are', async () => {
+	const r = await responder();
+	try {
+		const svg = `<svg xmlns="http://www.w3.org/2000/svg">${'<rect width="1" height="1"/>'.repeat(60)}</svg>`;
+		const json = JSON.stringify({ rows: Array.from({ length: 80 }, (_, i) => ({ i, word: 'compressible' })) });
+		r.write('a.svg', svg); r.write('a.json', json); r.write('a.css', `.x { color: red; }\n`.repeat(60));
+		r.write('small.mjs', 'export const x = 1;\n'); r.write('a.png', Buffer.alloc(4096, 7));
+		for (const f of ['a.svg', 'a.json', 'a.css']) assert.equal((await r.ask(`/${f}`, { 'Accept-Encoding': 'br' })).headers['content-encoding'], 'br', f);
+		const small = await r.ask('/small.mjs', { 'Accept-Encoding': 'br' });
+		assert.equal(small.headers['content-encoding'], undefined, 'a file under 512 bytes is not worth compressing');
+		assert.equal(small.body.toString(), 'export const x = 1;\n');
+		assert.equal((await r.ask('/a.png', { 'Accept-Encoding': 'br' })).headers['content-encoding'], undefined, 'a picture is not text');
+	} finally { await r.close(); }
+});
+
+test('B386: a file is never kept -- no-store on every answer, no tag to ask with, and a changed file served at once', async () => {
+	const zlib = await import('node:zlib');
 	const r = await responder();
 	try {
 		r.write('m.mjs', MODULE);
 		const first = await r.ask('/m.mjs', { 'Accept-Encoding': 'br' });
-		assert.equal(first.headers['cache-control'], 'no-cache', 'kept, and asked about on every use -- never served stale');
-		const tag = first.headers.etag;
-		assert.match(tag, /^"[^"]+"$/, 'a strong tag');
-		const again = await r.ask('/m.mjs', { 'Accept-Encoding': 'br', 'If-None-Match': tag });
-		assert.equal(again.status, 304, 'unchanged: 304');
-		assert.equal(again.body.length, 0, 'with no body');
-		assert.equal(again.headers.etag, tag);
-		assert.equal((await r.ask('/m.mjs', { 'Accept-Encoding': 'gzip', 'If-None-Match': `W/${tag}` })).status, 304, 'the same file in another coding, asked weakly, is unchanged too');
-		assert.equal((await r.ask('/m.mjs', { 'If-None-Match': '"something-else"' })).status, 200, 'a tag it does not hold is answered in full (control)');
-
-		r.write('m.mjs', `${MODULE}// changed by a deploy\n`);
-		const changed = await r.ask('/m.mjs', { 'If-None-Match': tag });
-		assert.equal(changed.status, 200, 'changed: answered in full');
-		assert.notEqual(changed.headers.etag, tag, 'under a new tag');
-		assert.match(changed.body.toString(), /changed by a deploy/);
+		assert.equal(first.headers['cache-control'], 'no-store', 'never kept: a kept module is run stale after Back or a restore');
+		assert.equal(first.headers.etag, undefined, 'no tag, so nothing invites a browser to keep it');
+		const asked = await r.ask('/m.mjs', { 'Accept-Encoding': 'br', 'If-None-Match': '*' });
+		assert.equal(asked.status, 200, 'a request that asks whether it changed is answered in full');
+		assert.ok(asked.body.length > 0);
+		const changed = MODULE.replace('compressible', 'Compressible');   // the same length, written at once
+		r.write('m.mjs', changed);
+		const after = await r.ask('/m.mjs', { 'Accept-Encoding': 'br' });
+		assert.equal(zlib.brotliDecompressSync(after.body).toString(), changed, 'the new content, never the coding of the old');
+		assert.equal((await r.ask('/m.mjs')).body.toString(), changed, 'and as it is');
 	} finally { await r.close(); }
 });
 
-test('B386: HEAD carries the headers and no body; a missing file is still never kept', async () => {
+test('B386: HEAD carries the headers and no body; a missing file is never kept', async () => {
 	const r = await responder();
 	try {
 		r.write('m.mjs', MODULE);
 		const head = await r.ask('/m.mjs', { 'Accept-Encoding': 'br' }, 'HEAD');
 		assert.equal(head.status, 200);
 		assert.equal(head.headers['content-encoding'], 'br');
-		assert.ok(head.headers.etag);
+		assert.equal(head.headers['cache-control'], 'no-store');
 		assert.equal(head.body.length, 0);
 		const missing = await r.ask('/nothing.mjs');
 		assert.equal(missing.status, 404);

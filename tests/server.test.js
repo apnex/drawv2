@@ -1380,13 +1380,12 @@ test('K9: a template deep link serves the editor, as a diagram one does', async 
 	assert.match(res.headers.get('content-type'), /text\/html/);
 });
 
-test('K9: one module per mount, as JavaScript and never served stale', async () => {
+test('K9: one module per mount, as JavaScript and never cached', async () => {
 	for (const p of ['/next/src/main.js', '/kernel/geometry.mjs', '/engine/store.mjs', '/model/model.mjs', '/planner/log.mjs']) {
 		const res = await fetch(base + p);
 		assert.equal(res.status, 200, p);
 		assert.match(res.headers.get('content-type'), /^text\/javascript/, `${p} as a module`);
-		// RESTATED (H24.16, B386): kept and asked about on every use (`no-cache`), where it was never kept -- still never served stale
-		assert.equal(res.headers.get('cache-control'), 'no-cache', `${p} is revalidated on every use`);
+		assert.equal(res.headers.get('cache-control'), 'no-store', `${p} is not kept`);   // never kept (H24.16-1)
 	}
 });
 
