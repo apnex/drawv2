@@ -1571,7 +1571,7 @@ Opened 2026-10-18 by the director (`dev/DECISIONS.md` H26): the canvas and the i
 
 | # | Item | Cites | Sev | State |
 |---|---|---|---|---|
-| H26.0 | Design of record: each component's duty and contract, what draw supplies to each, the vocabulary check in each gate, the repository template, the release workflow, draw's generated import map and the tester's scope; checked against the axioms (M7), reviewed by several model families (context-lab), ratified with each component's vision (H26.0) | **B346** | S3 | `TODO` |
+| H26.0 | Design of record: each component's duty and contract, what draw supplies to each, the vocabulary check in each gate, the repository template, the release workflow, draw's generated import map and the tester's scope; checked against the axioms (M7), reviewed by several model families (context-lab), ratified with each component's vision (H26.0); part 1, `snap-grid` and the shared parts, ratified (H26-4) | **B346** | S3 | `WIP` |
 | H26.1 | `snap-grid`: the grid's arithmetic out of draw into its own repository, released, and draw on it -- the pipeline proven on the smallest (H26.1) | feature | S3 | `TODO` |
 | H26.2 | `input-binding`: the rule matcher and the gesture lifecycle out of draw, draw's rules supplied as data (H26.2) | **B274** | S3 | `TODO` |
 | H26.3 | `input-capture`: device events into input facts, the hit test and the coordinates supplied by the app (H26.3) | feature | S3 | `TODO` |

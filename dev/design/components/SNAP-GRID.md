@@ -4,7 +4,7 @@ The first piece of H26's design of record (`dev/DECISIONS.md` H26-3).\
 It designs `snap-grid`, the smallest of the four components H26-1 named, and the parts all four share: the repository template, the vocabulary check, the gate and the release workflow, how draw depends on a release, and how draw's pages load it.\
 The other three components and the gesture tester's scope are later pieces, each brought to the director on its own.
 
-**Standing:** a design under review; nothing in it is built until the director ratifies it.\
+**Standing:** ratified by the director on 2026-10-20, all ten decisions of section 8 as recommended and appendix A as `snap-grid`'s vision (`dev/DECISIONS.md` H26-4); built in H26.1.\
 Revision 6, after four full multi-family readings and a confirming one (section 10); revision 1 was `0c59572`, revision 2 `fe8c25f`, revision 3 `2cbd907`, revision 4 `1d8a592`, revision 5 `6d4e877`.
 
 ---
@@ -492,7 +492,8 @@ The register of mission-kit's components in `tools/layers.mjs` gains `snap-grid`
 
 ## 8. Decisions owed
 
-Each is offered with a recommendation; they may be ratified together, or one at a time.
+Each is offered with a recommendation; they may be ratified together, or one at a time.\
+Ratified together, all ten as recommended, on 2026-10-20 (`dev/DECISIONS.md` H26-4).
 
 | # | Decision | Recommendation, and why |
 |---|---|---|
@@ -691,6 +692,8 @@ A reading scoped to revision 5's changes and section 10.4's dispositions, by `a`
 ---
 
 ## Appendix A -- `snap-grid`'s vision, the draft put to the director
+
+Ratified by the director as written (H26-4); `snap-grid`'s `VISION.md` is made from it when its repository is.
 
 **North star.**\
 Let every part of every application agree, to the last unit, on where a grid's positions lie and which one a point belongs to.
