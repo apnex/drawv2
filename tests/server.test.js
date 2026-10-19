@@ -918,21 +918,26 @@ test('B383: through the agent door, only the REST surface, a picture and the fav
 	const id = (await get('/api/v1/diagrams')).body[0].id;
 	const refused = [
 		'/connect/svg/', `/connect/svg/${id}`, '/connect/svg/index.html', '/connect/svg/app/src/main.js', '/connect/svg/kernel/geometry.mjs',
-		'/connect/svg/health', '/connect/svg/api/v1/diagrams',
+		'/connect/svg/health', '/connect/svg/api/v1/diagrams', '/connect/svg/devices/router.svg', `/connect/svg/${id}0.svg`,
 		'/connect/v1/%2e%2e/%2e%2e/index.html', '/connect/v1/%2E%2E/%2e%2e/kernel/geometry.mjs', '/connect/v1/%2e%2e/%2e%2e/health',
-		'/connect/v1/..%2f..%2findex.html', '/connect/%2e%2e/index.html', '/connect/svg/%2e%2e/index.html', '/connect/svg/../app/src/main.js',
+		'/connect/%2e%2e/index.html', '/connect/svg/%2e%2e/index.html', '/connect/svg/../app/src/main.js',
 	];
 	// sent as written: fetch resolves dot segments itself before it sends, so it could never put one on the wire
 	const { request } = await import('node:http');
-	const raw = (p) => new Promise((resolve, reject) => {
-		const req = request({ host: 'localhost', port: app.port, path: p, method: 'GET' }, (res) => { res.resume(); res.on('end', () => resolve(res.statusCode)); });
+	const answered = (p) => new Promise((resolve, reject) => {
+		const req = request({ host: 'localhost', port: app.port, path: p, method: 'GET' }, (res) => {
+			let body = ''; res.on('data', (c) => { body += c; }); res.on('end', () => resolve({ status: res.statusCode, body }));
+		});
 		req.on('error', reject);
 		req.end();
 	});
+	const raw = async (p) => (await answered(p)).status;
 	assert.equal(await raw('/index.html'), 200, 'the raw request reaches the server as written (control)');
-	for (const p of refused) {
-		const status = await raw(p);
-		assert.equal(status, 404, `${p} answered ${status}: the door opened onto something it is not for`);
+	// the door's own refusal, so a path cannot pass this by failing further down for some other reason
+	const DOORS_404 = { status: 404, body: '{"error":"not found"}\n' };
+	for (const p of [...refused, `http://localhost:${app.port}/connect/v1/%2e%2e/%2e%2e/index.html`, '/connect/v1/..\\..\\index.html', '/connect\\v1\\..\\..\\index.html']) {
+		const got = await answered(p);
+		assert.deepEqual(got, DOORS_404, `${p} answered ${got.status}: the door opened onto something it is not for`);
 	}
 	assert.equal(await raw('/connect/v1/diagrams/../types'), 200, 'a dot segment that stays on the REST surface, sent as written');
 	assert.equal(await raw(`/x/%2e%2e/connect/svg/${id}.svg`), 200, 'a path that resolves into the door is the door, as every handler would read it');

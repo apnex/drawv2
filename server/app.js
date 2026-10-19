@@ -93,7 +93,9 @@ the other way; and the picture entry opens onto a diagram's picture and the favi
 function throughTheAgentDoor(rawUrl) {
 	let at;
 	try { at = new URL(rawUrl, 'http://localhost'); } catch { return rawUrl; }
-	if (!rawUrl.startsWith(DOOR) && !at.pathname.startsWith(DOOR)) return rawUrl;
+	// the raw path as a proxy would match it: an absolute-form target's authority set aside, a backslash read as the parser reads it
+	const raw = rawUrl.replace(/^[a-z][a-z0-9+.-]*:\/\/[^/\\]*/i, '').replaceAll('\\', '/');
+	if (!raw.startsWith(DOOR) && !at.pathname.startsWith(DOOR)) return rawUrl;
 	for (const [door, real] of AGENT_DOOR) {
 		if (!at.pathname.startsWith(door)) continue;
 		const path = real + at.pathname.slice(door.length);

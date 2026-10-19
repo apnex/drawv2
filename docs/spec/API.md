@@ -408,7 +408,7 @@ An agent reaches the same API at `/connect/v1/...` that the editor reaches at `/
 The routes, bodies and refusals are identical, because the prefix is stripped at ingress and everything below it is one implementation.
 
 `/connect` is a door onto the surface rather than onto the API alone.\
-It opens on exactly two paths, and widening it is a deliberate act rather than a consequence of adding a route:
+It has two entries -- the REST surface, and the picture with the favicon -- and widening it is a deliberate act rather than a consequence of adding a route:
 ```text
 /connect/v1/...      ->  /api/v1/...      the REST surface
 /connect/svg/<id>.svg -> /<id>.svg        the rendered picture
@@ -416,7 +416,7 @@ It opens on exactly two paths, and widening it is a deliberate act rather than a
 /<id>.svg            ->  /<id>.svg        the rendered picture (outside IAP, H23)
 ```
 
-A path is normalised before the door decides -- dot segments resolved, `%2e` among them -- and a request that arrived through the door and names nothing above is answered 404, never served as if it had come the other way (B383, H24.13).
+A path is normalised before the door decides -- dot segments resolved, `%2e` among them -- and a request that arrived through the door and names nothing above is answered 404, never served as if it had come the other way; a websocket cannot be opened through it (B383, H24.13).
 
 The picture is the same route the editor links to, so an agent can fetch a render of what it just drew:
 ```sh
