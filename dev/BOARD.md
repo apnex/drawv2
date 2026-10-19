@@ -1463,7 +1463,7 @@ Milestone H23 complete again.
 
 ---
 
-## H24 -- UI, UX and polish: smaller items, one at a time - `WIP`
+## H24 -- UI, UX and polish: smaller items, one at a time - `DONE`
 
 Opened 2026-10-15 by the director (`dev/DECISIONS.md` H24): smaller UI, UX and polish items, each registered as a row, tested before and after, and deployed in small batches.
 
@@ -1485,7 +1485,7 @@ Opened 2026-10-15 by the director (`dev/DECISIONS.md` H24): smaller UI, UX and p
 | H24.14 | Presence on a template is told to every principal, the sitter's email with it (H24.14) | **B384** | S3 | `DONE` |
 | H24.15 | A reader whose grant is revoked keeps receiving changes while its socket stays open (H24.15) | **B385** | S3 | `DONE` |
 | H24.16 | Draw's page files go uncompressed and uncached, about 974 KB on every visit (H24.16) | **B386** | S4 | `DONE` |
-| H24.17 | The session log can show another's session live on a template, which the presence lists now hide (H24.17) | **B392** | S4 | `WIP` |
+| H24.17 | The session log can show another's session live on a template, which the presence lists now hide (H24.17) | **B392** | S4 | `DONE` |
 | H24.18 | An edit in flight when its session is moved -- off a deleted diagram, or one it lost access to -- lands on the diagram it was moved to (H24.18) | **B393** | S2 | `DONE` |
 
 **Exit:** each item the director names is done or ruled, and deployed.
@@ -1520,6 +1520,7 @@ AMENDED 2026-10-19: H24.16 done -- the page's files go compressed and are never 
 AMENDED 2026-10-19: H24.16 live in production (`d249c3a`), at the director's "continue"; the published diagram and the favicon byte-identical before and after. H24.17 waits on the director.
 AMENDED 2026-10-19: H24.17 built and verified -- the session log hides another's session while it sits on a template, as the presence lists do (`dev/DECISIONS.md` H24.17); B392 closes when it is live.
 AMENDED 2026-10-19: every item from H24.11 to H24.18 done; the milestone closes once H24.17 is deployed, as its exit asks.
+AMENDED 2026-10-19: H24.17 live in production (`1093dc4`), at the director's "continue"; the published diagram and the favicon byte-identical before and after (B392 closed). Every item is done and deployed: H24 closes, its held triggers re-read at the close, none fired; it reopens with the director's next item. Next on the board: H26.0.
 
 ---
 
