@@ -1617,6 +1617,11 @@ Scored so the comparison is a judgement, not an omission.\
 | **B396** | S4 | `forked` drops an undo and a commit queued behind the forking write (H24.18) | a person reports an edit lost in the first moments on a template, or the next change to the `forked` handler. |
 | **B397** | S4 | An unreadable request target gets no answer, its handler's error unhandled (H24.13) | a hung request or an unhandled rejection from the request handler is seen in production's log, or the next change to how the request handler reads its URL. |
 | **B398** | S4 | The browser keeps draw's files only under versioned addresses (H24.16-1) | H26's import map gives each module a versioned address, or the page's load time is shown to be a problem with compression in place. |
+| **B399** | S5 | The REST zone anchor list omits a column and a row of zone anchors (H26.0) | H26.1 is live, or an agent is seen asking for a zone anchor the list omits. |
+| **B400** | S5 | The zone cap counts the node grid's places, not the zone grid's (H26.0) | H26.1 is live, or a diagram is refused a zone by its cap. |
+| **B401** | S4 | An inherited property named as a layout answers 200 with nulls (H26.0; changed by H26.1) | H26.1 is built. |
+| **B402** | S5 | The CLI restates the pitch as literals (H26.0) | OD-3 is designed for the CLI, so it can take `snap-grid` (B346), or the pitch is changed. |
+| **B403** | S4 | A page loading across a deploy mixes two revisions, or 404s a component (H26.0) | a page is seen failing to start, or running two revisions' code, across a deploy. |
 | **B344** | S4 | OD-1: a diagram kept in mission-kit's entity-store | the director selects it, or entity-store's record rules the adjustments it needs -- an asynchronous durable storage port, and names optional per kind. |
 | **B345** | S4 | OD-2: clients reaching the server over agp | OD-1 is ruled, entity-api is certified, and its follows are unparked (zorg's D15). |
 | **B347** | S4 | The towerless-combat timing test failed once under machine load | it fails a second time, or B333's flake ledger is built. |
