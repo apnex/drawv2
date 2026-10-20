@@ -40,7 +40,7 @@ const ROOT = path.resolve(import.meta.dirname, '..', '..');
 const args = process.argv.slice(2);
 const flag = (name, fallback = null) => { const i = args.indexOf(`--${name}`); return i >= 0 ? args[i + 1] : fallback; };
 const baseline = flag('baseline', 'e9c1b62'), candidate = flag('candidate');
-const OUT = flag('out', fs.mkdtempSync(path.join(os.tmpdir(), 'draw-rest-sweep-')));
+const OUT = flag('out') ?? fs.mkdtempSync(path.join(os.tmpdir(), 'draw-rest-sweep-'));   // made only when none is named
 fs.mkdirSync(OUT, { recursive: true });
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const LIMIT = 2 ** 49;
