@@ -369,6 +369,28 @@ const MUTANTS = [
 	{ id: 'IM3', rule: 'L6', needle: /app\/index\.html:\d+ an import map outside the generated region, or a second one/, edits: [{ file: 'app/index.html', replace: ['\t\t<!-- END GENERATED: importmap -->\n', ''] }] },
 	{ id: 'IM5', rule: 'L6', needle: /app\/index\.html:\d+ an import map outside the generated region, or a second one/, edits: [{ file: 'app/index.html', replace: ['\t\t<script type="importmap">\n', '\t\t<script type="importmap" data-typed="by hand">\n'] }] },
 	{ id: 'IM4', rule: 'L6', needle: /lab\/index\.html:\d+ an inline <script> is code no entry declares/, edits: [{ file: 'lab/index.html', replace: ['\t\t<script type="importmap">\n', '\t\t<script type="module">import \'/src/early.js\';</script>\n\t\t<script type="importmap">\n'] }] },
+	/*
+	H26.1 (SNAP-GRID.md section 7.7, D7) -- L12: a component is imported by the parts COMPONENTS names alone, the package and its subpaths
+	alike, and never by a dynamic import, anywhere -- the whole of a component's graph loads with the page. An @apnex/ dependency with
+	no entry in COMPONENTS is refused, so a component cannot arrive without saying who may import it.
+	*/
+	{ id: 'C1', rule: 'L12', needle: /model\/model\.mjs:\d+ import '@apnex\/snap-grid' -- part document may not import the component @apnex\/snap-grid/, edits: [{ file: 'model/model.mjs', append: "\nimport { openGrid as __og } from '@apnex/snap-grid';\n" }] },
+	{ id: 'C2', rule: 'L12', needle: /zones\/zone-keys\.mjs:\d+ import '@apnex\/snap-grid\/conformance' -- part zones may not import the component @apnex\/snap-grid/, edits: [{ file: 'zones/zone-keys.mjs', append: "\nimport { checkGridShape as __k } from '@apnex/snap-grid/conformance';\n" }] },
+	{ id: 'C3', rule: 'L12', needle: /kernel\/geometry\.mjs:\d+ import\('@apnex\/snap-grid'\) -- a component is imported statically \(D7\)/, edits: [{ file: 'kernel/geometry.mjs', append: "\nconst __d7 = async () => (await import('@apnex/snap-grid')).openGrid;\n" }] },
+	{ id: 'C4', rule: 'L12', needle: /tools\/__d7\.mjs:\d+ import\('@apnex\/snap-grid\/conformance'\) -- a component is imported statically \(D7\)/, edits: [{ file: 'tools/__d7.mjs', create: "#!/usr/bin/env node\nconst __d7 = async () => (await import('@apnex/snap-grid/conformance')).checkGridShape;\n" }] },
+	{ id: 'C5', rule: 'L12', needle: /package\.json depends on @apnex\/other, which COMPONENTS does not declare/, edits: [{ file: 'package.json', replace: ['"ws": "^8.21.0"', '"@apnex/other": "https://example.invalid/other.tgz",\n\t\t"ws": "^8.21.0"'] }] },
+	{ id: 'C6', rule: 'L12', needle: /COMPONENTS declares @apnex\/snap-grid, which package\.json does not depend on/, edits: [{ file: 'package.json', replace: ['"@apnex/snap-grid": "', '"@apnex/snap-grid-renamed": "'] }] },
+	{ id: 'C7', rule: 'L12', needle: /COMPONENTS\.@apnex\/snap-grid lets part latice import it, and PARTS holds no such part/, edits: [{ file: MAN, replace: ["'@apnex/snap-grid': { parts: ['lattice'],", "'@apnex/snap-grid': { parts: ['latice'],"] }] },
+];
+
+/*
+The controls beside the mutants: edits that must PASS the scan, so a rule that refused everything would be seen. H26.1 L12: the lattice
+imports the component, the package and a subpath, and a test may too -- tools and tests are no part, and may import any layer.
+*/
+const CONTROLS = [
+	{ id: 'C0', edits: [{ file: 'kernel/geometry.mjs', append: "\nimport { openGrid as __og } from '@apnex/snap-grid';\n" },
+		{ file: 'kernel/spec.mjs', append: "\nimport { checkGridShape as __k } from '@apnex/snap-grid/conformance';\n" },
+		{ file: 'tests/__c0.test.js', create: "import { openGrid } from '@apnex/snap-grid';\nexport const __c0 = openGrid;\n" }] },
 ];
 
 const scanOwn = (dir) => new Promise((done) => {
@@ -390,7 +412,7 @@ test('K0 M1-M7 and the attack\'s A-mutants (on copies of this tree): each lands 
 		const control = await scanOwn(path.join(base, 'control'));
 		assert.equal(control.code, 0, `the unmutated copy must pass before any mutant is read:\n${control.out}`);
 
-		const runs = MUTANTS.map((m) => {
+		const runs = [...MUTANTS, ...CONTROLS].map((m) => {
 			const dir = path.join(base, m.id);
 			fs.cpSync(path.join(base, 'control'), dir, { recursive: true });
 			for (const e of m.edits) {
@@ -404,6 +426,7 @@ test('K0 M1-M7 and the attack\'s A-mutants (on copies of this tree): each lands 
 			return scanOwn(dir).then((r) => ({ m, r }));
 		});
 		for (const { m, r } of await Promise.all(runs)) {
+			if (!m.rule) { assert.equal(r.code, 0, `${m.id}, a control, must pass:\n${r.out}`); continue; }
 			assert.equal(r.code, 1, `${m.id} was not caught:\n${r.out}`);
 			for (const rule of [m.rule, ...(m.also ?? [])]) assert.ok(failed(r.out).includes(rule), `${m.id} must fail ${rule}; it failed ${failed(r.out).join(', ')}:\n${r.out}`);
 			if (m.needle) assert.match(r.out, m.needle, `${m.id} must be refused for its own reason`);

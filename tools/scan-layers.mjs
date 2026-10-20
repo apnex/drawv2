@@ -32,6 +32,8 @@ moves the code, and a reviewer sees both in one diff. The rules are those of the
   L11  no host read (`window`, `globalThis`, `self`, `global`) in core, network or planner; the
        canvas is a ratchet                                        PROXY: `top`, `parent`, `frames`
                                                                   are not read (see HOST)
+  L12  H26.1: a component (COMPONENTS) is imported only by the parts that may, the package and its
+       subpaths alike, never by a dynamic import (D7), and every @apnex/ dependency is a component
 
 HOW EDGES ARE JUDGED. A specifier is resolved as the loaders resolve it: a query or fragment
 (`./x.mjs?v`) names the same file, so it is dropped. L2 resolves an import THROUGH a barrel to the
@@ -46,7 +48,7 @@ recorded -- progress is written down in the commit that makes it, or it did not 
 site (`from -> to`, `file:name`), not by total, because a total holds still when one violation is
 fixed and another added. A record may never sit above RATCHET_CEILING, the records as K0 froze them
 (its hash is pinned in the tests), so a violation cannot be excused by raising its record. The hard
-rules (L1, L3, L6, L7, L7k's lists, L8, L11 outside the canvas, and the refused edges) have no
+rules (L1, L3, L6, L7, L7k's lists, L8, L11 outside the canvas, L12, and the refused edges) have no
 ratchet at all: the only way to excuse one is to edit this file.
 
 NO PARSER DEPENDENCY. The repository ships no parser among its dependencies (`ws`, and since H26.1 its
@@ -71,7 +73,7 @@ import path from 'node:path';
 import { builtinModules } from 'node:module';
 import {
 	ALLOWED, FOLDERS, UNSCANNED, LAYER, ENTRIES, PAGES, PRODUCT_LAYERS, RULES, RATCHETS, RATCHET_CEILING, UNUSED_EXPORTS, SCANNER_ROOTS,
-	RATCHET_REASONS, COPIES,
+	RATCHET_REASONS, COPIES, PARTS, COMPONENTS,
 } from './layers.mjs';
 import { exceptionFaults } from './exceptions.mjs';
 import { markersOf } from './regions.mjs';   // H26.1: the import map's generated region, the one place L6 admits an inline script
@@ -86,8 +88,8 @@ const M = J ? {
 	ALLOWED: J.ALLOWED ?? {}, FOLDERS: J.FOLDERS ?? [], UNSCANNED: J.UNSCANNED ?? {}, LAYER: J.LAYER ?? {},
 	ENTRIES: J.ENTRIES ?? {}, PAGES: J.PAGES ?? {}, PRODUCT_LAYERS: J.PRODUCT_LAYERS ?? [], RULES: J.RULES ?? {}, RATCHETS: J.RATCHETS ?? {},
 	RATCHET_CEILING: J.RATCHET_CEILING, UNUSED_EXPORTS: J.UNUSED_EXPORTS ?? {}, SCANNER_ROOTS: J.SCANNER_ROOTS ?? {},
-	COPIES: J.COPIES ?? {},
-} : { ALLOWED, FOLDERS, UNSCANNED, LAYER, ENTRIES, PAGES, PRODUCT_LAYERS, RULES, RATCHETS, RATCHET_CEILING, UNUSED_EXPORTS, SCANNER_ROOTS, COPIES };
+	COPIES: J.COPIES ?? {}, PARTS: J.PARTS ?? {}, COMPONENTS: J.COMPONENTS ?? {},
+} : { ALLOWED, FOLDERS, UNSCANNED, LAYER, ENTRIES, PAGES, PRODUCT_LAYERS, RULES, RATCHETS, RATCHET_CEILING, UNUSED_EXPORTS, SCANNER_ROOTS, COPIES, PARTS, COMPONENTS };
 const R = M.RULES;
 
 // ---------------------------------------------------------------------------------------------
@@ -567,12 +569,8 @@ its pathname, so it is the same module. A relative path that climbs out of the r
 rather than ignored, because a browser clamps `..` at the site root and the path can still land in a
 served folder. An absolute path, a URL and a package subpath import (`#x`) are refused, not mapped.
 */
-const DEPENDENCIES = (() => {
-	try {
-		const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
-		return new Set(['dependencies', 'devDependencies', 'optionalDependencies', 'peerDependencies'].flatMap((k) => Object.keys(pkg[k] ?? {})));
-	} catch { return new Set(); }
-})();
+const PACKAGE = (() => { try { return JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8')); } catch { return {}; } })();
+const DEPENDENCIES = new Set(['dependencies', 'devDependencies', 'optionalDependencies', 'peerDependencies'].flatMap((k) => Object.keys(PACKAGE[k] ?? {})));
 const CODE_LOADING_BUILTINS = new Set(['module', 'vm']);   // createRequire, register(), runInThisContext: loading outside import
 function resolveSpec(from, spec) {
 	if (/^\.{1,2}\//.test(spec)) {
@@ -587,7 +585,8 @@ function resolveSpec(from, spec) {
 	if (spec.startsWith('node:') || builtinModules.includes(pkg)) {
 		return CODE_LOADING_BUILTINS.has(pkg) ? { external: true, loader: `node:${pkg}` } : { external: true };
 	}
-	if (DEPENDENCIES.has(pkg)) return { external: true };
+	// H26.1: a component is resolved as every declared package is, the package and its subpaths alike, and judged by L12
+	if (DEPENDENCIES.has(pkg)) return M.COMPONENTS[pkg] ? { external: true, component: pkg } : { external: true };
 	return { refused: 'neither a builtin nor a package that package.json declares' };
 }
 for (const file of modules) {
@@ -597,6 +596,7 @@ for (const file of modules) {
 		x.to = r.to ?? null;
 		if (r.refused) x.refused = r.refused;
 		if (r.loader) x.loader = r.loader;
+		if (r.component) x.component = r.component;
 	}
 }
 
@@ -638,6 +638,8 @@ const site = (file, e) => `${file}:${e.line} ${e.kind === 'dynamic' ? `import(${
 // The rules. Each is one function, so a rule can be switched off in one place to prove its test.
 // ---------------------------------------------------------------------------------------------
 const RATCHETED = ['L2', 'L4', 'L5', 'L5p', 'L7k', 'L9', 'L11'];
+// H26.1: the part each product module is in (tools/layers.mjs PARTS; a module path ending in `/` names every module under it)
+const partOfModule = (file) => Object.entries(M.PARTS).find(([, p]) => p.modules.some((s) => (s.endsWith('/') ? file.startsWith(s) : file === s)))?.[0] ?? null;
 const rules = {
 	L1: () => {
 		// the manifest may name only layers it defines, or a typo silently switches a rule off
@@ -985,6 +987,28 @@ const rules = {
 			if (counted.includes(layerOf[file])) for (const x of g) note('L11', file, `${file}:${x.line} ${x.name}`);
 		}
 	},
+
+	/*
+	H26.1 (SNAP-GRID.md section 7.7, D7) -- the components draw composes. A product module imports one only from a part COMPONENTS lets
+	import it, the package and every subpath alike; the tools and the tests, which are no part, may import it, as they may import any
+	layer. A dynamic import of one is refused everywhere: draw imports components only statically, so the whole of a component's graph
+	loads with the page, and a page kept across a deploy never asks for a version the deploy removed (D7's second condition). And every
+	@apnex/ dependency is declared here, so a component cannot be installed without saying who may import it.
+	*/
+	L12: () => {
+		for (const [pkg, c] of Object.entries(M.COMPONENTS)) {
+			if (!DEPENDENCIES.has(pkg)) fail('L12', `COMPONENTS declares ${pkg}, which package.json does not depend on`);
+			for (const p of c.parts ?? []) if (!M.PARTS[p]) fail('L12', `COMPONENTS.${pkg} lets part ${p} import it, and PARTS holds no such part`);
+		}
+		for (const pkg of DEPENDENCIES) if (pkg.startsWith('@apnex/') && !M.COMPONENTS[pkg]) fail('L12', `package.json depends on ${pkg}, which COMPONENTS does not declare -- name the parts that may import it and the ruling that admits it`);
+		for (const file of modules) for (const e of A[file].edges) {
+			if (!e.component) continue;
+			if (e.kind === 'dynamic') { fail('L12', `${site(file, e)} -- a component is imported statically (D7), so its whole graph loads with the page`); continue; }
+			const part = partOfModule(file);
+			if (part ? M.COMPONENTS[e.component].parts?.includes(part) : !M.PRODUCT_LAYERS.includes(layerOf[file]) && layerOf[file] !== 'lab') continue;
+			fail('L12', `${site(file, e)} -- ${part ? `part ${part}` : `${file}, in no part,`} may not import the component ${e.component}; COMPONENTS lets ${(M.COMPONENTS[e.component].parts ?? []).join(', ') || 'no part'} import it`);
+		}
+	},
 };
 
 function closure(roots) {
@@ -1079,7 +1103,7 @@ const l10 = measured.L10 ? measured.L10.size : 0;
 console.log(`  scan-layers: ${modules.length} module(s) in ${layers} layer(s). Ratcheted: `
 	+ `L2 ${totals.L2} edge(s), L4 ${totals.L4 - barrelReexports} barrel import(s) of ${barrels} barrel(s) (${barrelReexports} re-export(s)), L5 ${totals.L5}, L5p ${totals.L5p}, `
 	+ `L7k ${totals.L7k} consumer line(s), L9 ${totals.L9}, L11 ${totals.L11} canvas read(s). Listed: L10 ${l10} unused export(s). `
-	+ 'Hard, with no ratchet: L1, L3, L6, L7, L8, the L7k lists, L11 outside the canvas, the refused edges');
+	+ 'Hard, with no ratchet: L1, L3, L6, L7, L8, the L7k lists, L11 outside the canvas, L12, the refused edges');
 if (findings.length) {
 	const by = [...new Set(findings.map((f) => f.rule))].map((r) => `${r} ${count(r)}`).join(', ');
 	console.log(`\n  FAIL -- ${findings.length} finding(s): ${by}. The manifest is ${manifestFile ?? 'tools/layers.mjs'}; a ratchet is lowered there in the commit that earns it.\n`);

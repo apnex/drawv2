@@ -68,6 +68,7 @@ Noted for PC1: AR1 asks for the system's north star and this one is the programm
 - **H9, access** (amended 2026-08-20; `docs/spec/ACCESS.md`, "Decided"): access is per diagram and per owner, a principal is a person's identity or an agent's, and a connection code is an agent's credential.
 - **The palette** (2026-10-01): one core palette, roles per owner.
 - **WD1, WD6, WD7, WD10:** a wide device is one anchor (WD1); a diagram stores its grids as layout records (WD6) holding today's values (WD7); a device owns its size (WD10).
+- **H26-1, H26-2, H26-4:** a grid's arithmetic is `snap-grid`'s, a component of one duty that knows nothing of drawv2 (H26-1); each component is its own public repository, released by its own CI, drawv2 pinning the release file by its hash, its server importing it by name and its pages through a generated import map (H26-2); `snap-grid`'s design is ratified, the `lattice` part alone composing it (H26-4).
 <!-- END GENERATED: architecture-justification -->
 
 **Model, as built.**\
@@ -103,39 +104,39 @@ How the current instant stands against the axioms in force, as the target names 
 
 ## 4. Parts
 
-The anchored core's parts, declared once in `tools/layers.mjs` `PARTS` and rendered here with the modules each is made of and the parts each imports, read from the code; every product module is in exactly one part.
+The anchored core's parts, declared once in `tools/layers.mjs` `PARTS` and rendered here with the modules each is made of, and the parts and components each imports, read from the code; every product module is in exactly one part.
 
 <!-- BEGIN GENERATED: architecture-parts. Run tools/generate-architecture.mjs; do not edit by hand. -->
-| Part | Duty | Kind | Made of | Imports today |
-|---|---|---|---|---|
-| `lattice` | Compute geometry on the grid | core | `kernel/geometry.mjs`, `kernel/spec.mjs`, `kernel/router.mjs`, `model/surface.mjs` | -- |
-| `kind-contract` | Compose kinds from the rows plugins declare | core | `model/shape.mjs`, `model/limits.mjs` | -- |
-| `document` | Hold one document's entities | core | `model/model.mjs`, `model/anchors.mjs`, `model/ops.mjs`, `model/order.mjs`, `model/stacking.mjs` | `kind-contract` |
-| `relations` | Index which entities relate | core | `engine/relations.mjs`, `engine/ivm.mjs`, `engine/store.mjs` | `document` |
-| `colours` | Hold the colours every role draws from | core | `kernel/palette.mjs`, `kernel/theme.mjs` | -- |
-| `primitives` | Draw the shapes painters compose | core | `kernel/renderer.mjs` | `lattice` |
-| `rules` | Match an input to one declared row | core | `kernel/input-rules.mjs` | -- |
-| `planner` | Make the one write every door applies | core | `planner/`, `model/invariants.mjs` | `document`, `kind-contract` |
-| `layouts` | Declare a diagram's grids | plugin | `layouts/` | `lattice` |
-| `devices` | Compose a device onto an anchor | plugin | `devices/` | `colours`, `document`, `kind-contract`, `lattice`, `primitives` |
-| `network` | Connect anchors | plugin | `network/` | `colours`, `document`, `kind-contract`, `lattice`, `primitives`, `rules` |
-| `zones` | Bound regions of cells | plugin | `zones/` | `kind-contract`, `lattice`, `layouts`, `primitives` |
-| `groups` | Name sets of anchors | plugin | `groups/` | `colours`, `document`, `kind-contract`, `lattice` |
-| `simulation` | Derive what the clock drives | plugin | `engine/kinds.mjs`, `engine/movers.mjs`, `engine/rules.mjs`, `engine/spawn-appearance.mjs`, `engine/spawners.mjs`, `engine/spawn-field.mjs`, `engine/spawn-runs.mjs`, `model/reveal.mjs`, `engine/mover-painter.mjs`, `engine/reveal-painter.mjs`, `engine/paintloop.mjs` | `devices`, `document`, `kind-contract`, `lattice`, `network` |
-| `product` | Compose the plugins into the product | composition | `product/` | `devices`, `groups`, `kind-contract`, `lattice`, `layouts`, `network`, `simulation`, `zones` |
-| `canvas` | Turn input into edits through the parts' declarations | host | `app/src/actions.js`, `app/src/capture.js`, `app/src/changes.js`, `app/src/commands.js`, `app/src/compose-canvas.js`, `app/src/help.js`, `app/src/input.js`, `app/src/input-state.js`, `app/src/keymap.js`, `app/src/labeledit.js`, `app/src/overlay.js`, `app/src/pick.js`, `app/src/readout.js`, `app/src/recognize.js`, `app/src/releases.js`, `app/src/selection.js`, `app/src/snap.js`, `app/src/tools.js`, `app/src/triggers.js`, `app/src/grids.js`, `engine/situation.mjs` | `document`, `kind-contract`, `lattice`, `planner`, `primitives`, `relations`, `renderer`, `rules` |
-| `renderer` | Draw a document through the parts' painters | host | `app/src/renderer.js`, `app/src/painter.js` | `document`, `lattice`, `primitives` |
-| `sync` | Keep a tab converged with the server | host | `app/src/sync.js`, `app/src/net.js`, `app/src/watchdog.js`, `app/src/clock.js` | `canvas`, `document`, `kind-contract` |
-| `product-page` | Compose the product page | composition root | `app/src/main.js`, `app/src/palette.js`, `app/src/run-mode.js`, `app/src/spectate.js` | `canvas`, `devices`, `network`, `product`, `renderer`, `simulation`, `sync` |
-| `lab` | Compose the canvas over the real modules, without storage | composition root | `lab/` | `canvas`, `document`, `lattice`, `network`, `planner`, `product`, `relations`, `renderer`, `server` |
-| `server` | Compose the server | composition root | `server/server.js`, `server/app.js`, `server/static.mjs` | `access`, `devices`, `export`, `hub`, `planner`, `rest`, `store` |
-| `access` | Establish who a request comes from | door | `server/identity.mjs`, `server/codes.mjs`, `server/origin.mjs` | -- |
-| `placement` | Choose the free anchor a relationship names | door | `server/anchor.mjs` | `devices`, `document`, `lattice` |
-| `store` | Keep documents durable | door | `server/store.js`, `server/files.mjs`, `server/docfile.mjs`, `server/seed.js`, `server/diagram-id.mjs` | `access`, `document`, `kind-contract`, `lattice`, `network`, `placement`, `planner`, `product` |
-| `hub` | Carry each change to the tabs watching a document | door | `server/hub.js`, `server/protocol.js`, `server/locks.js`, `server/sessionlog.mjs` | `kind-contract` |
-| `rest` | Answer agents over HTTP | door | `server/rest.js`, `server/routes.mjs` | `devices`, `document`, `groups`, `hub`, `kind-contract`, `lattice`, `layouts`, `network`, `simulation`, `zones` |
-| `cli` | Give an agent one command per verb | door | `cli/` | -- |
-| `export` | Render a document without a browser | door | `server/svg.mjs`, `server/svg-style.mjs` | `lattice`, `primitives`, `product`, `renderer` |
+| Part | Duty | Kind | Made of | Imports today | Composes today |
+|---|---|---|---|---|---|
+| `lattice` | Compute geometry on the grid | core | `kernel/geometry.mjs`, `kernel/spec.mjs`, `kernel/router.mjs`, `model/surface.mjs` | -- | -- |
+| `kind-contract` | Compose kinds from the rows plugins declare | core | `model/shape.mjs`, `model/limits.mjs` | -- | -- |
+| `document` | Hold one document's entities | core | `model/model.mjs`, `model/anchors.mjs`, `model/ops.mjs`, `model/order.mjs`, `model/stacking.mjs` | `kind-contract` | -- |
+| `relations` | Index which entities relate | core | `engine/relations.mjs`, `engine/ivm.mjs`, `engine/store.mjs` | `document` | -- |
+| `colours` | Hold the colours every role draws from | core | `kernel/palette.mjs`, `kernel/theme.mjs` | -- | -- |
+| `primitives` | Draw the shapes painters compose | core | `kernel/renderer.mjs` | `lattice` | -- |
+| `rules` | Match an input to one declared row | core | `kernel/input-rules.mjs` | -- | -- |
+| `planner` | Make the one write every door applies | core | `planner/`, `model/invariants.mjs` | `document`, `kind-contract` | -- |
+| `layouts` | Declare a diagram's grids | plugin | `layouts/` | `lattice` | -- |
+| `devices` | Compose a device onto an anchor | plugin | `devices/` | `colours`, `document`, `kind-contract`, `lattice`, `primitives` | -- |
+| `network` | Connect anchors | plugin | `network/` | `colours`, `document`, `kind-contract`, `lattice`, `primitives`, `rules` | -- |
+| `zones` | Bound regions of cells | plugin | `zones/` | `kind-contract`, `lattice`, `layouts`, `primitives` | -- |
+| `groups` | Name sets of anchors | plugin | `groups/` | `colours`, `document`, `kind-contract`, `lattice` | -- |
+| `simulation` | Derive what the clock drives | plugin | `engine/kinds.mjs`, `engine/movers.mjs`, `engine/rules.mjs`, `engine/spawn-appearance.mjs`, `engine/spawners.mjs`, `engine/spawn-field.mjs`, `engine/spawn-runs.mjs`, `model/reveal.mjs`, `engine/mover-painter.mjs`, `engine/reveal-painter.mjs`, `engine/paintloop.mjs` | `devices`, `document`, `kind-contract`, `lattice`, `network` | -- |
+| `product` | Compose the plugins into the product | composition | `product/` | `devices`, `groups`, `kind-contract`, `lattice`, `layouts`, `network`, `simulation`, `zones` | -- |
+| `canvas` | Turn input into edits through the parts' declarations | host | `app/src/actions.js`, `app/src/capture.js`, `app/src/changes.js`, `app/src/commands.js`, `app/src/compose-canvas.js`, `app/src/help.js`, `app/src/input.js`, `app/src/input-state.js`, `app/src/keymap.js`, `app/src/labeledit.js`, `app/src/overlay.js`, `app/src/pick.js`, `app/src/readout.js`, `app/src/recognize.js`, `app/src/releases.js`, `app/src/selection.js`, `app/src/snap.js`, `app/src/tools.js`, `app/src/triggers.js`, `app/src/grids.js`, `engine/situation.mjs` | `document`, `kind-contract`, `lattice`, `planner`, `primitives`, `relations`, `renderer`, `rules` | -- |
+| `renderer` | Draw a document through the parts' painters | host | `app/src/renderer.js`, `app/src/painter.js` | `document`, `lattice`, `primitives` | -- |
+| `sync` | Keep a tab converged with the server | host | `app/src/sync.js`, `app/src/net.js`, `app/src/watchdog.js`, `app/src/clock.js` | `canvas`, `document`, `kind-contract` | -- |
+| `product-page` | Compose the product page | composition root | `app/src/main.js`, `app/src/palette.js`, `app/src/run-mode.js`, `app/src/spectate.js` | `canvas`, `devices`, `network`, `product`, `renderer`, `simulation`, `sync` | -- |
+| `lab` | Compose the canvas over the real modules, without storage | composition root | `lab/` | `canvas`, `document`, `lattice`, `network`, `planner`, `product`, `relations`, `renderer`, `server` | -- |
+| `server` | Compose the server | composition root | `server/server.js`, `server/app.js`, `server/static.mjs` | `access`, `devices`, `export`, `hub`, `planner`, `rest`, `store` | -- |
+| `access` | Establish who a request comes from | door | `server/identity.mjs`, `server/codes.mjs`, `server/origin.mjs` | -- | -- |
+| `placement` | Choose the free anchor a relationship names | door | `server/anchor.mjs` | `devices`, `document`, `lattice` | -- |
+| `store` | Keep documents durable | door | `server/store.js`, `server/files.mjs`, `server/docfile.mjs`, `server/seed.js`, `server/diagram-id.mjs` | `access`, `document`, `kind-contract`, `lattice`, `network`, `placement`, `planner`, `product` | -- |
+| `hub` | Carry each change to the tabs watching a document | door | `server/hub.js`, `server/protocol.js`, `server/locks.js`, `server/sessionlog.mjs` | `kind-contract` | -- |
+| `rest` | Answer agents over HTTP | door | `server/rest.js`, `server/routes.mjs` | `devices`, `document`, `groups`, `hub`, `kind-contract`, `lattice`, `layouts`, `network`, `simulation`, `zones` | -- |
+| `cli` | Give an agent one command per verb | door | `cli/` | -- | -- |
+| `export` | Render a document without a browser | door | `server/svg.mjs`, `server/svg-style.mjs` | `lattice`, `primitives`, `product`, `renderer` | -- |
 <!-- END GENERATED: architecture-parts -->
 
 ---

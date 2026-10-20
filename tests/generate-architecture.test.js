@@ -157,3 +157,62 @@ test('H21.9 A-0: an alignment naming no part, or a name MISSION_KIT does not hol
 	assert.match(r.stdout, /ALIGNMENT\.cli aligns to nothing/);
 });
 
+
+/*
+H26.1 (dev/design/components/SNAP-GRID.md section 7.7) -- the components draw composes (tools/layers.mjs COMPONENTS) are rendered beside
+each part's consumes: in the target, the components a part composes; in the current document, those its modules import today. A
+component's parts are parts that exist, each aligned to it in the mission-kit register, and the rulings that admit it are cited in the
+target's justification chain, as every ruling a part is fixed by is.
+*/
+const componentsWith = (edit) => {
+	const f = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'draw-components-')), 'components.json');
+	return import('../tools/layers.mjs').then(({ COMPONENTS }) => { const c = structuredClone(COMPONENTS); edit(c); fs.writeFileSync(f, JSON.stringify(c)); return f; });
+};
+
+test('H26.1: each part\'s components are rendered beside its consumes -- the lattice composes snap-grid -- the control', () => {
+	const target = fs.readFileSync(path.join(ROOT, 'docs/ARCHITECTURE-TARGET.md'), 'utf8');
+	assert.match(target, /\| Part \| Duty \| Kind \| Fixed by \| Consumes \| Composes \|/);
+	assert.match(target, /\| `lattice` \| Compute geometry on the grid \| core \| O1 \| -- \| `@apnex\/snap-grid` \|/, 'the lattice, and no other part, composes it');
+	assert.match(target, /\| `document` \| [^\n]* \| `kind-contract`, `lattice` \| -- \|/);
+	assert.match(target, /\| `lattice` \| `snap-grid` \| snap-grid: proposed in drawv2[^|]*\|/, 'and the register aligns the lattice to it');
+	assert.doesNotMatch(target, /The anchored core composes no mission-kit component/, 'A-0\'s finding, no longer true, is gone from the authored text');
+	const current = fs.readFileSync(path.join(ROOT, 'docs/ARCHITECTURE.md'), 'utf8');
+	assert.match(current, /\| Part \| Duty \| Kind \| Made of \| Imports today \| Composes today \|/);
+	assert.equal(run('--check').status, 0);
+});
+
+test('H26.1: a component\'s part that is no part, or not aligned to it, and a ruling the justification chain does not cite, each fail', async () => {
+	let r = run('--check', '--components', await componentsWith((c) => { c['@apnex/snap-grid'].parts = ['latice']; }));
+	assert.equal(r.status, 1);
+	assert.match(r.stdout, /COMPONENTS\.@apnex\/snap-grid lets latice import it, which is no part/);
+	r = run('--check', '--components', await componentsWith((c) => { c['@apnex/snap-grid'].by = ['H26-1', 'ZZ9']; }));
+	assert.equal(r.status, 1);
+	assert.match(r.stdout, /COMPONENTS\.@apnex\/snap-grid is admitted by ZZ9, which the target's justification chain \(section 2\) does not cite/);
+	r = run('--check', '--components', await componentsWith((c) => { c['@apnex/snap-grid'].by = []; }));
+	assert.match(r.stdout, /COMPONENTS\.@apnex\/snap-grid cites no ruling that admits it/);
+	r = run('--check', '--components', await componentsWith((c) => { c['@apnex/snap-grid'].parts.push('primitives'); }));
+	assert.equal(r.status, 1);
+	assert.match(r.stdout, /COMPONENTS lets primitives import @apnex\/snap-grid, and ALIGNMENT does not align primitives to snap-grid/);
+	r = run('--check', '--components', await componentsWith(() => {}));
+	assert.equal(r.status, 0, 'the declaration as written passes (control)');
+});
+
+test('H26.1: a component a part\'s modules import today is rendered in the current document -- planted in a copy of the tree', async () => {
+	const { FOLDERS } = await import('../tools/layers.mjs');
+	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-arch-components-'));
+	try {
+		for (const f of FOLDERS) fs.cpSync(path.join(ROOT, f.dir), path.join(dir, f.dir), { recursive: true, filter: (src) => !(f.skip ?? []).some((s) => src.startsWith(path.join(ROOT, s))) });
+		for (const f of ['docs', 'dev/BACKLOG.md', 'package.json']) fs.cpSync(path.join(ROOT, f), path.join(dir, f), { recursive: true });
+		fs.symlinkSync(path.join(ROOT, 'node_modules'), path.join(dir, 'node_modules'));
+		const tool = path.join(dir, 'tools/generate-architecture.mjs');
+		assert.equal(spawnSync(process.execPath, [tool, '--check'], { encoding: 'utf8' }).status, 0, 'the copy says what its code declares before the plant (control)');
+		fs.appendFileSync(path.join(dir, 'kernel/geometry.mjs'), "\nimport { openGrid as __og } from '@apnex/snap-grid';\n");
+		const r = spawnSync(process.execPath, [tool, '--check'], { encoding: 'utf8' });
+		assert.equal(r.status, 1);
+		assert.match(r.stdout, /docs\/ARCHITECTURE\.md parts/, 'the current document no longer says what the code imports');
+		assert.equal(spawnSync(process.execPath, [tool], { encoding: 'utf8' }).status, 0);
+		const doc = fs.readFileSync(path.join(dir, 'docs/ARCHITECTURE.md'), 'utf8');
+		assert.match(doc, /\| `lattice` \| [^\n]* \| `@apnex\/snap-grid` \|\n/, 'the lattice imports it today');
+		assert.match(doc, /\| `document` \| [^\n]* \| -- \|\n/, 'and no other part does');
+	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});

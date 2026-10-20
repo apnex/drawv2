@@ -87,6 +87,7 @@ Noted for PC1: AR1 asks for the system's north star and this one is the programm
 - **H9, access** (amended 2026-08-20; `docs/spec/ACCESS.md`, "Decided"): access is per diagram and per owner, a principal is a person's identity or an agent's, and a connection code is an agent's credential.
 - **The palette** (2026-10-01): one core palette, roles per owner.
 - **WD1, WD6, WD7, WD10:** a wide device is one anchor (WD1); a diagram stores its grids as layout records (WD6) holding today's values (WD7); a device owns its size (WD10).
+- **H26-1, H26-2, H26-4:** a grid's arithmetic is `snap-grid`'s, a component of one duty that knows nothing of drawv2 (H26-1); each component is its own public repository, released by its own CI, drawv2 pinning the release file by its hash, its server importing it by name and its pages through a generated import map (H26-2); `snap-grid`'s design is ratified, the `lattice` part alone composing it (H26-4).
 
 **Model.**\
 The **anchor** is the core: identity and position on one cell (SD11b, O4); connection is the network plugin's.\
@@ -132,39 +133,39 @@ Three families compose onto a type -- appearance, routing and run-mode behaviour
 
 ### 4.1 Parts
 
-Generated from `tools/layers.mjs` `PARTS`; the current document renders the same parts with the modules each is made of today and the parts each imports.
+Generated from `tools/layers.mjs` `PARTS`, and each part's components from its `COMPONENTS`; the current document renders the same parts with the modules each is made of today, and the parts and components each imports.
 
 <!-- BEGIN GENERATED: architecture-target-parts. Run tools/generate-architecture.mjs; do not edit by hand. -->
-| Part | Duty | Kind | Fixed by | Consumes |
-|---|---|---|---|---|
-| `lattice` | Compute geometry on the grid | core | O1 | -- |
-| `kind-contract` | Compose kinds from the rows plugins declare | core | N1, G3, WD6 | -- |
-| `document` | Hold one document's entities | core | O1, O4, Q1 | `kind-contract`, `lattice` |
-| `relations` | Index which entities relate | core | O1 | `document`, `kind-contract`, `lattice` |
-| `colours` | Hold the colours every role draws from | core | N1 | -- |
-| `primitives` | Draw the shapes painters compose | core | N1, D3 | `lattice`, `colours` |
-| `rules` | Match an input to one declared row | core | D2 | -- |
-| `planner` | Make the one write every door applies | core | SD2, O1 | `kind-contract`, `document`, `relations`, `lattice` |
-| `layouts` | Declare a diagram's grids | plugin | WD6, WD7 | `lattice`, `kind-contract`, `document` |
-| `devices` | Compose a device onto an anchor | plugin | O4, WD10 | `lattice`, `kind-contract`, `document`, `relations`, `colours`, `primitives`, `rules` |
-| `network` | Connect anchors | plugin | SD11, SD11b, O1 | `lattice`, `kind-contract`, `document`, `relations`, `colours`, `primitives`, `rules` |
-| `zones` | Bound regions of cells | plugin | O1, O4 | `lattice`, `kind-contract`, `document`, `layouts`, `colours`, `primitives`, `rules` |
-| `groups` | Name sets of anchors | plugin | O1 | `lattice`, `kind-contract`, `document`, `relations`, `colours`, `primitives`, `rules` |
-| `simulation` | Derive what the clock drives | plugin | AX1, AX4, SD11b | `lattice`, `kind-contract`, `document`, `relations`, `colours`, `primitives`, `rules`, `network`, `devices` |
-| `product` | Compose the plugins into the product | composition | N1, D1 | `kind-contract`, `lattice`, `colours`, `layouts`, `devices`, `network`, `zones`, `groups`, `simulation` |
-| `canvas` | Turn input into edits through the parts' declarations | host | D1, D2, D5 | `lattice`, `kind-contract`, `document`, `relations`, `rules`, `planner`, `renderer`, `primitives`, `colours` |
-| `renderer` | Draw a document through the parts' painters | host | D1, D3 | `lattice`, `document`, `primitives`, `colours` |
-| `sync` | Keep a tab converged with the server | host | SD2 | `document`, `kind-contract`, `canvas` |
-| `product-page` | Compose the product page | composition root | D1 | any part -- a composition root |
-| `lab` | Compose the canvas over the real modules, without storage | composition root | H17-D1 | any part -- a composition root |
-| `server` | Compose the server | composition root | SD2 | any part -- a composition root |
-| `access` | Establish who a request comes from | door | H9 | -- |
-| `placement` | Choose the free anchor a relationship names | door | SD1 | `lattice`, `document`, `relations`, `devices` |
-| `store` | Keep documents durable | door | SD2, WD6 | `document`, `kind-contract`, `lattice`, `planner`, `product`, `relations`, `access`, `placement`, `network` |
-| `hub` | Carry each change to the tabs watching a document | door | SD2 | `store`, `planner`, `document`, `kind-contract`, `access` |
-| `rest` | Answer agents over HTTP | door | SD1, Q1 | `store`, `hub`, `planner`, `document`, `kind-contract`, `product`, `lattice`, `access`, `layouts`, `network`, `devices`, `zones`, `groups`, `simulation` |
-| `cli` | Give an agent one command per verb | door | SD1 | -- |
-| `export` | Render a document without a browser | door | H2 | `lattice`, `document`, `kind-contract`, `primitives`, `colours`, `product`, `renderer` |
+| Part | Duty | Kind | Fixed by | Consumes | Composes |
+|---|---|---|---|---|---|
+| `lattice` | Compute geometry on the grid | core | O1 | -- | `@apnex/snap-grid` |
+| `kind-contract` | Compose kinds from the rows plugins declare | core | N1, G3, WD6 | -- | -- |
+| `document` | Hold one document's entities | core | O1, O4, Q1 | `kind-contract`, `lattice` | -- |
+| `relations` | Index which entities relate | core | O1 | `document`, `kind-contract`, `lattice` | -- |
+| `colours` | Hold the colours every role draws from | core | N1 | -- | -- |
+| `primitives` | Draw the shapes painters compose | core | N1, D3 | `lattice`, `colours` | -- |
+| `rules` | Match an input to one declared row | core | D2 | -- | -- |
+| `planner` | Make the one write every door applies | core | SD2, O1 | `kind-contract`, `document`, `relations`, `lattice` | -- |
+| `layouts` | Declare a diagram's grids | plugin | WD6, WD7 | `lattice`, `kind-contract`, `document` | -- |
+| `devices` | Compose a device onto an anchor | plugin | O4, WD10 | `lattice`, `kind-contract`, `document`, `relations`, `colours`, `primitives`, `rules` | -- |
+| `network` | Connect anchors | plugin | SD11, SD11b, O1 | `lattice`, `kind-contract`, `document`, `relations`, `colours`, `primitives`, `rules` | -- |
+| `zones` | Bound regions of cells | plugin | O1, O4 | `lattice`, `kind-contract`, `document`, `layouts`, `colours`, `primitives`, `rules` | -- |
+| `groups` | Name sets of anchors | plugin | O1 | `lattice`, `kind-contract`, `document`, `relations`, `colours`, `primitives`, `rules` | -- |
+| `simulation` | Derive what the clock drives | plugin | AX1, AX4, SD11b | `lattice`, `kind-contract`, `document`, `relations`, `colours`, `primitives`, `rules`, `network`, `devices` | -- |
+| `product` | Compose the plugins into the product | composition | N1, D1 | `kind-contract`, `lattice`, `colours`, `layouts`, `devices`, `network`, `zones`, `groups`, `simulation` | -- |
+| `canvas` | Turn input into edits through the parts' declarations | host | D1, D2, D5 | `lattice`, `kind-contract`, `document`, `relations`, `rules`, `planner`, `renderer`, `primitives`, `colours` | -- |
+| `renderer` | Draw a document through the parts' painters | host | D1, D3 | `lattice`, `document`, `primitives`, `colours` | -- |
+| `sync` | Keep a tab converged with the server | host | SD2 | `document`, `kind-contract`, `canvas` | -- |
+| `product-page` | Compose the product page | composition root | D1 | any part -- a composition root | -- |
+| `lab` | Compose the canvas over the real modules, without storage | composition root | H17-D1 | any part -- a composition root | -- |
+| `server` | Compose the server | composition root | SD2 | any part -- a composition root | -- |
+| `access` | Establish who a request comes from | door | H9 | -- | -- |
+| `placement` | Choose the free anchor a relationship names | door | SD1 | `lattice`, `document`, `relations`, `devices` | -- |
+| `store` | Keep documents durable | door | SD2, WD6 | `document`, `kind-contract`, `lattice`, `planner`, `product`, `relations`, `access`, `placement`, `network` | -- |
+| `hub` | Carry each change to the tabs watching a document | door | SD2 | `store`, `planner`, `document`, `kind-contract`, `access` | -- |
+| `rest` | Answer agents over HTTP | door | SD1, Q1 | `store`, `hub`, `planner`, `document`, `kind-contract`, `product`, `lattice`, `access`, `layouts`, `network`, `devices`, `zones`, `groups`, `simulation` | -- |
+| `cli` | Give an agent one command per verb | door | SD1 | -- | -- |
+| `export` | Render a document without a browser | door | H2 | `lattice`, `document`, `kind-contract`, `primitives`, `colours`, `product`, `renderer` | -- |
 <!-- END GENERATED: architecture-target-parts -->
 
 ### 4.2 What the parts expose
@@ -322,13 +323,14 @@ All five questions recorded here at ratification (H21.6) have been ruled: the an
 ### 9.3 Alignment with mission-kit -- a register (A-0)
 
 **Maturity: provisional; a register, not structure.**\
-The anchored core composes no mission-kit component (A-0).\
-Each part below is mapped to the component or candidate it would take, declared in `tools/layers.mjs` `ALIGNMENT` and generated; the other parts are drawv2's own.\
+The anchored core composes one component, `snap-grid`, through its `lattice` part alone (H26-1, H26-2, H26-4; `tools/layers.mjs` `COMPONENTS`), where A-0 found it composed none.\
+Each part below is mapped to the component it composes or the candidate it would take, declared in `tools/layers.mjs` `ALIGNMENT` and generated; the other parts are drawv2's own.\
 Why each mapping fits, and the rulings composing it would change, are `dev/design/unification/MISSION-KIT-ALIGNMENT.md`, sections 3 and 7.2.
 
 <!-- BEGIN GENERATED: architecture-target-alignment. Run tools/generate-architecture.mjs; do not edit by hand. -->
-| Part | Aligns to | Standing, read 2026-10-12 | Composing it waits on |
+| Part | Aligns to | Standing, read 2026-10-20 | Composing it waits on |
 |---|---|---|---|
+| `lattice` | `snap-grid` | snap-grid: proposed in drawv2, released from its own repository, composed (H26-4) | composed (H26-4); its grid arithmetic moves onto it in H26.1 |
 | `kind-contract` | `shape-check` | shape-check: proposed in zorg, certified | OD-3; the target's section 4.3 |
 | `document` | `entity-store` | entity-store: proposed in zorg, certified | OD-1 |
 | `store` | `entity-store` | entity-store: proposed in zorg, certified | OD-1 |

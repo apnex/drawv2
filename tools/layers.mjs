@@ -148,16 +148,31 @@ export const PARTS = {
 };
 
 /*
-H21.9 (A-0) -- EACH PART'S ALIGNMENT WITH MISSION-KIT, a register, not structure: the anchored core composes no mission-kit
-component yet, and each part below is mapped to the component or candidate it would take
-(dev/design/unification/MISSION-KIT-ALIGNMENT.md, section 3, says why each fits and which rulings composing it would change).
+H26.1 (dev/design/components/SNAP-GRID.md section 7.7) -- THE COMPONENTS DRAW COMPOSES, each a package installed from its own
+repository's release (H26-2): the parts that may import it, the package and its subpaths alike, and the rulings that admit it.
+tools/scan-layers.mjs (L12) refuses an import of a component from any other part, refuses a dynamic import of one anywhere (D7: the
+whole of a component's graph loads with the page), and refuses an @apnex/ dependency with no entry here; tools/generate-architecture.mjs
+renders each part's components beside its consumes and fails on a part that is no part, or a ruling the target's justification
+chain does not cite. The tools and the tests are no part: they may import any layer, a component among them.
+*/
+export const COMPONENTS = {
+	// the lattice alone; every other part asks the grids the lattice and the layouts plugin open (SNAP-GRID.md section 5)
+	'@apnex/snap-grid': { parts: ['lattice'], by: ['H26-1', 'H26-2', 'H26-4'] },
+};
+
+/*
+H21.9 (A-0) -- EACH PART'S ALIGNMENT WITH MISSION-KIT, a register, not structure: each part below is mapped to the component or
+candidate it takes or would take (dev/design/unification/MISSION-KIT-ALIGNMENT.md, section 3, says why each fits and which rulings
+composing it would change). AMENDED by H26.1: the anchored core composes its first component, `snap-grid`, through the lattice
+(COMPONENTS above); every other mapping is still a candidate's.
 MISSION_KIT holds each component's or candidate's standing as read on MISSION_KIT_READ -- standings move, and are read again before
 a design that composes one is asked. tools/generate-architecture.mjs renders the register into the target's section 9.3 and fails
 on a part that is no part, a name MISSION_KIT does not hold, or an entry of MISSION_KIT no part aligns to.
 */
-export const MISSION_KIT_READ = '2026-10-12';
+export const MISSION_KIT_READ = '2026-10-20';
 export const MISSION_KIT = {
 	agp: 'registered in mission-kit, C1',
+	'snap-grid': 'proposed in drawv2, released from its own repository, composed (H26-4)',
 	'shape-check': 'proposed in zorg, certified',
 	'entity-store': 'proposed in zorg, certified',
 	'caller-identity': 'proposed in zorg, certified',
@@ -174,6 +189,7 @@ export const MISSION_KIT = {
 	'access-grants': 'candidate, zorg BL20',
 };
 export const ALIGNMENT = {
+	lattice: { to: ['snap-grid'], waits: 'composed (H26-4); its grid arithmetic moves onto it in H26.1' },
 	'kind-contract': { to: ['shape-check'], waits: 'OD-3; the target\'s section 4.3' },
 	document: { to: ['entity-store'], waits: 'OD-1' },
 	store: { to: ['entity-store'], waits: 'OD-1' },

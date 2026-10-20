@@ -18,6 +18,8 @@ what the code declares about itself, and the gate fails when the document no lon
   gate           package.json -- the steps `npm run gate` runs
   alignment      tools/layers.mjs ALIGNMENT and MISSION_KIT -- each part mapped to the mission-kit component or candidate it
                  would take, with its standing as read, rendered into the target's register (H21.9, A-0)
+  components     tools/layers.mjs COMPONENTS -- each part's components beside its consumes: in the target those it composes, in the
+                 current document those its modules import today (H26.1)
 
 Regions are delimited `<!-- BEGIN GENERATED: architecture-<name> ... -->` and `<!-- END GENERATED: architecture-<name> -->`; the
 prose around them is authored. No line numbers and no counts that move with every test, so the document changes when the
@@ -29,12 +31,13 @@ Usage: node tools/generate-architecture.mjs [--check] [--doc <path>]
   --target-doc  the target document holding the parts table (default docs/ARCHITECTURE-TARGET.md)
   --parts  a JSON parts declaration in place of tools/layers.mjs PARTS (tests)
   --alignment  a JSON alignment register in place of tools/layers.mjs ALIGNMENT (tests)
+  --components  a JSON components declaration in place of tools/layers.mjs COMPONENTS (tests)
 */
 
 import fs from 'node:fs';
 import path from 'node:path';
 import { LAYER_DUTY, ALLOWED, LAYER, RATCHETS, RATCHET_REASONS, PARTS as DECLARED_PARTS, KIND_MAY_CONSUME, NOT_PARTS,
-	ALIGNMENT as DECLARED_ALIGNMENT, MISSION_KIT, MISSION_KIT_READ, COPIES, SCANNER_ROOTS } from './layers.mjs';
+	ALIGNMENT as DECLARED_ALIGNMENT, MISSION_KIT, MISSION_KIT_READ, COPIES, SCANNER_ROOTS, COMPONENTS as DECLARED_COMPONENTS } from './layers.mjs';
 import { readRows } from './records.mjs';
 import { productKinds } from '../product/kinds.mjs';
 import { NETWORK_ROWS } from '../network/kinds.mjs';
@@ -51,6 +54,8 @@ const CHECK = process.argv.includes('--check');
 const PARTS = arg('--parts') ? JSON.parse(fs.readFileSync(arg('--parts'), 'utf8')) : DECLARED_PARTS;
 // --alignment <json>: an alignment register in place of tools/layers.mjs's, so a test can drive its rules
 const ALIGNMENT = arg('--alignment') ? JSON.parse(fs.readFileSync(arg('--alignment'), 'utf8')) : DECLARED_ALIGNMENT;
+// --components <json>: a components declaration in place of tools/layers.mjs's, so a test can drive its rules (H26.1)
+const COMPONENTS = arg('--components') ? JSON.parse(fs.readFileSync(arg('--components'), 'utf8')) : DECLARED_COMPONENTS;
 const read = (f) => fs.readFileSync(path.join(ROOT, f), 'utf8');
 const code = (f) => read(f).replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
 const cell = (v) => String(v).replace(/\|/g, '\\|');
@@ -163,8 +168,12 @@ for (const m of productModules) {
 	}
 }
 const importsBy = (name) => [...new Set([...edges.keys()].filter((k) => k.startsWith(`${name} -> `)).map((k) => k.split(' -> ')[1]))].sort();
-const parts = table(['Part', 'Duty', 'Kind', 'Made of', 'Imports today'],
-	Object.entries(PARTS).map(([name, p]) => [`\`${name}\``, p.duty, p.kind, p.modules.map((m) => `\`${m}\``).join(', '), list(importsBy(name))]));
+// H26.1: the components a part's modules import today -- a component's package, its subpaths alike -- and those COMPONENTS lets it compose
+const componentsIn = (m) => [...code(m).matchAll(/(?:\bfrom\s*|\bimport\s*\(?\s*)(['"])(@apnex\/[^'"/]+)(?:\/[^'"]*)?\1/g)].map((x) => x[2]);
+const componentsToday = (name) => [...new Set(productModules.filter((m) => partOf.get(m) === name).flatMap(componentsIn))].sort();
+const composes = (name) => Object.keys(COMPONENTS).filter((c) => COMPONENTS[c].parts?.includes(name)).sort();
+const parts = table(['Part', 'Duty', 'Kind', 'Made of', 'Imports today', 'Composes today'],
+	Object.entries(PARTS).map(([name, p]) => [`\`${name}\``, p.duty, p.kind, p.modules.map((m) => `\`${m}\``).join(', '), list(importsBy(name)), list(componentsToday(name))]));
 const citedInChain = (id) => new RegExp(`(^|[^\\w.-])${id.replace(/[.]/g, '\\.')}(?![\\w-]|\\.\\d)`).test(justification);
 // the consumes: parts that exist, within the kind's ceiling (the target's section 4.3), and no cycle
 for (const [a, p] of Object.entries(PARTS)) {
@@ -207,8 +216,8 @@ for (const [a, p] of Object.entries(PARTS)) for (const b of Object.keys(p.carrie
 const divergence = outside.length
 	? table(['Part', 'Imports', 'Carried by', 'Which the target does not allow, from'], outside.map(([k, ms]) => { const [a, b] = k.split(' -> '); return [`\`${a}\``, `\`${b}\``, PARTS[a].carried?.[b] ?? '--', [...ms].sort().map((m) => `\`${m}\``).join(', ')]; }))
 	: 'None: every import between parts is one the target allows.';
-const targetParts = table(['Part', 'Duty', 'Kind', 'Fixed by', 'Consumes'],
-	Object.entries(PARTS).map(([name, p]) => [`\`${name}\``, p.duty, p.kind, p.by.map((b) => (b.includes('/') ? `\`${b}\`` : b)).join(', '), p.consumes === '*' ? 'any part -- a composition root' : list(p.consumes)]));
+const targetParts = table(['Part', 'Duty', 'Kind', 'Fixed by', 'Consumes', 'Composes'],
+	Object.entries(PARTS).map(([name, p]) => [`\`${name}\``, p.duty, p.kind, p.by.map((b) => (b.includes('/') ? `\`${b}\`` : b)).join(', '), p.consumes === '*' ? 'any part -- a composition root' : list(p.consumes), list(composes(name))]));
 
 // each part's boundary cites a layer of the justification chain (AR1): every `by` id appears in the target's section 2
 for (const [a, p] of Object.entries(PARTS)) {
@@ -232,6 +241,16 @@ for (const [part, a] of Object.entries(ALIGNMENT)) {
 	if (!a.to?.length) partFaults.push(`ALIGNMENT.${part} aligns to nothing`);
 }
 const referenced = new Set(Object.values(ALIGNMENT).flatMap((a) => a.to ?? []));
+// ---- the components (H26.1): parts that exist, each aligned to the component in the register, admitted by rulings the chain cites
+for (const [c, d] of Object.entries(COMPONENTS)) {
+	const short = c.slice(c.indexOf('/') + 1);
+	for (const part of d.parts ?? []) {
+		if (!PARTS[part]) partFaults.push(`COMPONENTS.${c} lets ${part} import it, which is no part`);
+		else if (!ALIGNMENT[part]?.to?.includes(short)) partFaults.push(`COMPONENTS lets ${part} import ${c}, and ALIGNMENT does not align ${part} to ${short}`);
+	}
+	if (!d.by?.length) partFaults.push(`COMPONENTS.${c} cites no ruling that admits it`);
+	for (const id of d.by ?? []) if (!citedInChain(id)) partFaults.push(`COMPONENTS.${c} is admitted by ${id}, which the target's justification chain (section 2) does not cite`);
+}
 for (const c of Object.keys(MISSION_KIT)) if (!referenced.has(c)) partFaults.push(`MISSION_KIT holds ${c}, which no part aligns to -- remove it`);
 const alignmentRegister = table(['Part', 'Aligns to', `Standing, read ${MISSION_KIT_READ}`, 'Composing it waits on'],
 	Object.entries(ALIGNMENT).map(([part, a]) => [`\`${part}\``, list(a.to ?? []), (a.to ?? []).map((c) => `${c}: ${MISSION_KIT[c] ?? '?'}`).join('; '), a.waits ?? '--']));
