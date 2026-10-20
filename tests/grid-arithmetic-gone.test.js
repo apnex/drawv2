@@ -143,6 +143,20 @@ const productModules = () => {
 	return [...all].filter((f) => fs.existsSync(path.join(root, f))).sort();
 };
 
+/*
+F3 (H26.1's verification) -- AN ANCHOR'S SHAPE IS STATED ONCE, IN THE LATTICE. `{ layout, cx, cy, x, y }` was built twice, in the layouts
+plugin for the REST door and inline in server-side placement; two statements of one shape drift. kernel/geometry.mjs's `anchorOn`
+builds every anchor the agent door and placement answer, and no other product module writes an object with an anchor's `layout` and
+`cx` -- read here as an object literal holding both keys.
+*/
+const ANCHOR_SHAPE = /\{\s*layout\s*:[^{}]*\bcx\s*:/;
+test('F3: an anchor\'s shape is stated once, in the lattice -- every module the door and placement answer through builds it there', () => {
+	assert.deepEqual(productModules().filter((f) => ANCHOR_SHAPE.test(code(f))), ['kernel/geometry.mjs']);
+	for (const f of ['server/rest.js', 'server/anchor.mjs']) assert.match(code(f), /import \{[^}]*\banchorOn\b[^}]*\} from '\.\.\/kernel\/geometry\.mjs'/, `${f} builds its anchors with the lattice's anchorOn`);
+	assert.equal(ANCHOR_SHAPE.test('return { layout: name, cx: p.col, cy: p.row, x, y };'), true, 'control: the shape is seen');
+	assert.equal(ANCHOR_SHAPE.test("el('circle', { cx: pt.x, cy: pt.y, r });"), false, 'control: a circle\'s cx is no anchor');
+});
+
 // file -> { count, reason, cites }: every product module's rounding over a pitch, by appendix B's row for it
 const RECORD = {
 	'app/src/snap.js': { count: 2, cites: ['SNAP-GRID.md appendix B'],

@@ -7,11 +7,11 @@ browsers viewing that diagram. The browser path (websocket) is refused while a d
 exactly one side writes at a time.
 */
 
-import { layoutRecords, anchorOn } from '../layouts/layout-records.mjs';   // WD8 (H19.45): the list the agent API serves; H26.1: an anchor as it answers one
+import { layoutRecords } from '../layouts/layout-records.mjs';   // WD8 (H19.45): the list the agent API serves
 import { linksOf, linksAt, makeLink } from '../network/link-queries.mjs';   // which links meet an anchor: the network's (K13d)
 import { snapshotBody, changeBody, reversalBody } from './protocol.js';
 import { announceActivity, announceAccess, viewersFor } from './hub.js';   // B342 (H21.8): in the hub, so the hub does not import REST
-import { NODE_GRID, nodeGridWithin } from '../kernel/geometry.mjs';
+import { NODE_GRID, nodeGridWithin, anchorOn } from '../kernel/geometry.mjs';   // H26.1: the grids, and an anchor's one builder (F3)
 import { NODE_EXT } from '../model/surface.mjs';
 import { LAYOUT_TABLE, ZONE_GRIDS } from '../layouts/layout-table.mjs';   // H26.1: the layouts table's names, and the zone's grids
 import { makeZone } from '../zones/make-zone.mjs';   // the zones plugin's factory (O-b1)
@@ -674,7 +674,7 @@ export function handleRest(req, res, store, locks, hub, principal = null, sessio
 				return json(res, 422, { error: `nearest requires x and y within 2^49 (${NEAREST_LIMIT}) in magnitude`, code: 'bad-query' }), true;
 			}
 			const at = grid.nearest({ x, y });
-			const a = anchorOn(L.name, at, grid.pointOf(at));
+			const a = anchorOn(L.name, grid, at);
 			return json(res, 200, { ...a, occupant: occupantAt(model, a) }), true;
 		}
 		if (parts[6] === 'anchors' && parts.length === 7) {
@@ -685,7 +685,7 @@ export function handleRest(req, res, store, locks, hub, principal = null, sessio
 			// H26.1: the node extent's positions, by row then column, each placed on this layout's grid with no bounds -- KEPT exactly
 			// (section 6.3, B399): on the zone grid this omits a column and a row of the zone lattice within its own extent
 			for (const { position } of NODE_PLACES.inView(NODE_EXTENT_VIEW).positions) {
-				const a = anchorOn(L.name, position, grid.pointOf(position));
+				const a = anchorOn(L.name, grid, position);
 				const occupant = occupantAt(model, a);
 				if (wantFree && occupant) continue;
 				out.push(occupant ? { ...a, occupant } : a);

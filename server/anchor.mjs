@@ -27,7 +27,7 @@ Placed in `server/` rather than `model/` deliberately: this needs `kernel/` for 
 `model/` is a sovereign sibling of `kernel/` that imports it nowhere (`model/limits.mjs`).
 */
 
-import { NODE_GRID, nodeGridWithin } from '../kernel/geometry.mjs';
+import { NODE_GRID, nodeGridWithin, anchorOn } from '../kernel/geometry.mjs';   // H26.1: the grids, and an anchor's one builder (F3)
 import { NODE_EXT } from '../model/surface.mjs';
 import { ANCHOR_KINDS } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
 import { typedNodes } from '../devices/device-shapes.mjs';
@@ -57,15 +57,15 @@ function takenSet(model) {
 // Every free anchor on the node grid. The node extent bounds it, which is the same rule the REST
 // anchors route applies: an anchor outside it cannot hold a node anyway.
 // H26.1 (SNAP-GRID.md appendix B): the node grid within its extent, its positions in view of the whole extent -- every one, by row
-// then column -- each mapped back to the anchor it was, `{ layout, cx, cy, x, y }`; which are free stays decided here. The placement
-// part consumes the lattice alone (appendix B), so the node layout's name, which the kernel's `anchorAt` stamped, is stated here
+// then column -- each mapped back to the anchor it was by the lattice's `anchorOn`; which are free stays decided here. The placement
+// part consumes the lattice alone (appendix B), so the name of the layout its anchors are on is stated here
 const NODE_LAYOUT = 'node';
 const NODE_PLACES = nodeGridWithin(NODE_EXT);
 const NODE_EXTENT_VIEW = { region: { kind: 'rect', x: -NODE_EXT.x, y: -NODE_EXT.y, w: 2 * NODE_EXT.x, h: 2 * NODE_EXT.y }, scale: 1 };
 function freeAnchors(model) {
 	const taken = takenSet(model);
 	return NODE_PLACES.inView(NODE_EXTENT_VIEW).positions
-		.map(({ position, point }) => ({ layout: NODE_LAYOUT, cx: position.col, cy: position.row, x: point.x, y: point.y }))
+		.map(({ position }) => anchorOn(NODE_LAYOUT, NODE_PLACES, position))
 		.filter((a) => !taken.has(`${a.x},${a.y}`));
 }
 

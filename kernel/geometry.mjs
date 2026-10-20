@@ -38,6 +38,18 @@ export const NODE_GRID = latticeGrids({ pitch: STD.pitch, offset: 0 }).unbounded
 export const nodeGridWithin = (ext) => latticeGrids({ pitch: NODE_GRID.declaration.pitch, offset: NODE_GRID.declaration.origin.x, ext }).bounded;
 
 /*
+H26.1 (SNAP-GRID.md appendix B; F3, H26.1's verification) -- AN ANCHOR, AS THE AGENT DOOR AND PLACEMENT ANSWER IT: a position on a
+named layout's grid, carrying the layout's name, its cell and its point, `{ layout, cx, cy, x, y }` -- both representations, so no
+consumer does arithmetic, and the layout with them, because a cell alone is ambiguous (B111). The one place the shape is stated: the
+REST door's `nearest` and `anchors` routes (server/rest.js) and server-side placement (server/anchor.mjs) build it here, as they did
+with `anchorAt` and `nearestAnchor`. The point is the grid's own for the position, never one a caller worked out.
+*/
+export function anchorOn(name, grid, position) {
+	const point = grid.pointOf(position);
+	return { layout: name, cx: position.col, cy: position.row, x: point.x, y: point.y };
+}
+
+/*
 THE GRID DOT. A waypoint does not own it -- a waypoint HIGHLIGHTS it.
 
 Every snap point on the node grid carries this dot, drawn dim at `#202020`. A waypoint sits exactly

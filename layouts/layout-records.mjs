@@ -21,14 +21,3 @@ export function layoutNamed(model, name) {
 export function layoutRecords(model) {
 	return LAYOUT_TABLE.map((want) => layoutNamed(model, want.name));
 }
-
-/*
-H26.1 (dev/design/components/SNAP-GRID.md appendix B): an anchor as the agent API answers it -- a position on a layout's grid and
-its point, carrying the layout's name, `{ layout, cx, cy, x, y }`, both representations so no consumer does arithmetic (B111). The
-kernel's `anchorAt` and `nearestAnchor` built it, and the layout's name left the kernel with them; the REST door's `nearest` and
-`anchors` routes shape what snap-grid answers through this one. Server-side placement (server/anchor.mjs) builds the node layout's
-own, its part consuming the lattice alone.
-*/
-export function anchorOn(name, position, point) {
-	return { layout: name, cx: position.col, cy: position.row, x: point.x, y: point.y };
-}
