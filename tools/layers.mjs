@@ -1015,6 +1015,8 @@ export const COPIES = {
 	generated: {
 		stylesheets: { tool: 'tools/stylesheets.mjs', source: 'product/canvas.mjs PAGE_STYLESHEETS' },
 		canvas: { tool: 'tools/canvas-layout.mjs', source: 'product/canvas.mjs CANVAS_VIEWBOX, CANVAS_LAYERS' },
+		// H26.1 (SNAP-GRID.md section 7.6): the components' addresses, one entry per export, from what is installed (tools/components.mjs)
+		importmap: { tool: 'tools/import-map.mjs', source: 'package.json @apnex dependencies, each installed package.json exports and version' },
 	},
 	owners: { 'app/style.css': 'product-page', 'app/canvas.css': 'canvas', 'app/tokens.css': 'colours', 'kernel/primitives.css': 'primitives', 'engine/simulation.css': 'simulation' },
 	// H25-4 (B374): the three foreign style rules the director ruled may stand, each with what reopens it

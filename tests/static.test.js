@@ -171,3 +171,123 @@ test('B386: HEAD carries the headers and no body; a missing file is never kept',
 		assert.equal(missing.headers['cache-control'], 'no-store', 'a 404 is not kept');
 	} finally { await r.close(); }
 });
+
+/*
+H26.1 (dev/design/components/SNAP-GRID.md section 7.6, D7) -- THE VENDOR MOUNT: a component's built files, at the version installed,
+kept by the browser for a year.
+
+A page maps `@apnex/snap-grid` to `/vendor/@apnex/snap-grid@<version>/index.js` (tools/import-map.mjs), and one responder both servers
+call in a line (server/static.mjs sendVendored) serves it from node_modules/@apnex/snap-grid/dist/ -- only for a package draw depends
+on, only at the version installed; any other name, version or file is a 404, as every mount answers. Its address carries the version,
+and a release is never replaced, so a kept file is never the wrong one: these, and only these, are sent `immutable`, a year (D7);
+draw's own files and the page that holds the map stay `no-store` (H24.16-1). Driven over a tree of the test's own, so a package
+installed and not depended on, and one installed at another version, can be shown refused.
+*/
+const KEPT = 'public, max-age=31536000, immutable';
+async function vendorTree() {
+	const fs = await import('node:fs');
+	const os = await import('node:os');
+	const http = await import('node:http');
+	const { sendFile, sendVendored } = await import('../server/static.mjs');
+	const root = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-vendor-'));
+	const put = (f, text) => { fs.mkdirSync(path.dirname(path.join(root, f)), { recursive: true }); fs.writeFileSync(path.join(root, f), text); };
+	put('package.json', JSON.stringify({ dependencies: { '@apnex/kit': 'https://example.invalid/kit-1.2.3.tgz', ws: '^8' } }));
+	put('node_modules/@apnex/kit/package.json', JSON.stringify({ name: '@apnex/kit', version: '1.2.3' }));
+	put('node_modules/@apnex/kit/dist/index.js', MODULE);
+	put('node_modules/@apnex/kit/dist/sub/deep.js', 'export const deep = 1;\n');
+	put('node_modules/@apnex/kit/dist/index.js.map', '{"version":3,"sources":[],"mappings":""}');
+	put('node_modules/@apnex/kit/README.md', 'outside dist\n');
+	put('node_modules/@apnex/stray/package.json', JSON.stringify({ name: '@apnex/stray', version: '0.1.0' }));   // installed, not depended on
+	put('node_modules/@apnex/stray/dist/index.js', 'export const stray = 1;\n');
+	put('node_modules/ws/package.json', JSON.stringify({ name: 'ws', version: '8.21.0' }));
+	put('node_modules/ws/index.js', 'module.exports = 1;\n');
+	put('own/own.mjs', MODULE);
+	const server = http.createServer((req, res) => { if (sendVendored(req, res, root)) return; sendFile(req, res, fileWithin(path.join(root, 'own'), new URL(req.url, 'http://x').pathname)); });
+	await new Promise((r) => server.listen(0, '127.0.0.1', r));
+	// sent as written: `fetch` would resolve the dot segments before they reach the server
+	const ask = (p, headers = {}, method = 'GET') => new Promise((resolve, reject) => {
+		const req = http.request({ host: '127.0.0.1', port: server.address().port, path: p, method, headers }, (res) => {
+			const parts = []; res.on('data', (c) => parts.push(c)); res.on('end', () => resolve({ status: res.statusCode, headers: res.headers, body: Buffer.concat(parts) }));
+		});
+		req.on('error', reject); req.end();
+	});
+	return { ask, close: () => new Promise((r) => server.close(() => { fs.rmSync(root, { recursive: true, force: true }); r(); })) };
+}
+
+test('H26.1: the vendor mount serves a component draw depends on at its installed version, kept a year, compressed as any file', async () => {
+	const zlib = await import('node:zlib');
+	const v = await vendorTree();
+	try {
+		const br = await v.ask('/vendor/@apnex/kit@1.2.3/index.js', { 'Accept-Encoding': 'br' });
+		assert.equal(br.status, 200);
+		assert.match(br.headers['content-type'], /^text\/javascript/, 'a module, as a module');
+		assert.equal(br.headers['cache-control'], KEPT, 'kept a year, immutable: its address changes with its content (D7)');
+		assert.equal(br.headers['content-encoding'], 'br', 'compressed as sendFile compresses every file');
+		assert.equal(zlib.brotliDecompressSync(br.body).toString(), MODULE);
+		assert.equal(br.headers.vary, 'Accept-Encoding');
+		const deep = await v.ask('/vendor/@apnex/kit@1.2.3/sub/deep.js');
+		assert.deepEqual([deep.status, deep.headers['cache-control'], deep.body.toString()], [200, KEPT, 'export const deep = 1;\n'], 'a file in a folder of dist/');
+		const map = await v.ask('/vendor/@apnex/kit@1.2.3/index.js.map');
+		assert.deepEqual([map.status, map.headers['content-type']], [200, 'application/json; charset=utf-8'], 'a source map, as JSON');
+		const head = await v.ask('/vendor/@apnex/kit@1.2.3/index.js', {}, 'HEAD');
+		assert.deepEqual([head.status, head.headers['cache-control'], head.body.length], [200, KEPT, 0]);
+		// draw's own files are never kept (H24.16-1), and neither is a refusal (control)
+		const own = await v.ask('/own.mjs');
+		assert.deepEqual([own.status, own.headers['cache-control']], [200, 'no-store'], 'a file outside the vendor mount stays no-store');
+	} finally { await v.close(); }
+});
+
+test('H26.1: the vendor mount answers 404 for any other name, version or file, however the path is spelled, and keeps no refusal', async () => {
+	const v = await vendorTree();
+	try {
+		for (const p of [
+			'/vendor/@apnex/kit@1.2.4/index.js', '/vendor/@apnex/kit@1.2/index.js', '/vendor/@apnex/kit@latest/index.js',   // another version
+			'/vendor/@apnex/stray@0.1.0/index.js',   // installed, and not a package draw depends on
+			'/vendor/@apnex/none@1.0.0/index.js', '/vendor/ws@8.21.0/index.js', '/vendor/@other/kit@1.2.3/index.js',   // no such component
+			'/vendor/@apnex/kit@1.2.3/README.md', '/vendor/@apnex/kit@1.2.3/package.json', '/vendor/@apnex/kit@1.2.3/missing.js',   // not in dist/
+			'/vendor/@apnex/kit@1.2.3/', '/vendor/@apnex/kit@1.2.3', '/vendor/@apnex/kit@1.2.3/sub', '/vendor/', '/vendor/@apnex/kit',
+			'/vendor/@apnex/kit@1.2.3/../package.json', '/vendor/@apnex/kit@1.2.3/../../package.json', '/vendor/@apnex/kit@1.2.3/%2e%2e/package.json',
+			'/vendor/@apnex/kit@1.2.3/%2E%2E/%2e%2e/%2e%2e/package.json', '/vendor/@apnex/kit@1.2.3/..%2fpackage.json', '/vendor/@apnex/kit@1.2.3/sub/..%2f..%2fREADME.md',
+			'/vendor/@apnex/kit@1.2.3//index.js', '/vendor//@apnex/kit@1.2.3/index.js', '/vendor/@apnex/kit@1.2.3/sub//deep.js',
+			'/vendor/@apnex/kit@1.2.3/..\\package.json', '/vendor/@apnex/kit@1.2.3\\..\\..\\package.json', '/vendor/@apnex/kit@1.2.3/index.js%00',
+			'/vendor/@apnex/kit@1.2.3/%2fetc%2fpasswd', '/vendor/@apnex/..%2fstray@0.1.0/index.js', '/vendor/@apnex/kit@1.2.3/sub/%2e%2e/%2e%2e/README.md',
+		]) {
+			const r = await v.ask(p);
+			assert.equal(r.status, 404, `${p} answered ${r.status}`);
+			assert.equal(r.headers['cache-control'], 'no-store', `${p}: a refusal is never kept`);
+		}
+		// a dot segment is resolved before the mount decides, as the URL parser reads it for every handler (H24.13): one that stays in
+		// dist/ is the file it names (control)
+		for (const p of ['/vendor/@apnex/kit@1.2.3/sub/./deep.js', '/vendor/@apnex/kit@1.2.3/sub/../sub/deep.js', '/vendor/@apnex/kit@1.2.3/sub/%2e/deep.js']) assert.equal((await v.ask(p)).status, 200, p);
+	} finally { await v.close(); }
+});
+
+test('H26.1: the lab serves the installed component on the vendor mount, kept a year, and nothing else there; its own files stay no-store', async () => {
+	const fs = await import('node:fs');
+	const { spawnGroup, stopProcess } = await import('./fixtures/teardown.mjs');
+	const http = await import('node:http');
+	const net = await import('node:net');
+	const port = await new Promise((resolve) => { const s = net.createServer().listen(0, () => { const p = s.address().port; s.close(() => resolve(p)); }); });
+	const root = new URL('../', import.meta.url).pathname;
+	const { version } = JSON.parse(fs.readFileSync(path.join(root, 'node_modules/@apnex/snap-grid/package.json'), 'utf8'));
+	const srv = spawnGroup('node', ['lab/server.mjs'], { cwd: root, env: { ...process.env, PORT: String(port) }, stdio: 'ignore' });
+	const ask = (p) => new Promise((resolve, reject) => {
+		const req = http.request({ host: '127.0.0.1', port, path: p }, (res) => { res.resume(); resolve({ status: res.statusCode, type: res.headers['content-type'], cache: res.headers['cache-control'] }); });
+		req.on('error', reject); req.end();
+	});
+	try {
+		for (let i = 0; i < 50; i++) { try { await ask('/health'); break; } catch { await new Promise((r) => setTimeout(r, 100)); } }
+		for (const f of ['index.js', 'conformance.js']) {
+			const r = await ask(`/vendor/@apnex/snap-grid@${version}/${f}`);
+			assert.deepEqual([r.status, r.cache], [200, KEPT], f);
+			assert.match(r.type, /^text\/javascript/, f);
+		}
+		for (const p of [`/vendor/@apnex/snap-grid@9.${version}/index.js`, '/vendor/@apnex/nothing@0.1.0/index.js', `/vendor/@apnex/snap-grid@${version}/../package.json`,
+			`/vendor/@apnex/snap-grid@${version}/%2e%2e/package.json`, `/vendor/@apnex/snap-grid@${version}/..%2fpackage.json`, `/vendor/@apnex/snap-grid@${version}/CONTRACT.md`]) {
+			assert.equal((await ask(p)).status, 404, p);
+		}
+		const own = await ask('/src/root.js');
+		assert.deepEqual([own.status, own.cache], [200, 'no-store'], 'the lab\'s own module is never kept');
+		assert.equal((await ask('/')).cache, 'no-store', 'nor the page that holds the map, so a page reached by Back fetches a fresh map (D7)');
+	} finally { await stopProcess(srv); }
+});

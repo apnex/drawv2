@@ -1407,3 +1407,40 @@ test('K4 (H17-D5): the product serves the planner whole and never `server/` -- t
 		assert.equal((await fetch(base + p)).status, 404, `${p} is never served`);
 	}
 });
+
+/*
+H26.1 (dev/design/components/SNAP-GRID.md section 7.6, D7) -- the product serves the components' built files on the vendor mount, one
+line in server/app.js calling the responder the lab calls too (server/static.mjs sendVendored): the installed version, kept a year;
+any other version a 404; and the page and its own modules still never kept (H24.16-1). The mount is under the same access as the
+page's own module files -- behind the sign-in, like /kernel/ -- and the agent door, which opens onto the REST surface and a picture
+alone (H24.13), does not open onto it, however the path is spelled. Sent raw where it matters, since `fetch` resolves dot segments.
+*/
+test('H26.1: the product serves the installed component on the vendor mount, kept a year, and the agent door does not open onto it', async () => {
+	const { version } = JSON.parse(fs.readFileSync(new URL('../node_modules/@apnex/snap-grid/package.json', import.meta.url), 'utf8'));
+	const at = `/vendor/@apnex/snap-grid@${version}`;
+	for (const f of ['index.js', 'conformance.js']) {
+		const res = await fetch(`${base}${at}/${f}`);
+		assert.equal(res.status, 200, f);
+		assert.match(res.headers.get('content-type'), /^text\/javascript/, `${f} as a module`);
+		assert.equal(res.headers.get('cache-control'), 'public, max-age=31536000, immutable', `${f} is kept a year: its address carries its version (D7)`);
+	}
+	for (const p of ['/', '/index.html', '/src/main.js', '/kernel/geometry.mjs']) assert.equal((await fetch(base + p)).headers.get('cache-control'), 'no-store', `${p} is never kept (H24.16-1)`);
+	const { request } = await import('node:http');
+	const raw = (p) => new Promise((resolve, reject) => {
+		const req = request({ host: 'localhost', port: app.port, path: p, method: 'GET' }, (res) => {
+			let body = ''; res.on('data', (c) => { body += c; }); res.on('end', () => resolve({ status: res.statusCode, body, cache: res.headers['cache-control'] }));
+		});
+		req.on('error', reject); req.end();
+	});
+	for (const p of [`/vendor/@apnex/snap-grid@9.${version}/index.js`, '/vendor/@apnex/nothing@0.1.0/index.js', `${at}/../package.json`, `${at}/%2e%2e/package.json`,
+		`${at}/..%2fpackage.json`, `${at}/CONTRACT.md`, `${at}//index.js`, `${at}\\..\\package.json`, '/vendor/ws@8.21.0/index.js']) {
+		const r = await raw(p);
+		assert.deepEqual([r.status, r.cache], [404, 'no-store'], `${p} answered ${r.status}`);
+	}
+	// the agent door's own refusal (B383, H24.13): the vendor mount is not one of its two jobs
+	for (const p of [`/connect/svg${at}/index.js`, `/connect/svg/vendor/@apnex/snap-grid@${version}/index.js`, `/connect/v1/..${at}/index.js`,
+		`/connect/v1/%2e%2e/%2e%2e${at}/index.js`, `/connect/svg/%2e%2e${at}/index.js`]) {
+		assert.deepEqual(await raw(p).then((r) => [r.status, r.body]), [404, '{"error":"not found"}\n'], `${p} came through the agent door`);
+	}
+	assert.equal((await raw(`/x/%2e%2e${at}/index.js`)).status, 200, 'a path that resolves onto the mount is the mount, as every handler reads it (control)');
+});

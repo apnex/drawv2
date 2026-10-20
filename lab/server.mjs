@@ -20,7 +20,7 @@ still be dangerous, so the check is held once, by its own test (tests/static.tes
 import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { fileWithin, sendFile, notFound } from '../server/static.mjs';
+import { fileWithin, sendFile, notFound, sendVendored } from '../server/static.mjs';
 import { PAGE_STYLESHEETS } from '../product/canvas.mjs';   // H25.2: the stylesheets a page loads, the product page's served from app/
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -77,6 +77,7 @@ function resolveFile(pathname) {
 const server = http.createServer((req, res) => {
 	if (req.method !== 'GET' && req.method !== 'HEAD') return send(res, 405, 'method not allowed');
 	if (req.url === '/health') return send(res, 200, 'ok');
+	if (sendVendored(req, res)) return;   // H26.1: the components' built files, at the version installed (server/static.mjs; D7)
 
 	const file = resolveFile(new URL(req.url, 'http://localhost').pathname);
 	return file ? sendFile(req, res, file) : notFound(res);

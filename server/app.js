@@ -23,7 +23,7 @@ import { Hub, announceActivity } from './hub.js';
 import { SessionLog } from './sessionlog.mjs';
 import { svgDocument } from './svg.mjs';
 import { drawingRules, styleMarkup, nodeContext } from './svg-style.mjs';
-import { fileWithin, sendFile } from './static.mjs';
+import { fileWithin, sendFile, sendVendored } from './static.mjs';
 
 /*
 K9 (H17) -- the static files, through the one responder both servers share (server/static.mjs): how a file is found
@@ -310,6 +310,9 @@ export async function createApp({ dataDir, port = 8080, clientDir, host, templat
 			const rules = drawingRules();
 			return res.end(styleMarkup(faviconSvg(), rules, nodeContext(rules)));   // H25.2: the page's own rules written onto it, as the export's
 		}
+		// H26.1: the components' built files, at the version installed, behind the sign-in as the page's own modules are (D7); the agent
+		// door above opens onto the REST surface and a picture alone, so nothing it hands on reaches here (H24.13)
+		if (sendVendored(req, res)) return;
 		// the new thin UI + the kernel ESM, mounted beside the legacy client during migration
 		if (hasApp && (url.pathname === '/next' || url.pathname.startsWith('/next/'))) return serveFrom(req, res, appDir, '/next');
 		if (hasKernel && url.pathname.startsWith('/kernel/')) return serveFrom(req, res, kernelDir, '/kernel');

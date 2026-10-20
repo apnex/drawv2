@@ -359,6 +359,16 @@ const MUTANTS = [
 		{ file: 'app/src/selection.js', append: '\nconst __h = () => window.draw;\n' }] },
 	// U3 (H21.7): L7k scans the lab too, not only PRODUCT_LAYERS
 	{ id: 'U3', rule: 'L7k', edits: [{ file: 'lab/src/root.js', append: "\nconst __u3 = ['nodes', 'waypoints', 'links', 'zones', 'groups'];\n" }] },
+	/*
+	H26.1 (SNAP-GRID.md section 7.6) -- L6 admits exactly one inline script: the import map inside its generated region (the generator's
+	--check holds what it says, tools/import-map.mjs). A second map in the region, one outside it, a map whose markers are gone, and an
+	inline module beside the map are each refused. Read from the page as written: no node_modules in the copy, none needed.
+	*/
+	{ id: 'IM1', rule: 'L6', needle: /app\/index\.html:\d+ an import map outside the generated region, or a second one/, edits: [{ file: 'app/index.html', replace: ['</script>\n\t\t<!-- END GENERATED: importmap -->', '</script>\n\t\t<script type="importmap">{ "imports": {} }</script>\n\t\t<!-- END GENERATED: importmap -->'] }] },
+	{ id: 'IM2', rule: 'L6', needle: /lab\/index\.html:\d+ an import map outside the generated region, or a second one/, edits: [{ file: 'lab/index.html', replace: ['</body>', '\t<script type="importmap">{ "imports": {} }</script>\n\t</body>'] }] },
+	{ id: 'IM3', rule: 'L6', needle: /app\/index\.html:\d+ an import map outside the generated region, or a second one/, edits: [{ file: 'app/index.html', replace: ['\t\t<!-- END GENERATED: importmap -->\n', ''] }] },
+	{ id: 'IM5', rule: 'L6', needle: /app\/index\.html:\d+ an import map outside the generated region, or a second one/, edits: [{ file: 'app/index.html', replace: ['\t\t<script type="importmap">\n', '\t\t<script type="importmap" data-typed="by hand">\n'] }] },
+	{ id: 'IM4', rule: 'L6', needle: /lab\/index\.html:\d+ an inline <script> is code no entry declares/, edits: [{ file: 'lab/index.html', replace: ['\t\t<script type="importmap">\n', '\t\t<script type="module">import \'/src/early.js\';</script>\n\t\t<script type="importmap">\n'] }] },
 ];
 
 const scanOwn = (dir) => new Promise((done) => {
@@ -396,6 +406,7 @@ test('K0 M1-M7 and the attack\'s A-mutants (on copies of this tree): each lands 
 		for (const { m, r } of await Promise.all(runs)) {
 			assert.equal(r.code, 1, `${m.id} was not caught:\n${r.out}`);
 			for (const rule of [m.rule, ...(m.also ?? [])]) assert.ok(failed(r.out).includes(rule), `${m.id} must fail ${rule}; it failed ${failed(r.out).join(', ')}:\n${r.out}`);
+			if (m.needle) assert.match(r.out, m.needle, `${m.id} must be refused for its own reason`);
 		}
 	} finally { fs.rmSync(base, { recursive: true, force: true }); }
 });

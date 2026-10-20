@@ -25,6 +25,17 @@ before composing.
 		<!-- no icon, said explicitly: without this Chrome asks for /favicon.ico, the lab answers 404, and every
 		     first page load logs an error -- which the behaviour matrix's invariant I5 caught as a real one -->
 		<link rel="icon" href="data:,">
+		<!-- H26.1: the components' addresses, one entry per export of each release installed (dev/design/components/SNAP-GRID.md section 7.6) -->
+		<!-- BEGIN GENERATED: importmap. Run node tools/import-map.mjs --write; do not edit by hand (package.json @apnex dependencies, each installed package.json exports and version). -->
+		<script type="importmap">
+		{
+			"imports": {
+				"@apnex/snap-grid": "/vendor/@apnex/snap-grid@0.1.0/index.js",
+				"@apnex/snap-grid/conformance": "/vendor/@apnex/snap-grid@0.1.0/conformance.js"
+			}
+		}
+		</script>
+		<!-- END GENERATED: importmap -->
 		<!-- H25.1: the composition's stylesheets, each part bringing its own, in order (the colour registry first, the page's own last) -->
 		<!-- BEGIN GENERATED: stylesheets. Run node tools/stylesheets.mjs --write; do not edit by hand (product/canvas.mjs PAGE_STYLESHEETS). -->
 		<link rel="stylesheet" href="/tokens.css">

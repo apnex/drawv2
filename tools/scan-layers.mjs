@@ -20,7 +20,7 @@ moves the code, and a reviewer sees both in one diff. The rules are those of the
   L5   core exports no network name from the fixed list          PROXY: names, not meaning
   L5p  core exports no name matching the network pattern         PROXY: names, not meaning
   L6   each entry's closure equals its declared module list, and each page's scripts are exactly
-       its entry's roots, with no inline code
+       its entry's roots, with no inline code but the one import map inside its generated region (H26.1)
   L7   no batch module is reachable from a product root
   L7k  the product's kind lists equal exactly the five kinds, and so does the whole id grammar
        (C3); every other line naming all five kinds is a recorded consumer  PROXY: one line at a time
@@ -49,9 +49,9 @@ fixed and another added. A record may never sit above RATCHET_CEILING, the recor
 rules (L1, L3, L6, L7, L7k's lists, L8, L11 outside the canvas, and the refused edges) have no
 ratchet at all: the only way to excuse one is to edit this file.
 
-NO PARSER DEPENDENCY. The repository ships one dependency (`ws`), so modules are read with the
-small tokenizer below rather than a vendored parser. Its answers were compared with acorn 8 over
-every module in the tree -- static and dynamic edges, imported names, exports, re-exports, global
+NO PARSER DEPENDENCY. The repository ships no parser among its dependencies (`ws`, and since H26.1 its
+components), so modules are read with the small tokenizer below rather than a vendored parser. Its
+answers were compared with acorn 8 over every module in the tree -- static and dynamic edges, imported names, exports, re-exports, global
 reads and kind lists -- and every difference traced to the comparison's own text matching, none to
 the tokenizer. It decodes escapes in strings and identifiers as the language does, and tells a regex
 from a division after `)` and `}` by what the bracket closed. What it does not do is parse: a
@@ -71,9 +71,10 @@ import path from 'node:path';
 import { builtinModules } from 'node:module';
 import {
 	ALLOWED, FOLDERS, UNSCANNED, LAYER, ENTRIES, PAGES, PRODUCT_LAYERS, RULES, RATCHETS, RATCHET_CEILING, UNUSED_EXPORTS, SCANNER_ROOTS,
-	RATCHET_REASONS,
+	RATCHET_REASONS, COPIES,
 } from './layers.mjs';
 import { exceptionFaults } from './exceptions.mjs';
+import { markersOf } from './regions.mjs';   // H26.1: the import map's generated region, the one place L6 admits an inline script
 
 const argOf = (flag) => { const i = process.argv.indexOf(flag); return i > -1 ? process.argv[i + 1] : null; };
 const verbose = process.argv.includes('--verbose');
@@ -85,7 +86,8 @@ const M = J ? {
 	ALLOWED: J.ALLOWED ?? {}, FOLDERS: J.FOLDERS ?? [], UNSCANNED: J.UNSCANNED ?? {}, LAYER: J.LAYER ?? {},
 	ENTRIES: J.ENTRIES ?? {}, PAGES: J.PAGES ?? {}, PRODUCT_LAYERS: J.PRODUCT_LAYERS ?? [], RULES: J.RULES ?? {}, RATCHETS: J.RATCHETS ?? {},
 	RATCHET_CEILING: J.RATCHET_CEILING, UNUSED_EXPORTS: J.UNUSED_EXPORTS ?? {}, SCANNER_ROOTS: J.SCANNER_ROOTS ?? {},
-} : { ALLOWED, FOLDERS, UNSCANNED, LAYER, ENTRIES, PAGES, PRODUCT_LAYERS, RULES, RATCHETS, RATCHET_CEILING, UNUSED_EXPORTS, SCANNER_ROOTS };
+	COPIES: J.COPIES ?? {},
+} : { ALLOWED, FOLDERS, UNSCANNED, LAYER, ENTRIES, PAGES, PRODUCT_LAYERS, RULES, RATCHETS, RATCHET_CEILING, UNUSED_EXPORTS, SCANNER_ROOTS, COPIES };
 const R = M.RULES;
 
 // ---------------------------------------------------------------------------------------------
@@ -760,14 +762,29 @@ const rules = {
 		*/
 		const pages = walk('', [], [...Object.keys(M.UNSCANNED), ...skipped], HTML);
 		for (const page of Object.keys(M.PAGES)) if (!pages.includes(page)) fail('L6', `PAGES declares ${page}, which is not a page in the tree`);
+		/*
+		H26.1 (SNAP-GRID.md section 7.6) -- ONE inline script is admitted: a declared page's `<script type="importmap">`, inside the region
+		tools/import-map.mjs writes, the first there. L6 holds where it is; the generator's --check holds what it says. Every other import
+		map -- a second one, one outside the region, one whose region's markers are gone -- is refused, and so is every other inline script.
+		*/
+		const mapRegion = M.COPIES.generated?.importmap ? markersOf('importmap', M.COPIES.generated.importmap) : null;
 		for (const page of pages) {
 			const html = fs.readFileSync(path.join(ROOT, page), 'utf8');
 			const lineAt = (i) => html.slice(0, i).split('\n').length;
 			const srcs = [];
+			const begin = mapRegion && M.PAGES[page] ? html.indexOf(mapRegion.begin) : -1;
+			const end = begin >= 0 ? html.indexOf(mapRegion.end, begin) : -1;
+			let admitted = false;
 			for (const m of html.matchAll(/<script\b([^>]*)>([\s\S]*?)(?:<\/script\s*>|$)/gi)) {
 				const src = /\ssrc\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/i.exec(` ${m[1]}`);
-				if (src) srcs.push({ src: src[1] ?? src[2] ?? src[3], line: lineAt(m.index) });
-				else if (m[2].trim()) fail('L6', `${page}:${lineAt(m.index)} an inline <script> is code no entry declares -- move it into a module the page's entry loads`);
+				if (src) { srcs.push({ src: src[1] ?? src[2] ?? src[3], line: lineAt(m.index) }); continue; }
+				if (/\btype\s*=\s*["']?importmap\b/i.test(m[1])) {
+					const inRegion = end > begin && m.index > begin && m.index + m[0].length <= end;
+					if (inRegion && !admitted && m[1].trim() === 'type="importmap"') { admitted = true; continue; }
+					fail('L6', `${page}:${lineAt(m.index)} an import map outside the generated region, or a second one -- a page holds one, written by node tools/import-map.mjs`);
+					continue;
+				}
+				if (m[2].trim()) fail('L6', `${page}:${lineAt(m.index)} an inline <script> is code no entry declares -- move it into a module the page's entry loads`);
 			}
 			for (const m of html.matchAll(/<[a-z][^>]*?\son[a-z]+\s*=/gi)) fail('L6', `${page}:${lineAt(m.index)} an inline event handler is code no entry declares`);
 			for (const m of html.matchAll(/javascript:/gi)) fail('L6', `${page}:${lineAt(m.index)} a javascript: URL is code no entry declares`);

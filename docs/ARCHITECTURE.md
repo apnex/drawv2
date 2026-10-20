@@ -348,6 +348,7 @@ What `npm run gate` runs, before every commit and again before every push.
 | 20 | `node tools/colour-tokens.mjs --check` |
 | 21 | `node tools/stylesheets.mjs --check` |
 | 22 | `node tools/canvas-layout.mjs --check` |
+| 23 | `node tools/import-map.mjs --check` |
 <!-- END GENERATED: architecture-gate -->
 
 ---

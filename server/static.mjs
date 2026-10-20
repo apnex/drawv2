@@ -9,7 +9,8 @@ for both.
 
 What each server serves stays its own -- the product its mounts and deep links, the lab its declared mounts and the
 planner files it names by hand. This owns only how a file is found inside a folder and how it is sent -- compressed, and
-never kept by the browser (H24.16-1).
+never kept by the browser (H24.16-1) -- and, since H26.1, the vendor mount both serve alike: a component's built files at a
+versioned address, the only files a browser keeps (D7).
 
 Its own layer, `serve` (tools/layers.mjs): Node-side, never served to a browser, and importable by the two servers --
 the lab's layer may not import server-only code, which is why this is not simply a server module.
@@ -27,6 +28,7 @@ const MIME = {
 	'.svg': 'image/svg+xml',
 	'.json': 'application/json; charset=utf-8',
 	'.ico': 'image/x-icon',
+	'.map': 'application/json; charset=utf-8',   // H26.1: a component's source maps, which a browser's tools ask for
 };
 
 /*
@@ -79,13 +81,13 @@ function accepts(header, coding) {
 	return false;
 }
 
-export function sendFile(req, res, file) {
+export function sendFile(req, res, file, { cache = 'no-store' } = {}) {
 	if (!file) return notFound(res);
 	fs.readFile(file, (err, data) => {
 		if (err) return notFound(res);
 		const type = MIME[path.extname(file)] || 'application/octet-stream';
 		const send = (body, used) => {
-			res.writeHead(200, { 'Content-Type': type, 'Cache-Control': 'no-store', Vary: 'Accept-Encoding',
+			res.writeHead(200, { 'Content-Type': type, 'Cache-Control': cache, Vary: 'Accept-Encoding',
 				...(used ? { 'Content-Encoding': used.name } : {}), 'Content-Length': body.length });
 			res.end(req.method === 'HEAD' ? undefined : body);
 		};
@@ -102,4 +104,40 @@ export function sendFile(req, res, file) {
 			send(body, coding);
 		});
 	});
+}
+
+/*
+H26.1 (dev/design/components/SNAP-GRID.md section 7.6, D7) -- THE VENDOR MOUNT: `/vendor/@apnex/<name>@<version>/<file>`, served from
+node_modules/@apnex/<name>/dist/<file>, for the import map the pages hold (tools/import-map.mjs).
+
+One responder, which the product's server and the lab's each call in a line -- no entry in either's mounts, so the lab keeps its line
+budget (L8) and the test that every folder it mounts is in the image (H17 C5) is unchanged: the files come from `npm ci`, not a COPY.
+It serves only a package draw depends on (package.json `dependencies`) and only at the version installed (its own package.json),
+read at each request, so a page naming another version -- one from before a deploy -- is answered 404 rather than another release's
+file (B403); any other name, version or file is a 404, as every mount answers (H17 C6). The file is a plain path inside dist/ --
+no empty, `.` or `..` segment, no escape, no backslash -- and is bounded by `fileWithin` as every mount is.
+
+KEPT A YEAR, AND ONLY THESE (D7): an address that carries the version, of a release that is never replaced (H26-2), is never the
+wrong file, so the browser may keep it; draw's own files and the page that holds the map stay `no-store` (H24.16-1), so a page reached
+by Back or a restored session fetches a fresh map. Compressed as sendFile compresses every file.
+
+Returns false for a path outside the mount, so a server goes on to its own routes; the path is the one the URL parser makes of the
+request, dot segments resolved, as every handler reads it (H24.13).
+*/
+const ROOT = path.resolve(import.meta.dirname, '..');
+const KEPT = 'public, max-age=31536000, immutable';
+const VENDORED = /^\/vendor\/(@apnex\/[a-z0-9][a-z0-9._-]*)@([^/]+)(\/.*)$/;   // H26-2: each component is the package @apnex/<name>
+const VENDORED_FILE = /^(?:\/(?!\.\.?(?:\/|$))[A-Za-z0-9._-]+)+$/;
+const readJson = (file) => { try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return null; } };
+
+export function sendVendored(req, res, root = ROOT) {
+	let pathname;
+	try { pathname = new URL(req.url, 'http://localhost').pathname; } catch { return false; }
+	if (!pathname.startsWith('/vendor/')) return false;
+	const [, name, version, file] = VENDORED.exec(pathname) ?? [];
+	const depended = name && Object.hasOwn(readJson(path.join(root, 'package.json'))?.dependencies ?? {}, name);
+	const installed = depended ? readJson(path.join(root, 'node_modules', name, 'package.json')) : null;
+	if (!installed || installed.name !== name || installed.version !== version || !VENDORED_FILE.test(file)) { notFound(res); return true; }
+	sendFile(req, res, fileWithin(path.join(root, 'node_modules', name, 'dist'), file), { cache: KEPT });
+	return true;
 }

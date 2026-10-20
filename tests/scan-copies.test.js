@@ -184,12 +184,19 @@ test('H25.4: the regions the measure trusts are the ones the generators write --
 	assert.deepEqual(Object.keys(PAGE_REGIONS).sort(), Object.keys(COPIES.generated).sort(), 'a region for each generator the manifest names, and no other');
 	for (const [name, r] of Object.entries(PAGE_REGIONS)) assert.deepEqual({ begin: r.begin, end: r.end }, markersOf(name, COPIES.generated[name]), `${name}: its markers are the manifest's`);
 	for (const tool of ['tools/stylesheets.mjs', 'tools/canvas-layout.mjs']) assert.match(fs.readFileSync(path.join(import.meta.dirname, '..', tool), 'utf8'), /PAGE_REGIONS\.(stylesheets|canvas)/, `${tool} writes the region from that definition`);
+	// RESTATED at H26.1 (SNAP-GRID.md section 7.6): the import map's region, written for whatever tree the generator is given, from the
+	// one definition the copy measure takes for this tree (tools/page-regions.mjs importMapRegion)
+	const { importMapRegion } = await import('../tools/page-regions.mjs');
+	const { importMapOf } = await import('../tools/components.mjs');
+	assert.deepEqual(PAGE_REGIONS.importmap, importMapRegion(importMapOf(root).imports), 'the measure trusts the map this tree installs');
+	assert.match(fs.readFileSync(path.join(import.meta.dirname, '..', 'tools/import-map.mjs'), 'utf8'), /importMapRegion\(imports\)/, 'tools/import-map.mjs writes the region from that definition');
 });
 
 test('H25.4: each generator the copy measure trusts is run by the gate with --check, as a step of its own', () => {
 	const steps = JSON.parse(fs.readFileSync(path.join(import.meta.dirname, '..', 'package.json'), 'utf8')).scripts.gate.split('&&').map((x) => x.trim());
 	const owners = Object.entries(COPIES.generated);
-	assert.deepEqual(owners.map(([name]) => name).sort(), ['canvas', 'stylesheets'], 'control: the two regions the pages hold');
+	// RESTATED at H26.1 (SNAP-GRID.md section 7.6): the import map joins the stylesheets and the canvas
+	assert.deepEqual(owners.map(([name]) => name).sort(), ['canvas', 'importmap', 'stylesheets'], 'control: the three regions the pages hold');
 	for (const [name, { tool }] of owners) assert.ok(steps.includes(`node ${tool} --check`), `the ${name} region's generator, ${tool}, is a gate step exactly -- nothing after it to excuse a failure`);
 });
 
