@@ -20,6 +20,10 @@ Any difference fails, and both images are written beside the report.
   node tools/probe/parity.mjs compare --baseline <commit> [--candidate <commit>] [--docs DIR] [--out DIR]
       the candidate is the working tree when not named
 
+Each side runs on its own dependencies (H26.1, G8; tools/probe/sides.mjs): a worktree whose lockfile differs from the root's installs
+from its own, and before anything is measured each side's servers answer every address its pages' import map names, at the version
+installed on that side -- a revision from before the map has nothing to assert.
+
 Not a gate check: it needs Chrome, the docs and minutes. Each H25 stage is held to it, run by an agent that did not build the stage.
 Lessons kept from tools/probe/measure.mjs: ports unique per run, every process stopped and waited for, and a step that could
 silently do nothing fails instead -- a probe that cannot prove what it photographed produces numbers, not evidence.
@@ -32,6 +36,7 @@ import os from 'node:os';
 import path from 'node:path';
 import zlib from 'node:zlib';
 import { PARITY_DIAGRAM, parityBoard } from './boards.mjs';
+import { ownDependencies, sideProblems } from './sides.mjs';   // H26.1 (G8): each side on its own dependencies, shown before measuring
 
 const ROOT = path.resolve(import.meta.dirname, '..', '..');
 const args = process.argv.slice(2);
@@ -84,12 +89,13 @@ const start = (cmd, argv, opts) => { const p = spawn(cmd, argv, { ...opts, detac
 const until = async (fn, ms, what) => { const end = Date.now() + ms; while (Date.now() < end) { try { if (await fn()) return; } catch { /* not yet */ } await sleep(200); } die(`${what} did not happen within ${ms} ms`); };
 
 async function serve(name, commit) {
-	let root = ROOT;
+	let root = ROOT, deps = 'its own';
 	if (commit) {
 		root = path.join(OUT, `tree-${name}`);
 		execFileSync('git', ['worktree', 'add', '--detach', root, commit], { cwd: ROOT, stdio: 'ignore' });
 		worktrees.push(root);
-		fs.symlinkSync(path.join(ROOT, 'node_modules'), path.join(root, 'node_modules'));
+		// H26.1 (G8): the root's node_modules only when its lockfile is the root's; else its own, from its own lockfile
+		deps = ownDependencies(root, ROOT) === 'linked' ? 'linked from the root, its lockfile the same' : 'installed from its own lockfile';
 	}
 	const data = path.join(OUT, `data-${name}`);
 	fs.mkdirSync(data, { recursive: true });
@@ -102,7 +108,7 @@ async function serve(name, commit) {
 	await until(async () => (await fetch(`http://127.0.0.1:${port}/health`)).ok, 20000, `the ${name} server answering`);
 	await until(async () => (await fetch(`http://127.0.0.1:${labPort}/health`)).ok, 20000, `the ${name} lab answering`);
 	const sha = execFileSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim();
-	return { name, root, port, labPort, sha: commit ? sha : `${sha} + working tree` };
+	return { name, root, port, labPort, deps, sha: commit ? sha : `${sha} + working tree` };
 }
 
 // ---- one browser for both sides, over the DevTools protocol
@@ -230,11 +236,18 @@ let failed = false;
 try {
 	({ default: WebSocket } = await import('ws'));
 	const sides = [await serve('baseline', baseline), await serve('candidate', candidate)];
+	// H26.1 (G8): before measuring, each side serves what its pages' import map names, at the version installed on that side
+	for (const side of sides) {
+		const { problems, checked } = await sideProblems({ name: side.name, root: side.root, pages: [`http://127.0.0.1:${side.port}/`, `http://127.0.0.1:${side.labPort}/`] });
+		if (problems.length) throw new Error(`a side does not serve its own import map -- nothing measured:\n    ${problems.join('\n    ')}`);
+		side.components = checked;
+		console.log(`  ${side.name} (${side.sha}): dependencies ${side.deps}; ${checked.length ? `its pages' import map names ${checked.join(', ')}, installed, every address answered 200` : 'no import map on its pages -- nothing to assert'}`);
+	}
 	start('google-chrome', ['--headless=new', '--no-sandbox', '--disable-gpu', '--disable-extensions', '--hide-scrollbars', '--force-device-scale-factor=1',
 		'--window-size=1600,1000', `--remote-debugging-port=${cdpPort}`, `--user-data-dir=${path.join(OUT, 'chrome')}`, 'about:blank'], {});
 	await until(async () => (await fetch(`http://127.0.0.1:${cdpPort}/json/list`)).ok, 20000, 'Chrome answering');
 	const [a, b] = [await capture(sides[0]), await capture(sides[1])];
-	const report = { baseline: sides[0].sha, candidate: sides[1].sha, documents: docs.length, pixels: {}, styles: {} };
+	const report = { baseline: sides[0].sha, candidate: sides[1].sha, components: Object.fromEntries(sides.map((s) => [s.name, s.components])), documents: docs.length, pixels: {}, styles: {} };
 	for (const [k, png] of Object.entries(a.shots)) {
 		const n = b.shots[k] ? differing(png, b.shots[k]) : -1;
 		report.pixels[k] = n;
