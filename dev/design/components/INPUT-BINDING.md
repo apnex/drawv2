@@ -4,7 +4,7 @@ The second piece of H26's design of record (`dev/DECISIONS.md` H26-3, as H26-5 a
 It designs `input-binding`, the component that decides what each input means: the one declared row it resolves to in its context, and the phase of a gesture it makes due.\
 It builds on part 1 (`SNAP-GRID.md`), whose section 7 -- the repository, the checks, the gate, the release, the import map -- is settled and built, and states only where this piece differs.
 
-**Standing:** a design under review, revision 4, drafted 2026-10-20 after its third multi-family reading (section 10.3); revisions 1 to 3 were `5b4997b`, `e131855` and `355a25d`; the code read is `355a25d`'s, identical in code to `5b4997b` and `6078018`; not ratified, and its standing to be confirmed by a fourth reading.
+**Standing:** a design under review, revision 5, drafted 2026-10-20 after its fourth reading, confirming revision 4 (section 10.4); revisions 1 to 4 were `5b4997b`, `e131855`, `355a25d` and `d275205`; the code read is `d275205`'s, identical in code to `5b4997b` and `6078018`; not ratified.
 
 ---
 
@@ -266,7 +266,7 @@ These rules, `snap-grid`'s as settled at build (`SNAP-GRID.md` section 11) where
 5. A point -- a fact's `at`, a gesture argument's `from` -- and a fact handed to a pointer operation are each a non-null value whose `typeof` is `'object'`, so a function is neither, of any prototype; a point's `x` and `y` are read once each through ordinary property access, `x` first, so a `DOMPoint`'s getters answer -- draw's `at` is a `DOMPoint`, whose `x` and `y` are getters on its prototype (`app/src/painter.js:29-32`) -- and both are read before either is checked, as `snap-grid` reads a point.
 6. Reflection that throws -- `Array.isArray`, or reading a prototype, own keys, a descriptor or a point's coordinate, on a revoked or trapping `Proxy` or through a throwing getter -- makes that value of no form: in a declaration it is refused at its pointer (IB3); in any other argument it is malformed.
 7. A property binding does not own -- a row's payload, a match's `owner` and `row`, a fact's every property but `at` and `button` -- is never read, so its getter never runs, whatever its form, and it may be an accessor or hold `undefined`.
-8. A declaration is read whole and depth first, in the table's order: of each value, its prototype -- for an array, `Array.isArray` first -- then its own keys, then the descriptor of each property its form names that its own keys hold, an array's elements in index order, each such value read whole before the next descriptor; a property its form does not name is known by its key alone, nothing beneath a value refused at its pointer is read, nothing is read twice, and every problem is reported (IB3, IB9); every other function reads its arguments once each, in the table's order, checking each read as it is made -- a point's `x` and `y` together -- and throws at the first that is malformed, reading nothing after it.
+8. A declaration is read whole, value by value, in the table's order: of each value, first all that judges it at its own pointer -- its prototype, for an array `Array.isArray` first, then its own keys, then the descriptor of each property its form names that its own keys hold, in the table's order, or for an array the descriptor of its `length` and then of each index in order -- and only then, unless it is refused at its pointer, the values those descriptors held, in the same order, each read whole before the next; a property its form does not name is known by its key alone, nothing beneath a value refused at its pointer is read, nothing is read twice, and every problem is reported (IB3, IB9); every other function reads its arguments once each, in the table's order, an array as a declaration's is read, checking each read as it is made -- a point's `x` and `y` together -- and throws at the first that is malformed, reading nothing after it.
 9. A point's getter and a `Proxy`'s trap -- `getPrototypeOf`, `ownKeys`, `getOwnPropertyDescriptor`, `get` and the rest -- are the application's code, and may call the session: what that call does takes effect at once; the operation reading the argument reads the session's state only after all its arguments are read and checked, so it sees what that code left; an operation that throws while reading changes nothing itself, and undoes nothing that code did, whether the code returned or threw; and binding cannot tell a `Proxy` from its target, no means to do so being common to every runtime, so it can neither refuse one nor keep its traps from running, and it calls a getter only on a point, where draw's `DOMPoint` needs one.
 
 | Function | What it reads, in order |
@@ -274,7 +274,7 @@ These rules, `snap-grid`'s as settled at build (`SNAP-GRID.md` section 11) where
 | `composeBindingTable` | the declaration; its `guards`, each guard's `state`, `flag`, `default` and `refuses`; its `claim`'s `flag` and `default`; its `opens`'s `field`; its `tenants`, each tenant's `owner` and `rows`, and each row's `id`, `on` and `when`, then, when step 9 runs, each guard's flag in order, the claim's flag and the `opens` field |
 | `openGestureSession` | the declaration; its `threshold`; its `gestures`, each gesture's `name`, `engaged` and `button` |
 | `matchInput`, `traceInput` | the guard state, if given: its prototype, its own keys, then each own string-named property's descriptor in the order `Reflect.ownKeys` gives them; the fact and the context are never read |
-| `findOverlaps` | `facts`, then `contexts`, then `guardStates`, each array as rule 4 reads it -- `Array.isArray`, its prototype, its own keys, its elements' descriptors in index order; then each element of `guardStates` in order, as a guard state |
+| `findOverlaps` | `facts`, then `contexts`, then `guardStates`, each array as rule 8 reads one -- `Array.isArray`, its prototype, its own keys, its `length`'s descriptor and its elements' in index order; then each element of `guardStates` in order, as a guard state |
 | `pointerDown` | the fact; its `at`; that point's `x` and `y`; the fact's `button` |
 | `pointerMove` | the fact; its `at`; that point's `x` and `y` |
 | `pointerUp` | the fact; its `button` |
@@ -282,7 +282,7 @@ These rules, `snap-grid`'s as settled at build (`SNAP-GRID.md` section 11) where
 | `startGesture`, `becomeGesture` | the argument's prototype and own keys; its `gesture`, then its `row` for `startGesture`, then its `from`, each by descriptor; then that point's `x` and `y` |
 | `pointerLost`, `cancelGesture` | nothing |
 
-So a declaration whose `gestures` descriptor trap rewrites `threshold` has already had `threshold` read; `pointerDown` given an accessor `at` throws with no getter called; a point whose `x` is `NaN` has its `y` read and then throws; and `startGesture` naming a gesture the session does not declare throws before `from`'s coordinates are read.
+So a declaration whose `gestures` descriptor trap rewrites `threshold` has already had `threshold` read; a `guards` array whose second element is an accessor is refused before its first element is read, so no trap of that element runs; `pointerDown` given an accessor `at` throws with no getter called; a point whose `x` is `NaN` has its `y` read and then throws; and `startGesture` naming a gesture the session does not declare throws before `from`'s coordinates are read.
 
 **IB3 -- A table, composed or refused.**\
 `composeBindingTable(declaration)` returns `{ ok: true, table }` or `{ ok: false, problems }`.\
@@ -531,7 +531,7 @@ There is no conformance kit (D9): nothing in `input-binding` is a port another p
 | I14 | The source names no consumer's vocabulary, and the built files import no package and no runtime-specific module or global (`SNAP-GRID.md` section 7.2). | gate |
 
 **Each rule's own tests,** in `input-binding`'s `test/contract/`, one file per capability:
-- IB2, IB3 and IB9: the refusal tables of I1, every step's rows, a problem beneath one member never suppressing its sibling's, step 6 judging each name at its own pointer, step 9 skipped after any problem at or beneath `/guards`, `/claim` or `/opens`, a `duplicate-field` among them, accessors refused without a getter called, a row's `opens` field absent giving `null` and present as `undefined` refused, and IB2's reading order for every function, the constructors' depth-first order among them, held by a `Proxy` that records each trap, and o:F1's declaration whose trap rewrites `threshold` (section 10.3);
+- IB2, IB3 and IB9: the refusal tables of I1, every step's rows, a problem beneath one member never suppressing its sibling's, step 6 judging each name at its own pointer, step 9 skipped after any problem at or beneath `/guards`, `/claim` or `/opens`, a `duplicate-field` among them, accessors refused without a getter called, a row's `opens` field absent giving `null` and present as `undefined` refused, and IB2's reading order for every function, the constructors' among them -- each value judged at its pointer before anything beneath it is read -- held by a `Proxy` that records each trap; reading 3's declaration whose trap rewrites `threshold` (section 10.3); and reading 4's, whose `guards` holds a guard wrapped in a `Proxy` whose `getPrototypeOf` trap empties `tenants`, then an accessor, and is refused with `invalid-value` at `/guards` and at `/tenants/0/rows/0/id`, the trap never run (section 10.4);
 - IB4 and IB5: defaults applied to omitted flags; `opens` `null` without a declaration; each refusal form at each of its four combinations; an undeclared state, a non-boolean value and an accessor refused with the function's name;
 - IB6 and IB7: a row refused by two guards naming the first; `on` answering `0`, `''` and an object; `claimed` with a hit, with an unmet `when`, with two hits, and with no claim declared;
 - IB8: an empty answer, an overlap under one guard state alone, the nesting order, holes refused, `undefined` accepted as a fact and refused as a guard state;
@@ -701,7 +701,7 @@ The ruling that ratifies this piece is written `H26-r` below until it has its nu
 ## 9. Axiom alignment audit (M7)
 
 **Identity.**\
-H26.0 part 2 at revision 4, read against `355a25d`, identical in code to `5b4997b`, and mission-kit at `b076560`, audited in three layers:
+H26.0 part 2 at revision 5, read against `d275205`, identical in code to `5b4997b`, and mission-kit at `b076560`, audited in three layers:
 - the library: the table holds no state; the session holds the press and the live gesture between calls, which the application acts on, so the library is stateful in T1's sense -- not durable, but read back and authoritative while the session lives -- and A1 binds it, beyond the floor; it coordinates no actors and runs no model;
 - the release process: unchanged from part 1, whose release layer section 9 of `SNAP-GRID.md` audited and H26.1 built;
 - the consumer: draw, stateful, multi-agent and autonomous as `MISSION-KIT-ALIGNMENT.md` section 5 reads it, to which the move adds a second installed component and moves its gesture state into a session.
@@ -710,7 +710,8 @@ H26.0 part 2 at revision 4, read against `355a25d`, identical in code to `5b4997
 Revision 1 was `revise-before-implementation`: its session recorded the phases draw asked for rather than deciding them, so H26-1's lifecycle stayed in draw; its argument forms left builders room to differ on getters, proxies, sparse arrays, present `undefined`, validation order and state identity; its inventory missed the palette's and the label editor's input paths, capture's routes and the help overlay's projection; and its kept right-button defect was an input one mouse cannot make (section 10.1).\
 Revision 2 was `revise-before-implementation`, by its second reading: draw's own cancels ran their body before binding reported the cancel, against G9 (o:F1); ending the gesture before a body that throws changed behaviour it did not list (o:F4); a defect it called unreachable is reachable (o:F3); key actions that change a live gesture had no place in its phase boundary (o:F2); a `Proxy`'s traps ran application code it did not admit, and its determinism held only for getters that answer alike (o:F5, o:F6); when a malformed argument stopped the reading was open (a:F3); and a function was admitted as a point (a:F4) (section 10.2).\
 Revision 3 stood: its third reading confirmed nothing blocking, and its two should-fix findings, each supported by a second family, asked for a declaration's reading order and a check of the travel's fallback independent of the fallback (section 10.3).\
-Revision 4 is `pass, with guardrails`, by its author; its standing is to be confirmed by a fourth reading.
+Revision 4 stood: its confirming reading, scoped to its diff, found one should-fix, supported by a second family -- its declaration reading descended into an array before judging the array's form (section 10.4).\
+Revision 5 is `pass, with guardrails`, by its author.
 
 | Layer | Axiom | Weight | How the design stands |
 |---|---|---|---|
@@ -846,6 +847,15 @@ Every finding was read against the code at `355a25d`, identical in code to `e131
 | x:F2 | IB11's `pressMatched` table disagrees with `app/src/input.js:612` | **Not changed**, as `a` and `o` found: `:609-612` cancels a live gesture only once a row matches, as IB11's `cancel` row says, a press no row matches never reaching `pressMatched`. The finding read "unmatched" as "matched no row", so the vocabulary now says it means not yet handed to `pressMatched`. |
 | x:F3 | IB2 rule 9 does not pin a trap's order relative to the session's state | **Not changed in substance**, as `a` and `o` found: rule 9 runs every trap and getter before the state is read; rule 8 now adds that each argument is read once, so none is read after. The prototype it cites shows traps running and a getter changing its answer, not an order. |
 | x:F4 | D6 and section 5 mix the session call and the body for draw's own cancels | **Not changed**, as `a` and `o` found: section 5 step 4 calls `cancelGesture` before the body, D6 makes every cancel outcome-first, G9 and acceptance step 3 require it; the order the finding cites, `app/src/input.js:1242-1249`, is today's, which 6.3 names as changed. |
+
+### 10.4 Reading 4 -- 2026-10-20, of revision 4 at `d275205`, confirming
+
+Read through context-lab's review panel, `--tools on --verify`, the document read from disk, by `gemini-4-argon` (`a`) and `gpt-6-astra` (`o`), scoped to revision 4's diff, the reading kept whole at `~/taceng/drawv2-eval-runs/h26-readings/ib/reading-4/` outside the repository.\
+`a` found nothing; `o` reported one should-fix finding, which `a` supported.
+
+| Finding | What it said | Disposition, and why |
+|---|---|---|
+| o:F1 | rule 8's depth-first reading of an array conflicts with suppressing everything beneath an array refused at its pointer: a `guards` array whose first element's trap empties `tenants` and whose second is an accessor answers `/guards` alone if read depth first, and `/guards` and `/tenants/0/rows/0/id` if its form is judged first | **Fixed**, confirmed by reading rule 8 against rule 4 and IB3's preamble: an array's form needs every element's descriptor, which revision 4 read only after descending into the elements before. Rule 8 now reads of each value all that judges it at its own pointer -- for an array, its `length`'s descriptor and each element's -- before reading anything beneath it, and descends only into a value not refused, using the values those descriptors held; `findOverlaps` reads its arrays the same way. Applied to every value, not only arrays: a throwing descriptor trap on an object refuses the object at its pointer (rule 6), so the same conflict stood there. Section 4's tests add the finding's case. |
 
 ---
 
