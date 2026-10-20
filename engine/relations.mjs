@@ -27,8 +27,8 @@ F6 (H26.1's verification): and so does a point whose `x` or `y` is not a number,
 export function makeRelations(model, { nearest } = {}) {   // nearest injected (composition root) -- engine imports no kernel
 	if (typeof nearest !== 'function') throw new Error('makeRelations requires an injected { nearest } (a point -> its position on the node grid, NODE_GRID.nearest) -- wire it at the composition root');
 
-	const positionOf = (p) => (p && typeof p.x === 'number' && typeof p.y === 'number' ? nearest(p) : null);
-	const keyOf = (p) => { const at = positionOf(p); return at ? at.col + ',' + at.row : null; };   // null: in no cell
+	const cellPosition = (p) => (p && typeof p.x === 'number' && typeof p.y === 'number' ? nearest(p) : null);
+	const keyOf = (p) => { const at = cellPosition(p); return at ? at.col + ',' + at.row : null; };   // null: in no cell
 	const cellsOf = (e) => { const key = keyOf(e); return key === null ? [] : [key]; };
 	const kindOfId = (id) => id.slice(0, id.indexOf('-'));
 	const refTargets = (kind) => (model.kinds.gathers[kind] ? [] : (model.kinds.row(kind)?.references ?? []));
@@ -86,7 +86,7 @@ export function makeRelations(model, { nearest } = {}) {   // nearest injected (
 			return gid ? model.get(kindOfId(gid), gid) : undefined;
 		},
 		atCell(id) {
-			const at = positionOf(model.endpointOf(id));
+			const at = cellPosition(model.endpointOf(id));
 			return at ? [at.col, at.row] : undefined;
 		},
 		occupiedAnyAt(p) { const key = keyOf(p); return key !== null && cellAnchors.has(key); },
