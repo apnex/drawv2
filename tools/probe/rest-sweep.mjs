@@ -13,8 +13,8 @@ its bytes, a node's id named by its stored name -- the board's ids are the same 
 
 A difference passes only as one class section 6.3 rules, judged again here from the query and both answers:
 
-  inherited-name   a name an object inherits answered before -- 200, or 422 for a malformed query -- and is unknown, 404, after
-                   (B401)
+  inherited-name   a name an object inherits answered before -- 200, 422 for a malformed query, or 404 for an unknown route or
+                   diagram -- and is unknown, 404, naming the layout, after (B401)
   beyond-2^49      a finite coordinate past 2^49 answered before and is refused 422 after, naming the limit (D1)
   rounding         a coordinate decided by a rounding: the answer after is the exact nearest position, by rational arithmetic
                    over the double as written, and the answer before is not (D1)
@@ -44,6 +44,7 @@ const OUT = flag('out') ?? fs.mkdtempSync(path.join(os.tmpdir(), 'draw-rest-swee
 fs.mkdirSync(OUT, { recursive: true });
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const LIMIT = 2 ** 49;
+const MISSING = '0000000000fa00ff';   // a diagram id no side holds
 const LIMIT_REFUSAL = `nearest requires x and y within 2^49 (${LIMIT}) in magnitude`;
 
 // ---- the exact nearest index: a double is n / 2^k exactly, and the position nearest it rounds (v - origin) / pitch half up
@@ -69,8 +70,9 @@ const INHERITED = (name) => name in Object.prototype && !['node', 'zone'].includ
 const says = (body, value) => { try { return JSON.stringify(JSON.parse(body)) === JSON.stringify(value); } catch { return false; } };
 function classOf(q, before, after, lattices) {
 	if (before.status === after.status && before.body === after.body) return 'same';
-	// an inherited name answered before -- 200, or 422 for a query it then read -- and is refused for the name now, before its query
-	if (INHERITED(q.name) && [200, 422].includes(before.status) && after.status === 404
+	// an inherited name answered before -- 200, or 422 for a query it then read, or 404 for a route or a diagram it then looked up (F9) --
+	// and is refused for the name now, before anything else
+	if (INHERITED(q.name) && [200, 404, 422].includes(before.status) && after.status === 404
 		&& says(after.body, { error: `unknown layout: ${q.name}`, code: 'unknown-layout' })) return 'inherited-name';
 	if (q.route !== 'nearest') return null;
 	const x = Number(q.x ?? null), y = Number(q.y ?? null);
@@ -103,6 +105,10 @@ function classifierProblems() {
 		[null, { name: 'node', route: 'nearest', x: String(2 ** 49), y: '0' }, ok({}), { status: 422, body: JSON.stringify({ error: LIMIT_REFUSAL, code: 'bad-query' }) }],
 		[null, { name: 'toString', route: 'nearest', x: '0', y: '0' }, ok({}), { status: 404, body: '{"error":"unknown layout: elsewhere","code":"unknown-layout"}' }],
 		[null, { name: 'zone', route: 'anchors', free: null }, ok({ layout: 'zone' }), { status: 404, body: '{"error":"unknown layout: zone","code":"unknown-layout"}' }],
+		// F9 (H26.1's verification): an inherited name on a route that answered 404 already -- for the route -- is 404 now for the name
+		['inherited-name', { name: 'constructor', route: 'nothing' }, { status: 404, body: '{"error":"unknown layout route: nothing"}' },
+			{ status: 404, body: '{"error":"unknown layout: constructor","code":"unknown-layout"}' }],
+		[null, { name: 'node', route: 'nothing' }, { status: 404, body: '{"error":"unknown layout route: nothing"}' }, { status: 404, body: '{"error":"unknown layout: node","code":"unknown-layout"}' }],
 		[null, { name: 'node', route: 'anchors' }, ok({ count: 527 }), ok({ count: 526 })],
 	];
 	return cases.flatMap(([want, q, before, after], i) => { const got = classOf(q, before, after, L); return got === want ? [] : [`case ${i}: classed ${got}, expected ${want}`]; });
@@ -135,6 +141,10 @@ function queries() {
 		nearest(name, '0', '0'); nearest(name, '270', '-150'); nearest(name, 'abc', '0');
 		for (const free of [null, '1']) out.push({ name, route: 'anchors', free });
 	}
+	// F9 (H26.1's verification): a route under a layout that is no route, and a diagram that does not exist, for every name
+	for (const name of ['node', 'zone', 'constructor', 'toString', '__proto__', 'hasOwnProperty', 'hexagon']) {
+		out.push({ name, route: 'nothing', free: null }, { name, route: 'nearest', x: '0', y: '0', diagram: MISSING });
+	}
 	return out;
 }
 const pathOf = (q) => {
@@ -142,7 +152,7 @@ const pathOf = (q) => {
 	if (q.route === 'nearest') { if (q.x !== undefined) query.set('x', q.x); if (q.y !== undefined) query.set('y', q.y); }
 	else if (q.free !== null) query.set('free', q.free);
 	const s = query.toString();
-	return `/api/v1/diagrams/${PARITY_DIAGRAM}/layouts/${encodeURIComponent(q.name)}/${q.route}${s ? `?${s}` : ''}`;
+	return `/api/v1/diagrams/${q.diagram ?? PARITY_DIAGRAM}/layouts/${encodeURIComponent(q.name)}/${q.route}${s ? `?${s}` : ''}`;
 };
 
 // the pinned board: the parity board, and a device at each corner of the node extent, so the extents' edges are occupied
