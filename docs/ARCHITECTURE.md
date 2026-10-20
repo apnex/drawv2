@@ -350,6 +350,7 @@ What `npm run gate` runs, before every commit and again before every push.
 | 21 | `node tools/stylesheets.mjs --check` |
 | 22 | `node tools/canvas-layout.mjs --check` |
 | 23 | `node tools/import-map.mjs --check` |
+| 24 | `node tools/scan-components.mjs` |
 <!-- END GENERATED: architecture-gate -->
 
 ---

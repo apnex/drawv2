@@ -5,12 +5,14 @@ nothing else: draw's `@apnex/` dependencies in package.json (H26-2: each compone
 package @apnex/<name>), and for each the installed package's name, version and exports (node_modules/@apnex/<name>/package.json).
 
 The import map's generator (tools/import-map.mjs) and the region the copy measure trusts (tools/page-regions.mjs) write the pages'
-map from this. The vendor mount (server/static.mjs sendVendored) reads the same two files for itself, because a server module may
-import no tool.
+map from this, and tools/scan-components.mjs reads each installed component's dist/ with draw's word list (section 7.2). The vendor
+mount (server/static.mjs sendVendored) reads the same two files for itself, because a server module may import no tool.
 
+  componentNames(root)       -> [name]                       draw's @apnex/ dependencies, in name order
   importMapOf(root)          -> { imports, components, problems }
                                 one entry per export, never a trailing-slash prefix, each at /vendor/<name>@<version>/<file>;
                                 each component { name, version, dir, exports: [{ specifier, file }] }
+  filesUnder(dir)            -> [path]                       every file under a folder, relative to it, in name order
 
 WHAT IS REFUSED, rather than guessed (section 7.6): a component not installed, or installed under another name; a version that is
 not one an address can carry; an `exports` that is not a string, a { types, default } pair or a map of subpaths to either -- a
@@ -27,7 +29,7 @@ const readJson = (file) => JSON.parse(fs.readFileSync(file, 'utf8'));
 const plain = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 const VERSION = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
 
-function componentNames(root) {
+export function componentNames(root) {
 	const pkg = readJson(path.join(root, 'package.json'));
 	return Object.keys(pkg.dependencies ?? {}).filter((n) => n.startsWith(SCOPE)).sort();
 }
@@ -76,7 +78,7 @@ function installedComponents(root) {
 }
 
 // every file under a folder, as paths relative to it, in name order
-function filesUnder(dir, rel = '') {
+export function filesUnder(dir, rel = '') {
 	const at = path.join(dir, rel);
 	if (!fs.existsSync(at)) return [];
 	return fs.readdirSync(at, { withFileTypes: true }).sort((a, b) => (a.name < b.name ? -1 : 1))

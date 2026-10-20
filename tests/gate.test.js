@@ -54,6 +54,7 @@ test('GR1: the gate is composed of the suite and every scanner it claims to run'
 		['H25.0 scan-copies', 'tools/scan-copies.mjs', 'tools/scan-copies.mjs'],   // B365: a copied fact, counted
 		['GR15 scan-docrefs', 'tools/scan-docrefs.mjs', 'tools/scan-docrefs.mjs'],
 		['GR16 scan-wiring', 'tools/scan-wiring.mjs', 'tools/scan-wiring.mjs'],
+		['H26.1 scan-components', 'tools/scan-components.mjs', 'tools/scan-components.mjs'],   // draw's words, over what it installs (SNAP-GRID.md 7.2)
 		['H26.1 import-map', 'node tools/import-map.mjs --check', 'tools/import-map.mjs'],   // the pages' import map, as installed (SNAP-GRID.md 7.6)
 	]) {
 		assert.ok(gate.includes(needle), `the gate no longer runs ${what} (looked for "${needle}")`);
