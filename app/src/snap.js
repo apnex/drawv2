@@ -1,39 +1,38 @@
 /*
 Snap — center-origin grid math, ported from client/src/grid.js. The pitch is now SOURCED FROM
-THE KERNEL SPEC (STD.pitch) so the UI and the geometry kernel can never disagree on the grid.
+THE KERNEL SPEC (STD.pitch) so the UI and the geometry kernel can never disagree on the grid
+(AMENDED H26.1: from the node grid's declaration, NODE_GRID, which the kernel opens from it).
 Node grid: multiples of pitch from origin. Zone grid: half-cell offset (±pitch/2 + k·pitch).
 Extent clamps stay a UI concern (canvas margins).
+
+H26.1 (dev/design/components/SNAP-GRID.md section 5, appendix B): where a point snaps is snap-grid's answer, asked of a grid
+bounded by the extent -- `snapNode` of the node grid within NODE_EXT (`nodeGridWithin`), `snapIn` of the grid its place carries --
+each the point of the position nearest the pointer, `pointOf(nearest(pos))`; the snap clamps the INDEX to the bounds, which equals
+clamping the snapped coordinate because every extent sits on its lattice (section 2); the per-axis clamp and the half pitch went. What
+stays draw's is a drag's clamp and its quantisation by the declared pitch (`clampDelta`), read from NODE_GRID's declaration.
 */
-import { STD, L_STD } from '../../kernel/spec.mjs';
-import { spanExtent, LAYOUTS, snapLayout } from '../../kernel/geometry.mjs';
+import { L_STD } from '../../kernel/spec.mjs';
+import { NODE_GRID, nodeGridWithin } from '../../kernel/geometry.mjs';
 // CL3: canvas surface + usable extents come from the sovereign model/ substrate (single source).
 // IMPORTED (not a bare re-export) — snapNode references NODE_EXT locally. AMENDED C-e (H19.33): the grids' points are their
 // parts'. AMENDED WD-b2 (H19.46): both grids are the layouts plugin's (layouts/layout-canvas.mjs), drawn by app/src/grids.js.
 import { SURFACE, NODE_EXT } from '../../model/surface.mjs';
 import { ANCHOR_KINDS } from '../../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
-export const GAP = STD.pitch;                     // 60 — from the kernel, not a local literal
-export const HALF = GAP / 2;
+export const GAP = NODE_GRID.declaration.pitch;   // 60 -- the node grid's declared pitch: a length a drag, a nudge and a readout step by
 export const NODE_R = L_STD.frame.ext;            // node frame half-extent — from the kernel spec (20)
-export { spanExtent };                            // a multi-cell node's px footprint — one owner, in the kernel
 
 // re-export the document-space magnitudes under the names snap.js consumers already use (CANVAS alias)
 export { SURFACE as CANVAS, NODE_EXT };
 
-// B111: the GRID comes from the kernel layout, the CLAMP stays here -- canvas margins are a UI
-// concern and the pitch is not. This function used to carry the offset itself, which made it one of
-// two places the zone grid was defined and the only place it was defined correctly.
-function clamped(L, v, min, max) {
-	return Math.min(Math.max(snapLayout(L, v), min), max);
-}
+// the point a grid places a pointer at: the position nearest it, as a fresh plain point a caller may keep or change, as it was. A
+// point snap-grid cannot place -- a coordinate that is not finite, or beyond its domain, which no pointer event and no validated
+// field is (SNAP-GRID.md section 6.2) -- snaps to no point
+const pointOn = (grid, pos) => { const at = grid.nearest(pos), p = at && grid.pointOf(at); return p ? { x: p.x, y: p.y } : { x: NaN, y: NaN }; };
+const NODES_WITHIN = nodeGridWithin(NODE_EXT);   // the node grid within its extent: where the palette and every gesture drop a node
 
 export function snapNode(pos) {
-	return {
-		x: clamped(LAYOUTS.node, pos.x, -NODE_EXT.x, NODE_EXT.x),
-		y: clamped(LAYOUTS.node, pos.y, -NODE_EXT.y, NODE_EXT.y)
-	};
+	return pointOn(NODES_WITHIN, pos);
 }
-
-
 
 export function resolveBox(p1, p2) {
 	return { x: Math.min(p1.x, p2.x), y: Math.min(p1.y, p2.y), w: Math.abs(p2.x - p1.x), h: Math.abs(p2.y - p1.y) };
@@ -99,6 +98,9 @@ layout, ext, size(entity) -> { w, h } }]` -- the kernel layout its grid follows 
 the extent it stays within, and its size beyond one cell, which the clamp holds inside the extent. Moving, duplicating,
 cloning and nudging read these rather than asking whether a kind is an anchor or a zone. A layout the kernel lacks, a place
 without a size, or a kind placed twice is refused, naming its owner.
+AMENDED H26.1 (SNAP-GRID.md section 5, appendix B): a place keeps its `layout` -- the name the grids it draws are matched by -- and
+its `ext`, and carries its `grid`, the snap-grid grid bounded by that extent its kind snaps to: the anchor's from `nodeGridWithin`,
+the zone's from the layouts plugin's `ZONE_GRIDS`. A place with no grid, or one whose grid's bounds are not its extent, is refused.
 */
 /*
 WD-b2 (H19.46; dev/design/unification/WIDE-DEVICES.md section 5.1) -- A PLACE'S SIZE COMES FROM ONE SOURCE, WHICH THE PLACE
@@ -113,7 +115,11 @@ export function placesOf(parts) {
 	const places = new Map();
 	for (const part of parts) {
 		for (const p of part.places ?? []) {
-			if (!LAYOUTS[p.layout]) throw new Error(`place: ${part.owner}'s place for ${p.kind} names layout ${p.layout}, which the kernel does not have`);
+			const bounds = p.grid?.declaration?.bounds, ext = p.ext ?? {};
+			if (!bounds) throw new Error(`place: ${part.owner}'s place for ${p.kind} carries no grid bounded by its extent -- a place snaps on the grid it carries`);
+			if (bounds.min.x !== -ext.x || bounds.min.y !== -ext.y || bounds.max.x !== ext.x || bounds.max.y !== ext.y) {
+				throw new Error(`place: ${part.owner}'s place for ${p.kind} carries a grid bounded by ${bounds.min.x},${bounds.min.y} to ${bounds.max.x},${bounds.max.y}, not its extent ${ext.x} x ${ext.y}`);
+			}
 			if (places.has(p.kind)) throw new Error(`place: ${p.kind} is placed by ${places.get(p.kind).owner} and by ${part.owner}`);
 			places.set(p.kind, { ...p, owner: part.owner });
 		}
@@ -142,12 +148,7 @@ export function gridsOf(parts) {
 	return parts.flatMap((p) => (p.grids ?? []).filter((g) => placed.has(g.layout)));
 }
 
-// a point on a placed kind's grid, within its extent
+// a point on a placed kind's grid, within its extent: its place's grid, bounded by that extent
 export function snapIn(place, pos) {
-	return {
-		x: clamped(LAYOUTS[place.layout], pos.x, -place.ext.x, place.ext.x),
-		y: clamped(LAYOUTS[place.layout], pos.y, -place.ext.y, place.ext.y)
-	};
+	return pointOn(place.grid, pos);
 }
-
-

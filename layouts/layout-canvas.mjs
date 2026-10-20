@@ -18,20 +18,18 @@ own circle at the same radius in a brighter fill, one layer up. The zone grid's 
 lattice, and reads as bigger on purpose because it shows only while Shift is held.
 */
 
-import { gridDot } from '../kernel/geometry.mjs';
+import { gridDot, latticeGrids, nodeGridWithin } from '../kernel/geometry.mjs';
 import { LAYOUT_TABLE } from './layout-table.mjs';
 import { layoutNamed } from './layout-records.mjs';
 
-// the first lattice point at or past -ext, on a lattice `offset` from the origin
-const first = (ext, offset, pitch) => Math.ceil((-ext - offset) / pitch) * pitch + offset;
-
-// every point of a layout's lattice within its extent, row by row
-function latticePoints({ pitch, offset, ext }) {
-	const points = [];
-	for (let y = first(ext.y, offset, pitch); y <= ext.y; y += pitch) {
-		for (let x = first(ext.x, offset, pitch); x <= ext.x; x += pitch) points.push({ x, y });
-	}
-	return points;
+/*
+H26.1 (dev/design/components/SNAP-GRID.md appendix B): every point of a layout's lattice within its extent, row by row -- snap-grid's
+positions in view, asked of the grid the diagram's record opens bounded by its extent (`latticeGrids`, which refuses a record it
+cannot open, naming its problems), the region the extent, at a scale of one: no thinning, every position, by row then column.
+*/
+function latticePoints(record) {
+	const { ext } = record;
+	return latticeGrids(record).bounded.inView({ region: { kind: 'rect', x: -ext.x, y: -ext.y, w: 2 * ext.x, h: 2 * ext.y }, scale: 1 }).positions.map(({ point }) => ({ x: point.x, y: point.y }));
 }
 
 const grid = (layout, shown) => ({ layout, points: (model) => latticePoints(layoutNamed(model, layout)), ...shown });
@@ -39,6 +37,8 @@ const NODE_GRID = grid('node', { layer: 'grid-nodes', r: gridDot().radius });
 const ZONE_GRID = grid('zone', { layer: 'grid-zones', r: 5, shownWith: 'shiftKey', cls: 'zonegrid' });
 
 // its kind's parts size it -- the devices plugin a device, by its span; with no part answering, one cell (app/src/snap.js `placesOf`)
-const ANCHOR_PLACE = { kind: 'node', layout: 'node', ext: LAYOUT_TABLE.find((l) => l.name === 'node').ext, sizedBy: 'parts' };
+// H26.1: and it carries the node grid bounded by its extent, which it snaps to (`nodeGridWithin`, SNAP-GRID.md section 5)
+const ANCHOR_EXT = LAYOUT_TABLE.find((l) => l.name === 'node').ext;
+const ANCHOR_PLACE = { kind: 'node', layout: 'node', ext: ANCHOR_EXT, grid: nodeGridWithin(ANCHOR_EXT), sizedBy: 'parts' };
 
 export const LAYOUTS_CANVAS = { owner: 'layouts', stylesheets: ['layouts/layouts.css'], places: [ANCHOR_PLACE], grids: [NODE_GRID, ZONE_GRID] };

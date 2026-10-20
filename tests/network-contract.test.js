@@ -29,7 +29,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Model } from '../model/model.mjs';
 import { attachRelations } from '../engine/store.mjs';
-import { cellOf } from '../kernel/geometry.mjs';
+import { NODE_GRID } from '../kernel/geometry.mjs';   // H26.1: the relation index is injected the node grid's nearest (it was cellOf)
 import { commit, plan } from '../planner/txn.mjs';
 import { Log } from '../planner/log.mjs';
 import { productKinds } from '../product/kinds.mjs';
@@ -44,7 +44,7 @@ const without = (name) => { const n = complete(); delete n[name]; return n; };
 
 const request = { label: 'add', ops: [{ op: 'put', kind: 'node', entity: { id: 'node-00000a', name: 'A', type: 'router', x: 0, y: 0, shape: 'circle' } }] };
 // a board with the network's kinds draws with a network (V-e, J2)
-const board = (kinds) => { const m = new Model(kinds ? { kinds, attached: { network: createNetwork() } } : {}); attachRelations(m, { cellOf }); return { m, log: new Log() }; };
+const board = (kinds) => { const m = new Model(kinds ? { kinds, attached: { network: createNetwork() } } : {}); attachRelations(m, { nearest: NODE_GRID.nearest }); return { m, log: new Log() }; };
 // the network's composition: the product's kinds and its pipe, which its tenant needs (H17.22 N-d)
 const KINDS = productKinds(...NETWORK_ROWS);
 // the product's own kinds, for a board with no network: a plan names its kinds since S-f, so a tenant error is the one met

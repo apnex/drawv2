@@ -825,6 +825,34 @@ test('B111/B112: an agent asks for an anchor instead of computing one', async ()
 	assert.equal((await get(`/api/v1/diagrams/${id}/layouts/node/nearest?x=abc&y=0`)).status, 422);
 });
 
+/*
+H26.1 (dev/design/components/SNAP-GRID.md section 6.3; B401, D1) -- what the move onto snap-grid changes at the agent door, and only
+that. A layout is looked up by its name in the layouts table, so a name every object inherits is unknown, 404, where it answered 200
+with nulls; and a coordinate beyond 2^49 is refused 422 as one that is not finite is, where past 2^53 its answer was garbled. Exactly
+2^49 is still answered, and the anchors route keeps its list on both grids -- the node extent's 31 x 17 positions (B399).
+*/
+test('H26.1: the grid routes refuse an inherited layout name and a coordinate beyond 2^49, and keep every other answer', async () => {
+	const id = (await get('/api/v1/diagrams')).body[0].id;
+	for (const name of ['constructor', 'toString', '__proto__', 'hasOwnProperty']) {
+		const r = await get(`/api/v1/diagrams/${id}/layouts/${name}/nearest?x=0&y=0`);
+		assert.deepEqual([r.status, r.body.code], [404, 'unknown-layout'], `${name} is no layout`);
+		assert.equal((await get(`/api/v1/diagrams/${id}/layouts/${name}/anchors`)).status, 404, `nor does ${name} list anchors`);
+	}
+	for (const [x, y] of [[2 ** 49 + 1, 0], [0, -(2 ** 49) - 1], [2 ** 50, 2 ** 50], [1e300, 0]]) {
+		const r = await get(`/api/v1/diagrams/${id}/layouts/zone/nearest?x=${encodeURIComponent(x)}&y=${encodeURIComponent(y)}`);
+		assert.deepEqual([r.status, r.body.code, r.body.error], [422, 'bad-query', `nearest requires x and y within 2^49 (${2 ** 49}) in magnitude`], `${x},${y} is refused`);
+	}
+	const edge = await get(`/api/v1/diagrams/${id}/layouts/node/nearest?x=${2 ** 49}&y=${-(2 ** 49)}`);
+	assert.equal(edge.status, 200, 'exactly 2^49 is answered -- the control');
+	assert.deepEqual({ cx: edge.body.cx, cy: edge.body.cy, x: edge.body.x, y: edge.body.y }, { cx: 9382499223689, cy: -9382499223689, x: 562949953421340, y: -562949953421340 });
+	assert.equal((await get(`/api/v1/diagrams/${id}/layouts/node/nearest?x=Infinity&y=0`)).body.error, 'nearest requires numeric x and y', 'a coordinate that is not finite is refused as before');
+	const node = (await get(`/api/v1/diagrams/${id}/layouts/node/anchors`)).body, zone = (await get(`/api/v1/diagrams/${id}/layouts/zone/anchors`)).body;
+	assert.deepEqual([node.count, zone.count], [527, 527], 'the node extent\'s positions, on either grid');
+	assert.deepEqual([node.anchors[0], zone.anchors[0], zone.anchors.at(-1)].map(({ layout, cx, cy, x, y }) => ({ layout, cx, cy, x, y })),
+		[{ layout: 'node', cx: -15, cy: -8, x: -900, y: -480 }, { layout: 'zone', cx: -15, cy: -8, x: -870, y: -450 }, { layout: 'zone', cx: 15, cy: 8, x: 930, y: 510 }],
+		'by row then column; the zone list omits its lattice\'s first column and row within its own extent, kept (B399)');
+});
+
 test('B112: free anchors exclude what is occupied, and an anchor round-trips into a legal write', async () => {
 	const id = (await get('/api/v1/diagrams')).body[0].id;
 	const seeded = (await get(`/api/v1/diagrams/${id}`)).body.nodes;

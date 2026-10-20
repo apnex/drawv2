@@ -109,7 +109,7 @@ The anchored core's parts, declared once in `tools/layers.mjs` `PARTS` and rende
 <!-- BEGIN GENERATED: architecture-parts. Run tools/generate-architecture.mjs; do not edit by hand. -->
 | Part | Duty | Kind | Made of | Imports today | Composes today |
 |---|---|---|---|---|---|
-| `lattice` | Compute geometry on the grid | core | `kernel/geometry.mjs`, `kernel/spec.mjs`, `kernel/router.mjs`, `model/surface.mjs` | -- | -- |
+| `lattice` | Compute geometry on the grid | core | `kernel/geometry.mjs`, `kernel/spec.mjs`, `kernel/router.mjs`, `model/surface.mjs` | -- | `@apnex/snap-grid` |
 | `kind-contract` | Compose kinds from the rows plugins declare | core | `model/shape.mjs`, `model/limits.mjs` | -- | -- |
 | `document` | Hold one document's entities | core | `model/model.mjs`, `model/anchors.mjs`, `model/ops.mjs`, `model/order.mjs`, `model/stacking.mjs` | `kind-contract` | -- |
 | `relations` | Index which entities relate | core | `engine/relations.mjs`, `engine/ivm.mjs`, `engine/store.mjs` | `document` | -- |
@@ -132,7 +132,7 @@ The anchored core's parts, declared once in `tools/layers.mjs` `PARTS` and rende
 | `server` | Compose the server | composition root | `server/server.js`, `server/app.js`, `server/static.mjs` | `access`, `devices`, `export`, `hub`, `planner`, `rest`, `store` | -- |
 | `access` | Establish who a request comes from | door | `server/identity.mjs`, `server/codes.mjs`, `server/origin.mjs` | -- | -- |
 | `placement` | Choose the free anchor a relationship names | door | `server/anchor.mjs` | `devices`, `document`, `lattice` | -- |
-| `store` | Keep documents durable | door | `server/store.js`, `server/files.mjs`, `server/docfile.mjs`, `server/seed.js`, `server/diagram-id.mjs` | `access`, `document`, `kind-contract`, `lattice`, `network`, `placement`, `planner`, `product` | -- |
+| `store` | Keep documents durable | door | `server/store.js`, `server/files.mjs`, `server/docfile.mjs`, `server/seed.js`, `server/diagram-id.mjs` | `access`, `document`, `kind-contract`, `network`, `placement`, `planner`, `product` | -- |
 | `hub` | Carry each change to the tabs watching a document | door | `server/hub.js`, `server/protocol.js`, `server/locks.js`, `server/sessionlog.mjs` | `kind-contract` | -- |
 | `rest` | Answer agents over HTTP | door | `server/rest.js`, `server/routes.mjs` | `devices`, `document`, `groups`, `hub`, `kind-contract`, `lattice`, `layouts`, `network`, `simulation`, `zones` | -- |
 | `cli` | Give an agent one command per verb | door | `cli/` | -- | -- |

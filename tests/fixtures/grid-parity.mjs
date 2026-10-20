@@ -273,128 +273,79 @@ THE CLASSES OF SECTION 6.3, "Changed by H26.1" -- the only differences allowed, 
 export const CLASSES = ['rounding', 'beyond-2^49', 'inherited-name', 'off-lattice-walk'];
 
 /*
-THE REPLACEMENTS -- each question answered as appendix B says its site will ask snap-grid, on the grid section 5 names: the node grid
-and the zone grid, each with no bounds and bounded by its extent, opened here from their declarations while the product still holds
-the old arithmetic. When the sites move, these become calls of the product's own functions, and must give the same answers.
+THE REPLACEMENTS -- each question asked of the product as it is now: the functions appendix B moved onto snap-grid, on the grids
+section 5 opens (kernel/geometry.mjs `NODE_GRID` and `nodeGridWithin`, layouts/layout-table.mjs `ZONE_GRIDS`). RESTATED at H26.1's
+move: when the old answers were recorded these were the same questions asked of snap-grid grids opened from their declarations in
+this file, and the product, moved, must answer as they did -- the record's differences are theirs.
+
+Where a site's question sits inside a route or an index rather than a function, it is asked of the grid that site asks: the relation
+index's key (`cellOf` was injected; NODE_GRID's `nearest` is), the REST nearest and anchors routes (their bytes are compared whole
+by tools/probe/rest-sweep.mjs), and the routes' layout lookup.
 */
-import { openGrid } from '@apnex/snap-grid';
-const open = (declaration) => { const r = openGrid(declaration); if (!r.ok) throw new Error(JSON.stringify(r.problems)); return r.grid; };
-const lattice = (offset, ext) => ({ shape: 'square', pitch: P, origin: { x: offset, y: offset }, ...(ext ? { bounds: { min: { x: -ext.x, y: -ext.y }, max: { x: ext.x, y: ext.y } } } : {}) });
-const NODE = open(lattice(0)), NODE_IN = open(lattice(0, NODE_EXT)), ZONE = open(lattice(HALF)), ZONE_IN = open(lattice(HALF, ZONE_EXT));
-const TABLE = [{ name: 'node', grid: NODE }, { name: 'zone', grid: ZONE }];
-const pointOn = (grid, p) => { const n = grid.nearest(p); return n ? grid.pointOf(n) : { x: NaN, y: NaN }; };
-const num = (v, lo, hi) => typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi;
-const onAxis = (grid, axis, v) => grid.positionAt(axis === 'x' ? { x: v, y: grid.declaration.origin.y } : { x: grid.declaration.origin.x, y: v }) !== null;
-const LIMIT = 2 ** 49;   // the REST nearest route's refusal (section 6.3, D1)
-const restNearest = (name, grid, p) => {
+import { NODE_GRID } from '../../kernel/geometry.mjs';
+import { LAYOUT_TABLE, ZONE_GRIDS } from '../../layouts/layout-table.mjs';
+import { snapNode, snapIn, placesOf } from '../../app/src/snap.js';
+import { PRODUCT_CANVAS } from '../../product/canvas.mjs';
+import { productKinds } from '../../product/kinds.mjs';
+import { ZONE_HANDLE_SPECS } from '../../zones/zone-gestures.mjs';
+import { ZONE_KEYS } from '../../zones/zone-keys.mjs';
+import { LAYOUTS_CANVAS } from '../../layouts/layout-canvas.mjs';
+import { DEVICE_PRESSES } from '../../devices/device-gestures.mjs';
+import { DEVICE_SIZE_STEP } from '../../devices/device-size.mjs';
+import { DEVICE_FIELDS } from '../../devices/device-fields.mjs';
+import { spanThrough } from '../../devices/device-footprint.mjs';
+import { resolveAnchor } from '../../server/anchor.mjs';
+
+const ZONE = ZONE_GRIDS.unbounded;
+const K = productKinds(), anchorField = K.row('node').fields, zoneField = K.row('zone').fields;
+const places = placesOf(PRODUCT_CANVAS);
+const pointOn = (grid, p) => grid.pointOf(grid.nearest(p));
+const LIMIT = 2 ** 49;   // the REST nearest route's refusal (section 6.3, D1; server/rest.js)
+const restNearest = (grid, p) => {
 	if (!Number.isFinite(p.x) || !Number.isFinite(p.y) || Math.abs(p.x) > LIMIT || Math.abs(p.y) > LIMIT) return 'refused';
 	const n = grid.nearest(p), at = grid.pointOf(n);
 	return [n.col, n.row, at.x, at.y];
 };
-// the free anchors: the bounded node grid's positions within its extent, each mapped back to { layout, cx, cy, x, y }
-const EXTENT_VIEW = { region: { kind: 'rect', x: -NODE_EXT.x, y: -NODE_EXT.y, w: 2 * NODE_EXT.x, h: 2 * NODE_EXT.y }, scale: 1 };
-function resolveNew(board, at) {
-	const taken = new Set(board.nodes.map((e) => `${e.x},${e.y}`));
-	const free = NODE_IN.inView(EXTENT_VIEW).positions.map(({ position, point }) => ({ layout: 'node', cx: position.col, cy: position.row, x: point.x, y: point.y })).filter((a) => !taken.has(`${a.x},${a.y}`));
-	const d2 = (a, x, y) => (a.x - x) * (a.x - x) + (a.y - y) * (a.y - y);
-	const nearest = (list, x, y) => { let best = null, bestD = Infinity; for (const a of list) { const d = d2(a, x, y); if (d < bestD) { best = a; bestD = d; } } return best; };
-	const typed = board.nodes.filter((n) => n.type), named = (ref) => typed.find((n) => n.name === ref || n.id === ref) || null;
-	const ok = (a) => (a ? [a.layout, a.cx, a.cy, a.x, a.y] : null);
-	if (!free.length) return 'the canvas is full: every anchor is occupied';
-	if (at.inside !== undefined) {
-		const zone = board.zones.find((z) => z.name === at.inside || z.id === at.inside);
-		if (!zone) return `${at.inside} is not a zone`;
-		const within = free.filter((a) => a.x >= zone.x && a.x <= zone.x + zone.w && a.y >= zone.y && a.y <= zone.y + zone.h);
-		return within.length ? ok(nearest(within, zone.x + zone.w / 2, zone.y + zone.h / 2)) : `zone ${at.inside} has no free anchor`;
-	}
-	if (at.between !== undefined) {
-		const [a, b] = at.between.map(named);
-		return ok(nearest(free, (a.x + b.x) / 2, (a.y + b.y) / 2));
-	}
-	if (at.near !== undefined) {
-		const ref = named(at.near);
-		if (!ref) return `${at.near} is not a node`;
-		if (at.dir !== undefined) {
-			const DIR = { right: '+x', left: '-x', up: '-y', down: '+y' }[at.dir];
-			const open = new Set(free.map((a) => `${a.x},${a.y}`));
-			let p = NODE.positionAt(ref);
-			for (let n = 1; p && n <= 16; n++) {
-				p = NODE.next(p, DIR);
-				const pt = p && NODE.pointOf(p);
-				if (pt && open.has(`${pt.x},${pt.y}`)) return ok(free.find((a) => a.x === pt.x && a.y === pt.y));
-			}
-			return `nothing free to the ${at.dir} of ${at.near}`;
-		}
-		return ok(nearest(free, ref.x, ref.y));
-	}
-	return 'an anchor relationship needs one of near, between or inside';
-}
+const STUB = { freshId: () => 'zone-000001', nextName: () => 'z', nextOrder: () => 1 };   // what the zone factory asks of a Model
+const boardModel = (b) => ({ all: (kind) => (kind === 'node' ? b.nodes : kind === 'zone' ? b.zones : []) });
+const fakeModel = (record) => ({ get: (kind, id) => (kind === 'layout' ? { id, ...record } : undefined) });
+const xy = (p) => [p.x, p.y];
+
 export const REPLACEMENTS = {
-	'cellOf': (v) => NODE.nearest({ x: v, y: 0 }).col,
-	'snapLayout.node': (v) => pointOn(NODE, { x: v, y: 0 }).x,
+	'cellOf': (v) => NODE_GRID.nearest({ x: v, y: 0 }).col,
+	'snapLayout.node': (v) => pointOn(NODE_GRID, { x: v, y: 0 }).x,
 	'snapLayout.zone': (v) => pointOn(ZONE, { x: v, y: HALF }).x,
-	'cellOn.node': (v) => NODE.nearest({ x: v, y: 0 }).col,
+	'cellOn.node': (v) => NODE_GRID.nearest({ x: v, y: 0 }).col,
 	'cellOn.zone': (v) => ZONE.nearest({ x: v, y: HALF }).col,
-	'pxOn.node': (c) => NODE.pointOf({ col: c, row: 0 }).x,
+	'pxOn.node': (c) => NODE_GRID.pointOf({ col: c, row: 0 }).x,
 	'pxOn.zone': (c) => ZONE.pointOf({ col: c, row: 0 }).x,
-	'anchor.x': (v) => num(v, -NODE_EXT.x, NODE_EXT.x) && onAxis(NODE, 'x', v),
-	'anchor.y': (v) => num(v, -NODE_EXT.y, NODE_EXT.y) && onAxis(NODE, 'y', v),
-	'zone.x': (v) => num(v, -ZONE_EXT.x, ZONE_EXT.x) && onAxis(ZONE, 'x', v),
-	'zone.y': (v) => num(v, -ZONE_EXT.y, ZONE_EXT.y) && onAxis(ZONE, 'y', v),
-	'zone.w': (v) => num(v, P, 2 * ZONE_EXT.x) && onAxis(NODE, 'x', v),
-	'zone.h': (v) => num(v, P, 2 * ZONE_EXT.y) && onAxis(NODE, 'x', v),
-	'nearestAnchor.node': (p) => restNearest('node', NODE, p),
-	'nearestAnchor.zone': (p) => restNearest('zone', ZONE, p),
-	'anchorAt.node': ({ cx, cy }) => { const at = NODE.pointOf({ col: cx, row: cy }); return ['node', cx, cy, at.x, at.y]; },
+	'anchor.x': (v) => anchorField.x(v),
+	'anchor.y': (v) => anchorField.y(v),
+	'zone.x': (v) => zoneField.x(v),
+	'zone.y': (v) => zoneField.y(v),
+	'zone.w': (v) => zoneField.w(v),
+	'zone.h': (v) => zoneField.h(v),
+	'nearestAnchor.node': (p) => restNearest(NODE_GRID, p),
+	'nearestAnchor.zone': (p) => restNearest(ZONE, p),
+	'anchorAt.node': ({ cx, cy }) => { const at = NODE_GRID.pointOf({ col: cx, row: cy }); return ['node', cx, cy, at.x, at.y]; },
 	'anchorAt.zone': ({ cx, cy }) => { const at = ZONE.pointOf({ col: cx, row: cy }); return ['zone', cx, cy, at.x, at.y]; },
-	'spanExtent': (span) => { if (!span) return [0, 0]; const t = NODE.span({ col: 0, row: 0 }, { col: span.cols - 1, row: span.rows - 1 }).through; return [t.w, t.h]; },
-	'snapNode': (p) => { const at = pointOn(NODE_IN, p); return [at.x, at.y]; },
-	'snapIn.node': (p) => { const at = pointOn(NODE_IN, p); return [at.x, at.y]; },
-	'snapIn.zone': (p) => { const at = pointOn(ZONE_IN, p); return [at.x, at.y]; },
-	'snapZone': (p) => { const at = pointOn(ZONE_IN, p); return [at.x, at.y]; },
-	'zoneResize': ({ fixed, pos }) => {
-		const snapped = ZONE_IN.nearest(pos), still = ZONE_IN.nearest(fixed);
-		const corner = {
-			col: snapped.col === still.col ? (ZONE_IN.next(still, '+x') ?? ZONE_IN.next(still, '-x')).col : snapped.col,
-			row: snapped.row === still.row ? (ZONE_IN.next(still, '+y') ?? ZONE_IN.next(still, '-y')).row : snapped.row,
-		};
-		const { through } = ZONE_IN.span(corner, still);
-		return [through.x, through.y, through.w, through.h];
-	},
+	'spanExtent': (span) => ((e) => [e.sw, e.sh])(spanThrough(span)),
+	'snapNode': (p) => xy(snapNode(p)),
+	'snapIn.node': (p) => xy(snapIn(places.get('node'), p)),
+	'snapIn.zone': (p) => xy(snapIn(places.get('zone'), p)),
+	'snapZone': (p) => xy(snapIn(places.get('zone'), p)),   // the zone drag's own snap is its place's, since snapZone went
+	'zoneResize': ({ fixed, pos }) => ((b) => [b.x, b.y, b.w, b.h])(ZONE_HANDLE_SPECS[0].at({ fixedCorner: fixed }, pos)),
 	'zoneWrap': (b) => {
-		const block = ZONE_IN.enclosing({ kind: 'rect', x: b.x - HALF, y: b.y - HALF, w: b.x2 - b.x + P, h: b.y2 - b.y + P });
-		const lo = ZONE_IN.pointOf(block.from), hi = ZONE_IN.pointOf(block.to);
-		return [lo.x, lo.y, Math.max(hi.x - lo.x, P), Math.max(hi.y - lo.y, P)];
+		let box = null;
+		ZONE_KEYS.find((k) => k.id === 'wrap').run({ selectionBounds: () => b, create: (kind, make) => { box = make(STUB); }, flash: () => {}, dims: () => '' });
+		return box && [box.x, box.y, box.w, box.h];
 	},
-	'latticePoints': (record) => {
-		const g = open({ ...lattice(record.offset, record.ext), pitch: record.pitch });
-		return g.inView({ region: { kind: 'rect', x: -record.ext.x, y: -record.ext.y, w: 2 * record.ext.x, h: 2 * record.ext.y }, scale: 1 }).positions.flatMap(({ point }) => [point.x, point.y]);
-	},
-	'frameSpan': ([a, b]) => {
-		const p = NODE.nearest(a), q = NODE.nearest(b), { through } = NODE.span(p, q), R = 20;
-		return [through.x - R, through.y - R, through.w + 2 * R, through.h + 2 * R, through.x, through.y, Math.abs(q.col - p.col) + 1, Math.abs(q.row - p.row) + 1];
-	},
-	'deviceSizeStep': ({ node, dx, dy }) => {
-		const cur = node.span || { cols: 1, rows: 1 };
-		const least = (node.content ?? []).reduce((m, r) => ({ cols: Math.max(m.cols, (r.at?.[0] ?? 0) + (r.cols ?? 1)), rows: Math.max(m.rows, (r.at?.[1] ?? 0) + (r.rows ?? 1)) }), { cols: 1, rows: 1 });
-		const edge = NODE.nearest(NODE_EXT), at = NODE.nearest(node);
-		const most = { cols: Math.min(64, edge.col - at.col + 1), rows: Math.min(64, edge.row - at.row + 1) };
-		const cols = Math.min(Math.max(cur.cols + dx, least.cols), most.cols), rows = Math.min(Math.max(cur.rows + dy, least.rows), most.rows);
-		return cols === cur.cols && rows === cur.rows ? null : [cols, rows];
-	},
-	'deviceWithinSurface': (n) => {
-		const { cols, rows } = n.span ?? { cols: 1, rows: 1 };
-		const first = NODE.nearest(n), end = { col: first.col + cols - 1, row: first.row + rows - 1 }, { through } = NODE.span(first, end);
-		const far = { x: through.x + through.w, y: through.y + through.h };
-		if (!NODE_IN.offers(end)) return `${n.id}'s ${cols}x${rows} span reaches ${far.x},${far.y}, past the surface's edge at ${NODE_EXT.x},${NODE_EXT.y}`;
-		for (const r of n.content ?? []) {
-			const [c, w, h, rw] = [(r.at ?? [0, 0])[0], r.cols ?? 1, r.rows ?? 1, (r.at ?? [0, 0])[1]];
-			if (c + w > cols || rw + h > rows) return `${n.id}'s content region at [${c},${rw}], ${w}x${h}, falls outside its ${cols}x${rows} span`;
-		}
-		return null;
-	},
-	'resolveAnchor': ({ board, at }) => resolveNew(SWEEP.boards[board], at),
-	'layoutNamed': (name) => TABLE.find((l) => l.name === name)?.name ?? null,
+	'latticePoints': (record) => LAYOUTS_CANVAS.grids.find((g) => g.layout === record.name).points(fakeModel(record)).flatMap((p) => [p.x, p.y]),
+	'frameSpan': ([a, b]) => ((f) => [f.x, f.y, f.w, f.h, f.origin.x, f.origin.y, f.cols, f.rows])(DEVICE_PRESSES.find((r) => r.id === 'tool').box.frame(a, b)),
+	'deviceSizeStep': ({ node, dx, dy }) => ((s) => (s ? [s.span.cols, s.span.rows] : null))(DEVICE_SIZE_STEP.step(node, dx, dy)),
+	'deviceWithinSurface': (n) => DEVICE_FIELDS.refers(n, null, n, null),
+	'resolveAnchor': ({ board, at }) => ((r) => (r.ok ? [r.layout, r.cx, r.cy, r.x, r.y] : r.error))(resolveAnchor(boardModel(SWEEP.boards[board]), at)),
+	'layoutNamed': (name) => LAYOUT_TABLE.find((l) => l.name === name)?.name ?? null,
 };
 
 /*
@@ -415,7 +366,7 @@ function exactPoint(question, input, [origin, pitch]) {
 }
 export function classOf(d) {
 	const def = QUESTIONS[d.question], input = def.inputs()[d.index];
-	if (d.question === 'layoutNamed') return typeof input === 'string' && !TABLE.some((l) => l.name === input) && input in Object.prototype && d.new === null && d.old !== null ? 'inherited-name' : null;
+	if (d.question === 'layoutNamed') return typeof input === 'string' && !LAYOUT_TABLE.some((l) => l.name === input) && input in Object.prototype && d.new === null && d.old !== null ? 'inherited-name' : null;
 	if (d.question.startsWith('nearestAnchor.') && d.new === 'refused' && d.old !== 'refused') return Math.abs(input.x) > LIMIT || Math.abs(input.y) > LIMIT ? 'beyond-2^49' : null;
 	if (d.question === 'resolveAnchor') {
 		const ref = SWEEP.boards[input.board].nodes.find((n) => n.name === input.at.near);

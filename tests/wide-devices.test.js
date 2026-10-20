@@ -99,9 +99,9 @@ test('WD-a: a click with a type held on a covered cell lands on the device -- a 
 
 test('WD-a: the index keys an anchor by its own cell -- a covered cell is free, and the index and the scan agree', async () => {
 	const { attachRelations } = await import('../engine/store.mjs');
-	const { cellOf } = await import('../kernel/geometry.mjs');
+	const { NODE_GRID } = await import('../kernel/geometry.mjs');
 	const { occupiedAt } = await import('../devices/occupancy.mjs');
-	const withIndex = new Model(); attachRelations(withIndex, { cellOf });
+	const withIndex = new Model(); attachRelations(withIndex, { nearest: NODE_GRID.nearest });
 	const scan = new Model();
 	for (const m of [withIndex, scan]) wide(m, 'host', 0);
 	for (const p of [{ x: 0, y: 0 }, { x: 60, y: 0 }, { x: 120, y: 0 }, { x: 180, y: 0 }]) {

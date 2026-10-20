@@ -18,9 +18,9 @@ this does not start capturing: it returns `listen()`, and a root calls it once i
 (tests/browser.test.js "K8: Escape during a sidebar drag").
 */
 import { sharedDefs } from '../../kernel/renderer.mjs';
-import { cellOf } from '../../kernel/geometry.mjs';
+import { NODE_GRID } from '../../kernel/geometry.mjs';
 import { el, crosshair } from './painter.js';
-import { CANVAS, GAP } from './snap.js';
+import { CANVAS } from './snap.js';
 import { Model } from '../../model/model.mjs';
 import { attachRelations } from '../../engine/store.mjs';
 import { Changes, applyAnswer } from './changes.js';
@@ -51,9 +51,9 @@ export function composeCanvas({ svg, defs, host, network = null, kinds = undefin
 	defs.innerHTML = sharedDefs(undefined, undefined, parts.map((p) => p.defs).filter(Boolean).join('\n'));
 
 	const model = new Model({ attached: { network }, kinds });   // the kinds a composition brings -- the core's when none are passed, so no links (S-e) (H17.22 N-a)
-	// R3: the maintained reverse indices, registered before any other subscriber so they see a fresh index; `cellOf` is
-	// injected here, at a composition root, so engine/ imports no kernel
-	attachRelations(model, { cellOf });
+	// R3: the maintained reverse indices, registered before any other subscriber so they see a fresh index; the node grid's
+	// `nearest` is injected here, at a composition root, so engine/ imports no kernel (H26.1: it was `cellOf`)
+	attachRelations(model, { nearest: NODE_GRID.nearest });
 	// WD-b2 (H19.46): each grid a part declares, drawn from the open diagram and again on every load -- the layouts plugin's two
 	new Grids({ svg, parts, model });
 	const selection = new Selection(model);
@@ -73,7 +73,7 @@ export function composeCanvas({ svg, defs, host, network = null, kinds = undefin
 	const shownReadout = readoutEl ? new Readout({ model, selection, elements: [readoutEl], parts }) : null;   // C-e: each kind's words, from its part
 	// B36 -- one crosshair on #snaplayer, owned here and shared by everything that draws it: Overlay inside Input, and the
 	// held tools' ghost. Two owners of one layer drew two crosshairs.
-	const snap = crosshair(svg.querySelector('#snaplayer'), CANVAS, GAP);
+	const snap = crosshair(svg.querySelector('#snaplayer'), CANVAS, NODE_GRID.declaration.pitch);   // H26.1: a box a pitch wide, the node grid's
 	const heldTools = tools ? new Tools({ svg, snap, preview: parts.find((p) => p.hand)?.hand.preview ?? null }) : null;   // C-e: the ghost draws the hand's preview
 	const input = new Input({ svg, model, history, selection, renderer, labels, readout: shownReadout, tools: heldTools,
 		host, help, now, snap, plugins, runRules, parts });   // C-c, C-d: the canvas parts -- places, press rows, handles

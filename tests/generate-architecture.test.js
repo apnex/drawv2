@@ -197,6 +197,12 @@ test('H26.1: a component\'s part that is no part, or not aligned to it, and a ru
 	assert.equal(r.status, 0, 'the declaration as written passes (control)');
 });
 
+/*
+RESTATED at H26.1's move (SNAP-GRID.md section 5): the kernel imports snap-grid now, so the plant takes the import away -- in a copy
+of the tree, the document says the lattice composes it, and once the lattice's one import of it is gone the current document no
+longer says what the code imports until it is regenerated, its lattice row then composing nothing. The kernel still has to load, since
+the generator reads the composition, so the plant loads the package by a specifier no import names, which no part's imports show.
+*/
 test('H26.1: a component a part\'s modules import today is rendered in the current document -- planted in a copy of the tree', async () => {
 	const { FOLDERS } = await import('../tools/layers.mjs');
 	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-arch-components-'));
@@ -206,13 +212,18 @@ test('H26.1: a component a part\'s modules import today is rendered in the curre
 		fs.symlinkSync(path.join(ROOT, 'node_modules'), path.join(dir, 'node_modules'));
 		const tool = path.join(dir, 'tools/generate-architecture.mjs');
 		assert.equal(spawnSync(process.execPath, [tool, '--check'], { encoding: 'utf8' }).status, 0, 'the copy says what its code declares before the plant (control)');
-		fs.appendFileSync(path.join(dir, 'kernel/geometry.mjs'), "\nimport { openGrid as __og } from '@apnex/snap-grid';\n");
+		const before = fs.readFileSync(path.join(dir, 'docs/ARCHITECTURE.md'), 'utf8');
+		assert.match(before, /\| `lattice` \| [^\n]* \| `@apnex\/snap-grid` \|\n/, 'the lattice imports it today');
+		assert.match(before, /\| `document` \| [^\n]* \| -- \|\n/, 'and no other part does');
+		const geometry = path.join(dir, 'kernel/geometry.mjs'), src = fs.readFileSync(geometry, 'utf8');
+		const line = /^import \{ openGrid \} from '@apnex\/snap-grid';.*\n/m;
+		assert.equal(src.split('\n').filter((l) => line.test(`${l}\n`)).length, 1, 'the plant is INVALID: the kernel\'s import of the component no longer reads as it did');
+		fs.writeFileSync(geometry, src.replace(line, "const { openGrid } = await import(['@apnex', 'snap-grid'].join('/'));\n"));
 		const r = spawnSync(process.execPath, [tool, '--check'], { encoding: 'utf8' });
 		assert.equal(r.status, 1);
 		assert.match(r.stdout, /docs\/ARCHITECTURE\.md parts/, 'the current document no longer says what the code imports');
 		assert.equal(spawnSync(process.execPath, [tool], { encoding: 'utf8' }).status, 0);
 		const doc = fs.readFileSync(path.join(dir, 'docs/ARCHITECTURE.md'), 'utf8');
-		assert.match(doc, /\| `lattice` \| [^\n]* \| `@apnex\/snap-grid` \|\n/, 'the lattice imports it today');
-		assert.match(doc, /\| `document` \| [^\n]* \| -- \|\n/, 'and no other part does');
+		assert.match(doc, /\| `lattice` \| [^\n]* \| -- \|\n/, 'regenerated, the lattice composes nothing');
 	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });

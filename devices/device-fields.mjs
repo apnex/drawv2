@@ -12,8 +12,9 @@ rule (engine/spawn-field.mjs) build on it.
 
 import { CONTENT_VALUE_MAX, SPAN_MAX, FONT_MIN, FONT_MAX } from '../model/limits.mjs';
 import { NODE_EXT } from '../model/surface.mjs';   // B27: the surface a device's span stays within
-import { STD } from '../kernel/spec.mjs';
-const PITCH = STD.pitch;
+import { NODE_GRID, nodeGridWithin } from '../kernel/geometry.mjs';
+// H26.1 (SNAP-GRID.md section 5): the places a device's cells may take -- the node lattice within the surface
+const SURFACE_PLACES = nodeGridWithin(NODE_EXT);
 
 // whether a device is composed on an anchor: it carries a type, which a bare anchor -- a waypoint -- never does
 export const hasDevice = (entity) => !!entity && !!entity.type;
@@ -60,10 +61,17 @@ cell must sit within the node extent -- a 64 x 64 panel at the edge reached 4680
 the span, as the renderer lays it out (kernel/renderer.mjs: `at` defaults to the first cell, `cols` and `rows` to one). The browser's
 drag held the first; nothing held the second.
 */
+/*
+H26.1 (SNAP-GRID.md appendix B): its first cell is its anchor's position on the node lattice -- its x and y are on it, the anchor's own
+checks having passed -- its far cell the position `cols - 1` and `rows - 1` on, and where the far cell lies is `span(...).through`'s far
+corner, where it was `(cols - 1) * pitch` restated; the far cell within the surface is one of the surface's places.
+*/
 function withinSurface(n) {
 	const { cols, rows } = n.span ?? { cols: 1, rows: 1 };
-	const far = { x: n.x + (cols - 1) * PITCH, y: n.y + (rows - 1) * PITCH };
-	if (far.x > NODE_EXT.x || far.y > NODE_EXT.y) return `${n.id}'s ${cols}x${rows} span reaches ${far.x},${far.y}, past the surface's edge at ${NODE_EXT.x},${NODE_EXT.y}`;
+	const first = NODE_GRID.nearest(n), end = { col: first.col + cols - 1, row: first.row + rows - 1 };
+	const { through } = NODE_GRID.span(first, end);
+	const far = { x: through.x + through.w, y: through.y + through.h };
+	if (!SURFACE_PLACES.offers(end)) return `${n.id}'s ${cols}x${rows} span reaches ${far.x},${far.y}, past the surface's edge at ${NODE_EXT.x},${NODE_EXT.y}`;
 	for (const r of n.content ?? []) {
 		const [c, w, h, rw] = [(r.at ?? [0, 0])[0], r.cols ?? 1, r.rows ?? 1, (r.at ?? [0, 0])[1]];
 		if (c + w > cols || rw + h > rows) return `${n.id}'s content region at [${c},${rw}], ${w}x${h}, falls outside its ${cols}x${rows} span`;

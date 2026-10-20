@@ -14,7 +14,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Model } from './fixtures/composed.mjs';   // the network's kinds, the link among them (S-e)
 import { attachRelations } from '../engine/store.mjs';
-import { cellOf } from '../kernel/geometry.mjs';
+import { NODE_GRID } from '../kernel/geometry.mjs';   // H26.1: the relation index is injected the node grid's nearest (it was cellOf)
 import { Renderer } from '../app/src/renderer.js';
 import { makeRenderer } from './fixtures/client-harness.mjs';
 import { pipeEntity } from '../network/pipe-kind.mjs';   // H24.6: a pipe under a link, so it is up
@@ -28,7 +28,7 @@ const snapshot = (svg) => Object.fromEntries(['zones', 'groups', 'links', 'waypo
 function world(board, change) {
 	const { svg, restore } = makeRenderer();
 	try {
-		const m = new Model(); attachRelations(m, { cellOf });
+		const m = new Model(); attachRelations(m, { nearest: NODE_GRID.nearest });
 		new Renderer(m, svg, { parts: PRODUCT_CANVAS });
 		for (const [kind, e] of board) m.put(kind, structuredClone(e));
 		if (change) for (const [kind, id, patch] of change) m.set(kind, id, patch);

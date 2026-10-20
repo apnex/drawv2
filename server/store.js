@@ -9,12 +9,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { Model } from '../model/model.mjs';
 import { mintDiagramId } from './diagram-id.mjs';   // B351: the one minter of diagram ids, from crypto.randomBytes
-import { NODE_EXT } from '../model/surface.mjs';
 import { seedDoc } from './seed.js';
 import { validateDoc, validateSelectionIds, validPrincipal } from '../planner/validate.js';
 import crypto from 'node:crypto';
-
-// the grid's own pitch, sourced not restated -- a speed in CELLS is meaningless without it
 import { mintCode, formatCode, hashCode } from './codes.mjs';
 import { violations } from '../model/invariants.mjs';
 import { commit as txnCommit, undo as txnUndo, redo as txnRedo } from '../planner/txn.mjs';

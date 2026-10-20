@@ -88,6 +88,8 @@ test('WD-b2: a diagram lacking a layout record is an error naming it; a page wit
 test('WD-b2 test 4: the layouts plugin holds the anchor\'s place and both grids; the product\'s part is composition alone', () => {
 	assert.deepEqual(LAYOUTS_CANVAS.places.map((p) => [p.kind, p.layout, p.ext.x, p.ext.y, 'size' in p, p.sizedBy]), [['node', 'node', 900, 480, false, 'parts']],
 		'the anchor\'s place, on the node layout, its extent the table\'s, carrying no size of its own: its kind\'s parts size it');
+	// RESTATED at H26.1 (SNAP-GRID.md section 5): and the node grid bounded by that extent, which it snaps to
+	assert.deepEqual(LAYOUTS_CANVAS.places[0].grid.declaration, { shape: 'square', pitch: 60, origin: { x: 0, y: 0 }, bounds: { min: { x: -900, y: -480 }, max: { x: 900, y: 480 } } });
 	assert.deepEqual(LAYOUTS_CANVAS.grids.map((g) => g.layout), ['node', 'zone']);
 	const product = PRODUCT_CANVAS.find((p) => p.owner === 'the product');
 	assert.deepEqual(Object.keys(product).sort(), ['deleteRanks', 'orders', 'owner'], 'the anchor\'s drawing order and its rank in a delete -- composition');

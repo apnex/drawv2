@@ -178,13 +178,13 @@ stylesheet colours a head from the element just before it, so a head that drifte
 test('H24.6: a head is deleted with its link, and stays straight after it when the links are restacked', async () => {
 	const { Model } = await import('./fixtures/composed.mjs');
 	const { attachRelations } = await import('../engine/store.mjs');
-	const { cellOf } = await import('../kernel/geometry.mjs');
+	const { NODE_GRID } = await import('../kernel/geometry.mjs');
 	const { Renderer } = await import('../app/src/renderer.js');
 	const { makeRenderer } = await import('./fixtures/client-harness.mjs');
 	const { PRODUCT_CANVAS } = await import('../product/canvas.mjs');
 	const { svg, restore } = makeRenderer();
 	try {
-		const m = new Model(); attachRelations(m, { cellOf });
+		const m = new Model(); attachRelations(m, { nearest: NODE_GRID.nearest });
 		new Renderer(m, svg, { parts: PRODUCT_CANVAS });
 		const n = (id, x, y) => m.put('node', { id, name: id.slice(-2), type: 'host', shape: 'circle', x, y });
 		n('node-d00001', -360, 0); n('node-d00002', 0, 0); n('node-d00003', -360, 120); n('node-d00004', 0, 120);

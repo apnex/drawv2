@@ -307,16 +307,17 @@ const MUTANTS = [
 	{ id: 'M3', rule: 'L5p', edits: [{ file: 'kernel/spec.mjs', append: '\nexport const linkLength = (link) => (link.via ? link.via.length + 1 : 1);\n' }] },
 	// PL-5: the kind list's one literal is model/shape.mjs's table now, so the planted sixth kind goes there
 	{ id: 'M4', rule: 'L7k', edits: [{ file: 'model/shape.mjs', replace: ["const KINDS = ['node'];", "const KINDS = ['node', 'waypoint', 'link', 'zone', 'group', 'pipe'];"] }] },
+	// RESTATED at H26.1: the planted imports name `gridDot`, the kernel's `cellOf` being deleted (SNAP-GRID.md section 5)
 	{ id: 'M5', rule: 'L4', also: ['L1'], edits: [{ file: 'kernel/all.mjs', create: "export * from './geometry.mjs';\nexport * from './spec.mjs';\n" },
-		{ file: 'app/src/snap.js', append: "\nimport { cellOf } from '../../kernel/all.mjs';\n" }] },
+		{ file: 'app/src/snap.js', append: "\nimport { gridDot } from '../../kernel/all.mjs';\n" }] },
 	{ id: 'M6', rule: 'L11', edits: [{ file: 'app/src/input.js', append: '\nexport function __m6() { return window.draw.sync.submit({ ops: [] }); }\n' }] },
 	{ id: 'M7', rule: 'L2', edits: [{ file: 'model/model.mjs', append: "\nimport { Log } from '../planner/log.mjs';\n" }] },
 	// the attack: a suffix, an absolute path, and a barrel import re-pointed at `index.mjs?` with its record lowered
 	{ id: 'A1d', rule: 'L2', edits: [{ file: 'kernel/spec.mjs', append: "\nimport { Log as __c } from '../planner/log.mjs?v';\n" }] },
 	{ id: 'A2', rule: 'L2', edits: [{ file: 'app/src/input.js', append: "\nexport async function __a2() { return (await import('/engine/movers.mjs')).moversAt; }\n" }] },
 	// K2c: no barrel is left to re-point, so the attack plants one and imports it through a suffix; the new file also fails L1
-	{ id: 'A24b', rule: 'L4', also: ['L1'], edits: [{ file: 'kernel/index.mjs', create: "export { cellOf } from './geometry.mjs';\n" },
-		{ file: 'app/src/snap.js', append: "\nimport { cellOf as __c } from '../../kernel/index.mjs?';\n" }] },
+	{ id: 'A24b', rule: 'L4', also: ['L1'], edits: [{ file: 'kernel/index.mjs', create: "export { gridDot } from './geometry.mjs';\n" },
+		{ file: 'app/src/snap.js', append: "\nimport { gridDot as __c } from '../../kernel/index.mjs?';\n" }] },
 	// a record raised with its violation; a new export borrowing a baseline name into the L10 list
 	// the L2 records are empty since the readout joined the canvas; the attack re-adds a retired edge twice and records it
 	// at 2, above the frozen ceiling of 1 -- a record raised with its violation
@@ -720,7 +721,7 @@ push that broke it rather than the next time somebody opens the page.
 test('H17 K10: every seeded board is accepted by the real planner', async () => {
 	const { Model } = await import('../model/model.mjs');
 	const { attachRelations } = await import('../engine/store.mjs');
-	const { cellOf } = await import('../kernel/geometry.mjs');
+	const { NODE_GRID } = await import('../kernel/geometry.mjs');
 	const { commit } = await import('../planner/txn.mjs');
 	const { Log } = await import('../planner/log.mjs');
 	const { productKinds } = await import('../product/kinds.mjs');
@@ -738,7 +739,7 @@ test('H17 K10: every seeded board is accepted by the real planner', async () => 
 		// sharing their hex is no pipe, which the 'compare' board did until its waypoints were renumbered
 		const kinds = productKinds(...NETWORK_ROWS);
 		const model = new Model({ kinds, attached: { network: aNetwork() }});
-		attachRelations(model, { cellOf });
+		attachRelations(model, { nearest: NODE_GRID.nearest });
 		const pipeOps = createNetworkSession().seed(boards[name].pipes ?? [], []);
 		const answer = commit(model, new Log(), { ops: [...boards[name].ops, ...pipeOps], label: `seed ${name}` }, 'lab', 'lab', { kinds, links: createNetworkSession().network.links });   // the network's tenant, as the lab seeds (S-b)
 		assert.equal(answer.ok, true, `seed '${name}' is refused by the planner: ${answer.error} -- it would fail silently in the browser`);

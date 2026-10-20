@@ -2,28 +2,32 @@
 WHAT A DEVICE COVERS -- C-e, step three (H19.33; dev/design/unification/CANVAS-PLUGINS.md).
 
 A device occupies a RECTANGLE, not a point: a multi-cell device is hittable across its whole span, so every test goes through
-`spanExtent` rather than a radius (B29's family of bugs was surfaces forgetting exactly this). The two predicates moved here
+its span rather than a radius (B29's family of bugs was surfaces forgetting exactly this). The two predicates moved here
 from app/src/pick.js unchanged, with the devices plugin's coordinate picks: what a press or a link's end grabs (the frame and a
 little more), what keeps a hover after a gesture (the frame), what a marquee box takes (a footprint overlapping it).
 */
 
 import { L_STD } from '../kernel/spec.mjs';
-import { spanExtent } from '../kernel/geometry.mjs';
+import { NODE_GRID } from '../kernel/geometry.mjs';
 import { typedNodes } from './device-shapes.mjs';
 import { hasDevice } from './device-fields.mjs';
 import { isPanel } from './device-types.mjs';   // H24.6: a panel draws a rectangle, as a wide device does
 
 const NODE_R = L_STD.frame.ext;   // a device frame's half-extent (20)
 
+// H26.1 (SNAP-GRID.md appendix B): what a device's span runs through beyond its first cell -- `span(...).through` on the node grid,
+// from its first cell to its last -- which draw pads by its own margins below, and the appearance draws its frame around
+export const spanThrough = (span) => { if (!span) return { sw: 0, sh: 0 }; const { w, h } = NODE_GRID.span({ col: 0, row: 0 }, { col: span.cols - 1, row: span.rows - 1 }).through; return { sw: w, sh: h }; };
+
 // is `pos` inside this device's footprint, padded by `pad`?
 export const inFootprint = (n, pos, pad = 0) => {
-	const { sw, sh } = spanExtent(n.span);
+	const { sw, sh } = spanThrough(n.span);
 	return pos.x >= n.x - pad && pos.x <= n.x + sw + pad && pos.y >= n.y - pad && pos.y <= n.y + sh + pad;
 };
 
 // does this device's footprint overlap `box`? (the marquee test)
 const footprintHits = (n, box, pad = 0) => {
-	const { sw, sh } = spanExtent(n.span);
+	const { sw, sh } = spanThrough(n.span);
 	return n.x - pad <= box.x + box.w && n.x + sw + pad >= box.x && n.y - pad <= box.y + box.h && n.y + sh + pad >= box.y;
 };
 
@@ -42,7 +46,7 @@ export const DEVICE_OUTLINES = {
 		if (!hasDevice(n)) return undefined;
 		const spanned = !!n.span && (n.span.cols > 1 || n.span.rows > 1);
 		if (spanned || isPanel(n)) {
-			const { sw, sh } = spanExtent(n.span);
+			const { sw, sh } = spanThrough(n.span);
 			return { form: 'rect', x0: -NODE_R, y0: -NODE_R, x1: sw + NODE_R, y1: sh + NODE_R };
 		}
 		return n.shape === 'square' ? { form: 'rect', x0: -NODE_R, y0: -NODE_R, x1: NODE_R, y1: NODE_R } : { form: 'circle', r: NODE_R };
@@ -52,7 +56,7 @@ export const DEVICE_OUTLINES = {
 export const DEVICE_SIZES = {
 	node: (n) => {
 		if (!n.span) return undefined;
-		const { sw, sh } = spanExtent(n.span);
+		const { sw, sh } = spanThrough(n.span);
 		return { w: sw, h: sh };
 	},
 };

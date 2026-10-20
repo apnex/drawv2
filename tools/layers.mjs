@@ -189,7 +189,7 @@ export const MISSION_KIT = {
 	'access-grants': 'candidate, zorg BL20',
 };
 export const ALIGNMENT = {
-	lattice: { to: ['snap-grid'], waits: 'composed (H26-4); its grid arithmetic moves onto it in H26.1' },
+	lattice: { to: ['snap-grid'], waits: 'composed (H26-4); its grid arithmetic moved onto it at H26.1' },
 	'kind-contract': { to: ['shape-check'], waits: 'OD-3; the target\'s section 4.3' },
 	document: { to: ['entity-store'], waits: 'OD-1' },
 	store: { to: ['entity-store'], waits: 'OD-1' },
@@ -917,14 +917,15 @@ export const UNUSED_EXPORTS = {
 			// H25.5 (B378, D4): the old scene renderer and its scene-element helpers, retired
 			'docToSchema', 'schemaToDoc', 'resolve', 'render', 'renderScene', 'renderElement', 'renderContentRegion',
 			'bboxOf', 'cellPx', 'derive', 'gridSnap', 'junction', 'port',
+			// H26.1 (dev/design/components/SNAP-GRID.md sections 5 and 7.7): the kernel's grid arithmetic, and app/src/snap.js's half
+			// pitch, deleted -- the grids are snap-grid's, opened by the kernel and the layouts plugin
+			'px', 'cellOf', 'LAYOUTS', 'onLayout', 'snapLayout', 'cellOn', 'pxOn', 'nearestAnchor', 'anchorAt', 'spanExtent', 'HALF',
 		],
 		list: {
 			'kernel/geometry.mjs': {
-				'rebuild-debt': [
-					'cellOf', 'cellOn',
-					'gridDot', 'groupHull', 'px', 'pxOn', 'snapLayout', 'spanExtent',
-				],
-				'serves-a-server-door': ['anchorAt', 'nearestAnchor'],   // anchorAt: server/anchor.mjs left the planner at PL-4, passed in by the store
+				// H26.1: the grid arithmetic deleted (SNAP-GRID.md section 7.7); the drawing helpers stay
+				'rebuild-debt': ['gridDot', 'groupHull'],
+				'serves-a-server-door': [],
 			},
 			'kernel/spec.mjs': {
 				'rebuild-debt': ['BEND_R', 'L_STD'],   // BEND_R and L_STD: their consumers (`roundedPath`, the painters) are outside the planner closure

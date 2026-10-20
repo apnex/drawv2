@@ -7,12 +7,13 @@ browsers viewing that diagram. The browser path (websocket) is refused while a d
 exactly one side writes at a time.
 */
 
-import { layoutRecords } from '../layouts/layout-records.mjs';   // WD8 (H19.45): the list the agent API serves
+import { layoutRecords, anchorOn } from '../layouts/layout-records.mjs';   // WD8 (H19.45): the list the agent API serves; H26.1: an anchor as it answers one
 import { linksOf, linksAt, makeLink } from '../network/link-queries.mjs';   // which links meet an anchor: the network's (K13d)
 import { snapshotBody, changeBody, reversalBody } from './protocol.js';
 import { announceActivity, announceAccess, viewersFor } from './hub.js';   // B342 (H21.8): in the hub, so the hub does not import REST
-import { LAYOUTS, nearestAnchor, anchorAt } from '../kernel/geometry.mjs';
+import { NODE_GRID, nodeGridWithin } from '../kernel/geometry.mjs';
 import { NODE_EXT } from '../model/surface.mjs';
+import { LAYOUT_TABLE, ZONE_GRIDS } from '../layouts/layout-table.mjs';   // H26.1: the layouts table's names, and the zone's grids
 import { makeZone } from '../zones/make-zone.mjs';   // the zones plugin's factory (O-b1)
 import { makeGroup } from '../groups/make-group.mjs';   // the groups plugin's factory (O-c)
 import { groupOf } from '../groups/group-of.mjs';   // and its lookup (O-c)
@@ -130,6 +131,14 @@ function contextOf(model, kind, e) {
 	}
 	return out;
 }
+
+// H26.1 (SNAP-GRID.md section 5): each layout's grid with no bounds, by its name in the layouts table; the node grid within its extent,
+// whose positions the anchors route lists for both layouts; and the nearest route's limit (section 6.3)
+const [NODE_LAYOUT, ZONE_LAYOUT] = LAYOUT_TABLE;
+const UNBOUNDED_GRIDS = new Map([[NODE_LAYOUT.name, NODE_GRID], [ZONE_LAYOUT.name, ZONE_GRIDS.unbounded]]);
+const NODE_PLACES = nodeGridWithin(NODE_EXT);
+const NODE_EXTENT_VIEW = { region: { kind: 'rect', x: -NODE_EXT.x, y: -NODE_EXT.y, w: 2 * NODE_EXT.x, h: 2 * NODE_EXT.y }, scale: 1 };
+const NEAREST_LIMIT = 2 ** 49;
 
 function occupantAt(model, anchor) {
 	for (const kind of [...ANCHOR_KINDS]) {
@@ -641,9 +650,15 @@ export function handleRest(req, res, store, locks, hub, principal = null, sessio
 			return json(res, 500, { error: e.message, code: 'layout-missing' }), true;
 		}
 	}
+	/*
+	H26.1 (dev/design/components/SNAP-GRID.md section 5, section 6.3, appendix B): the name is looked up in the layouts plugin's table,
+	so a name an object inherits -- `constructor`, `toString` -- is unknown, 404, where it answered 200 with nulls (B401); and each
+	route asks that name's grid with no bounds, NODE_GRID or the zone's, as it asked the kernel's, reading no record.
+	*/
 	if (parts[4] === 'layouts' && parts.length >= 6) {
-		const L = LAYOUTS[parts[5]];
+		const L = LAYOUT_TABLE.find((l) => l.name === parts[5]);
 		if (!L) return json(res, 404, { error: `unknown layout: ${parts[5]}`, code: 'unknown-layout' }), true;
+		const grid = UNBOUNDED_GRIDS.get(L.name);
 		const model = store.get(parts[3]);
 		if (!model) return json(res, 404, { error: `unknown diagram: ${parts[3]}` }), true;
 
@@ -652,7 +667,14 @@ export function handleRest(req, res, store, locks, hub, principal = null, sessio
 			if (!Number.isFinite(x) || !Number.isFinite(y)) {
 				return json(res, 422, { error: 'nearest requires numeric x and y', code: 'bad-query' }), true;
 			}
-			const a = nearestAnchor(L, x, y);
+			// H26.1 (section 6.3, D1): beyond 2^49 a coordinate is refused as one that is not finite is -- past 2^53 its answer was garbled,
+			// and near 2^50 the exact nearest position can lie outside snap-grid's domain; within 2^49 every nearest position lies well
+			// inside it, so no accepted answer moves
+			if (Math.abs(x) > NEAREST_LIMIT || Math.abs(y) > NEAREST_LIMIT) {
+				return json(res, 422, { error: `nearest requires x and y within 2^49 (${NEAREST_LIMIT}) in magnitude`, code: 'bad-query' }), true;
+			}
+			const at = grid.nearest({ x, y });
+			const a = anchorOn(L.name, at, grid.pointOf(at));
 			return json(res, 200, { ...a, occupant: occupantAt(model, a) }), true;
 		}
 		if (parts[6] === 'anchors' && parts.length === 7) {
@@ -660,13 +682,13 @@ export function handleRest(req, res, store, locks, hub, principal = null, sessio
 			const out = [];
 			// the node extent bounds BOTH grids here: a zone anchor outside it cannot hold a node
 			// anyway, and one list with one rule beats two that drift
-			for (let cy = -Math.floor(NODE_EXT.y / 60); cy <= Math.floor(NODE_EXT.y / 60); cy++) {
-				for (let cx = -Math.floor(NODE_EXT.x / 60); cx <= Math.floor(NODE_EXT.x / 60); cx++) {
-					const a = anchorAt(L, cx, cy);
-					const occupant = occupantAt(model, a);
-					if (wantFree && occupant) continue;
-					out.push(occupant ? { ...a, occupant } : a);
-				}
+			// H26.1: the node extent's positions, by row then column, each placed on this layout's grid with no bounds -- KEPT exactly
+			// (section 6.3, B399): on the zone grid this omits a column and a row of the zone lattice within its own extent
+			for (const { position } of NODE_PLACES.inView(NODE_EXTENT_VIEW).positions) {
+				const a = anchorOn(L.name, position, grid.pointOf(position));
+				const occupant = occupantAt(model, a);
+				if (wantFree && occupant) continue;
+				out.push(occupant ? { ...a, occupant } : a);
 			}
 			return json(res, 200, { layout: L.name, count: out.length, anchors: out }), true;
 		}

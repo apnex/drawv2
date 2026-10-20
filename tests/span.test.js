@@ -5,7 +5,8 @@ import { Model, heldLayouts } from './fixtures/composed.mjs';   // the network's
 import { attachRelations } from '../engine/store.mjs';
 import { selBox, showsSockets } from '../kernel/renderer.mjs';
 import { isPanel, frameRadius } from '../devices/device-types.mjs';
-import { cellOf, spanExtent } from '../kernel/geometry.mjs';
+import { NODE_GRID } from '../kernel/geometry.mjs';   // H26.1: the relation index is injected the node grid's nearest (it was cellOf)
+import { spanThrough } from '../devices/device-footprint.mjs';   // H26.1: what a span runs through, snap-grid's span on the node grid (it was spanExtent)
 import { STD, L_STD } from '../kernel/spec.mjs';
 import { svgDocument } from '../server/svg.mjs';   // H25.5 (B378, D4): the real export renderer
 import { COMPOSED_KINDS, readModel } from '../product/types.mjs';
@@ -35,9 +36,10 @@ const groupSvg = (svg, id) => { const at = svg.indexOf(`<g id="${id}"`); return 
 const renderNodeSvg = (node) => groupSvg(renderNodesSvg([node]), node.id);
 
 // ---- kernel geometry + render (RESTATED at H25.5, B378, D4: driven through spanExtent and the real renderer) ----
+// RESTATED at H26.1 (SNAP-GRID.md appendix B): through the devices plugin's `spanThrough` -- `span(...).through` on the node grid
 test('bboxOf: 1×1 is the 40px frame; a span grows +x/+y from the anchor', () => {
-	assert.deepEqual(spanExtent(undefined), { sw: 0, sh: 0 });
-	assert.deepEqual(spanExtent({ cols: 3, rows: 2 }), { sw: 2 * P, sh: 1 * P });
+	assert.deepEqual(spanThrough(undefined), { sw: 0, sh: 0 });
+	assert.deepEqual(spanThrough({ cols: 3, rows: 2 }), { sw: 2 * P, sh: 1 * P });
 	const svg = renderNodesSvg([
 		{ id: 'node-000001', name: 'r', type: 'router', shape: 'circle', x: 0, y: 0 },
 		{ id: 'node-000002', name: 'h', type: 'host', shape: 'square', x: 2 * P, y: 0, span: { cols: 3, rows: 2 } },
@@ -84,7 +86,7 @@ test('docToSchema/schemaToDoc round-trip span as cell counts; 1×1 stays span-fr
 // RESTATED at WD-a (H19.44; WD2 revisited, B323): a wide device occupies its anchor's cell alone -- the index keyed every
 // cell its span covers, a rule only the browser tab held; every door now holds one anchor to a point
 test('a span node occupies its anchor\'s cell alone; move/resize/del maintain the index', () => {
-	const m = new Model(); attachRelations(m, { cellOf });
+	const m = new Model(); attachRelations(m, { nearest: NODE_GRID.nearest });
 	const n = makeNode(m, 'host', { x: 2 * P, y: 0 }); n.span = { cols: 3, rows: 2 }; m.put('node', n);
 	assert.equal(occupiedAt(m, { x: 2 * P, y: 0 }), true, 'its anchor');
 	for (const [c, r] of [[3, 0], [4, 0], [2, 1], [3, 1], [4, 1]]) assert.equal(occupiedAt(m, { x: c * P, y: r * P }), false, `covered ${c},${r} free`);

@@ -71,10 +71,17 @@ for (const [name, at, booted] of [['the product page', () => `http://127.0.0.1:$
 		const got = await t.run(THROUGH_THE_MAP);
 		assert.deepEqual(got, { maps: 1, ok: true, point: { x: 60, y: 0 }, kit: 0 }, 'one map; both exports resolved by name, and working');
 		await sleep(200);
+		/*
+		RESTATED at H26.1's move (SNAP-GRID.md sections 5 and 7.6): the kernel composes the component, so the page loads its entry while
+		it boots, through the map, and a module loaded once is not asked again -- the entry is among the page's own requests, and the kit,
+		which no page module imports, is asked of the vendor mount when the check imports it by name.
+		*/
+		const ownVendored = modules.filter((r) => r.url.startsWith('/vendor/'));
+		assert.ok(ownVendored.some((r) => r.url === `/vendor/@apnex/snap-grid@${version}/index.js` && r.status === 200), `index.js loaded with the page from the vendor mount and answered 200: ${JSON.stringify(ownVendored)}`);
 		const vendored = answered(mark).filter((r) => r.url.startsWith('/vendor/'));
-		for (const f of ['index.js', 'conformance.js']) assert.ok(vendored.some((r) => r.url === `/vendor/@apnex/snap-grid@${version}/${f}` && r.status === 200), `${f} asked of the vendor mount and answered 200: ${JSON.stringify(vendored)}`);
+		assert.ok(vendored.some((r) => r.url === `/vendor/@apnex/snap-grid@${version}/conformance.js` && r.status === 200), `conformance.js asked of the vendor mount and answered 200: ${JSON.stringify(vendored)}`);
 		assert.deepEqual(vendored.filter((r) => r.status !== 200), [], 'and every module it imports in turn');
-		assert.ok(vendored.length >= 4, `the component's own module graph came with it: ${vendored.length} request(s)`);
+		assert.ok(ownVendored.length + vendored.length >= 4, `the component's own module graph came with it: ${ownVendored.length + vendored.length} request(s)`);
 		assert.deepEqual(t.thrown, [], 'nothing failed after');
 	});
 }

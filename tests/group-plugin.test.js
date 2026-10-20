@@ -20,13 +20,13 @@ import { KINDS, NETWORK, heldLayouts } from './fixtures/composed.mjs';
 import { createNetwork } from '../network/network.mjs';
 import { createTransit } from '../network/transit.mjs';
 import { attachRelations } from '../engine/store.mjs';
-import { cellOf } from '../kernel/geometry.mjs';
+import { NODE_GRID } from '../kernel/geometry.mjs';   // H26.1: the relation index is injected the node grid's nearest (it was cellOf)
 
 const code = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
 const groups = async () => ({ ...(await import('../groups/group-kind.mjs')), ...(await import('../groups/make-group.mjs')), ...(await import('../groups/group-of.mjs')) });
 const node = (hex, x) => ({ id: `node-${hex}`, name: `n${hex}`, type: 'host', shape: 'circle', x, y: 0 });
 // with the relations index attached, as the page and the lab attach it (app/src/compose-canvas.js) -- a bare Model scans
-const model = (kinds = KINDS) => { const m = new Model({ kinds, attached: { network: createNetwork(createTransit()) }}); attachRelations(m, { cellOf }); return m; };
+const model = (kinds = KINDS) => { const m = new Model({ kinds, attached: { network: createNetwork(createTransit()) }}); attachRelations(m, { nearest: NODE_GRID.nearest }); return m; };
 const without = (field) => composeKinds(KINDS.list.map((k) => KINDS.row(k)).map((r) => {
 	if (r.kind !== 'group') return r;
 	const { [field]: _, ...rest } = r;

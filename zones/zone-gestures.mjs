@@ -9,23 +9,12 @@ the arithmetic were the canvas's (app/src/recognize.js `zone-draw`, app/src/rele
 now, and the canvas runs the shared gestures they name. Nothing a user sees changes: the gesture corpus holds that.
 */
 
-import { STD } from '../kernel/spec.mjs';
-import { LAYOUTS, snapLayout } from '../kernel/geometry.mjs';
-import { ZONE_EXT } from '../layouts/layout-table.mjs';   // WD-b1: the zone layout's extent, the layouts plugin's
+import { ZONE_GRIDS } from '../layouts/layout-table.mjs';   // H26.1: the zone layout's grids, the layouts plugin's
 import { makeZone } from './make-zone.mjs';
 
-const MIN_ZONE = STD.pitch;   // a zone is at least one cell (B86), the pitch the kernel's
-
-// a point on the zone grid -- offset by half a pitch, a zone bounding cells -- within the zone extent
-function snapZone(pos) {
-	const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi);
-	return {
-		x: clamp(snapLayout(LAYOUTS.zone, pos.x), -ZONE_EXT.x, ZONE_EXT.x),
-		y: clamp(snapLayout(LAYOUTS.zone, pos.y), -ZONE_EXT.y, ZONE_EXT.y)
-	};
-}
-// the box two corners span (app/src/snap.js `resolveBox`, restated: a plugin imports no canvas code)
-const boxOf = (a, b) => ({ x: Math.min(a.x, b.x), y: Math.min(a.y, b.y), w: Math.abs(b.x - a.x), h: Math.abs(b.y - a.y) });
+// H26.1 (SNAP-GRID.md section 5): a zone's corners lie on the zone grid -- offset by half a pitch, a zone bounding cells -- within the
+// zone extent, the grid bounded by it
+const ZONE_GRID = ZONE_GRIDS.bounded;
 
 /*
 The four corners of a zone, named the way the handles are. B36 — this was written out twice with the
@@ -50,21 +39,18 @@ const OPPOSITE_CORNER = { nw: 'se', ne: 'sw', sw: 'ne', se: 'nw' };
 A zone resize box from the dragged corner and the FIXED one. Enforces a one-cell minimum by pushing
 INWARD when the fixed corner sits on an edge — a blind push there would be clamped straight back to
 zero width.
+H26.1 (SNAP-GRID.md appendix B): the dragged corner is the zone grid's position nearest the pointer; where it shares the fixed corner's
+column -- on the zone lattice, the only way the two can lie under a pitch apart -- it is the fixed corner's neighbour, `next(fixed,
+'+x')`, or `next(fixed, '-x')` where there is none at the extent's edge; the same for rows. The box is the span of the two corners.
 */
 function resizeBox(pos, fixedCorner) {
-	const corner = snapZone(pos);
-	if (Math.abs(corner.x - fixedCorner.x) < MIN_ZONE) {
-		const dir = corner.x >= fixedCorner.x ? 1 : -1;
-		corner.x = fixedCorner.x + dir * MIN_ZONE;
-		if (corner.x < -ZONE_EXT.x || corner.x > ZONE_EXT.x) corner.x = fixedCorner.x - dir * MIN_ZONE;
-	}
-	if (Math.abs(corner.y - fixedCorner.y) < MIN_ZONE) {
-		const dir = corner.y >= fixedCorner.y ? 1 : -1;
-		corner.y = fixedCorner.y + dir * MIN_ZONE;
-		if (corner.y < -ZONE_EXT.y || corner.y > ZONE_EXT.y) corner.y = fixedCorner.y - dir * MIN_ZONE;
-	}
-	const box = boxOf(fixedCorner, corner);
-	return { x: box.x, y: box.y, w: box.w, h: box.h };
+	const dragged = ZONE_GRID.nearest(pos), fixed = ZONE_GRID.nearest(fixedCorner);
+	const corner = {
+		col: dragged.col === fixed.col ? (ZONE_GRID.next(fixed, '+x') ?? ZONE_GRID.next(fixed, '-x')).col : dragged.col,
+		row: dragged.row === fixed.row ? (ZONE_GRID.next(fixed, '+y') ?? ZONE_GRID.next(fixed, '-y')).row : dragged.row,
+	};
+	const { through } = ZONE_GRID.span(fixed, corner);
+	return { x: through.x, y: through.y, w: through.w, h: through.h };
 }
 
 // the zone's draw: Shift and left-drag on the canvas, with no tool held, opens the shared box gesture on the zone's grid --

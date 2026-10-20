@@ -29,7 +29,7 @@ leaving it to memory.
 
 import { Model } from '../../model/model.mjs';
 import { attachRelations } from '../../engine/store.mjs';
-import { cellOf } from '../../kernel/geometry.mjs';
+import { NODE_GRID } from '../../kernel/geometry.mjs';   // H26.1: the relation index is injected the node grid's nearest (it was cellOf)
 import { Changes, applyAnswer } from '../../app/src/changes.js';
 import { plan } from '../../planner/txn.mjs';
 import { LabelEditor } from '../../app/src/labeledit.js';
@@ -172,7 +172,7 @@ export function makeInput({ readOnly = false, bare = false, host: hostOverride =
 	const session = createNetworkSession();
 	const pageNetwork = session.network;
 	const model = new Model({ kinds: PAGE_KINDS, attached: { network: pageNetwork }});
-	attachRelations(model, { cellOf });
+	attachRelations(model, { nearest: NODE_GRID.nearest });
 	const selection = new Selection(model);
 	// V-d (H18.28; PL-6): the commit boundary previews with the planner, composed as the product page composes it
 	const tenant = pageNetwork.links;

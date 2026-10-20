@@ -15,6 +15,7 @@ types and their map letters rather than keeping a copy (`U4-2`).
 */
 
 import { STD, L_STD } from '../kernel/spec.mjs';
+import { NODE_GRID } from '../kernel/geometry.mjs';   // H26.1: the node grid's declared pitch, a content region's cell step
 import { TOKENS } from '../kernel/theme.mjs';
 import { hexColor } from '../kernel/renderer.mjs';
 
@@ -157,7 +158,7 @@ export const frameWidth = (e, V = STD) => (isPanel(e) ? V.panelW : V.frameW);
 export const frameRadius = (e, L = L_STD) => (isPanel(e) && (e.frame || e.shape) !== 'square') ? L.frame.ext : L.frame.r;
 
 export function contentLayout(r, V = STD, L = L_STD) {
-	const P = V.pitch, SE = L.socket.ext;
+	const P = NODE_GRID.declaration.pitch, SE = L.socket.ext;   // H26.1: a region's cells in the device's own frame, a pitch apart -- the node grid's declared pitch
 	const [oc, orow] = r.at || [0, 0], cols = r.cols || 1, rows = r.rows || 1;
 	const x0 = oc * P - SE, y0 = orow * P - SE, w = (cols - 1) * P + 2 * SE, h = (rows - 1) * P + 2 * SE;
 	const cx = x0 + w / 2, cy = y0 + h / 2;

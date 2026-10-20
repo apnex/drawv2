@@ -12,13 +12,13 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { Model } from './fixtures/composed.mjs';
 import { attachRelations } from '../engine/store.mjs';
-import { cellOf } from '../kernel/geometry.mjs';
+import { NODE_GRID } from '../kernel/geometry.mjs';   // H26.1: the relation index is injected the node grid's nearest (it was cellOf)
 
 const code = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
 const queries = () => import('../network/link-queries.mjs');
 const board = (indexed) => {
 	const m = new Model();
-	if (indexed) attachRelations(m, { cellOf });
+	if (indexed) attachRelations(m, { nearest: NODE_GRID.nearest });
 	for (const [h, x] of [['0f0001', 0], ['0f0002', 240], ['0f0004', 480]]) m.put('node', { id: `node-${h}`, name: h, type: 'host', shape: 'circle', x, y: 0 });
 	m.put('node', { id: 'node-0f0003', name: 'w', x: 120, y: 120 });
 	m.put('link', { id: 'link-0f0005', name: 'a', src: 'node-0f0001', dst: 'node-0f0002' });

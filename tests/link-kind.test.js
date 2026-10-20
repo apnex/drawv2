@@ -15,7 +15,7 @@ import { productKinds } from '../product/kinds.mjs';
 const PRODUCT_KINDS = productKinds();   // the product's own kinds; the export went at S-f with the defaults it served
 import { validateEntity as productValidateEntity } from '../planner/validate.js';
 import { attachRelations } from '../engine/store.mjs';
-import { cellOf } from '../kernel/geometry.mjs';
+import { NODE_GRID } from '../kernel/geometry.mjs';   // H26.1: the relation index is injected the node grid's nearest (it was cellOf)
 import { LINK_ROW } from '../network/link-kind.mjs';
 import { NETWORK_ROWS } from '../network/kinds.mjs';
 import { Model, KINDS, plan, validateDoc, heldLayouts } from './fixtures/composed.mjs';
@@ -137,5 +137,5 @@ test('S-e: clone copies every nested value, so a plugin kind\'s nested field is 
 test('S-e: the relations index attaches to a model composed without links', () => {
 	const m = new CoreModel();
 	m.put('node', node('000001', 0, 0));
-	assert.doesNotThrow(() => attachRelations(m, { cellOf }));
+	assert.doesNotThrow(() => attachRelations(m, { nearest: NODE_GRID.nearest }));
 });

@@ -14,19 +14,20 @@ import { makeWaypoint } from './make-node.mjs';
 import { waypointAt } from './occupancy.mjs';
 import { STD, L_STD } from '../kernel/spec.mjs';
 import { selBox, hexColor, showsSockets, nameLabel } from '../kernel/renderer.mjs';
-import { spanExtent } from '../kernel/geometry.mjs';
+import { NODE_GRID } from '../kernel/geometry.mjs';   // H26.1: the node grid's declared pitch, a socket's step
 import { TOKENS } from '../kernel/theme.mjs';
 import { GLYPH_BB, DEFAULT_GLYPH_BB, GLYPH_DEFS, isPanel, frameRadius, frameWidth, contentLayout } from './device-types.mjs';
 import { hasDevice } from './device-fields.mjs';
 import { DEVICE_PRESSES } from './device-gestures.mjs';
 import { DEVICE_HAND } from './device-hand.mjs';
-import { DEVICE_POINTS, DEVICE_SIZES, DEVICE_OUTLINES } from './device-footprint.mjs';
+import { DEVICE_POINTS, DEVICE_SIZES, DEVICE_OUTLINES, spanThrough } from './device-footprint.mjs';   // H26.1: what a span runs through, on the node grid
 import { DEVICE_SIZE_STEP } from './device-size.mjs';
 import { DEVICE_KEYS } from './device-keys.mjs';
 import { DEVICE_DESCRIBE, DEVICE_SELECT_ALL } from './device-facts.mjs';
 import { DEVICE_LABELS } from './device-labels.mjs';
 
 const FE = L_STD.frame.ext;            // the frame's half-extent (20)
+const PITCH = NODE_GRID.declaration.pitch;   // a socket's step in a device's own frame (stays draw's: positions in that frame)
 const SOCKET = STD.socket;             // the glyph box (26)
 const NODE_LABEL_Y = FE + STD.labelDy; // the label baseline below the frame -- B236, the spec owns the offset
 const SELECT_BOX = selBox(L_STD);      // the kernel's selection brackets (+-23)
@@ -72,7 +73,7 @@ const nodeLook = (entity, pillWidth) => {
 	look.frame = (sig || csig) ? { rx: frameRadius(entity, L_STD), 'stroke-width': frameWidth(entity) } : { href: `#m-${entity.shape || 'circle'}` };
 	if (!csig) {   // a content node is labelled by its content and its regions own the glyphs
 		const [bx, by, bw, bh] = FIT(entity.type);
-		const pw = pillWidth(entity.name), { sw } = spanExtent(entity.span);
+		const pw = pillWidth(entity.name), { sw } = spanThrough(entity.span);
 		look.fit = { viewBox: `${bx} ${by} ${bw} ${bh}` };   // the glyph fitted to its own box (B205)
 		look.glyph = { href: `#glyph-${entity.type}` };
 		look.pill = { x: sw / 2 - pw / 2, width: pw };
@@ -102,7 +103,7 @@ const DEVICE = {
 	structure: (entity) => `${spanSig(entity)}|${contentSig(entity)}`,
 	parts: {
 		frame(entity, g, { el }) {
-			const { sw, sh } = spanExtent(entity.span);
+			const { sw, sh } = spanThrough(entity.span);
 			// a panel or wide device: a sized rect, its corner following its shape; a plain device <use>s the circle or square
 			if (spanSig(entity) || contentSig(entity)) el('rect', { 'data-layer': 'frame', class: 'frame', x: -FE, y: -FE, width: 2 * FE + sw, height: 2 * FE + sh }, g);
 			else el('use', { 'data-layer': 'frame' }, g);
@@ -113,7 +114,7 @@ const DEVICE = {
 			if (contentSig(entity)) {
 				const gc = entity.span ? entity.span.cols : 1, gr = entity.span ? entity.span.rows : 1;
 				for (let j = 0; j < gr; j++) for (let i = 0; i < gc; i++)
-					el('rect', { class: 'socket', x: i * STD.pitch - SOCKET / 2, y: j * STD.pitch - SOCKET / 2, width: SOCKET, height: SOCKET }, g);
+					el('rect', { class: 'socket', x: i * PITCH - SOCKET / 2, y: j * PITCH - SOCKET / 2, width: SOCKET, height: SOCKET }, g);
 			} else {
 				el('rect', { class: 'socket', x: -SOCKET / 2, y: -SOCKET / 2, width: SOCKET, height: SOCKET }, g);
 			}
@@ -126,11 +127,11 @@ const DEVICE = {
 		// a panel is labelled by its content: no name below it
 		label(entity, g, { el }) {
 			if (contentSig(entity)) return;
-			const { sh } = spanExtent(entity.span);
+			const { sh } = spanThrough(entity.span);
 			nameLabel(el, g, { pill: { rx: 4, y: NODE_LABEL_Y - 13 + sh, height: STD.labelH }, text: { y: NODE_LABEL_Y + sh, 'font-size': STD.fontSize } });   // H25.1: the core's label
 		},
 	},
-	selectBox: (entity) => { const { sw, sh } = spanExtent(entity.span); return spanSig(entity) ? selBox(L_STD, sw, sh) : SELECT_BOX; },
+	selectBox: (entity) => { const { sw, sh } = spanThrough(entity.span); return spanSig(entity) ? selBox(L_STD, sw, sh) : SELECT_BOX; },
 	look: (entity, { pillWidth }) => [nodeLook(entity, pillWidth), NODE_PARTS],
 };
 

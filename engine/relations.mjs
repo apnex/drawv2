@@ -15,11 +15,17 @@ import { maintainIndex } from './ivm.mjs';
 import { byId } from '../model/order.mjs';   // B246: the one derivation order
 import { ANCHOR_KINDS } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
 
-export function makeRelations(model, { cellOf } = {}) {   // cellOf injected (composition root) -- engine imports no kernel
-	if (!cellOf) throw new Error('makeRelations requires an injected { cellOf } (px->cell) -- wire it at the composition root');
+/*
+H26.1 (dev/design/components/SNAP-GRID.md appendix B): a position's cell is the node grid's position nearest it -- snap-grid's
+`nearest` on NODE_GRID, injected at the composition root as `cellOf` was, so engine/ still imports no kernel module. A key stays
+the `col,row` string it was and `atCell` stays `[col, row]`. A point the grid cannot place -- not finite, or beyond its domain,
+which no validated position is -- keys to none.
+*/
+export function makeRelations(model, { nearest } = {}) {   // nearest injected (composition root) -- engine imports no kernel
+	if (typeof nearest !== 'function') throw new Error('makeRelations requires an injected { nearest } (a point -> its position on the node grid, NODE_GRID.nearest) -- wire it at the composition root');
 
-	const keyOf = (e) => cellOf(e.x) + ',' + cellOf(e.y);
-	const cellsOf = (e) => [cellOf(e.x) + ',' + cellOf(e.y)];
+	const keyOf = (e) => { const at = nearest(e); return at ? at.col + ',' + at.row : 'none'; };
+	const cellsOf = (e) => [keyOf(e)];
 	const kindOfId = (id) => id.slice(0, id.indexOf('-'));
 	const refTargets = (kind) => (model.kinds.gathers[kind] ? [] : (model.kinds.row(kind)?.references ?? []));
 	const isRefKind = (kind) => refTargets(kind).length > 0;
@@ -76,8 +82,8 @@ export function makeRelations(model, { cellOf } = {}) {   // cellOf injected (co
 			return gid ? model.get(kindOfId(gid), gid) : undefined;
 		},
 		atCell(id) {
-			const e = model.endpointOf(id);
-			return e ? [cellOf(e.x), cellOf(e.y)] : undefined;
+			const e = model.endpointOf(id), at = e && nearest(e);
+			return at ? [at.col, at.row] : undefined;
 		},
 		occupiedAnyAt(p) { return cellAnchors.has(keyOf(p)); },
 		anchorsAt(p) { return [...(cellAnchors.get(keyOf(p)) ?? [])]; },

@@ -33,7 +33,7 @@ import fs from 'node:fs';
 import crypto from 'node:crypto';
 import { Model } from '../../model/model.mjs';
 import { attachRelations } from '../../engine/store.mjs';
-import { cellOf } from '../../kernel/geometry.mjs';
+import { NODE_GRID } from '../../kernel/geometry.mjs';   // H26.1: the relation index is injected the node grid's nearest (it was cellOf)
 import { applyOps } from '../../model/ops.mjs';
 import { plan } from '../../planner/txn.mjs';
 import { resolveAnchor } from '../../server/anchor.mjs';
@@ -273,7 +273,7 @@ function compose(c) {
 	if (c.compose !== 'network') throw new Error(`${c.id}: the only composition is the network's (S-b)`);
 	const network = true;
 	const model = new Model({ kinds: WITH_PIPES, attached: { network: createNetwork(createTransit()) }});   // V-e, J2
-	attachRelations(model, { cellOf });
+	attachRelations(model, { nearest: NODE_GRID.nearest });
 	// a case keeps its waypoints apart to describe the board; the document holds them among the nodes (F-c)
 	const { waypoints = [], ...board } = c.board;
 	model.load({ meta: { id: '0000000000000001', name: 'corpus' }, zones: [], ...board, nodes: [...(board.nodes || []), ...waypoints], ...(network ? { pipes: pipesOf(c) } : {}) });

@@ -18,8 +18,7 @@ the grid (kernel/), and model/ and kernel/ import nothing from each other (C9). 
 import { CORE_ROWS, composeKinds } from '../model/shape.mjs';
 import { NAME_MAX } from '../model/limits.mjs';
 import { NODE_EXT, anchorCellsWithin } from '../model/surface.mjs';
-import { LAYOUTS, onLayout } from '../kernel/geometry.mjs';
-import { STD } from '../kernel/spec.mjs';
+import { NODE_GRID } from '../kernel/geometry.mjs';
 import { ZONE_ROWS } from '../zones/zone-kind.mjs';
 import { LAYOUT_ROWS } from '../layouts/layout-kind.mjs';   // WD-b1: the layouts plugin's kind
 import { GROUP_ROWS } from '../groups/group-kind.mjs';
@@ -68,8 +67,12 @@ trust boundary is never delegated to the module that supplies the magnitude.
 // B111: the LAYOUT is sourced, the CHECK stays local -- the same split the surface extents use.
 // This file restated the half-pitch offset when B110 landed, which made the kernel's silence about
 // the zone grid into a second implementation of it rather than a gap.
-const PITCH = STD.pitch;
-const onGrid = (name, v) => onLayout(LAYOUTS[name], v);
+// H26.1 (SNAP-GRID.md section 5, appendix B): ON the node lattice is snap-grid's exact question, `positionAt` on NODE_GRID, one axis
+// at a time with the other held at the origin; the extent check stays first, so it is asked only of a finite number within the
+// extent. Exact where `v % pitch` was too: on the node lattice's origin of 0 the remainder never rounded.
+const { pitch: PITCH, origin: NODE_ORIGIN } = NODE_GRID.declaration;
+const onNodeX = (v) => NODE_GRID.positionAt({ x: v, y: NODE_ORIGIN.y }) !== null;
+const onNodeY = (v) => NODE_GRID.positionAt({ x: NODE_ORIGIN.x, y: v }) !== null;
 
 // the checks are LOCAL: the trust boundary is never delegated (B110) -- each plugin's row restates these for its own fields
 const str = (v, max) => typeof v === 'string' && v.length <= max;
@@ -84,8 +87,8 @@ const ANCHOR_CAP = anchorCellsWithin(NODE_EXT, PITCH);
 const ANCHOR_FIELDS = {
 	id: (v) => id(v, 'node'),
 	name: (v) => str(v, NAME_MAX),
-	x: (v) => num(v, -EXT.x, EXT.x) && onGrid('node', v),
-	y: (v) => num(v, -EXT.y, EXT.y) && onGrid('node', v),
+	x: (v) => num(v, -EXT.x, EXT.x) && onNodeX(v),
+	y: (v) => num(v, -EXT.y, EXT.y) && onNodeY(v),
 	order: (v) => int(v, 1, ORDER_MAX),   // the drawing order (F-d, model/order.mjs)
 	// O-e2 (H19.21; O4): the ANCHOR's fields alone -- "The core holds only the anchor". A device's -- its type, frame,
 	// footprint and content regions -- are the devices plugin's (devices/device-fields.mjs), with the rule that a device

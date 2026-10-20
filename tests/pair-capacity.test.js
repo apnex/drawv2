@@ -116,7 +116,7 @@ import { makeInput, pointer, seedNodes } from './tests/fixtures/client-harness.m
 import { Model } from './model/model.mjs';
 import { violations } from './model/invariants.mjs';
 import { attachRelations } from './engine/store.mjs';
-import { cellOf } from './kernel/geometry.mjs';
+import { NODE_GRID } from './kernel/geometry.mjs';
 import { commit } from './planner/txn.mjs';
 import { linkTenant } from './network/link-reactions.mjs';
 import { productKinds } from './product/kinds.mjs';
@@ -143,7 +143,7 @@ const out = {};
   out.invariant = !violations(m).some((v) => /straight links between/.test(v)); }
 
 // the planner's strip: deleting the only bend of a routed link on a pair that holds a straight one
-{ const m = new Model({ kinds: K, attached: { network: N() }}); attachRelations(m, { cellOf }); const log = new Log();
+{ const m = new Model({ kinds: K, attached: { network: N() }}); attachRelations(m, { nearest: NODE_GRID.nearest }); const log = new Log();
   const r0 = commit(m, log, { label: 'setup', ops: [
     { op: 'put', kind: 'node', entity: { id: A, name: 'A', type: 'router', x: 0, y: 0, shape: 'circle' } },
     { op: 'put', kind: 'node', entity: { id: B, name: 'B', type: 'router', x: 6 * P, y: 0, shape: 'circle' } },
@@ -194,6 +194,8 @@ test('ONE HOME: raise straightCapacity to 2 in a copy, and all six sites admit a
 	try {
 		for (const d of ['kernel', 'model', 'engine', 'app', 'server', 'planner', 'network', 'layouts', 'zones', 'groups', 'devices', 'product', 'tests/fixtures']) fs.cpSync(path.join(ROOT, d), path.join(dir, d), { recursive: true });
 		fs.cpSync(path.join(ROOT, 'package.json'), path.join(dir, 'package.json'));
+		// RESTATED at H26.1: the kernel imports snap-grid by name (SNAP-GRID.md section 5), so the copy resolves the root's dependencies
+		fs.symlinkSync(path.join(ROOT, 'node_modules'), path.join(dir, 'node_modules'));
 		const inv = path.join(dir, 'network/pair-capacity.mjs');
 		const src = fs.readFileSync(inv, 'utf8');
 		assert.equal(src.split(NEEDLE).length, 2, 'the guard is INVALID: straightCapacity no longer reads as it did -- re-point NEEDLE');

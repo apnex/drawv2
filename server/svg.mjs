@@ -7,7 +7,8 @@ headless SVG tree, then serialises the rendered layers into a standalone `<svg x
 the parts' `defs`, each element carrying as attributes what the page's own stylesheets give it (server/svg-style.mjs, H25.2). `export` therefore imports `renderer`, `product`,
 `lattice`, `document`, `primitives` and `colours` -- never a plugin directly.
 */
-import { STD, L_STD } from '../kernel/spec.mjs';
+import { L_STD } from '../kernel/spec.mjs';
+import { NODE_GRID } from '../kernel/geometry.mjs';
 import { sharedDefs } from '../kernel/renderer.mjs';
 import { Renderer } from '../app/src/renderer.js';
 import { PRODUCT_CANVAS, CANVAS_LAYERS } from '../product/canvas.mjs';
@@ -159,7 +160,7 @@ function linkGroup(c, layerSet) {
 	return `<g id="${esc(id)}">${line}${c.companions.map((x) => serializeNode(x, layerSet)).join('')}</g>`;
 }
 
-function boundsOf(svg, L = L_STD, V = STD) {
+function boundsOf(svg, L = L_STD) {
 	let minX = 1e9, minY = 1e9, maxX = -1e9, maxY = -1e9;
 	const ext = (x, y) => { minX = Math.min(minX, x); minY = Math.min(minY, y); maxX = Math.max(maxX, x); maxY = Math.max(maxY, y); };
 	for (const layer of svg.children) {
@@ -168,7 +169,8 @@ function boundsOf(svg, L = L_STD, V = STD) {
 			if (tr) {
 				const cx = Number(tr[1]), cy = Number(tr[2]), e = L.frame.ext;
 				const sp = el.attrs['data-span']?.split('x').map(Number);
-				const sw = sp ? (sp[0] - 1) * V.pitch : 0, sh = sp ? (sp[1] - 1) * V.pitch : 0;
+				// H26.1 (SNAP-GRID.md appendix B): what the span runs through beyond its first cell, `span(...).through` on the node grid
+				const { w: sw, h: sh } = sp ? NODE_GRID.span({ col: 0, row: 0 }, { col: sp[0] - 1, row: sp[1] - 1 }).through : { w: 0, h: 0 };
 				ext(cx - e, cy - e); ext(cx + e + sw, cy + e + sh);
 			}
 			for (const c of el.children) {

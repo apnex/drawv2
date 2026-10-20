@@ -16,16 +16,20 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import crypto from 'node:crypto';
 import { SWEEP, QUESTIONS, REPLACEMENTS, CLASSES, answersOf, differences, classOf, enc } from './fixtures/grid-parity.mjs';
-import { OLD } from './fixtures/grid-parity-record.mjs';   // the old functions, while they exist
 
 const RECORD = JSON.parse(fs.readFileSync(new URL('./fixtures/grid-parity-record.json', import.meta.url), 'utf8'));
 const pick = ({ question, index, old, new: now }) => ({ question, index, old, new: now });
 const inputsHash = () => crypto.createHash('sha256').update(JSON.stringify(Object.fromEntries(Object.entries(QUESTIONS).map(([q, d]) => [q, enc(d.inputs())])))).digest('hex');
 
-test('H26.1 (acceptance step 4): the record is the old functions\' own answers, over the sweep as it stands', () => {
+/*
+RESTATED at H26.1's move: the old functions are deleted, so the record is what holds their answers. It was read from them at `readAt`
+by tests/fixtures/grid-parity-record.mjs, committed with this test at 2b704b6 and deleted with them, and this test held it to their
+live answers until then; what is checked now is that it answers this sweep, every question, every input.
+*/
+test('H26.1 (acceptance step 4): the record answers the sweep as it stands -- every question, every input, read from the old functions', () => {
 	assert.equal(RECORD.inputs, inputsHash(), 'the sweep is the one the record answers');
-	const old = answersOf(OLD);
-	for (const q of Object.keys(QUESTIONS)) assert.deepEqual(old[q], RECORD.old[q], `${q}: the record holds the old function's answers`);
+	assert.equal(RECORD.readAt, 'cee1bb3', 'read at the last commit holding the old arithmetic whole');
+	for (const [q, def] of Object.entries(QUESTIONS)) assert.equal(RECORD.old[q].length, def.inputs().length, `${q}: an old answer for every input`);
 });
 
 test('H26.1 (acceptance step 4): the replacements answer exactly as the old functions did, -0 told apart, but for the differences recorded with both answers', () => {

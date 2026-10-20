@@ -36,7 +36,7 @@ index into whatever array happened to be built this frame.
 */
 
 import { pathGeometry, pathLength, pointAtDistance } from '../kernel/router.mjs';
-import { STD } from '../kernel/spec.mjs';
+import { NODE_GRID } from '../kernel/geometry.mjs';   // H26.1: the node grid's declared pitch, the length a cell is
 
 /*
 B172 -- `speed` is authored in CELLS per second and the geometry is in pixels, so the conversion
@@ -46,7 +46,7 @@ Cells is the authored unit because the grid is this system's unit of distance (B
 speed keeps its meaning if the pitch ever changes. Pixels is the computed unit because that is what
 a path is measured in. Converting at the edge is what keeps both true at the same time.
 */
-const PITCH = STD.pitch;
+const PITCH = NODE_GRID.declaration.pitch;
 
 /*
 A runtime bound, not a document limit -- so it is here rather than in `model/limits.mjs`, whose

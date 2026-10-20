@@ -7,17 +7,21 @@ the tool (one panel per arm) and opens the editor on its text. The row, the fram
 (app/src/recognize.js `tool`, app/src/input.js `GESTURES.textbox`, `frameSpan`); nothing a user sees changes.
 */
 
-import { STD, L_STD } from '../kernel/spec.mjs';
+import { L_STD } from '../kernel/spec.mjs';
+import { NODE_GRID } from '../kernel/geometry.mjs';
 import { makeTextBox } from './make-node.mjs';
 
 const NODE_R = L_STD.frame.ext;   // a device frame's half-extent (20)
-const GAP = STD.pitch;
 
-// the frame two snapped points span -- a margin of a frame's half-extent around the cells -- with its origin and span counts
+/*
+The frame two snapped points span -- a margin of a frame's half-extent around the cells -- with its origin and span counts.
+H26.1 (SNAP-GRID.md appendix B): the two snapped corners are positions on the node grid; the origin is the least corner's point and
+the counts the index differences plus one, and the frame is the block's `span(...).through` grown by the frame's margin, which stays.
+*/
 const frameSpan = (a, b) => {
-	const x0 = Math.min(a.x, b.x), y0 = Math.min(a.y, b.y), x1 = Math.max(a.x, b.x), y1 = Math.max(a.y, b.y);
-	return { x: x0 - NODE_R, y: y0 - NODE_R, w: (x1 - x0) + 2 * NODE_R, h: (y1 - y0) + 2 * NODE_R,
-		origin: { x: x0, y: y0 }, cols: Math.round((x1 - x0) / GAP) + 1, rows: Math.round((y1 - y0) / GAP) + 1 };
+	const p = NODE_GRID.nearest(a), q = NODE_GRID.nearest(b), { through } = NODE_GRID.span(p, q);
+	return { x: through.x - NODE_R, y: through.y - NODE_R, w: through.w + 2 * NODE_R, h: through.h + 2 * NODE_R,
+		origin: { x: through.x, y: through.y }, cols: Math.abs(q.col - p.col) + 1, rows: Math.abs(q.row - p.row) + 1 };
 };
 
 const TEXT_TOOL = {

@@ -12,7 +12,7 @@ import assert from 'node:assert/strict';
 import { composeKinds } from '../model/shape.mjs';
 import { Model } from './fixtures/composed.mjs';   // the composition production runs (S-b)
 import { attachRelations } from '../engine/store.mjs';
-import { cellOf } from '../kernel/geometry.mjs';
+import { NODE_GRID } from '../kernel/geometry.mjs';   // H26.1: the relation index is injected the node grid's nearest (it was cellOf)
 import { applyOps } from '../model/ops.mjs';
 import { productKinds } from '../product/kinds.mjs';
 const PRODUCT_KINDS = productKinds();   // the product's own kinds; the export went at S-f with the defaults it served
@@ -27,7 +27,7 @@ const A = 'node-00000a', B = 'node-00000b', W = 'node-00000c';
 
 function board() {
 	const m = new Model({ kinds: KINDS });
-	attachRelations(m, { cellOf });
+	attachRelations(m, { nearest: NODE_GRID.nearest });
 	m.put('node', { id: A, name: 'A', type: 'router', x: -240, y: 0, shape: 'circle' });
 	m.put('node', { id: B, name: 'B', type: 'router', x: 240, y: 0, shape: 'circle' });
 	m.put('node', { id: W, name: 'w', x: 0, y: -120 });

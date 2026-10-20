@@ -642,16 +642,19 @@ test('B43: a resize commit fires the gesture-end hook exactly once', () => {
 	} finally { h.restore(); }
 });
 
+// CORRECTED at H26.1 (SNAP-GRID.md appendix B): the zone sits on the zone grid, as B43's above does since V-d. At (0, 0) its fixed
+// corner was off the zone lattice, which no stored zone is, its fields validated on it; the resize takes a corner at its position on
+// the grid (snap-grid's `nearest`), so the preview from an off-lattice corner was a box no diagram can hold either way
 test('H6.4: a cancelled resize restores the pre-drag geometry', () => {
 	const h = makeInput();
 	try {
-		const z = makeZone(h.model, { x: 0, y: 0, w: 300, h: 300 });
+		const z = makeZone(h.model, { x: -30, y: -30, w: 300, h: 300 });
 		h.model.put('zone', z);
 		h.selection.set([z.id]);
 
-		h.capture.onDown(handle('se', 300, 300));
+		h.capture.onDown(handle('se', 270, 270));
 		h.capture.onMove(handle('se', 480, 480));
-		assert.equal(h.model.get('zone', z.id).w, 510, 'the live preview writes the shared Model (B7)');
+		assert.equal(h.model.get('zone', z.id).w, 540, 'the live preview writes the shared Model (B7)');
 
 		h.input.cancelDrag();
 		assert.equal(h.model.get('zone', z.id).w, 300, 'and a cancel rewinds it');

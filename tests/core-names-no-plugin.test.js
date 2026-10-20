@@ -13,6 +13,7 @@ What still names a plugin's kind in a core module is recorded below, each with i
     canvas's half of B280, which B308 designs (O3).
     AMENDED 2026-10-11 (H21, U0): B280 and B308 are closed; what remains is the export door's (B330, held) and the zone
     lattice's name in `LAYOUTS` (B325); the frame and content primitives are the devices plugin's painter's too.
+    AMENDED H26.1 (dev/design/components/SNAP-GRID.md section 7.7): the zone lattice's name left the kernel with `LAYOUTS`.
 And one plugin field is read below the plugins, the occupancy index's `span` (engine/relations.mjs `cellsOf`), the network's
 rung, not the core's: a wide device's footprint until B282 makes it several anchors (O4; section 16.3, corrected).
 AMENDED WD-a (H19.44; WD1, WD2 revisited): ended -- a wide device is one anchor and the index keys it by its own cell, so no
@@ -71,9 +72,8 @@ const plannerModules = () => fs.readdirSync(path.join(root, 'planner')).filter((
 const RECORD = {
 	// model/model.mjs's 7 -- its link methods -- went to the network at K13d (H19.25, network/link-queries.mjs)
 	// RESTATED at H25.5 (B378, D4): the declarative scene helpers `zone`, `group` and `bboxOf` retired with the old scene renderer
-	'kernel/geometry.mjs': { count: 4, cites: ['B325'],
-		reason: 'the zone lattice\'s name in `LAYOUTS` and `layout:` in `anchorAt`/`nearestAnchor` (B325)',
-		trigger: 'a diagram varies its grids (B325)' },
+	// H26.1 (SNAP-GRID.md section 7.7, appendix B): kernel/geometry.mjs's 4 fell to none -- the zone lattice's offset left for the layouts
+	// table and an anchor's layout name for the layouts plugin's `anchorOn` (layouts/layout-records.mjs), with `LAYOUTS` and `anchorAt`
 	'kernel/spec.mjs': { count: 2, cites: ['B325'],
 		reason: 'the `group:` and `zone:` layout constants in `STD`',
 		trigger: 'a diagram varies its grids (B325)' },
@@ -111,8 +111,11 @@ const PRODUCT_KIND_RECORD = {
 	'product/canvas.mjs': { count: 4, cites: ['H25.4'],
 		reason: 'the canvas\'s layers back to front (`CANVAS_LAYERS`): the composition names the layer each plugin draws into -- moved from the lab\'s `NEEDED` and the two pages (H25.4)',
 		trigger: 'each canvas part declares where its own layer stacks, so the composition names none' },
-	'server/anchor.mjs': { count: 1, cites: ['SD1'],
-		reason: 'server-side placement resolving `at.inside` against the diagram\'s zones (SD1)',
+	// RAISED at H26.1 (SNAP-GRID.md appendix B, section 7.7), from kernel/geometry.mjs's record, which fell from 4 to none: placement
+	// maps snap-grid's positions back to the anchor it answered, `{ layout, cx, cy, x, y }`, consuming the lattice alone, so the node
+	// layout's `layout:` the kernel's `anchorAt` stamped is stamped here
+	'server/anchor.mjs': { count: 2, cites: ['SD1', 'B325'],
+		reason: 'server-side placement resolving `at.inside` against the diagram\'s zones (SD1), and the `layout:` its anchors carry (B325)',
 		trigger: 'permanent' },
 	'server/app.js': { count: 3, cites: ['O1', 'WD6'],
 		reason: 'the product server mounting `/layouts`, `/zones` and `/groups` for the browser',

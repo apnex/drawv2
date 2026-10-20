@@ -33,7 +33,6 @@ export const BEND_R = STD.node;   // 20
 // defining params → per-layer geometry (the uniform +step ladder: frame→sel→group→zone)
 function derive(V) {
 	return {
-		cell: { ext: V.pitch / 2 },
 		frame: { ext: V.node, r: V.frameR },
 		socket: { ext: V.socket / 2 },
 		selection: { ext: V.node + V.step, r: V.frameR + V.step, arm: V.selArm },

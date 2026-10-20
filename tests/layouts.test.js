@@ -13,7 +13,7 @@ import { Model, KINDS, plan } from './fixtures/composed.mjs';
 import { composeKinds } from '../model/shape.mjs';
 import { LAYOUT_TABLE } from '../layouts/layout-table.mjs';
 import { STD } from '../kernel/spec.mjs';
-import { LAYOUTS } from '../kernel/geometry.mjs';
+import { NODE_GRID } from '../kernel/geometry.mjs';   // H26.1: the node lattice's declaration (the kernel's LAYOUTS is deleted)
 import { NODE_EXT } from '../model/surface.mjs';
 
 const layouts = (m) => m.all('layout').map((l) => [l.id, l.name, l.pitch, l.offset, l.ext.x, l.ext.y]);
@@ -54,7 +54,9 @@ test('WD-b1: the planner refuses a layout deleted, a second of a name added, or 
 test('WD-b1: a layout is neither selectable nor named; the table is the constants the core and the kernel keep', () => {
 	assert.equal(KINDS.selectable.includes('layout'), false);
 	assert.equal(KINDS.named.includes('layout'), false);
-	assert.deepEqual(LAYOUT_TABLE.map((l) => [l.pitch, l.offset]), [[STD.pitch, LAYOUTS.node.offset], [STD.pitch, LAYOUTS.zone.offset]]);
+	// RESTATED at H26.1 (SNAP-GRID.md section 5): the node's pitch and offset read from NODE_GRID's declaration; the zone's offset, half a
+	// pitch, the table's own, where the kernel's LAYOUTS held it
+	assert.deepEqual(LAYOUT_TABLE.map((l) => [l.pitch, l.offset]), [[STD.pitch, NODE_GRID.declaration.origin.x], [STD.pitch, STD.pitch / 2]]);
 	assert.deepEqual({ ...LAYOUT_TABLE[0].ext }, { ...NODE_EXT });
 });
 

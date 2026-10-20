@@ -172,7 +172,7 @@ Generated from `tools/layers.mjs` `PARTS`, and each part's components from its `
 
 | Part | Exposes |
 |---|---|
-| `lattice` | the lattices' arithmetic -- cells, snapping, the nearest point -- and a path's geometry |
+| `lattice` | the grids, opened from `snap-grid` -- the node grid, and any lattice record's (H26-1, H26.1) -- and a path's geometry |
 | `kind-contract` | the row contract a kind is declared by; extension rows (G3); the entities every document holds (WD6); a composition |
 | `document` | a document's entities by kind; the one name namespace kinds opt into (N5); the anchor capability's identity and reference resolution (O1) |
 | `relations` | the anchor capability's occupancy -- which anchor holds a cell (O1) -- and which entities refer to an anchor, by the references their rows declare |
@@ -330,7 +330,7 @@ Why each mapping fits, and the rulings composing it would change, are `dev/desig
 <!-- BEGIN GENERATED: architecture-target-alignment. Run tools/generate-architecture.mjs; do not edit by hand. -->
 | Part | Aligns to | Standing, read 2026-10-20 | Composing it waits on |
 |---|---|---|---|
-| `lattice` | `snap-grid` | snap-grid: proposed in drawv2, released from its own repository, composed (H26-4) | composed (H26-4); its grid arithmetic moves onto it in H26.1 |
+| `lattice` | `snap-grid` | snap-grid: proposed in drawv2, released from its own repository, composed (H26-4) | composed (H26-4); its grid arithmetic moved onto it at H26.1 |
 | `kind-contract` | `shape-check` | shape-check: proposed in zorg, certified | OD-3; the target's section 4.3 |
 | `document` | `entity-store` | entity-store: proposed in zorg, certified | OD-1 |
 | `store` | `entity-store` | entity-store: proposed in zorg, certified | OD-1 |

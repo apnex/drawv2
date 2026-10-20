@@ -23,7 +23,7 @@ network: the tab model proposes, the authority model rules, exactly as productio
 */
 
 import { editOf } from '../../app/src/commands.js';   // C-e (D5): the network's edit, built by the canvas's generic builder
-import { cellOf } from '../../kernel/geometry.mjs';
+import { NODE_GRID } from '../../kernel/geometry.mjs';
 import { el } from '../../app/src/painter.js';
 import { Model } from '../../model/model.mjs';
 import { attachRelations } from '../../engine/store.mjs';
@@ -90,7 +90,7 @@ the planner's answer is what the tab applies. The seam is identical to productio
 transport is gone.
 */
 const authority = new Model({ kinds, attached: { network } });   // a Model holding links draws with the network (V-e, J2)
-attachRelations(authority, { cellOf });
+attachRelations(authority, { nearest: NODE_GRID.nearest });
 const log = new Log();
 
 const notice = document.getElementById('lab-notice');

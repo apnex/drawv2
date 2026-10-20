@@ -1,70 +1,41 @@
-// GEOMETRY — the grid (cell↔px), its layouts and anchors, the grid dot, span extent and group hull.
+// GEOMETRY -- the grid, the grid dot and the group hull.
 // Pure geometry: no rendering, no I/O. Consumes the locked spec; everything downstream consumes these primitives.
 // H25.5 (B378, D4): the old scene renderer's element helpers (node, zone, group, bboxOf, cellPx) retired with it.
+// H26.1 (SNAP-GRID.md section 7.7): the grid's own arithmetic -- px, cellOf, LAYOUTS, onLayout, snapLayout, cellOn, pxOn,
+// nearestAnchor, anchorAt and spanExtent -- deleted, its answers snap-grid's, asked of the grids opened below.
 import { STD } from './spec.mjs';
-
-// ---- the grid: cell (logical, integer) ↔ px (resolved, center-origin) ----
-export const px = (cell, V = STD) => cell * V.pitch;                       // one axis
-// px → cell (one axis): the inverse of px(). Rounds a resolved coordinate to its nearest logical
-// cell index; the `+ 0` normalizes signed zero (-0 → +0) so a cell never splits into "-0"/"0" keys.
-// The SINGLE source for px→cell — used by the schema adapter (rendering/validation) and, INJECTED,
-// by the engine to derive its staged `atCell` cell projection (R5).
-export const cellOf = (v, V = STD) => Math.round(v / V.pitch) + 0;
+import { openGrid } from '@apnex/snap-grid';   // H26.1: the lattice part alone composes the component (tools/layers.mjs COMPONENTS)
 
 /*
-LAYOUTS -- the named grids, and the one place either of them is defined.
+H26.1 (dev/design/components/SNAP-GRID.md section 5) -- THE GRIDS, OPENED FROM DECLARATIONS, AND THE ONE PLACE DRAW OPENS ONE.
 
-There are two, and until now the kernel knew only the first. `cellOf` and `cellPx` are both offset
-zero, which is the NODE grid; the half-pitch offset that ZONES use lived in `app/src/snap.js` and,
-after B110, in `planner/validate.js` as well (B111). Two restatements of a rule the kernel did not
-hold, and a mistake the author of B110 duly made by hand while migrating a document.
+Where a position lies and which position lies nearest a point are snap-grid's to answer (H26-1, H26-4); what a grid is for --
+what is drawn at a position, what may sit there, how a drag is held -- stays draw's. Every grid draw asks is NODE_GRID or is
+opened through one of the two functions below, so two parts asking one grid ask one declaration (guardrail G7).
 
-A zone is offset because it BOUNDS cells rather than sitting on one, so its edges fall between them.
-That is the whole of the difference, and naming it here is what lets a caller ask a layout instead
-of remembering an offset.
-
-An ANCHOR is a grid position. The term is deliberate and already this file's: the header calls the
-cell centre the single per-cell anchor, and `model/model.mjs` already resolves a link route over
-anchors while admitting a bare cell coord as a free one. A grid position and a route endpoint are
-the same concept reached from two directions, so they keep one word.
-
-Kernel-owned for now. Programmable or per-document layouts are wanted later; storing them in a
-document today would duplicate a truth this module holds and let the two drift.
+  latticeGrids(record)  a record of the layouts plugin's form, { pitch, offset, ext? }, opened into { bounded, unbounded }: the
+                        grid bounded by the extent -- each axis from -ext to ext -- and the grid with no bounds; `bounded` is
+                        null for a record with no extent. A record snap-grid refuses throws, naming every problem, so a bad
+                        lattice fails where it is opened rather than answering wrongly later
+  NODE_GRID             the node lattice with no bounds: the kernel's locked pitch, origin 0 -- the relation index, field
+                        validation of positions and lengths, spans, steps and the REST routes ask it
+  nodeGridWithin(ext)   the node lattice bounded by an extent the caller holds -- the kernel cannot read model/surface.mjs (C9),
+                        so each part needing the node grid within its extent opens it here, every opening equal to the others
 */
-export const LAYOUTS = {
-	node: { name: 'node', offset: 0 },                  // nodes and waypoints sit ON cells
-	zone: { name: 'zone', offset: STD.pitch / 2 },      // zones bound cells, so their edges fall between
-};
-
-// is a resolved coordinate ON this layout's grid
-export const onLayout = (L, v, V = STD) => Number.isFinite(v) && (v - L.offset) % V.pitch === 0;
-
-// the nearest legal coordinate on this layout (one axis)
-export const snapLayout = (L, v, V = STD) => Math.round((v - L.offset) / V.pitch) * V.pitch + L.offset;
-
-// px -> cell index on this layout (one axis); `+ 0` normalizes -0 so a cell never splits into two keys
-export const cellOn = (L, v, V = STD) => Math.round((v - L.offset) / V.pitch) + 0;
-
-// cell index -> px on this layout (one axis)
-export const pxOn = (L, c, V = STD) => c * V.pitch + L.offset;
-
-/*
-The anchor nearest a resolved point, carrying BOTH representations.
-
-The pixels are present so no consumer multiplies and the cell is present so no consumer divides --
-the two arithmetic steps that produced every off-grid entity this vocabulary exists to prevent.
-`layout` travels with it because the same cell index resolves to different pixels on the two grids,
-so an anchor without its layout is ambiguous.
-*/
-export const nearestAnchor = (L, x, y, V = STD) => ({
-	layout: L.name,
-	cx: cellOn(L, x, V), cy: cellOn(L, y, V),
-	x: snapLayout(L, x, V), y: snapLayout(L, y, V),
-});
-
-export const anchorAt = (L, cx, cy, V = STD) => ({
-	layout: L.name, cx, cy, x: pxOn(L, cx, V), y: pxOn(L, cy, V),
-});
+export function latticeGrids({ pitch, offset, ext } = {}) {
+	const lattice = { shape: 'square', pitch, origin: { x: offset, y: offset } };
+	const open = (declaration) => {
+		const opened = openGrid(declaration);
+		if (!opened.ok) throw new Error(`latticeGrids: the lattice of pitch ${pitch}, offset ${offset}${ext ? `, extent ${ext.x} x ${ext.y}` : ''} is refused -- ${opened.problems.map((p) => `${p.problem} at ${p.pointer || '/'}`).join(', ')}`);
+		return opened.grid;
+	};
+	return {
+		bounded: ext === undefined ? null : open({ ...lattice, bounds: { min: { x: -ext?.x, y: -ext?.y }, max: { x: ext?.x, y: ext?.y } } }),
+		unbounded: open(lattice),
+	};
+}
+export const NODE_GRID = latticeGrids({ pitch: STD.pitch, offset: 0 }).unbounded;
+export const nodeGridWithin = (ext) => latticeGrids({ pitch: NODE_GRID.declaration.pitch, offset: NODE_GRID.declaration.origin.x, ext }).bounded;
 
 /*
 THE GRID DOT. A waypoint does not own it -- a waypoint HIGHLIGHTS it.
@@ -92,23 +63,6 @@ own literal and agreed with the kernel.
 // the dot's radius: the floor of the waypoint ring ladder (network/appearance.mjs, B200), which reads it here
 const DOT_RADIUS = 2;
 export const gridDot = () => ({ radius: DOT_RADIUS });
-
-/*
-A node's footprint BEYOND its 1×1 frame, in px — the extent a multi-cell span adds on +x/+y.
-
-One owner. This was five spellings of `(span.cols - 1) * pitch`: `spanPx` in the client renderer and
-`spanExt` in input were the same function under two names, and the readout and the double-click
-hit-test each inlined it again. `tools/scan-twins.mjs` cannot see one-liners — they fall below its
-MIN_LINES floor — so this is the class of duplication a detector will not find and a reader must.
-
-Takes the SPAN, not the entity: the kernel has no business knowing an entity's shape. Two other
-`span` computations are deliberately NOT folded in, because they answer different questions with the
-same field — `engine/relations.mjs` keys occupied CELLS.
-*/
-export const spanExtent = (span, V = STD) => ({
-	sw: span ? (span.cols - 1) * V.pitch : 0,
-	sh: span ? (span.rows - 1) * V.pitch : 0
-});
 
 // group hull = bbox of member CENTRES padded by `ext` on all sides. centres = [{x,y},…];
 // null for no members (avoids ±Infinity). One authority shared by the engine (resolve) and the

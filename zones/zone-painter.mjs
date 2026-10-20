@@ -13,7 +13,7 @@ import { nameLabel } from '../kernel/renderer.mjs';   // H25.1: a name's label i
 
 // B338 (H21.8, N1): the zones plugin's colour roles over the core palette
 export const ZONE_COLOURS = { zoneFill: 'blueGrey300', zoneStroke: 'blueGrey200' };
-import { ZONE_EXT } from '../layouts/layout-table.mjs';   // WD-b1: the zone layout's extent, the layouts plugin's
+import { ZONE_EXT, ZONE_GRIDS } from '../layouts/layout-table.mjs';   // WD-b1: the zone layout's extent, the layouts plugin's; H26.1: its grids
 import { ZONE_PRESSES, ZONE_HANDLE_SPECS } from './zone-gestures.mjs';
 import { ZONE_KEYS, ZONE_SIZE_STEP } from './zone-keys.mjs';
 import { ZONE_DESCRIBE, ZONE_SELECT_ALL } from './zone-facts.mjs';
@@ -50,7 +50,8 @@ const ZONE_PAINTER = {
 };
 
 // C-c: a zone is placed on the half-offset grid, within its extent, its size its own box
-const ZONE_PLACE = { kind: 'zone', layout: 'zone', ext: ZONE_EXT, size: (zone) => ({ w: zone.w, h: zone.h }) };
+// H26.1: carrying the zone grid bounded by that extent, which it snaps to (SNAP-GRID.md section 5)
+const ZONE_PLACE = { kind: 'zone', layout: 'zone', ext: ZONE_EXT, grid: ZONE_GRIDS.bounded, size: (zone) => ({ w: zone.w, h: zone.h }) };
 
 // the zones plugin's canvas part: what it brings to the page (C-a: its painter; C-b its pick, on the painter; C-c its place;
 // C-d its press row over the shared box gesture, and its handles)

@@ -15,7 +15,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Model } from './fixtures/composed.mjs';   // the network's kinds, the link among them (S-e)
 import { attachRelations } from '../engine/store.mjs';
-import { cellOf } from '../kernel/geometry.mjs';
+import { NODE_GRID } from '../kernel/geometry.mjs';   // H26.1: the relation index is injected the node grid's nearest (it was cellOf)
 import { spawnersOf } from '../engine/spawners.mjs';
 import { pipeEntity, pipeId } from '../network/pipe-kind.mjs';
 
@@ -36,7 +36,7 @@ const entities = [
 ];
 function peer(order, indexed) {
 	const m = new Model();
-	if (indexed) attachRelations(m, { cellOf });
+	if (indexed) attachRelations(m, { nearest: NODE_GRID.nearest });
 	// reversed whole: the waypoints too, or the spawners' own order is never put to the test (a surviving mutant found this)
 	const list = order === 'forward' ? entities : [...entities].reverse();
 	for (const [kind, e] of list) m.put(kind, structuredClone(e));

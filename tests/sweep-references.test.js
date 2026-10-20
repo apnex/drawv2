@@ -22,7 +22,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Model } from './fixtures/composed.mjs';   // the composition production runs (S-b)
 import { attachRelations } from '../engine/store.mjs';
-import { cellOf } from '../kernel/geometry.mjs';
+import { NODE_GRID } from '../kernel/geometry.mjs';   // H26.1: the relation index is injected the node grid's nearest (it was cellOf)
 import { commit, undo } from './fixtures/composed.mjs';
 import { Log } from '../planner/log.mjs';
 import { linkTenant } from '../network/link-reactions.mjs';
@@ -42,7 +42,7 @@ const net = ({ alsoReferenced = null, keepsOrphan = (w, { wasBendOnly }) => !was
 
 // the SHARED anchor: a pin of link-a, and (in the lab) a guide for link-b over pipes
 function shared() {
-	const m = new Model(); attachRelations(m, { cellOf }); const log = new Log();
+	const m = new Model(); attachRelations(m, { nearest: NODE_GRID.nearest }); const log = new Log();
 	const ok = commit(m, log, { label: 'setup', ops: [nd('node-00000a', -6, 0), nd('node-00000b', 6, 0), nd('node-00000c', 0, -4),
 		nd('node-00000d', 0, 4), wp(W, 0, 0), lk('link-00000a', 'node-00000a', 'node-00000b', [W]), lk('link-00000b', 'node-00000c', 'node-00000d')] }, 'lab', 'lab');
 	assert.equal(ok.ok, true, `setup refused: ${ok.error}`);
@@ -85,7 +85,7 @@ production's. The first test is the one that matters most: absent, production sw
 */
 function ended() {
 	// a link from a start anchor, through a bend, to an END anchor (the start carried `pinned` until S-d retired it)
-	const m = new Model(); attachRelations(m, { cellOf }); const log = new Log();
+	const m = new Model(); attachRelations(m, { nearest: NODE_GRID.nearest }); const log = new Log();
 	const ok = commit(m, log, { label: 'setup', ops: [
 		wp('node-0000a1', -6, 0),
 		wp('node-0000b2', 0, -2), wp('node-0000c3', 6, 0),
@@ -142,7 +142,7 @@ const [WQ, WP] = ['node-0000e5', 'node-0000e6'];
 const [PINNED, APART] = ['link-0000e7', 'link-0000e8'];
 function pinned() {
 	// A -> B pinned at Q then P; and C -> D, which touches neither
-	const m = new Model(); attachRelations(m, { cellOf }); const log = new Log();
+	const m = new Model(); attachRelations(m, { nearest: NODE_GRID.nearest }); const log = new Log();
 	const ok = commit(m, log, { label: 'setup', ops: [nd(NA, -6, 0), nd(NB, 6, 0), nd(NC, 0, -4), nd(ND, 0, 4),
 		wp(WQ, -3, -2), wp(WP, 3, -2), lk(PINNED, NA, NB, [WQ, WP]), lk(APART, NC, ND)] }, 'lab', 'lab');
 	assert.equal(ok.ok, true, `setup refused: ${ok.error}`);
@@ -182,7 +182,7 @@ test('the stranded pass removes only a link that lost a pin, judging the documen
 });
 
 test('a link that ENDS at the deleted anchor is not the stranded pass\'s: it goes with its end regardless', () => {
-	const m = new Model(); attachRelations(m, { cellOf }); const log = new Log();
+	const m = new Model(); attachRelations(m, { nearest: NODE_GRID.nearest }); const log = new Log();
 	assert.equal(commit(m, log, { label: 'setup', ops: [nd(NA, -6, 0), wp(WP, 3, -2), lk(PINNED, NA, WP)] }, 'lab', 'lab').ok, true);
 	const heard = [];
 	commit(m, log, { label: 'delete', ops: [{ op: 'del', kind: 'node', id: WP }] }, 'lab', 'lab', net({ stranded: true, onStranded: (ops) => heard.push(...ops) }));
@@ -197,7 +197,7 @@ ring's `src` and `dst` as termini (B216), because it counted every link's ends a
 tenant, which keeps a link's END and sweeps a bend.
 */
 test('B244: deleting a closed ring sweeps all its waypoints, its src and dst included', () => {
-	const m = new Model(); attachRelations(m, { cellOf }); const log = new Log();
+	const m = new Model(); attachRelations(m, { nearest: NODE_GRID.nearest }); const log = new Log();
 	const [A, B, C] = ['node-0000a1', 'node-0000b2', 'node-0000c3'];
 	assert.equal(commit(m, log, { label: 'ring', ops: [wp(A, -2, 0), wp(B, 2, 0), wp(C, 0, 2),
 		{ op: 'put', kind: 'link', entity: { id: 'link-0000d4', name: 'ring', src: A, dst: B, via: [C], closed: true } }] }, 'lab', 'lab').ok, true);
@@ -227,7 +227,7 @@ test('B244: the sweep and the role derivation agree on where a link ends, rings 
 	for (const [name, shape] of Object.entries(shapes)) {
 		const l = { id: 'link-0000f3', name: 'l', ...shape };
 		const endpoint = waypointRoles(W, [l]).includes('endpoint');
-		const m = new Model(); attachRelations(m, { cellOf }); const log = new Log();
+		const m = new Model(); attachRelations(m, { nearest: NODE_GRID.nearest }); const log = new Log();
 		assert.equal(commit(m, log, { label: 'set', ops: [wp(W, 0, 0), wp(P, -3, 0), wp(Q, 3, 2), { op: 'put', kind: 'link', entity: l }] }, 'lab', 'lab').ok, true, name);
 		// a tenant keeping what was a link's end -- the condition the sweep is told through `wasBendOnly`, whose endsAt is the twin
 		assert.equal(commit(m, log, { label: 'del', ops: [{ op: 'del', kind: 'link', id: l.id }] }, 'lab', 'lab', net({ keepsOrphan: (_w, { wasBendOnly }) => !wasBendOnly })).ok, true, name);

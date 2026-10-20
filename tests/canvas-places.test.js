@@ -20,7 +20,8 @@ import { Model } from './fixtures/composed.mjs';
 import { placesOf } from '../app/src/snap.js';
 import { nudgeSelection } from '../app/src/commands.js';
 import { PRODUCT_CANVAS } from '../product/canvas.mjs';
-import { ZONE_EXT } from '../layouts/layout-table.mjs';
+import { ZONE_EXT, ZONE_GRIDS } from '../layouts/layout-table.mjs';
+import { NODE_GRID, nodeGridWithin } from '../kernel/geometry.mjs';
 
 const code = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
 const PLACES = placesOf(PRODUCT_CANVAS);
@@ -66,11 +67,23 @@ test('C-c: the canvas names no list of placed kinds', () => {
 	assert.doesNotMatch(clamp, /ANCHOR_KINDS|'zone'|ZONE_EXT|NODE_EXT|span/, 'the clamp reads each kind\'s declared place');
 });
 
+// RESTATED at H26.1 (SNAP-GRID.md section 5, appendix B): a place keeps its layout and extent and carries its grid, bounded by that
+// extent -- a place carrying none, or one bounded otherwise, is refused, naming its owner; the kernel's layout names are gone
+const grid1 = nodeGridWithin({ x: 1, y: 1 });
 test('C-c: a malformed place is refused when the places are composed, naming its owner', () => {
-	assert.throws(() => placesOf([{ owner: 'p', places: [{ kind: 'x', layout: 'nowhere', ext: { x: 1, y: 1 }, size: () => ({ w: 0, h: 0 }) }] }]), /place: p's place for x names layout nowhere, which the kernel does not have/);
-	assert.throws(() => placesOf([...PRODUCT_CANVAS, { owner: 'p', places: [{ kind: 'zone', layout: 'zone', ext: { x: 1, y: 1 }, size: () => ({ w: 0, h: 0 }) }] }]), /place: zone is placed by zones and by p/);
+	assert.throws(() => placesOf([{ owner: 'p', places: [{ kind: 'x', layout: 'nowhere', ext: { x: 1, y: 1 }, size: () => ({ w: 0, h: 0 }) }] }]), /place: p's place for x carries no grid bounded by its extent/);
+	assert.throws(() => placesOf([{ owner: 'p', places: [{ kind: 'x', layout: 'node', ext: { x: 60, y: 1 }, grid: grid1, size: () => ({ w: 0, h: 0 }) }] }]), /place: p's place for x carries a grid bounded by -1,-1 to 1,1, not its extent 60 x 1/);
+	assert.throws(() => placesOf([{ owner: 'p', places: [{ kind: 'x', layout: 'node', ext: { x: 1, y: 1 }, grid: NODE_GRID, size: () => ({ w: 0, h: 0 }) }] }]), /place: p's place for x carries no grid bounded by its extent/, 'a grid with no bounds is no place\'s');
+	assert.equal(placesOf([{ owner: 'p', places: [{ kind: 'x', layout: 'node', ext: { x: 1, y: 1 }, grid: grid1, size: () => ({ w: 0, h: 0 }) }] }]).get('x').owner, 'p', 'control: a place carrying its extent\'s grid');
+	assert.throws(() => placesOf([...PRODUCT_CANVAS, { owner: 'p', places: [{ kind: 'zone', layout: 'zone', ext: { x: 1, y: 1 }, grid: grid1, size: () => ({ w: 0, h: 0 }) }] }]), /place: zone is placed by zones and by p/);
 	// RESTATED at WD-b2 (H19.46): a place declares its size's source -- its own size, or its kind's parts -- and one declaring neither is refused, naming it
-	assert.throws(() => placesOf([{ owner: 'p', places: [{ kind: 'x', layout: 'node', ext: { x: 1, y: 1 } }] }]), /place: x has no size -- p's place declares neither its own size nor that its kind's parts size it/);
+	assert.throws(() => placesOf([{ owner: 'p', places: [{ kind: 'x', layout: 'node', ext: { x: 1, y: 1 }, grid: grid1 }] }]), /place: x has no size -- p's place declares neither its own size nor that its kind's parts size it/);
+});
+
+test('H26.1: each placed kind carries the grid its extent bounds -- the anchor the node grid\'s, the zone the zone grid\'s', () => {
+	assert.deepEqual(PLACES.get('node').grid.declaration, { shape: 'square', pitch: 60, origin: { x: 0, y: 0 }, bounds: { min: { x: -900, y: -480 }, max: { x: 900, y: 480 } } });
+	assert.deepEqual(PLACES.get('zone').grid.declaration, { shape: 'square', pitch: 60, origin: { x: 30, y: 30 }, bounds: { min: { x: -930, y: -510 }, max: { x: 930, y: 510 } } });
+	assert.equal(PLACES.get('zone').grid, ZONE_GRIDS.bounded, 'the zone\'s, opened once by the layouts plugin');
 });
 
 test('C-c: a dragged zone snaps on its own half-offset grid, not the node grid', async () => {

@@ -13,7 +13,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { Model, KINDS } from './fixtures/composed.mjs';
 import { attachRelations } from '../engine/store.mjs';
-import { cellOf } from '../kernel/geometry.mjs';
+import { NODE_GRID } from '../kernel/geometry.mjs';   // H26.1: the relation index is injected the node grid's nearest (it was cellOf)
 import * as coreAnchors from '../model/anchors.mjs';
 
 const code = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
@@ -21,7 +21,7 @@ const devices = async () => ({ ...(await import('../devices/device-shapes.mjs'))
 	...(await import('../devices/occupancy.mjs')), ...(await import('../devices/anchor-words.mjs')) });
 const board = (indexed) => {
 	const m = new Model();
-	if (indexed) attachRelations(m, { cellOf });
+	if (indexed) attachRelations(m, { nearest: NODE_GRID.nearest });
 	m.put('node', { id: 'node-0e0001', name: 'r', type: 'router', shape: 'circle', x: 0, y: 0 });
 	m.put('node', { id: 'node-0e0002', name: 'w', x: 60, y: 0 });
 	return m;

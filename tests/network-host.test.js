@@ -20,7 +20,7 @@ import { NETWORK_ROWS } from '../network/kinds.mjs';   // the network's kind and
 import { applyOps } from '../model/ops.mjs';
 import { Model } from '../model/model.mjs';
 import { attachRelations } from '../engine/store.mjs';
-import { cellOf } from '../kernel/geometry.mjs';
+import { NODE_GRID } from '../kernel/geometry.mjs';   // H26.1: the relation index is injected the node grid's nearest (it was cellOf)
 import { plan } from '../planner/txn.mjs';
 import { productKinds } from '../product/kinds.mjs';
 import { PIPE_ROW } from '../network/pipe-kind.mjs';
@@ -143,7 +143,7 @@ up down over a pipe another held; turning both back on could not rejoin them.
 test('B283: turning transit off at two pins of one link at once makes three straight pieces, and turning them back on rejoins it whole', () => {
 	const session = createNetworkSession();
 	const model = new Model({ kinds: productKinds(...NETWORK_ROWS), attached: { network: session.network }});
-	attachRelations(model, { cellOf });
+	attachRelations(model, { nearest: NODE_GRID.nearest });
 	const [S, A, B, E] = ['node-00000a', 'node-00000b', 'node-00000c', 'node-00000d'];
 	[[S, -360, 0], [A, -240, -120], [B, -120, 0], [E, 0, -120]].forEach(([id, x, y]) => model.put('node', { id, name: id, x, y }));
 	model.put('link', { id: 'link-000001', name: 'l', src: S, dst: E, via: [A, B] });
@@ -183,7 +183,7 @@ test('B283: turning transit off at two pins of one link at once makes three stra
 test('B348: two transit toggles sent before the first answer arrives keep each toggle\'s notice in FIFO order', () => {
 	const session = createNetworkSession();
 	const model = new Model({ kinds: productKinds(...NETWORK_ROWS), attached: { network: session.network } });
-	attachRelations(model, { cellOf });
+	attachRelations(model, { nearest: NODE_GRID.nearest });
 	const P = 'node-00000a';
 	model.put('node', { id: P, name: 'P', x: 0, y: 0 });
 	const toOp = (e) => (e.op === 'set' ? { op: 'set', kind: e.kind, id: e.id, patch: e.after } : e);

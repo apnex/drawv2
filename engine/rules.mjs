@@ -37,10 +37,10 @@ protocol. Mutation stays with player intent. Ruled 2026-09-01.
 import { moversAt } from './movers.mjs';
 import { spawnersOf } from './spawners.mjs';
 import { towerFor, moverFor, tickAt, cycleOf, TICK_MS } from './kinds.mjs';
-import { STD } from '../kernel/spec.mjs';
+import { NODE_GRID } from '../kernel/geometry.mjs';   // H26.1: the node grid's declared pitch, the length a cell is
 import { typedNodes } from '../devices/device-shapes.mjs';   // whether a device is composed: the devices plugin's (O-e1)
 
-const PITCH = STD.pitch;
+const PITCH = NODE_GRID.declaration.pitch;
 
 /*
 The board at rest: everything a rule reads, gathered once.

@@ -6,7 +6,7 @@ import { makeZone } from '../zones/make-zone.mjs';   // O-b1: the zones plugin's
 import assert from 'node:assert/strict';
 import { Model } from './fixtures/composed.mjs';   // the network's kinds, the link among them (S-e)
 import { attachRelations } from '../engine/store.mjs';
-import { cellOf, px } from '../kernel/geometry.mjs';
+import { NODE_GRID } from '../kernel/geometry.mjs';   // H26.1: the relation index is injected the node grid's nearest (it was cellOf)
 import { STD } from '../kernel/spec.mjs';
 import { makeNode, makeWaypoint } from '../devices/make-node.mjs';   // O-e1: the devices plugin's factories
 import { occupiedAt, waypointAt } from '../devices/occupancy.mjs';   // O-e1: which device or waypoint is on a cell
@@ -14,20 +14,24 @@ import { occupiedAt, waypointAt } from '../devices/occupancy.mjs';   // O-e1: wh
 // R5 — the engine stages `atCell` (a logical cell EDB atom) off the entity, via the kernel's
 // single-sourced px→cell primitive. These are the FIRST suite tests over the app/src + engine +
 // kernel substrate (the rest of the suite targets the legacy client/ + server/).
+// RESTATED at H26.1 (SNAP-GRID.md appendix B): the primitive is the node grid's `nearest` (snap-grid), injected as `cellOf` was;
+// its exactness against the old one is held by tests/grid-parity.test.js. `cellOf` and `px` are deleted.
+const cell = (v) => NODE_GRID.nearest({ x: v, y: 0 }).col;
+const px = (c) => NODE_GRID.pointOf({ col: c, row: 0 }).x;
 
-test('cellOf is the inverse of px() and rounds to the nearest cell', () => {
-	for (const c of [-15, -1, 0, 1, 7, 16]) assert.equal(cellOf(px(c)), c);
-	assert.equal(cellOf(0), 0);
-	assert.equal(cellOf(STD.pitch / 2 - 1), 0);          // just below the half-cell boundary
-	assert.equal(cellOf(STD.pitch / 2 + 1), 1);          // just above
-	assert.equal(cellOf(STD.pitch / 2), 1);              // exact half-cell tie rounds up (Math.round)
-	assert.equal(cellOf(-STD.pitch), -1);
-	assert.ok(Object.is(cellOf(-STD.pitch / 2), 0));     // signed zero normalized: -0 → +0 (no "-0" cell key)
+test('the node grid\'s nearest is the inverse of its pointOf, and rounds to the nearest cell', () => {
+	for (const c of [-15, -1, 0, 1, 7, 16]) assert.equal(cell(px(c)), c);
+	assert.equal(cell(0), 0);
+	assert.equal(cell(STD.pitch / 2 - 1), 0);          // just below the half-cell boundary
+	assert.equal(cell(STD.pitch / 2 + 1), 1);          // just above
+	assert.equal(cell(STD.pitch / 2), 1);              // exact half-cell tie rounds up (Math.round)
+	assert.equal(cell(-STD.pitch), -1);
+	assert.ok(Object.is(cell(-STD.pitch / 2), 0));     // signed zero normalized: -0 -> +0 (no "-0" cell key)
 });
 
 function seeded() {
 	const m = new Model();
-	attachRelations(m, { cellOf });                      // inject px→cell; sets m.index = the maintained relations
+	attachRelations(m, { nearest: NODE_GRID.nearest });                      // inject px->cell; sets m.index = the maintained relations
 	const n = makeNode(m, 'router', { x: 120, y: -60 }); m.put('node', n);
 	const w = makeWaypoint(m, { x: 0, y: 180 });          m.put('node', w);
 	const l = makeLink(m, n.id, w.id);                    m.put('link', l);
@@ -36,11 +40,11 @@ function seeded() {
 	return { m, n, w, l, z, g };
 }
 
-test('atCell derives [cellOf(x), cellOf(y)] for the cell-placed kinds', () => {
+test('atCell derives [col, row] of the node grid\'s nearest for the cell-placed kinds', () => {
 	const { m, n, w } = seeded();
-	assert.deepEqual(m.index.atCell(n.id), [cellOf(n.x), cellOf(n.y)]);
+	assert.deepEqual(m.index.atCell(n.id), [cell(n.x), cell(n.y)]);
 	assert.deepEqual(m.index.atCell(n.id), [2, -1]);     // 120/60, -60/60
-	assert.deepEqual(m.index.atCell(w.id), [cellOf(w.x), cellOf(w.y)]);
+	assert.deepEqual(m.index.atCell(w.id), [cell(w.x), cell(w.y)]);
 	assert.deepEqual(m.index.atCell(w.id), [0, 3]);
 });
 
@@ -70,7 +74,7 @@ test('atCell is derived, not cached: it tracks a move with no index maintenance'
 
 test('atCell normalizes signed zero (an entity on a negative half-cell yields +0, not -0)', () => {
 	const m = new Model();
-	attachRelations(m, { cellOf });
+	attachRelations(m, { nearest: NODE_GRID.nearest });
 	const n = makeNode(m, 'router', { x: -30, y: 0 });    // -30/60 = -0.5 → Math.round = -0 before normalization
 	m.put('node', n);
 	const [cx, cy] = m.index.atCell(n.id);
@@ -102,7 +106,7 @@ test('occupancy index === px-scan fallback for grid-snapped points (parity)', ()
 });
 
 test('occupancy is maintained eagerly across put / set / del', () => {
-	const m = new Model(); attachRelations(m, { cellOf });
+	const m = new Model(); attachRelations(m, { nearest: NODE_GRID.nearest });
 	const n = makeNode(m, 'router', { x: 0, y: 0 }); m.put('node', n);
 	assert.equal(occupiedAt(m, { x: 0, y: 0 }), true);
 	m.set('node', n.id, { x: 120, y: 0 });                        // move one cell over
@@ -113,7 +117,7 @@ test('occupancy is maintained eagerly across put / set / del', () => {
 });
 
 test('Set<id> buckets keep legal at-rest co-occupancy correct (no premature eviction)', () => {
-	const m = new Model(); attachRelations(m, { cellOf });
+	const m = new Model(); attachRelations(m, { nearest: NODE_GRID.nearest });
 	const a = makeNode(m, 'router', { x: 60, y: 60 }); m.put('node', a);
 	const b = makeNode(m, 'host', { x: 60, y: 60 });   m.put('node', b);   // two nodes, one cell (move/nudge don't gate)
 	assert.equal(occupiedAt(m, { x: 60, y: 60 }), true);
@@ -124,7 +128,7 @@ test('Set<id> buckets keep legal at-rest co-occupancy correct (no premature evic
 });
 
 test('occupancy rebuilds on document load with no carry-over', () => {
-	const m = new Model(); attachRelations(m, { cellOf });
+	const m = new Model(); attachRelations(m, { nearest: NODE_GRID.nearest });
 	m.put('node', makeNode(m, 'router', { x: 240, y: 120 }));
 	assert.equal(occupiedAt(m, { x: 240, y: 120 }), true);
 	m.load({ meta: { id: '' }, nodes: [{ id: 'node-ffff01', type: 'host', x: -120, y: -60 }], links: [], zones: [], groups: [] });
@@ -139,14 +143,28 @@ test('waypointAt resolves the waypoint entity at a cell (index path)', () => {
 });
 
 test('waypointAt resolves co-occupancy in collection order (parity with the old find)', () => {
-	const m = new Model(); attachRelations(m, { cellOf });
+	const m = new Model(); attachRelations(m, { nearest: NODE_GRID.nearest });
 	const w1 = makeWaypoint(m, { x: 60, y: 0 }); m.put('node', w1);
 	const w2 = makeWaypoint(m, { x: 60, y: 0 }); m.put('node', w2);   // legal stack — move/nudge don't gate
 	assert.equal(waypointAt(m, { x: 60, y: 0 })?.id, w1.id, 'first in collection order, like the old all().find');
 });
 
-test('makeRelations fails fast without an injected cellOf', () => {
-	assert.throws(() => attachRelations(new Model()), /cellOf/);   // cellOf is mandatory since R13
+// H26.1 (SNAP-GRID.md section 6.2): a point the node grid cannot place -- a coordinate not finite, or beyond its domain -- has no
+// position, so it keys no cell: it never finds what holds a cell, as `cellOf`'s NaN key never did. No stored entity is such a point.
+test('a point the node grid cannot place keys no cell, so it finds no anchor', () => {
+	const m = new Model(); attachRelations(m, { nearest: NODE_GRID.nearest });
+	const n = makeNode(m, 'router', { x: 0, y: 0 }); m.put('node', n);
+	assert.equal(m.index.occupiedAnyAt({ x: 0, y: 0 }), true, 'control: the anchor at the origin is found');
+	for (const p of [{ x: NaN, y: 0 }, { x: 0, y: Infinity }, { x: 2 ** 60, y: 0 }]) {
+		assert.equal(m.index.occupiedAnyAt(p), false, `${p.x},${p.y} is in no cell`);
+		assert.deepEqual(m.index.anchorsAt(p), [], `${p.x},${p.y} holds no anchor`);
+	}
+});
+
+// RESTATED at H26.1: the injected function is the node grid's `nearest`, its option named so, and its absence refused naming it
+test('makeRelations fails fast without an injected nearest', () => {
+	assert.throws(() => attachRelations(new Model()), /requires an injected \{ nearest \}/);   // mandatory since R13
+	assert.throws(() => attachRelations(new Model(), { cellOf: (v) => v }), /requires an injected \{ nearest \}/, 'the old option is no longer read');
 });
 
 // ---- S2 parity oracle: the two snapshot-diff hard cases NOT previously exercised THROUGH THE INDEX
@@ -156,7 +174,7 @@ test('makeRelations fails fast without an injected cellOf', () => {
 
 test('incidence snapshot-diff: a link via-change reroutes linksAt (index === scan)', () => {
 	const m = new Model();
-	const { detach } = attachRelations(m, { cellOf });
+	const { detach } = attachRelations(m, { nearest: NODE_GRID.nearest });
 	const n1 = makeNode(m, 'host', { x: 0, y: 0 }); m.put('node', n1);
 	const n2 = makeNode(m, 'host', { x: 300, y: 0 }); m.put('node', n2);
 	const w1 = makeWaypoint(m, { x: 60, y: 0 }); m.put('node', w1);
@@ -174,7 +192,7 @@ test('incidence snapshot-diff: a link via-change reroutes linksAt (index === sca
 
 test('membership re-ownership: a member reassigned (add-to-B before remove-from-A) stays owned (index === scan)', () => {
 	const m = new Model();
-	const { detach } = attachRelations(m, { cellOf });
+	const { detach } = attachRelations(m, { nearest: NODE_GRID.nearest });
 	const ids = [];
 	for (let i = 0; i < 4; i++) { const n = makeNode(m, 'host', { x: i * 60, y: 0 }); m.put('node', n); ids.push(n.id); }
 	const [a, b, c, d] = ids;

@@ -4,8 +4,9 @@ Anchor resolution -- turning a RELATIONSHIP into a position, server-side.
   resolveAnchor(model, at)   PURE. Reads a model, returns an anchor or a refusal.
 
 Sovereign duty: choosing WHICH free anchor satisfies a relationship, and nothing else. The grid
-itself belongs to `kernel/geometry.mjs` (`LAYOUTS`, `anchorAt`), occupancy belongs to the model,
-and this composes the two rather than restating either.
+itself belongs to `kernel/geometry.mjs` (`NODE_GRID`, `nodeGridWithin`; snap-grid answers where its
+positions lie, H26.1), occupancy belongs to the model, and this composes the two rather than
+restating either.
 
 B189 -- why this exists at all.
 
@@ -26,15 +27,15 @@ Placed in `server/` rather than `model/` deliberately: this needs `kernel/` for 
 `model/` is a sovereign sibling of `kernel/` that imports it nowhere (`model/limits.mjs`).
 */
 
-import { LAYOUTS, anchorAt } from '../kernel/geometry.mjs';
+import { NODE_GRID, nodeGridWithin } from '../kernel/geometry.mjs';
 import { NODE_EXT } from '../model/surface.mjs';
 import { ANCHOR_KINDS } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
 import { typedNodes } from '../devices/device-shapes.mjs';
 
 // The four directions a caller may ask for, as unit steps on the grid. Screen coordinates, so `up`
 // is negative y -- the same mapping `cli/verbs.mjs` shipped, kept identical so moving the rule
-// cannot silently change where a node lands.
-const DIRS = { right: [1, 0], left: [-1, 0], up: [0, -1], down: [0, 1] };
+// cannot silently change where a node lands. H26.1: each names the node grid's direction it steps in (snap-grid's `next`).
+const DIRS = { right: '+x', left: '-x', up: '-y', down: '+y' };
 
 // How far a direction walks before giving up, in cells. 16 was the CLI's limit and is retained;
 // the grid's own extent bounds it in practice.
@@ -55,18 +56,17 @@ function takenSet(model) {
 
 // Every free anchor on the node grid. The node extent bounds it, which is the same rule the REST
 // anchors route applies: an anchor outside it cannot hold a node anyway.
+// H26.1 (SNAP-GRID.md appendix B): the node grid within its extent, its positions in view of the whole extent -- every one, by row
+// then column -- each mapped back to the anchor it was, `{ layout, cx, cy, x, y }`; which are free stays decided here. The placement
+// part consumes the lattice alone (appendix B), so the node layout's name, which the kernel's `anchorAt` stamped, is stated here
+const NODE_LAYOUT = 'node';
+const NODE_PLACES = nodeGridWithin(NODE_EXT);
+const NODE_EXTENT_VIEW = { region: { kind: 'rect', x: -NODE_EXT.x, y: -NODE_EXT.y, w: 2 * NODE_EXT.x, h: 2 * NODE_EXT.y }, scale: 1 };
 function freeAnchors(model) {
-	const L = LAYOUTS.node;
 	const taken = takenSet(model);
-	const out = [];
-	const cxMax = Math.floor(NODE_EXT.x / 60), cyMax = Math.floor(NODE_EXT.y / 60);
-	for (let cy = -cyMax; cy <= cyMax; cy++) {
-		for (let cx = -cxMax; cx <= cxMax; cx++) {
-			const a = anchorAt(L, cx, cy);
-			if (!taken.has(`${a.x},${a.y}`)) out.push(a);
-		}
-	}
-	return out;
+	return NODE_PLACES.inView(NODE_EXTENT_VIEW).positions
+		.map(({ position, point }) => ({ layout: NODE_LAYOUT, cx: position.col, cy: position.row, x: point.x, y: point.y }))
+		.filter((a) => !taken.has(`${a.x},${a.y}`));
 }
 
 // Squared distance, never a root. Two engines may return different last bits for the same segment
@@ -133,11 +133,17 @@ export function resolveAnchor(model, at = {}) {
 		if (at.dir !== undefined) {
 			const step = DIRS[at.dir];
 			if (!step) return fail(`dir must be one of ${Object.keys(DIRS).join(', ')}`);
-			const [dx, dy] = step;
 			const open = new Set(free.map((a) => `${a.x},${a.y}`));
-			for (let n = 1; n <= DIR_STEPS; n++) {
-				const x = ref.x + dx * 60 * n, y = ref.y + dy * 60 * n;
-				if (open.has(`${x},${y}`)) return { ok: true, ...free.find((a) => a.x === x && a.y === y) };
+			/*
+			H26.1 (SNAP-GRID.md appendix B, section 6.3): the walk steps with `next` on the node grid from the reference's own position, the
+			free set deciding as it did for every reference on the lattice -- which every stored node is, its fields validated on it. A
+			reference off the lattice has no position, and the walk finds nothing, where adding pixels to it could round onto an anchor.
+			*/
+			let p = NODE_GRID.positionAt(ref);
+			for (let n = 1; p && n <= DIR_STEPS; n++) {
+				p = NODE_GRID.next(p, step);
+				const point = p && NODE_GRID.pointOf(p);
+				if (point && open.has(`${point.x},${point.y}`)) return { ok: true, ...free.find((a) => a.x === point.x && a.y === point.y) };
 			}
 			return fail(`nothing free to the ${at.dir} of ${at.near}`);
 		}

@@ -23,6 +23,7 @@ import { pathOf, isLinkDown } from '../network/network-queries.mjs';   // the ne
 import { linksAt } from '../network/link-queries.mjs';   // which links meet an anchor: the network's (K13d)
 import { prepareSpawner } from './movers.mjs';
 import { BEND_R } from '../kernel/spec.mjs';
+import { NODE_GRID } from '../kernel/geometry.mjs';   // H26.1: the node grid's declared pitch -- a route's length in cells
 import { byId } from '../model/order.mjs';   // B246: the one derivation order
 import { bareAnchors } from '../devices/device-shapes.mjs';   // whether a device is composed: the devices plugin's (O-e1)
 
@@ -68,7 +69,7 @@ export function moversReport(model, at, spawner = null, moversAtFn) {
 		const mine = live.filter((m) => m.spawnerId === s.id);
 		return {
 			spawner: s.id, link: s.link,
-			cells: Math.round((s.length / 60) * 100) / 100,
+			cells: Math.round((s.length / NODE_GRID.declaration.pitch) * 100) / 100,
 			speed: s.speed, interval: s.interval,
 			transit: Math.round((s.length / s.pxSpeed) * 10) / 10,
 			inFlight: mine.length,

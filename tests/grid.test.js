@@ -1,10 +1,14 @@
 import { Model } from './fixtures/composed.mjs';   // WD-b2: a grid reads the diagram's layout record
 import { test } from 'node:test';
-import { LAYOUTS, onLayout, snapLayout, cellOn, pxOn, nearestAnchor, anchorAt } from '../kernel/geometry.mjs';
+// RESTATED at H26.1 (SNAP-GRID.md section 5): the kernel's grid arithmetic is deleted; the grids are snap-grid's, opened in the kernel
+// (NODE_GRID) and the layouts plugin (ZONE_GRIDS), and a span is what it runs through (devices/device-footprint.mjs spanThrough)
+import { NODE_GRID } from '../kernel/geometry.mjs';
+import { ZONE_GRIDS, LAYOUT_TABLE } from '../layouts/layout-table.mjs';
+import { spanThrough as spanExtent } from '../devices/device-footprint.mjs';
 import { STD } from '../kernel/spec.mjs';
 import assert from 'node:assert/strict';
 import * as snap from '../app/src/snap.js';
-import { CANVAS, GAP, NODE_EXT, spanExtent, snapNode, resolveBox, dist, snapIn, placesOf } from '../app/src/snap.js';
+import { CANVAS, GAP, NODE_EXT, snapNode, resolveBox, dist, snapIn, placesOf } from '../app/src/snap.js';
 import { PRODUCT_CANVAS } from '../product/canvas.mjs';
 // RESTATED at C-d step one (H19.32): the zone grid is the zones plugin's place, snapped through it -- snapZone left the canvas
 const snapZone = (pos) => snapIn(placesOf(PRODUCT_CANVAS).get('zone'), pos);
@@ -129,43 +133,48 @@ zones use lived in app/src/snap.js, and B110 added a second copy to planner/vali
 restatements of a rule the kernel did not hold, in the same session that fixed B107 for being
 exactly that.
 */
-test('B111: the kernel holds both grids, and they differ only by the offset', () => {
-	assert.equal(LAYOUTS.node.offset, 0);
-	assert.equal(LAYOUTS.zone.offset, STD.pitch / 2, 'a zone bounds cells, so its edges fall between them');
+// RESTATED at H26.1: the two grids are the node grid and the zone grid, each declared once -- the zone's offset in the layouts table
+const ZONE_GRID = ZONE_GRIDS.unbounded;
+const onX = (grid, v) => grid.positionAt({ x: v, y: grid.declaration.origin.y }) !== null;
+const anchorOn = (grid, x, y) => { const at = grid.nearest({ x, y }), p = grid.pointOf(at); return { cx: at.col, cy: at.row, x: p.x, y: p.y }; };
+test('B111: the two grids, each declared once, differ only by the offset', () => {
+	assert.equal(NODE_GRID.declaration.origin.x, 0);
+	assert.equal(ZONE_GRID.declaration.origin.x, STD.pitch / 2, 'a zone bounds cells, so its edges fall between them');
+	assert.deepEqual(LAYOUT_TABLE.map((l) => l.offset), [0, STD.pitch / 2], 'and the layouts table states the same');
 });
 
-test('B111: onLayout separates the two grids rather than conflating them', () => {
-	assert.equal(onLayout(LAYOUTS.node, 240), true);
-	assert.equal(onLayout(LAYOUTS.node, 270), false);
+test('B111: being on a grid separates the two grids rather than conflating them', () => {
+	assert.equal(onX(NODE_GRID, 240), true);
+	assert.equal(onX(NODE_GRID, 270), false);
 	// -780 is ON the node grid and OFF the zone grid: the exact mistake made by hand during B110
-	assert.equal(onLayout(LAYOUTS.node, -780), true);
-	assert.equal(onLayout(LAYOUTS.zone, -780), false);
-	assert.equal(onLayout(LAYOUTS.zone, -750), true);
+	assert.equal(onX(NODE_GRID, -780), true);
+	assert.equal(onX(ZONE_GRID, -780), false);
+	assert.equal(onX(ZONE_GRID, -750), true);
 });
 
 test('B111: an anchor carries both representations, so no consumer does arithmetic', () => {
-	const a = nearestAnchor(LAYOUTS.node, 270, -150);
-	assert.deepEqual(a, { layout: 'node', cx: 5, cy: -2, x: 300, y: -120 });
-	assert.equal(onLayout(LAYOUTS.node, a.x), true, 'an anchor is on-grid by construction');
+	const a = anchorOn(NODE_GRID, 270, -150);
+	assert.deepEqual(a, { cx: 5, cy: -2, x: 300, y: -120 });
+	assert.equal(onX(NODE_GRID, a.x), true, 'an anchor is on-grid by construction');
 
-	const z = nearestAnchor(LAYOUTS.zone, -780, -390);
-	assert.deepEqual(z, { layout: 'zone', cx: -13, cy: -7, x: -750, y: -390 });
-	assert.equal(onLayout(LAYOUTS.zone, z.x), true);
+	const z = anchorOn(ZONE_GRID, -780, -390);
+	assert.deepEqual(z, { cx: -13, cy: -7, x: -750, y: -390 });
+	assert.equal(onX(ZONE_GRID, z.x), true);
 });
 
 test('B111: the layout travels with the anchor, because a cell index alone is ambiguous', () => {
 	// the same cell resolves to different pixels on the two grids -- an anchor without its layout
 	// cannot be turned back into a position
-	assert.notEqual(anchorAt(LAYOUTS.node, 4, 0).x, anchorAt(LAYOUTS.zone, 4, 0).x);
-	assert.equal(anchorAt(LAYOUTS.node, 4, 0).x, 240);
-	assert.equal(anchorAt(LAYOUTS.zone, 4, 0).x, 270);
+	assert.notEqual(NODE_GRID.pointOf({ col: 4, row: 0 }).x, ZONE_GRID.pointOf({ col: 4, row: 0 }).x);
+	assert.equal(NODE_GRID.pointOf({ col: 4, row: 0 }).x, 240);
+	assert.equal(ZONE_GRID.pointOf({ col: 4, row: 0 }).x, 270);
 });
 
 test('B111: a round trip through cell and back is the identity, on either grid', () => {
-	for (const L of [LAYOUTS.node, LAYOUTS.zone]) {
+	for (const grid of [NODE_GRID, ZONE_GRID]) {
 		for (const v of [-900, -750, -60, 0, 60, 300, 900]) {
-			const on = snapLayout(L, v);
-			assert.equal(pxOn(L, cellOn(L, on)), on, `${L.name}: ${on} did not survive px->cell->px`);
+			const on = grid.pointOf(grid.nearest({ x: v, y: 0 }));
+			assert.deepEqual(grid.pointOf(grid.nearest(on)), on, `${on.x} did not survive px->cell->px`);
 		}
 	}
 });

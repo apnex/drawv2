@@ -21,7 +21,7 @@ not acquire an opinion about mutation, which is precisely the coupling that prod
 ─────────────────────────────────────────────────────────────────────────────────────────────────*/
 
 import { el } from './painter.js';
-import { CANVAS, GAP, NODE_R, dist } from './snap.js';
+import { NODE_R, dist } from './snap.js';
 import { kindOf } from '../../model/model.mjs';
 
 const HANDLE = 12;
