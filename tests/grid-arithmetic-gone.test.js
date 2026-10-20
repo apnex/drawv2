@@ -40,7 +40,8 @@ test('H26.1 (acceptance step 3): snapNode and snapIn only ask snap-grid -- the p
 	const text = code('app/src/snap.js');
 	assert.equal(bodyOf(text, 'snapNode'), 'return pointOn(NODES_WITHIN, pos);');
 	assert.equal(bodyOf(text, 'snapIn'), 'return pointOn(place.grid, pos);');
-	const helper = text.match(/^const pointOn = (.*)$/m)?.[1] ?? '';
+	// RESTATED at H26.1's verification (F6): the helper spans lines now, guarding a point that is not a number; read to its closing `};`
+	const helper = text.match(/^const pointOn = ([\s\S]*?)^\};?$/m)?.[1] ?? '';
 	assert.match(helper, /grid\.nearest\(pos\)/, 'the helper asks the grid its nearest position');
 	assert.match(helper, /grid\.pointOf\(at\)/, 'and that position\'s point');
 	assert.doesNotMatch(helper, /Math\.|[-+*/] *\d/, 'and does no arithmetic of its own');

@@ -42,9 +42,13 @@ zero width.
 H26.1 (SNAP-GRID.md appendix B): the dragged corner is the zone grid's position nearest the pointer; where it shares the fixed corner's
 column -- on the zone lattice, the only way the two can lie under a pitch apart -- it is the fixed corner's neighbour, `next(fixed,
 '+x')`, or `next(fixed, '-x')` where there is none at the extent's edge; the same for rows. The box is the span of the two corners.
+F6 (H26.1's verification): a corner the zone grid cannot place -- a coordinate not a number, not finite or beyond its domain, which
+no pointer and no stored zone is -- gives a box of NaN, as the old arithmetic's NaN did, where asking the grid would throw.
 */
+const positionOn = (grid, p) => (p && typeof p.x === 'number' && typeof p.y === 'number' ? grid.nearest(p) : null);
 function resizeBox(pos, fixedCorner) {
-	const dragged = ZONE_GRID.nearest(pos), fixed = ZONE_GRID.nearest(fixedCorner);
+	const dragged = positionOn(ZONE_GRID, pos), fixed = positionOn(ZONE_GRID, fixedCorner);
+	if (!dragged || !fixed) return { x: NaN, y: NaN, w: NaN, h: NaN };
 	const corner = {
 		col: dragged.col === fixed.col ? (ZONE_GRID.next(fixed, '+x') ?? ZONE_GRID.next(fixed, '-x')).col : dragged.col,
 		row: dragged.row === fixed.row ? (ZONE_GRID.next(fixed, '+y') ?? ZONE_GRID.next(fixed, '-y')).row : dragged.row,

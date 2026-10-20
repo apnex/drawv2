@@ -18,8 +18,13 @@ The frame two snapped points span -- a margin of a frame's half-extent around th
 H26.1 (SNAP-GRID.md appendix B): the two snapped corners are positions on the node grid; the origin is the least corner's point and
 the counts the index differences plus one, and the frame is the block's `span(...).through` grown by the frame's margin, which stays.
 */
+// F6 (H26.1's verification): a point the node grid cannot place -- not a number, not finite or beyond its domain, which no snapped
+// pointer is -- gives a frame of NaN, as the old arithmetic's NaN did, where asking the grid would throw
+const positionOn = (p) => (p && typeof p.x === 'number' && typeof p.y === 'number' ? NODE_GRID.nearest(p) : null);
 const frameSpan = (a, b) => {
-	const p = NODE_GRID.nearest(a), q = NODE_GRID.nearest(b), { through } = NODE_GRID.span(p, q);
+	const p = positionOn(a), q = positionOn(b);
+	if (!p || !q) return { x: NaN, y: NaN, w: NaN, h: NaN, origin: { x: NaN, y: NaN }, cols: NaN, rows: NaN };
+	const { through } = NODE_GRID.span(p, q);
 	return { x: through.x - NODE_R, y: through.y - NODE_R, w: through.w + 2 * NODE_R, h: through.h + 2 * NODE_R,
 		origin: { x: through.x, y: through.y }, cols: Math.abs(q.col - p.col) + 1, rows: Math.abs(q.row - p.row) + 1 };
 };

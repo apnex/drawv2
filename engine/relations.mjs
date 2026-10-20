@@ -20,12 +20,16 @@ H26.1 (dev/design/components/SNAP-GRID.md appendix B): a position's cell is the 
 `nearest` on NODE_GRID, injected at the composition root as `cellOf` was, so engine/ still imports no kernel module. A key stays
 the `col,row` string it was and `atCell` stays `[col, row]`. A point the grid cannot place -- not finite, or beyond its domain,
 which no validated position is -- keys to none.
+F6 (H26.1's verification): and so does a point whose `x` or `y` is not a number, which `nearest` refuses with a TypeError where
+`cellOf` answered NaN: it is asked of no grid. A point keyed to none is in no cell -- filed under none, found by no query, its
+`atCell` undefined -- so two such points never share one.
 */
 export function makeRelations(model, { nearest } = {}) {   // nearest injected (composition root) -- engine imports no kernel
 	if (typeof nearest !== 'function') throw new Error('makeRelations requires an injected { nearest } (a point -> its position on the node grid, NODE_GRID.nearest) -- wire it at the composition root');
 
-	const keyOf = (e) => { const at = nearest(e); return at ? at.col + ',' + at.row : 'none'; };
-	const cellsOf = (e) => [keyOf(e)];
+	const positionOf = (p) => (p && typeof p.x === 'number' && typeof p.y === 'number' ? nearest(p) : null);
+	const keyOf = (p) => { const at = positionOf(p); return at ? at.col + ',' + at.row : null; };   // null: in no cell
+	const cellsOf = (e) => { const key = keyOf(e); return key === null ? [] : [key]; };
 	const kindOfId = (id) => id.slice(0, id.indexOf('-'));
 	const refTargets = (kind) => (model.kinds.gathers[kind] ? [] : (model.kinds.row(kind)?.references ?? []));
 	const isRefKind = (kind) => refTargets(kind).length > 0;
@@ -82,10 +86,10 @@ export function makeRelations(model, { nearest } = {}) {   // nearest injected (
 			return gid ? model.get(kindOfId(gid), gid) : undefined;
 		},
 		atCell(id) {
-			const e = model.endpointOf(id), at = e && nearest(e);
+			const at = positionOf(model.endpointOf(id));
 			return at ? [at.col, at.row] : undefined;
 		},
-		occupiedAnyAt(p) { return cellAnchors.has(keyOf(p)); },
-		anchorsAt(p) { return [...(cellAnchors.get(keyOf(p)) ?? [])]; },
+		occupiedAnyAt(p) { const key = keyOf(p); return key !== null && cellAnchors.has(key); },
+		anchorsAt(p) { const key = keyOf(p); return key === null ? [] : [...(cellAnchors.get(key) ?? [])]; },
 	};
 }

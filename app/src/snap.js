@@ -26,8 +26,12 @@ export { SURFACE as CANVAS, NODE_EXT };
 
 // the point a grid places a pointer at: the position nearest it, as a fresh plain point a caller may keep or change, as it was. A
 // point snap-grid cannot place -- a coordinate that is not finite, or beyond its domain, which no pointer event and no validated
-// field is (SNAP-GRID.md section 6.2) -- snaps to no point
-const pointOn = (grid, pos) => { const at = grid.nearest(pos), p = at && grid.pointOf(at); return p ? { x: p.x, y: p.y } : { x: NaN, y: NaN }; };
+// field is (SNAP-GRID.md section 6.2) -- snaps to no point. F6 (H26.1's verification): nor does one whose x or y is not a number, which
+// the grid refuses with a TypeError where the old clamp answered NaN: it is asked of no grid
+const pointOn = (grid, pos) => {
+	const at = pos && typeof pos.x === 'number' && typeof pos.y === 'number' ? grid.nearest(pos) : null, p = at && grid.pointOf(at);
+	return p ? { x: p.x, y: p.y } : { x: NaN, y: NaN };
+};
 const NODES_WITHIN = nodeGridWithin(NODE_EXT);   // the node grid within its extent: where the palette and every gesture drop a node
 
 export function snapNode(pos) {
