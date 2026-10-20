@@ -1565,14 +1565,14 @@ AMENDED 2026-10-18: H25.6 and H25.7 live in production (`88ab283`), at the direc
 
 ---
 
-## H26 -- sovereign canvas and input components: four repositories that know nothing of draw, a second app on them, and draw rebuilt on them - `TODO`
+## H26 -- sovereign canvas and input components: four repositories that know nothing of draw, a second app on them, and draw rebuilt on them - `WIP`
 
 Opened 2026-10-18 by the director (`dev/DECISIONS.md` H26): the canvas and the input system become sovereign components, each in its own repository and registered in mission-kit, with no knowledge of draw; their seams cleaned, hardened and deduplicated; draw re-integrated on them; and the canvas able to pan and zoom. The four, and the gesture tester as the second app, are H26-1; their form -- public repositories, TypeScript, released by their own CI on GitHub, draw unbuilt and loading them through a generated import map -- is H26-2; the order below is H26-3.
 
 | # | Item | Cites | Sev | State |
 |---|---|---|---|---|
 | H26.0 | Design of record: each component's duty and contract, what draw supplies to each, the vocabulary check in each gate, the repository template, the release workflow, draw's generated import map and the tester's scope; checked against the axioms (M7), reviewed by several model families (context-lab), ratified with each component's vision (H26.0); part 1, `snap-grid` and the shared parts, ratified (H26-4) | **B346** | S3 | `WIP` |
-| H26.1 | `snap-grid`: the grid's arithmetic out of draw into its own repository, released, and draw on it -- the pipeline proven on the smallest (H26.1); built before the rest of H26.0 (H26-5) | feature | S3 | `WIP` |
+| H26.1 | `snap-grid`: the grid's arithmetic out of draw into its own repository, released, and draw on it -- the pipeline proven on the smallest (H26.1); built before the rest of H26.0 (H26-5); live in production (`draw-00237-rzm`, `416c062`) | feature | S3 | `DONE` |
 | H26.2 | `input-binding`: the rule matcher and the gesture lifecycle out of draw, draw's rules supplied as data (H26.2) | **B274** | S3 | `TODO` |
 | H26.3 | `input-capture`: device events into input facts, the hit test and the coordinates supplied by the app (H26.3) | feature | S3 | `TODO` |
 | H26.4 | `vector-scene`: the drawing loop, its layers and what lies under a point out of draw, draw's painters supplied (H26.4) | feature | S3 | `TODO` |
@@ -1617,9 +1617,6 @@ Scored so the comparison is a judgement, not an omission.\
 | **B396** | S4 | `forked` drops an undo and a commit queued behind the forking write (H24.18) | a person reports an edit lost in the first moments on a template, or the next change to the `forked` handler. |
 | **B397** | S4 | An unreadable request target gets no answer, its handler's error unhandled (H24.13) | a hung request or an unhandled rejection from the request handler is seen in production's log, or the next change to how the request handler reads its URL. |
 | **B398** | S4 | The browser keeps draw's files only under versioned addresses (H24.16-1) | H26's import map gives each module a versioned address, or the page's load time is shown to be a problem with compression in place. |
-| **B399** | S5 | The REST zone anchor list omits a column and a row of zone anchors (H26.0) | H26.1 is live, or an agent is seen asking for a zone anchor the list omits. |
-| **B400** | S5 | The zone cap counts the node grid's places, not the zone grid's (H26.0) | H26.1 is live, or a diagram is refused a zone by its cap. |
-| **B401** | S4 | An inherited property named as a layout answers 200 with nulls (H26.0; changed by H26.1) | H26.1 is built. |
 | **B402** | S5 | The CLI restates the pitch as literals (H26.0) | OD-3 is designed for the CLI, so it can take `snap-grid` (B346), or the pitch is changed. |
 | **B403** | S4 | A page loading across a deploy mixes two revisions, or 404s a component (H26.0) | a page is seen failing to start, or running two revisions' code, across a deploy. |
 | **B344** | S4 | OD-1: a diagram kept in mission-kit's entity-store | the director selects it, or entity-store's record rules the adjustments it needs -- an asynchronous durable storage port, and names optional per kind. |
@@ -1668,6 +1665,8 @@ B163, the last entry, was ratified and closed on 2026-10-01: the standing goals 
 
 | Row | Decision owed | Why it cannot be settled without you |
 |---|---|---|
+| **B399** | The REST zone anchor list: the zone grid within its extent (576) or the node extent's range (527) | It changes what agents are answered, and section 6.3 kept it for a ruling of its own (H26.1 live) |
+| **B400** | The zone kind's cap: the zone grid's places (576) or the node grid's form (527) | It changes which documents the write path accepts, and section 6.3 kept it for a ruling of its own (H26.1 live) |
 
 **R13 reads this table in both directions**, which is what `Held` has had since B123 and this section never did.\
 A row recording `RULING-OWED` must appear here, so a decision cannot wait unseen; an entry here must still be `RULING-OWED`, so a ruling that has landed cannot keep asserting itself.\
