@@ -16,6 +16,12 @@ own decision record, never by loosening this match; whether a component holds dr
 The installed packages are draw's @apnex/ dependencies (tools/components.mjs); one draw depends on with no dist/ to read fails, rather
 than passing for want of anything to check.
 
+A SOURCE MAP IS JSON (F1, H26.1's verification). Read as raw text, its escapes glued `\n` and `\t` onto the word after them -- `\tlink`
+read as `tlink` -- and the first word of every inlined source line was missed. A `.map` file is parsed: each `sourcesContent` entry is
+read line by line as the source it is, its findings named by the field and the source's own line (`#/sourcesContent/0:2`), and every
+other string in the map -- `file`, `sourceRoot`, `sources`, `names`, any field a tool adds -- as text; `mappings` is positions in
+base64, not text, and is not read. A map that is not JSON fails, rather than passing for want of anything read.
+
 Usage: node tools/scan-components.mjs [--root <dir>]
   --root  the tree whose package.json and node_modules are read (a test's copy); the default is this repository
 */
@@ -39,6 +45,12 @@ const listed = (w) => (LISTED.has(w) ? w : w.endsWith('s') && LISTED.has(w.slice
 
 const problems = [], findings = [];
 let names = [], files = 0;
+const scan = (where, text) => text.split('\n').forEach((line, i) => {
+	for (const word of candidates(line)) { const w = listed(word); if (w) findings.push(`${where}:${i + 1}  "${word}" (draw: ${w})`); }
+});
+// every string in a parsed map, by its JSON pointer, but `mappings` -- base64 positions, which a run of letters only seems to spell
+const stringsOf = (value, pointer = '') => (typeof value === 'string' ? [[pointer, value]]
+	: value && typeof value === 'object' ? Object.entries(value).flatMap(([k, v]) => (pointer === '' && k === 'mappings' ? [] : stringsOf(v, `${pointer}/${k}`))) : []);
 try { names = componentNames(ROOT); } catch (e) { problems.push(`package.json could not be read: ${e.message}`); }
 for (const name of names) {
 	const dist = path.join(ROOT, 'node_modules', ...name.split('/'), 'dist');
@@ -46,9 +58,11 @@ for (const name of names) {
 	if (!all.length) { problems.push(`${name} has no dist/ to read -- run npm ci`); continue; }
 	for (const f of all) {
 		files++;
-		fs.readFileSync(path.join(dist, f), 'utf8').split('\n').forEach((line, i) => {
-			for (const word of candidates(line)) { const w = listed(word); if (w) findings.push(`${name}/dist/${f}:${i + 1}  "${word}" (draw: ${w})`); }
-		});
+		const text = fs.readFileSync(path.join(dist, f), 'utf8');
+		if (!f.endsWith('.map')) { scan(`${name}/dist/${f}`, text); continue; }
+		let map;
+		try { map = JSON.parse(text); } catch { problems.push(`${name}/dist/${f} is not JSON -- a source map's inlined sources cannot be read`); continue; }
+		for (const [pointer, value] of stringsOf(map)) scan(`${name}/dist/${f}#${pointer}`, value);
 	}
 }
 for (const p of problems) console.log(`  \u2717 ${p}`);
