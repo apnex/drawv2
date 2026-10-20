@@ -429,7 +429,7 @@ The style checks are fetched, never copied, as draw fetches them (its `.github/w
 5. only then it publishes the draft.
 
 A failed run leaves at most a draft, which the next run of the same tag deletes and remakes; a published release is never replaced, and a fix is a new version.\
-Tags `v*` are protected so that only maintainers can push them, and the repository's release immutability setting is on where GitHub offers it (INFERRED available; checked when the first repository is made).\
+Tags `v*` are protected so that only maintainers can push them, and the repository's release immutability setting is on where GitHub offers it (INFERRED available; checked when the first repository is made, and confirmed, section 11).\
 Only CI makes a release; a file made on a machine is never attached.
 
 ### 7.5 How draw depends on a release
@@ -688,6 +688,23 @@ A reading scoped to revision 5's changes and section 10.4's dispositions, by `a`
 |---|---|---|
 | o:F1 | `ring-test`'s cells, made by a rounded distance, are not the geometric cells its text claimed: a point the rounding ties is in two cells though exactly nearer one, and the centre with three slots is in one cell only | **Fixed** by narrowing: appendix C claims only what its definitions make true -- cells of the rounded distance, no centre tie, no shared edge -- and says the shape exists for the kit, not as a geometry. |
 | o:F2 | a shape that answers differently on its fifth call makes two kits' failure lists differ, since only I7's calls are scheduled | **Fixed** by narrowing: the determinism SG11 promises is for shapes whose answers depend only on their arguments; a shape that is not is broken whatever a kit lists, and a kit, which samples, cannot always see it. Scheduling every call of every check was the alternative, and buys determinism only for shapes already broken. |
+
+---
+
+## 11. Settled at build
+
+`apnex/snap-grid` was built from section 3 by an agent that had not drafted it, verified twice by others -- a static reading, then a run that sealed it -- and released as `v0.1.0` by its own CI (H26-5).\
+Where section 3 was silent or open, the builder chose, the verifiers judged, and the recorder confirmed; each rule is stated in the component's `CONTRACT.md` and listed in its own decision record, D2.\
+None changes a decision of section 8.
+
+- **Arguments.** A point is a non-null value of type `object`, functions refused, its `x` and `y` read through getters; every other argument is read by descriptor, a getter never called; an error from a getter or a proxy is rethrown as the function's own `TypeError`.
+- **Rects.** A rect is malformed unless `x`, `y`, `w` and `h` are numbers with `w` and `h` each at least 0, so `NaN` is refused; an infinite size is well formed, and `enclosing` answers `null` for its edge.
+- **Options.** Omitted and `undefined` are the same; `null`, or a property present with the value `undefined`, is malformed.
+- **Shapes.** A shape is a frozen plain object of exactly `name` and `open`; `openGrid`'s guarantees hold for `square` and for an added shape that keeps SG11, and the kit checks that `open` answers in SG1's form, frozen and fresh.
+- **The kit.** I4's `args` are always `[view, options]`; `args` are copied one way, every point as `{ x, y }`; answers compare by value with `-0` equal to `0`, except under I7, which compares with `Object.is`, key order and prototype; a case position whose `offers` throws is not selected for I1 or I5, and I2 asks `offers` inside each point's tuple; `null` from `enclosing` for a case rect fails I8.
+- **I10.** The corpus -- 8,947 cases that agree -- lists apart 680 points with every reason that applies: 60 where draw's float arithmetic is not exact, 24 where draw's answer lies outside the domain, and 598 rects wholly beyond one side, for which draw's wrap inverts its block where SG9 gives the edge position; SG9 is draw's wrap for every rect the wrap is given, a selection's bounds within the extent.
+- **Checks.** The vocabulary check compares each identifier whole, split at case changes, underscores, hyphens and digits, and with a trailing `s` or `es` removed -- a word run together in lower case, as `zonegrid`, is not caught; the runtime check walks TypeScript's syntax tree.
+- **The release.** GitHub's immutable releases are on, confirming section 7.4's inference, and tags `v*` are held by a ruleset that lets only an administrator create, move or delete one; the release workflow refuses a version outside `0.x` and attaches the very file its consumer test installed; a source map's `sources` name the inlined content, not files the release must hold.
 
 ---
 
