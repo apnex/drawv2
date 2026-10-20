@@ -353,10 +353,10 @@ Why each mapping fits, and the rulings composing it would change, are `dev/desig
 |---|---|---|
 | OD-1, a diagram kept in an entity-store | B344 | the director selecting it, or a ruling in entity-store's record on the adjustments it needs |
 | OD-2, clients reaching the server over agp | B345 | OD-1 ruled, entity-api certified, and its follows unparked (zorg's D15) |
-| OD-3, how components reach the page and the installed CLI | B346 | the first ruling that puts a component in the page, the lab or the CLI |
+| OD-3, how components reach the page and the installed CLI -- the page's and the server's half answered: each release file pinned by its hash, the server importing it by name, the pages through a generated import map and a vendor mount (H26-2, H26-4; `dev/design/components/SNAP-GRID.md` section 7.6, built in H26.1); the installed CLI's half open | B346; the CLI's half, B402 | fired at H26-2 for the page and the server; the CLI's half when it is designed for the CLI, so the CLI can take `snap-grid`, or the pitch changes (B402) |
 
 **Held with them:**
 - zorg's D38 and D39, where they name drawv2's agent door and its connection codes, open until OD-2;
-- the anchored core in zorg's checkable form, until the first component composes;
+- the anchored core in zorg's checkable form, held until the first component composed, which it has -- the `lattice` composes `snap-grid` (H26-4), its grid arithmetic moved onto it in H26.1 -- so the hold has ended and the form is the director's to take up (A-0);
 - drawv2's board, backlog and decisions at mission-kit's paths (its ruling 0076), a divergence;
 - which of drawv2's parts become shared components, reasoned with agp's and zorg's own, when the director starts it (B343).
