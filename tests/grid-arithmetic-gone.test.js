@@ -50,16 +50,51 @@ test('H26.1 (acceptance step 3): snapNode and snapIn only ask snap-grid -- the p
 A rounding over a pitch: `Math.round`, `Math.floor` or `Math.ceil` whose argument divides by a pitch -- a name ending `pitch` or
 `PITCH`, `GAP`, `HALF`, `P`, or a literal 60 or 30, the pitch and the half pitch -- or whose result is multiplied by one. Comments
 are not code; the argument is read to its balancing parenthesis.
+
+STRENGTHENED at H26.1's verification (F2): the finder missed `(v-30)%60===0`, `Math.trunc(v/60)`, `Math.round(v/p)*p`, an aliased
+`const S=60`, `60*Math.round(v/6e1)` and `/(2*30)`. So the text is first normalised, every spelling of the pitch made one word, and
+then read:
+  spellings  a name ending `pitch` or `PITCH`, `GAP`, `HALF` or `P`; a number literal whose value is 60 or 30 however written (`6e1`,
+             `60.0`, `0x3c`), and a product of two literals that is one (`2*30`); and a name declared as any of these -- `const S =
+             60`, `= STD.pitch`, `= GAP`, `{ pitch: S } =` -- and so on, alias of alias, to a fixpoint
+  findings   `Math.round`, `floor`, `ceil` or `trunc` whose argument divides by the pitch, or whose result is multiplied by it on
+             either side; one whose argument ends dividing by any name X and whose result is multiplied by the same X, a
+             quantisation whatever X is called; and each remainder by the pitch, `% 60`, `% pitch`, `% S`
+What it cannot see is a pitch reached through a call or an object -- `step()`, `cfg.s` -- which is the reviewer's to find.
 */
-const PITCH_WORD = String.raw`(?:[\w.]*pitch|[\w.]*PITCH|GAP|HALF|P|60|30)\b`;
-const roundingsOverAPitch = (text) => {
-	const out = [];
-	for (const m of text.matchAll(/Math\.(?:round|floor|ceil)\(/g)) {
-		let depth = 1, i = m.index + m[0].length;
-		while (i < text.length && depth > 0) depth += text[i] === '(' ? 1 : text[i] === ')' ? -1 : 0, i++;
-		const arg = text.slice(m.index + m[0].length, i - 1), after = text.slice(i, i + 40);
-		if (new RegExp(String.raw`/\s*\(?\s*${PITCH_WORD}`).test(arg) || new RegExp(String.raw`^\s*\*\s*${PITCH_WORD}`).test(after)) out.push(text.slice(m.index, i));
+const PITCH = '__PITCH__';
+const NUM = String.raw`(?<![\w$.])(?:0[xX][0-9a-fA-F]+|(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?)(?![\w$.])`;
+const NAME = String.raw`(?<![\w$.])(?:[\w$]+\.)*(?:[\w$]*(?:pitch|PITCH)|GAP|HALF|P)(?![\w$])`;
+const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const isPitch = (v) => v === 60 || v === 30;
+function normalised(text) {
+	const product = (m, a, b) => (isPitch(Number(a) * Number(b)) ? PITCH : m);
+	let t = text.replace(new RegExp(String.raw`\(\s*(${NUM})\s*\*\s*(${NUM})\s*\)`, 'g'), product)
+		.replace(new RegExp(String.raw`(${NUM})\s*\*\s*(${NUM})`, 'g'), product)
+		.replace(new RegExp(NUM, 'g'), (m) => (isPitch(Number(m)) ? PITCH : m))
+		.replace(new RegExp(NAME, 'g'), PITCH);
+	for (let round = 0; round < 8; round++) {
+		const aliases = new Set([
+			...[...t.matchAll(new RegExp(String.raw`\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*${PITCH}\s*(?=[;,)\n]|$)`, 'g'))].map((m) => m[1]),
+			...[...t.matchAll(/\b(?:const|let|var)\s*\{([^}]*)\}\s*=/g)].flatMap((m) => [...m[1].matchAll(new RegExp(String.raw`${PITCH}\s*:\s*([A-Za-z_$][\w$]*)`, 'g'))].map((n) => n[1])),
+		].filter((a) => a !== PITCH));
+		if (!aliases.size) break;
+		for (const a of aliases) t = t.replace(new RegExp(String.raw`(?<![\w$.])${esc(a)}(?![\w$])`, 'g'), PITCH);
 	}
+	return t;
+}
+const roundingsOverAPitch = (text) => {
+	const t = normalised(text), out = [];
+	const divides = new RegExp(String.raw`/\s*\(?\s*${PITCH}(?![\w$])`);
+	for (const m of t.matchAll(/Math\.(?:round|floor|ceil|trunc)\s*\(/g)) {
+		let depth = 1, i = m.index + m[0].length;
+		while (i < t.length && depth > 0) depth += t[i] === '(' ? 1 : t[i] === ')' ? -1 : 0, i++;
+		const arg = t.slice(m.index + m[0].length, i - 1), after = t.slice(i, i + 80), before = t.slice(Math.max(0, m.index - 80), m.index);
+		const by = (x) => new RegExp(String.raw`^\s*\*\s*${esc(x)}(?![\w$])`).test(after) || new RegExp(String.raw`(?<![\w$.])${esc(x)}\s*\*\s*\(?\s*$`).test(before);
+		const divisor = arg.match(/\/\s*\(?\s*([A-Za-z_$][\w$.]*)\s*\)?\s*$/)?.[1];   // a name: a literal quantises only as the pitch
+		if (divides.test(arg) || by(PITCH) || (divisor && by(divisor))) out.push(t.slice(m.index, i));
+	}
+	for (const m of t.matchAll(new RegExp(String.raw`%=?\s*\(?\s*${PITCH}(?![\w$])`, 'g'))) out.push(m[0]);
 	return out;
 };
 
@@ -71,6 +106,30 @@ test('H26.1: the rounding finder finds a rounding over a pitch and passes one th
 	assert.equal(roundingsOverAPitch('const c = Math.round(Math.max(a, b) / NODE_GRID.declaration.pitch);').length, 1, 'a nested call, and a declared pitch');
 	assert.equal(roundingsOverAPitch('Math.round(n * 10) / 10; Math.floor(ms / 3600000); Math.round(d); Math.ceil(t / TICK_MS); Math.round(x / 600) * 1')
 		.length, 0, 'none of these divides by a pitch or multiplies by one');
+});
+
+// F2 (H26.1's verification): the six spellings the finder missed, each its own case, and what must still pass
+const MISSED = [
+	['(v-30)%60===0', 'a remainder over the pitch'],
+	['Math.trunc(v/60)', 'Math.trunc, beside round, floor and ceil'],
+	['Math.round(v/p)*p', 'a quantisation by any one name, divided by and multiplied by'],
+	['const S=60;\nexport const on = (v) => Math.round(v/S);', 'a name declared as the pitch'],
+	['60*Math.round(v/6e1)', 'the pitch written before the call, and 60 spelled 6e1'],
+	['Math.floor(v/(2*30))', 'the pitch as a product of literals'],
+];
+test('F2: each spelling the finder missed is found -- a remainder, trunc, a quantisation by a name, an alias, a pitch before the call, a product', () => {
+	for (const [code, why] of MISSED) assert.equal(roundingsOverAPitch(code).length, 1, `${why}: ${code}`);
+	for (const [code, why, count] of [
+		['const s = x % pitch, t = x % GAP;', 'a remainder by a pitch name, twice', 2],
+		['const { pitch: Q } = NODE_GRID.declaration;\nconst on = (v) => v % Q === 0;', 'a name destructured from a pitch', 1],
+		['const A = STD.pitch;\nconst B = A;\nconst n = Math.ceil(v / B);', 'an alias of an alias', 1],
+		['Math.round(v / 60.0); Math.floor(v / 0x3c); Math.ceil(v / 3e1)', 'other spellings of 60 and 30', 3],
+		['const k = PITCH * Math.round(v / step);', 'the pitch before the call, whatever it divides by', 1],
+	]) assert.equal(roundingsOverAPitch(code).length, count, `${why}: ${code}`);
+	for (const code of ['cx % 5 === 0', 'ms % 1000', 'Math.trunc(x)', 'const n = 5;\nconst m = Math.round(v / n);', 'Math.round(n * 100) / 100',
+		'const w = Math.round(v / 6) * 10;', "const css = 'calc(100% - 30px)';", 'Math.round(x / 600) * 600 + 0 * 30', 'const step = 2 * 3; Math.round(v / step) * 2']) {
+		assert.deepEqual(roundingsOverAPitch(code), [], `no rounding over a pitch: ${code}`);
+	}
 });
 
 const productModules = () => {
