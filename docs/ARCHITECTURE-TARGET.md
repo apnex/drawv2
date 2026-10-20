@@ -334,17 +334,17 @@ Why each mapping fits, and the rulings composing it would change, are `dev/desig
 | `kind-contract` | `shape-check` | shape-check: proposed in zorg, certified | OD-3; the target's section 4.3 |
 | `document` | `entity-store` | entity-store: proposed in zorg, certified | OD-1 |
 | `store` | `entity-store` | entity-store: proposed in zorg, certified | OD-1 |
-| `primitives` | `vector-scene` | vector-scene: candidate, zorg D32, steered in D35 | a contract; OD-3 |
-| `rules` | `input-binding` | input-binding: candidate, zorg D32, steered in D35 | a contract; OD-3 |
+| `primitives` | `vector-scene` | vector-scene: a drawv2 component by H26-1, its design owed (H26.0); a candidate in zorg D32, steered in D35 | a contract; OD-3 |
+| `rules` | `input-binding` | input-binding: a drawv2 component by H26-1, its design owed (H26.0); a candidate in zorg D32, steered in D35 | a contract; OD-3 |
 | `planner` | `change-planner` | change-planner: candidate, zorg D32, steered in D35 | a contract; OD-3 |
-| `canvas` | `input-binding` | input-binding: candidate, zorg D32, steered in D35 | a contract; OD-3 |
-| `renderer` | `vector-scene` | vector-scene: candidate, zorg D32, steered in D35 | a contract; OD-3 |
+| `canvas` | `input-binding` | input-binding: a drawv2 component by H26-1, its design owed (H26.0); a candidate in zorg D32, steered in D35 | a contract; OD-3 |
+| `renderer` | `vector-scene` | vector-scene: a drawv2 component by H26-1, its design owed (H26.0); a candidate in zorg D32, steered in D35 | a contract; OD-3 |
 | `sync` | `entity-view`, `write-outbox` | entity-view: candidate, zorg D32; write-outbox: candidate, zorg D32 | OD-2; OD-3 |
 | `server` | `static-host` | static-host: candidate, zorg D32 | a contract |
 | `access` | `caller-identity`, `credential-issuer`, `access-grants` | caller-identity: proposed in zorg, certified; credential-issuer: proposed in zorg, no code; access-grants: candidate, zorg BL20 | OD-2 |
-| `hub` | `entity-api`, `agp`, `resource-lease` | entity-api: proposed in zorg, failed two verifications; agp: registered in mission-kit, C1; resource-lease: candidate, zorg D32 | OD-2 |
-| `cli` | `operation-command` | operation-command: proposed in zorg, failed two verifications | OD-3 |
-| `export` | `vector-scene` | vector-scene: candidate, zorg D32, steered in D35 | a contract |
+| `hub` | `entity-api`, `agp`, `resource-lease` | entity-api: proposed in zorg, certified; agp: registered in mission-kit, C1; resource-lease: candidate, zorg D32 | OD-2 |
+| `cli` | `operation-command` | operation-command: proposed in zorg, certified | OD-3 |
+| `export` | `vector-scene` | vector-scene: a drawv2 component by H26-1, its design owed (H26.0); a candidate in zorg D32, steered in D35 | a contract |
 <!-- END GENERATED: architecture-target-alignment -->
 
 **The owed designs,** each designed and asked on its own when its trigger fires:
