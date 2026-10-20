@@ -10,7 +10,8 @@ ENV NODE_ENV=production
 # (the CLI defaults to http://localhost:8080 — itself). column lives in util-linux.
 RUN apk add --no-cache bash curl jq util-linux
 
-# dependency layer — one runtime dependency (ws); no git, no SSH key, no build step
+# dependency layer -- the runtime dependencies (ws, and since H26.1 the components, each a release file pinned by its hash in the
+# lockfile and served to the page from node_modules on the vendor mount); no git, no SSH key, no build step
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
 

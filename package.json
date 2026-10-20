@@ -6,7 +6,7 @@
 	"private": true,
 	"type": "module",
 	"engines": {
-		"node": ">=18"
+		"node": ">=22"
 	},
 	"scripts": {
 		"start": "node server/server.js",
@@ -16,6 +16,7 @@
 		"prepare": "[ ! -f tools/install-hook.sh ] || sh tools/install-hook.sh"
 	},
 	"dependencies": {
+		"@apnex/snap-grid": "https://github.com/apnex/snap-grid/releases/download/v0.1.0/apnex-snap-grid-0.1.0.tgz",
 		"ws": "^8.21.0"
 	}
 }
