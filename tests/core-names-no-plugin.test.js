@@ -52,8 +52,9 @@ const allLayerOf = () => {
 	for (const f of FOLDERS) if (f.layer && !['tools', 'tests'].includes(f.layer)) for (const m of walk(f.dir, f.skip ?? [])) map[m] = f.layer;
 	return map;
 };
+// H26.7: the five plugin folders under plugins/; the simulation's modules owned by their layer, as when they lived in engine/
 const PLUGIN_FOLDERS = ['layouts', 'devices', 'network', 'zones', 'groups'];
-const ownerPlugin = (f) => (PLUGIN_FOLDERS.includes(f.split('/')[0]) ? f.split('/')[0] : (LAYER.simulation ?? []).includes(f) ? 'simulation' : null);
+const ownerPlugin = (f) => (f.startsWith('plugins/') && PLUGIN_FOLDERS.includes(f.split('/')[1]) ? f.split('/')[1] : (LAYER.simulation ?? []).includes(f) ? 'simulation' : null);
 const KIND_OWNER = { layout: 'layouts', layouts: 'layouts', zone: 'zones', zones: 'zones', group: 'groups', groups: 'groups', link: 'network', links: 'network', pipe: 'network', pipes: 'network' };
 const FIELD_OWNER = { type: 'devices', shape: 'devices', span: 'devices', content: 'devices', glyph: 'devices', transit: 'network', spawn: 'simulation' };
 const foreignKindsIn = (f, text) => {
@@ -70,7 +71,7 @@ const plannerModules = () => fs.readdirSync(path.join(root, 'planner')).filter((
 
 // file -> { count, reason, cites, trigger }; a count may only fall (AMENDED H21.5, R-b: cites resolve, a trigger says when it ends)
 const RECORD = {
-	// model/model.mjs's 7 -- its link methods -- went to the network at K13d (H19.25, network/link-queries.mjs)
+	// model/model.mjs's 7 -- its link methods -- went to the network at K13d (H19.25, plugins/network/link-queries.mjs)
 	// RESTATED at H25.5 (B378, D4): the declarative scene helpers `zone`, `group` and `bboxOf` retired with the old scene renderer
 	// H26.1 (SNAP-GRID.md section 7.7, appendix B): kernel/geometry.mjs's 4 fell -- the zone lattice's offset left for the layouts table,
 	// with `LAYOUTS`, `anchorAt` and `nearestAnchor`. RESTATED at H26.1's verification (F3): to 1, the anchor's one builder, beside the grids
@@ -95,20 +96,18 @@ const PRODUCT_KIND_RECORD = {
 	'engine/situation.mjs': { count: 2, cites: ['D2'],
 		reason: 'the pointer situation naming `link` for the draw-a-link gesture and a selected link (D2)',
 		trigger: 'permanent' },
-	'engine/spawners.mjs': { count: 2, cites: ['SD11b'],
+	'plugins/simulation/spawners.mjs': { count: 2, cites: ['SD11b'],
 		reason: 'a spawner record and its movers report naming the `link` its movers ride along (SD11b)',
 		trigger: 'permanent' },
-	'lab/server.mjs': { count: 3, cites: ['O1', 'WD6'],
-		reason: 'the lab static server mounting `/layouts/`, `/zones/` and `/groups/` for the browser',
-		trigger: 'permanent' },
+	// H26.7: lab/server.mjs's 3 went -- it mounts /plugins/ once, where it mounted /layouts/, /zones/ and /groups/ apart
 	// RESTATED at H25.4 (B376): the layer ids went to product/canvas.mjs CANVAS_LAYERS, which the lab spreads into `NEEDED`
 	'lab/src/root.js': { count: 2, cites: ['H17-D1'],
 		reason: 'the lab composition root seeding its board\'s pipes (`board.pipes`) and counting them (`model.all(\'pipe\')`)',
 		trigger: 'permanent' },
-	'layouts/layout-canvas.mjs': { count: 1, cites: ['WD6', 'B325'],
+	'plugins/layouts/layout-canvas.mjs': { count: 1, cites: ['WD6', 'B325'],
 		reason: 'the layouts plugin\'s canvas part naming the `zone` grid record (`layout-000002`, WD6)',
 		trigger: 'a diagram varies its grids (B325)' },
-	'layouts/layout-table.mjs': { count: 1, cites: ['WD6', 'B325'],
+	'plugins/layouts/layout-table.mjs': { count: 1, cites: ['WD6', 'B325'],
 		reason: 'the default `zone` layout record (`layout-000002`) every diagram holds (WD6)',
 		trigger: 'a diagram varies its grids (B325)' },
 	'product/canvas.mjs': { count: 4, cites: ['H25.4'],
@@ -118,16 +117,14 @@ const PRODUCT_KIND_RECORD = {
 	'server/anchor.mjs': { count: 1, cites: ['SD1'],
 		reason: 'server-side placement resolving `at.inside` against the diagram\'s zones (SD1)',
 		trigger: 'permanent' },
-	'server/app.js': { count: 3, cites: ['O1', 'WD6'],
-		reason: 'the product server mounting `/layouts`, `/zones` and `/groups` for the browser',
-		trigger: 'permanent' },
+	// H26.7: server/app.js's 3 went -- it mounts /plugins once, where it mounted /layouts, /zones and /groups apart
 	'server/rest.js': { count: 23, cites: ['SD1'],
 		reason: 'the REST door\'s per-kind routes, entity summaries, and creation shortcuts',
 		trigger: 'the REST door dispatches per-kind routes and summaries through the composition\'s rows' },
 	'server/seed.js': { count: 9, cites: ['SD2'],
 		reason: 'the seed diagram\'s initial zones, groups, links and pipes',
 		trigger: 'permanent' },
-	'zones/zone-painter.mjs': { count: 1, cites: ['WD6'],
+	'plugins/zones/zone-painter.mjs': { count: 1, cites: ['WD6'],
 		reason: 'the zone place row\'s `layout: \'zone\'` key, naming which layout record a zone snaps to (WD6)',
 		trigger: 'permanent' },
 };
@@ -140,7 +137,7 @@ const PRODUCT_FIELD_RECORD = {
 
 // U3 (H21.7): device type names (`host`, `server`, `loadbalancer`, `firewall`, `vxlan`, `router`) across every product layer
 const TYPE_NAME_RECORD = {
-	'devices/device-types.mjs': { count: 6, cites: ['U4-1', 'U4-2', 'U4-3'],
+	'plugins/devices/device-types.mjs': { count: 6, cites: ['U4-1', 'U4-2', 'U4-3'],
 		reason: 'the one device-type declaration table (`DEVICE_TYPES`): `host`, `server`, `loadbalancer`, `firewall`, `vxlan`, `router` (U4-1, U4-2, U4-3)',
 		trigger: 'permanent' },
 	'server/seed.js': { count: 8, cites: ['SD2'],
@@ -150,7 +147,7 @@ const TYPE_NAME_RECORD = {
 
 test('O-d: the product composes layout, node, zone, group, link, pipe from the core\'s anchor and the plugins, in product/kinds.mjs', async () => {
 	const { productKinds } = await import('../product/kinds.mjs');
-	const { NETWORK_ROWS } = await import('../network/kinds.mjs');
+	const { NETWORK_ROWS } = await import('../plugins/network/kinds.mjs');
 	const k = productKinds(...NETWORK_ROWS);
 // RESTATED at WD-b1 (H19.45; WD6): the layouts plugin's kind is composed first -- a document lists its grids before what sits on them
 	assert.deepEqual(k.list, ['layout', 'node', 'zone', 'group', 'link', 'pipe']);
@@ -233,8 +230,8 @@ test('U3 (H21.7): no product layer goes unscanned -- foreign kinds, foreign fiel
 test('U3 (H21.7): the widened measures see every quoting form, object keys, collection properties, cross-plugin reads, and device type names', () => {
 	assert.deepEqual(foreignKindsIn('server/x.js', "const a = 'zone'; const b = \"groups\"; const c = `pipe`; const d = doc.layouts; const o = { links: 1 };"),
 		['zone', 'groups', 'pipe', 'layouts', 'links']);
-	assert.deepEqual(foreignKindsIn('zones/x.mjs', "const own = 'zone'; const foreign = 'link';"), ['link'], 'a plugin may name its own kind, not another\'s');
-	assert.deepEqual(foreignFieldsIn('network/x.mjs', "const own = e.transit; const foreign = e.type + e.span;"), ['type', 'span'], 'a plugin may read its own field, not another\'s');
+	assert.deepEqual(foreignKindsIn('plugins/zones/x.mjs', "const own = 'zone'; const foreign = 'link';"), ['link'], 'a plugin may name its own kind, not another\'s');
+	assert.deepEqual(foreignFieldsIn('plugins/network/x.mjs', "const own = e.transit; const foreign = e.type + e.span;"), ['type', 'span'], 'a plugin may read its own field, not another\'s');
 	assert.deepEqual(deviceTypesIn("const a = 'router'; const b = \"firewall\"; const c = `vxlan`; const o = { loadbalancer: 1 }; const g = GLYPH_BB.host; const id = 'glyph-server';\nconst t = { type: 'host', glyph: \"server\" };\nconst ok = { host: window, by: 'server' };"),
 		["'router'", '"firewall"', '`vxlan`', 'loadbalancer:', 'GLYPH_BB.host', 'glyph-server', "'host'", '"server"']);
 });
@@ -255,10 +252,10 @@ test('H21.5: the core and product ratchets\' exceptions cite live work and say w
 // U4 (H21.3, B282; UNIFICATION-AUDIT.md section 7): adding a seventh device type is one declaration, driving appearance,
 // routing, behaviour and the records `/api/v1/types` serves
 test('U4 (H21.3): adding a seventh device type in one declaration drives appearance, routing, behaviour and /types, and refuses an unknown pack', async () => {
-	const { DEVICE_TYPES } = await import('../devices/device-types.mjs');
+	const { DEVICE_TYPES } = await import('../plugins/devices/device-types.mjs');
 	const { composeProductTypes } = await import('../product/types.mjs');
-	const { nodeOffersTransit, nodePermitsBend, transitOffersOf } = await import('../network/transit-offers.mjs');
-	const { towerFor } = await import('../engine/kinds.mjs');
+	const { nodeOffersTransit, nodePermitsBend, transitOffersOf } = await import('../plugins/network/transit-offers.mjs');
+	const { towerFor } = await import('../plugins/simulation/kinds.mjs');
 	try {
 		const slices = composeProductTypes({
 			...DEVICE_TYPES,

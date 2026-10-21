@@ -13,7 +13,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { validateDoc } from '../planner/validate.js';
 import { productKinds } from '../product/kinds.mjs';
-import { NETWORK_ROWS } from '../network/kinds.mjs';
+import { NETWORK_ROWS } from '../plugins/network/kinds.mjs';
 import { makeApp } from './fixtures/app.mjs';
 import fs from 'node:fs';
 import os from 'node:os';

@@ -10,8 +10,8 @@ cannot place gives a point, a box or a frame of NaN, and the index keys it to no
 */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { ZONE_HANDLE_SPECS } from '../zones/zone-gestures.mjs';
-import { DEVICE_PRESSES } from '../devices/device-gestures.mjs';
+import { ZONE_HANDLE_SPECS } from '../plugins/zones/zone-gestures.mjs';
+import { DEVICE_PRESSES } from '../plugins/devices/device-gestures.mjs';
 import { snapNode, snapIn, placesOf } from '../app/src/snap.js';
 import { PRODUCT_CANVAS } from '../product/canvas.mjs';
 import { Model } from './fixtures/composed.mjs';

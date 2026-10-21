@@ -26,7 +26,7 @@ THE FACTS each gesture hands over -- only what a row reads:
             srcIsNode, hand, handIsSrcType, chained, srcSelected   for what a click means
   marquee   click, hand, shift, ctrl, alt
   ctrl-click  exists     the entity pressed still exists
-  handle    the declaring plugin's facts (C-d): a link end's retargets and admitted (network/link-handles.mjs), a zone's changed
+  handle    the declaring plugin's facts (C-d): a link end's retargets and admitted (plugins/network/link-handles.mjs), a zone's changed
   box       area         the box has width and height (the opening row's own releases, C-d)
   drag-start  unplaced, onMark, linksOnLeft, leftPress    what the press was on (by the plugins' facts, D4), and with which button
 */
@@ -76,10 +76,10 @@ export const CTRL_CLICKS = [
 ];
 
 // ---- a replug: retarget one end, where the pair has room ----
-// C-d (H19.32): a handle's release is the declaring plugin's rows -- the network's re-plug (network/link-handles.mjs)
+// C-d (H19.32): a handle's release is the declaring plugin's rows -- the network's re-plug (plugins/network/link-handles.mjs)
 
 // ---- a zone drawn: made when it has area ----
-// C-d (H19.32): what a released box means is the row's that opened it -- the zones plugin's makes a zone (zones/zone-gestures.mjs)
+// C-d (H19.32): what a released box means is the row's that opened it -- the zones plugin's makes a zone (plugins/zones/zone-gestures.mjs)
 
 /*
 ---- a press becoming a drag ----

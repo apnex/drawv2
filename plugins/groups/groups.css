@@ -1,0 +1,7 @@
+/*
+THE GROUPS PLUGIN'S STYLESHEET -- the look of what the groups plugin draws (plugins/groups/group-painter.mjs). H25.1 (B366): moved
+here from app/style.css word for word.
+*/
+
+/* ---- groups (draw-only hull; nodes stay the interaction targets) ---- */
+.group { pointer-events: none; }

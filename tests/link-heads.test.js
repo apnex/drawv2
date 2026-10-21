@@ -12,10 +12,10 @@ network's link painter, as the canvas does) is held at every kind of anchor.
 */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { headLength, HEAD_OUTLINE, outlineDistance, linkHead } from '../network/link-head.mjs';
+import { headLength, HEAD_OUTLINE, outlineDistance, linkHead } from '../plugins/network/link-head.mjs';
 import { svgDocument } from '../server/svg.mjs';
 import { heldLayouts } from './fixtures/composed.mjs';
-import { pipeEntity } from '../network/pipe-kind.mjs';
+import { pipeEntity } from '../plugins/network/pipe-kind.mjs';
 
 const CIRCLE = { form: 'circle', r: 20 };
 const SQUARE = { form: 'rect', x0: -20, y0: -20, x1: 20, y1: 20 };

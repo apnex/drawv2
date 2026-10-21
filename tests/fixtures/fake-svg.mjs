@@ -1,7 +1,7 @@
 /*
 A FAKE SVG LAYER for painters tested without a browser: `el(tag, attrs, parent)` as app/src/painter.js has it, making
 nodes that keep their attributes and children, answer `setAttribute` and `remove`, and can be listed back. Enough for the
-network's pipe painter (network/host.mjs), which keeps one element per pipe and updates it in place.
+network's pipe painter (plugins/network/host.mjs), which keeps one element per pipe and updates it in place.
 */
 export function fakeLayer() {
 	const make = (tag, attrs = {}, parent = null) => {

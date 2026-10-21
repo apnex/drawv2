@@ -14,7 +14,7 @@ painting every endpoint in the spawning green passed the test as well (found by 
 tests/browser.test.js `H24.8 (B361)` draws it in the page and the served file; tools/probe/parity.mjs draws it at two commits.
 */
 import { productKinds } from '../../product/kinds.mjs';
-import { pipeEntity } from '../../network/pipe-kind.mjs';
+import { pipeEntity } from '../../plugins/network/pipe-kind.mjs';
 
 export const PARITY_DIAGRAM = '0000000000fa0001';
 

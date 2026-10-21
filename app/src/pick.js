@@ -86,7 +86,7 @@ export function hitWith(picks) {
 
 /*
 C-e, step three (H19.33) -- WHAT IS AT A POINT is what each part says its items cover (`at`), asked in the parts' order: the
-devices plugin's devices (devices/device-footprint.mjs), the network's waypoints and links (network/anchor-points.mjs). An entry
+devices plugin's devices (plugins/devices/device-footprint.mjs), the network's waypoints and links (plugins/network/anchor-points.mjs). An entry
 names the word its items are picked by and the items (`of`), and any of: what a press grabs (`grabs`), what keeps a hover
 (`under`), what a box takes (`within`), and what a box takes once it took what the item joins (`joins`).
 */

@@ -19,7 +19,7 @@ import { PRODUCT_CANVAS as CANVAS_FOR_ROWS } from '../product/canvas.mjs';
 const RECOGNIZE = pressRows(picksOf(CANVAS_FOR_ROWS), placesOf(CANVAS_FOR_ROWS));
 import { LINK_RELEASES, MARQUEE_RELEASES, CTRL_CLICKS } from '../app/src/releases.js';
 import { RUN_PRESSES } from '../app/src/run-mode.js';
-import { networkInput } from '../network/keys.mjs';
+import { networkInput } from '../plugins/network/keys.mjs';
 import { ACTION_LABELS, actionOf } from '../app/src/actions.js';
 import { eventsFor, shown, helpSections } from '../app/src/help.js';
 import { makeInput } from './fixtures/client-harness.mjs';

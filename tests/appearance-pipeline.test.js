@@ -45,9 +45,9 @@ test('C-a: a device draws its frame and glyph with the network\'s transit ring a
 
 test('C-a: each plugin brings its appearances, and the product composes them with the anchor\'s order', async () => {
 	const parts = await canvas();
-	const { DEVICES_CANVAS } = await import('../devices/device-appearance.mjs');
-	const { NETWORK_CANVAS } = await import('../network/canvas.mjs');   // RESTATED at C-a step four: the network's whole part
-	const { SIMULATION_CANVAS } = await import('../engine/spawn-appearance.mjs');
+	const { DEVICES_CANVAS } = await import('../plugins/devices/device-appearance.mjs');
+	const { NETWORK_CANVAS } = await import('../plugins/network/canvas.mjs');   // RESTATED at C-a step four: the network's whole part
+	const { SIMULATION_CANVAS } = await import('../plugins/simulation/spawn-appearance.mjs');
 	assert.deepEqual(DEVICES_CANVAS.appearances.map((a) => a.id), ['device']);
 	assert.deepEqual(NETWORK_CANVAS.appearances.map((a) => a.id), ['marks', 'transit']);
 	assert.deepEqual(SIMULATION_CANVAS.appearances.map((a) => a.id), ['spawning']);
@@ -99,9 +99,9 @@ device whose transit is off keeps its transit ring, which still composes over th
 */
 test('H24.9 (B362): a device the graph makes a junction draws no junction mark -- three links ending at it, or one pinned through it -- in authoring, in run mode and in the export; a waypoint junction keeps its ring', async () => {
 	const parts = await canvas();
-	const { waypointRolesIn } = await import('../network/roles.mjs');
+	const { waypointRolesIn } = await import('../plugins/network/roles.mjs');
 	const { svgDocument } = await import('../server/svg.mjs');
-	const { pipeEntity } = await import('../network/pipe-kind.mjs');
+	const { pipeEntity } = await import('../plugins/network/pipe-kind.mjs');
 	const { heldLayouts } = await import('./fixtures/composed.mjs');
 	const node = (id, name, type, x, y, more = {}) => ({ id, name, ...(type ? { type, shape: 'circle' } : {}), x, y, ...more });
 	const NODES = [
@@ -144,7 +144,7 @@ test('H24.9 (B362): a device the graph makes a junction draws no junction mark -
 		zones: [], groups: [], selection: [],
 	});
 	// a ring is known by its radius -- CORRECTED at H25.2b (B370): the export keeps a waypoint circle's class now; the radius still names it
-	const { waypointJunction } = await import('../network/appearance.mjs');
+	const { waypointJunction } = await import('../plugins/network/appearance.mjs');
 	const ring = new RegExp(`<circle[^>]*\\br="${waypointJunction().radius}"`);
 	const group = (id) => { const at = exported.indexOf(`<g id="${id}"`); return exported.slice(at, exported.indexOf('</g>', at + 1)); };
 	assert.match(group('node-0e3016'), ring, 'control: the export draws the waypoint junction\'s ring');

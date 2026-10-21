@@ -88,8 +88,8 @@ test('C-e: a held type clicked onto a device\'s cell sends nothing; a click on a
 // hand's preview, fitted as the device is.
 test('B318: the ghost draws each item\'s glyph fitted to the socket box, as the device it stamps is', async () => {
 	const { STD } = await import('../kernel/spec.mjs');
-	// RESTATED at H21.3 (U4-1, B282): the glyph boxes live with the device type declaration in devices/device-types.mjs
-	const { GLYPH_BB } = await import('../devices/device-types.mjs');
+	// RESTATED at H21.3 (U4-1, B282): the glyph boxes live with the device type declaration in plugins/devices/device-types.mjs
+	const { GLYPH_BB } = await import('../plugins/devices/device-types.mjs');
 	const { ghostNode } = await import('../app/src/painter.js');
 	const hand = PRODUCT_CANVAS.find((p) => p.hand).hand;
 	const h = makeInput();

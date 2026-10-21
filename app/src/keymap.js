@@ -96,11 +96,11 @@ export const KEYMAP = [
 	// `w` is the one mutating verb that belongs DURING a gesture: dropping a bend mid-route is the
 	// whole point of it, and the mouse button is still held. Over a node mid-drag it means nothing
 	// here -- a bend cannot sit on a node -- which is what leaves that situation free for a plugin to
-	// mean something by (the network's `stop-on-node`, network/keys.mjs). `g` is not the product's
+	// mean something by (the network's `stop-on-node`, plugins/network/keys.mjs). `g` is not the product's
 	// at all any more: it is the network plugin's, and production composes none (dev/RULES.md section 11).
 	{ id: 'waypoint', input: ['w'],  prevent: false, mutates: true, duringGesture: true, on: (e) => is(e, 'w') && plain(e), when: (s) => !linkStepOnNode(s), run: 'onWaypointKey' },
 	{ id: 'text-tool', input: ['t'], mutates: true, on: (e) => is(e, 't') && plain(e) && !e.repeat,         run: 'onTextTool' },
-	// C-e (H19.33): `s` -- reshape the selected nodes -- is the devices plugin's key row (devices/device-keys.mjs)
+	// C-e (H19.33): `s` -- reshape the selected nodes -- is the devices plugin's key row (plugins/devices/device-keys.mjs)
 		// B147: meaningful mid-drag now -- a digit places that node and carries the link run through
 	// it, which is the same argument `w` already makes for a bend
 	{ id: 'hand', input: ['1-6'],      mutates: true, duringGesture: true, on: (e) => /^[1-6]$/.test(e.key) && plain(e), run: 'onHandDigit' },
@@ -110,10 +110,10 @@ export const KEYMAP = [
 	// C-e: what a step does is each part's size step (`sizeStep`), and so is how the help says it; with none, no row
 	{ id: 'resize-step', input: ['Shift+Arrows'], mutates: true, on: (e) => arrow(e) && e.shiftKey,                    run: 'onResizeStep',
 		doc: (parts) => (parts.some((p) => p.sizeStep) ? parts.filter((p) => p.sizeStep).map((p) => p.sizeStep.doc).join(', or ') : null) },
-	// C-e (H19.33): `z` -- wrap the selection in a zone -- is the zones plugin's key row (zones/zone-keys.mjs)
+	// C-e (H19.33): `z` -- wrap the selection in a zone -- is the zones plugin's key row (plugins/zones/zone-keys.mjs)
 	// `c` means two things by situation -- the acceptance case of the Rules system, ruled 2026-09-30: close (or open) ONE
 	// link with a bend, refuse ONE link without, and anything else means nothing. Two rows, and no handler asks.
-	// C-e (H19.33): c, f, k, l and Shift+L are the network's key rows (network/link-keys.mjs)
+	// C-e (H19.33): c, f, k, l and Shift+L are the network's key rows (plugins/network/link-keys.mjs)
 	{ id: 'rename', input: ['F2'],    mutates: true, on: (e) => e.key === 'F2',                              run: 'onRenameKey' },
 
 	/*
@@ -130,7 +130,7 @@ export const KEYMAP = [
 	{ id: 'undo', input: ['Ctrl+Z'],     mutates: true, on: (e) => meta(e) && is(e, 'z') && !e.shiftKey,            run: 'onUndoKey' },
 	{ id: 'redo', input: ['Ctrl+Shift+Z', 'Ctrl+Y'],     mutates: true, on: (e) => meta(e) && (is(e, 'y') || (is(e, 'z') && e.shiftKey)), run: 'onRedoKey' },
 	{ id: 'dup', input: ['Ctrl+D'],      mutates: true, on: (e) => meta(e) && is(e, 'd'),                          run: 'onDuplicate' },
-	// C-e (H19.33): Ctrl+G and Ctrl+Shift+G are the groups plugin's key rows (groups/group-keys.mjs)
+	// C-e (H19.33): Ctrl+G and Ctrl+Shift+G are the groups plugin's key rows (plugins/groups/group-keys.mjs)
 	{ id: 'delete', input: ['Delete', 'Backspace'],   prevent: false, mutates: true, on: (e) => (e.key === 'Delete' || e.key === 'Backspace') && !(meta(e) && e.shiftKey && e.key === 'Backspace'), run: 'onDeleteKey' },
 ];
 

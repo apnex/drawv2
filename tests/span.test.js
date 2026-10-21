@@ -4,9 +4,9 @@ import fs from 'node:fs';
 import { Model, heldLayouts } from './fixtures/composed.mjs';   // the network's kinds, the link among them (S-e)
 import { attachRelations } from '../engine/store.mjs';
 import { selBox, showsSockets } from '../kernel/renderer.mjs';
-import { isPanel, frameRadius } from '../devices/device-types.mjs';
+import { isPanel, frameRadius } from '../plugins/devices/device-types.mjs';
 import { NODE_GRID } from '../kernel/geometry.mjs';   // H26.1: the relation index is injected the node grid's nearest (it was cellOf)
-import { spanThrough } from '../devices/device-footprint.mjs';   // H26.1: what a span runs through, snap-grid's span on the node grid (it was spanExtent)
+import { spanThrough } from '../plugins/devices/device-footprint.mjs';   // H26.1: what a span runs through, snap-grid's span on the node grid (it was spanExtent)
 import { STD, L_STD } from '../kernel/spec.mjs';
 import { svgDocument } from '../server/svg.mjs';   // H25.5 (B378, D4): the real export renderer
 import { COMPOSED_KINDS, readModel } from '../product/types.mjs';
@@ -20,8 +20,8 @@ import { contentCommand as setContentValue } from './fixtures/plugin-edits.mjs';
 // RESTATED at C-e step six (D5): `s` is the devices plugin's row; the reshape is run as the row runs it
 import { reshapeCommand as reshapeNodes } from './fixtures/plugin-edits.mjs';
 import { controlBarDoc } from './fixtures/control-bar-doc.mjs';
-import { makeNode, makeTextBox } from '../devices/make-node.mjs';   // O-e1: the devices plugin's factories
-import { occupiedAt } from '../devices/occupancy.mjs';   // O-e1: which device or waypoint is on a cell
+import { makeNode, makeTextBox } from '../plugins/devices/make-node.mjs';   // O-e1: the devices plugin's factories
+import { occupiedAt } from '../plugins/devices/occupancy.mjs';   // O-e1: which device or waypoint is on a cell
 
 // W1 — multi-cell span foundation. A node gains an optional span = {cols,rows} (cell counts, default
 // 1×1); it anchors at its cell and grows +col/+row. Both absent ⇒ byte-identical to today's 1-cell node.
@@ -460,7 +460,7 @@ test('B162: the kernel derives bend from endpoint, and closing a path flips it',
 });
 
 test('B199: every waypoint draws the anchor, and an endpoint adds a pad inside it', async () => {
-	const { waypointStyle } = await import('../network/appearance.mjs');
+	const { waypointStyle } = await import('../plugins/network/appearance.mjs');
 	const svg = svgDocument({
 		meta: { id: '0000000000aa0001', name: 't' },
 		nodes: [{ id: 'node-aa0001', type: 'host', x: 0, y: 0, name: 'a' }, { id: 'node-ea0001', name: 'node-ea0001', x: 120, y: 0 }, { id: 'node-ea0002', name: 'node-ea0002', x: 60, y: 60 }],
@@ -473,7 +473,7 @@ test('B199: every waypoint draws the anchor, and an endpoint adds a pad inside i
 	authoring -- is read from the one layer list both renderers walk.
 	*/
 	const exported = Object.fromEntries([...svg.matchAll(/class="waypoint (\w+)">(.*?)<\/g>/g)].map(([, role, body]) => [role, [...body.matchAll(/<circle[^>]*?r="([\d.]+)"/g)].map((m) => Number(m[1]))]));
-	const { waypointLayers } = await import('../network/appearance.mjs');
+	const { waypointLayers } = await import('../plugins/network/appearance.mjs');
 	assert.deepEqual(exported.bend, [], 'the export draws nothing at a bend: the corner is in the path');
 	assert.deepEqual(exported.endpoint, waypointLayers(['endpoint'], 20, null, null, { run: true }).map((l) => l.radius), 'and an endpoint as the run picture has it');
 	assert.ok(!exported.endpoint.includes(20), 'with no anchor ring');
@@ -519,7 +519,7 @@ This is the twin guard: if either renderer grows its own copy of the rule, or st
 shared one, this fails.
 */
 test('B162: one rule, consumed by the client renderer and the kernel alike', async () => {
-	const { waypointRole } = await import('../network/roles.mjs');
+	const { waypointRole } = await import('../plugins/network/roles.mjs');
 	assert.equal(typeof waypointRole, 'function', 'the rule is exported from the kernel');
 
 	// the four cases, asserted on the rule itself rather than through either renderer
@@ -542,10 +542,10 @@ test('B162: one rule, consumed by the client renderer and the kernel alike', asy
 	`waypointRole`, and a renderer that stopped calling it would fail the assertion below.
 	*/
 	// RESTATED at C-a (H19.29, D3): the anchor's drawing is the plugins' appearances now -- the network's marks, the devices plugin's device
-	const client = fs.readFileSync(new URL('../network/anchor-appearance.mjs', import.meta.url), 'utf8');
+	const client = fs.readFileSync(new URL('../plugins/network/anchor-appearance.mjs', import.meta.url), 'utf8');
 	// RESTATED at H25.5 (B378, D4): the export drives the real Renderer over the same parts (server/svg.mjs), and waypointRolesIn
-	// in network/roles.mjs delegates to waypointRoles
-	const rolesMod = fs.readFileSync(new URL('../network/roles.mjs', import.meta.url), 'utf8');
+	// in plugins/network/roles.mjs delegates to waypointRoles
+	const rolesMod = fs.readFileSync(new URL('../plugins/network/roles.mjs', import.meta.url), 'utf8');
 
 	/*
 	B166 settled the vocabulary this used to need translating.
@@ -588,10 +588,10 @@ And fixing only `update` left the common case broken: a NEW link is exactly what
 waypoint into an endpoint, and a new link goes through `render`. Both call the same helper now.
 */
 test('B162/B218: create, update AND delete refresh a link\'s waypoints', () => {
-	// RESTATED at C-a step four (H19.29): the link is drawn by the network's painter now (network/link-painter.mjs): the painter names the waypoints to
+	// RESTATED at C-a step four (H19.29): the link is drawn by the network's painter now (plugins/network/link-painter.mjs): the painter names the waypoints to
 	// redraw once (`redraws`), and the renderer runs a painter's redraws from create, update AND delete -- what this counted as three
 	// call sites of one helper
-	const painter = fs.readFileSync(new URL('../network/link-painter.mjs', import.meta.url), 'utf8');
+	const painter = fs.readFileSync(new URL('../plugins/network/link-painter.mjs', import.meta.url), 'utf8');
 	const renderer = fs.readFileSync(new URL('../app/src/renderer.js', import.meta.url), 'utf8');
 	assert.equal((renderer.match(/this\.redrawAfter\(kind, entity\)/g) || []).length, 3, 'render(), update() and the del branch must ALL refresh');
 	assert.match(renderer, /this\.remove\(entity\.id\);\n\t\t\tthis\.redrawAfter\(kind, entity\);/, 'the delete branch refreshes from the DELETED entity -- the model no longer knows what it touched');
@@ -603,7 +603,7 @@ test('B162/B218: create, update AND delete refresh a link\'s waypoints', () => {
 });
 
 test('B162: an endpoint is opaque so the path terminates on it, a bend stays hollow', async () => {
-	const { waypointAnchor, waypointStyle } = await import('../network/appearance.mjs');
+	const { waypointAnchor, waypointStyle } = await import('../plugins/network/appearance.mjs');
 	const svg = svgDocument({
 		meta: { id: '0000000000aa0001', name: 't' },
 		nodes: [{ id: 'node-aa0001', type: 'host', x: -240, y: 0, name: 'a' }, { id: 'node-ea0001', name: 'node-ea0001', x: 120, y: 0 }, { id: 'node-ea0002', name: 'node-ea0002', x: 0, y: -120 }],
@@ -629,7 +629,7 @@ test('B162: an endpoint is opaque so the path terminates on it, a bend stays hol
 	}));
 	// AMENDED 2026-10-04 (R-c): the export draws the run picture, where a bend draws nothing at all; while authoring, the
 	// canvas draws it as its anchor, read from the one layer list the canvas walks
-	const { waypointLayers } = await import('../network/appearance.mjs');
+	const { waypointLayers } = await import('../plugins/network/appearance.mjs');
 	assert.equal(fills.bend, undefined, 'the export draws no ring at a bend');
 	fills.bend = waypointLayers([], 20).find((l) => l.radius === want.bend).fill;
 	/*
@@ -655,7 +655,7 @@ way and the client imports every one of them: the kernel owns the numbers, each 
 its emission. The waypoint style was the outlier.
 */
 test('B162: the waypoint style has one owner, and neither renderer restates it', async () => {
-	const { waypointAnchor, waypointStyle } = await import('../network/appearance.mjs');
+	const { waypointAnchor, waypointStyle } = await import('../plugins/network/appearance.mjs');
 	const end = waypointStyle('endpoint', 20);
 	const bend = waypointStyle('bend', 20);
 
@@ -679,8 +679,8 @@ test('B162: the waypoint style has one owner, and neither renderer restates it',
 	behavioural test in this file -- both would be correct on the day it was written -- and then
 	drift the first time one side changed.
 	*/
-	// RESTATED at H25.5 (B378, D4): both the canvas and the export draw through network/anchor-appearance.mjs
-	for (const f of ['../network/anchor-appearance.mjs']) {
+	// RESTATED at H25.5 (B378, D4): both the canvas and the export draw through plugins/network/anchor-appearance.mjs
+	for (const f of ['../plugins/network/anchor-appearance.mjs']) {
 		const src = fs.readFileSync(new URL(f, import.meta.url), 'utf8');
 		assert.match(src, /waypointLayers\(/, `${f} must ASK for the layer list (B209), not restate which role draws what`);
 		assert.doesNotMatch(src, /endpoint\s*\?\s*5\s*:\s*1\.6/, `${f} restates the stroke weight`);
@@ -690,7 +690,7 @@ test('B162: the waypoint style has one owner, and neither renderer restates it',
 });
 
 test('B162: the two renderers agree, value for value', async () => {
-	const { waypointAnchor, waypointStyle } = await import('../network/appearance.mjs');
+	const { waypointAnchor, waypointStyle } = await import('../plugins/network/appearance.mjs');
 	// what the export emits, parsed back out of the SVG it produced
 	const svg = svgDocument({
 		meta: { id: '0000000000aa0001', name: 't' },
@@ -743,7 +743,7 @@ hardcoded 2.2 that nothing could see.
 */
 test('B200: the waypoint layers nest, on whole numbers, with the grid dot at the centre', async () => {
 	const { gridDot } = await import('../kernel/geometry.mjs');
-	const { waypointAnchor, waypointJunction, waypointStyle } = await import('../network/appearance.mjs');
+	const { waypointAnchor, waypointJunction, waypointStyle } = await import('../plugins/network/appearance.mjs');
 
 	/*
 	The junction rung is RESERVED rather than exported -- nothing draws it yet, and an export with no
@@ -793,11 +793,11 @@ test('B200: the node grid and the waypoint centre are one dot, from one source',
 	// K8: the grid is drawn by the one canvas composition (app/src/compose-canvas.js), for the product page and the lab
 	// RESTATED at C-e step thirteen (H19.33): it draws each part's declared grid -- the anchor grid is the product's, declared
 	// with its dot in product/canvas.mjs, which is where the radius is now read
-	// RESTATED at WD-b2 (H19.46): both grids are the layouts plugin's, its node grid's dot declared in layouts/layout-canvas.mjs
-	const main = fs.readFileSync(new URL('../layouts/layout-canvas.mjs', import.meta.url), 'utf8');
+	// RESTATED at WD-b2 (H19.46): both grids are the layouts plugin's, its node grid's dot declared in plugins/layouts/layout-canvas.mjs
+	const main = fs.readFileSync(new URL('../plugins/layouts/layout-canvas.mjs', import.meta.url), 'utf8');
 	// RESTATED at C-a (H19.29, D3): the anchor's drawing is the plugins' appearances now -- the network's marks, the devices plugin's device
-	const renderer = fs.readFileSync(new URL('../network/anchor-appearance.mjs', import.meta.url), 'utf8');
-	// RESTATED at H25.5 (B378, D4): server/svg.mjs drives the real Renderer over PRODUCT_CANVAS, which includes network/anchor-appearance.mjs
+	const renderer = fs.readFileSync(new URL('../plugins/network/anchor-appearance.mjs', import.meta.url), 'utf8');
+	// RESTATED at H25.5 (B378, D4): server/svg.mjs drives the real Renderer over PRODUCT_CANVAS, which includes plugins/network/anchor-appearance.mjs
 	const exportDoor = fs.readFileSync(new URL('../server/svg.mjs', import.meta.url), 'utf8');
 
 	assert.match(main, /gridDot\(\)\.radius/, 'the node grid must draw the kernel dot, not a literal of its own');
@@ -818,7 +818,7 @@ test('B200: the node grid and the waypoint centre are one dot, from one source',
 	*/
 	const drawing = [];
 	// RESTATED at H25.5 (B378): sweep the plugins' folders too, where the appearances now live
-	for (const dir of ['../app/src', '../kernel', '../network', '../devices', '../zones', '../groups', '../layouts']) {
+	for (const dir of ['../app/src', '../kernel', '../plugins/network', '../plugins/devices', '../plugins/zones', '../plugins/groups', '../plugins/layouts']) {
 		const base = new URL(`${dir}/`, import.meta.url);
 		for (const f of fs.readdirSync(base)) {
 			if (!f.endsWith('.js') && !f.endsWith('.mjs')) continue;
@@ -848,7 +848,7 @@ gesture that makes a junction was refused at the pointer before the validator ev
 relaxed the validator; without this the feature is still undrawable.
 */
 test('B209: each role combination draws its own layers, in both renderers', async () => {
-	const { waypointLayers } = await import('../network/appearance.mjs');
+	const { waypointLayers } = await import('../plugins/network/appearance.mjs');
 
 	const cases = [
 		['bend', [], ['wp-anchor', 'wp-dot']],
@@ -902,10 +902,10 @@ test('B209: each role combination draws its own layers, in both renderers', asyn
 
 test('B209: a waypoint that already has links is a valid link target', async () => {
 	// RESTATED at C-e step three (H19.33): `endpointAt` left app/src/pick.js -- a link end grabs what the network says a waypoint
-	// covers (network/anchor-points.mjs), and the old slice would have passed against a file that no longer holds it
+	// covers (plugins/network/anchor-points.mjs), and the old slice would have passed against a file that no longer holds it
 	const src = fs.readFileSync(new URL('../app/src/pick.js', import.meta.url), 'utf8');
-	const points = fs.readFileSync(new URL('../network/anchor-points.mjs', import.meta.url), 'utf8');
-	// RESTATED at H22.1 (B349): network/anchor-points.mjs filters by its own `nodePermitsBend` rather than importing `bareAnchors` from devices/
+	const points = fs.readFileSync(new URL('../plugins/network/anchor-points.mjs', import.meta.url), 'utf8');
+	// RESTATED at H22.1 (B349): plugins/network/anchor-points.mjs filters by its own `nodePermitsBend` rather than importing `bareAnchors` from devices/
 	assert.match(points, /word: 'waypoint', of: \(model\) => model\.all\('node'\)\.filter\(nodePermitsBend\), grabs: near/, 'every waypoint is grabbed, the declaration as read');
 	assert.doesNotMatch(points, /waypointFree|free/i,
 		'a link end must be offered a waypoint that already carries a link, or a junction cannot be DRAWN');
@@ -950,7 +950,7 @@ test('B210: pressing w on an occupied bend threads it, and the split happens on 
 	// drag is still one undo -- the drag sends the link alone
 	assert.doesNotMatch(commit, /splitsFor|splitAtBend/, 'the browser computes no split');
 	assert.match(commit, /routeLink\(ctx\.placed, link\)/, 'it commits the placed anchors and the link');
-	assert.match(fs.readFileSync(new URL('../network/network.mjs', import.meta.url), 'utf8'), /id: 'junction-cut'/, 'and the planner cuts');
+	assert.match(fs.readFileSync(new URL('../plugins/network/network.mjs', import.meta.url), 'utf8'), /id: 'junction-cut'/, 'and the planner cuts');
 });
 
 /*
@@ -965,7 +965,7 @@ The endpoint pad already fills for exactly this reason, so the two now agree: a 
 at is opaque, and a circle a line passes through is not.
 */
 test('B212: the junction ring masks what is behind it, as the endpoint pad does', async () => {
-	const { waypointLayers } = await import('../network/appearance.mjs');
+	const { waypointLayers } = await import('../plugins/network/appearance.mjs');
 
 	const fillOf = (roles, cls) => waypointLayers(roles, 20).find((l) => l.cls === cls).fill;
 
@@ -1006,8 +1006,8 @@ consumed by every renderer without any of them deciding again.
 export can emit. An undeclared link has no head, because it asserts nothing.
 */
 test('H15.6: the arrowhead follows the declaration, from one source', async () => {
-	const { linkFacing } = await import('../network/roles.mjs');
-	const { linkMarker } = await import('../network/appearance.mjs');
+	const { linkFacing } = await import('../plugins/network/roles.mjs');
+	const { linkMarker } = await import('../plugins/network/appearance.mjs');
 
 	assert.equal(linkMarker({ id: 'l', src: 'a', dst: 'b' }), null,
 		'an undeclared link carries no head -- it asserts no direction to point');
@@ -1036,8 +1036,8 @@ test('H15.6: the arrowhead follows the declaration, from one source', async () =
 	disagree. The pipeline enforces that more strongly than a call check did, because there is now
 	one answer rather than two call sites that happen to ask the same thing.
 	*/
-	// RESTATED at H25.5 (B378, D4): both the canvas and the export draw links through network/link-painter.mjs
-	const clientRenderer = fs.readFileSync(new URL('../network/link-painter.mjs', import.meta.url), 'utf8');
+	// RESTATED at H25.5 (B378, D4): both the canvas and the export draw links through plugins/network/link-painter.mjs
+	const clientRenderer = fs.readFileSync(new URL('../plugins/network/link-painter.mjs', import.meta.url), 'utf8');
 	assert.match(clientRenderer, /linkAppearance\(/, 'the link painter derives appearance in one call');
 
 	/*
@@ -1062,7 +1062,7 @@ test('H15.6: the arrowhead follows the declaration, from one source', async () =
 	kernel/svg-scene.mjs, the declarative scene the tests render, draws no head at all, and is no longer asked.
 	*/
 	const { heldLayouts } = await import('./fixtures/composed.mjs');
-	const { pipeEntity } = await import('../network/pipe-kind.mjs');
+	const { pipeEntity } = await import('../plugins/network/pipe-kind.mjs');
 	const exportOf = (direction) => {
 		const doc = mk(direction);
 		return svgDocument({ meta: { id: '0000000000aa0001', name: 'h', version: 1, schema: 3 }, layouts: heldLayouts(), selection: [],
@@ -1090,8 +1090,8 @@ The plane is the same shape of field travelling the same five doors, so it is gu
 that failed rather than trusted because the code looks right.
 */
 test('H15.15: a control link exports dashed, round-trips, and survives an update', async () => {
-	const { linkDash, linkWidth } = await import('../network/appearance.mjs');
-	const { pipeEntity } = await import('../network/pipe-kind.mjs');
+	const { linkDash, linkWidth } = await import('../plugins/network/appearance.mjs');
+	const { pipeEntity } = await import('../plugins/network/pipe-kind.mjs');
 	const mk = (control) => ({
 		meta: { id: '0000000000aa0001', name: 'd' },
 		nodes: [{ id: 'node-aa0001', name: 'a', type: 'host', x: -60, y: 0 }, { id: 'node-aa0002', name: 'b', type: 'host', x: 60, y: 0 }],
@@ -1149,8 +1149,8 @@ test('H15.15: a control link exports dashed, round-trips, and survives an update
 	create uses, over the DECLARED key set, so a key a previous state set is removed rather than
 	stranded. That is B228's property, now enforced by the key set instead of by remembering.
 	*/
-	// RESTATED at C-a step four (H19.29) and H25.5 (B378, D4): both the canvas and the export draw links through network/link-painter.mjs
-	const clientRenderer = fs.readFileSync(new URL('../network/link-painter.mjs', import.meta.url), 'utf8');
+	// RESTATED at C-a step four (H19.29) and H25.5 (B378, D4): both the canvas and the export draw links through plugins/network/link-painter.mjs
+	const clientRenderer = fs.readFileSync(new URL('../plugins/network/link-painter.mjs', import.meta.url), 'utf8');
 	const updateBranch = clientRenderer.slice(clientRenderer.indexOf('\tupdate(link, dom'));
 	// RESTATED 2026-10-16 (H24.6): the assembly is fed whether the link carries a head, and both branches derive the head the same way
 	assert.match(updateBranch, /lookOf\(model, link, head\)/, 'the UPDATE path must re-derive through the same assembly create uses, not patch by hand');
@@ -1176,7 +1176,7 @@ renderer decides for itself. The ring needs the links to know which plane it ser
 `waypointLayers` takes them -- a role set alone cannot say.
 */
 test('H15.16: a control link and its endpoint ring are thinner than a data one', async () => {
-	const { linkWidth, waypointLayers } = await import('../network/appearance.mjs');
+	const { linkWidth, waypointLayers } = await import('../plugins/network/appearance.mjs');
 	const { L_STD, STD } = await import('../kernel/spec.mjs');
 
 	// the LINK
@@ -1216,7 +1216,7 @@ Units are the SVG user space the whole spec uses -- the same unit as `linkW: 6` 
 not pixels or points. A stroke stays proportional to the drawing under zoom, which is correct.
 */
 test('H15.18: a text panel has a 1-unit frame and 13-unit text, from one source', async () => {
-	const { frameWidth } = await import('../devices/device-types.mjs');
+	const { frameWidth } = await import('../plugins/devices/device-types.mjs');
 	const { STD } = await import('../kernel/spec.mjs');
 
 	const panel = { id: 'node-aa0001', type: 'text', content: [{ at: [0, 0], cols: 1, rows: 1, content: 'text', value: 'hi' }] };
@@ -1233,10 +1233,10 @@ test('H15.18: a text panel has a 1-unit frame and 13-unit text, from one source'
 	kernel/renderer.mjs and app/src/renderer.js independently, and the frame weight into two
 	stylesheets -- which is the B121 and B200 shape, and why this is derived at all.
 	*/
-	// RESTATED at H25.5 (B378, D4): both the canvas and the export draw devices through devices/device-appearance.mjs
-	const clientRenderer = fs.readFileSync(new URL('../devices/device-appearance.mjs', import.meta.url), 'utf8');
-	assert.match(clientRenderer, /frameWidth\(/, 'devices/device-appearance.mjs must derive the frame weight rather than hardcode it');
-	assert.doesNotMatch(clientRenderer, /'font-size':\s*15|font-size="15"/, 'devices/device-appearance.mjs still carries a literal font size');
+	// RESTATED at H25.5 (B378, D4): both the canvas and the export draw devices through plugins/devices/device-appearance.mjs
+	const clientRenderer = fs.readFileSync(new URL('../plugins/devices/device-appearance.mjs', import.meta.url), 'utf8');
+	assert.match(clientRenderer, /frameWidth\(/, 'plugins/devices/device-appearance.mjs must derive the frame weight rather than hardcode it');
+	assert.doesNotMatch(clientRenderer, /'font-size':\s*15|font-size="15"/, 'plugins/devices/device-appearance.mjs still carries a literal font size');
 
 	// and the EXPORT carries the thin frame, or a saved diagram disagrees with the canvas
 	const doc = {
@@ -1313,7 +1313,7 @@ what makes the canvas and the export unable to disagree.
 The defence is structural rather than a new guard: there is no longer a second place to forget.
 */
 test('H15.9: linkAppearance is the whole answer, and it is attributes rather than advice', async () => {
-	const { APPEARANCE_KEYS, linkAppearance } = await import('../network/appearance.mjs');
+	const { APPEARANCE_KEYS, linkAppearance } = await import('../plugins/network/appearance.mjs');
 	const { STD } = await import('../kernel/spec.mjs');
 
 	const plain = linkAppearance({ id: 'l', src: 'a', dst: 'b' });
@@ -1326,7 +1326,7 @@ test('H15.9: linkAppearance is the whole answer, and it is attributes rather tha
 	assert.match(ctrl['stroke-dasharray'], /^[\d.]+ [\d.]+$/, 'and dashed, as a ready attribute value');
 	/*
 	RESTATED 2026-10-16 (H24.6, B356): the head was a marker attribute here (`marker-end`, `marker-start`). It is a shape of its own
-	now (network/link-head.mjs), so the line carries no head attribute at all; what the line owes a head is SQUARE caps, so no
+	now (plugins/network/link-head.mjs), so the line carries no head attribute at all; what the line owes a head is SQUARE caps, so no
 	round cap pokes into it -- except a down link's, whose dots need round ones.
 	*/
 	assert.ok(!('marker-end' in ctrl) && !('marker-start' in ctrl), 'a directed line carries no marker: its head is drawn apart');
@@ -1346,11 +1346,11 @@ test('H15.9: linkAppearance is the whole answer, and it is attributes rather tha
 		assert.ok(APPEARANCE_KEYS.includes(key), `${key} is emitted but not declared -- an update could not remove it`);
 	}
 
-	// RESTATED at C-a step four (H19.29) and H25.5 (B378, D4): both the canvas and the export draw links through network/link-painter.mjs
-	const clientRenderer = fs.readFileSync(new URL('../network/link-painter.mjs', import.meta.url), 'utf8');
-	assert.match(clientRenderer, /linkAppearance\(/, 'network/link-painter.mjs must derive a link\'s appearance in one call');
+	// RESTATED at C-a step four (H19.29) and H25.5 (B378, D4): both the canvas and the export draw links through plugins/network/link-painter.mjs
+	const clientRenderer = fs.readFileSync(new URL('../plugins/network/link-painter.mjs', import.meta.url), 'utf8');
+	assert.match(clientRenderer, /linkAppearance\(/, 'plugins/network/link-painter.mjs must derive a link\'s appearance in one call');
 	assert.doesNotMatch(clientRenderer, /linkMarker\(|linkDash\(|linkWidth\(/,
-		'network/link-painter.mjs still asks the sub-questions directly, so there are two ways to draw a link');
+		'plugins/network/link-painter.mjs still asks the sub-questions directly, so there are two ways to draw a link');
 	// H24.6: and the head is one call too -- which end and how wide are the appearance's answers, asked inside it
 	assert.match(clientRenderer, /linkHeadOf\(/, 'the painter derives a head in one call');
 });
@@ -1366,7 +1366,7 @@ not the control dash -- which a down link must not be mistaken for. A down contr
 thinner weight, so its plane stays legible while it is down.
 */
 test('a DOWN link is dotted: round dots spaced in stroke widths, never the control dash', async () => {
-	const { APPEARANCE_KEYS, linkAppearance } = await import('../network/appearance.mjs');   // the module itself, not the barrel (L4 ratchets barrel imports)
+	const { APPEARANCE_KEYS, linkAppearance } = await import('../plugins/network/appearance.mjs');   // the module itself, not the barrel (L4 ratchets barrel imports)
 	const dots = (link, w, extra) => linkAppearance(link, w, { down: true, ...extra });
 	const plain = { id: 'l', src: 'a', dst: 'b' };
 
@@ -1404,7 +1404,7 @@ on the junction's rung -- its radius and its width, dashed, light red. Asserted 
 before: the rule is "the junction's ring, dashed, each dash at least as long as the stroke is thick", not "radius 7".
 */
 test('the transit ring sits where the junction would, at its radius and width, dashed, clear of the endpoint ring', async () => {
-	const { waypointLayers, waypointJunction } = await import('../network/appearance.mjs');
+	const { waypointLayers, waypointJunction } = await import('../plugins/network/appearance.mjs');
 	const ext = 12;
 
 	const all = waypointLayers(['endpoint'], ext, null, { transit: false });
@@ -1429,7 +1429,7 @@ test('the transit ring sits where the junction would, at its radius and width, d
 });
 
 test('the transit ring draws only when the author declared it, at any link count', async () => {
-	const { waypointLayers } = await import('../network/appearance.mjs');
+	const { waypointLayers } = await import('../plugins/network/appearance.mjs');
 	const has = (roles, opts) => waypointLayers(roles, 12, null, opts).some((l) => l.cls === 'wp-transit');
 
 	assert.equal(has(['endpoint'], { transit: false }), true, 'declared, one link: the mark shows');
@@ -1442,8 +1442,8 @@ test('the transit ring draws only when the author declared it, at any link count
 });
 
 test('the transit ring takes its colour from the network\'s role over the palette, not a literal', async () => {
-	// the ring is the network plugin's, so its role is too (network/appearance.mjs, ruled 2026-10-01)
-	const { NETWORK_COLOURS, waypointLayers } = await import('../network/appearance.mjs');
+	// the ring is the network plugin's, so its role is too (plugins/network/appearance.mjs, ruled 2026-10-01)
+	const { NETWORK_COLOURS, waypointLayers } = await import('../plugins/network/appearance.mjs');
 	const { colour } = await import('../kernel/palette.mjs');
 	const ring = waypointLayers([], 20, null, { transit: false }).find((l) => l.cls === 'wp-transit');
 	assert.equal(ring.stroke, colour(NETWORK_COLOURS.transitRing), 'drawn in the network\'s transit-ring role');
@@ -1453,7 +1453,7 @@ test('the transit ring takes its colour from the network\'s role over the palett
 	instruction will be switched off rather than obeyed. Comments are stripped first, so the
 	assertion is about what the module DOES.
 	*/
-	const src = fs.readFileSync(new URL('../network/appearance.mjs', import.meta.url), 'utf8')
+	const src = fs.readFileSync(new URL('../plugins/network/appearance.mjs', import.meta.url), 'utf8')
 		.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
 	assert.doesNotMatch(src, /#[0-9a-fA-F]{6}/, 'the network appearance carries no colour value in code; the palette is the authority (B255)');
 });
@@ -1464,7 +1464,7 @@ makes it an endpoint, and the endpoint ring's opaque fill, drawn after the trans
 seen (ruled 2026-09-28), so no filled layer wide enough to cover radius 10 may come after it.
 */
 test('the transit ring is drawn after every filled layer that would cover it', async () => {
-	const { waypointLayers } = await import('../network/appearance.mjs');
+	const { waypointLayers } = await import('../plugins/network/appearance.mjs');
 	for (const roles of [['endpoint'], ['junction'], ['endpoint', 'junction'], []]) {
 		const all = waypointLayers(roles, 20, null, { transit: false });
 		const at = all.findIndex((l) => l.cls === 'wp-transit');
@@ -1493,11 +1493,11 @@ test('evenDash fits a whole number of dashes, nearest the target, at least one',
 });
 
 test('a fitted dash is drawn as fitted, by the canvas and the export alike', async () => {
-	const { waypointLayers } = await import('../network/appearance.mjs');
+	const { waypointLayers } = await import('../plugins/network/appearance.mjs');
 	const ring = waypointLayers([], 20, null, { transit: false }).find((l) => l.cls === 'wp-transit');
 	assert.ok(ring.pathLength, 'the transit ring carries its fitted length');
 	// RESTATED at C-a (H19.29, D3): the anchor's drawing is the plugins' appearances now -- the network's marks, the devices plugin's device
-	// RESTATED at H25.5 (B378, D4): both the canvas and the export draw through network/anchor-appearance.mjs
-	const canvas = fs.readFileSync(new URL('../network/anchor-appearance.mjs', import.meta.url), 'utf8');
+	// RESTATED at H25.5 (B378, D4): both the canvas and the export draw through plugins/network/anchor-appearance.mjs
+	const canvas = fs.readFileSync(new URL('../plugins/network/anchor-appearance.mjs', import.meta.url), 'utf8');
 	assert.match(canvas, /pathLength: l\.pathLength/, 'the anchor appearance emits it for the canvas and the export alike');
 });

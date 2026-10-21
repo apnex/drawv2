@@ -14,7 +14,7 @@ was measured against lives on in `Model#pathOf`, which `tests/model.test.js` hol
 // RESTATED at C-e step ten (H19.33): how a link reads on the selection line is the network's, so the readout is composed with
 // the product's parts, as the page composes it
 import { PRODUCT_CANVAS } from '../product/canvas.mjs';
-import { makeLink } from '../network/link-queries.mjs';   // K13d: the network's link queries
+import { makeLink } from '../plugins/network/link-queries.mjs';   // K13d: the network's link queries
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Model } from './fixtures/composed.mjs';   // the network's kinds, the link among them (S-e)
@@ -79,9 +79,9 @@ The invariant worth pinning is not "the function exists" — it is that both ren
 the SAME coordinates. That is what the copy silently threatened and what a shared owner guarantees.
 */
 
-import { contentLayout } from '../devices/device-types.mjs';
+import { contentLayout } from '../plugins/devices/device-types.mjs';
 import { svgDocument } from '../server/svg.mjs';   // H25.5 (B378, D4): the real export renderer
-import { makeNode, makeWaypoint } from '../devices/make-node.mjs';   // O-e1: the devices plugin's factories
+import { makeNode, makeWaypoint } from '../plugins/devices/make-node.mjs';   // O-e1: the devices plugin's factories
 
 const REGIONS = [
 	{ at: [0, 0], cols: 1, rows: 1, content: 'text', value: 'hi' },
@@ -91,7 +91,7 @@ const REGIONS = [
 	{ at: [0, 0], cols: 4, rows: 4, content: 'text', value: 'x '.repeat(60), fill: '#ff0000' },
 ];
 
-// RESTATED at H25.5 (B378, D4): the real renderer (devices/device-appearance.mjs via server/svg.mjs svgDocument) emits each
+// RESTATED at H25.5 (B378, D4): the real renderer (plugins/devices/device-appearance.mjs via server/svg.mjs svgDocument) emits each
 // non-empty text line at the coordinates contentLayout computes (empty text nodes are stripped on serialisation)
 test('B40: the renderer emits text at exactly the coordinates contentLayout computes', () => {
 	for (const r of REGIONS) {

@@ -38,13 +38,13 @@ import { applyOps } from '../../model/ops.mjs';
 import { plan } from '../../planner/txn.mjs';
 import { resolveAnchor } from '../../server/anchor.mjs';
 import { validateMutation } from '../../planner/validate.js';
-import { createNetwork } from '../../network/network.mjs';
-import { createTransit } from '../../network/transit.mjs';
+import { createNetwork } from '../../plugins/network/network.mjs';
+import { createTransit } from '../../plugins/network/transit.mjs';
 import { productKinds } from '../../product/kinds.mjs';
 import '../../product/types.mjs';
-import { PIPE_ROW, pipeEntity } from '../../network/pipe-kind.mjs';
-import { NETWORK_ROWS } from '../../network/kinds.mjs';   // the network's kind and the field it contributes (S-a)
-import { bareAnchor } from '../../devices/device-shapes.mjs';   // whether a device is composed: the devices plugin's (O-e1)
+import { PIPE_ROW, pipeEntity } from '../../plugins/network/pipe-kind.mjs';
+import { NETWORK_ROWS } from '../../plugins/network/kinds.mjs';   // the network's kind and the field it contributes (S-a)
+import { bareAnchor } from '../../plugins/devices/device-shapes.mjs';   // whether a device is composed: the devices plugin's (O-e1)
 
 const GOLDEN = new URL('./planner-corpus.json', import.meta.url);
 const P = 60;

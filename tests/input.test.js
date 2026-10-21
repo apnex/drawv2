@@ -16,17 +16,17 @@ its row, never asserted as correct and never written around.
 // C-c (H19.31): the placed kinds, as the page composes them
 import { closeCommand, linkCommand } from './fixtures/plugin-edits.mjs';
 import { PRODUCT_CANVAS as PRODUCT_CANVAS_FOR_KEYS } from '../product/canvas.mjs';
-import { GROUP_KEYS } from '../groups/group-keys.mjs';
-import { ZONE_SIZE_STEP } from '../zones/zone-keys.mjs';
-import { DEVICE_SIZE_STEP } from '../devices/device-size.mjs';
+import { GROUP_KEYS } from '../plugins/groups/group-keys.mjs';
+import { ZONE_SIZE_STEP } from '../plugins/zones/zone-keys.mjs';
+import { DEVICE_SIZE_STEP } from '../plugins/devices/device-size.mjs';
 import { placesOf as placesOfCanvas } from '../app/src/snap.js';
 import { PRODUCT_CANVAS as CANVAS_PARTS } from '../product/canvas.mjs';
 const PLACES = placesOfCanvas(CANVAS_PARTS);
 // C-e step eight (H19.33): what follows a clone is each part's -- the network's link, the groups plugin's group
 const FOLLOWERS = commands.followersOf(PRODUCT_CANVAS_FOR_KEYS);
-import { linkBetween, linksBetween, makeLink } from '../network/link-queries.mjs';   // K13d: the network's link queries
+import { linkBetween, linksBetween, makeLink } from '../plugins/network/link-queries.mjs';   // K13d: the network's link queries
 import { test } from 'node:test';
-import { makeZone } from '../zones/make-zone.mjs';   // O-b1: the zones plugin's factory
+import { makeZone } from '../plugins/zones/make-zone.mjs';   // O-b1: the zones plugin's factory
 import assert from 'node:assert/strict';
 import { makeInput, key, pointer, seedNodes } from './fixtures/client-harness.mjs';
 import { validateEntity } from './fixtures/composed.mjs';   // the network's kinds, as the server validates (S-e)
@@ -34,7 +34,7 @@ import { bindGestureDefer } from '../app/src/sync.js';
 import * as commands from '../app/src/commands.js';
 import { KEYMAP } from '../app/src/keymap.js';
 import { composeRules, resolveInput, overlapsIn } from '../kernel/input-rules.mjs';
-import { networkInput } from '../network/keys.mjs';
+import { networkInput } from '../plugins/network/keys.mjs';
 
 // the product's key table through the Rules engine (dev/RULES.md section 11), and the row a key resolves to
 const PRODUCT_KEYS = composeRules({ owner: 'product', rules: KEYMAP });
@@ -43,7 +43,7 @@ const resolveKey = (e, guards, s = sit()) => resolveInput(PRODUCT_KEYS, e, s, gu
 import { GAP, NODE_EXT } from '../app/src/snap.js';
 import { Tools } from '../app/src/tools.js';
 import { fakeEl } from './fixtures/client-harness.mjs';
-import { makeWaypoint } from '../devices/make-node.mjs';   // O-e1: the devices plugin's factories
+import { makeWaypoint } from '../plugins/devices/make-node.mjs';   // O-e1: the devices plugin's factories
 
 const opKinds = (ops) => ops.map((o) => `${o.op}/${o.kind ?? ''}`);
 
@@ -1064,7 +1064,7 @@ test('B47: every entry declares prevent, or inherits the safe default', () => {
 	const optOut = KEYMAP.filter((r) => r.prevent === false).map((r) => r.id).sort();
 	/*
 	`guide` joined the set on 2026-09-28 and left it with T3 (dev/RULES.md section 11): `g` is no longer a product row
-	at all but the network plugin's (network/keys.mjs), which production does not compose -- so production has no row
+	at all but the network plugin's (plugins/network/keys.mjs), which production does not compose -- so production has no row
 	to claim it with, which is the property the opt-out existed for. tests/guide-gesture.test.js holds both halves.
 	*/
 	assert.deepEqual(optOut, ['alt', 'control', 'delete', 'escape', 'labels', 'stamp', 'waypoint'],
@@ -1688,7 +1688,7 @@ piece carrying the route's original `src` inherits the identity. That id is what
 collapse a round trip rather than a churn, so it is worth pinning at the point it is decided.
 */
 /*
-AMENDED 2026-10-04 (V-c, H18.27; V-d, H18.28): the cut is the PLANNER's (network/network.mjs `junction-cut`), at every door
+AMENDED 2026-10-04 (V-c, H18.27; V-d, H18.28): the cut is the PLANNER's (plugins/network/network.mjs `junction-cut`), at every door
 (B243) -- the drag sends the link alone, and since V-d the tab previews with the planner, so it shows the cut at once.
 */
 const sendsLinkAlone = (h) => assert.deepEqual(h.soleCommit().ops.filter((o) => o.kind === 'link').length, 1, 'the drag sends the link it drew, and no split');

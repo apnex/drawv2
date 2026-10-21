@@ -4,11 +4,11 @@ TRANSIT, stage X1 -- the value and the mark (dev/design/unification/TRANSIT.md s
 `x` flips each selected anchor's transit on its own; a type offering no choice is refused and named; only a declaration
 draws the ring. Held here on the session, in Node; the lab's matrix rows TRN-01 to TRN-05 hold the same in real Chrome.
 */
-import { pathOf, isLinkDown, declaresNoTransit, stopsAt } from '../network/network-queries.mjs';   // Q-a: the network's questions
+import { pathOf, isLinkDown, declaresNoTransit, stopsAt } from '../plugins/network/network-queries.mjs';   // Q-a: the network's questions
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createNetworkSession } from '../network/session.mjs';
-import { networkInput } from '../network/keys.mjs';
+import { createNetworkSession } from '../plugins/network/session.mjs';
+import { networkInput } from '../plugins/network/keys.mjs';
 import { composeRules, resolveInput } from '../kernel/input-rules.mjs';
 import { applyOps } from '../model/ops.mjs';
 
@@ -98,14 +98,14 @@ test('x means transit only with an anchor or node selected, and never mid-drag',
 X2 -- routing stops at a non-transiting anchor (TR-1, TR-4, TR-6). Every router takes the one predicate, so where a link
 is drawn, whether it is down, what a drag would make and why a link is down all agree.
 */
-import { route, assignRoutes } from '../network/pipes.mjs';
-import { judgeDrag } from '../network/guide.mjs';
-import { whyDown } from '../network/resolve.mjs';
+import { route, assignRoutes } from '../plugins/network/pipes.mjs';
+import { judgeDrag } from '../plugins/network/guide.mjs';
+import { whyDown } from '../plugins/network/resolve.mjs';
 import { Model } from '../model/model.mjs';
-import { createNetwork } from '../network/network.mjs';
+import { createNetwork } from '../plugins/network/network.mjs';
 import { productKinds } from '../product/kinds.mjs';
-import { PIPE_ROW } from '../network/pipe-kind.mjs';
-import { NETWORK_ROWS } from '../network/kinds.mjs';   // the network's kind and the field it contributes (S-a)
+import { PIPE_ROW } from '../plugins/network/pipe-kind.mjs';
+import { NETWORK_ROWS } from '../plugins/network/kinds.mjs';   // the network's kind and the field it contributes (S-a)
 
 // pipes are entities since H17.22 N-c: a board's model holds the network's pipe kind, and a fixed board's pipes go into it
 const KINDS = productKinds(...NETWORK_ROWS);
@@ -179,11 +179,11 @@ test('a drag is judged with the same stops: a plain link drawn A to B runs over 
 X3 -- pins and guides at a non-transiting anchor (TR-2, TR-2b, TR-3).
 */
 import { plan } from '../planner/txn.mjs';
-import { createTransit } from '../network/transit.mjs';
+import { createTransit } from '../plugins/network/transit.mjs';
 import { makeInput, pointer, key, seedNodes } from './fixtures/client-harness.mjs';
 
 /*
-F-e: the cut and the join are the PLANNER'S, set off by a change of a waypoint's `transit` (network/transit.mjs
+F-e: the cut and the join are the PLANNER'S, set off by a change of a waypoint's `transit` (plugins/network/transit.mjs
 `transitReactions`; the join is `link-join`, woken by it). Held by planning that change over the network's own tenant.
 */
 const NET = createNetwork(createTransit());
@@ -369,7 +369,7 @@ pieces -- a piece an earlier cut made is traced back to its drawn link, so one l
 pieces", not "2 links cut in two".
 */
 test('a transit change counts the drawn links it cut and the pieces they became, and the pieces it joined', async () => {
-	const { transitSummary } = await import('../network/transit.mjs');
+	const { transitSummary } = await import('../plugins/network/transit.mjs');
 	const [S, A, B, E, F] = ['node-e0000a', 'node-e0000b', 'node-e0000c', 'node-00000d', 'node-00000e'];
 	const fresh = (links) => {
 		const m = new Model({ attached: { network: NET }, kinds: KINDS });

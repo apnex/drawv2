@@ -1,0 +1,81 @@
+/*
+spawners.mjs — a DOCUMENT's armed endpoints, described for the simulation.
+
+The adapter between what is stored and what `moversAt` consumes: which waypoints are armed, which
+link each emits along, and in which direction.
+
+IT LIVES HERE BECAUSE IT NEVER NEEDED A BROWSER. It was written as a method on the presentation
+layer and reads nothing but the model -- zero references to a DOM, a renderer or an element. That
+placement made it unreachable from anywhere except a browser tab, which is why a report of "one
+spawner is not animating" could not be investigated without asking the director to open a console
+and read numbers back. That is the A5 fault this file exists to close: the human was acting as the
+agent's eyes for a fact the system already knew.
+
+Now the browser, the server and `draw movers` all derive spawners from the SAME function, so the
+answer to "what should be moving right now" is one answer rather than three that can disagree.
+
+DIRECTION IS DERIVED, not stored. Arm the `src` end and movers run src to dst; arm `dst` and the
+route is reversed. A stored direction would be a twin of the link and wrong the first time one was
+reversed.
+*/
+
+import { pathOf, isLinkDown } from '../network/network-queries.mjs';   // the network's questions over a Model (Q-a)
+import { linksAt } from '../network/link-queries.mjs';   // which links meet an anchor: the network's (K13d)
+import { prepareSpawner } from './movers.mjs';
+import { BEND_R } from '../../kernel/spec.mjs';
+import { NODE_GRID } from '../../kernel/geometry.mjs';   // H26.1: the node grid's declared pitch -- a route's length in cells
+import { byId } from '../../model/order.mjs';   // B246: the one derivation order
+import { bareAnchors } from '../devices/device-shapes.mjs';   // whether a device is composed: the devices plugin's (O-e1)
+
+/*
+`model` is anything answering `all('waypoint')`, `linksAt(id)`, `pathOf(link)` and `isLinkDown(link)` -- the live client
+Model, or a Model built from a stored document on the server. Passing the shape rather than the
+class is what lets both peers call this without either becoming the other.
+*/
+export function spawnersOf(model) {
+	const out = [];
+	// B246: in id order, and from `linksAt`, which answers in id order -- so every peer arms the same link, in one order
+	for (const wp of [...bareAnchors(model)].sort(byId)) {
+		if (!wp.spawn) continue;
+		const links = linksAt(model, wp.id);   // K13d: the network's query -- an optional call on the Model answered [] once it left
+		const link = links.find((l) => (l.src === wp.id || l.dst === wp.id) && !l.closed);
+		if (!link) continue;                       // a ring has no ends, so it emits nothing
+		/*
+		P4 R-d (H18.22) -- A DOWN LINK CARRIES NOTHING. It has no route right now: it is drawn along its intent and marked down
+		(H1), and a path along that intent is no way for a mover to take. So a spawner on it emits nothing until it heals, in
+		every door that derives spawners -- the page, `draw movers`, `draw combat`. A model with no network has no down link.
+		*/
+		if (isLinkDown(model, link)) continue;
+		const pts = pathOf(model, link);
+		if (!pts || pts.length < 2) continue;      // a dangling route resolves to nothing
+		out.push(prepareSpawner({
+			id: wp.id,
+			link: link.id,
+			pts: link.src === wp.id ? pts : [...pts].reverse(),
+			closed: false,
+			radius: BEND_R,
+			...wp.spawn,
+		}));
+	}
+	return out;
+}
+
+// B339 (H21.8, SD1): the movers report REST serves at GET /api/v1/diagrams/:id/movers (`draw movers`)
+export function moversReport(model, at, spawner = null, moversAtFn) {
+	let prepared = spawnersOf(model);
+	if (spawner) prepared = prepared.filter((s) => s.id === spawner);
+	const live = moversAtFn(prepared, at);
+	const rows = prepared.map((s) => {
+		const mine = live.filter((m) => m.spawnerId === s.id);
+		return {
+			spawner: s.id, link: s.link,
+			cells: Math.round((s.length / NODE_GRID.declaration.pitch) * 100) / 100,
+			speed: s.speed, interval: s.interval,
+			transit: Math.round((s.length / s.pxSpeed) * 10) / 10,
+			inFlight: mine.length,
+			at: mine.map((m) => `${Math.round(m.progress * 100)}%`).join(' '),
+		};
+	});
+	return { at, spawners: rows, movers: rows.length ? live.length : 0 };
+}
+

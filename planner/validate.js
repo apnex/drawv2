@@ -141,7 +141,7 @@ export function validateMutation(model, mutation, kinds) {
 	/*
 	Referential integrity, against the CURRENT model state and under a post-merge view for `set`.
 
-	The rules themselves live in each kind's row -- the link's in `network/link-references.mjs` since S-e -- and are shared with `validateDoc`, which
+	The rules themselves live in each kind's row -- the link's in `plugins/network/link-references.mjs` since S-e -- and are shared with `validateDoc`, which
 	used to carry a second hand-written copy of all five (B83). What stays here is the part that is
 	genuinely about MUTATION: merging the patch over the stored entity, so a `set` that touches only
 	`via` is still checked against the `src` and `dst` it is keeping.
@@ -150,7 +150,7 @@ export function validateMutation(model, mutation, kinds) {
 	/*
 	S-e (H18.15) -- ONE GENERIC ACCESS, naming no kind: whether an entity exists, the entity, and every entity of a kind. It
 	carried four questions of the link's own (`hasNode`, `hasWaypoint`, `ownersOf`, `linkById`) and built the link's owners
-	index; the link's row builds those from this, once per access (network/link-references.mjs `linkAccess`).
+	index; the link's row builds those from this, once per access (plugins/network/link-references.mjs `linkAccess`).
 	*/
 	const access = {
 		has: (k, eid) => kinds.has(k) && !!model.get(k, eid),
@@ -254,7 +254,7 @@ export function validateDoc(doc, { kinds } = {}) {
 	}
 	/*
 	Referential integrity within the document -- the SAME five rules the mutation path applies,
-	from each kind's row (the link's `network/link-references.mjs` since S-e), reached through a lookup over these arrays instead of a Model.
+	from each kind's row (the link's `plugins/network/link-references.mjs` since S-e), reached through a lookup over these arrays instead of a Model.
 
 	This block used to be a second hand-written implementation of all of them, with its own error
 	vocabulary and its own complexity class (B83). Nothing forced the pair to agree, and a
@@ -299,7 +299,7 @@ export function validateDoc(doc, { kinds } = {}) {
 	rather than a document missing a highlight, and the two peers would disagree about which.
 
 	A beat naming an entity that no longer exists is NOT malformed and passes here: that is a stale
-	beat, and `model/reveal.mjs` answers by not revealing it. The shape is the contract; whether the
+	beat, and `plugins/simulation/reveal.mjs` answers by not revealing it. The shape is the contract; whether the
 	entities still exist is the document's business and changes under the record all the time.
 	*/
 	if ('reveal' in doc && doc.reveal !== null) {

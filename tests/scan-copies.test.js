@@ -44,12 +44,12 @@ test('H25.0: on this tree, the classes are credited to the parts that put them o
 	for (const c of ['label', 'label-pill']) assert.ok(!of('server/svg.mjs').has(c), `the export reads ${c} and draws none`);
 	// RESTATED at H25.1 (B366): a name's label is the core's (kernel/renderer.mjs nameLabel), drawn for the zones and devices alike
 	assert.ok(of('kernel/renderer.mjs').has('label-pill') && of('kernel/renderer.mjs').has('label'), 'control: the core draws the name pill and its text');
-	assert.ok(!of('zones/zone-painter.mjs').has('label-pill') && !of('devices/device-appearance.mjs').has('label-pill'), 'and neither plugin draws its own');
-	assert.ok(of('zones/zone-painter.mjs').has('zone-label'), 'the zones plugin still names its own variant');
-	assert.ok(!of('layouts/layout-canvas.mjs').has('zone') && of('layouts/layout-canvas.mjs').has('zonegrid'), 'the layouts plugin\'s grid named `zone` is no class; its `zonegrid` is');
-	assert.ok(!of('network/appearance.mjs').has('solid'), 'a layer\'s `fill: \'solid\'` is no class');
-	assert.ok(!of('network/anchor-appearance.mjs').has('waypoints') && of('network/anchor-appearance.mjs').has('waypoint'), 'a root\'s layer is no class; its class is');
-	assert.ok(of('devices/device-types.mjs').has('solid') && of('devices/device-types.mjs').has('hollow'), 'control: the glyph art\'s markup draws `solid` and `hollow`');
+	assert.ok(!of('plugins/zones/zone-painter.mjs').has('label-pill') && !of('plugins/devices/device-appearance.mjs').has('label-pill'), 'and neither plugin draws its own');
+	assert.ok(of('plugins/zones/zone-painter.mjs').has('zone-label'), 'the zones plugin still names its own variant');
+	assert.ok(!of('plugins/layouts/layout-canvas.mjs').has('zone') && of('plugins/layouts/layout-canvas.mjs').has('zonegrid'), 'the layouts plugin\'s grid named `zone` is no class; its `zonegrid` is');
+	assert.ok(!of('plugins/network/appearance.mjs').has('solid'), 'a layer\'s `fill: \'solid\'` is no class');
+	assert.ok(!of('plugins/network/anchor-appearance.mjs').has('waypoints') && of('plugins/network/anchor-appearance.mjs').has('waypoint'), 'a root\'s layer is no class; its class is');
+	assert.ok(of('plugins/devices/device-types.mjs').has('solid') && of('plugins/devices/device-types.mjs').has('hollow'), 'control: the glyph art\'s markup draws `solid` and `hollow`');
 	assert.ok(!of('app/src/pick.js').has('handle'), 'a class only tested with `contains` is not drawn');
 });
 
@@ -224,7 +224,7 @@ test('H25.0: a ruled exception is for a copy that exists; one for a copy that is
 
 test('H25.0: the duplicate scanners read every folder scan-layers walks but the tools and the tests -- a new plugin folder is compared without an edit', () => {
 	const product = FOLDERS.map((f) => f.dir).filter((d) => d !== 'tools' && d !== 'tests');
-	for (const d of ['network', 'devices', 'zones', 'groups', 'layouts', 'product', 'lab', 'cli']) assert.ok(product.includes(d), `control: ${d} is a folder scan-layers walks`);
+	for (const d of ['plugins/network', 'plugins/devices', 'plugins/zones', 'plugins/groups', 'plugins/layouts', 'plugins/simulation', 'product', 'lab', 'cli']) assert.ok(product.includes(d), `control: ${d} is a folder scan-layers walks`);
 	assert.deepEqual(SCANNER_ROOTS.twins, product, 'scan-twins compares every product folder (it read six, none a plugin\'s)');
 	assert.deepEqual(SCANNER_ROOTS.copies, product, 'scan-copies looks in every product folder');
 	assert.deepEqual(SCANNER_ROOTS.docrefs, product, 'scan-docrefs reads every product folder (H25.7)');
@@ -252,7 +252,7 @@ test('H25.0: the frozen ceiling is the one H25 opened with, and the record holds
 test('H25.0: on this tree the scanner reads every stylesheet the pages load, and every finding is on the record', () => {
 	const out = execFileSync('node', ['tools/scan-copies.mjs', '--verbose'], { cwd: root, encoding: 'utf8' });
 	// RESTATED at H25.2 (B366): KERNEL_CSS and EXPORT_CSS retired; the canvas's own sheet split from the chrome's
-	for (const sheet of ['app/style.css', 'app/canvas.css', 'network/network.css', 'lab/lab.css', 'kernel/primitives.css', 'zones/zones.css']) assert.ok(out.includes(sheet), `the scan reads ${sheet}`);
+	for (const sheet of ['app/style.css', 'app/canvas.css', 'plugins/network/network.css', 'lab/lab.css', 'kernel/primitives.css', 'plugins/zones/zones.css']) assert.ok(out.includes(sheet), `the scan reads ${sheet}`);
 	assert.match(out, /scan-copies: 1[0-9] stylesheet\(s\)/, 'and no fewer sheets than the pages load');
 	for (const [k, v] of Object.entries(JSON.parse(read('tools/copies-record.json')))) assert.match(out, new RegExp(`\\n  ${k}: ${v.length}\\n`), `${k}: ${v.length}, as recorded`);
 	assert.match(out, /PASS -- every copy is on the record and none is new/);

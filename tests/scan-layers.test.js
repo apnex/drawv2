@@ -24,9 +24,9 @@ import crypto from 'node:crypto';
 import { execFileSync, execFile } from 'node:child_process';
 import { UNUSED_EXPORTS, SCANNER_ROOTS, FOLDERS, PAGES, RATCHETS, RATCHET_CEILING, ENTRIES, MOVED } from '../tools/layers.mjs';
 import { movedTo } from '../tools/records.mjs';
-import { NETWORK_ROWS } from '../network/kinds.mjs';   // the network's kind and the field it contributes (S-a)
-import { createNetwork as netFor } from '../network/network.mjs';
-import { createTransit as transitFor } from '../network/transit.mjs';
+import { NETWORK_ROWS } from '../plugins/network/kinds.mjs';   // the network's kind and the field it contributes (S-a)
+import { createNetwork as netFor } from '../plugins/network/network.mjs';
+import { createTransit as transitFor } from '../plugins/network/transit.mjs';
 const aNetwork = () => netFor(transitFor());   // a Model holding links is given one (V-e, J2)
 
 const root = path.resolve(import.meta.dirname, '..');
@@ -302,9 +302,9 @@ re-points it.
 const MAN = 'tools/layers.mjs';
 const MUTANTS = [
 	// RESTATED at H21.8 (B341): model/invariants.mjs is core now, so M1 imports model/ (L3) and network/ (L2)
-	{ id: 'M1', rule: 'L2', also: ['L3'], edits: [{ file: 'kernel/spec.mjs', append: "\nimport { violations } from '../model/invariants.mjs';\nimport { splitAtBend } from '../network/link-rules.mjs';\n" }] },
+	{ id: 'M1', rule: 'L2', also: ['L3'], edits: [{ file: 'kernel/spec.mjs', append: "\nimport { violations } from '../model/invariants.mjs';\nimport { splitAtBend } from '../plugins/network/link-rules.mjs';\n" }] },
 	// K5: the situation is core now, so a canvas reaching the SIMULATION is shown with the movers
-	{ id: 'M2', rule: 'L2', edits: [{ file: 'app/src/input.js', append: "\nexport async function __m2() { return (await import('../../engine/movers.mjs')).moversAt; }\n" }] },
+	{ id: 'M2', rule: 'L2', edits: [{ file: 'app/src/input.js', append: "\nexport async function __m2() { return (await import('../../plugins/simulation/movers.mjs')).moversAt; }\n" }] },
 	{ id: 'M3', rule: 'L5p', edits: [{ file: 'kernel/spec.mjs', append: '\nexport const linkLength = (link) => (link.via ? link.via.length + 1 : 1);\n' }] },
 	// PL-5: the kind list's one literal is model/shape.mjs's table now, so the planted sixth kind goes there
 	{ id: 'M4', rule: 'L7k', edits: [{ file: 'model/shape.mjs', replace: ["const KINDS = ['node'];", "const KINDS = ['node', 'waypoint', 'link', 'zone', 'group', 'pipe'];"] }] },
@@ -315,7 +315,7 @@ const MUTANTS = [
 	{ id: 'M7', rule: 'L2', edits: [{ file: 'model/model.mjs', append: "\nimport { Log } from '../planner/log.mjs';\n" }] },
 	// the attack: a suffix, an absolute path, and a barrel import re-pointed at `index.mjs?` with its record lowered
 	{ id: 'A1d', rule: 'L2', edits: [{ file: 'kernel/spec.mjs', append: "\nimport { Log as __c } from '../planner/log.mjs?v';\n" }] },
-	{ id: 'A2', rule: 'L2', edits: [{ file: 'app/src/input.js', append: "\nexport async function __a2() { return (await import('/engine/movers.mjs')).moversAt; }\n" }] },
+	{ id: 'A2', rule: 'L2', edits: [{ file: 'app/src/input.js', append: "\nexport async function __a2() { return (await import('/plugins/simulation/movers.mjs')).moversAt; }\n" }] },
 	// K2c: no barrel is left to re-point, so the attack plants one and imports it through a suffix; the new file also fails L1
 	{ id: 'A24b', rule: 'L4', also: ['L1'], edits: [{ file: 'kernel/index.mjs', create: "export { gridDot } from './geometry.mjs';\n" },
 		{ file: 'app/src/snap.js', append: "\nimport { gridDot as __c } from '../../kernel/index.mjs?';\n" }] },
@@ -333,15 +333,15 @@ const MUTANTS = [
 	// accepting only its own kind (planted and caught when the literal went).
 	// a core barrel forwarding network code, and one forwarding simulation code under a listed name
 	// K2c: with the barrels gone, a core module that starts forwarding network code IS a new barrel, so it fails L4 too
-	// RESTATED at H21.8 (B341): model/invariants.mjs is core now, so A5 forwards from network/link-rules.mjs
-	{ id: 'A5', rule: 'L2', also: ['L4'], edits: [{ file: 'model/limits.mjs', append: "export { splitAtBend } from '../network/link-rules.mjs';\n" }] },
+	// RESTATED at H21.8 (B341): model/invariants.mjs is core now, so A5 forwards from plugins/network/link-rules.mjs
+	{ id: 'A5', rule: 'L2', also: ['L4'], edits: [{ file: 'model/limits.mjs', append: "export { splitAtBend } from '../plugins/network/link-rules.mjs';\n" }] },
 	/*
 	K2a: the second edit is gone. It existed only to keep L10 quiet -- `model/index.mjs` was in the
 	planner's unused list, so a new re-export there needed listing too, or the mutant would have
 	failed two rules and `fails` asserts exactly one. K2a took every barrel out of the planner
 	closure, so the barrel is no longer listed and the re-export alone is the mutant.
 	*/
-	{ id: 'A5b', rule: 'L2', also: ['L4'], edits: [{ file: 'model/limits.mjs', append: "export { moversAt } from '../engine/movers.mjs';\n" }] },
+	{ id: 'A5b', rule: 'L2', also: ['L4'], edits: [{ file: 'model/limits.mjs', append: "export { moversAt } from '../plugins/simulation/movers.mjs';\n" }] },
 	// a rule primitive taken from a namespace, and from import(), by destructuring
 	{ id: 'A12a', rule: 'L9', edits: [{ file: 'app/src/selection.js', append: "\nimport * as __inv from '../../model/invariants.mjs';\nconst { collapseAtWaypoint: __cw } = __inv;\n" }] },
 	{ id: 'A12c', rule: 'L9', edits: [{ file: 'app/src/selection.js', append: "\nexport async function __a12() { const m = await import('../../model/invariants.mjs'); const { collapseAtWaypoint } = m; return collapseAtWaypoint; }\n" }] },
@@ -350,7 +350,7 @@ const MUTANTS = [
 	{ id: 'A7b', rule: 'L11', edits: [{ file: 'planner/txn.mjs', append: '\nconst __host = () => global.draw;\n' }] },
 	{ id: 'A7d', rule: 'L11', edits: [{ file: 'kernel/spec.mjs', append: '\nconst __host = () => \\u0077indow.draw;\n' }] },
 	// a regex after `)` that used to hide the import() after it
-	{ id: 'A15', rule: 'L2', edits: [{ file: 'app/src/input.js', append: "\nexport async function __a15(ok, s) { if (ok) /'/.test(s); const m = await import(\"../../engine/movers.mjs\"); if (ok) /'/.test(s); return m.moversAt; }\n" }] },
+	{ id: 'A15', rule: 'L2', edits: [{ file: 'app/src/input.js', append: "\nexport async function __a15(ok, s) { if (ok) /'/.test(s); const m = await import(\"../../plugins/simulation/movers.mjs\"); if (ok) /'/.test(s); return m.moversAt; }\n" }] },
 	// loading outside import: createRequire, a .cjs shim, an inline module script
 	{ id: 'A18', rule: 'L2', edits: [{ file: 'planner/txn.mjs', append: "\nimport { createRequire } from 'node:module';\nconst __req = createRequire(import.meta.url);\nconst __lazy = () => __req('./store.js');\n" }] },
 	{ id: 'A13b', rule: 'L1', edits: [{ file: 'server/helper.cjs', create: "module.exports = require('./origin.mjs');\n" },
@@ -377,12 +377,19 @@ const MUTANTS = [
 	no entry in COMPONENTS is refused, so a component cannot arrive without saying who may import it.
 	*/
 	{ id: 'C1', rule: 'L12', needle: /model\/model\.mjs:\d+ import '@apnex\/snap-grid' -- part document may not import the component @apnex\/snap-grid/, edits: [{ file: 'model/model.mjs', append: "\nimport { openGrid as __og } from '@apnex/snap-grid';\n" }] },
-	{ id: 'C2', rule: 'L12', needle: /zones\/zone-keys\.mjs:\d+ import '@apnex\/snap-grid\/conformance' -- part zones may not import the component @apnex\/snap-grid/, edits: [{ file: 'zones/zone-keys.mjs', append: "\nimport { checkGridShape as __k } from '@apnex/snap-grid/conformance';\n" }] },
+	{ id: 'C2', rule: 'L12', needle: /plugins\/zones\/zone-keys\.mjs:\d+ import '@apnex\/snap-grid\/conformance' -- part zones may not import the component @apnex\/snap-grid/, edits: [{ file: 'plugins/zones/zone-keys.mjs', append: "\nimport { checkGridShape as __k } from '@apnex/snap-grid/conformance';\n" }] },
 	{ id: 'C3', rule: 'L12', needle: /kernel\/geometry\.mjs:\d+ import\('@apnex\/snap-grid'\) -- a component is imported statically \(D7\)/, edits: [{ file: 'kernel/geometry.mjs', append: "\nconst __d7 = async () => (await import('@apnex/snap-grid')).openGrid;\n" }] },
 	{ id: 'C4', rule: 'L12', needle: /tools\/__d7\.mjs:\d+ import\('@apnex\/snap-grid\/conformance'\) -- a component is imported statically \(D7\)/, edits: [{ file: 'tools/__d7.mjs', create: "#!/usr/bin/env node\nconst __d7 = async () => (await import('@apnex/snap-grid/conformance')).checkGridShape;\n" }] },
 	{ id: 'C5', rule: 'L12', needle: /package\.json depends on @apnex\/other, which COMPONENTS does not declare/, edits: [{ file: 'package.json', replace: ['"ws": "^8.21.0"', '"@apnex/other": "https://example.invalid/other.tgz",\n\t\t"ws": "^8.21.0"'] }] },
 	{ id: 'C6', rule: 'L12', needle: /COMPONENTS declares @apnex\/snap-grid, which package\.json does not depend on/, edits: [{ file: 'package.json', replace: ['"@apnex/snap-grid": "', '"@apnex/snap-grid-renamed": "'] }] },
 	{ id: 'C7', rule: 'L12', needle: /COMPONENTS\.@apnex\/snap-grid lets part latice import it, and PARTS holds no such part/, edits: [{ file: MAN, replace: ["'@apnex/snap-grid': { parts: ['lattice'],", "'@apnex/snap-grid': { parts: ['latice'],"] }] },
+	/*
+	H26.7 (H26-7): the frozen K0 closure keeps the paths K0 knew (RU2), and a module it dropped that moved is read where it is now
+	(tools/layers.mjs MOVED). `BEND_R` is listed because engine/spawners.mjs, which the closure dropped, imports it; with that file's
+	move unrecorded, its import is unreadable and the listing is refused for want of a departure.
+	*/
+	{ id: 'P1', rule: 'L10', needle: /kernel\/spec\.mjs:BEND_R is listed but is not in the frozen K0 baseline, no baseline symbol of that name left its module for it \(0 vacated, 1 claimed\), and its module is not one the closure dropped/,
+		edits: [{ file: MAN, replace: ["'engine/spawners.mjs': 'plugins/simulation/spawners.mjs',", ''] }] },
 ];
 
 /*
@@ -595,7 +602,7 @@ test('H17 K2a: a name is admitted only when a DEPARTED module imported it, not m
 		const mod = k.slice(0, k.lastIndexOf(':')), name = k.slice(k.lastIndexOf(':') + 1);
 		// K2c deleted the three barrels (H17-D4), K12 the design-rule checker (ruled), and K4 moved the planner's K0 files to
 		// planner/ (H17-D5), so they are departed and gone from their K0 paths; every other departed module still exists.
-		// S-e (H18.15, G5) moved model/referential.mjs to network/link-references.mjs, the link's references the network's
+		// S-e (H18.15, G5) moved model/referential.mjs to plugins/network/link-references.mjs, the link's references the network's
 		const gone = departed.filter((m) => !fs.existsSync(path.join(root, m)));
 		// RESTATED at H25.5 (B378, D4 of H25-1): kernel/adapt.mjs and kernel/engine.mjs deleted with the old scene renderer
 		assert.deepEqual(gone.sort(), ['engine/index.mjs', 'engine/policy.mjs', 'kernel/adapt.mjs', 'kernel/engine.mjs', 'kernel/grc.mjs', 'kernel/index.mjs', 'model/index.mjs',
@@ -728,8 +735,8 @@ test('H17 K10: every seeded board is accepted by the real planner', async () => 
 	const { Log } = await import('../planner/log.mjs');
 	const { productKinds } = await import('../product/kinds.mjs');
 	await import('../product/types.mjs');
-	const { PIPE_ROW } = await import('../network/pipe-kind.mjs');
-	const { createNetworkSession } = await import('../network/session.mjs');
+	const { PIPE_ROW } = await import('../plugins/network/pipe-kind.mjs');
+	const { createNetworkSession } = await import('../plugins/network/session.mjs');
 
 	// read as DATA -- the boards moved out of the lab's source into lab/seeds.json
 	const boards = JSON.parse(fs.readFileSync(path.join(root, 'lab/seeds.json'), 'utf8'));
@@ -783,9 +790,9 @@ dev/COMMIT-DELETIONS.md.
 */
 
 test('the network plugin exists and the lab composes it', () => {
-	assert.ok(fs.existsSync(path.join(root, 'network/')), 'network/ is the plugin (SD11b, ruled 2026-09-28; a product folder since V-a, J1)');
+	assert.ok(fs.existsSync(path.join(root, 'plugins/network/')), 'plugins/network/ is the plugin (SD11b, ruled 2026-09-28; a product folder since V-a, J1; under plugins/ since H26.7)');
 	const lab = fs.readFileSync(path.join(root, 'lab/src/root.js'), 'utf8');
-	assert.match(lab, /from '\.\.\/\.\.\/network\//, 'the lab must compose the incubator, or nothing is being tested');
+	assert.match(lab, /from '\.\.\/\.\.\/plugins\/network\//, 'the lab must compose the incubator, or nothing is being tested');
 });
 
 /*

@@ -20,7 +20,7 @@ import { Store } from '../server/store.js';
 import { fsFiles } from '../server/files.mjs';
 import { serialize, parse } from '../server/docfile.mjs';
 import { completeAlwaysHeld } from '../model/shape.mjs';
-import { LAYOUT_TABLE } from '../layouts/layout-table.mjs';
+import { LAYOUT_TABLE } from '../plugins/layouts/layout-table.mjs';
 
 const LAYOUTS = structuredClone(LAYOUT_TABLE).map((l) => ({ ...l, ext: { ...l.ext } }));
 const tmp = (tag) => fs.mkdtempSync(path.join(os.tmpdir(), `draw-schema3-${tag}-`));

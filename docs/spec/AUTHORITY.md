@@ -195,7 +195,7 @@ That is what `moversAt` and `combatAt` rest on, and it is why a third client joi
 
 **There is a third input, and it was never named: the code itself.**
 
-Derivation reads `TOWERS` and `MOVERS` from `engine/kinds.mjs`.\
+Derivation reads `TOWERS` and `MOVERS` from `plugins/simulation/kinds.mjs`.\
 Those are declared centrally and stored nowhere, which is deliberate -- B172 established that a number copied into a document is a decision you can no longer change.\
 The consequence was not followed through: a game constant that lives only in code makes the running REVISION a parameter of the derivation.
 

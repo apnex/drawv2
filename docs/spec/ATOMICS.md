@@ -376,7 +376,7 @@ A caller emits what it is given and decides nothing.
 
 `linkAppearance(link, w)` is the first, and the only one so far.\
 It answers the weight, the dash and the head together, where those were three questions assembled by hand at four call sites.\
-AMENDED 2026-10-16 (H24.6): the head left it -- a head is a shape of its own, answered in one call by `linkHeadOf` (`network/link-head.mjs`); what the line owes a head, square caps, is still the appearance's.
+AMENDED 2026-10-16 (H24.6): the head left it -- a head is a shape of its own, answered in one call by `linkHeadOf` (`plugins/network/link-head.mjs`); what the line owes a head, square caps, is still the appearance's.
 
 **`APPEARANCE_KEYS` declares every key the derivation can produce**, which is what makes an UPDATE possible to write correctly.\
 An update applies the derivation over the declared set, setting what is present and REMOVING what is not -- so a key a previous state set cannot strand on an element whose state has changed.
@@ -425,9 +425,9 @@ Accepted costs: a group's outline, and on a diagonal the selection brackets, cro
 
 ### Built
 
-`network/link-head.mjs` works a head out from a link's routed points, the outlines of the anchors at its ends and the line's width; `network/link-painter.mjs` draws it, on create and on update alike, as a `.link-head` path straight after its link and before the link's click twin, and breaks the line beneath it.\
-An anchor's outline is declared by the part that draws it -- `DEVICE_OUTLINES` (`devices/device-footprint.mjs`) for a device -- and reaches the painter through the renderer's `outlineOf`; a waypoint, which declares none, takes the network's own ring, a circle of 20.\
-The stylesheet colours a head from the link element before it (`app/style.css`, `network/network.css`); the export, which loads no stylesheet, reads the head's own `stroke` attribute.
+`plugins/network/link-head.mjs` works a head out from a link's routed points, the outlines of the anchors at its ends and the line's width; `plugins/network/link-painter.mjs` draws it, on create and on update alike, as a `.link-head` path straight after its link and before the link's click twin, and breaks the line beneath it.\
+An anchor's outline is declared by the part that draws it -- `DEVICE_OUTLINES` (`plugins/devices/device-footprint.mjs`) for a device -- and reaches the painter through the renderer's `outlineOf`; a waypoint, which declares none, takes the network's own ring, a circle of 20.\
+The stylesheet colours a head from the link element before it (`app/style.css`, `plugins/network/network.css`); the export, which loads no stylesheet, reads the head's own `stroke` attribute.
 
 Settled while building, each within the rulings:
 

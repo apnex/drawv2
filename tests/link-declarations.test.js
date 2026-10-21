@@ -10,8 +10,8 @@ reverse -- fails here.
 */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { LINK_DECLARATIONS, collapseAtWaypoint, splitAtBend } from '../network/link-rules.mjs';
-import { LINK_ROW } from '../network/link-kind.mjs';
+import { LINK_DECLARATIONS, collapseAtWaypoint, splitAtBend } from '../plugins/network/link-rules.mjs';
+import { LINK_ROW } from '../plugins/network/link-kind.mjs';
 
 const STRUCTURAL = ['id', 'name', 'src', 'dst', 'via', 'closed'];
 const W = 'node-00000e';

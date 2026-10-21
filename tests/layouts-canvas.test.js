@@ -21,11 +21,11 @@ import fs from 'node:fs';
 import { installDom, fakeEl } from './fixtures/client-harness.mjs';
 import { Model } from './fixtures/composed.mjs';
 import { PRODUCT_CANVAS } from '../product/canvas.mjs';
-import { LAYOUTS_CANVAS } from '../layouts/layout-canvas.mjs';
+import { LAYOUTS_CANVAS } from '../plugins/layouts/layout-canvas.mjs';
 import { Grids } from '../app/src/grids.js';
 import { placesOf, gridsOf } from '../app/src/snap.js';
 import { gridDot } from '../kernel/geometry.mjs';
-import { LAYOUT_TABLE } from '../layouts/layout-table.mjs';
+import { LAYOUT_TABLE } from '../plugins/layouts/layout-table.mjs';
 
 const code = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
 const page = () => {
@@ -94,12 +94,12 @@ test('WD-b2 test 4: the layouts plugin holds the anchor\'s place and both grids;
 	const product = PRODUCT_CANVAS.find((p) => p.owner === 'the product');
 	assert.deepEqual(Object.keys(product).sort(), ['deleteRanks', 'orders', 'owner'], 'the anchor\'s drawing order and its rank in a delete -- composition');
 	assert.doesNotMatch(code('product/canvas.mjs'), /\.(span|type|shape|content)\b|spanExtent|NODE_EXT|gridDot/, 'the product reads no device field and draws no grid');
-	for (const f of fs.readdirSync(new URL('../layouts/', import.meta.url)).filter((x) => x.endsWith('.mjs'))) {
-		for (const [, from] of code(`layouts/${f}`).matchAll(/^import [^;]*? from '([^']+)'/gm)) {
-			assert.match(from, /^(\.\/|\.\.\/model\/|\.\.\/kernel\/)/, `layouts/${f} imports ${from} -- the layouts plugin imports the core and itself alone`);
+	for (const f of fs.readdirSync(new URL('../plugins/layouts/', import.meta.url)).filter((x) => x.endsWith('.mjs'))) {
+		for (const [, from] of code(`plugins/layouts/${f}`).matchAll(/^import [^;]*? from '([^']+)'/gm)) {
+			assert.match(from, /^(\.\/|\.\.\/\.\.\/model\/|\.\.\/\.\.\/kernel\/)/, `plugins/layouts/${f} imports ${from} -- the layouts plugin imports the core and itself alone`);
 		}
 	}
-	assert.doesNotMatch(code('layouts/layout-canvas.mjs'), /\.(span|type|shape|content)\b/, 'nor does it read a device field');
+	assert.doesNotMatch(code('plugins/layouts/layout-canvas.mjs'), /\.(span|type|shape|content)\b/, 'nor does it read a device field');
 });
 
 test('WD-b2 test 6: a device\'s place size is its span\'s extent, a waypoint\'s one cell; a zone\'s place keeps its own size', () => {

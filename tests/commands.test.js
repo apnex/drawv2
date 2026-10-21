@@ -14,8 +14,8 @@
 // RESTATED at C-e step six (D5): `reshapeNodes` left the builders -- `s` is the devices plugin's row -- so the reshape is run as
 // the row runs it (tests/fixtures/plugin-edits.mjs)
 import { reshapeCommand as reshapeNodes } from './fixtures/plugin-edits.mjs';
-import { makeGroup } from '../groups/make-group.mjs';
-import { GROUP_KEYS } from '../groups/group-keys.mjs';
+import { makeGroup } from '../plugins/groups/make-group.mjs';
+import { GROUP_KEYS } from '../plugins/groups/group-keys.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Model } from './fixtures/composed.mjs';   // the network's kinds, the link among them (S-e)
@@ -235,7 +235,7 @@ model does not have.
 test('H15.6: cycling direction walks undeclared, forward, reverse, and back to absent', async () => {
 	// RESTATED at C-e step seven (H19.33; D5): the link keys are the network's rows: `f` run as its row runs it
 	const { directionCommand: cycleDirection } = await import('./fixtures/plugin-edits.mjs');
-	const { linkFacing } = await import('../network/roles.mjs');
+	const { linkFacing } = await import('../plugins/network/roles.mjs');
 
 	const undeclared = { id: 'link-aa0001', src: 'node-aa0001', dst: 'node-aa0002' };
 	const first = cycleDirection(undeclared);
@@ -269,7 +269,7 @@ test('H15.6: cycling direction walks undeclared, forward, reverse, and back to a
 	and a readout saying another is the shape this register is full of.
 	*/
 	const bar = (l) => (l.direction === undefined ? '<->' : (l.direction === 'forward' ? '>>>' : '<<<'));
-	const { linkMarker } = await import('../network/appearance.mjs');
+	const { linkMarker } = await import('../plugins/network/appearance.mjs');
 	for (const l of [undeclared, forward, reverse]) {
 		const head = linkMarker(l);
 		const expect = head === 'end' ? '>>>' : head === 'start' ? '<<<' : '<->';

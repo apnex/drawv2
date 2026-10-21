@@ -9,7 +9,7 @@ link. Nothing said which hooks belonged together, because nothing declared them 
 
 T1 declares them as one: a `network` object. The Model reads four of its methods and the planner three, each method
 named as the question it answers -- the Model's under the Model's own method names, so `isLinkDown(model, link)` is
-`network.isLinkDown(link, model)`. The plugin builds the object once (`network/network.mjs`) and the lab hands the
+`network.isLinkDown(link, model)`. The plugin builds the object once (`plugins/network/network.mjs`) and the lab hands the
 same object to both.
 
 AMENDED by PL-3 (dev/design/planner/PLANNER-SYSTEM.md): the planner no longer reads the network's methods. The four it
@@ -23,7 +23,7 @@ These tests hold the two guardrails the audit set:
     fall-back to production's answer for that one question -- and so is a caller still using a retired hook name,
     which would otherwise be ignored and leave the plugin half-composed.
 */
-import * as queries from '../network/network-queries.mjs';   // Q-a: the network's questions, its own functions
+import * as queries from '../plugins/network/network-queries.mjs';   // Q-a: the network's questions, its own functions
 const { networkOf } = queries;
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -33,9 +33,9 @@ import { NODE_GRID } from '../kernel/geometry.mjs';   // H26.1: the relation ind
 import { commit, plan } from '../planner/txn.mjs';
 import { Log } from '../planner/log.mjs';
 import { productKinds } from '../product/kinds.mjs';
-import { PIPE_ROW, pipeEntity } from '../network/pipe-kind.mjs';
-import { NETWORK_ROWS } from '../network/kinds.mjs';   // the network's kind and the field it contributes (S-a)
-import { createNetwork } from '../network/network.mjs';
+import { PIPE_ROW, pipeEntity } from '../plugins/network/pipe-kind.mjs';
+import { NETWORK_ROWS } from '../plugins/network/kinds.mjs';   // the network's kind and the field it contributes (S-a)
+import { createNetwork } from '../plugins/network/network.mjs';
 
 const MODEL_READS = ['pathOf', 'linksRoutedThrough', 'isLinkDown', 'blockersOf', 'declaresNoTransit', 'stopsAt'];
 const RETIRED_PLANNER_HOOKS = ['alsoReferenced', 'keepsOrphan', 'isStranded', 'joinsAt'];

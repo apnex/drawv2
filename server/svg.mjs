@@ -138,7 +138,7 @@ function serializeNode(n, layerSet) {
 /*
 H25.2 (B366): A LINK IS WRITTEN AS ONE GROUP NAMED BY ITS ID -- its line as the painter drew it, its class kept, then the head and
 the leg that name it (\`data-head-of\`, \`data-leg-of\`) -- so the page's own rules style it as on the page: the down rule reaches
-the head as the line's next sibling (network/network.css), and nothing in the file is coloured by the export. The group keeps the
+the head as the line's next sibling (plugins/network/network.css), and nothing in the file is coloured by the export. The group keeps the
 \`<g id="link-...">\` the file has always drawn, which \`draw render --summary\` and \`draw parity\` count links by, so a CLI already
 installed reads a new file as it read an old one. The line gives its id to the group; the click twin stays out (\`data-link\`).
 */

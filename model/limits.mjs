@@ -60,7 +60,7 @@ export const SPAN_MAX = 64;
 H12.5 -- the bounds on an authored spawner.
 
 These ARE user-supplied values, which is why they belong here and why the derived cap on how many
-movers may be alive at once does not: `MAX_MOVERS_PER_SPAWNER` in `engine/movers.mjs` is a runtime
+movers may be alive at once does not: `MAX_MOVERS_PER_SPAWNER` in `plugins/simulation/movers.mjs` is a runtime
 safety bound over numbers that have already passed these, and folding the two together would give
 this file a second concern.
 

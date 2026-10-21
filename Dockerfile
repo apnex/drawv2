@@ -34,22 +34,11 @@ COPY planner/ planner/
 # principal and no agent door sit behind it (H17-D1, amended 2026-09-28). One image serves both;
 # which one a container IS depends on the service it runs as, not on what it carries.
 COPY lab/ lab/
-# the NETWORK plugin, incubating (ruled 2026-09-28): built lab-first and promoted to production once
-# proven. It is in the image because the lab serves it; production's own server imports nothing from
-# it until promotion, and tests/scan-layers.test.js holds that boundary. Named rather than globbed, as
-# every folder here is -- which is exactly why forgetting this line shipped a lab that 404'd its own
-# plugin while every check in the gate passed.
-COPY network/ network/
-
-# the ZONES plugin (O-b1, H19.19; KINDS-AS-PLUGINS.md): the zone kind, which the product and the lab compose
-COPY layouts/ layouts/
-COPY zones/ zones/
-
-# the GROUPS plugin (O-c, H19.20): the group kind and its rules, which the product and the lab compose
-COPY groups/ groups/
-
-# the DEVICES plugin (O-e1, H19.21; O4): whether a device is composed on an anchor, its factories and its drawn word
-COPY devices/ devices/
+# the PLUGINS (H26.7): network, layouts, zones, groups, devices and the simulation, each in its folder,
+# which the product and the lab compose. Named rather than globbed, as every folder here is -- forgetting
+# the network's line once shipped a lab that 404'd its own plugin while every check in the gate passed
+# (tests/scan-layers.test.js "H17 C5" holds every folder the lab mounts to a line here).
+COPY plugins/ plugins/
 
 # the PRODUCT's composition (O-d, H19.22): the kinds production ships, composed in one place
 COPY product/ product/

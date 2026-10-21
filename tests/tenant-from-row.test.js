@@ -15,8 +15,8 @@ import { commit } from '../planner/txn.mjs';
 import { Log } from '../planner/log.mjs';
 import { violations } from '../model/invariants.mjs';
 import { KINDS, NETWORK } from './fixtures/composed.mjs';
-import { createNetwork } from '../network/network.mjs';
-import { createTransit } from '../network/transit.mjs';
+import { createNetwork } from '../plugins/network/network.mjs';
+import { createTransit } from '../plugins/network/transit.mjs';
 
 const code = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
 const put = (kind, entity) => ({ op: 'put', kind, entity });

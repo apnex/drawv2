@@ -16,7 +16,7 @@ import path from 'node:path';
 import { teardown, spawnGroup } from './fixtures/teardown.mjs';
 import { NO_CHROME, launchChrome } from './fixtures/chrome.mjs';
 import { createTab, inputOf, matrixTests, sleep } from './fixtures/matrix-runner.mjs';
-import { pipeEntity } from '../network/pipe-kind.mjs';
+import { pipeEntity } from '../plugins/network/pipe-kind.mjs';
 
 const SKIP = NO_CHROME;
 const root = path.resolve(import.meta.dirname, '..');
@@ -112,7 +112,7 @@ page said nothing. UNDO-03 caught it one run in three, its keys only nearly as c
 test('page matrix: B294 -- a redo pressed while its undo is on the wire is redone', { skip: SKIP }, async () => {
 	const p = await open('');
 	const got = await p.run(`(async () => {
-		const { makeNode } = await import('/devices/make-node.mjs');   // the devices plugin's factories, as the page serves them (O-e1)
+		const { makeNode } = await import('/plugins/devices/make-node.mjs');   // the devices plugin's factories, as the page serves them (O-e1)
 		const d = window.draw, n = makeNode(d.model, 'host', { x: 0, y: 0 });
 		d.history.commit({ label: 'put', entries: [{ op: 'put', kind: 'node', entity: n }] });
 		for (let i = 0; i < 40 && !d.sync.outbox.every((m) => m.answered); i++) await new Promise((r) => setTimeout(r, 50));

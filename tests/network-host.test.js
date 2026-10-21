@@ -1,5 +1,5 @@
 /*
-THE NETWORK ATTACHED TO A PAGE (network/host.mjs) -- its choreography, held without a browser.
+THE NETWORK ATTACHED TO A PAGE (plugins/network/host.mjs) -- its choreography, held without a browser.
 
 The lab's behaviour matrix proves what the board looks like after each gesture; this proves the ORDER the network's hooks
 run in, which that outcome depends on and which moved out of the lab root with them: the page's own reconciliation, then
@@ -9,21 +9,21 @@ sweeps nothing -- the planner does, in the edit -- and paints the tab's own pipe
 // RESTATED at C-e step eight (H19.33; D5): the network commits its transit edit through `edit`, which the composition backs
 // with the canvas's generic builder -- so each test's commit sees the command `editOf` builds, as the page's history does
 import { editOf } from '../app/src/commands.js';
-import { isLinkDown } from '../network/network-queries.mjs';   // Q-a: the network's questions
+import { isLinkDown } from '../plugins/network/network-queries.mjs';   // Q-a: the network's questions
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { attachNetwork } from '../network/host.mjs';
+import { attachNetwork } from '../plugins/network/host.mjs';
 import { fakeLayer } from './fixtures/fake-svg.mjs';
-import { createNetworkSession } from '../network/session.mjs';
-import { pipeEntity } from '../network/pipe-kind.mjs';
-import { NETWORK_ROWS } from '../network/kinds.mjs';   // the network's kind and the field it contributes (S-a)
+import { createNetworkSession } from '../plugins/network/session.mjs';
+import { pipeEntity } from '../plugins/network/pipe-kind.mjs';
+import { NETWORK_ROWS } from '../plugins/network/kinds.mjs';   // the network's kind and the field it contributes (S-a)
 import { applyOps } from '../model/ops.mjs';
 import { Model } from '../model/model.mjs';
 import { attachRelations } from '../engine/store.mjs';
 import { NODE_GRID } from '../kernel/geometry.mjs';   // H26.1: the relation index is injected the node grid's nearest (it was cellOf)
 import { plan } from '../planner/txn.mjs';
 import { productKinds } from '../product/kinds.mjs';
-import { PIPE_ROW } from '../network/pipe-kind.mjs';
+import { PIPE_ROW } from '../plugins/network/pipe-kind.mjs';
 
 function rig({ commits = true, accepts = true } = {}) {
 	const calls = [];
@@ -100,7 +100,7 @@ test('the pipes repaint on every model change, and a transit change settles', ()
 
 /*
 F-e (H18.7) -- A TRANSIT CHANGE IS AN EDIT: the host commits the session's set of each anchor's transit, as one edit labelled
-`transit`, and builds no cut or join of its own -- those are the planner's (network/transit.mjs `transitReactions`). B278's
+`transit`, and builds no cut or join of its own -- those are the planner's (plugins/network/transit.mjs `transitReactions`). B278's
 rule, that a cut asks whether what arrives stops rather than what was declared, is the cut reaction's, held below.
 */
 test('F-e: a transit change commits the session\'s edit as given, and no edit of the host\'s own', () => {
@@ -120,7 +120,7 @@ test('F-e: a transit change commits the session\'s edit as given, and no edit of
 });
 
 test('B278: the cut asks whether what arrives stops, whatever was declared', async () => {
-	const { transitReactions } = await import('../network/transit.mjs');
+	const { transitReactions } = await import('../plugins/network/transit.mjs');
 	const { plan } = await import('../planner/txn.mjs');
 	// a stand-in transit where the two questions differ: P stops what arrives, and nothing is declared
 	const [cut] = transitReactions({ stopsAt: (id) => id === 'node-000003' }).reactions;

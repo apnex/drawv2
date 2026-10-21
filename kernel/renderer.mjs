@@ -68,7 +68,7 @@ no caller re-implements the `rows <= 1` branch either.
 /*
 H15.6 -- the arrowhead WAS an SVG marker defined here, once for both renderers. RETIRED at H24.6 (B356): a marker sits at the
 path's last point -- the anchor's centre, under the device -- cannot hold a size floor, and could not take the line's colour
-(B226, `context-stroke` painting nothing). A head is a shape of its own now, worked out by network/link-head.mjs and drawn by the
+(B226, `context-stroke` painting nothing). A head is a shape of its own now, worked out by plugins/network/link-head.mjs and drawn by the
 network's link painter.
 */
 

@@ -199,7 +199,7 @@ test('with a route hook, w on a node the drag continues past is a pin, handed to
 /*
 REWRITTEN 2026-10-04 (P7 X-a, H18.37; the cutover ruling): this held that `w` on a node did nothing on the product page. The page
 composes the network now (V-b), whose grammar makes a node a STOP: a link bends only at a waypoint (F-c), so a drag through a
-node with `w` makes two links that end there (network/guide.mjs), as the lab does.
+node with `w` makes two links that end there (plugins/network/guide.mjs), as the lab does.
 CORRECTED 2026-10-07 (H19.10, Z1): a link may be pinned through a node that passes routes now; these are HOSTS, which never do,
 so the judge cuts the drag there (TR-2b) -- the outcome stands, for that reason. A router with transit on is pinned (TRN-43).
 */

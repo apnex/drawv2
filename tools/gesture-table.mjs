@@ -3,7 +3,7 @@
 gesture-table -- the network plugin's gesture table, generated from its grammar, and the gate that holds it.
 
 ONE MASTER, ONE GENERATED VIEW (mission-kit P3). The master is the data the Rules engine reads: the network's key rows
-(network/keys.mjs) and its drag grammar (network/grammar.mjs). The readable view is
+(plugins/network/keys.mjs) and its drag grammar (plugins/network/grammar.mjs). The readable view is
 `dev/design/unification/GESTURES.md`, whose charter is hand-written and whose tables are GENERATED here from each row's
 `id`, `doc` and result. A gesture changes by editing its row; the table follows, and `--check` in the gate fails when
 the two differ. Before T3 the gestures were described by hand beside conditions in code, and nothing compared them.
@@ -13,8 +13,8 @@ Usage: node tools/gesture-table.mjs --check | --write
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { networkInput } from '../network/keys.mjs';
-import { DRAG_KINDS, LEGS } from '../network/grammar.mjs';
+import { networkInput } from '../plugins/network/keys.mjs';
+import { DRAG_KINDS, LEGS } from '../plugins/network/grammar.mjs';
 
 const root = path.resolve(import.meta.dirname, '..');
 const VIEW = path.join(root, 'dev/design/unification/GESTURES.md');

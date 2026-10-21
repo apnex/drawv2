@@ -1,10 +1,10 @@
 import { Model } from './fixtures/composed.mjs';   // WD-b2: a grid reads the diagram's layout record
 import { test } from 'node:test';
 // RESTATED at H26.1 (SNAP-GRID.md section 5): the kernel's grid arithmetic is deleted; the grids are snap-grid's, opened in the kernel
-// (NODE_GRID) and the layouts plugin (ZONE_GRIDS), and a span is what it runs through (devices/device-footprint.mjs spanThrough)
+// (NODE_GRID) and the layouts plugin (ZONE_GRIDS), and a span is what it runs through (plugins/devices/device-footprint.mjs spanThrough)
 import { NODE_GRID } from '../kernel/geometry.mjs';
-import { ZONE_GRIDS, LAYOUT_TABLE } from '../layouts/layout-table.mjs';
-import { spanThrough as spanExtent } from '../devices/device-footprint.mjs';
+import { ZONE_GRIDS, LAYOUT_TABLE } from '../plugins/layouts/layout-table.mjs';
+import { spanThrough as spanExtent } from '../plugins/devices/device-footprint.mjs';
 import { STD } from '../kernel/spec.mjs';
 import assert from 'node:assert/strict';
 import * as snap from '../app/src/snap.js';
@@ -13,7 +13,7 @@ import { PRODUCT_CANVAS } from '../product/canvas.mjs';
 // RESTATED at C-d step one (H19.32): the zone grid is the zones plugin's place, snapped through it -- snapZone left the canvas
 const snapZone = (pos) => snapIn(placesOf(PRODUCT_CANVAS).get('zone'), pos);
 import { SURFACE, NODE_EXT as DOC_NODE_EXT } from '../model/surface.mjs';
-import { ZONE_EXT as DOC_ZONE_EXT } from '../layouts/layout-table.mjs';   // CORRECTED at O-b1: the zone extent is the zones plugin's
+import { ZONE_EXT as DOC_ZONE_EXT } from '../plugins/layouts/layout-table.mjs';   // CORRECTED at O-b1: the zone extent is the zones plugin's
 // RESTATED at C-e step thirteen (H19.33): the grids' points are their parts', and snap.js no longer re-exports the zone extent
 const ZONE_EXT = DOC_ZONE_EXT;
 // RESTATED at WD-b2 (H19.46): a grid's points are read from the open diagram's layout record -- here a fresh Model's
@@ -67,9 +67,9 @@ test('resolveBox normalizes any corner pair', () => {
 });
 
 // CORRECTED at C-e step eleven (H19.33): `pointInBox` left the canvas with its last callers -- the marquee's waypoint test is the
-// network's (network/anchor-points.mjs) and the zone's double-click the zones plugin's -- so the inclusive edge is held there
+// network's (plugins/network/anchor-points.mjs) and the zone's double-click the zones plugin's -- so the inclusive edge is held there
 test('a zone\'s box is inclusive of its edges, for a double-click', async () => {
-	const { ZONE_LABELS } = await import('../zones/zone-labels.mjs');
+	const { ZONE_LABELS } = await import('../plugins/zones/zone-labels.mjs');
 	const model = { all: () => [{ id: 'zone-aa0001', x: -30, y: -30, w: 60, h: 60 }] };
 	const at = (x, y) => ZONE_LABELS.edits[0].find(model, { x, y })?.id ?? null;
 	assert.equal(at(-30, -30), 'zone-aa0001');

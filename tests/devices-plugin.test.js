@@ -17,8 +17,8 @@ import { NODE_GRID } from '../kernel/geometry.mjs';   // H26.1: the relation ind
 import * as coreAnchors from '../model/anchors.mjs';
 
 const code = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
-const devices = async () => ({ ...(await import('../devices/device-shapes.mjs')), ...(await import('../devices/make-node.mjs')),
-	...(await import('../devices/occupancy.mjs')), ...(await import('../devices/anchor-words.mjs')) });
+const devices = async () => ({ ...(await import('../plugins/devices/device-shapes.mjs')), ...(await import('../plugins/devices/make-node.mjs')),
+	...(await import('../plugins/devices/occupancy.mjs')), ...(await import('../plugins/devices/anchor-words.mjs')) });
 const board = (indexed) => {
 	const m = new Model();
 	if (indexed) attachRelations(m, { nearest: NODE_GRID.nearest });

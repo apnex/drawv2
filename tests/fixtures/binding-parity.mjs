@@ -32,8 +32,8 @@ import * as ADAPTER from '../../kernel/input-rules.mjs';   // the adapter, the f
 import { makeInput } from './client-harness.mjs';
 import { SCENARIOS, record } from './gesture-corpus.mjs';
 import { Input, GESTURES } from '../../app/src/input.js';
-import { DRAG_KINDS, LEGS, kindOf, pipeFor } from '../../network/grammar.mjs';
-import { DEVICE_HAND } from '../../devices/device-hand.mjs';
+import { DRAG_KINDS, LEGS, kindOf, pipeFor } from '../../plugins/network/grammar.mjs';
+import { DEVICE_HAND } from '../../plugins/devices/device-hand.mjs';
 
 export const READ_AT = '8793699';   // the last commit holding draw's matcher, press and lifecycle whole
 export const MOVED = true;          // the move flipped it, with the new side's import
@@ -69,7 +69,7 @@ export function tenantsOf(table) {
 // a composed table's rows, `owner:id`, in table order
 export const idsOf = (table) => (Array.isArray(table) ? table.map((r) => `${r.owner}:${r.id}`) : table.rows.map((e) => `${e.owner}:${e.id}`));
 
-// the tables an Input composes, by the names section 2.2 gives them, and the network's drag grammar as network/grammar.mjs composes it
+// the tables an Input composes, by the names section 2.2 gives them, and the network's drag grammar as plugins/network/grammar.mjs composes it
 export function tablesOf(input) {
 	return {
 		keys: input.keyRules, presses: input.pressRules, double: input.doubleRules, 'key-releases': input.releaseRules, run: input.runRules,

@@ -7,8 +7,8 @@ core views, parameterized by what the composition's rows declare (`references`, 
   - gathering            memberId -> gathererId        for any kind whose row declares `gathers` (O-c)
   - cell occupancy       cellKey  -> Set<anchorId>     for the anchor kinds (`ANCHOR_KINDS`, R13, O1)
 
-Names no plugin's kind and imports no plugin module: `network/link-queries.mjs` asks `referrersOf(id, 'link')` and
-`devices/occupancy.mjs` asks `anchorsAt(p)`.
+Names no plugin's kind and imports no plugin module: `plugins/network/link-queries.mjs` asks `referrersOf(id, 'link')` and
+`plugins/devices/occupancy.mjs` asks `anchorsAt(p)`.
 */
 
 import { maintainIndex } from './ivm.mjs';

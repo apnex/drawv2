@@ -40,7 +40,7 @@ import { LAYER_DUTY, ALLOWED, LAYER, RATCHETS, RATCHET_REASONS, PARTS as DECLARE
 	ALIGNMENT as DECLARED_ALIGNMENT, MISSION_KIT, MISSION_KIT_READ, COPIES, SCANNER_ROOTS, COMPONENTS as DECLARED_COMPONENTS } from './layers.mjs';
 import { readRows } from './records.mjs';
 import { productKinds } from '../product/kinds.mjs';
-import { NETWORK_ROWS } from '../network/kinds.mjs';
+import { NETWORK_ROWS } from '../plugins/network/kinds.mjs';
 import { PRODUCT_CANVAS } from '../product/canvas.mjs';
 import { ROUTES } from '../server/routes.mjs';
 import { VERBS } from '../cli/verbs.mjs';

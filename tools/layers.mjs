@@ -14,7 +14,7 @@ connection (SD11b), the planner knows nothing of the page, and nothing imports a
   core         anchors in space: the grid, spec, theme, path geometry, render primitives, the
                document store and its taxonomy
   network      the plugin of connection: link rules and references, the relation index. Its own folder,
-               network/, since K13 (S-e); the relation index stays in engine/
+               network/, since K13 (S-e), plugins/network/ since H26.7; the relation index stays in engine/
   planner      the one write: plan, commit, undo, redo, the log, validation, group policy
   canvas       the gesture machine and everything a canvas needs to draw and edit
   chrome       the production page around the canvas: sync, network status, palette, readouts,
@@ -95,18 +95,18 @@ export const PARTS = {
 	planner: { duty: 'Make the one write every door applies', kind: 'core', by: ['SD2', 'O1'],
 		modules: ['planner/', 'model/invariants.mjs'], consumes: ['kind-contract', 'document', 'relations', 'lattice'] },
 	layouts: { duty: 'Declare a diagram\'s grids', kind: 'plugin', by: ['WD6', 'WD7'],
-		modules: ['layouts/'], consumes: ['lattice', 'kind-contract', 'document'] },
+		modules: ['plugins/layouts/'], consumes: ['lattice', 'kind-contract', 'document'] },
 	devices: { duty: 'Compose a device onto an anchor', kind: 'plugin', by: ['O4', 'WD10'],
-		modules: ['devices/'], consumes: ['lattice', 'kind-contract', 'document', 'relations', 'colours', 'primitives', 'rules'] },
+		modules: ['plugins/devices/'], consumes: ['lattice', 'kind-contract', 'document', 'relations', 'colours', 'primitives', 'rules'] },
 	network: { duty: 'Connect anchors', kind: 'plugin', by: ['SD11', 'SD11b', 'O1'],
-		modules: ['network/'], consumes: ['lattice', 'kind-contract', 'document', 'relations', 'colours', 'primitives', 'rules'] },
+		modules: ['plugins/network/'], consumes: ['lattice', 'kind-contract', 'document', 'relations', 'colours', 'primitives', 'rules'] },
 	zones: { duty: 'Bound regions of cells', kind: 'plugin', by: ['O1', 'O4'],
-		modules: ['zones/'], consumes: ['lattice', 'kind-contract', 'document', 'layouts', 'colours', 'primitives', 'rules'] },
+		modules: ['plugins/zones/'], consumes: ['lattice', 'kind-contract', 'document', 'layouts', 'colours', 'primitives', 'rules'] },
 	groups: { duty: 'Name sets of anchors', kind: 'plugin', by: ['O1'],
-		modules: ['groups/'], consumes: ['lattice', 'kind-contract', 'document', 'relations', 'colours', 'primitives', 'rules'] },
+		modules: ['plugins/groups/'], consumes: ['lattice', 'kind-contract', 'document', 'relations', 'colours', 'primitives', 'rules'] },
 	simulation: { duty: 'Derive what the clock drives', kind: 'plugin', by: ['AX1', 'AX4', 'SD11b'],
-		modules: ['engine/kinds.mjs', 'engine/movers.mjs', 'engine/rules.mjs', 'engine/spawn-appearance.mjs', 'engine/spawners.mjs', 'engine/spawn-field.mjs',
-			'engine/spawn-runs.mjs', 'model/reveal.mjs', 'engine/mover-painter.mjs', 'engine/reveal-painter.mjs', 'engine/paintloop.mjs'],
+		modules: ['plugins/simulation/kinds.mjs', 'plugins/simulation/movers.mjs', 'plugins/simulation/rules.mjs', 'plugins/simulation/spawn-appearance.mjs', 'plugins/simulation/spawners.mjs', 'plugins/simulation/spawn-field.mjs',
+			'plugins/simulation/spawn-runs.mjs', 'plugins/simulation/reveal.mjs', 'plugins/simulation/mover-painter.mjs', 'plugins/simulation/reveal-painter.mjs', 'plugins/simulation/paintloop.mjs'],
 		consumes: ['lattice', 'kind-contract', 'document', 'relations', 'colours', 'primitives', 'rules', 'network', 'devices'] },
 	product: { duty: 'Compose the plugins into the product', kind: 'composition', by: ['N1', 'D1'],
 		modules: ['product/'], consumes: ['kind-contract', 'lattice', 'colours', 'layouts', 'devices', 'network', 'zones', 'groups', 'simulation'] },
@@ -258,11 +258,13 @@ export const FOLDERS = [
 	retired; the layer rules judge every edge into the `network` layer, as they judge every other.
 	*/
 	{ dir: 'planner', layer: 'planner' },   // K4 (H17-D5): the planner, served whole to the lab, never `server/`
-	{ dir: 'network', layer: 'network' },
-	{ dir: 'layouts', layer: 'layouts' },   // WD-b1 (H19.45): the layouts plugin (WIDE-DEVICES.md section 12)
-	{ dir: 'zones', layer: 'zones' },   // O-b1 (H19.19): the zones plugin (KINDS-AS-PLUGINS.md)
-	{ dir: 'groups', layer: 'groups' },   // O-c (H19.20): the groups plugin (KINDS-AS-PLUGINS.md)
-	{ dir: 'devices', layer: 'devices' },   // O-e1 (H19.21): the devices plugin (KINDS-AS-PLUGINS.md section 16)
+	// H26.7 (H26-7): every plugin under plugins/, each folder its plugin's layer as at the root
+	{ dir: 'plugins/network', layer: 'network' },
+	{ dir: 'plugins/layouts', layer: 'layouts' },   // WD-b1 (H19.45): the layouts plugin (WIDE-DEVICES.md section 12)
+	{ dir: 'plugins/zones', layer: 'zones' },   // O-b1 (H19.19): the zones plugin (KINDS-AS-PLUGINS.md)
+	{ dir: 'plugins/groups', layer: 'groups' },   // O-c (H19.20): the groups plugin (KINDS-AS-PLUGINS.md)
+	{ dir: 'plugins/devices', layer: 'devices' },   // O-e1 (H19.21): the devices plugin (KINDS-AS-PLUGINS.md section 16)
+	{ dir: 'plugins/simulation' },   // H26.7: the simulation's modules, from engine/ and model/; no folder layer -- its painters are chrome's (LAYER)
 	{ dir: 'product', layer: 'product' },   // O-d (H19.22): the product's composition
 	{ dir: 'lab', layer: 'lab' },   // K10: composition only, held to that by L8
 	{ dir: 'tools', layer: 'tools' },
@@ -322,14 +324,14 @@ export const LAYER = {
 		'app/src/help.js',       // the generated help overlay (gesture system stage 6): draws what the bindings document
 		'app/src/run-mode.js',   // K5: run mode's press rows, the product's feature, handed to Input by main.js
 		'app/src/palette.js',    // the device palette widget; input.js's reach into it went at K7 (`RATCHETS.L2` is empty)
-		'engine/mover-painter.mjs', 'engine/reveal-painter.mjs', 'engine/paintloop.mjs',   // the simulation's painters: production-only, outside the lab
+		'plugins/simulation/mover-painter.mjs', 'plugins/simulation/reveal-painter.mjs', 'plugins/simulation/paintloop.mjs',   // the simulation's painters: production-only, outside the lab
 	],
 	simulation: [
-		'engine/movers.mjs', 'engine/spawners.mjs', 'engine/kinds.mjs', 'engine/rules.mjs',
-		'engine/spawn-field.mjs',   // O-e2 (H19.21): the spawner's field, composed onto the anchor
-		'engine/spawn-appearance.mjs',   // C-a (H19.29, D3): the spawning mark, composed onto the anchor's drawing
-		'engine/spawn-runs.mjs',   // C-e (H19.33): run mode's spawner and tower, the simulation's
-		'model/reveal.mjs',      // the reveal beat's timing; its only product reader is the reveal painter
+		'plugins/simulation/movers.mjs', 'plugins/simulation/spawners.mjs', 'plugins/simulation/kinds.mjs', 'plugins/simulation/rules.mjs',
+		'plugins/simulation/spawn-field.mjs',   // O-e2 (H19.21): the spawner's field, composed onto the anchor
+		'plugins/simulation/spawn-appearance.mjs',   // C-a (H19.29, D3): the spawning mark, composed onto the anchor's drawing
+		'plugins/simulation/spawn-runs.mjs',   // C-e (H19.33): run mode's spawner and tower, the simulation's
+		'plugins/simulation/reveal.mjs',      // the reveal beat's timing; its only product reader is the reveal painter
 	],
 	export: [
 		'server/svg.mjs',        // the headless SVG door; it composes the export path and nothing else
@@ -359,51 +361,51 @@ export const ENTRIES = {
 		roots: ['app/src/main.js'],
 		modules: [
 			'app/src/capture.js', 'app/src/changes.js', 'app/src/clock.js', 'app/src/commands.js', 'app/src/input-state.js', 'app/src/input.js', 'app/src/keymap.js',
-			'engine/spawn-runs.mjs',   // C-e (H19.33): the simulation's run-mode rows, which run-mode.js hands in -- the page's alone
-			'devices/device-panels.mjs',   // C-e (H19.33): the devices plugin's panel rows, likewise
-			'app/src/actions.js', 'app/src/help.js', 'app/src/run-mode.js', 'app/src/labeledit.js', 'app/src/main.js', 'engine/mover-painter.mjs', 'app/src/net.js', 'app/src/overlay.js',
-			'app/src/painter.js', 'engine/paintloop.mjs', 'app/src/palette.js', 'app/src/pick.js', 'app/src/readout.js',
-			'app/src/recognize.js', 'app/src/releases.js', 'app/src/renderer.js', 'engine/reveal-painter.mjs', 'app/src/selection.js', 'app/src/snap.js', 'app/src/tools.js', 'app/src/compose-canvas.js',
+			'plugins/simulation/spawn-runs.mjs',   // C-e (H19.33): the simulation's run-mode rows, which run-mode.js hands in -- the page's alone
+			'plugins/devices/device-panels.mjs',   // C-e (H19.33): the devices plugin's panel rows, likewise
+			'app/src/actions.js', 'app/src/help.js', 'app/src/run-mode.js', 'app/src/labeledit.js', 'app/src/main.js', 'plugins/simulation/mover-painter.mjs', 'app/src/net.js', 'app/src/overlay.js',
+			'app/src/painter.js', 'plugins/simulation/paintloop.mjs', 'app/src/palette.js', 'app/src/pick.js', 'app/src/readout.js',
+			'app/src/recognize.js', 'app/src/releases.js', 'app/src/renderer.js', 'plugins/simulation/reveal-painter.mjs', 'app/src/selection.js', 'app/src/snap.js', 'app/src/tools.js', 'app/src/compose-canvas.js',
 			'app/src/spectate.js', 'app/src/sync.js', 'app/src/watchdog.js', 'engine/ivm.mjs',
-			'engine/kinds.mjs', 'engine/movers.mjs', 'engine/relations.mjs', 'engine/rules.mjs',
-			'engine/situation.mjs', 'engine/spawners.mjs', 'engine/store.mjs', 
-			'kernel/geometry.mjs', 'network/roles.mjs', 'network/appearance.mjs', 'kernel/input-rules.mjs', 'kernel/renderer.mjs', 'kernel/router.mjs',
-			'kernel/spec.mjs', 'kernel/theme.mjs', 'network/link-rules.mjs', 'network/pair-capacity.mjs', 'model/limits.mjs',
+			'plugins/simulation/kinds.mjs', 'plugins/simulation/movers.mjs', 'engine/relations.mjs', 'plugins/simulation/rules.mjs',
+			'engine/situation.mjs', 'plugins/simulation/spawners.mjs', 'engine/store.mjs', 
+			'kernel/geometry.mjs', 'plugins/network/roles.mjs', 'plugins/network/appearance.mjs', 'kernel/input-rules.mjs', 'kernel/renderer.mjs', 'kernel/router.mjs',
+			'kernel/spec.mjs', 'kernel/theme.mjs', 'plugins/network/link-rules.mjs', 'plugins/network/pair-capacity.mjs', 'model/limits.mjs',
 			'model/model.mjs', 'model/anchors.mjs', 'model/ops.mjs', 'model/order.mjs', 'model/stacking.mjs',
-			'network/kinds.mjs', 'network/pipe-kind.mjs',   // S-b (H18.12, G1): the network's rows
-			// V-b (H18.26): the network, composed into the page as into the lab (network/page.mjs) -- routes, pipes, its keys and judge
-			'network/page.mjs', 'network/session.mjs', 'network/network.mjs', 'network/view.mjs', 'network/resolve.mjs', 'network/pipes.mjs',
-			'network/transit.mjs', 'network/link-reactions.mjs', 'network/keys.mjs', 'network/grammar.mjs', 'network/guide.mjs', 'network/host.mjs',
+			'plugins/network/kinds.mjs', 'plugins/network/pipe-kind.mjs',   // S-b (H18.12, G1): the network's rows
+			// V-b (H18.26): the network, composed into the page as into the lab (plugins/network/page.mjs) -- routes, pipes, its keys and judge
+			'plugins/network/page.mjs', 'plugins/network/session.mjs', 'plugins/network/network.mjs', 'plugins/network/view.mjs', 'plugins/network/resolve.mjs', 'plugins/network/pipes.mjs',
+			'plugins/network/transit.mjs', 'plugins/network/link-reactions.mjs', 'plugins/network/keys.mjs', 'plugins/network/grammar.mjs', 'plugins/network/guide.mjs', 'plugins/network/host.mjs',
 			// V-d (H18.28; PL-6): the planner, for the page's preview of every commit
 			'planner/txn.mjs', 'planner/validate.js', 'planner/edges.mjs', 'model/invariants.mjs',
-			'kernel/palette.mjs', 'model/reveal.mjs', 'model/shape.mjs', 'model/surface.mjs',
+			'kernel/palette.mjs', 'plugins/simulation/reveal.mjs', 'model/shape.mjs', 'model/surface.mjs',
 			'product/kinds.mjs',   // the product's composition (O-d): the anchor and the shipped plugins, with the network's rows
-			'zones/zone-kind.mjs', 'layouts/layout-table.mjs', 'layouts/layout-kind.mjs', 'zones/make-zone.mjs',   // O-b1 (H19.19): the zones plugin -- its row, extent and factory
-			'zones/zone-painter.mjs', 'product/canvas.mjs',   // C-a (H19.29): the zones plugin's painter, and the product's canvas parts
-			'zones/zone-gestures.mjs',   // C-d (H19.32): the zones plugin's press row and handles
-			'devices/device-gestures.mjs',   // C-d (H19.32): the devices plugin's text box row
-			'devices/device-types.mjs', 'product/types.mjs', 'devices/device-hand.mjs',   // C-e (H19.33): the devices plugin's hand
-			'devices/device-footprint.mjs', 'network/anchor-points.mjs',   // C-e (H19.33): what a device, a waypoint and a link cover
-			'zones/zone-keys.mjs', 'devices/device-size.mjs',   // C-e (H19.33): the zone keys, and the size steps
-			'groups/group-keys.mjs',   // C-e (H19.33): the group keys
-			'devices/device-keys.mjs',   // C-e (H19.33): the devices plugin's key
-			'network/link-keys.mjs',   // C-e (H19.33): the network's link keys
-			'network/link-clone.mjs', 'groups/group-clone.mjs',   // C-e (H19.33): what follows a clone
-			'devices/device-facts.mjs', 'zones/zone-facts.mjs', 'network/link-facts.mjs',   // C-e (H19.33): how a kind reads, and Ctrl+A
-			'devices/device-labels.mjs', 'zones/zone-labels.mjs',   // C-e (H19.33): where a kind's label edits
-			'layouts/layout-canvas.mjs', 'layouts/layout-records.mjs', 'app/src/grids.js',   // WD-b2 (H19.46): the layouts plugin's grids and the anchor's place, drawn from the records (the zone grid was zones/zone-grid.mjs)
-			'network/selection-reflects.mjs',   // C-e (H19.33): what a selected link lights
-			'groups/group-painter.mjs',   // C-a (H19.29): the groups plugin's painter
-			'devices/device-appearance.mjs', 'network/anchor-appearance.mjs', 'engine/spawn-appearance.mjs',   // C-a (D3): the anchor's appearances
-			'network/link-painter.mjs', 'network/canvas.mjs',   // C-a (H19.29): the network's link painter and its canvas part
-			'network/link-head.mjs',   // H24.6 (B356): a directed link's head, the painter's geometry
-			'network/link-handles.mjs',   // C-d (H19.32): the network's link end handles and re-plug
-			'groups/group-kind.mjs', 'groups/group-rules.mjs', 'groups/make-group.mjs', 'groups/group-of.mjs',   // O-c (H19.20): the groups plugin
-			'devices/device-shapes.mjs', 'devices/anchor-words.mjs', 'devices/make-node.mjs', 'devices/occupancy.mjs',   // O-e1 (H19.21): the devices plugin
-			'devices/device-fields.mjs', 'engine/spawn-field.mjs',   // O-e2 (H19.21): the fields composed onto the anchor
-			'network/link-queries.mjs',   // K13d (H19.25): the network's link queries, off the Model
-			'network/network-queries.mjs', 'network/read-model.mjs',   // Q-a (H19.27): the network's questions over a Model, off the Model
-			'network/link-kind.mjs', 'network/link-references.mjs', 'network/transit-offers.mjs',   // S-e (H18.15, G5): the network's link row and its references; H19.10 what each type offers
+			'plugins/zones/zone-kind.mjs', 'plugins/layouts/layout-table.mjs', 'plugins/layouts/layout-kind.mjs', 'plugins/zones/make-zone.mjs',   // O-b1 (H19.19): the zones plugin -- its row, extent and factory
+			'plugins/zones/zone-painter.mjs', 'product/canvas.mjs',   // C-a (H19.29): the zones plugin's painter, and the product's canvas parts
+			'plugins/zones/zone-gestures.mjs',   // C-d (H19.32): the zones plugin's press row and handles
+			'plugins/devices/device-gestures.mjs',   // C-d (H19.32): the devices plugin's text box row
+			'plugins/devices/device-types.mjs', 'product/types.mjs', 'plugins/devices/device-hand.mjs',   // C-e (H19.33): the devices plugin's hand
+			'plugins/devices/device-footprint.mjs', 'plugins/network/anchor-points.mjs',   // C-e (H19.33): what a device, a waypoint and a link cover
+			'plugins/zones/zone-keys.mjs', 'plugins/devices/device-size.mjs',   // C-e (H19.33): the zone keys, and the size steps
+			'plugins/groups/group-keys.mjs',   // C-e (H19.33): the group keys
+			'plugins/devices/device-keys.mjs',   // C-e (H19.33): the devices plugin's key
+			'plugins/network/link-keys.mjs',   // C-e (H19.33): the network's link keys
+			'plugins/network/link-clone.mjs', 'plugins/groups/group-clone.mjs',   // C-e (H19.33): what follows a clone
+			'plugins/devices/device-facts.mjs', 'plugins/zones/zone-facts.mjs', 'plugins/network/link-facts.mjs',   // C-e (H19.33): how a kind reads, and Ctrl+A
+			'plugins/devices/device-labels.mjs', 'plugins/zones/zone-labels.mjs',   // C-e (H19.33): where a kind's label edits
+			'plugins/layouts/layout-canvas.mjs', 'plugins/layouts/layout-records.mjs', 'app/src/grids.js',   // WD-b2 (H19.46): the layouts plugin's grids and the anchor's place, drawn from the records (the zone grid was zones/zone-grid.mjs)
+			'plugins/network/selection-reflects.mjs',   // C-e (H19.33): what a selected link lights
+			'plugins/groups/group-painter.mjs',   // C-a (H19.29): the groups plugin's painter
+			'plugins/devices/device-appearance.mjs', 'plugins/network/anchor-appearance.mjs', 'plugins/simulation/spawn-appearance.mjs',   // C-a (D3): the anchor's appearances
+			'plugins/network/link-painter.mjs', 'plugins/network/canvas.mjs',   // C-a (H19.29): the network's link painter and its canvas part
+			'plugins/network/link-head.mjs',   // H24.6 (B356): a directed link's head, the painter's geometry
+			'plugins/network/link-handles.mjs',   // C-d (H19.32): the network's link end handles and re-plug
+			'plugins/groups/group-kind.mjs', 'plugins/groups/group-rules.mjs', 'plugins/groups/make-group.mjs', 'plugins/groups/group-of.mjs',   // O-c (H19.20): the groups plugin
+			'plugins/devices/device-shapes.mjs', 'plugins/devices/anchor-words.mjs', 'plugins/devices/make-node.mjs', 'plugins/devices/occupancy.mjs',   // O-e1 (H19.21): the devices plugin
+			'plugins/devices/device-fields.mjs', 'plugins/simulation/spawn-field.mjs',   // O-e2 (H19.21): the fields composed onto the anchor
+			'plugins/network/link-queries.mjs',   // K13d (H19.25): the network's link queries, off the Model
+			'plugins/network/network-queries.mjs', 'plugins/network/read-model.mjs',   // Q-a (H19.27): the network's questions over a Model, off the Model
+			'plugins/network/link-kind.mjs', 'plugins/network/link-references.mjs', 'plugins/network/transit-offers.mjs',   // S-e (H18.15, G5): the network's link row and its references; H19.10 what each type offers
 		],
 	},
 	lab: {
@@ -419,56 +421,56 @@ export const ENTRIES = {
 		*/
 		modules: [
 			'lab/src/root.js',
-			'network/pipes.mjs',   // the network plugin (incubated from 2026-09-28; a product folder since V-a, J1)
-			'network/page.mjs',    // the network composed into a page, the lab's as the product's (V-b)
-			'network/pipe-kind.mjs',   // the network's pipe kind, a row of the one shape (H17.22 N-b); the lab composes it from N-c
-			'network/kinds.mjs',   // the network's rows: its pipe kind and the transit field it contributes to the node (S-a)
-			'network/guide.mjs',
-			'network/resolve.mjs',
-			'network/view.mjs',    // one derivation per board state (RULESET-AUDIT T2)
-			'network/network.mjs', // the one network interface, handed to the Model and the planner (RULESET-AUDIT T1)
-			'network/session.mjs', // the network's session state and the order one edit changes it in (RULESET-AUDIT T5)
-			'network/keys.mjs',    // the network plugin's own key rows for the Rules engine (dev/RULES.md section 11)
-			'network/grammar.mjs', // the network's drag grammar as data, read by the Rules engine (dev/RULES.md section 11)
-			'network/transit.mjs', // transit: the per-type table and the session's settings (TRANSIT.md section 12)
-			'network/host.mjs',    // the network attached to a page: its choreography around an edit (item 3, 2026-10-01)
+			'plugins/network/pipes.mjs',   // the network plugin (incubated from 2026-09-28; a product folder since V-a, J1)
+			'plugins/network/page.mjs',    // the network composed into a page, the lab's as the product's (V-b)
+			'plugins/network/pipe-kind.mjs',   // the network's pipe kind, a row of the one shape (H17.22 N-b); the lab composes it from N-c
+			'plugins/network/kinds.mjs',   // the network's rows: its pipe kind and the transit field it contributes to the node (S-a)
+			'plugins/network/guide.mjs',
+			'plugins/network/resolve.mjs',
+			'plugins/network/view.mjs',    // one derivation per board state (RULESET-AUDIT T2)
+			'plugins/network/network.mjs', // the one network interface, handed to the Model and the planner (RULESET-AUDIT T1)
+			'plugins/network/session.mjs', // the network's session state and the order one edit changes it in (RULESET-AUDIT T5)
+			'plugins/network/keys.mjs',    // the network plugin's own key rows for the Rules engine (dev/RULES.md section 11)
+			'plugins/network/grammar.mjs', // the network's drag grammar as data, read by the Rules engine (dev/RULES.md section 11)
+			'plugins/network/transit.mjs', // transit: the per-type table and the session's settings (TRANSIT.md section 12)
+			'plugins/network/host.mjs',    // the network attached to a page: its choreography around an edit (item 3, 2026-10-01)
 			'app/src/capture.js', 'app/src/changes.js', 'app/src/commands.js', 'app/src/input-state.js', 'app/src/input.js', 'app/src/keymap.js', 'app/src/labeledit.js',
 			'app/src/overlay.js', 'app/src/painter.js', 'app/src/pick.js', 'app/src/readout.js',
 			'app/src/recognize.js', 'app/src/releases.js', 'app/src/renderer.js', 'app/src/selection.js', 'app/src/snap.js', 'app/src/tools.js', 'app/src/compose-canvas.js', 
 			'engine/ivm.mjs', 'engine/relations.mjs',
 			'engine/situation.mjs', 'engine/store.mjs', 
-			'kernel/geometry.mjs', 'network/roles.mjs', 'network/appearance.mjs', 'kernel/input-rules.mjs', 'kernel/renderer.mjs',
-			'kernel/router.mjs', 'kernel/spec.mjs', 'kernel/theme.mjs', 'model/invariants.mjs', 'network/link-rules.mjs', 'network/pair-capacity.mjs',
+			'kernel/geometry.mjs', 'plugins/network/roles.mjs', 'plugins/network/appearance.mjs', 'kernel/input-rules.mjs', 'kernel/renderer.mjs',
+			'kernel/router.mjs', 'kernel/spec.mjs', 'kernel/theme.mjs', 'model/invariants.mjs', 'plugins/network/link-rules.mjs', 'plugins/network/pair-capacity.mjs',
 			'model/limits.mjs', 'model/model.mjs', 'model/anchors.mjs', 'model/ops.mjs', 'model/order.mjs', 'model/stacking.mjs', 'kernel/palette.mjs', 'model/shape.mjs',
-			'network/link-kind.mjs', 'network/link-references.mjs', 'network/transit-offers.mjs',   // S-e (H18.15, G5): the network's link row and its references; H19.10 what each type offers
+			'plugins/network/link-kind.mjs', 'plugins/network/link-references.mjs', 'plugins/network/transit-offers.mjs',   // S-e (H18.15, G5): the network's link row and its references; H19.10 what each type offers
 			'model/surface.mjs', 'product/kinds.mjs', 'planner/log.mjs', 'planner/txn.mjs', 'planner/validate.js',
-			'network/link-reactions.mjs',
+			'plugins/network/link-reactions.mjs',
 			'planner/edges.mjs',   // the planner's edges (PL-4)
-			'zones/zone-kind.mjs', 'layouts/layout-table.mjs', 'layouts/layout-kind.mjs', 'zones/make-zone.mjs',   // O-b1 (H19.19): the zones plugin -- its row, extent and factory
-			'zones/zone-painter.mjs', 'product/canvas.mjs',   // C-a (H19.29): the zones plugin's painter, and the product's canvas parts
-			'zones/zone-gestures.mjs',   // C-d (H19.32): the zones plugin's press row and handles
-			'devices/device-gestures.mjs',   // C-d (H19.32): the devices plugin's text box row
-			'devices/device-types.mjs', 'devices/device-hand.mjs',   // C-e (H19.33): the devices plugin's hand
-			'devices/device-footprint.mjs', 'network/anchor-points.mjs',   // C-e (H19.33): what a device, a waypoint and a link cover
-			'zones/zone-keys.mjs', 'devices/device-size.mjs',   // C-e (H19.33): the zone keys, and the size steps
-			'groups/group-keys.mjs',   // C-e (H19.33): the group keys
-			'devices/device-keys.mjs',   // C-e (H19.33): the devices plugin's key
-			'network/link-keys.mjs',   // C-e (H19.33): the network's link keys
-			'network/link-clone.mjs', 'groups/group-clone.mjs',   // C-e (H19.33): what follows a clone
-			'devices/device-facts.mjs', 'zones/zone-facts.mjs', 'network/link-facts.mjs',   // C-e (H19.33): how a kind reads, and Ctrl+A
-			'devices/device-labels.mjs', 'zones/zone-labels.mjs',   // C-e (H19.33): where a kind's label edits
-			'layouts/layout-canvas.mjs', 'layouts/layout-records.mjs', 'app/src/grids.js',   // WD-b2 (H19.46): the layouts plugin's grids and the anchor's place, drawn from the records (the zone grid was zones/zone-grid.mjs)
-			'network/selection-reflects.mjs',   // C-e (H19.33): what a selected link lights
-			'groups/group-painter.mjs',   // C-a (H19.29): the groups plugin's painter
-			'devices/device-appearance.mjs', 'network/anchor-appearance.mjs', 'engine/spawn-appearance.mjs',   // C-a (D3): the anchor's appearances
-			'network/link-painter.mjs', 'network/canvas.mjs',   // C-a (H19.29): the network's link painter and its canvas part
-			'network/link-head.mjs',   // H24.6 (B356): a directed link's head, the painter's geometry
-			'network/link-handles.mjs',   // C-d (H19.32): the network's link end handles and re-plug
-			'groups/group-kind.mjs', 'groups/group-rules.mjs', 'groups/make-group.mjs', 'groups/group-of.mjs',   // O-c (H19.20): the groups plugin
-			'devices/device-shapes.mjs', 'devices/anchor-words.mjs', 'devices/make-node.mjs', 'devices/occupancy.mjs',   // O-e1 (H19.21): the devices plugin
-			'devices/device-fields.mjs', 'engine/spawn-field.mjs',   // O-e2 (H19.21): the fields composed onto the anchor
-			'network/link-queries.mjs',   // K13d (H19.25): the network's link queries, off the Model
-			'network/network-queries.mjs',   // Q-a (H19.27): the network's questions over a Model, off the Model
+			'plugins/zones/zone-kind.mjs', 'plugins/layouts/layout-table.mjs', 'plugins/layouts/layout-kind.mjs', 'plugins/zones/make-zone.mjs',   // O-b1 (H19.19): the zones plugin -- its row, extent and factory
+			'plugins/zones/zone-painter.mjs', 'product/canvas.mjs',   // C-a (H19.29): the zones plugin's painter, and the product's canvas parts
+			'plugins/zones/zone-gestures.mjs',   // C-d (H19.32): the zones plugin's press row and handles
+			'plugins/devices/device-gestures.mjs',   // C-d (H19.32): the devices plugin's text box row
+			'plugins/devices/device-types.mjs', 'plugins/devices/device-hand.mjs',   // C-e (H19.33): the devices plugin's hand
+			'plugins/devices/device-footprint.mjs', 'plugins/network/anchor-points.mjs',   // C-e (H19.33): what a device, a waypoint and a link cover
+			'plugins/zones/zone-keys.mjs', 'plugins/devices/device-size.mjs',   // C-e (H19.33): the zone keys, and the size steps
+			'plugins/groups/group-keys.mjs',   // C-e (H19.33): the group keys
+			'plugins/devices/device-keys.mjs',   // C-e (H19.33): the devices plugin's key
+			'plugins/network/link-keys.mjs',   // C-e (H19.33): the network's link keys
+			'plugins/network/link-clone.mjs', 'plugins/groups/group-clone.mjs',   // C-e (H19.33): what follows a clone
+			'plugins/devices/device-facts.mjs', 'plugins/zones/zone-facts.mjs', 'plugins/network/link-facts.mjs',   // C-e (H19.33): how a kind reads, and Ctrl+A
+			'plugins/devices/device-labels.mjs', 'plugins/zones/zone-labels.mjs',   // C-e (H19.33): where a kind's label edits
+			'plugins/layouts/layout-canvas.mjs', 'plugins/layouts/layout-records.mjs', 'app/src/grids.js',   // WD-b2 (H19.46): the layouts plugin's grids and the anchor's place, drawn from the records (the zone grid was zones/zone-grid.mjs)
+			'plugins/network/selection-reflects.mjs',   // C-e (H19.33): what a selected link lights
+			'plugins/groups/group-painter.mjs',   // C-a (H19.29): the groups plugin's painter
+			'plugins/devices/device-appearance.mjs', 'plugins/network/anchor-appearance.mjs', 'plugins/simulation/spawn-appearance.mjs',   // C-a (D3): the anchor's appearances
+			'plugins/network/link-painter.mjs', 'plugins/network/canvas.mjs',   // C-a (H19.29): the network's link painter and its canvas part
+			'plugins/network/link-head.mjs',   // H24.6 (B356): a directed link's head, the painter's geometry
+			'plugins/network/link-handles.mjs',   // C-d (H19.32): the network's link end handles and re-plug
+			'plugins/groups/group-kind.mjs', 'plugins/groups/group-rules.mjs', 'plugins/groups/make-group.mjs', 'plugins/groups/group-of.mjs',   // O-c (H19.20): the groups plugin
+			'plugins/devices/device-shapes.mjs', 'plugins/devices/anchor-words.mjs', 'plugins/devices/make-node.mjs', 'plugins/devices/occupancy.mjs',   // O-e1 (H19.21): the devices plugin
+			'plugins/devices/device-fields.mjs', 'plugins/simulation/spawn-field.mjs',   // O-e2 (H19.21): the fields composed onto the anchor
+			'plugins/network/link-queries.mjs',   // K13d (H19.25): the network's link queries, off the Model
+			'plugins/network/network-queries.mjs',   // Q-a (H19.27): the network's questions over a Model, off the Model
 		],
 	},
 	planner: {
@@ -488,9 +490,9 @@ export const ENTRIES = {
 			// S-e (H18.15): the planner loads no network module -- the link's references and its straight-pair invariant are the
 			// network's row's, handed in with the composition; model/referential.mjs and the pair capacity left its closure
 			'planner/edges.mjs',   // the planner's edges (PL-4)
-			'zones/zone-kind.mjs', 'layouts/layout-table.mjs', 'layouts/layout-kind.mjs',   // O-b1 (H19.19): the zones plugin's row and extent, composed by productKinds; its factory is not loaded
-			'groups/group-kind.mjs', 'groups/group-rules.mjs',   // O-c (H19.20): the groups plugin's row and rules; its factory and lookup are not loaded
-			'devices/device-fields.mjs', 'engine/spawn-field.mjs',   // O-e2 (H19.21): the device's and the spawner's fields, composed onto the anchor
+			'plugins/zones/zone-kind.mjs', 'plugins/layouts/layout-table.mjs', 'plugins/layouts/layout-kind.mjs',   // O-b1 (H19.19): the zones plugin's row and extent, composed by productKinds; its factory is not loaded
+			'plugins/groups/group-kind.mjs', 'plugins/groups/group-rules.mjs',   // O-c (H19.20): the groups plugin's row and rules; its factory and lookup are not loaded
+			'plugins/devices/device-fields.mjs', 'plugins/simulation/spawn-field.mjs',   // O-e2 (H19.21): the device's and the spawner's fields, composed onto the anchor
 		],
 	},
 };
@@ -544,9 +546,9 @@ export const RULES = {
 	*/
 	L7k: {
 		// F-c (H18.5, P-10): four -- a waypoint is a node with no type
-		// S-e (H18.15, G5): three -- the link is the network's kind (network/link-kind.mjs), composed by composing the network
-		// O-b1 (H19.19, O1): two -- the zone is the zones plugin's (zones/zone-kind.mjs)
-		// O-c (H19.20, O3): one -- the group is the groups plugin's (groups/group-kind.mjs)
+		// S-e (H18.15, G5): three -- the link is the network's kind (plugins/network/link-kind.mjs), composed by composing the network
+		// O-b1 (H19.19, O1): two -- the zone is the zones plugin's (plugins/zones/zone-kind.mjs)
+		// O-c (H19.20, O3): one -- the group is the groups plugin's (plugins/groups/group-kind.mjs)
 		kinds: ['node'],
 		/*
 		AMENDED by H17.22 N-a (ruled 2026-10-02, amending C3): the id grammar is no longer a literal. Each kind's row carries
@@ -584,7 +586,7 @@ export const RULES = {
 	incubator is being written in the lab instead.
 	*/
 	/*
-	LOWERED, 180 to 120, when the network's choreography left the lab for network/host.mjs (item 3, 2026-10-02). Both raises
+	LOWERED, 180 to 120, when the network's choreography left the lab for plugins/network/host.mjs (item 3, 2026-10-02). Both raises
 	are spent elsewhere now: the boards are data in lab/seeds.json, and the pipe painter is the attached network's. MEASURED
 	at 100 code lines across the root and the static server; 120 is K10's own ceiling, the measurement plus a little again.
 	*/
@@ -597,7 +599,7 @@ export const RULES = {
 	*/
 	L9: {
 		layers: ['canvas', 'chrome', 'lab'],
-		primitives: { splitAtBend: 'network/link-rules.mjs', collapseAtWaypoint: 'network/link-rules.mjs', violations: 'model/invariants.mjs', groupAfterRemoval: 'groups/group-rules.mjs' },
+		primitives: { splitAtBend: 'plugins/network/link-rules.mjs', collapseAtWaypoint: 'plugins/network/link-rules.mjs', violations: 'model/invariants.mjs', groupAfterRemoval: 'plugins/groups/group-rules.mjs' },
 	},
 	// C2(d): the only two tags, and the layers whose imports make "serves-a-server-door" true
 	L10: { tags: ['rebuild-debt', 'serves-a-server-door'], doors: ['server-only'] },
@@ -900,12 +902,12 @@ export const UNUSED_EXPORTS = {
 		admits no name; a module that existed at K0 and is missing from the frozen list still fails K2a.
 		*/
 		// K4 moved the planner's files to `planner/`: paths K0 never knew, so arrivals too (its frozen list names their old places)
-		arrived: ['network/link-reactions.mjs', 'product/kinds.mjs', 'planner/edges.mjs', 'model/order.mjs', 'planner/txn.mjs', 'planner/log.mjs', 'planner/validate.js',
+		arrived: ['plugins/network/link-reactions.mjs', 'product/kinds.mjs', 'planner/edges.mjs', 'model/order.mjs', 'planner/txn.mjs', 'planner/log.mjs', 'planner/validate.js',
 			'model/anchors.mjs',   // H18.4 F-b: the bare anchor, asked in one place
-			'network/pair-capacity.mjs',   // S-b: the pair rule's one home, split out of model/invariants.mjs
-			'zones/zone-kind.mjs', 'layouts/layout-table.mjs', 'layouts/layout-kind.mjs',   // O-b1 (H19.19): the zones plugin's row and extent, out of the core and the planner
-			'groups/group-kind.mjs', 'groups/group-rules.mjs',   // O-c (H19.20): the groups plugin's row and rules, out of the core and the planner (planner/tenants.mjs moved here)
-			'devices/device-fields.mjs', 'engine/spawn-field.mjs'],   // O-e2 (H19.21): the device's and the spawner's fields, out of the planner
+			'plugins/network/pair-capacity.mjs',   // S-b: the pair rule's one home, split out of model/invariants.mjs
+			'plugins/zones/zone-kind.mjs', 'plugins/layouts/layout-table.mjs', 'plugins/layouts/layout-kind.mjs',   // O-b1 (H19.19): the zones plugin's row and extent, out of the core and the planner
+			'plugins/groups/group-kind.mjs', 'plugins/groups/group-rules.mjs',   // O-c (H19.20): the groups plugin's row and rules, out of the core and the planner (planner/tenants.mjs moved here)
+			'plugins/devices/device-fields.mjs', 'plugins/simulation/spawn-field.mjs'],   // O-e2 (H19.21): the device's and the spawner's fields, out of the planner
 		/*
 		Names DELETED since K0 rather than moved, by the cut and ruling that deleted them. L10 counts a baseline name its
 		module no longer exports as vacated, ready for its new home to claim -- right for a move, wrong for a deletion: a
@@ -939,7 +941,7 @@ export const UNUSED_EXPORTS = {
 				'serves-a-server-door': [],
 			},
 			'model/anchors.mjs': {
-				// O-e1 (H19.21): isBareEntity left for the devices plugin (devices/device-shapes.mjs), so the debt it carried here is paid
+				// O-e1 (H19.21): isBareEntity left for the devices plugin (plugins/devices/device-shapes.mjs), so the debt it carried here is paid
 				'rebuild-debt': [],
 			},
 			'model/model.mjs': {
@@ -1004,6 +1006,13 @@ the frozen closure names where it is now (C2(c), `byDeparture`). A key ending in
 the same moves as its own `*:` allowances, one per path a record cites.
 */
 export const MOVED = {
+	'layouts/': 'plugins/layouts/', 'devices/': 'plugins/devices/', 'network/': 'plugins/network/', 'zones/': 'plugins/zones/', 'groups/': 'plugins/groups/',
+	'engine/kinds.mjs': 'plugins/simulation/kinds.mjs', 'engine/movers.mjs': 'plugins/simulation/movers.mjs', 'engine/rules.mjs': 'plugins/simulation/rules.mjs',
+	'engine/spawn-appearance.mjs': 'plugins/simulation/spawn-appearance.mjs', 'engine/spawners.mjs': 'plugins/simulation/spawners.mjs',
+	'engine/spawn-field.mjs': 'plugins/simulation/spawn-field.mjs', 'engine/spawn-runs.mjs': 'plugins/simulation/spawn-runs.mjs',
+	'model/reveal.mjs': 'plugins/simulation/reveal.mjs', 'engine/mover-painter.mjs': 'plugins/simulation/mover-painter.mjs',
+	'engine/reveal-painter.mjs': 'plugins/simulation/reveal-painter.mjs', 'engine/paintloop.mjs': 'plugins/simulation/paintloop.mjs',
+	'engine/simulation.css': 'plugins/simulation/simulation.css',
 };
 
 /*
@@ -1016,8 +1025,10 @@ scan-dead reads every scanned folder except the tests (which it reads separately
 const PRODUCT_FOLDERS = FOLDERS.map((f) => f.dir).filter((d) => d !== 'tools' && d !== 'tests');
 
 export const SCANNER_ROOTS = {
-	dead: ['kernel', 'engine', 'model', 'app/src', 'server', 'planner', 'tools', 'cli', 'lab', 'network', 'layouts', 'zones', 'groups', 'devices', 'product'],   // scan-dead PROD: where a consumer counts as production
-	deadMethods: ['server', 'planner', 'model', 'engine', 'kernel'],                 // scan-dead METHOD_SCOPE: where a public method must have a caller
+	dead: ['kernel', 'engine', 'model', 'app/src', 'server', 'planner', 'tools', 'cli', 'lab', 'plugins/network', 'plugins/layouts', 'plugins/zones', 'plugins/groups',
+		'plugins/devices', 'plugins/simulation', 'product'],   // scan-dead PROD: where a consumer counts as production
+	// H26.7: and the simulation's folder, whose modules were engine/'s and model/'s
+	deadMethods: ['server', 'planner', 'model', 'engine', 'kernel', 'plugins/simulation'],   // scan-dead METHOD_SCOPE: where a public method must have a caller
 	docrefs: PRODUCT_FOLDERS,   // H25.7 (B365): every product folder, derived from FOLDERS so lab/ and network/ are read too
 	// H25.0 (B365): every product folder, read from FOLDERS, so a new plugin's folder is compared without an edit here. It was
 	// the six folders the product had when the scanner was written, and read none of the plugins' folders
@@ -1049,7 +1060,7 @@ export const COPIES = {
 		// H26.1 (SNAP-GRID.md section 7.6): the components' addresses, one entry per export, from what is installed (tools/components.mjs)
 		importmap: { tool: 'tools/import-map.mjs', source: 'package.json @apnex dependencies, each installed package.json exports and version' },
 	},
-	owners: { 'app/style.css': 'product-page', 'app/canvas.css': 'canvas', 'app/tokens.css': 'colours', 'kernel/primitives.css': 'primitives', 'engine/simulation.css': 'simulation' },
+	owners: { 'app/style.css': 'product-page', 'app/canvas.css': 'canvas', 'app/tokens.css': 'colours', 'kernel/primitives.css': 'primitives', 'plugins/simulation/simulation.css': 'simulation' },
 	// H25-4 (B374): the three foreign style rules the director ruled may stand, each with what reopens it
 	exceptions: {
 		'foreign style rules': {

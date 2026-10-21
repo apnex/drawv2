@@ -12,7 +12,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { makeInput, pointer } from './fixtures/client-harness.mjs';
-import { makeZone } from '../zones/make-zone.mjs';
+import { makeZone } from '../plugins/zones/make-zone.mjs';
 import { PRODUCT_CANVAS } from '../product/canvas.mjs';
 
 const code = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
@@ -82,7 +82,7 @@ test('C-d: a kind\'s handles brought twice are refused when Input is built, nami
 const endHandle = (end, x, y) => pointer(x, y, { target: { tagName: 'circle', classList: { contains: (c) => c === 'handle' }, dataset: { end }, closest: () => null } });
 const threeHosts = async (h) => {
 	const { seedNodes } = await import('./fixtures/client-harness.mjs');
-	const { makeLink } = await import('../network/link-queries.mjs');
+	const { makeLink } = await import('../plugins/network/link-queries.mjs');
 	const [n0, n1, n2] = seedNodes(h.model, [[0, 0], [360, 0], [360, 360]]);
 	const l = makeLink(h.model, n2.id, n1.id); h.model.put('link', l);
 	h.selection.set([l.id]);
@@ -251,7 +251,7 @@ test('C-d: the press rows and the overlay\'s arming name no plugin\'s kind', () 
 
 test('C-d: Ctrl over a hovered device or zone lights the clone; over a waypoint it does not (D4: placed and cloned)', async () => {
 	const { key, seedNodes } = await import('./fixtures/client-harness.mjs');
-	const { makeWaypoint } = await import('../devices/make-node.mjs');
+	const { makeWaypoint } = await import('../plugins/devices/make-node.mjs');
 	const h = makeInput();
 	try {
 		const [n] = seedNodes(h.model, [[0, 0]]);
@@ -287,7 +287,7 @@ test('C-d: a Shift-press on a zone selects it alone -- Shift is the zone\'s laye
 H24.3 -- A ZONE DOES NOT STAY SELECTED ONCE SHIFT IS RELEASED.
 
 The director: "selecting a zone, then releasing shift should unselect zones. A zone should not remain selected while shift
-released". Shift is the zone's layer key -- a zone is picked only with it held (zones/zone-painter.mjs, its pick's
+released". Shift is the zone's layer key -- a zone is picked only with it held (plugins/zones/zone-painter.mjs, its pick's
 `modifier`) -- so releasing it drops from the selection every entity of a kind picked only under Shift, and nothing else.
 The canvas names no kind: it reads the modifier off the composed picks, as `onShiftUp` already does for a hovered zone.
 
@@ -368,7 +368,7 @@ H24.5 -- UNDER SHIFT, THE LEFT BUTTON ALWAYS DRAWS A ZONE, AND THE RIGHT BUTTON 
 The director: "for zones (in shift mode) we make it that only right click drag selects or moves an existing zone. that way -
 left click can be used to create a new zone on top of an old one". A Shift+left press that landed on a zone used to take that
 zone -- select it, drag it -- so no zone could be started inside another. The zone's pick now says it is pressed with the
-right button (zones/zone-painter.mjs), the product's left-press rows pass over it by that fact, and the zones plugin's draw
+right button (plugins/zones/zone-painter.mjs), the product's left-press rows pass over it by that fact, and the zones plugin's draw
 row takes a Shift+left press on the canvas or on a zone. A corner handle is drawn over its zone and still resizes it with the
 left button.
 */

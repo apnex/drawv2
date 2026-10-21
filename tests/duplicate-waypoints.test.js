@@ -11,8 +11,8 @@ edit says so.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeInput, seedNodes, pointer } from './fixtures/client-harness.mjs';
-import { makeWaypoint } from '../devices/make-node.mjs';
-import { makeLink } from '../network/link-queries.mjs';
+import { makeWaypoint } from '../plugins/devices/make-node.mjs';
+import { makeLink } from '../plugins/network/link-queries.mjs';
 
 const key = (k, mod = {}) => ({ key: k, code: '', ctrlKey: false, shiftKey: false, altKey: false, metaKey: false, repeat: false, target: { tagName: 'svg' }, preventDefault() {}, ...mod });
 const flashes = (h) => h.calls.filter((c) => /flash/.test(c.name)).map((c) => c.args[0]);

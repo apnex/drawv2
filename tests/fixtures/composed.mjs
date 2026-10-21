@@ -8,15 +8,15 @@ test passes none, and a Model built here carries these kinds; a test that is ABO
 import { Model as RealModel } from '../../model/model.mjs';
 import { plan as realPlan, commit as realCommit, undo as realUndo, redo as realRedo } from '../../planner/txn.mjs';
 import { productKinds } from '../../product/kinds.mjs';
-import { NETWORK_ROWS } from '../../network/kinds.mjs';
+import { NETWORK_ROWS } from '../../plugins/network/kinds.mjs';
 import { composeProductTypes } from '../../product/types.mjs';
 
 composeProductTypes();
-import { createNetwork } from '../../network/network.mjs';
-import { createTransit } from '../../network/transit.mjs';
+import { createNetwork } from '../../plugins/network/network.mjs';
+import { createTransit } from '../../plugins/network/transit.mjs';
 
 export const KINDS = productKinds(...NETWORK_ROWS);
-// WD-b1 (H19.45): the two layouts every schema 3 document holds (layouts/layout-kind.mjs), fresh copies -- what a document a test
+// WD-b1 (H19.45): the two layouts every schema 3 document holds (plugins/layouts/layout-kind.mjs), fresh copies -- what a document a test
 // builds by hand carries, as a stored one does
 export const heldLayouts = () => structuredClone(KINDS.always.layout);
 export const NETWORK = createNetwork(createTransit());

@@ -28,11 +28,11 @@ in the commit that makes it:
 
 	node tests/fixtures/gesture-corpus.mjs --write
 */
-import { makeLink } from '../../network/link-queries.mjs';   // K13d: the network's link queries
+import { makeLink } from '../../plugins/network/link-queries.mjs';   // K13d: the network's link queries
 import fs from 'node:fs';
-import { makeZone } from '../../zones/make-zone.mjs';   // O-b1: the zones plugin's factory
+import { makeZone } from '../../plugins/zones/make-zone.mjs';   // O-b1: the zones plugin's factory
 import { makeInput } from './client-harness.mjs';
-import { makeNode, makeWaypoint } from '../../devices/make-node.mjs';   // O-e1: the devices plugin's factories
+import { makeNode, makeWaypoint } from '../../plugins/devices/make-node.mjs';   // O-e1: the devices plugin's factories
 
 const GOLDEN = new URL('./gesture-corpus.json', import.meta.url);
 
@@ -252,7 +252,7 @@ export function record(scenario, { withHarness = null, afterStep = null } = {}) 
 	Date.now = () => 1790000000000;
 	/*
 	P7 X-a (H18.37): the random ids pinned too, by a sequence seeded from the scenario's id. A pipe's id and the order of its ends
-	follow its anchors' hex (network/pipe-kind.mjs), so with random ids two runs of one scenario recorded its pipes in different
+	follow its anchors' hex (plugins/network/pipe-kind.mjs), so with random ids two runs of one scenario recorded its pipes in different
 	orders, and the record was not a function of behaviour.
 	*/
 	let state = [...scenario.id].reduce((h, c) => (Math.imul(h, 31) + c.charCodeAt(0)) >>> 0, 2166136261);
@@ -343,7 +343,7 @@ export function canonical(value, { typed = new Set() } = {}) {
 		if (!seen.has(id)) { count[kind] = (count[kind] ?? 0) + 1; seen.set(id, `${kind}#${count[kind]}`); }
 		return seen.get(id);
 	};
-	// P7 X-a: a pipe's id is its two ends' hex (network/pipe-kind.mjs), so it is named by its ends' names, in one pass with them
+	// P7 X-a: a pipe's id is its two ends' hex (plugins/network/pipe-kind.mjs), so it is named by its ends' names, in one pass with them
 	return JSON.parse(text.replace(/\bpipe-([0-9a-f]{6})-([0-9a-f]{6})\b|\b(node|waypoint|link|zone|group)-[0-9a-f]{6}\b/g, (id, lo, hi, stored) => (
 		lo ? `pipe(${name(`node-${lo}`, 'node')},${name(`node-${hi}`, 'node')})` : name(id, stored))));
 }

@@ -4,7 +4,7 @@ C-e, step twelve (H19.33; dev/design/unification/CANVAS-PLUGINS.md) -- A PANEL'S
 A device's `content` -- its regions, the field only a device carries -- is read and edited through what the devices plugin
 declares (`labels.content`: a region's value and alignment, and the edit that sets one), so the label editor that opens over a
 region names no kind; and run mode's two panel rows -- press a panel button, edit a panel input -- are the devices plugin's
-(`devices/device-panels.mjs`), handed to Input with the simulation's by the product page alone (H17-D7), acting through the
+(`plugins/devices/device-panels.mjs`), handed to Input with the simulation's by the product page alone (H17-D7), acting through the
 host's `emit` and `editRegion`. `setContentValue` left the builders, `fireActionHere` and `openInputHere` left Input. Nothing a
 user sees changes.
 */

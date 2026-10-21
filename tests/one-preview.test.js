@@ -1,7 +1,7 @@
 // P5 V-d (H18.28; PL-6, ruled PD-5) -- ONE PREVIEW: the browser plans its own view with the planner the server runs, sends only
 // what the author did, and keeps no copy of a planner rule. dev/design/unification/PAGE-COMPOSES-NETWORK.md, stage V-d.
 
-import { makeLink } from '../network/link-queries.mjs';   // K13d: the network's link queries
+import { makeLink } from '../plugins/network/link-queries.mjs';   // K13d: the network's link queries
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { SCENARIOS, record } from './fixtures/gesture-corpus.mjs';
@@ -9,7 +9,7 @@ import { Model, plan } from './fixtures/composed.mjs';
 import { derivedToApply, applyAnswer } from '../app/src/changes.js';
 import { applyOps } from '../model/ops.mjs';
 import { makeInput, key, seedNodes } from './fixtures/client-harness.mjs';
-import { makeWaypoint } from '../devices/make-node.mjs';   // O-e1: the devices plugin's factories
+import { makeWaypoint } from '../plugins/devices/make-node.mjs';   // O-e1: the devices plugin's factories
 
 const entities = (m) => { const d = m.toJSON(); return JSON.stringify(['nodes', 'links', 'zones', 'groups', 'pipes'].map((k) => [...(d[k] || [])].sort((a, b) => (a.id < b.id ? -1 : 1)))); };
 

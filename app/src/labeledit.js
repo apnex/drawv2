@@ -10,7 +10,7 @@ import * as commands from './commands.js';
 // the caps are the model's, shared with the server rather than restated here (B86)
 
 export class LabelEditor {
-	// C-e: `labelAt(entity)` -- where a kind's label sits, the parts' (devices/device-labels.mjs); null for the default, by its corner
+	// C-e: `labelAt(entity)` -- where a kind's label sits, the parts' (plugins/devices/device-labels.mjs); null for the default, by its corner
 	// C-e: and `wordOf(kind, entity)` -- the word a Tab rename run groups by, the parts' (a device or a waypoint); the kind without one
 	// and `contentOf(entity, idx)` -- what reads and edits an entity's region, the parts' (a panel's, the devices plugin's), or null
 	constructor({ svg, model, history, labelAt = () => null, wordOf = () => null, contentOf = () => null }) {

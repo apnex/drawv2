@@ -27,7 +27,7 @@ test('H26.1 (acceptance step 3): the kernel exports none of its grid arithmetic,
 	for (const name of DELETED) assert.equal(name in geometry, false, `kernel/geometry.mjs still exports ${name}`);
 	assert.deepEqual(['NODE_GRID', 'latticeGrids', 'nodeGridWithin'].filter((n) => !(n in geometry)), [], 'control: what replaced them is exported');
 	assert.doesNotMatch(code('app/src/snap.js'), /\b(clamped|HALF)\b/, 'app/src/snap.js holds `clamped` or `HALF`');
-	assert.doesNotMatch(code('zones/zone-gestures.mjs'), /\bsnapZone\b/, 'zones/zone-gestures.mjs holds `snapZone`');
+	assert.doesNotMatch(code('plugins/zones/zone-gestures.mjs'), /\bsnapZone\b/, 'plugins/zones/zone-gestures.mjs holds `snapZone`');
 });
 
 // snapNode and snapIn only ask snap-grid: each body is one call of the helper that asks a grid its nearest position and that point
@@ -164,7 +164,7 @@ const RECORD = {
 		reason: '`clampDelta`: a drag\'s clamp and its quantisation by the declared pitch, which stays draw\'s' },
 	'model/surface.mjs': { count: 2, cites: ['SNAP-GRID.md appendix B', 'B400'],
 		reason: '`anchorCellsWithin`: the cap on how many things fit, which stays draw\'s; the zone cap kept (section 6.3, B400)' },
-	'engine/spawners.mjs': { count: 1, cites: ['SNAP-GRID.md appendix B'],
+	'plugins/simulation/spawners.mjs': { count: 1, cites: ['SNAP-GRID.md appendix B'],
 		reason: 'a route\'s length in pitches, to two places, for the readout: a length read in the declared pitch, which stays' },
 	'cli/verbs.mjs': { count: 4, cites: ['B402'],
 		reason: 'a zone\'s cell range from literal 30 and 60: out of H26.1, registered (section 5; B402)' },

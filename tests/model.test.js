@@ -1,13 +1,13 @@
-import { pathOf } from '../network/network-queries.mjs';   // Q-a: the network's questions
-import { linksOf, linksAt, linkBetween, makeLink } from '../network/link-queries.mjs';   // K13d: the network's link queries
+import { pathOf } from '../plugins/network/network-queries.mjs';   // Q-a: the network's questions
+import { linksOf, linksAt, linkBetween, makeLink } from '../plugins/network/link-queries.mjs';   // K13d: the network's link queries
 import { test } from 'node:test';
-import { makeGroup } from '../groups/make-group.mjs';   // O-c: the groups plugin's factory
-import { groupOf } from '../groups/group-of.mjs';   // O-c: the groups plugin's lookup
-import { makeZone } from '../zones/make-zone.mjs';   // O-b1: the zones plugin's factory
+import { makeGroup } from '../plugins/groups/make-group.mjs';   // O-c: the groups plugin's factory
+import { groupOf } from '../plugins/groups/group-of.mjs';   // O-c: the groups plugin's lookup
+import { makeZone } from '../plugins/zones/make-zone.mjs';   // O-b1: the zones plugin's factory
 import assert from 'node:assert/strict';
 import { newId, kindOf } from '../model/model.mjs';
 import { Model } from './fixtures/composed.mjs';   // the network's kinds, the link among them (S-e)
-import { makeNode, makeWaypoint } from '../devices/make-node.mjs';   // O-e1: the devices plugin's factories
+import { makeNode, makeWaypoint } from '../plugins/devices/make-node.mjs';   // O-e1: the devices plugin's factories
 
 test('newId produces prefixed 6-hex ids and avoids collisions', () => {
 	const id = newId('node');

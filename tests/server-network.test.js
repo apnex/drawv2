@@ -2,14 +2,14 @@
 H18.12 (S-b; PROMOTION.md P3, SERVER-COMPOSES-NETWORK.md) -- THE SERVER COMPOSES THE NETWORK: the store's Models hold the
 network's rows, and every commit, undo and redo plans with its tenant.
 */
-import { isLinkDown } from '../network/network-queries.mjs';   // Q-a: the network's questions
+import { isLinkDown } from '../plugins/network/network-queries.mjs';   // Q-a: the network's questions
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { Store } from '../server/store.js';
-import { pipeEntity, pipeId } from '../network/pipe-kind.mjs';
+import { pipeEntity, pipeId } from '../plugins/network/pipe-kind.mjs';
 
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'sb-'));
 const [A, B, W] = ['node-00000a', 'node-00000b', 'node-00000e'];
@@ -66,9 +66,9 @@ H18.13 (S-c; ruled 2026-10-03, G2) -- A PINNED LINK LAYS THE LEGS NO PIPES JOIN,
 */
 import { Model } from '../model/model.mjs';
 import { productKinds } from '../product/kinds.mjs';
-import { NETWORK_ROWS } from '../network/kinds.mjs';
-import { createNetwork } from '../network/network.mjs';
-import { createTransit } from '../network/transit.mjs';
+import { NETWORK_ROWS } from '../plugins/network/kinds.mjs';
+import { createNetwork } from '../plugins/network/network.mjs';
+import { createTransit } from '../plugins/network/transit.mjs';
 
 const nodes = [
 	{ op: 'put', kind: 'node', entity: { id: A, name: 'A', type: 'router', x: -360, y: 0 } },

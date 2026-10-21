@@ -77,7 +77,7 @@ test('B322: a pipe put again keeps the line the network drew for it', () => {
 	try {
 		const pipes = fakeEl('g', 'pipes'); svg.appendChild(pipes);
 		const pipe = { id: 'pipe-0c0e0a-0c0e0b', a: 'node-0c0e0a', b: 'node-0c0e0b', laid: 'hand' };
-		const line = fakeEl('line'); line.setAttribute('id', pipe.id); pipes.appendChild(line);   // the network's element, as network/host.mjs draws it
+		const line = fakeEl('line'); line.setAttribute('id', pipe.id); pipes.appendChild(line);   // the network's element, as plugins/network/host.mjs draws it
 		m.put('pipe', pipe);
 		m.put('pipe', { ...pipe });
 		assert.equal(line.parentNode, pipes, 'still where the network put it');

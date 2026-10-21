@@ -7,27 +7,27 @@ browsers viewing that diagram. The browser path (websocket) is refused while a d
 exactly one side writes at a time.
 */
 
-import { layoutRecords } from '../layouts/layout-records.mjs';   // WD8 (H19.45): the list the agent API serves
-import { linksOf, linksAt, makeLink } from '../network/link-queries.mjs';   // which links meet an anchor: the network's (K13d)
+import { layoutRecords } from '../plugins/layouts/layout-records.mjs';   // WD8 (H19.45): the list the agent API serves
+import { linksOf, linksAt, makeLink } from '../plugins/network/link-queries.mjs';   // which links meet an anchor: the network's (K13d)
 import { snapshotBody, changeBody, reversalBody } from './protocol.js';
 import { announceActivity, announceAccess, viewersFor } from './hub.js';   // B342 (H21.8): in the hub, so the hub does not import REST
 import { NODE_GRID, nodeGridWithin, anchorOn } from '../kernel/geometry.mjs';   // H26.1: the grids, and an anchor's one builder (F3)
 import { NODE_EXT } from '../model/surface.mjs';
-import { LAYOUT_TABLE, ZONE_GRIDS } from '../layouts/layout-table.mjs';   // H26.1: the layouts table's names, and the zone's grids
-import { makeZone } from '../zones/make-zone.mjs';   // the zones plugin's factory (O-b1)
-import { makeGroup } from '../groups/make-group.mjs';   // the groups plugin's factory (O-c)
-import { groupOf } from '../groups/group-of.mjs';   // and its lookup (O-c)
+import { LAYOUT_TABLE, ZONE_GRIDS } from '../plugins/layouts/layout-table.mjs';   // H26.1: the layouts table's names, and the zone's grids
+import { makeZone } from '../plugins/zones/make-zone.mjs';   // the zones plugin's factory (O-b1)
+import { makeGroup } from '../plugins/groups/make-group.mjs';   // the groups plugin's factory (O-c)
+import { groupOf } from '../plugins/groups/group-of.mjs';   // and its lookup (O-c)
 import { NAME_MAX } from '../model/limits.mjs';   // truncates where validate.js rejects (B86)
 import { ANCHOR_KINDS } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
-import { isBareEntity } from '../devices/device-shapes.mjs';
-import { linkReading } from '../network/read-model.mjs';   // a link's path, route, down and blockers, as one answer (R-b, H1)
-import { pipeEntity } from '../network/pipe-kind.mjs';   // a pipe from its two ends, by the network's own rule (W-a)
-import { makeNode, makeNodeFrom } from '../devices/make-node.mjs';   // the devices plugin's factories (O-e1)
-import { deviceTypeRecords } from '../devices/device-types.mjs';   // U4-2 (H21.3): the declared device types the server serves
-import { waypointRolesIn } from '../network/roles.mjs';   // B339 (H21.8, SD1): an anchor's derived roles
-import { combatReport } from '../engine/rules.mjs';   // B339 (H21.8, SD1): combat and movers derived on the server
-import { moversReport } from '../engine/spawners.mjs';
-import { moversAt } from '../engine/movers.mjs';
+import { isBareEntity } from '../plugins/devices/device-shapes.mjs';
+import { linkReading } from '../plugins/network/read-model.mjs';   // a link's path, route, down and blockers, as one answer (R-b, H1)
+import { pipeEntity } from '../plugins/network/pipe-kind.mjs';   // a pipe from its two ends, by the network's own rule (W-a)
+import { makeNode, makeNodeFrom } from '../plugins/devices/make-node.mjs';   // the devices plugin's factories (O-e1)
+import { deviceTypeRecords } from '../plugins/devices/device-types.mjs';   // U4-2 (H21.3): the declared device types the server serves
+import { waypointRolesIn } from '../plugins/network/roles.mjs';   // B339 (H21.8, SD1): an anchor's derived roles
+import { combatReport } from '../plugins/simulation/rules.mjs';   // B339 (H21.8, SD1): combat and movers derived on the server
+import { moversReport } from '../plugins/simulation/spawners.mjs';
+import { moversAt } from '../plugins/simulation/movers.mjs';
 
 /*
 P6 W-a (H18.31) -- THE COLLECTIONS ARE THE MODEL'S COMPOSITION, read rather than listed. This was a hand-kept list of the

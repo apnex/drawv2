@@ -1,7 +1,7 @@
 /*
 AMENDED 2026-10-08 (O-e1, H19.21; O4): THE ANCHOR, the core's -- its stored kind, the anchor kinds, and resolving a reference
 to one. Whether a device is composed on an anchor -- the questions below that read `type` -- moved to the devices plugin
-(devices/device-shapes.mjs), and the drawn word with them (devices/anchor-words.mjs): "The core holds only the anchor".
+(plugins/devices/device-shapes.mjs), and the drawn word with them (plugins/devices/anchor-words.mjs): "The core holds only the anchor".
 
 THE BARE ANCHOR -- one place that says how it is stored, so every reader asks here (promotion's format batch, F-b, H18.4;
 dev/design/unification/FORMAT-BATCH.md section 6).
@@ -17,7 +17,7 @@ never changes under a reader that cached it.
 WHAT IS NOT ASKED HERE, and why:
   - the word `waypoint` people and agents see -- keys, help, the palette's hand, the CLI's verbs: kept by F4;
   - the canvas's hit and scene vocabulary -- a hit `{ kind: 'waypoint' }` from the picker and a kernel scene entity of kind
-    `waypoint` name what is DRAWN, which F4 keeps; devices/anchor-words.mjs derives it from a stored entity, and it is never
+    `waypoint` name what is DRAWN, which F4 keeps; plugins/devices/anchor-words.mjs derives it from a stored entity, and it is never
     stored -- a module of its own because the planner, which loads this one, reads no drawn word;
   - the kind's own definition -- its row (model/shape.mjs, planner/kinds.mjs);
   - `kernel/`, which may not import `model/` (C9), and the CLI, which ships standalone (B138): each restates the question

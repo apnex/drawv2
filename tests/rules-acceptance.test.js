@@ -12,8 +12,8 @@ meant two things and decided which inside its handler:
 Behaviour is unchanged. What moved is WHERE the decision lives: two rows in the product's table, over the situation,
 and handlers that ask nothing.
 */
-import { LINK_KEYS } from '../network/link-keys.mjs';
-import { makeLink } from '../network/link-queries.mjs';   // K13d: the network's link queries
+import { LINK_KEYS } from '../plugins/network/link-keys.mjs';
+import { makeLink } from '../plugins/network/link-queries.mjs';   // K13d: the network's link queries
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeInput, key, pointer, seedNodes } from './fixtures/client-harness.mjs';
@@ -25,7 +25,7 @@ import { pointsOf, grabbedAt } from '../app/src/pick.js';
 import { PRODUCT_CANVAS as PARTS_FOR_POINTS } from '../product/canvas.mjs';
 const nodeAt = (model, pos) => grabbedAt(pointsOf(PARTS_FOR_POINTS), model, pos, ['node']);
 import { GAP, NODE_EXT } from '../app/src/snap.js';
-import { makeNode, makeWaypoint } from '../devices/make-node.mjs';   // O-e1: the devices plugin's factories
+import { makeNode, makeWaypoint } from '../plugins/devices/make-node.mjs';   // O-e1: the devices plugin's factories
 
 function board(bends) {
 	const h = makeInput();
@@ -76,7 +76,7 @@ test('anything else selected -- nothing, a node, two things: c means nothing', (
 });
 
 test('the two meanings are two ROWS, and the handlers they name ask nothing', () => {
-	// RESTATED at C-e step seven (H19.33; D5): the link keys are the network's rows (network/link-keys.mjs); their runs are functions, held to the same rule
+	// RESTATED at C-e step seven (H19.33; D5): the link keys are the network's rows (plugins/network/link-keys.mjs); their runs are functions, held to the same rule
 	const rows = LINK_KEYS.filter((r) => r.on(key('c')));
 	assert.deepEqual(rows.map((r) => r.id).sort(), ['close', 'close-refused']);
 	assert.ok(rows.every((r) => typeof r.when === 'function'), 'each chosen by a condition over the situation');

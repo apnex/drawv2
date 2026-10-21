@@ -19,11 +19,11 @@ import { CORE_ROWS, composeKinds } from '../model/shape.mjs';
 import { NAME_MAX } from '../model/limits.mjs';
 import { NODE_EXT, anchorCellsWithin } from '../model/surface.mjs';
 import { NODE_GRID } from '../kernel/geometry.mjs';
-import { ZONE_ROWS } from '../zones/zone-kind.mjs';
-import { LAYOUT_ROWS } from '../layouts/layout-kind.mjs';   // WD-b1: the layouts plugin's kind
-import { GROUP_ROWS } from '../groups/group-kind.mjs';
-import { DEVICE_FIELDS } from '../devices/device-fields.mjs';
-import { SPAWN_FIELDS } from '../engine/spawn-field.mjs';
+import { ZONE_ROWS } from '../plugins/zones/zone-kind.mjs';
+import { LAYOUT_ROWS } from '../plugins/layouts/layout-kind.mjs';   // WD-b1: the layouts plugin's kind
+import { GROUP_ROWS } from '../plugins/groups/group-kind.mjs';
+import { DEVICE_FIELDS } from '../plugins/devices/device-fields.mjs';
+import { SPAWN_FIELDS } from '../plugins/simulation/spawn-field.mjs';
 
 
 // a drawing order is a positive integer; the ceiling only keeps it an exact one (F-d)
@@ -91,8 +91,8 @@ const ANCHOR_FIELDS = {
 	y: (v) => num(v, -EXT.y, EXT.y) && onNodeY(v),
 	order: (v) => int(v, 1, ORDER_MAX),   // the drawing order (F-d, model/order.mjs)
 	// O-e2 (H19.21; O4): the ANCHOR's fields alone -- "The core holds only the anchor". A device's -- its type, frame,
-	// footprint and content regions -- are the devices plugin's (devices/device-fields.mjs), with the rule that a device
-	// stays a device; a spawner is the simulation's (engine/spawn-field.mjs); transit the network's (network/kinds.mjs).
+	// footprint and content regions -- are the devices plugin's (plugins/devices/device-fields.mjs), with the rule that a device
+	// stays a device; a spawner is the simulation's (plugins/simulation/spawn-field.mjs); transit the network's (plugins/network/kinds.mjs).
 	// `pinned` (B162) is retired: the network keeps no orphan beyond what its pipes hold (ruled 2026-09-29)
 };
 

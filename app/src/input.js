@@ -58,7 +58,7 @@ be a click, ruled 2026-09-30 (dev/design/input/GESTURE-SYSTEM.md section 13, sta
 (input-binding IB10, D7); the link release alone reads it again, asking whether a click landed at the drag's start -- draw's policy.
 */
 const DRAG_THRESHOLD = 4;
-// H25.3 (B373): the selection rectangle's class, declared as a box row declares its preview (zones/zone-gestures.mjs), where the
+// H25.3 (B373): the selection rectangle's class, declared as a box row declares its preview (plugins/zones/zone-gestures.mjs), where the
 // copy measure reads what a module puts on its elements (tools/copies.mjs) -- passed bare to previewRect, it read as never drawn
 const MARQUEE = { preview: 'marquee' };
 
@@ -264,7 +264,7 @@ export const GESTURES = {
 			// direct link became impossible the moment a routed one was drawn, which made the
 			// order a person happened to draw in decide what they could have.
 			// judged on every stop DRAWN, pins and guides: with no drag judge they are the same, and with one the judge
-			// decides by pins itself (network/guide.mjs) -- the one predicate either way (RULESET-AUDIT T4)
+			// decides by pins itself (plugins/network/guide.mjs) -- the one predicate either way (RULESET-AUDIT T4)
 			const admitted = i.linkKit ? i.linkKit.admitted(i.model, ctx.src.id, dst, route) : true;
 			/*
 			WHAT THE RELEASE MEANS is a row of app/src/releases.js LINK_RELEASES, chosen from these facts by the Rules engine:
@@ -459,7 +459,7 @@ export class Input {
 		// C-e: what each part's items cover at a point and in a box, in the parts' order; a link ends at an anchor
 		this.points = pointsOf(parts);
 		this.anchorWords = [...this.hitFacts].filter(([, f]) => f.anchor).map(([w]) => w);
-		// C-e: the hand a part declares -- what can be held, how a held item stamps, what blocks it, retyping (devices/device-hand.mjs)
+		// C-e: the hand a part declares -- what can be held, how a held item stamps, what blocks it, retyping (plugins/devices/device-hand.mjs)
 		const hands = parts.filter((p) => p.hand);
 		if (hands.length > 1) throw new Error(`Input: a hand is brought by ${hands.map((p) => p.owner).join(' and by ')} -- one may`);
 		this.handSpec = hands[0]?.hand ?? null;
@@ -838,7 +838,7 @@ export class Input {
 	// a node already on this exact grid point (a stamp must never overlap) — engine occupancy index (R13)
 
 	// stamp the held type at the snapped cell; refuses occupied cells
-	// C-e: the held item stamped on its grid where it is not blocked, by the hand's declaration (devices/device-hand.mjs)
+	// C-e: the held item stamped on its grid where it is not blocked, by the hand's declaration (plugins/devices/device-hand.mjs)
 	stampAt(pos, item = this.tools.hand) {   // the held item -- or a palette tile's, dropped (C-e)
 		const spec = this.handSpec;
 		if (!item || !spec) return false;
@@ -908,7 +908,7 @@ export class Input {
 
 	/*
 	A DRAG STEP -- the one verb a key uses to add a stop to the link being drawn: the product's `w`, and a plugin's
-	keys through `pluginHost` (network/keys.mjs). What the step MEANS is not decided here; this places or threads an
+	keys through `pluginHost` (plugins/network/keys.mjs). What the step MEANS is not decided here; this places or threads an
 	anchor and records which key made it.
 
 	  key     the key that made the step, recorded in `steps`
@@ -975,7 +975,7 @@ export class Input {
 
 	/*
 	B210 -- a link landing on another's bend was cut here, by the browser's own copy of a planner rule (H17-D11). Deleted at
-	V-c (H18.27): the planner's `junction-cut` (network/network.mjs) cuts at every door, each piece's id derived from the cut.
+	V-c (H18.27): the planner's `junction-cut` (plugins/network/network.mjs) cuts at every door, each piece's id derived from the cut.
 	*/
 
 	// abandon an in-progress route: drop any waypoints placed during this draw
@@ -1139,7 +1139,7 @@ export class Input {
 
 	/*
 	Commit the drawn link -- subject to the plugin's judge, when a plugin judges drags. The judge is handed the RECORD of
-	the drag, as it happened; what it means is the judge's (network/grammar.mjs reads its facts from it). `release` says
+	the drag, as it happened; what it means is the judge's (plugins/network/grammar.mjs reads its facts from it). `release` says
 	whether it was released ON an anchor or ended at the last stop a key made; `route` and `pins` are as the drag leaves
 	them, the destination taken off. A refusal may name anchors to KEEP: they reach the planner in one commit, and
 	everything else the drag placed is cleaned up, as a cancelled drag's is -- the director's report was a refused `g` drag
@@ -1336,7 +1336,7 @@ export class Input {
 
 	// the `edit-label` binding: a locked client never reaches here -- the engine's guard refuses it (app/src/recognize.js)
 	// C-e: what a double-click edits is what the parts say they edit at the point, in rank order -- a text box's text, a device's
-	// name, a zone's name (devices/device-labels.mjs, zones/zone-labels.mjs); the first that answers wins. An edit naming a
+	// name, a zone's name (plugins/devices/device-labels.mjs, plugins/zones/zone-labels.mjs); the first that answers wins. An edit naming a
 	// `modifier` is asked only while it is held -- a backdrop's, as its press pick is (H24.1, B264)
 	editUnderPointer(evt) {
 		let target = null;

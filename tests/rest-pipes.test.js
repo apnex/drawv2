@@ -7,7 +7,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { makeApp } from './fixtures/app.mjs';
-import { pipeId } from '../network/pipe-kind.mjs';
+import { pipeId } from '../plugins/network/pipe-kind.mjs';
 
 let app, dataDir, base, id, token;
 const H = () => ({ 'Content-Type': 'application/json', 'X-Draw-Lock': token });

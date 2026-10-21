@@ -13,16 +13,16 @@ None of the canvas's seams names a plugin kind; production, which draws no marks
 // RESTATED at C-e step eight (H19.33; D5): the network commits its transit edit through `edit`, which the composition backs
 // with the canvas's generic builder -- so each test's commit sees the command `editOf` builds, as the page's history does
 import { editOf } from '../app/src/commands.js';
-import { isLinkDown } from '../network/network-queries.mjs';   // Q-a: the network's questions
+import { isLinkDown } from '../plugins/network/network-queries.mjs';   // Q-a: the network's questions
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Model } from '../model/model.mjs';
 import { productKinds } from '../product/kinds.mjs';
-import { PIPE_ROW, pipeEntity } from '../network/pipe-kind.mjs';
-import { NETWORK_ROWS } from '../network/kinds.mjs';   // the network's kind and the field it contributes (S-a)
-import { pipeHitAttributes } from '../network/appearance.mjs';
-import { linkWidth } from '../network/appearance.mjs';
-import { attachNetwork } from '../network/host.mjs';
+import { PIPE_ROW, pipeEntity } from '../plugins/network/pipe-kind.mjs';
+import { NETWORK_ROWS } from '../plugins/network/kinds.mjs';   // the network's kind and the field it contributes (S-a)
+import { pipeHitAttributes } from '../plugins/network/appearance.mjs';
+import { linkWidth } from '../plugins/network/appearance.mjs';
+import { attachNetwork } from '../plugins/network/host.mjs';
 import { fakeLayer } from './fixtures/fake-svg.mjs';
 import { picksOf, hitWith } from '../app/src/pick.js';
 import { PRODUCT_CANVAS } from '../product/canvas.mjs';
@@ -30,8 +30,8 @@ import { PRODUCT_CANVAS } from '../product/canvas.mjs';
 const hitOf = hitWith(picksOf(PRODUCT_CANVAS));
 import { PRESS_DRAGS } from '../app/src/releases.js';
 import { deleteSelection } from '../app/src/commands.js';
-import { createNetwork as netFor } from '../network/network.mjs';
-import { createTransit as transitFor } from '../network/transit.mjs';
+import { createNetwork as netFor } from '../plugins/network/network.mjs';
+import { createTransit as transitFor } from '../plugins/network/transit.mjs';
 const aNetwork = () => netFor(transitFor());   // a Model holding links is given one (V-e, J2)
 
 const A = 'node-00000a', B = 'node-00000b', W = 'node-00000c';
@@ -124,7 +124,7 @@ A PIPE A LINK RUNS OVER IS NOT DRAWN (the director, 2026-10-02): hidden exactly 
 network's derivation; a free pipe, and a down link's own legs, are drawn.
 */
 test('the painter marks hidden every pipe an up link runs over, keeping it in the page, and no other', async () => {
-	const { createNetworkSession } = await import('../network/session.mjs');
+	const { createNetworkSession } = await import('../plugins/network/session.mjs');
 	const session = createNetworkSession();
 	const m = new Model({ kinds: productKinds(...NETWORK_ROWS), attached: { network: session.network }});
 	const C = 'node-00000d', D = 'node-00000e';

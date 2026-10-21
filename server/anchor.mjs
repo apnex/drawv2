@@ -30,7 +30,7 @@ Placed in `server/` rather than `model/` deliberately: this needs `kernel/` for 
 import { NODE_GRID, nodeGridWithin, anchorOn } from '../kernel/geometry.mjs';   // H26.1: the grids, and an anchor's one builder (F3)
 import { NODE_EXT } from '../model/surface.mjs';
 import { ANCHOR_KINDS } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
-import { typedNodes } from '../devices/device-shapes.mjs';
+import { typedNodes } from '../plugins/devices/device-shapes.mjs';
 
 // The four directions a caller may ask for, as unit steps on the grid. Screen coordinates, so `up`
 // is negative y -- the same mapping `cli/verbs.mjs` shipped, kept identical so moving the rule

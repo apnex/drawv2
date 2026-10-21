@@ -3,7 +3,7 @@ O-b1 (H19.19; dev/design/unification/KINDS-AS-PLUGINS.md) -- THE ZONE IS THE ZON
 
 The core composed three kinds, node, zone and group; the zone's storage facts were the core's (model/shape.mjs), its checks
 and its cap the planner's (planner/kinds.mjs, planner/policy.mjs), its factory the Model's (`makeZone`) and its extent the
-surface's (`ZONE_EXT`). They are the zones plugin's now (zones/zone-kind.mjs), composed where the product is composed,
+surface's (`ZONE_EXT`). They are the zones plugin's now (plugins/zones/zone-kind.mjs), composed where the product is composed,
 between the node and the group so a document lists its collections as before. And the reader composes nothing of its own:
 it reads a document with the kinds its caller composed -- the O1 claim that three ways of composing kinds become one.
 Nothing a user sees changes; the corpora hold that.
@@ -17,11 +17,11 @@ import { commit } from '../planner/txn.mjs';
 import { Log } from '../planner/log.mjs';
 import { validateDoc } from '../planner/validate.js';
 import { KINDS, NETWORK, heldLayouts } from './fixtures/composed.mjs';
-import { createNetwork } from '../network/network.mjs';
-import { createTransit } from '../network/transit.mjs';
+import { createNetwork } from '../plugins/network/network.mjs';
+import { createTransit } from '../plugins/network/transit.mjs';
 
 const code = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
-const zones = async () => ({ ...(await import('../zones/zone-kind.mjs')), ...(await import('../zones/make-zone.mjs')) });
+const zones = async () => ({ ...(await import('../plugins/zones/zone-kind.mjs')), ...(await import('../plugins/zones/make-zone.mjs')) });
 
 test('O-b1: production composes layout, node, zone, group, link, pipe -- the state under test, the layouts plugin\'s kind first since WD-b1', () => {
 // RESTATED at WD-b1 (H19.45; WD6): the layouts plugin's kind is composed first -- a document lists its grids before what sits on them
@@ -66,9 +66,9 @@ test('O-b1: a composition without the zones plugin refuses a zone by name -- val
 });
 
 test('O-b1: the reader reads with its caller\'s kinds, and composes none of its own', async () => {
-	const { readModel } = await import('../network/read-model.mjs');
+	const { readModel } = await import('../plugins/network/read-model.mjs');
 	const doc = { meta: { id: '00000000000e0001', name: 'd' }, nodes: [], zones: [{ id: 'zone-0e0003', name: 'z', x: 30, y: 30, w: 60, h: 60 }], groups: [], links: [], pipes: [] };
 	assert.throws(() => readModel(doc), /readModel: no kinds/);
 	assert.equal(readModel(doc, KINDS).all('zone').length, 1, 'with the caller\'s, the zone is held');
-	assert.doesNotMatch(code('network/read-model.mjs'), /composeKinds|CORE_ROWS/);
+	assert.doesNotMatch(code('plugins/network/read-model.mjs'), /composeKinds|CORE_ROWS/);
 });

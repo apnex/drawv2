@@ -36,9 +36,9 @@ import { productKinds } from '../../product/kinds.mjs';
 import { PRODUCT_CANVAS, CANVAS_LAYERS } from '../../product/canvas.mjs';   // the plugins' canvas parts (C-a), and the canvas's layers (H25.4)
 // the network plugin -- incubated here from 2026-09-28, composed into a page by its one function since V-b (H18.26), as the
 // product page composes it
-import { routeLink } from '../../network/pipes.mjs';
-import { NETWORK_ROWS } from '../../network/kinds.mjs';   // the network's kind and the field it contributes (S-a)
-import { createPageNetwork } from '../../network/page.mjs';
+import { routeLink } from '../../plugins/network/pipes.mjs';
+import { NETWORK_ROWS } from '../../plugins/network/kinds.mjs';   // the network's kind and the field it contributes (S-a)
+import { createPageNetwork } from '../../plugins/network/page.mjs';
 
 /*
 The DOM contract, asserted rather than assumed.
@@ -57,7 +57,7 @@ const svg = document.getElementById('container');
 
 /*
 THE NETWORK SESSION (RULESET-AUDIT T5): the link ages, the transit settings, and the network that reads the models' own
-pipes (H17.22 N-c) -- network/session.mjs, which knows no DOM. This file draws what it says.
+pipes (H17.22 N-c) -- plugins/network/session.mjs, which knows no DOM. This file draws what it says.
 
 Its network is ONE object (T1), handed to the tab's Model -- where a link runs, which links a moved anchor affects,
 whether it is down, what blocks it -- and to the planner -- what else references an anchor, which orphans survive, which
@@ -98,7 +98,7 @@ const say = (text) => { notice.textContent = text; };
 
 
 /*
-THE NETWORK, ATTACHED (network/host.mjs): its pipe painter, its drag judge, its transit edits, its answer step and the
+THE NETWORK, ATTACHED (plugins/network/host.mjs): its pipe painter, its drag judge, its transit edits, its answer step and the
 settle that follows every change -- the plugin's choreography, which promotion attaches to the product page the same way.
 What stays here is the lab's own: the in-page planner below (the authority model and its log), the refusal that takes the
 planner's document back, the notice, and which fixed board to load.
@@ -131,7 +131,7 @@ history.onCommit((request) => {
 		: commit(authority, log, request, 'lab', 'lab', { kinds });
 	/*
 	THE ANSWER, RECONCILED BY THE PRODUCT'S OWN RULE -- pipes included, since they are ops in the edit (N-c), so a link is
-	drawn along its pipes from its first frame (network/session.mjs `answered`).
+	drawn along its pipes from its first frame (plugins/network/session.mjs `answered`).
 
 	Two shapes: `commit()` returns its applied ops at `change.ops` -- reading `answer.ops` there
 	applied nothing, the first build's defect -- and `undo()`/`redo()` return them at `ops`.
@@ -158,7 +158,7 @@ history.onCommit((request) => {
 say('lab -- nothing is stored, nothing is shared');
 /*
 Proof the incubator is composed and running, not merely imported. A trivial route through the
-network plugin, reported on the notice: if `network/` fails to load, the module graph fails before
+network plugin, reported on the notice: if `plugins/network/` fails to load, the module graph fails before
 this line and the notice never reads it, so its presence is the evidence.
 */
 const probe = routeLink([{ a: 'A', b: 'B' }, { a: 'B', b: 'C' }], { src: 'A', dst: 'C' });
@@ -178,7 +178,7 @@ tests had been extracting the literals from this source and evaluating them.
 
 Every board is applied THROUGH THE PLANNER, as an author's edit is, so a board the product could not
 reach is refused rather than shown. Its pipes are ops in the same commit (N-c) and its links are aged first, so the links
-are routed over them the moment they are drawn (network/host.mjs `seed`). An unknown name refuses and lists what exists,
+are routed over them the moment they are drawn (plugins/network/host.mjs `seed`). An unknown name refuses and lists what exists,
 rather than silently giving a different board.
 */
 const wanted = new URLSearchParams(location.search).get('seed');

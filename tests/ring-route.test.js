@@ -2,19 +2,19 @@
 H18.8 (F-f; P-3, ruled 2026-10-03) -- A RING'S CLOSING LEG IS ROUTED LIKE ANY LEG, over a pipe laid with it.
 dev/design/unification/FORMAT-BATCH.md section 6.
 */
-import { pathOf, isLinkDown } from '../network/network-queries.mjs';   // Q-a: the network's questions
+import { pathOf, isLinkDown } from '../plugins/network/network-queries.mjs';   // Q-a: the network's questions
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Model } from '../model/model.mjs';
 import { plan, commit, undo } from '../planner/txn.mjs';
 import { Log } from '../planner/log.mjs';
 import { applyOps } from '../model/ops.mjs';
-import { routeLink } from '../network/pipes.mjs';
-import { createNetwork } from '../network/network.mjs';
-import { createTransit } from '../network/transit.mjs';
+import { routeLink } from '../plugins/network/pipes.mjs';
+import { createNetwork } from '../plugins/network/network.mjs';
+import { createTransit } from '../plugins/network/transit.mjs';
 import { productKinds } from '../product/kinds.mjs';
-import { PIPE_ROW, pipeEntity, pipeId } from '../network/pipe-kind.mjs';
-import { NETWORK_ROWS } from '../network/kinds.mjs';   // the network's kind and the field it contributes (S-a)
+import { PIPE_ROW, pipeEntity, pipeId } from '../plugins/network/pipe-kind.mjs';
+import { NETWORK_ROWS } from '../plugins/network/kinds.mjs';   // the network's kind and the field it contributes (S-a)
 
 const KINDS = productKinds(...NETWORK_ROWS);
 const NET = createNetwork(createTransit());

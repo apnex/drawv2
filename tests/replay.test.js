@@ -38,7 +38,7 @@ it is not addressed here.
 import { reshapeCommand, closeCommand, spawnCommand } from './fixtures/plugin-edits.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { makeNode } from '../devices/make-node.mjs';   // O-e1: the devices plugin's factories
+import { makeNode } from '../plugins/devices/make-node.mjs';   // O-e1: the devices plugin's factories
 import fs from 'node:fs';
 import { Model } from './fixtures/composed.mjs';   // the network's kinds, the link among them (S-e)
 import { applyOps } from '../model/ops.mjs';

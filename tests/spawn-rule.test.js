@@ -15,7 +15,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Model } from './fixtures/composed.mjs';   // the network's kinds, the link among them (S-e)
 import { situationOf, inReadView, onEndpoint } from '../engine/situation.mjs';
-import { waypointRoles } from '../network/roles.mjs';
+import { waypointRoles } from '../plugins/network/roles.mjs';
 // RESTATED at C-e step nine (H19.33; D5): arming is the simulation's run-mode row; it is run as the row runs it
 import { spawnCommand as toggleSpawn } from './fixtures/plugin-edits.mjs';
 import { validateEntity } from './fixtures/composed.mjs';   // the composition production runs; the validator takes no default since S-f
@@ -123,5 +123,5 @@ test('H12.7: the builder never reads a wall clock -- the instant is always the c
 	// a builder that stamped Date.now() would put a LOCAL instant into a shared document, and every
 	// other peer would compute departures from a phase that was never theirs
 	// RESTATED at C-e step nine: the row and its decision are the simulation's module, read whole
-	assert.doesNotMatch(fs.readFileSync(new URL('../engine/spawn-runs.mjs', import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, ''), /Date\.now/, 'the phase must come from the agreed clock');
+	assert.doesNotMatch(fs.readFileSync(new URL('../plugins/simulation/spawn-runs.mjs', import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, ''), /Date\.now/, 'the phase must come from the agreed clock');
 });

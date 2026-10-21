@@ -24,7 +24,7 @@ what it can prove: which route families exist. B119 records the gap.
 */
 import fs from 'node:fs';
 import { productKinds } from '../product/kinds.mjs';
-import { NETWORK_ROWS } from '../network/kinds.mjs';
+import { NETWORK_ROWS } from '../plugins/network/kinds.mjs';
 
 const SRC = 'server/rest.js';
 /*

@@ -10,14 +10,14 @@ that needed one would be stored state, which is the stored-format batch's busine
 holding one document inserted in opposite orders, with the relation index attached (as the client and the server run)
 and without it (the Model's own fallback), and every answer must be the same, in the same order.
 */
-import { linksOf, linksAt, linkBetween, linksBetween } from '../network/link-queries.mjs';   // K13d: the network's link queries
+import { linksOf, linksAt, linkBetween, linksBetween } from '../plugins/network/link-queries.mjs';   // K13d: the network's link queries
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Model } from './fixtures/composed.mjs';   // the network's kinds, the link among them (S-e)
 import { attachRelations } from '../engine/store.mjs';
 import { NODE_GRID } from '../kernel/geometry.mjs';   // H26.1: the relation index is injected the node grid's nearest (it was cellOf)
-import { spawnersOf } from '../engine/spawners.mjs';
-import { pipeEntity, pipeId } from '../network/pipe-kind.mjs';
+import { spawnersOf } from '../plugins/simulation/spawners.mjs';
+import { pipeEntity, pipeId } from '../plugins/network/pipe-kind.mjs';
 
 const N = (i) => `node-00000${i}`, W = (i) => `node-0000e${i}`   /* a waypoint: a node with no type (F-c) */, L = (h) => `link-${h}`;
 const entities = [

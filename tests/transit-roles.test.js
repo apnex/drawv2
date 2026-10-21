@@ -11,9 +11,9 @@ The other half is that nothing changes where transit is on or undeclared -- whic
 import { test } from 'node:test';
 import { KINDS } from './fixtures/composed.mjs';   // O-b1: a reader is handed its caller's kinds
 import assert from 'node:assert/strict';
-import { waypointRoles, waypointRolesIn } from '../network/roles.mjs';
-import { waypointLayers } from '../network/appearance.mjs';
-import { NETWORK_ROWS } from '../network/kinds.mjs';   // the network's kind and the field it contributes (S-a)
+import { waypointRoles, waypointRolesIn } from '../plugins/network/roles.mjs';
+import { waypointLayers } from '../plugins/network/appearance.mjs';
+import { NETWORK_ROWS } from '../plugins/network/kinds.mjs';   // the network's kind and the field it contributes (S-a)
 
 const W = 'node-e00001';
 const L = (n, src, dst, extra = {}) => ({ id: `link-00000${n}`, src, dst, via: [], ...extra });
@@ -62,7 +62,7 @@ test('B277: the roles in a model read its links and whether it declares transit 
 	const links = SHAPES['three links'];
 	/*
 	RESTATED at K13d (H19.25): the doubles answered `linksAt` as a Model method, which no Model has now -- the links meeting an
-	anchor are the network's query over a Model's `all('link')` (network/link-queries.mjs). The doubles take that shape; what is
+	anchor are the network's query over a Model's `all('link')` (plugins/network/link-queries.mjs). The doubles take that shape; what is
 	held is unchanged: the roles read the links and whether what arrives stops, and a model with no links has none.
 	*/
 	// RESTATED at Q-a (H19.27): whether what arrives stops is asked of the network attached to the model, not of the model
@@ -89,9 +89,9 @@ where the canvas drew endpoints.
 */
 test('F-e: the export and the canvas give a waypoint whose transit is off the same roles, and both draw its ring', async () => {
 	const { Model } = await import('../model/model.mjs');
-	const { createNetworkSession } = await import('../network/session.mjs');
+	const { createNetworkSession } = await import('../plugins/network/session.mjs');
 	const { productKinds } = await import('../product/kinds.mjs');
-	const { PIPE_ROW } = await import('../network/pipe-kind.mjs');
+	const { PIPE_ROW } = await import('../plugins/network/pipe-kind.mjs');
 	// RESTATED at H25.5 (B378, D4): the export is server/svg.mjs svgDocument, which drives the real Renderer
 	const { svgDocument } = await import('../server/svg.mjs');
 	const s = createNetworkSession();

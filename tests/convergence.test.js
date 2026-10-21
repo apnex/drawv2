@@ -18,12 +18,12 @@ import { applyOps } from '../model/ops.mjs';
 import { Changes } from '../app/src/changes.js';
 import { Sync } from '../app/src/sync.js';
 import { createEntity, moveEntities, deleteSelection, putEntity } from '../app/src/commands.js';
-import { makeGroup } from '../groups/make-group.mjs';   // RESTATED at C-e step five (D5): a group is the groups plugin's edit, put
+import { makeGroup } from '../plugins/groups/make-group.mjs';   // RESTATED at C-e step five (D5): a group is the groups plugin's edit, put
 import { OWNER, openStore } from './fixtures/app.mjs';
 import { productKinds } from '../product/kinds.mjs';
-import { NETWORK_ROWS } from '../network/kinds.mjs';
-import { createNetwork as netFor } from '../network/network.mjs';
-import { createTransit as transitFor } from '../network/transit.mjs';
+import { NETWORK_ROWS } from '../plugins/network/kinds.mjs';
+import { createNetwork as netFor } from '../plugins/network/network.mjs';
+import { createTransit as transitFor } from '../plugins/network/transit.mjs';
 const aNetwork = () => netFor(transitFor());   // a Model holding links is given one (V-e, J2)
 const PAGE_KINDS = productKinds(...NETWORK_ROWS);
 

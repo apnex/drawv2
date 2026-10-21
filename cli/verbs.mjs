@@ -249,7 +249,7 @@ const viewOf = (doc) => ({ ...doc, nodes: (doc.nodes || []).filter((n) => !isWay
 /*
 P6 W-d (H18.34; K1) -- A PIPE LAID WITH A LINK, for `draw link --lay`. Those pipes must ride in the link's own commit -- a link
 pipe laid alone has no link on it and is swept in the same edit -- so this file builds them, and states the network's rule for
-a pipe's id here, as it states `isWaypoint`: it ships alone (B138) and cannot import network/pipe-kind.mjs. The id is its two
+a pipe's id here, as it states `isWaypoint`: it ships alone (B138) and cannot import plugins/network/pipe-kind.mjs. The id is its two
 ends' hex, lower first, and so are its ends. Held to `pipeEntity` by tests/cli-tool.test.js.
 */
 const linkPipe = (x, y) => {
@@ -262,7 +262,7 @@ async function resolveId(ctx, diagramId, ref, known = null) {
 	// PU33: a waypoint's id became a node's with the same hex at the format batch; an old one is named as such, not "not found"
 	if (/^waypoint-[0-9a-f]{6}$/.test(ref)) die(`${ref} is a waypoint id from before the format batch -- waypoints are nodes now: node-${ref.slice(9)}`);
 	if (/^(node|link|zone|group)-[0-9a-f]{6}$/.test(ref)) return ref;
-	// P6 W-b (H18.32): a pipe has no name, only an id -- its two ends' hex (network/pipe-kind.mjs) -- so it is taken as given
+	// P6 W-b (H18.32): a pipe has no name, only an id -- its two ends' hex (plugins/network/pipe-kind.mjs) -- so it is taken as given
 	if (/^pipe-[0-9a-f]{6}-[0-9a-f]{6}$/.test(ref)) return ref;
 	// `known` lets a verb that has already fetched the document reuse it. `place` used to avoid the
 	// second read by reimplementing the lookup inline, four times, which is how the ambiguity
@@ -409,7 +409,7 @@ Held by a test: every `request()` a handler issues must appear in `route` or `al
 S-e (H18.15) -- the Model `combat` and `movers` read a document into: the product's kinds and the network's, since the link is
 the network's kind and a Model composed with the core's alone would drop every link. Imported when one of the two runs,
 as the Model always was, so the file still ships alone for every other verb (B138).
-R-a (H18.19): the network's read composition (network/read-model.mjs), so the Model draws with the network -- movers run
+R-a (H18.19): the network's read composition (plugins/network/read-model.mjs), so the Model draws with the network -- movers run
 along each link's route -- and the CLI composes nothing by hand.
 */
 // O-b1 (H19.19): with the product's kinds, since the reader composes none; O-d (H19.22): the product's composition is its
@@ -1419,7 +1419,7 @@ open a console. That is the A5 fault -- the human acting as the agent's eyes for
 already knows.
 
 It is DERIVED, not sampled. The simulation is a pure function of the document and an instant, and
-`engine/spawners.mjs` is the same adapter the browser uses, so this reports exactly what a correct
+`plugins/simulation/spawners.mjs` is the same adapter the browser uses, so this reports exactly what a correct
 client must be drawing. When a tab disagrees with this, the divergence is in the tab -- which is
 itself the finding, and narrows the search to one layer instead of three.
 
@@ -1989,7 +1989,7 @@ VERBS.push(
 			ops.push({ op: 'put', kind: 'link', entity });
 			/*
 			K1 (ruled 2026-10-04) -- `--lay` is the keyed drag: a pipe laid with the link on each hop that has no pipe of its own
-			(network/session.mjs `pipeEntries`), a ring's closing hop included; they go when no link runs over them. Without it,
+			(plugins/network/session.mjs `pipeEntries`), a ring's closing hop included; they go when no link runs over them. Without it,
 			"direct links without a key lay no pipe" (2026-09-30) -- a plain link runs over the pipes already there, or is down.
 			*/
 			let laid = [];
@@ -2477,7 +2477,7 @@ const census = (doc) => {
 /*
 P6 W-b (H18.32) -- `pipe`: lay a pipe BY HAND between two anchors, as `g` does on the canvas, or take one away. A hand pipe
 outlives any link (2026-09-27); a link that lays its own pipes is `draw link --lay` (K1). Laid through REST's `/pipes`, so the
-server builds the pipe -- its id is its two ends' hex, the network's rule (network/pipe-kind.mjs) -- and this file, which ships
+server builds the pipe -- its id is its two ends' hex, the network's rule (plugins/network/pipe-kind.mjs) -- and this file, which ships
 alone (B138), restates nothing. For the same reason it does not stage into a draft: a staged op would have to carry an id the
 tool would build itself.
 

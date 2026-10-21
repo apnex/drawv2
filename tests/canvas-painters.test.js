@@ -41,7 +41,7 @@ test('C-a: a canvas composed without the zones plugin draws no zone', async () =
 });
 
 test('C-a: the zones plugin brings the zone\'s painter, and the renderer names no zone', async () => {
-	const { ZONES_CANVAS } = await import('../zones/zone-painter.mjs');
+	const { ZONES_CANVAS } = await import('../plugins/zones/zone-painter.mjs');
 	assert.equal(ZONES_CANVAS.owner, 'zones');
 	assert.deepEqual(ZONES_CANVAS.painters.map((p) => [p.kind, p.layer, p.stacked]), [['zone', 'zones', true]]);
 	assert.ok((await parts()).includes(ZONES_CANVAS), 'the product composes it');
@@ -94,7 +94,7 @@ test('C-a: a canvas composed without the groups plugin draws no group', async ()
 });
 
 test('C-a: the groups plugin brings the group\'s painter, and the renderer names no group', async () => {
-	const { GROUPS_CANVAS } = await import('../groups/group-painter.mjs');
+	const { GROUPS_CANVAS } = await import('../plugins/groups/group-painter.mjs');
 	assert.equal(GROUPS_CANVAS.owner, 'groups');
 	assert.deepEqual(GROUPS_CANVAS.painters.map((p) => [p.kind, p.layer, p.stacked]), [['group', 'groups', false]]);
 	assert.ok((await parts()).includes(GROUPS_CANVAS));
@@ -173,7 +173,7 @@ test('C-a: the product\'s canvas draws a link with its click twin, and a link de
 });
 
 test('C-a: a canvas composed without the network\'s painter draws no link', async () => {
-	const { NETWORK_APPEARANCES } = await import('../network/anchor-appearance.mjs');
+	const { NETWORK_APPEARANCES } = await import('../plugins/network/anchor-appearance.mjs');
 	const without = (await parts()).map((p) => (p.owner === 'network' ? { owner: 'network', appearances: NETWORK_APPEARANCES } : p));
 	linked(without, ({ el, twins }) => {
 		assert.equal(el('link-0c0c03'), null);
@@ -182,7 +182,7 @@ test('C-a: a canvas composed without the network\'s painter draws no link', asyn
 });
 
 test('C-a: the network brings the link\'s painter, and the renderer draws no link of its own', async () => {
-	const { NETWORK_CANVAS } = await import('../network/canvas.mjs');
+	const { NETWORK_CANVAS } = await import('../plugins/network/canvas.mjs');
 	assert.equal(NETWORK_CANVAS.owner, 'network');
 	assert.deepEqual(NETWORK_CANVAS.painters.map((p) => [p.kind, p.layer, p.stacked]), [['link', 'links', true]]);
 	assert.ok((await parts()).includes(NETWORK_CANVAS));

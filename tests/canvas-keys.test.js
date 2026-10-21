@@ -14,8 +14,8 @@ import fs from 'node:fs';
 import { makeInput, key, seedNodes } from './fixtures/client-harness.mjs';
 import { PRODUCT_CANVAS } from '../product/canvas.mjs';
 import { helpSections } from '../app/src/help.js';
-import { makeWaypoint } from '../devices/make-node.mjs';
-import { makeZone } from '../zones/make-zone.mjs';
+import { makeWaypoint } from '../plugins/devices/make-node.mjs';
+import { makeZone } from '../plugins/zones/make-zone.mjs';
 
 const code = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
 const keyLines = (h) => helpSections(h.input.bindings()).find((s) => s.title === 'keys').lines;
@@ -109,8 +109,8 @@ test('C-e: Ctrl+G groups the selected anchors, labelled "group", the selection k
 });
 
 test('C-e: a delete sends a group, then a zone, then a link, then a node -- each plugin\'s rank', async () => {
-	const { makeLink } = await import('../network/link-queries.mjs');
-	const { makeGroup } = await import('../groups/make-group.mjs');
+	const { makeLink } = await import('../plugins/network/link-queries.mjs');
+	const { makeGroup } = await import('../plugins/groups/make-group.mjs');
 	const h = makeInput();
 	try {
 		const [a, b, c] = seedNodes(h.model, [[0, 0], [120, 0], [240, 240]]);
@@ -147,7 +147,7 @@ test('C-e: the canvas holds no group key, group builder or delete ranking of its
 // ---- C-e, step six (D5): the devices plugin's key -- s reshapes the selected devices ----
 
 test('C-e: s flips each selected device between circle and square, labelled "reshape"; a waypoint and a link untouched -- the state under test', async () => {
-	const { makeLink } = await import('../network/link-queries.mjs');
+	const { makeLink } = await import('../plugins/network/link-queries.mjs');
 	const h = makeInput();
 	try {
 		const [a, b] = seedNodes(h.model, [[0, 0], [120, 0]]);
@@ -183,7 +183,7 @@ test('C-e: the canvas holds no reshape key or builder of its own', () => {
 // ---- C-e, step seven (D5): the network's link keys -- c, f, k, l and Shift+L -- are the network's ----
 
 const linkBoard = async (h) => {
-	const { makeLink } = await import('../network/link-queries.mjs');
+	const { makeLink } = await import('../plugins/network/link-queries.mjs');
 	const [a, b, c] = seedNodes(h.model, [[0, 0], [240, 0], [480, 0]]);
 	const w = makeWaypoint(h.model, { x: 120, y: 120 }); h.model.put('node', w);
 	const bent = { ...makeLink(h.model, a.id, b.id), via: [w.id] }; h.model.put('link', bent);
@@ -249,8 +249,8 @@ test('C-e: the canvas holds no link key or link builder of its own', () => {
 // is each plugin's to declare; the network's transit edit reaches history through a generic builder ----
 
 const cloneBoard = async (h) => {
-	const { makeLink } = await import('../network/link-queries.mjs');
-	const { makeGroup } = await import('../groups/make-group.mjs');
+	const { makeLink } = await import('../plugins/network/link-queries.mjs');
+	const { makeGroup } = await import('../plugins/groups/make-group.mjs');
 	const [a, b] = seedNodes(h.model, [[0, 0], [240, 0]]);
 	const w = makeWaypoint(h.model, { x: 120, y: 120 }); h.model.put('node', w);
 	h.model.put('link', { ...makeLink(h.model, a.id, b.id), via: [w.id] });
@@ -290,12 +290,12 @@ test('C-e: composed without the network part no link follows a clone; without th
 test('C-e: the clone builder names no follower, and the network builds no command by hand', () => {
 	const body = code('app/src/commands.js').slice(code('app/src/commands.js').indexOf('export function cloneSubgraph'));
 	assert.doesNotMatch(body.slice(0, body.indexOf('\n}\n')), /model\.all\('(link|group)'\)|makeGroup/);
-	assert.doesNotMatch(code('network/host.mjs'), /label: 'transit', entries/);
+	assert.doesNotMatch(code('plugins/network/host.mjs'), /label: 'transit', entries/);
 });
 
 test('C-e: a group holding a link\'s bend follows a clone of the link\'s ends -- the link follows first, pulling the bend in', async () => {
-	const { makeLink } = await import('../network/link-queries.mjs');
-	const { makeGroup } = await import('../groups/make-group.mjs');
+	const { makeLink } = await import('../plugins/network/link-queries.mjs');
+	const { makeGroup } = await import('../plugins/groups/make-group.mjs');
 	const h = makeInput();
 	try {
 		const [a, b] = seedNodes(h.model, [[0, 0], [240, 0]]);

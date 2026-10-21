@@ -10,7 +10,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { makeApp } from './fixtures/app.mjs';
 import { main } from '../cli/draw.mjs';
-import { createNetworkSession } from '../network/session.mjs';
+import { createNetworkSession } from '../plugins/network/session.mjs';
 import { Model } from './fixtures/composed.mjs';
 
 const MATRIX = JSON.parse(fs.readFileSync(new URL('../dev/design/unification/BEHAVIOUR-MATRIX.json', import.meta.url), 'utf8'));
@@ -43,7 +43,7 @@ async function board(state, setup = async () => {}) {
 	const seed = SEEDS[s.board];
 	const id = (await run('create', `${state}-${Math.random().toString(36).slice(2, 6)}`)).trim();
 	await run('lock', '--diagram', id);
-	const pipes = await import('../network/pipe-kind.mjs');
+	const pipes = await import('../plugins/network/pipe-kind.mjs');
 	const ops = [...seed.ops, ...seed.pipes.map(([a, b, laid]) => ({ op: 'put', kind: 'pipe', entity: pipes.pipeEntity(a, b, laid) }))];
 	const f = path.join(home, `seed-${id}.json`);
 	fs.writeFileSync(f, JSON.stringify({ ops }));

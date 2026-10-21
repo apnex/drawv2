@@ -72,7 +72,7 @@ renderers drew a hardcoded 2.2 -- the kernel computed spacing for a dot neither 
 Three copies of one number, and the two that mattered were invisible to the guard, which read its
 own literal and agreed with the kernel.
 */
-// the dot's radius: the floor of the waypoint ring ladder (network/appearance.mjs, B200), which reads it here
+// the dot's radius: the floor of the waypoint ring ladder (plugins/network/appearance.mjs, B200), which reads it here
 const DOT_RADIUS = 2;
 export const gridDot = () => ({ radius: DOT_RADIUS });
 

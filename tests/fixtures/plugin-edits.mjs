@@ -7,10 +7,10 @@ records what it is handed and builds the command with the generic builder Input 
 still holds the product's decision, not a copy of it.
 */
 import { setFieldsAll, setFields, putEntity, putEntities } from '../../app/src/commands.js';
-import { DEVICE_KEYS } from '../../devices/device-keys.mjs';
-import { LINK_KEYS } from '../../network/link-keys.mjs';
-import { SPAWN_RUNS } from '../../engine/spawn-runs.mjs';
-import { DEVICE_LABELS as DEVICE_LABELS_FOR_EDITS } from '../../devices/device-labels.mjs';
+import { DEVICE_KEYS } from '../../plugins/devices/device-keys.mjs';
+import { LINK_KEYS } from '../../plugins/network/link-keys.mjs';
+import { SPAWN_RUNS } from '../../plugins/simulation/spawn-runs.mjs';
+import { DEVICE_LABELS as DEVICE_LABELS_FOR_EDITS } from '../../plugins/devices/device-labels.mjs';
 import { kindOf } from '../../model/model.mjs';
 
 // `s` on these ids: the devices plugin's reshape, as the command Input would send (empty when nothing is a device)

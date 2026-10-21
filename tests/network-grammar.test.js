@@ -4,7 +4,7 @@ THE NETWORK'S DRAG GRAMMAR AS DATA -- step T3 of the ruleset audit (dev/RULES.md
 What a finished drag makes, and which pipe each hop lays, were conditions inside `judgeDrag`, and the facts they read
 -- which keys were pressed, how the end was reached, which stops are guides -- were worked out inside the product's
 Input. Now Input records the drag as it happened (its steps), `dragFacts` reads the facts from that record in the
-plugin, and two tables in network/grammar.mjs say what the facts mean. The Rules engine reads the tables, so the
+plugin, and two tables in plugins/network/grammar.mjs say what the facts mean. The Rules engine reads the tables, so the
 grammar is held to Q3 like any other rows: exactly one row per case, never resolved by position.
 
 BEHAVIOUR IS UNCHANGED, and this file proves it the strong way: the formula `judgeDrag` used before T3 is copied below
@@ -13,8 +13,8 @@ as an oracle, and the tables must give its answer for every case enumerated.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { DRAG_KINDS, LEGS, dragFacts, kindOf, pipeFor } from '../network/grammar.mjs';
-import { networkInput } from '../network/keys.mjs';
+import { DRAG_KINDS, LEGS, dragFacts, kindOf, pipeFor } from '../plugins/network/grammar.mjs';
+import { networkInput } from '../plugins/network/keys.mjs';
 import { composeRules, overlapsIn } from '../kernel/input-rules.mjs';
 
 // ---- the facts, from Input's record ----
@@ -79,7 +79,7 @@ test('LEGS: every hop is exactly one row -- no overlap (Q3) and no gap, since a 
 });
 
 /*
-THE ORACLE: judgeDrag's leg formula as it stood before T3 (network/guide.mjs at d59b867), copied verbatim in meaning.
+THE ORACLE: judgeDrag's leg formula as it stood before T3 (plugins/network/guide.mjs at d59b867), copied verbatim in meaning.
 A hop is skipped when its ends are one anchor, or when it is the only hop of a drag that pressed no key -- not at the
 end, not the source w; otherwise it is laid by hand in a pipes-only drag, or touching a guide, or into an end reached
 with g, and with the link otherwise.

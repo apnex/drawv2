@@ -1,0 +1,33 @@
+/*
+THE SIMULATION'S STYLESHEET -- the look of what the simulation draws in run mode: movers and beams (plugins/simulation/mover-painter.mjs).
+H25.1 (B366): moved here from app/style.css word for word, in their order. A spawning waypoint's look stays in the network's
+sheet, inside the waypoint rules it is ordered among (plugins/network/network.css).
+*/
+
+/* a mover is presentation only: never a pointer target, so it cannot intercept a click meant for
+   the line it is riding, and no transition -- the compositor owns its motion via offset-path. */
+/*
+B172 -- the mover's look lives HERE, not in the document.
+
+Each spawner stores a `kind`; the class it resolves to carries the colour. That is what makes a
+change of mind one edit instead of a rewrite of every diagram that has a spawner -- the previous
+arrangement stored a hex per spawner and three repaints only ever reached newly armed ones.
+*/
+.mover { pointer-events: none; }
+.mover.packet { fill: var(--tok-packet); }
+
+/* the laser. A beam is instantaneous by ruling, so it has no travel animation to express -- what it
+   needs to read as is a connection that is either there or not. `pointer-events: none` matters more
+   than it looks: play places towers by pressing open ground, and a beam sweeping under the cursor
+   must never eat that press. */
+.beams { pointer-events: none; }
+.beam {
+	/* brighter, per the director. var(--tok-unreachable) is a muted material red that reads as a thin line rather
+	   than as energy; this is a hot core at full opacity with a saturated glow carrying the colour,
+	   which is how a beam reads as bright without becoming thick. */
+	stroke: var(--tok-beam);
+	stroke-width: 2.5;
+	stroke-linecap: round;
+	opacity: 1;
+	filter: drop-shadow(0 0 2px var(--tok-beam-glow)) drop-shadow(0 0 6px var(--tok-beam-core));
+}

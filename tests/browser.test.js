@@ -31,7 +31,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { teardown } from './fixtures/teardown.mjs';
 import { NO_CHROME, launchChrome } from './fixtures/chrome.mjs';   // one launch config for every harness
-import { pipeEntity } from '../network/pipe-kind.mjs';   // V-b's board lays its pipes as the network names them
+import { pipeEntity } from '../plugins/network/pipe-kind.mjs';   // V-b's board lays its pipes as the network names them
 
 const SKIP = NO_CHROME;
 const PITCH = 60;
@@ -553,8 +553,8 @@ centred on the origin after `.icon`'s own scale -- so a 32-unit viewBox centred 
 one unit of margin, and the ring radius is half the glyph extent.
 */
 test('B197/B204: the favicon composes a node exactly as the canvas does', async () => {
-	// RESTATED at H21.3 (U4-1, B282): the glyph boxes, art and favicon live with the device type declaration in devices/device-types.mjs
-	const { faviconSvg, GLYPH_BB } = await import('../devices/device-types.mjs');
+	// RESTATED at H21.3 (U4-1, B282): the glyph boxes, art and favicon live with the device type declaration in plugins/devices/device-types.mjs
+	const { faviconSvg, GLYPH_BB } = await import('../plugins/devices/device-types.mjs');
 	const { STD, L_STD } = await import('../kernel/spec.mjs');
 	const svg = faviconSvg();
 
@@ -1134,7 +1134,7 @@ So this asserts getComputedStyle -- what the browser resolved -- rather than wha
 test('B235: the panel frame the browser DRAWS is the derived one', { skip: SKIP }, async () => {
 	assert.equal(booted.loaded, true, 'precondition: fixture loaded');
 	const seen = await tab.eval(`(async () => {
-		const { makeTextBox } = await import('/devices/make-node.mjs');   // the devices plugin's factories, as the page serves them (O-e1)
+		const { makeTextBox } = await import('/plugins/devices/make-node.mjs');   // the devices plugin's factories, as the page serves them (O-e1)
 		const app = window.draw;
 		const tb = makeTextBox(app.model, { x: 300, y: 300 }, { cols: 3, rows: 1 });
 		tb.content[0].value = 'panel';
@@ -1413,7 +1413,7 @@ test('H15.23: the colours the page draws come from the registry, generated from 
 	const t = await freshTab();
 	try {
 		const { TOKENS, CHROME } = await import('../kernel/theme.mjs');
-		const { NETWORK_TOKENS } = await import('../network/appearance.mjs');
+		const { NETWORK_TOKENS } = await import('../plugins/network/appearance.mjs');
 		const rgb = (hex) => { const h = hex.replace('#', ''); const f = h.length === 3 ? h.split('').map((c) => c + c).join('') : h; return `rgb(${parseInt(f.slice(0, 2), 16)}, ${parseInt(f.slice(2, 4), 16)}, ${parseInt(f.slice(4, 6), 16)})`; };
 		const got = JSON.parse(await t.eval(`JSON.stringify({
 			token: getComputedStyle(document.documentElement).getPropertyValue('--tok-link').trim(),
@@ -1439,7 +1439,7 @@ test('V-b: the product page draws routes and pipes, says why a link is down, and
 	try {
 		await until(t, `document.getElementById('node-ab00a1') ? 1 : 0`, 8000);
 		await t.eval(`window.draw.input.setReadOnly(false), 1`);
-		const state = () => t.eval(`(async () => { const { pathOf, isLinkDown } = await import('/network/network-queries.mjs');   // the network's questions, as the page serves them (Q-a)
+		const state = () => t.eval(`(async () => { const { pathOf, isLinkDown } = await import('/plugins/network/network-queries.mjs');   // the network's questions, as the page serves them (Q-a)
 			return JSON.stringify((() => { const m = window.draw.model, l = (id) => m.get('link', id);
 			return { routed: pathOf(m, l('link-ab0001')), downs: m.all('link').filter((x) => isLinkDown(m, x)).map((x) => x.id).sort(),
 				under: document.querySelectorAll('#pipes .pipe-of.under').length, pipes: m.all('pipe').map((p) => p.id + ':' + p.laid).sort(),
@@ -1498,7 +1498,7 @@ test('V-d: on the product page a deleted pin takes its link before the server an
 		await until(t, `document.getElementById('node-ab00a1') ? 1 : 0`, 8000);
 		await t.eval(`window.draw.input.setReadOnly(false), 1`);
 		// a waypoint, and a link pinned at it, through the server
-		await t.eval(`(async () => { const { makeWaypoint } = await import('/devices/make-node.mjs'); const { makeLink } = await import('/network/link-queries.mjs');   // the devices plugin's factories, as the page serves them (O-e1)
+		await t.eval(`(async () => { const { makeWaypoint } = await import('/plugins/devices/make-node.mjs'); const { makeLink } = await import('/plugins/network/link-queries.mjs');   // the devices plugin's factories, as the page serves them (O-e1)
 			const m = window.draw.model; const w = makeWaypoint(m, { x: 0, y: 360 });
 			window.draw.history.commit({ label: 'pin', entries: [{ op: 'put', kind: 'node', entity: w }, { op: 'put', kind: 'link', entity: { ...makeLink(m, 'node-ab00c1', 'node-ab00c2'), via: [w.id] } }] });
 			window.__pin = w.id; return 1; })()`);
@@ -1532,7 +1532,7 @@ test('H24.1: on the product page a plain double-click inside a zone opens no edi
 	try {
 		await until(t, `document.getElementById('node-ab00a1') ? 1 : 0`, 8000);
 		await t.eval(`window.draw.input.setReadOnly(false), 1`);
-		zoneId = await t.eval(`(async () => { const { makeZone } = await import('/zones/make-zone.mjs');
+		zoneId = await t.eval(`(async () => { const { makeZone } = await import('/plugins/zones/make-zone.mjs');
 			const z = makeZone(window.draw.model, { x: -90, y: 270, w: 180, h: 120 });
 			window.draw.history.commit({ label: 'zone', entries: [{ op: 'put', kind: 'zone', entity: z }] });
 			return z.id; })()`);
@@ -1579,7 +1579,7 @@ test('H24.3: on the product page releasing Shift deselects a zone, and a Shift+d
 	try {
 		await until(t, `document.getElementById('node-ab00a1') ? 1 : 0`, 8000);
 		await t.eval(`window.draw.input.setReadOnly(false), 1`);
-		zoneId = await t.eval(`(async () => { const { makeZone } = await import('/zones/make-zone.mjs');
+		zoneId = await t.eval(`(async () => { const { makeZone } = await import('/plugins/zones/make-zone.mjs');
 			const z = makeZone(window.draw.model, { x: -90, y: 270, w: 180, h: 120 });
 			window.draw.history.commit({ label: 'zone', entries: [{ op: 'put', kind: 'zone', entity: z }] });
 			return z.id; })()`);
@@ -1632,7 +1632,7 @@ test('H24.5: on the product page Shift+left drag inside a zone draws a new zone 
 	try {
 		await until(t, `document.getElementById('node-ab00a1') ? 1 : 0`, 8000);
 		await t.eval(`window.draw.input.setReadOnly(false), 1`);
-		zoneId = await t.eval(`(async () => { const { makeZone } = await import('/zones/make-zone.mjs');
+		zoneId = await t.eval(`(async () => { const { makeZone } = await import('/plugins/zones/make-zone.mjs');
 			const z = makeZone(window.draw.model, { x: -150, y: 270, w: 300, h: 180 });
 			window.draw.history.commit({ label: 'zone', entries: [{ op: 'put', kind: 'zone', entity: z }] });
 			return z.id; })()`);

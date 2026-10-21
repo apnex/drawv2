@@ -15,7 +15,7 @@ import { L_STD } from '../../kernel/spec.mjs';
 import { NODE_GRID, nodeGridWithin } from '../../kernel/geometry.mjs';
 // CL3: canvas surface + usable extents come from the sovereign model/ substrate (single source).
 // IMPORTED (not a bare re-export) — snapNode references NODE_EXT locally. AMENDED C-e (H19.33): the grids' points are their
-// parts'. AMENDED WD-b2 (H19.46): both grids are the layouts plugin's (layouts/layout-canvas.mjs), drawn by app/src/grids.js.
+// parts'. AMENDED WD-b2 (H19.46): both grids are the layouts plugin's (plugins/layouts/layout-canvas.mjs), drawn by app/src/grids.js.
 import { SURFACE, NODE_EXT } from '../../model/surface.mjs';
 import { ANCHOR_KINDS } from '../../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
 export const GAP = NODE_GRID.declaration.pitch;   // 60 -- the node grid's declared pitch: a length a drag, a nudge and a readout step by

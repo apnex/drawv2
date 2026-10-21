@@ -1491,9 +1491,9 @@ the check that keeps the two honest. Without it, adding a glyph would leave `dra
 type the editor happily draws.
 */
 // RESTATED at H21.3 (U4-2, B282): the CLI holds no NODE_TYPES, GLYPH or LEGEND copy of its own; it asks GET /api/v1/types
-// (`draw types`), which serves the devices plugin's one type declaration (`devices/device-types.mjs`)
+// (`draw types`), which serves the devices plugin's one type declaration (`plugins/devices/device-types.mjs`)
 test('B167 / U4-2: the CLI holds no type copy of its own and reads the declared device types from the server', async () => {
-	const { DEVICE_TYPES } = await import('../devices/device-types.mjs');
+	const { DEVICE_TYPES } = await import('../plugins/devices/device-types.mjs');
 	const src = fs.readFileSync(path.join(root, 'cli/verbs.mjs'), 'utf8');
 	assert.doesNotMatch(src, /const NODE_TYPES|const GLYPH\b|const LEGEND\b/, 'the three CLI per-type tables are retired (U4-2)');
 	await boot();
@@ -1566,7 +1566,7 @@ the parity claim says neither can be. Tested by deriving both here from one docu
 */
 test('B179: draw combat derives the same answer the browser would', async () => {
 	const { Model } = await import('./fixtures/composed.mjs');   // the network's kinds, as `draw combat` composes them (S-e)
-	const { worldOf, combatAt } = await import('../engine/rules.mjs');
+	const { worldOf, combatAt } = await import('../plugins/simulation/rules.mjs');
 	const m = new Model();
 	m.put('node', { id: 'node-ca0001', name: 'node-ca0001', x: 0, y: 0, spawn: { interval: 700, speed: 1.4, kind: 'packet', since: 1_788_300_000_000 } });
 	m.put('node', { id: 'node-ca0002', name: 'node-ca0002', x: 720, y: 0 });
@@ -1938,7 +1938,7 @@ none, which go when no link is on them. Without the flag a plain link lays none,
 CLI builds those pipes (they must ride in the link's commit), so their ids are held here to the network's own rule.
 */
 test('W-d: draw link --lay comes up on an empty board with its own pipes, which go with it; a plain link lays none', async () => {
-	const { pipeEntity } = await import('../network/pipe-kind.mjs');
+	const { pipeEntity } = await import('../plugins/network/pipe-kind.mjs');
 	await boot();
 	try {
 		const id = (await run('create', 'lay')).trim();

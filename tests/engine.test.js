@@ -1,15 +1,15 @@
-import { linksAt, makeLink } from '../network/link-queries.mjs';   // K13d: the network's link queries
+import { linksAt, makeLink } from '../plugins/network/link-queries.mjs';   // K13d: the network's link queries
 import { test } from 'node:test';
-import { makeGroup } from '../groups/make-group.mjs';   // O-c: the groups plugin's factory
-import { groupOf } from '../groups/group-of.mjs';   // O-c: the groups plugin's lookup
-import { makeZone } from '../zones/make-zone.mjs';   // O-b1: the zones plugin's factory
+import { makeGroup } from '../plugins/groups/make-group.mjs';   // O-c: the groups plugin's factory
+import { groupOf } from '../plugins/groups/group-of.mjs';   // O-c: the groups plugin's lookup
+import { makeZone } from '../plugins/zones/make-zone.mjs';   // O-b1: the zones plugin's factory
 import assert from 'node:assert/strict';
 import { Model } from './fixtures/composed.mjs';   // the network's kinds, the link among them (S-e)
 import { attachRelations } from '../engine/store.mjs';
 import { NODE_GRID } from '../kernel/geometry.mjs';   // H26.1: the relation index is injected the node grid's nearest (it was cellOf)
 import { STD } from '../kernel/spec.mjs';
-import { makeNode, makeWaypoint } from '../devices/make-node.mjs';   // O-e1: the devices plugin's factories
-import { occupiedAt, waypointAt } from '../devices/occupancy.mjs';   // O-e1: which device or waypoint is on a cell
+import { makeNode, makeWaypoint } from '../plugins/devices/make-node.mjs';   // O-e1: the devices plugin's factories
+import { occupiedAt, waypointAt } from '../plugins/devices/occupancy.mjs';   // O-e1: which device or waypoint is on a cell
 
 // R5 — the engine stages `atCell` (a logical cell EDB atom) off the entity, via the kernel's
 // single-sourced px→cell primitive. These are the FIRST suite tests over the app/src + engine +

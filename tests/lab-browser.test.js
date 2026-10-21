@@ -111,7 +111,7 @@ PIPES ARE ENTITIES since H17.22 N-c, in both models, changed only through the pl
 an author's edit does -- a commit through the door -- with the page's own pipe kind making the entities, never a second
 copy of its id rule here. `pipesIn(body)` runs `body` with `lay`, `clear`, `pipes` and `has` in scope.
 */
-const PIPES = `const { pipeId, pipeEntity } = await import('/network/pipe-kind.mjs');
+const PIPES = `const { pipeId, pipeEntity } = await import('/plugins/network/pipe-kind.mjs');
 	const pipes = () => lab.authority.all('pipe').map(({ a, b, laid }) => ({ a, b, laid }));
 	const has = (x, y) => !!lab.authority.get('pipe', pipeId(x, y));
 	const commitPipes = (entries) => { if (entries.length) lab.history.commit({ label: 'pipes', entries }); };
@@ -176,7 +176,7 @@ test('on the cross board, an unpinned link is drawn along its route through the 
 	try {
 		// neither link pins the centre, yet the only pipes run through it -- so each is drawn as
 		// three points bending there, where a straight link would be two. This is what `g` stands on.
-		const path_ = await p.run(`(async () => { const { pathOf } = await import('/network/network-queries.mjs'); return pathOf(lab.model, lab.model.get('link', 'link-000001')); })()`);
+		const path_ = await p.run(`(async () => { const { pathOf } = await import('/plugins/network/network-queries.mjs'); return pathOf(lab.model, lab.model.get('link', 'link-000001')); })()`);
 		assert.equal(path_.length, 3, `the link was drawn straight, not routed over the pipes: ${JSON.stringify(path_)}`);
 		assert.deepEqual(path_[1], [0, 0], 'and its middle point is the centre anchor');
 		assert.equal(await p.run(`lab.model.get('link', 'link-000001').via`), undefined, 'while the link itself pins nothing');
@@ -216,7 +216,7 @@ test('compare: a landing CROSSES the links that only pass the centre, and they s
 		for (const id of ['link-000003', 'link-000004']) {
 			const l = await p.run(`lab.authority.get('link', '${id}')`);
 			assert.ok(l, `${id} was cut -- a link that only passes a point is not connected to a landing there`);
-			const path_ = await p.run(`(async () => { const { pathOf } = await import('/network/network-queries.mjs'); return pathOf(lab.model, lab.model.get('link', '${id}')); })()`);
+			const path_ = await p.run(`(async () => { const { pathOf } = await import('/plugins/network/network-queries.mjs'); return pathOf(lab.model, lab.model.get('link', '${id}')); })()`);
 			assert.deepEqual(path_[1], [480, 0], `${id} still runs through the centre over the pipes`);
 		}
 	} finally { await p.close(); }
@@ -303,7 +303,7 @@ test('pipes are drawn in the plugin\'s one colour, and it is visible on the canv
 		// a pipe no link runs over -- the cross board's are all under its links, and those are not drawn (2026-10-02)
 		await p.run(pipesIn(`lay([['node-000001', 'node-000003', 'hand']]);`));
 		const seen = await p.run(`(async () => {
-			const { pipeAttributes } = await import('/network/appearance.mjs');
+			const { pipeAttributes } = await import('/plugins/network/appearance.mjs');
 			const PIPE_STROKE = pipeAttributes('hand').stroke;   // through the painter's own door
 			const line = document.querySelector('#pipes line');
 			const cs = getComputedStyle(line);
@@ -414,7 +414,7 @@ test('B257: an edit keeps the pipes a link is drawn on, whichever order ids sort
 		assert.equal(await p.run(pipesIn(`return ['node-00000c|node-0000f1', 'node-0000f1|node-0000f2', 'node-0000f2|node-00000d']
 			.filter((k) => has(...k.split('|'))).length;`)), 3, 'the pipes the younger link is drawn on survive the sweep');
 		assert.match(await p.run(`document.getElementById('link-000001').getAttribute('d')`), /Q-120 360/, 'and it is drawn over them, by age');
-		assert.equal(await p.run(`(async () => { const { isLinkDown } = await import('/network/network-queries.mjs'); return isLinkDown(lab.model, lab.model.get('link', 'link-0000ff')); })()`), false, 'while the older link keeps the free w pipe');
+		assert.equal(await p.run(`(async () => { const { isLinkDown } = await import('/plugins/network/network-queries.mjs'); return isLinkDown(lab.model, lab.model.get('link', 'link-0000ff')); })()`), false, 'while the older link keeps the free w pipe');
 	} finally { await p.close(); }
 });
 
@@ -436,7 +436,7 @@ test('F11: after w on a node mid-drag, the live preview still follows the cursor
 		const live = `document.querySelector('#overlay path.link-live')?.getAttribute('d') ?? null`;
 		await p.mouse('mousePressed', -360, 0, 1);
 		await p.mouse('mouseMoved', 0, -240, 1);
-		await p.key('w');                                  // on node-000003: a stop, never a pin (network/keys.mjs)
+		await p.key('w');                                  // on node-000003: a stop, never a pin (plugins/network/keys.mjs)
 		await p.mouse('mouseMoved', 240, -240, 1);
 		const first = await p.run(live);
 		await p.mouse('mouseMoved', 240, -120, 1);
@@ -615,8 +615,8 @@ test('V-d: the lab previews a commit, and its answer writes nothing more to the 
 	const p = await open('bend');
 	try {
 		const got = JSON.parse(await p.run(`(async () => {
-			const { makeNode, makeWaypoint } = await import('/devices/make-node.mjs');
-			const { makeLink } = await import('/network/link-queries.mjs');   // the network's link queries, as the page serves them (K13d)   // the devices plugin's factories, as the page serves them (O-e1)
+			const { makeNode, makeWaypoint } = await import('/plugins/devices/make-node.mjs');
+			const { makeLink } = await import('/plugins/network/link-queries.mjs');   // the network's link queries, as the page serves them (K13d)   // the devices plugin's factories, as the page serves them (O-e1)
 			const m = lab.model, ids = (k) => m.all(k).map((e) => e.id);
 			const a = makeNode(m, 'host', { x: -360, y: 240 }); const b = makeNode(m, 'host', { x: 360, y: 240 }); const c = makeNode(m, 'host', { x: 0, y: 420 });
 			const w = makeWaypoint(m, { x: 0, y: 240 });

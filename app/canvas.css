@@ -13,7 +13,7 @@ app/style.css, where these rules stood after the chrome's palette rules (product
 
 /* W4 — edit mode: a subtle accent border cues that editing aids (the socket grid) are showing */
 #container.edit-mode #canvas { stroke: var(--tok-link); stroke-width: 2; stroke-opacity: 0.5; }
-/* W5 -- a green border cues run mode (its clickable regions are the devices plugin's, devices/devices.css) */
+/* W5 -- a green border cues run mode (its clickable regions are the devices plugin's, plugins/devices/devices.css) */
 #container.run-mode #canvas { stroke: var(--tok-accent); stroke-width: 2; stroke-opacity: 0.5; }
 
 /* ---- icon primitives (kernel art) ---- */
@@ -47,7 +47,7 @@ A text box that genuinely needs selectable content opts back in, and will have a
 */
 #container, #container text { user-select: none; -webkit-user-select: none; }
 
-/* the canvas's own live line while a link is drawn (the links themselves are the network's, network/network.css) */
+/* the canvas's own live line while a link is drawn (the links themselves are the network's, plugins/network/network.css) */
 .link-live { stroke: var(--tok-link); stroke-width: 6; stroke-dasharray: 10 8; pointer-events: none; }
 
 /* ---- handles (zone resize + link re-plug) ---- */
@@ -60,13 +60,13 @@ A text box that genuinely needs selectable content opts back in, and will have a
 .gridline { stroke: var(--tok-ink); stroke-width: 2; pointer-events: none; }
 .snapbox { rx: 6px; fill: var(--tok-snapbox); stroke: var(--tok-label); stroke-width: 4; pointer-events: none; }
 .marquee { rx: 2px; stroke: var(--tok-label); stroke-width: 2; stroke-dasharray: 8 6; fill: var(--tok-label); fill-opacity: 0.08; pointer-events: none; }
-/* A1 — the armed text tool's cursor (its draw preview is the devices plugin's, devices/devices.css) */
+/* A1 -- the armed text tool's cursor (its draw preview is the devices plugin's, plugins/devices/devices.css) */
 #container.texttool { cursor: crosshair; }
 .datum { fill: none; stroke: var(--tok-datum); stroke-width: 2; pointer-events: none; }
 
 /* ---- grid dots ---- */
 #grid-nodes circle { fill: var(--tok-grid-dot); pointer-events: none; }
-#grid-zones { visibility: hidden; }   /* shown with the zone grid by the layouts plugin, layouts/layouts.css */
+#grid-zones { visibility: hidden; }   /* shown with the zone grid by the layouts plugin, plugins/layouts/layouts.css */
 #grid-zones circle { fill: var(--tok-grid-dot); pointer-events: none; }
 
 /*
@@ -96,7 +96,7 @@ rather than instead of it, because opacity alone leaves an invisible entity clic
 /*
 500ms, ruled, and deliberately the SAME as a link's trace: a node appearing and a line reaching it
 are one arrival, and two durations made the faster of them look like a glitch beside the other.
-Stated as FADE_MS in model/reveal.mjs beside TRACE_MS, so the two ruled numbers read together; this
+Stated as FADE_MS in plugins/simulation/reveal.mjs beside TRACE_MS, so the two ruled numbers read together; this
 is where it is ENFORCED, because a browser interpolating an opacity needs no help from JS. A LINK is excluded: it
 traces from source to destination instead (`app/src/reveal.js`), and a fade would throw away the
 direction that is the whole reason a link is worth watching arrive.

@@ -119,7 +119,7 @@ document through REST, and the notice from the header banner (ruled L1: the page
 */
 const snapshot = (prelude) => `(async () => {
 	${prelude}
-	const { isLinkDown, pathOf } = await import('/network/network-queries.mjs');   // the network's questions, as the page serves them (Q-a)
+	const { isLinkDown, pathOf } = await import('/plugins/network/network-queries.mjs');   // the network's questions, as the page serves them (Q-a)
 	const drawn = (el) => {
 		const cs = getComputedStyle(el);
 		const dash = cs.strokeDasharray === 'none' ? [] : cs.strokeDasharray.split(/[ ,]+/).map(parseFloat);

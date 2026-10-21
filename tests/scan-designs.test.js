@@ -90,3 +90,28 @@ test('H21.6 ABSORBED: a ruling block names what it affects; each named document 
 	assert.match(r.stdout, /which does not cite H9\.9\.1/);
 });
 
+
+/*
+H26.7 (H26-7) -- A RULING KEEPS THE PATHS IT WAS WRITTEN WITH (RU2), AND ITS AFFECTED DOCUMENT IS READ WHERE IT IS NOW. The plugins
+moved under plugins/; a ruling's `Affects:` naming `network/network.css` names the file now at `plugins/network/network.css`. The check
+reads the path through tools/layers.mjs MOVED -- a key ending in `/` names every path under it -- so the moved file must still exist and
+still cite the ruling. A path at its own place is read there; a path neither present nor moved still fails.
+*/
+test('H26.7 ABSORBED: a path a ruling names that moved is read at its new place, which must exist and cite the ruling', () => {
+	const RULED = RULING.replace('Affects: dev/design/unification/A.md', 'Affects: dev/design/unification/A.md, network/x.css, engine/kinds.mjs');
+	const moved = (cite = { 'plugins/network/x.css': '/* H9.9 */\n', 'plugins/simulation/kinds.mjs': '// H9.9\n' }) => {
+		const dir = tree({ decisions: `${MARKER}\n\n${RULED}\n` });
+		for (const [f, text] of Object.entries(cite)) { fs.mkdirSync(path.join(dir, path.dirname(f)), { recursive: true }); fs.writeFileSync(path.join(dir, f), text); }
+		return dir;
+	};
+	let r = scan(moved());
+	assert.equal(r.status, 0, `a moved folder's file and a moved file, each citing the ruling at its new place -- the control:\n${r.stdout}`);
+	r = scan(moved({ 'plugins/network/x.css': '/* nothing */\n', 'plugins/simulation/kinds.mjs': '// H9.9\n' }));
+	assert.equal(r.status, 1, 'the new place must still cite the ruling');
+	assert.match(r.stdout, /Affects names network\/x\.css, which does not cite H9\.9/);
+	r = scan(moved({ 'plugins/network/x.css': '/* H9.9 */\n' }));
+	assert.equal(r.status, 1, 'a moved path whose new place is gone');
+	assert.match(r.stdout, /Affects names engine\/kinds\.mjs, which does not exist/);
+	r = scan(moved({ 'network/x.css': '/* H9.9 */\n', 'plugins/simulation/kinds.mjs': '// H9.9\n' }));
+	assert.equal(r.status, 0, 'a path present at its own place is read there');
+});

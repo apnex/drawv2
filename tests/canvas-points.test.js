@@ -14,8 +14,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { makeInput, pointer, key, seedNodes } from './fixtures/client-harness.mjs';
 import { PRODUCT_CANVAS } from '../product/canvas.mjs';
-import { makeWaypoint } from '../devices/make-node.mjs';
-import { makeLink } from '../network/link-queries.mjs';
+import { makeWaypoint } from '../plugins/devices/make-node.mjs';
+import { makeLink } from '../plugins/network/link-queries.mjs';
 
 const code = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
 const on = (word, id) => ({ tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: (s) => (s.includes(word) ? { id } : null) });

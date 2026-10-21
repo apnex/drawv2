@@ -143,7 +143,7 @@ Still pending from the same amendment and not yet built: a grant may name an OWN
   A node with NO `type` is a WAYPOINT: a grid point a link may terminate at or bend through. An
   ENDPOINT waypoint may carry a `spawn` composite, which makes it emit movers along its link in
   read view -- whole or absent, never partial. The numbers a mover obeys are declared in
-  `engine/kinds.mjs`, never stored here.
+  `plugins/simulation/kinds.mjs`, never stored here.
 - layout: one of the diagram's two grids, stored in every diagram (AMENDED 2026-10-10, WD-b1; `dev/design/unification/WIDE-DEVICES.md` section 12):
   `node`, the grid nodes sit on, and `zone`, the half-offset grid a zone's corners sit on -- each with its `pitch`, the
   `offset` of its lattice from the origin, and its extent `ext`. Every diagram holds exactly these two, with these values

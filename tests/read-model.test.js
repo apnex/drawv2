@@ -1,14 +1,14 @@
 // P4 R-a (H18.19) -- one read composition: a document as a Model that draws with the network, used by every reader, and
 // each of the store's Models drawing with a network of its own. dev/design/unification/CONSUMERS-ROUTE.md, stage R-a.
 
-import { pathOf, isLinkDown } from '../network/network-queries.mjs';   // Q-a: the network's questions
+import { pathOf, isLinkDown } from '../plugins/network/network-queries.mjs';   // Q-a: the network's questions
 import { test } from 'node:test';
 import { KINDS, heldLayouts } from './fixtures/composed.mjs';   // O-b1: a reader is handed its caller's kinds
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { readModel, readerNetwork } from '../network/read-model.mjs';
+import { readModel, readerNetwork } from '../plugins/network/read-model.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -41,7 +41,7 @@ test('R-a: readModel says a link with no way is down, and draws it along its int
 	const m = readModel(doc, KINDS);
 	const l = m.get('link', 'link-00000d');
 	assert.equal(isLinkDown(m, l), true);
-	assert.deepEqual(pathOf(m, l), [[0, 0], [360, 0]], 'its intent, straight between its ends (network/resolve.mjs)');
+	assert.deepEqual(pathOf(m, l), [[0, 0], [360, 0]], 'its intent, straight between its ends (plugins/network/resolve.mjs)');
 });
 
 test('R-a: each reader gets a network of its own -- one per Model, since each caches one derivation per board', () => {
@@ -102,7 +102,7 @@ P4 R-d (H18.22) -- a spawner on a down link emits nothing: a down link has no ro
 through `spawnersOf`, which the page, `draw movers` and `draw combat` all derive spawners from.
 */
 test('R-d: a spawner at the end of a down link emits nothing, and does again once the link heals', async () => {
-	const { spawnersOf } = await import('../engine/spawners.mjs');
+	const { spawnersOf } = await import('../plugins/simulation/spawners.mjs');
 	const armed = (pipes) => {
 		const doc = detour(); doc.pipes = pipes;
 		doc.nodes.push({ id: 'node-00000e', name: 's', x: -240, y: 0, spawn: { interval: 700, speed: 1.4, kind: 'packet', since: Date.now() } });

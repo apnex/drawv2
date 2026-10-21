@@ -55,7 +55,7 @@ test('H26.2: the network\'s drag grammar answers through both, and its own compo
 		assert.deepEqual(r.overlaps.now, r.overlaps.old);
 		assert.ok(r.asked > 0);
 	}
-	assert.deepEqual(grammarAgrees(), [], 'network/grammar.mjs kindOf and pipeFor answer the one row the sweep finds');
+	assert.deepEqual(grammarAgrees(), [], 'plugins/network/grammar.mjs kindOf and pipeFor answer the one row the sweep finds');
 });
 
 test('H26.2: a table built to overlap, to claim and to refuse answers alike -- the control that the comparison can see a difference', () => {

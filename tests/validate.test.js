@@ -1,9 +1,9 @@
 import { test } from 'node:test';
 import fs from 'node:fs';
-import { LINK_ROW } from '../network/link-kind.mjs';
+import { LINK_ROW } from '../plugins/network/link-kind.mjs';
 import { NODE_EXT } from '../model/surface.mjs';
-import { ZONE_EXT } from '../layouts/layout-table.mjs';
-import { ZONE_ROWS } from '../zones/zone-kind.mjs';
+import { ZONE_EXT } from '../plugins/layouts/layout-table.mjs';
+import { ZONE_ROWS } from '../plugins/zones/zone-kind.mjs';
 import { violations } from '../model/invariants.mjs';
 import { commit, heldLayouts } from './fixtures/composed.mjs';
 import { Log } from '../planner/log.mjs';
@@ -206,7 +206,7 @@ test('B113: the positioned cap is DERIVED from the grid, not a flat constant', a
 	guards is unchanged: a positioned kind's cap is its anchor-cell count, and a flat 2000 only for a kind with no anchor.
 	*/
 	const { productKinds } = await import('../product/kinds.mjs');
-	const { GROUP_ROWS } = await import('../groups/group-kind.mjs');
+	const { GROUP_ROWS } = await import('../plugins/groups/group-kind.mjs');
 	const node = productKinds().row('node').cap;
 	const anchors = (Math.floor(NODE_EXT.x / STD.pitch) * 2 + 1) * (Math.floor(NODE_EXT.y / STD.pitch) * 2 + 1);
 	assert.equal(node, anchors, 'the node cap IS the number of node anchors');
@@ -290,7 +290,7 @@ test('B86: the span and content caps are one number across both peers', async ()
 	of the literal, which is the only thing that actually differs.
 	*/
 	// RESTATED at C-e step four (H19.33; D5): the span step left app/src/commands.js for the devices plugin's size step
-	const src = fs.readFileSync(new URL('../devices/device-size.mjs', import.meta.url), 'utf8');
+	const src = fs.readFileSync(new URL('../plugins/devices/device-size.mjs', import.meta.url), 'utf8');
 	assert.doesNotMatch(src, /,\s*64\s*\)/, 'the client clamps to the shared cap, never a literal of its own');
 	assert.equal((src.match(/SPAN_MAX/g) || []).length, 3, 'both clamps and the import, so neither reverted alone');
 
@@ -331,11 +331,11 @@ test('B86: validate.js consults the shared OPTIONAL map, and declares none of it
 	const OPTIONAL = (await import('../model/shape.mjs')).CORE_KINDS.optional;
 	const PRODUCT_KINDS = (await import('../product/kinds.mjs')).productKinds();
 	// RESTATED at O-b1 (H19.19): the core composes node and group; the zone is the zones plugin's, which the product composes between them: each core kind's map is the table's, the zone's its plugin row's
-	const { ZONE_ROWS: ZR } = await import('../zones/zone-kind.mjs');
+	const { ZONE_ROWS: ZR } = await import('../plugins/zones/zone-kind.mjs');
 	// RESTATED at O-e2 (H19.21): the node's optional fields are the anchor's (order) and those the devices plugin and the simulation compose on
-	const { DEVICE_FIELDS: DF } = await import('../devices/device-fields.mjs'), { SPAWN_FIELDS: SF } = await import('../engine/spawn-field.mjs');
+	const { DEVICE_FIELDS: DF } = await import('../plugins/devices/device-fields.mjs'), { SPAWN_FIELDS: SF } = await import('../plugins/simulation/spawn-field.mjs');
 // RESTATED at WD-b1 (H19.45; WD6): the layouts plugin's kind is composed first -- a document lists its grids before what sits on them
-	assert.deepEqual(PRODUCT_KINDS.optional, { layout: new Set(), node: new Set([...OPTIONAL.node, ...DF.optional, ...SF.optional]), zone: new Set(ZR[0].optional), group: new Set((await import('../groups/group-kind.mjs')).GROUP_ROWS[0].optional) }, 'and the product\'s composition carries the table\'s map, unchanged');
+	assert.deepEqual(PRODUCT_KINDS.optional, { layout: new Set(), node: new Set([...OPTIONAL.node, ...DF.optional, ...SF.optional]), zone: new Set(ZR[0].optional), group: new Set((await import('../plugins/groups/group-kind.mjs')).GROUP_ROWS[0].optional) }, 'and the product\'s composition carries the table\'s map, unchanged');
 	const txn = fs.readFileSync(new URL('../planner/txn.mjs', import.meta.url), 'utf8');
 	assert.doesNotMatch(txn, /import \{[^}]*OPTIONAL[^}]*\} from/,
 		'and txn.mjs no longer imports it unused, which is what made the tree look single-sourced');
@@ -522,7 +522,7 @@ const genericAccess = (nodes, wps, links) => {
 };
 
 test('B206: self-conflict and sharing are independent checks', async () => {
-	const { linkReferential, linkAccess } = await import('../network/link-references.mjs');   // the network's since S-e
+	const { linkReferential, linkAccess } = await import('../plugins/network/link-references.mjs');   // the network's since S-e
 	const nodes = new Set(['n1', 'n2', 'n3', 'n4']);
 	const wps = new Set(['w1', 'w2']);
 	const access = (links) => linkAccess(genericAccess(nodes, wps, links));
@@ -565,7 +565,7 @@ test('B206: self-conflict and sharing are independent checks', async () => {
 	/*
 	A same-pair link that does NOT bend there is a different shape on the canvas -- one detours
 	through the waypoint, the other does not -- so it is accepted here. Whether a SECOND STRAIGHT
-	one may join is `straightCapacity` in network/pair-capacity.mjs, a separate rule in a separate layer.
+	one may join is `straightCapacity` in plugins/network/pair-capacity.mjs, a separate rule in a separate layer.
 	Asserted together so the boundary between them is pinned: if either starts covering the other's
 	case, one of these two lines fails.
 	*/
@@ -600,9 +600,9 @@ trust boundary refuses would be a gesture that cannot be committed -- and every 
 was refused until two commits ago, so this is not hypothetical.
 */
 test('B210: a split turns a bend into a junction, and the result validates', async () => {
-	const { splitAtBend } = await import('../network/link-rules.mjs');
-	const { linkReferential, linkAccess } = await import('../network/link-references.mjs');   // the network's since S-e
-	const { waypointRoles } = await import('../network/roles.mjs');
+	const { splitAtBend } = await import('../plugins/network/link-rules.mjs');
+	const { linkReferential, linkAccess } = await import('../plugins/network/link-references.mjs');   // the network's since S-e
+	const { waypointRoles } = await import('../plugins/network/roles.mjs');
 
 	// the arithmetic, including a link with bends either side of the cut
 	const cases = [
@@ -664,7 +664,7 @@ The src half keeping the original id is what makes it a ROUND TRIP rather than a
 before the split is pointing at a stranger afterwards.
 */
 test('B213: a split then a collapse restores the original link, id included', async () => {
-	const { splitAtBend, collapseAtWaypoint } = await import('../network/link-rules.mjs');
+	const { splitAtBend, collapseAtWaypoint } = await import('../plugins/network/link-rules.mjs');
 
 	const orig = { id: 'link-aa0001', name: 'l', src: 'node-aa0001', dst: 'node-aa0002', via: ['node-ea0001'] };
 	const [srcHalf, dstHalf] = splitAtBend(orig, 'node-ea0001');
@@ -729,8 +729,8 @@ The distinction returns when direction can be DECLARED: two flows arriving is a 
 stays a junction. That is a rule about meaning the author asserted, not about field order.
 */
 test('B214: three terminations is the smallest junction, and the collapse rule agrees', async () => {
-	const { waypointRoles } = await import('../network/roles.mjs');
-	const { collapseAtWaypoint } = await import('../network/link-rules.mjs');
+	const { waypointRoles } = await import('../plugins/network/roles.mjs');
+	const { collapseAtWaypoint } = await import('../plugins/network/link-rules.mjs');
 
 	const shapes = {
 		'in and out': [{ id: 'l1', src: 'a', dst: 'w' }, { id: 'l2', src: 'w', dst: 'b' }],
@@ -786,7 +786,7 @@ one again would be a second record free to disagree with the first after any edi
 this waypoint, is the flow arriving, leaving, or is there no flow at all?
 */
 test('H15.3: facing derives direction at a point, and an undeclared link has none', async () => {
-	const { linkFacing: facing } = await import('../network/roles.mjs');
+	const { linkFacing: facing } = await import('../plugins/network/roles.mjs');
 
 	const undeclared = { id: 'l1', src: 'a', dst: 'w' };
 	assert.equal(facing(undeclared, 'w'), null, 'an undeclared link asserts nothing at either end');
@@ -831,7 +831,7 @@ So the rule is no longer a count. It is: one termination is an endpoint, two tha
 two that oppose is a junction, three or more is a junction whatever they declare.
 */
 test('H15.4: two declared flows that oppose make a junction; agreeing ones make a bend', async () => {
-	const { waypointRoles } = await import('../network/roles.mjs');
+	const { waypointRoles } = await import('../plugins/network/roles.mjs');
 	const w = 'w';
 
 	// UNDECLARED -- unchanged by this rung. No direction, so nothing can oppose: still an endpoint.
@@ -894,13 +894,13 @@ a test instead of by an import: every combination, both readings, one answer. If
 edited alone this fails, which is the whole point.
 */
 test('H15.4: `facing` and `waypointRoles` read a declaration identically', async () => {
-	const { linkFacing, waypointRoles } = await import('../network/roles.mjs');
+	const { linkFacing, waypointRoles } = await import('../plugins/network/roles.mjs');
 	const w = 'w';
 
 	// The MODEL twin, reached through the collapse that is its only caller. `facing` is not
 	// exported -- two importable spellings of one rule is how a pair starts to drift -- so the
 	// agreement is driven through `collapseAtWaypoint`, which is the behaviour that would break.
-	const { collapseAtWaypoint } = await import('../network/link-rules.mjs');
+	const { collapseAtWaypoint } = await import('../plugins/network/link-rules.mjs');
 
 	const cases = [];
 	for (const direction of ['forward', 'reverse', undefined]) {
@@ -960,8 +960,8 @@ agree about every pair, and B232 shipped precisely because the matrix was implem
 and the guard was written from the code rather than from the ruled table. Two rules, one test.
 */
 test('H15.15: a control link and a data link meeting is a junction, not a bend', async () => {
-	const { waypointRoles } = await import('../network/roles.mjs');
-	const { collapseAtWaypoint } = await import('../network/link-rules.mjs');
+	const { waypointRoles } = await import('../plugins/network/roles.mjs');
+	const { collapseAtWaypoint } = await import('../plugins/network/link-rules.mjs');
 	const w = 'w';
 
 	// the four combinations of (directions agree?) x (planes match?)

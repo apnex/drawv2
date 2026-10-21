@@ -5,7 +5,7 @@
 // independent bound CHECK local (the trust boundary is never delegated to this module).
 export const SURFACE  = { w: 1920, h: 1080, hw: 960, hh: 540 };   // 16:9 canvas; hw/hh = half-extent (center-origin)
 export const NODE_EXT = { x: 900, y: 480 };                       // usable node extent (nodes keep a full margin cell)
-// the zone extent is the zones plugin's (zones/zone-kind.mjs `ZONE_EXT`, O-b1)
+// the zone extent is the zones plugin's (plugins/zones/zone-kind.mjs `ZONE_EXT`, O-b1)
 /*
 B113 -- the anchor cells within an extent at a pitch: what a positioned kind's cap derives from, one occupant to a cell.
 Arithmetic over the grid, which the core keeps (O1), so the node's cap (planner/policy.mjs) and a plugin's (the zone's)

@@ -1,0 +1,16 @@
+/*
+THE ZONES PLUGIN'S STYLESHEET -- the look of what the zones plugin draws (plugins/zones/zone-painter.mjs), and of its zones in the
+canvas's states. H25.1 (B366): moved here from app/style.css word for word, in their order; a zone's label is the core's
+(kernel/primitives.css), and only its left-aligned variant is the zones'.
+*/
+
+/* ---- zones (kernel translucent fill; selection via var) ---- */
+.zone { --zstroke: var(--tok-zone-stroke); --zwidth: 1; }
+.zone.hover { --zwidth: 2; }
+.zone.selected { --zstroke: var(--tok-accent); }
+/* H25-4 (B374): the layouts plugin's zone grid, shown under Shift, says a zone can be moved -- a ruled exception (tools/layers.mjs COPIES.exceptions) */
+#container.zonegrid .zone { cursor: move; }
+.zone.armed { --zstroke: var(--tok-danger); cursor: not-allowed; }
+.zone.armed-clone { --zstroke: var(--tok-clone); cursor: copy; }
+.zone-rect { fill: var(--tok-zone-fill); fill-opacity: 0.13; stroke: var(--zstroke, var(--tok-zone-stroke)); stroke-opacity: 0.55; stroke-width: var(--zwidth, 1); }
+.label.zone-label { text-anchor: start; }

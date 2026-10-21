@@ -156,7 +156,7 @@ export function setFields(label, kind, id, after) {
 export function routeLink(placed, link) {
 	/*
 	B210's SPLITS rode in this entry list until V-c (H18.27): linking to a bend cut the link bending there, computed here in the
-	browser. The cut is the planner's now (network/network.mjs `junction-cut`), at every door (B243), and arrives in the answer.
+	browser. The cut is the planner's now (plugins/network/network.mjs `junction-cut`), at every door (B243), and arrives in the answer.
 	*/
 	return {
 		label: link.via?.length ? 'route' : 'link',   // a NAME for the undo entry, not the pair rule (that is `pairHolders`)
@@ -305,7 +305,7 @@ export function cloneSubgraph(model, seedIds, places, followers = []) {
 
 	/*
 	C-e (H19.33) -- WHAT FOLLOWS the seeds is each part's: a link both of whose ends were cloned, with bends of its own (the
-	network, network/link-clone.mjs), then a group all of whose members were (the groups plugin, groups/group-clone.mjs). A
+	network, plugins/network/link-clone.mjs), then a group all of whose members were (the groups plugin, plugins/groups/group-clone.mjs). A
 	follower clones a further anchor through the canvas's own cloner, and adds each copy -- into the scratch, so the next
 	sibling sees it, and into the batch.
 	*/

@@ -1,19 +1,19 @@
 /*
-The incubated path resolver -- network/resolve.mjs -- through the real Model interface.
+The incubated path resolver -- plugins/network/resolve.mjs -- through the real Model interface.
 
 Driven through `new Model({ attached: { network: createNetwork(...) }})` -- the one object the lab composes (RULESET-AUDIT T1) -- rather than by calling the resolver directly, because the
 interface is the thing being proven: a resolver that works in isolation but receives the wrong
 arguments from the Model would pass a direct test and fail in the lab.
 */
-import { pathOf, linksRoutedThrough, isLinkDown, blockersOf } from '../network/network-queries.mjs';   // Q-a: the network's questions
+import { pathOf, linksRoutedThrough, isLinkDown, blockersOf } from '../plugins/network/network-queries.mjs';   // Q-a: the network's questions
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Model } from '../model/model.mjs';
-import { createNetwork } from '../network/network.mjs';
-import { preferredRoute } from '../network/pipes.mjs';
+import { createNetwork } from '../plugins/network/network.mjs';
+import { preferredRoute } from '../plugins/network/pipes.mjs';
 import { productKinds } from '../product/kinds.mjs';
-import { PIPE_ROW, pipeEntity, pipeId } from '../network/pipe-kind.mjs';
-import { NETWORK_ROWS } from '../network/kinds.mjs';   // the network's kind and the field it contributes (S-a)
+import { PIPE_ROW, pipeEntity, pipeId } from '../plugins/network/pipe-kind.mjs';
+import { NETWORK_ROWS } from '../plugins/network/kinds.mjs';   // the network's kind and the field it contributes (S-a)
 
 /*
 H17.22 N-d: the network reads the model's own pipes, so each board is a model composed with the network's pipe kind, and
@@ -164,7 +164,7 @@ test('the Model\'s companions answer from the one assignment: a blocked link is 
 
 /*
 F11 (RULESET-AUDIT) -- after `w` on a node mid-drag, the live preview stopped following the cursor. The preview is a link
-the model does not hold, whose stops may be nodes (the network's `stop-on-node`, network/keys.mjs). With no way over
+the model does not hold, whose stops may be nodes (the network's `stop-on-node`, plugins/network/keys.mjs). With no way over
 the pipes the network fell back to the straight polyline, which admits only waypoints as bends -- a node stop made it
 null, and the preview froze where it was. Production's straight polyline is untouched: its bends are always waypoints.
 */

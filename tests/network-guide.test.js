@@ -1,11 +1,11 @@
 /*
-The incubated whole-route check for `g` -- network/guide.mjs.
+The incubated whole-route check for `g` -- plugins/network/guide.mjs.
 */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { judgeDrag, pipeAnchors } from '../network/guide.mjs';
-import { assignRoutes, deriveNetwork } from '../network/pipes.mjs';
-import { createNetworkView } from '../network/view.mjs';
+import { judgeDrag, pipeAnchors } from '../plugins/network/guide.mjs';
+import { assignRoutes, deriveNetwork } from '../plugins/network/pipes.mjs';
+import { createNetworkView } from '../plugins/network/view.mjs';
 
 // a network view over a plain pipe list, as the lab builds one over its pipe set
 const viewOver = (list, rankOf) => createNetworkView(() => list, rankOf);

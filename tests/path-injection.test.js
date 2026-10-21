@@ -11,12 +11,12 @@ under the lab with no seam declaring it, which is exactly what G1 exists to stop
 So the seam is declared: a Model may be constructed with a `network` -- ONE object whose methods carry the
 Model's own names (RULESET-AUDIT T1; it began as four separate hooks).
 AMENDED 2026-10-08 (Q-a, H19.27): the network is attached -- `{ attached: { network } }` -- and its questions are its own
-functions over a Model (network/network-queries.mjs); a Model with none gives the answers these tests hold. The default is today's
+functions over a Model (plugins/network/network-queries.mjs); a Model with none gives the answers these tests hold. The default is today's
 behaviour. Production constructs `new Model()` and must be unchanged BYTE FOR BYTE in what it draws
 -- that is the property these tests exist to hold, and it is the one most likely to be broken
 casually, by someone "improving" the default while wiring the lab.
 */
-import { pathOf, linksRoutedThrough, isLinkDown, blockersOf, declaresNoTransit, stopsAt } from '../network/network-queries.mjs';   // Q-a: the network's questions
+import { pathOf, linksRoutedThrough, isLinkDown, blockersOf, declaresNoTransit, stopsAt } from '../plugins/network/network-queries.mjs';   // Q-a: the network's questions
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Model } from '../model/model.mjs';

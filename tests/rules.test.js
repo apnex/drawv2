@@ -12,12 +12,12 @@ slowly is a number; a tower that kills a different creep on two machines is the 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Model } from './fixtures/composed.mjs';   // the network's kinds, the link among them (S-e)
-import { pipeEntity } from '../network/pipe-kind.mjs';
-import { worldOf, combatAt, factsAt, aimAt, DERIVATIONS } from '../engine/rules.mjs';
-import { tickAt, TICK_MS } from '../engine/kinds.mjs';
-import { moversAt } from '../engine/movers.mjs';
+import { pipeEntity } from '../plugins/network/pipe-kind.mjs';
+import { worldOf, combatAt, factsAt, aimAt, DERIVATIONS } from '../plugins/simulation/rules.mjs';
+import { tickAt, TICK_MS } from '../plugins/simulation/kinds.mjs';
+import { moversAt } from '../plugins/simulation/movers.mjs';
 import '../product/types.mjs';
-import { TOWERS, MOVERS, cycleOf, moverFor } from '../engine/kinds.mjs';
+import { TOWERS, MOVERS, cycleOf, moverFor } from '../plugins/simulation/kinds.mjs';
 
 function board({ towers = [[600, 0]], speed = 1.4, interval = 900 } = {}) {
 	const m = new Model();

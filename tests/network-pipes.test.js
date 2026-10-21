@@ -1,5 +1,5 @@
 /*
-The incubated pipe router -- network/pipes.mjs -- against the three rulings it implements.
+The incubated pipe router -- plugins/network/pipes.mjs -- against the three rulings it implements.
 
 Each test states the RULING and asserts its consequence, rather than asserting a route literal. A
 router test that pins "A,B,C,D" breaks when an equally valid tie is resolved differently, which
@@ -8,7 +8,7 @@ and fails for every wrong one.
 */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { pipeKey, route, routeLink, assignRoutes, preferredRoute, blockersOf } from '../network/pipes.mjs';
+import { pipeKey, route, routeLink, assignRoutes, preferredRoute, blockersOf } from '../plugins/network/pipes.mjs';
 
 const pipes = (...pairs) => pairs.map(([a, b]) => ({ a, b }));
 
@@ -156,7 +156,7 @@ with the same key from an object edited after it was derived -- `blockers`, work
 sync fuzz (shared storage, seeds 400, 538, 553): a converged tab named a blocker the server's document did not.
 */
 test('B306: a derived board answers from the links as they were when derived, not as an object edited in place later reads', async () => {
-	const { deriveNetwork } = await import('../network/pipes.mjs');
+	const { deriveNetwork } = await import('../plugins/network/pipes.mjs');
 	const held = { id: 'link-h', src: 'A', dst: 'B' };
 	const down = { id: 'link-d', src: 'C', dst: 'D' };
 	const board = deriveNetwork(TRUNK, [UPPER, held, down], { rankOf: (id) => ({ 'link-u': 1, 'link-h': 2, 'link-d': 3 })[id] });

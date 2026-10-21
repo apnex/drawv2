@@ -1,10 +1,10 @@
 import { test } from 'node:test';
-import { makeGroup } from '../groups/make-group.mjs';   // O-c: the groups plugin's factory
+import { makeGroup } from '../plugins/groups/make-group.mjs';   // O-c: the groups plugin's factory
 import assert from 'node:assert/strict';
 import { Model } from '../model/model.mjs';
 import { productKinds } from '../product/kinds.mjs';   // O-c: groups are the groups plugin's, which the product composes
 import { Selection } from '../app/src/selection.js';
-import { makeNode } from '../devices/make-node.mjs';   // O-e1: the devices plugin's factories
+import { makeNode } from '../plugins/devices/make-node.mjs';   // O-e1: the devices plugin's factories
 
 // R7 salvage — Selection is a PURE model concept: renderer-free (no mock needed) and auto-prunes
 // against the model. The 'selected' visual reflection lives in the renderer (via subscribe()).

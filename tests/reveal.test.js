@@ -18,7 +18,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Model, heldLayouts } from './fixtures/composed.mjs';   // the composition production runs (S-b)
 import { validateDoc } from './fixtures/composed.mjs';   // the network's kinds, as the store validates (S-e)
-import { revealedAt, beatsOf } from '../model/reveal.mjs';
+import { revealedAt, beatsOf } from '../plugins/simulation/reveal.mjs';
 
 const NODE = (id, name, x, y) => ({ id, name, type: 'server', x, y });
 function doc(nodes = [], extra = {}) {
@@ -129,11 +129,11 @@ test('a zero interval reveals a whole beat at once rather than never', () => {
 });
 
 /*
-The consumer. `engine/reveal-painter.mjs` turns the derivation into marks on the canvas, and these drive it
+The consumer. `plugins/simulation/reveal-painter.mjs` turns the derivation into marks on the canvas, and these drive it
 with a fake renderer and a fake clock -- no DOM at all, which is the property B45 exists to keep.
 */
 test('the painter hides what the beat has not reached, and shows it when it does', async () => {
-	const { Reveal } = await import('../engine/reveal-painter.mjs');
+	const { Reveal } = await import('../plugins/simulation/reveal-painter.mjs');
 	const marks = new Map();
 	const renderer = { byId: (id) => marks.get(id) };
 	for (const id of ['node-aa0001', 'node-aa0002', 'node-aa0003']) {
@@ -156,7 +156,7 @@ test('the painter hides what the beat has not reached, and shows it when it does
 });
 
 test('the painter reports the caption, and only when it changes', async () => {
-	const { Reveal } = await import('../engine/reveal-painter.mjs');
+	const { Reveal } = await import('../plugins/simulation/reveal-painter.mjs');
 	const said = [];
 	let t = 900;
 	const r = new Reveal({
@@ -172,7 +172,7 @@ test('the painter reports the caption, and only when it changes', async () => {
 });
 
 test('a document with no reveal leaves every entity alone', async () => {
-	const { Reveal } = await import('../engine/reveal-painter.mjs');
+	const { Reveal } = await import('../plugins/simulation/reveal-painter.mjs');
 	const mark = { attrs: new Set(), setAttribute(k) { this.attrs.add(k); }, removeAttribute(k) { this.attrs.delete(k); } };
 	const r = new Reveal({ model: { state: { reveal: null } }, renderer: { byId: () => mark }, now: () => 5000 });
 	r.paint();
@@ -185,7 +185,7 @@ test('undoing a beat restores everything it was hiding', async () => {
 	at that instant stays hidden forever -- entities present in the document and invisible on the
 	canvas, with nothing left to explain why.
 	*/
-	const { Reveal } = await import('../engine/reveal-painter.mjs');
+	const { Reveal } = await import('../plugins/simulation/reveal-painter.mjs');
 	const marks = new Map();
 	for (const id of ['node-aa0001', 'node-aa0002', 'node-aa0003']) {
 		marks.set(id, { attrs: new Set(),
@@ -455,7 +455,7 @@ test('B193: a beat committed after the queue drained gets a fresh origin', async
 	assert.equal(m.state.reveal.beats[0].caption, 'second');
 
 	// the new beat must actually be in its own window NOW, which is the property that failed live
-	const { beatsOf, revealedAt } = await import('../model/reveal.mjs');
+	const { beatsOf, revealedAt } = await import('../plugins/simulation/reveal.mjs');
 	const now = m.state.reveal.origin;
 	assert.equal(beatsOf(m.state.reveal, now).active.caption, 'second');
 	assert.equal(revealedAt(m.state.reveal, now).has('node-bb0001'), true, 'its entity is revealed at its own origin');
@@ -478,7 +478,7 @@ second keeps the drawing truthful, and which matters depends on what is being na
 and the renderer is left with only the dash-offset to write.
 */
 test('H14.12: fixed duration gives every link the same time regardless of length', async () => {
-	const { traceOf } = await import('../model/reveal.mjs');
+	const { traceOf } = await import('../plugins/simulation/reveal.mjs');
 	const short = traceOf({ mode: 'duration', ms: 500 }, 100);
 	const long = traceOf({ mode: 'duration', ms: 500 }, 1000);
 	assert.equal(short.ms, 500);
@@ -487,7 +487,7 @@ test('H14.12: fixed duration gives every link the same time regardless of length
 });
 
 test('H14.12: fixed velocity gives every link the same speed, so length sets the time', async () => {
-	const { traceOf } = await import('../model/reveal.mjs');
+	const { traceOf } = await import('../plugins/simulation/reveal.mjs');
 	const short = traceOf({ mode: 'velocity', pxPerMs: 2 }, 100);
 	const long = traceOf({ mode: 'velocity', pxPerMs: 2 }, 1000);
 	assert.equal(short.ms, 50);
@@ -496,7 +496,7 @@ test('H14.12: fixed velocity gives every link the same speed, so length sets the
 });
 
 test('H14.12: the defaults are the ruled ones, and a node matches a link', async () => {
-	const { traceOf, TRACE_MS, FADE_MS } = await import('../model/reveal.mjs');
+	const { traceOf, TRACE_MS, FADE_MS } = await import('../plugins/simulation/reveal.mjs');
 	assert.equal(TRACE_MS, 500, 'a link traces in 500ms unless told otherwise');
 	assert.equal(FADE_MS, 500, 'a node fades in 500ms');
 	/*
@@ -510,7 +510,7 @@ test('H14.12: the defaults are the ruled ones, and a node matches a link', async
 });
 
 test('H14.12: a degenerate length is inert rather than a division by zero', async () => {
-	const { traceOf } = await import('../model/reveal.mjs');
+	const { traceOf } = await import('../plugins/simulation/reveal.mjs');
 	assert.equal(traceOf({ mode: 'velocity', pxPerMs: 2 }, 0).ms, 0, 'nothing to draw takes no time');
 	assert.ok(Number.isFinite(traceOf({ mode: 'duration', ms: 500 }, 0).pxPerMs), 'and no infinite speed');
 });

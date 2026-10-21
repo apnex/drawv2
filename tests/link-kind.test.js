@@ -16,8 +16,8 @@ const PRODUCT_KINDS = productKinds();   // the product's own kinds; the export w
 import { validateEntity as productValidateEntity } from '../planner/validate.js';
 import { attachRelations } from '../engine/store.mjs';
 import { NODE_GRID } from '../kernel/geometry.mjs';   // H26.1: the relation index is injected the node grid's nearest (it was cellOf)
-import { LINK_ROW } from '../network/link-kind.mjs';
-import { NETWORK_ROWS } from '../network/kinds.mjs';
+import { LINK_ROW } from '../plugins/network/link-kind.mjs';
+import { NETWORK_ROWS } from '../plugins/network/kinds.mjs';
 import { Model, KINDS, plan, validateDoc, heldLayouts } from './fixtures/composed.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');

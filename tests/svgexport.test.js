@@ -198,7 +198,7 @@ are applied at export time and written onto each element (server/svg-style.mjs):
 every colour the old file wrote on a line, a name and the ground is written there again, by the page's own rules.
 */
 test('H25.2: the export carries no stylesheet -- each element the page\'s rules as attributes, no var(), no pointer rule -- and neither does the favicon', async () => {
-	const { NETWORK_TOKENS, downStroke } = await import('../network/appearance.mjs');
+	const { NETWORK_TOKENS, downStroke } = await import('../plugins/network/appearance.mjs');
 	const { TOKENS } = await import('../kernel/theme.mjs');
 	const id = await firstId();
 	const body = await (await fetch(`${base}/${id}.svg`)).text();
@@ -234,7 +234,7 @@ test('H25.2: every stylesheet the pages list is served, by the product\'s server
 	try {
 		for (let i = 0; i < 50; i++) { try { if ((await fetch(`http://127.0.0.1:${port}/health`)).ok) break; } catch { /* not up */ } await new Promise((r) => setTimeout(r, 100)); }
 		const hrefs = PAGE_STYLESHEETS.map((f) => (f.startsWith('app/') ? `/${f.slice(4)}` : `/${f}`));
-		assert.ok(hrefs.includes('/canvas.css') && hrefs.includes('/zones/zones.css'), 'control: the list holds the page\'s own sheets and the plugins\'');
+		assert.ok(hrefs.includes('/canvas.css') && hrefs.includes('/plugins/zones/zones.css'), 'control: the list holds the page\'s own sheets and the plugins\'');
 		for (const h of hrefs) {
 			for (const [who, origin] of [['the product', base], ['the lab', `http://127.0.0.1:${port}`]]) {
 				const r = await fetch(`${origin}${h}`);

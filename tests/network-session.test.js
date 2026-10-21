@@ -9,14 +9,14 @@ are the planner's (tests/network-pipe-kind.test.js), so nothing here lays or rem
 
 Held here as behaviour, in Node. The lab's browser suite and the matrix hold the same end to end.
 */
-import { isLinkDown, blockersOf } from '../network/network-queries.mjs';   // Q-a: the network's questions
+import { isLinkDown, blockersOf } from '../plugins/network/network-queries.mjs';   // Q-a: the network's questions
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Model } from '../model/model.mjs';
 import { productKinds } from '../product/kinds.mjs';
-import { createNetworkSession } from '../network/session.mjs';
-import { PIPE_ROW, pipeEntity, pipeId } from '../network/pipe-kind.mjs';
-import { NETWORK_ROWS } from '../network/kinds.mjs';   // the network's kind and the field it contributes (S-a)
+import { createNetworkSession } from '../plugins/network/session.mjs';
+import { PIPE_ROW, pipeEntity, pipeId } from '../plugins/network/pipe-kind.mjs';
+import { NETWORK_ROWS } from '../plugins/network/kinds.mjs';   // the network's kind and the field it contributes (S-a)
 
 const P = 60;
 const KINDS = productKinds(...NETWORK_ROWS);

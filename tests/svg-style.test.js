@@ -63,7 +63,7 @@ test('H25.2: what acts only on a pointer or over time is left out; what draws an
 
 test('H25.2: on the page\'s own sheets -- a down link\'s head and leg take the down colour, a name the label colour, a frame and the glyph art a device\'s colours, the ground the canvas\'s', async () => {
 	const rules = drawingRules();
-	const { NETWORK_TOKENS, downStroke } = await import('../network/appearance.mjs');
+	const { NETWORK_TOKENS, downStroke } = await import('../plugins/network/appearance.mjs');
 	const { TOKENS } = await import('../kernel/theme.mjs');
 	const links = styleMarkup('<g><path class="link" data-down=""/><path class="link-head"/><path class="link-leg"/><path class="link"/><path class="link-head"/></g>', rules);
 	assert.match(links, new RegExp(`<path class="link" data-down="" stroke="${downStroke()}"/><path class="link-head" fill="none" stroke="${downStroke()}"/><path class="link-leg" fill="none" stroke="${downStroke()}"/>`), 'down: the line, its head, its leg');
@@ -100,7 +100,7 @@ test('H25.2b: the rules meet the file as written, and the file writes what they 
 	const r = attrs('wp-ring'), d = attrs('wp-dot');
 	assert.deepEqual([r.stroke, r['stroke-width'], r['stroke-opacity']], [ring.stroke, ring['stroke-width'], ring['stroke-opacity']], 'the ring in the page\'s spawning colour and width');
 	assert.equal(d.fill, dot.fill, 'the dot likewise');
-	const { NETWORK_TOKENS } = await import('../network/appearance.mjs');
+	const { NETWORK_TOKENS } = await import('../plugins/network/appearance.mjs');
 	for (const id of ['node-fa00b1', 'node-fa00b3']) {
 		const plain = out.match(new RegExp(`<g id="${id}"><g class="waypoint[^"]*">(.*?)</g></g>`));
 		assert.ok(plain && !/spawning/.test(plain[0]), `control: ${id} -- the junction, and the plain endpoint -- spawns nothing`);

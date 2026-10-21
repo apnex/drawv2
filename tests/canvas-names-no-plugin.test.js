@@ -30,8 +30,9 @@ const code = (file) => fs.readFileSync(path.join(root, file), 'utf8').replace(/\
 // keys (zone:, ...); and the fields plugins contribute onto the anchor (.type, .shape, .span, .content, .spawn, .transit, .glyph)
 const KIND_WORD = /(['"`])(zones?|groups?|links?|pipes?|layouts?)\1|(['"`])[^'"`$\n]*\.(zone|group|link|pipe|layout)\b[^'"`$\n]*\3|\.(zones|groups|links|pipes|layouts)\b(?!\s*\()|(?:^|[{,])\s*(zones?|groups?|links?|pipes?|layouts?)\s*:/gm;
 const PLUGIN_FIELD = /(?<!\b(?:evt|event|labels\??))\.(type|shape|span|content|spawn|transit|glyph)\b(?!\s*\(|\s*===\s*['"`](?:up|move|down|double|cancel)['"`])/g;
-const PLUGIN_FOLDERS = ['devices', 'network', 'zones', 'groups', 'layouts'];
-const pluginOf = (p) => (PLUGIN_FOLDERS.includes(p.split('/')[0]) ? p.split('/')[0] : ['simulation', 'network'].find((l) => (LAYER[l] ?? []).includes(p)) ?? null);
+// H26.7: the five plugin folders under plugins/; the simulation's modules are judged by their layer, as when they lived in engine/
+const PLUGIN_FOLDERS = ['plugins/devices', 'plugins/network', 'plugins/zones', 'plugins/groups', 'plugins/layouts'];
+const pluginOf = (p) => PLUGIN_FOLDERS.find((d) => p.startsWith(`${d}/`)) ?? ['simulation', 'network'].find((l) => (LAYER[l] ?? []).includes(p)) ?? null;
 const pluginImports = (file, text) => [...text.matchAll(/(?:\bfrom\s*|\bimport\s*\(\s*)(['"`])([^'"`]+)\1/g)]
 	.map((m) => path.normalize(path.join(path.dirname(file), m[2]))).filter((p) => pluginOf(p));
 const canvasModules = () => fs.readdirSync(path.join(root, 'app/src')).filter((f) => f.endsWith('.js')).map((f) => `app/src/${f}`).sort();
@@ -87,8 +88,8 @@ test('C-f: the measures see what they are for -- every quoting form, object keys
 	const fields = (t) => (t.match(PLUGIN_FIELD) ?? []).length;
 	assert.equal(fields("const a = e.type; const b = e.shape; const c = e.span; const d = e.content; const s = e.spawn; const tr = e.transit; const g = e.glyph; const ok = event.type === 'up' || e.type === 'move' || ctx.shape(p1, p2) || p.labels?.content;"), 7,
 		'all seven plugin-contributed fields; pointer events, shape() calls and part labels are not');
-	assert.deepEqual(pluginImports('app/src/x.js', "import { a } from '../../zones/zone-keys.mjs';\nconst m = await import(\"../../engine/spawn-runs.mjs\");\nimport { c } from '../../model/model.mjs';\nimport { d } from './snap.js';"),
-		['zones/zone-keys.mjs', 'engine/spawn-runs.mjs']);
+	assert.deepEqual(pluginImports('app/src/x.js', "import { a } from '../../plugins/zones/zone-keys.mjs';\nconst m = await import(\"../../plugins/simulation/spawn-runs.mjs\");\nimport { c } from '../../model/model.mjs';\nimport { d } from './snap.js';"),
+		['plugins/zones/zone-keys.mjs', 'plugins/simulation/spawn-runs.mjs']);
 });
 
 // H21.5 (R-b): every entry's cited ids resolve and every entry says when it ends (tools/exceptions.mjs)

@@ -53,7 +53,7 @@ export function violations(model, { facts = false, ...rest } = {}) {
 	/*
 	S-e (H18.15) -- EACH KIND'S OWN INVARIANT, from its row (model/shape.mjs `invariants`), in the order the composition lists
 	its kinds. The link's straight-pair rule (B81) was written here, in the core; it is the network's now, beside the link's
-	row (network/link-kind.mjs), and a composition without the network checks no links.
+	row (plugins/network/link-kind.mjs), and a composition without the network checks no links.
 	*/
 	for (const kind of model.kinds.list) model.kinds.row(kind).invariants?.(model, out.push);
 

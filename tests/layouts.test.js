@@ -11,7 +11,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Model, KINDS, plan } from './fixtures/composed.mjs';
 import { composeKinds } from '../model/shape.mjs';
-import { LAYOUT_TABLE } from '../layouts/layout-table.mjs';
+import { LAYOUT_TABLE } from '../plugins/layouts/layout-table.mjs';
 import { STD } from '../kernel/spec.mjs';
 import { NODE_GRID } from '../kernel/geometry.mjs';   // H26.1: the node lattice's declaration (the kernel's LAYOUTS is deleted)
 import { NODE_EXT } from '../model/surface.mjs';

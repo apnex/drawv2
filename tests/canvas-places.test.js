@@ -9,7 +9,7 @@ now -- `places: [{ kind, layout, ext, size(entity) -> { w, h } }]` -- and the ca
 zone on the half-offset grid within its extent; the product places the anchor on the node grid, its size a wide device's span
 until B282 makes it several anchors (O4, the recorded width exception). Nothing a user sees changes.
 
-AMENDED WD-b2 (H19.46): the layouts plugin places the anchor (layouts/layout-canvas.mjs) and the devices plugin sizes it -- a device
+AMENDED WD-b2 (H19.46): the layouts plugin places the anchor (plugins/layouts/layout-canvas.mjs) and the devices plugin sizes it -- a device
 owns its size (WD10); a place declares its size's source (tests/layouts-canvas.test.js). The width exception ended at WD-a: a wide
 device is one anchor (WD1).
 */
@@ -20,7 +20,7 @@ import { Model } from './fixtures/composed.mjs';
 import { placesOf } from '../app/src/snap.js';
 import { nudgeSelection } from '../app/src/commands.js';
 import { PRODUCT_CANVAS } from '../product/canvas.mjs';
-import { ZONE_EXT, ZONE_GRIDS } from '../layouts/layout-table.mjs';
+import { ZONE_EXT, ZONE_GRIDS } from '../plugins/layouts/layout-table.mjs';
 import { NODE_GRID, nodeGridWithin } from '../kernel/geometry.mjs';
 
 const code = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');

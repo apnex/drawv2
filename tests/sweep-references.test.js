@@ -12,7 +12,7 @@ GUIDE for another is swept when the pinning link is deleted, and the guided link
 guide-only anchor is safe, because it was never referenced and the sweep leaves what arrived
 unreferenced alone.
 
-So the orphan sweep is a REACTION its link tenant declares (PL-3, network/link-reactions.mjs), built with
+So the orphan sweep is a REACTION its link tenant declares (PL-3, plugins/network/link-reactions.mjs), built with
 `linkTenant({ alsoReferenced, keepsOrphan })`: `alsoReferenced(model) -> ids` names what else references an anchor.
 They began as hooks the planner asked a `network` object; since PL-3 the network brings its own tenant and the planner
 asks nothing. Production passes nothing and must sweep exactly as before -- the first test holds that, because the
@@ -25,7 +25,7 @@ import { attachRelations } from '../engine/store.mjs';
 import { NODE_GRID } from '../kernel/geometry.mjs';   // H26.1: the relation index is injected the node grid's nearest (it was cellOf)
 import { commit, undo } from './fixtures/composed.mjs';
 import { Log } from '../planner/log.mjs';
-import { linkTenant } from '../network/link-reactions.mjs';
+import { linkTenant } from '../plugins/network/link-reactions.mjs';
 
 const P = 60;
 const nd = (id, x, y) => ({ op: 'put', kind: 'node', entity: { id, name: id, type: 'router', x: x * P, y: y * P, shape: 'circle' } });
@@ -193,7 +193,7 @@ test('a link that ENDS at the deleted anchor is not the stranded pass\'s: it goe
 /*
 B244 (H17.4, K14a) -- A RING HAS NO ENDS, so deleting one sweeps every waypoint it ran through. The sweep kept a closed
 ring's `src` and `dst` as termini (B216), because it counted every link's ends as terminals; the role derivation
-(network/roles.mjs) calls them bends, which is what they are on the canvas. Production composition: the classic
+(plugins/network/roles.mjs) calls them bends, which is what they are on the canvas. Production composition: the classic
 tenant, which keeps a link's END and sweeps a bend.
 */
 test('B244: deleting a closed ring sweeps all its waypoints, its src and dst included', () => {
@@ -214,7 +214,7 @@ in the test: for a waypoint carrying one link, the derivation calls it an endpoi
 it after that link is deleted (B216), over every shape a single link can take through it.
 */
 test('B244: the sweep and the role derivation agree on where a link ends, rings included', async () => {
-	const { waypointRoles } = await import('../network/roles.mjs');
+	const { waypointRoles } = await import('../plugins/network/roles.mjs');
 	const W = 'node-0000e9', [P, Q] = ['node-0000f1', 'node-0000f2'];
 	const shapes = {
 		'open, ending at w': { src: P, dst: W },

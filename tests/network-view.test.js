@@ -1,5 +1,5 @@
 /*
-ONE DERIVATION PER BOARD STATE -- network/view.mjs, step T2 of the ruleset audit (dev/design/unification/RULESET-AUDIT.md).
+ONE DERIVATION PER BOARD STATE -- plugins/network/view.mjs, step T2 of the ruleset audit (dev/design/unification/RULESET-AUDIT.md).
 
 Where each link runs, whether it is down, what blocks it, which links pass an anchor and which pipes are in use
 are one question about the board. The audit MEASURED it answered 9 to 15 times per edit, in two orders, and two of
@@ -8,7 +8,7 @@ and every consumer reads that one derivation -- the two properties below are the
 */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createNetworkView } from '../network/view.mjs';
+import { createNetworkView } from '../plugins/network/view.mjs';
 
 const hand = (a, b) => ({ a, b, laid: 'hand' });
 // a mutable board: the pipe list, which anchors exist, the links, and each link's age

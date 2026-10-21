@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { posix } from 'node:path';
 import { LAYER } from '../tools/layers.mjs';   // K16: the guard's roots are the manifest's simulation layer
 import { pathGeometry, roundedPath, pathLength, pointAtDistance } from '../kernel/router.mjs';
-import { prepareSpawner, moversAt, positionOf, MAX_MOVERS_PER_SPAWNER } from '../engine/movers.mjs';
+import { prepareSpawner, moversAt, positionOf, MAX_MOVERS_PER_SPAWNER } from '../plugins/simulation/movers.mjs';
 import { STD } from '../kernel/spec.mjs';
 
 /*
@@ -337,7 +337,7 @@ test('B171: the presentation rebuilds a mover whose route changed, and only then
 	it compares against is produced by the same function that built the element -- if those two ever
 	drift, the check silently stops firing and the defect returns without a test failing.
 	*/
-	const src = readFileSync(new URL('../engine/mover-painter.mjs', import.meta.url), 'utf8');
+	const src = readFileSync(new URL('../plugins/simulation/mover-painter.mjs', import.meta.url), 'utf8');
 	/*
 	The comparison moved when painting went per-frame: rebuilding a path string for each of twenty
 	packets sixty times a second is work for nothing, so it is built once per SPAWNER per frame and
@@ -405,7 +405,7 @@ function measurementClosure() {
 
 test('B176: no approximated maths anywhere in the measurement path -- the simulation layer and all it imports', () => {
 	const files = measurementClosure();
-	for (const f of ['engine/movers.mjs', 'engine/spawners.mjs', 'engine/rules.mjs', 'kernel/router.mjs']) {
+	for (const f of ['plugins/simulation/movers.mjs', 'plugins/simulation/spawners.mjs', 'plugins/simulation/rules.mjs', 'kernel/router.mjs']) {
 		assert.ok(files.includes(f), `${f} is in the derivation, so the guard must reach it`);
 	}
 	for (const f of files) {
@@ -435,17 +435,17 @@ test('H13.5: painting has a timer floor, so a hidden tab still makes progress', 
 	*/
 	/*
 	Asserted against the LOOP rather than against the source text of movers.js. The floor moved to
-	`engine/paintloop.mjs` when scan-twins reported it duplicated into the beat painter at 57%, and
+	`plugins/simulation/paintloop.mjs` when scan-twins reported it duplicated into the beat painter at 57%, and
 	a test grepping for `setInterval(...)` in one consumer would now pass or fail on where the code
 	happens to live rather than on whether a hidden tab keeps painting.
 	*/
-	const src = readFileSync(new URL('../engine/paintloop.mjs', import.meta.url), 'utf8');
+	const src = readFileSync(new URL('../plugins/simulation/paintloop.mjs', import.meta.url), 'utf8');
 	assert.match(src, /setInterval\(paint, intervalMs\)/, 'the interval must call paint');
 	assert.match(src, /raf = requestAnimationFrame\(frame\)/, 'and the frame loop runs on top of it');
 
 	// and the consumer must give the loop BOTH halves: folding without painting is what left a
 	// background peer creating nothing at all.
-	const movers = readFileSync(new URL('../engine/mover-painter.mjs', import.meta.url), 'utf8');
+	const movers = readFileSync(new URL('../plugins/simulation/mover-painter.mjs', import.meta.url), 'utf8');
 	assert.match(movers, /loop\(\(\) => \{ this\.fold\(\); this\.paint\(\);/,
 		'movers must fold and paint on the floor, not fold alone');
 });

@@ -25,7 +25,7 @@ import { spawnSync } from 'node:child_process';
 import { Input } from '../app/src/input.js';
 import * as adapter from '../kernel/input-rules.mjs';
 import { makeInput, key, pointer } from './fixtures/client-harness.mjs';
-import { makeZone } from '../zones/make-zone.mjs';
+import { makeZone } from '../plugins/zones/make-zone.mjs';
 import { liveGesture } from './fixtures/binding-parity.mjs';
 import { PRODUCT_CANVAS } from '../product/canvas.mjs';
 

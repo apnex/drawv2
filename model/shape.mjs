@@ -25,10 +25,10 @@ merged list would be wrong in both directions.
 Per kind, the table also holds the collection a document stores it under and whether it can be selected.
 
 AMENDED 2026-10-08 (O-b1, H19.19; O1): the core's kinds are two -- node and group; the zone is the zones plugin's
-(zones/zone-kind.mjs), composed between them (product/kinds.mjs `productKinds`).
-AMENDED 2026-10-08 (O-c, H19.20; O3): the core's kind is the node alone; the group is the groups plugin's (groups/group-kind.mjs).
+(plugins/zones/zone-kind.mjs), composed between them (product/kinds.mjs `productKinds`).
+AMENDED 2026-10-08 (O-c, H19.20; O3): the core's kind is the node alone; the group is the groups plugin's (plugins/groups/group-kind.mjs).
 AMENDED 2026-10-04 (S-e, H18.15; G5, B280): the product's kinds are three -- node, zone and group. The link is the network
-plugin's kind (network/link-kind.mjs), brought by composing the network, as every production composition does; the core
+plugin's kind (plugins/network/link-kind.mjs), brought by composing the network, as every production composition does; the core
 names no link. `clone` copies every nested value now, so it no longer reads this table, and a plugin's kind may nest fields.
 
 Downstream this table is the source for: the
@@ -43,7 +43,7 @@ validator, which accepts this generation alone. Was four literals that nothing f
 the cutover and the migration was deleted (B291), so a schema 1 document is refused at every door, saying so.
 */
 export const SCHEMA = 3;
-// WD-b1 (H19.45): schema 3 -- every document holds its two layouts (layouts/layout-kind.mjs); production's were migrated once at the deploy, and no migration is kept (WD9)
+// WD-b1 (H19.45): schema 3 -- every document holds its two layouts (plugins/layouts/layout-kind.mjs); production's were migrated once at the deploy, and no migration is kept (WD9)
 
 // the core's kind; a plugin's are composed after it -- the zones plugin's (O-b1), the groups plugin's (O-c), the network's
 // (S-e) -- in the order a document lists its collections
@@ -70,7 +70,7 @@ const TABLE = {
 	Which of the fields a node may carry follows whether it has a type, held by the node row's cross-entity check
 	(planner/kinds.mjs).
 
-	`transit` is not the product's: the network plugin contributes it to the node (S-a, H18.11, G3; network/kinds.mjs), so a
+	`transit` is not the product's: the network plugin contributes it to the node (S-a, H18.11, G3; plugins/network/kinds.mjs), so a
 	composition without the network refuses it.
 	*/
 	// O-e2 (H19.21; O4): the ANCHOR's -- a device's nested and optional fields are the devices plugin's, a spawner the simulation's
@@ -107,7 +107,7 @@ Every kind is a ROW of one shape, whoever brings it -- the product's three or a 
 
 This module is CORE, so it holds the mechanism and the product rows' STORAGE half, and treats checks as opaque. The
 product's full rows -- checks, cross-entity checks, caps -- are the planner's (`planner/kinds.mjs`); the link's are the
-network's (`network/link-kind.mjs`, S-e). `new Model()` takes `CORE_KINDS`; the planner takes the composition it is handed
+network's (`plugins/network/link-kind.mjs`, S-e). `new Model()` takes `CORE_KINDS`; the planner takes the composition it is handed
 -- required since S-f -- and refuses a model composed with different kinds.
 
 Built when a page or a server is composed, never registered at runtime; no registry, no discovery (mission-kit P4).

@@ -14,8 +14,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { makeApp } from './fixtures/app.mjs';
 import { Model } from './fixtures/composed.mjs';
-import { LAYOUT_TABLE } from '../layouts/layout-table.mjs';
-import { layoutRecords } from '../layouts/layout-records.mjs';
+import { LAYOUT_TABLE } from '../plugins/layouts/layout-table.mjs';
+import { layoutRecords } from '../plugins/layouts/layout-records.mjs';
 
 const RECORDS = structuredClone(LAYOUT_TABLE).map((l) => ({ ...l, ext: { ...l.ext } }));
 let app, base, dataDir;

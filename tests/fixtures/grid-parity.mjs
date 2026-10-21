@@ -177,7 +177,7 @@ export const QUESTIONS = {
 	'pxOn.zone': { inputs: () => SWEEP.indices },
 	'anchor.x': { inputs: () => SWEEP.values, grid: [0, P] },                        // the anchor's field checks (product/kinds.mjs)
 	'anchor.y': { inputs: () => SWEEP.values, grid: [0, P] },
-	'zone.x': { inputs: () => SWEEP.values, grid: [HALF, P] },                       // the zone's (zones/zone-kind.mjs)
+	'zone.x': { inputs: () => SWEEP.values, grid: [HALF, P] },                       // the zone's (plugins/zones/zone-kind.mjs)
 	'zone.y': { inputs: () => SWEEP.values, grid: [HALF, P] },
 	'zone.w': { inputs: () => SWEEP.values, grid: [0, P] },
 	'zone.h': { inputs: () => SWEEP.values, grid: [0, P] },
@@ -274,7 +274,7 @@ export const CLASSES = ['rounding', 'beyond-2^49', 'inherited-name', 'off-lattic
 
 /*
 THE REPLACEMENTS -- each question asked of the product as it is now: the functions appendix B moved onto snap-grid, on the grids
-section 5 opens (kernel/geometry.mjs `NODE_GRID` and `nodeGridWithin`, layouts/layout-table.mjs `ZONE_GRIDS`). RESTATED at H26.1's
+section 5 opens (kernel/geometry.mjs `NODE_GRID` and `nodeGridWithin`, plugins/layouts/layout-table.mjs `ZONE_GRIDS`). RESTATED at H26.1's
 move: when the old answers were recorded these were the same questions asked of snap-grid grids opened from their declarations in
 this file, and the product, moved, must answer as they did -- the record's differences are theirs.
 
@@ -283,17 +283,17 @@ index's key (`cellOf` was injected; NODE_GRID's `nearest` is), the REST nearest 
 by tools/probe/rest-sweep.mjs), and the routes' layout lookup.
 */
 import { NODE_GRID } from '../../kernel/geometry.mjs';
-import { LAYOUT_TABLE, ZONE_GRIDS } from '../../layouts/layout-table.mjs';
+import { LAYOUT_TABLE, ZONE_GRIDS } from '../../plugins/layouts/layout-table.mjs';
 import { snapNode, snapIn, placesOf } from '../../app/src/snap.js';
 import { PRODUCT_CANVAS } from '../../product/canvas.mjs';
 import { productKinds } from '../../product/kinds.mjs';
-import { ZONE_HANDLE_SPECS } from '../../zones/zone-gestures.mjs';
-import { ZONE_KEYS } from '../../zones/zone-keys.mjs';
-import { LAYOUTS_CANVAS } from '../../layouts/layout-canvas.mjs';
-import { DEVICE_PRESSES } from '../../devices/device-gestures.mjs';
-import { DEVICE_SIZE_STEP } from '../../devices/device-size.mjs';
-import { DEVICE_FIELDS } from '../../devices/device-fields.mjs';
-import { spanThrough } from '../../devices/device-footprint.mjs';
+import { ZONE_HANDLE_SPECS } from '../../plugins/zones/zone-gestures.mjs';
+import { ZONE_KEYS } from '../../plugins/zones/zone-keys.mjs';
+import { LAYOUTS_CANVAS } from '../../plugins/layouts/layout-canvas.mjs';
+import { DEVICE_PRESSES } from '../../plugins/devices/device-gestures.mjs';
+import { DEVICE_SIZE_STEP } from '../../plugins/devices/device-size.mjs';
+import { DEVICE_FIELDS } from '../../plugins/devices/device-fields.mjs';
+import { spanThrough } from '../../plugins/devices/device-footprint.mjs';
 import { resolveAnchor } from '../../server/anchor.mjs';
 
 const ZONE = ZONE_GRIDS.unbounded;

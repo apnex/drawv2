@@ -15,7 +15,7 @@ across the kernel migration; only render/geometry are re-platformed onto the ker
 import { CORE_KINDS, SCHEMA, completeAlwaysHeld } from './shape.mjs';
 // B246: every query that answers links answers in one order on every peer -- ascending id (model/order.mjs)
 import { byId, nextOrder } from './order.mjs';
-import { BARE_KIND, anchorOf } from './anchors.mjs';   // the anchor's stored kind, and resolving one (O-e1: whether a device is composed is devices/device-shapes.mjs's)
+import { BARE_KIND, anchorOf } from './anchors.mjs';   // the anchor's stored kind, and resolving one (O-e1: whether a device is composed is plugins/devices/device-shapes.mjs's)
 
 /*
 A throwaway Model carrying the same content as `model`, so a step can be decided against the state
@@ -57,7 +57,7 @@ export const kindOf = (id) => id.split('-')[0];
 
 /*
 A HALF-COMPOSED MODEL IS AN ERROR, never a quiet fall-back: an option the Model does not read -- a retired one above all --
-is refused, naming it. A network is checked whole where it is read (network/network-queries.mjs `networkOf`, Q-a).
+is refused, naming it. A network is checked whole where it is read (plugins/network/network-queries.mjs `networkOf`, Q-a).
 */
 // every option a consumer does not read is refused -- a retired hook name above all, which would leave the plugin half-composed
 function refuseStrayOptions(rest, who) {
@@ -69,7 +69,7 @@ function refuseStrayOptions(rest, who) {
 Q-a (H19.27; dev/design/unification/PLUGIN-QUERIES.md, Q1 ruled A): the Model asked a plugin named the network six questions
 under its own method names -- where a link is drawn, whether it is down, what blocks it, which links pass through an anchor,
 whether an anchor declares its transit off, whether what arrives stops there. They are the network's functions over a Model
-now (network/network-queries.mjs), with the straight path a down link is drawn along; the Model holds what a plugin attaches
+now (plugins/network/network-queries.mjs), with the straight path a down link is drawn along; the Model holds what a plugin attaches
 to it and reads none of it.
 */
 
@@ -82,7 +82,7 @@ export class Model {
 		this.kinds = kinds;
 		/*
 		Q-a (H19.27) -- WHAT A PLUGIN ATTACHES TO THIS MODEL, held and never read: the network's instance, one per Model since it
-		keeps one derivation per board (network/read-model.mjs). The network's functions read their own (network/network-queries.mjs).
+		keeps one derivation per board (plugins/network/read-model.mjs). The network's functions read their own (plugins/network/network-queries.mjs).
 		*/
 		if (!attached || typeof attached !== 'object' || Array.isArray(attached)) throw new Error('Model: attached is an object, a plugin\'s name to what it attaches');
 		this.attached = Object.freeze({ ...attached });
@@ -109,7 +109,7 @@ export class Model {
 
 			Config rather than status, unlike selection: a beat is created BY a commit and undone
 			with it, so it must survive a write and travel in the snapshot. Held opaque here --
-			`model/reveal.mjs` owns what it means, and this only has to not lose it.
+			`plugins/simulation/reveal.mjs` owns what it means, and this only has to not lose it.
 			*/
 			reveal: null
 		};
@@ -208,7 +208,7 @@ export class Model {
 
 	/*
 	O-c (H19.20) -- THE ENTITY THAT GATHERS AN ID: of the kinds whose row gathers a list field (model/shape.mjs `gathers`), the
-	one listing `id`, else undefined. It was `groupOf`, which named the group; the group asks it now (groups/group-of.mjs).
+	one listing `id`, else undefined. It was `groupOf`, which named the group; the group asks it now (plugins/groups/group-of.mjs).
 	The index answers when attached, keyed as the group's membership was; the scan, in the composition's order and each
 	kind's id order, otherwise.
 	*/
@@ -228,7 +228,7 @@ export class Model {
 	// in-app data (every gesture snaps); off-grid coords exist only in hand-edited/legacy wire docs.
 	// Keeps doc.js free of any kernel import.
 	// O-e1 (H19.21): which anchor is on a cell is the core's; which DEVICE or which WAYPOINT is the devices plugin's
-	// (devices/occupancy.mjs `occupiedAt`, `waypointAt`), over this and the index
+	// (plugins/devices/occupancy.mjs `occupiedAt`, `waypointAt`), over this and the index
 	occupiedAnyAt(p) {
 		if (this.index) return this.index.occupiedAnyAt(p);
 		return this.all(BARE_KIND).some((n) => n.x === p.x && n.y === p.y);   // every anchor, a device composed on it or not
@@ -345,7 +345,7 @@ export class Model {
 		this.state.selection = new Set((doc.selection || []).filter((id) => this.selectable(id)));
 		// H14.4 -- the reveal travels with the document, opaque to the model. Not reconciled against
 		// live ids the way selection is: a beat naming an entity that has since gone is a STALE
-		// beat, which `model/reveal.mjs` simply does not reveal, and silently rewriting the record
+		// beat, which `plugins/simulation/reveal.mjs` simply does not reveal, and silently rewriting the record
 		// would destroy the author's stated order to hide a fact worth seeing.
 		this.state.reveal = doc.reveal ? structuredClone(doc.reveal) : null;
 		this.emit('load', 'model', null);

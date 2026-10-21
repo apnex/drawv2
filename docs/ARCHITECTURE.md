@@ -75,7 +75,7 @@ Noted for PC1: AR1 asks for the system's north star and this one is the programm
 The anchor is the core's one kind, stored as `node`: identity and position on one cell.\
 A node with a `type` is a device, the type a stored name; a node without one is a bare anchor, a waypoint.\
 Plugins contribute fields onto the node (G3): the devices plugin its type, shape, span and content, the network its transit, the simulation its spawn.\
-Each device type is declared once in `devices/device-types.mjs` across appearance, routing and run-mode behaviour, handed to the plugins at composition (`product/types.mjs`, `U4-1`, `U4-3`), and served by the server at `/api/v1/types` so the CLI asks for the types rather than keeping a copy (`U4-2`); `nodePermitsBend` reads an anchor's routing pack (`H21.3`, `B282`).
+Each device type is declared once in `plugins/devices/device-types.mjs` across appearance, routing and run-mode behaviour, handed to the plugins at composition (`product/types.mjs`, `U4-1`, `U4-3`), and served by the server at `/api/v1/types` so the CLI asks for the types rather than keeping a copy (`U4-2`); `nodePermitsBend` reads an anchor's routing pack (`H21.3`, `B282`).
 
 ---
 
@@ -98,7 +98,7 @@ How the current instant stands against the axioms in force, as the target names 
 | A13 Director Intent Amplification | rulings from 2026-10-11 record the director's words, what was shown, and what they affect |
 | A10 Autopoietic Evolution | not materially implicated: nothing in the product revises itself |
 
-**The outcome axes AX2 and AX5,** which hold what the target took from A2 and A11 (A-5): each device type is declared once in `devices/device-types.mjs` across appearance, routing and run-mode behaviour (`U4-1`, `U4-3`), served to the CLI by `/api/v1/types` (`U4-2`), and fields compose onto the anchor (`G3`).
+**The outcome axes AX2 and AX5,** which hold what the target took from A2 and A11 (A-5): each device type is declared once in `plugins/devices/device-types.mjs` across appearance, routing and run-mode behaviour (`U4-1`, `U4-3`), served to the CLI by `/api/v1/types` (`U4-2`), and fields compose onto the anchor (`G3`).
 
 ---
 
@@ -117,12 +117,12 @@ The anchored core's parts, declared once in `tools/layers.mjs` `PARTS` and rende
 | `primitives` | Draw the shapes painters compose | core | `kernel/renderer.mjs` | `lattice` | -- |
 | `rules` | Decide what an input means | core | `kernel/input-rules.mjs` | -- | `@apnex/input-binding` |
 | `planner` | Make the one write every door applies | core | `planner/`, `model/invariants.mjs` | `document`, `kind-contract` | -- |
-| `layouts` | Declare a diagram's grids | plugin | `layouts/` | `lattice` | -- |
-| `devices` | Compose a device onto an anchor | plugin | `devices/` | `colours`, `document`, `kind-contract`, `lattice`, `primitives` | -- |
-| `network` | Connect anchors | plugin | `network/` | `colours`, `document`, `kind-contract`, `lattice`, `primitives`, `rules` | -- |
-| `zones` | Bound regions of cells | plugin | `zones/` | `kind-contract`, `lattice`, `layouts`, `primitives` | -- |
-| `groups` | Name sets of anchors | plugin | `groups/` | `colours`, `document`, `kind-contract`, `lattice` | -- |
-| `simulation` | Derive what the clock drives | plugin | `engine/kinds.mjs`, `engine/movers.mjs`, `engine/rules.mjs`, `engine/spawn-appearance.mjs`, `engine/spawners.mjs`, `engine/spawn-field.mjs`, `engine/spawn-runs.mjs`, `model/reveal.mjs`, `engine/mover-painter.mjs`, `engine/reveal-painter.mjs`, `engine/paintloop.mjs` | `devices`, `document`, `kind-contract`, `lattice`, `network` | -- |
+| `layouts` | Declare a diagram's grids | plugin | `plugins/layouts/` | `lattice` | -- |
+| `devices` | Compose a device onto an anchor | plugin | `plugins/devices/` | `colours`, `document`, `kind-contract`, `lattice`, `primitives` | -- |
+| `network` | Connect anchors | plugin | `plugins/network/` | `colours`, `document`, `kind-contract`, `lattice`, `primitives`, `rules` | -- |
+| `zones` | Bound regions of cells | plugin | `plugins/zones/` | `kind-contract`, `lattice`, `layouts`, `primitives` | -- |
+| `groups` | Name sets of anchors | plugin | `plugins/groups/` | `colours`, `document`, `kind-contract`, `lattice` | -- |
+| `simulation` | Derive what the clock drives | plugin | `plugins/simulation/kinds.mjs`, `plugins/simulation/movers.mjs`, `plugins/simulation/rules.mjs`, `plugins/simulation/spawn-appearance.mjs`, `plugins/simulation/spawners.mjs`, `plugins/simulation/spawn-field.mjs`, `plugins/simulation/spawn-runs.mjs`, `plugins/simulation/reveal.mjs`, `plugins/simulation/mover-painter.mjs`, `plugins/simulation/reveal-painter.mjs`, `plugins/simulation/paintloop.mjs` | `devices`, `document`, `kind-contract`, `lattice`, `network` | -- |
 | `product` | Compose the plugins into the product | composition | `product/` | `devices`, `groups`, `kind-contract`, `lattice`, `layouts`, `network`, `simulation`, `zones` | -- |
 | `canvas` | Turn input into edits through the parts' declarations | host | `app/src/actions.js`, `app/src/capture.js`, `app/src/changes.js`, `app/src/commands.js`, `app/src/compose-canvas.js`, `app/src/help.js`, `app/src/input.js`, `app/src/input-state.js`, `app/src/keymap.js`, `app/src/labeledit.js`, `app/src/overlay.js`, `app/src/pick.js`, `app/src/readout.js`, `app/src/recognize.js`, `app/src/releases.js`, `app/src/selection.js`, `app/src/snap.js`, `app/src/tools.js`, `app/src/grids.js`, `engine/situation.mjs` | `document`, `kind-contract`, `lattice`, `planner`, `primitives`, `relations`, `renderer`, `rules` | -- |
 | `renderer` | Draw a document through the parts' painters | host | `app/src/renderer.js`, `app/src/painter.js` | `document`, `lattice`, `primitives` | -- |

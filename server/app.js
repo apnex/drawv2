@@ -7,7 +7,7 @@ Importable for tests (port 0 = random); server.js is the CLI entry.
 */
 
 import { DOCUMENT_ID } from '../planner/validate.js';
-import { faviconSvg } from '../devices/device-types.mjs';
+import { faviconSvg } from '../plugins/devices/device-types.mjs';
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -137,11 +137,7 @@ export async function createApp({ dataDir, port = 8080, clientDir, host, templat
 	const engineDir = path.resolve(root, '..', 'engine');  // the relational engine ESM (mounted at /engine)
 	const modelDir = path.resolve(root, '..', 'model'); // the model substrate ESM (mounted at /model)
 	const plannerDir = path.resolve(root, '..', 'planner'); // K4 (H17-D5): the planner, served whole (mounted at /planner); `server/` never is
-	const networkDir = path.resolve(root, '..', 'network'); // S-b (H18.12): the network plugin, which the product page composes (mounted at /network)
-	const layoutsDir = path.resolve(root, '..', 'layouts'); // WD-b1 (H19.45): the layouts plugin (mounted at /layouts)
-	const zonesDir = path.resolve(root, '..', 'zones'); // O-b1 (H19.19): the zones plugin, which the product page composes (mounted at /zones)
-	const groupsDir = path.resolve(root, '..', 'groups'); // O-c (H19.20): the groups plugin, which the product page composes (mounted at /groups)
-	const devicesDir = path.resolve(root, '..', 'devices'); // O-e1 (H19.21): the devices plugin, which the product page composes (mounted at /devices)
+	const pluginsDir = path.resolve(root, '..', 'plugins'); // H26.7: every plugin the product page composes, each in its folder (mounted at /plugins)
 	const productDir = path.resolve(root, '..', 'product'); // O-d (H19.22): the product's composition, which the page imports (mounted at /product)
 	const data = path.resolve(dataDir || path.join(root, '..', 'diagrams'));
 	// examplesDir is null unless the caller supplies one — only server/server.js does, so a test
@@ -239,11 +235,7 @@ export async function createApp({ dataDir, port = 8080, clientDir, host, templat
 	const hasEngine = fs.existsSync(engineDir);
 	const hasModel = fs.existsSync(modelDir);
 	const hasPlanner = fs.existsSync(plannerDir);
-	const hasNetwork = fs.existsSync(networkDir);
-	const hasLayouts = fs.existsSync(layoutsDir);
-	const hasZones = fs.existsSync(zonesDir);
-	const hasGroups = fs.existsSync(groupsDir);
-	const hasDevices = fs.existsSync(devicesDir);
+	const hasPlugins = fs.existsSync(pluginsDir);   // H26.7: one mount; a plugin's folder absent from it is a 404, as its mount absent was
 	const hasProduct = fs.existsSync(productDir);
 
 	const server = http.createServer(async (req, res) => {
@@ -319,11 +311,7 @@ export async function createApp({ dataDir, port = 8080, clientDir, host, templat
 		if (hasEngine && url.pathname.startsWith('/engine/')) return serveFrom(req, res, engineDir, '/engine');
 		if (hasModel && url.pathname.startsWith('/model/')) return serveFrom(req, res, modelDir, '/model');
 		if (hasPlanner && url.pathname.startsWith('/planner/')) return serveFrom(req, res, plannerDir, '/planner');
-		if (hasNetwork && url.pathname.startsWith('/network/')) return serveFrom(req, res, networkDir, '/network');
-		if (hasLayouts && url.pathname.startsWith('/layouts/')) return serveFrom(req, res, layoutsDir, '/layouts');
-		if (hasZones && url.pathname.startsWith('/zones/')) return serveFrom(req, res, zonesDir, '/zones');
-		if (hasGroups && url.pathname.startsWith('/groups/')) return serveFrom(req, res, groupsDir, '/groups');
-		if (hasDevices && url.pathname.startsWith('/devices/')) return serveFrom(req, res, devicesDir, '/devices');
+		if (hasPlugins && url.pathname.startsWith('/plugins/')) return serveFrom(req, res, pluginsDir, '/plugins');
 		if (hasProduct && url.pathname.startsWith('/product/')) return serveFrom(req, res, productDir, '/product');
 		if (!hasClient) {
 			res.writeHead(404, { 'Content-Type': 'application/json' });

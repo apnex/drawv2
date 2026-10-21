@@ -4,7 +4,7 @@ K13d (H19.25; dev/design/h17/PLAN.md K13d; KINDS-AS-PLUGINS.md section 17) -- TH
 The link has been the network plugin's kind since S-e (H18.15; G5), but the core Model kept five methods that read it by name
 -- `linksOf`, `linksAt`, `linkBetween`, `linksBetween`, `makeLink` -- the last place the core named a kind but the anchor
 (tests/core-names-no-plugin.test.js recorded them as K13d's debt). They are the network's functions now
-(network/link-queries.mjs), answering from the relations index when one is attached and by a scan otherwise, as the Model
+(plugins/network/link-queries.mjs), answering from the relations index when one is attached and by a scan otherwise, as the Model
 did. Nothing a user sees changes.
 */
 import { test } from 'node:test';
@@ -15,7 +15,7 @@ import { attachRelations } from '../engine/store.mjs';
 import { NODE_GRID } from '../kernel/geometry.mjs';   // H26.1: the relation index is injected the node grid's nearest (it was cellOf)
 
 const code = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
-const queries = () => import('../network/link-queries.mjs');
+const queries = () => import('../plugins/network/link-queries.mjs');
 const board = (indexed) => {
 	const m = new Model();
 	if (indexed) attachRelations(m, { nearest: NODE_GRID.nearest });

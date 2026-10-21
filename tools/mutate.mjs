@@ -17,7 +17,7 @@ WHAT A SURVIVOR MEANS. A mutant that survives is a change to the code that no te
 That is not automatically a defect -- the line may be unreachable, or genuinely not worth pinning --
 but it is always a QUESTION, and the answer belongs in a comment beside the code rather than in
 somebody's head. Two survivors in this tree are documented that way already, at the liveness check
-in `engine/movers.mjs`.
+in `plugins/simulation/movers.mjs`.
 
 WHAT IT IS NOT. Not a gate, deliberately, and not yet. A gate needs a survivor allow-list, and an
 allow-list needs evidence about which survivors are acceptable -- evidence this tool exists to
@@ -27,7 +27,7 @@ a month of output to read.
 Usage:
   node tools/mutate.mjs <source-file> --tests <file...>   [--limit n] [--verbose]
 
-  node tools/mutate.mjs engine/movers.mjs --tests tests/movers.test.js
+  node tools/mutate.mjs plugins/simulation/movers.mjs --tests tests/movers.test.js
 */
 
 import fs from 'node:fs';
@@ -170,6 +170,6 @@ console.log(`\n  ${killed} killed, ${survived.length} survived, ${errored} unpar
 console.log(`  ${scored ? Math.round((killed / scored) * 100) : 0}% of scorable mutants were caught; ${target} restored and verified`);
 if (survived.length) {
 	console.log('\n  A survivor is a QUESTION, not automatically a defect. Either a test is missing, or the');
-	console.log('  line is unreachable and should SAY so beside itself -- the way engine/movers.mjs does.');
+	console.log('  line is unreachable and should SAY so beside itself -- the way plugins/simulation/movers.mjs does.');
 }
 process.exit(survived.length ? 1 : 0);

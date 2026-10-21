@@ -18,10 +18,10 @@ import { Model } from '../model/model.mjs';
 import { productKinds } from '../product/kinds.mjs';
 const PRODUCT_KINDS = productKinds();   // the product's own kinds; the export went at S-f with the defaults it served
 import { commit, plan } from '../planner/txn.mjs';
-import { linkTenant } from '../network/link-reactions.mjs';
+import { linkTenant } from '../plugins/network/link-reactions.mjs';
 import { Log } from '../planner/log.mjs';
 import { validateDoc as realValidateDoc, validateSelectionIds as realValidateSelectionIds, validateEntity as realValidateEntity } from '../planner/validate.js';
-import { makeWaypoint } from '../devices/make-node.mjs';   // O-e1: the devices plugin's factories
+import { makeWaypoint } from '../plugins/devices/make-node.mjs';   // O-e1: the devices plugin's factories
 // the validator takes no default since S-f (H18.16): "the product's" below is named, the product's own kinds
 const validateDoc = (doc, o = {}) => realValidateDoc(doc, { kinds: PRODUCT_KINDS, ...o });
 const validateEntity = (kind, e, o = {}) => realValidateEntity(kind, e, { kinds: PRODUCT_KINDS, ...o });
@@ -179,9 +179,9 @@ test('S-a: an extension is refused when built -- each way it can be wrong, named
 });
 
 test('S-a: the network brings transit, and the product names none; a tenant reading a field it lacks is refused', async () => {
-	const { NETWORK_ROWS } = await import('../network/kinds.mjs');
-	const { createNetwork } = await import('../network/network.mjs');
-	const { createTransit } = await import('../network/transit.mjs');
+	const { NETWORK_ROWS } = await import('../plugins/network/kinds.mjs');
+	const { createNetwork } = await import('../plugins/network/network.mjs');
+	const { createTransit } = await import('../plugins/network/transit.mjs');
 	const { plan } = await import('../planner/txn.mjs');
 	assert.equal('transit' in PRODUCT_KINDS.row('node').fields, false, 'the product\'s node row names no transit');
 	const net = productKinds(...NETWORK_ROWS);

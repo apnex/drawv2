@@ -2,7 +2,7 @@
 clock.js — WHAT TIME IS IT, agreed with the server.
 
 One concern, and a small one. It exists because parity was ruled desirable and a per-machine clock
-cannot deliver it: `engine/movers.mjs` computes a mover's position from `t`, so two browsers holding
+cannot deliver it: `plugins/simulation/movers.mjs` computes a mover's position from `t`, so two browsers holding
 the same document agree only to the extent their CLOCKS agree. NTP usually holds a laptop within
 tens of milliseconds and nothing enforces it -- a hand-set clock puts one viewer's packets visibly
 ahead of another's, on a document that says they are in the same place.

@@ -6,21 +6,21 @@ server sync to a KERNEL-SOURCED renderer. The kernel owns every geometry number 
 
 import { editOf } from './commands.js';   // C-e (D5): the network's edit, built here
 import { Clock } from './clock.js';
-import { Movers } from '../../engine/mover-painter.mjs';
+import { Movers } from '../../plugins/simulation/mover-painter.mjs';
 import { helpSections, renderHelp } from './help.js';
 import { composeCanvas, tallyOf } from './compose-canvas.js';   // K8: the canvas half, composed as the lab composes it
 import { Palette } from './palette.js';
 import { Net, wsUrl } from './net.js';
 import { Sync, bindGestureDefer } from './sync.js';
 import { Watchdog } from './watchdog.js';
-import { Reveal } from '../../engine/reveal-painter.mjs';
+import { Reveal } from '../../plugins/simulation/reveal-painter.mjs';
 import { makeSpectator, followTarget } from './spectate.js';
 import { RUN_PRESSES } from './run-mode.js';   // K5: run mode is the product's, handed to Input here
 import { productKinds } from '../../product/kinds.mjs';
 import { PRODUCT_CANVAS } from '../../product/canvas.mjs';
 import '../../product/types.mjs';   // the plugins' canvas parts (C-a)
-import { NETWORK_ROWS } from '../../network/kinds.mjs';   // the network's kind and the field it contributes (S-a)
-import { createPageNetwork } from '../../network/page.mjs';   // the network, composed into this page as into the lab's (V-b)
+import { NETWORK_ROWS } from '../../plugins/network/kinds.mjs';   // the network's kind and the field it contributes (S-a)
+import { createPageNetwork } from '../../plugins/network/page.mjs';   // the network, composed into this page as into the lab's (V-b)
 import { el } from './painter.js';
 
 const svg = document.getElementById('container');
@@ -49,7 +49,7 @@ mode (K5) and its clock.
 S-b (H18.12; ruled 2026-10-03, G1) -- the page composes the network's ROWS, so it loads, holds and applies the pipes the
 server's planner now answers with; it does not yet attach the network's drawing, so links are drawn straight through their
 stops as before. A named stopgap: P5 attaches the network (pipe painter, drag judge, routes) and removes it.
-AMENDED 2026-10-04 (V-b, H18.26): removed. The page composes the network as the lab does (network/page.mjs): its Model draws
+AMENDED 2026-10-04 (V-b, H18.26): removed. The page composes the network as the lab does (plugins/network/page.mjs): its Model draws
 with it -- routes over pipes, down links -- and Input takes its keys and drag judge, so `g` and `x` work here.
 */
 const pageNetwork = createPageNetwork();
@@ -619,7 +619,7 @@ net.onStatus((status) => (status === 'open' ? watchdog.noteOpen() : watchdog.not
 
 const sync = new Sync({
 	model, net, history, selection, clock, watchdog,
-	// V-b: the network settles the board after what the server said is applied (network/host.mjs)
+	// V-b: the network settles the board after what the server said is applied (plugins/network/host.mjs)
 	onAnswered: (request, answer) => networkHost.settled(request, answer),
 	onChanged: () => networkHost.redraw(),
 	// B297: the network is handed the planner's reason, as the lab hands it; the server's frame carries it as `reason`

@@ -61,7 +61,7 @@ down: found at H19.3 when the browser harness's fixture, written the same way, l
 */
 test('B291: the seed diagram is written complete -- valid, every item ordered, every link up', async () => {
 	const { seedDoc } = await import('../server/seed.js');
-	const { readModel, linkReading } = await import('../network/read-model.mjs');
+	const { readModel, linkReading } = await import('../plugins/network/read-model.mjs');
 	const { validateDoc } = await import('./fixtures/composed.mjs');
 	const doc = seedDoc();
 	assert.equal(validateDoc(doc), null, 'valid as it stands');

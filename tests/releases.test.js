@@ -13,15 +13,15 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { LINK_RELEASES, MARQUEE_RELEASES, CTRL_CLICKS, PRESS_DRAGS, CLONE_DRAGS } from '../app/src/releases.js';
-import { LINK_HANDLE_SPECS } from '../network/link-handles.mjs';
+import { LINK_HANDLE_SPECS } from '../plugins/network/link-handles.mjs';
 // RESTATED at C-d step two (H19.32): a handle's press opens the shared handle gesture from the declaring plugin's row; its release the network's rows
 const REPLUG_RELEASES = LINK_HANDLE_SPECS[0].releases;
-import { ZONE_PRESSES } from '../zones/zone-gestures.mjs';
+import { ZONE_PRESSES } from '../plugins/zones/zone-gestures.mjs';
 // RESTATED at C-d step one (H19.32): the zone's draw is the zones plugin's row over the shared box gesture, its release the row's own
 const ZONE_RELEASES = ZONE_PRESSES.find((r) => r.id === 'zone-draw').box.releases;
 import { composeRules, resolveInput, overlapsIn } from '../kernel/input-rules.mjs';
 import { makeInput, key, pointer, seedNodes } from './fixtures/client-harness.mjs';
-import { makeWaypoint } from '../devices/make-node.mjs';   // O-e1: the devices plugin's factories
+import { makeWaypoint } from '../plugins/devices/make-node.mjs';   // O-e1: the devices plugin's factories
 
 const table = (rules) => composeRules({ owner: 'product', rules });
 const UP = { type: 'up' };
@@ -59,7 +59,7 @@ test('the link release chooses what the old handler did, for every combination o
 	// CORRECTED at C-e step fourteen (H19.33): the hand holds the devices plugin's items since C-e step one, and a waypoint is
 	// none of them -- so `hand: 'waypoint'` is a fact no release receives, and the rule's clause for it went. Held over every
 	// value the hand can hold, each of the devices plugin's items and none; the old handler's clause is unchanged for them.
-	const { DEVICE_HAND } = await import('../devices/device-hand.mjs');
+	const { DEVICE_HAND } = await import('../plugins/devices/device-hand.mjs');
 	for (const hand of [null, ...DEVICE_HAND.items]) for (const r of combos(LINK_FACTS, { hand })) {
 		n++;
 		const was = oldLink(r), now = choose(t, r);

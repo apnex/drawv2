@@ -14,8 +14,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { BARE_KIND, ANCHOR_KINDS, anchorOf } from '../model/anchors.mjs';
-import { isBareEntity, isTypedEntity, bareAnchor, bareAnchors, typedNodes } from '../devices/device-shapes.mjs';
-import { drawnKind, isAnchorWord } from '../devices/anchor-words.mjs';
+import { isBareEntity, isTypedEntity, bareAnchor, bareAnchors, typedNodes } from '../plugins/devices/device-shapes.mjs';
+import { drawnKind, isAnchorWord } from '../plugins/devices/anchor-words.mjs';
 import { Model } from '../model/model.mjs';
 import { svgDocument } from '../server/svg.mjs';   // H25.5 (B378, D4): the real export renderer
 
@@ -70,7 +70,7 @@ test('F-b: the export draws exactly the document\'s bare anchors as waypoints, a
 // ---- the ratchet ----
 
 // RESTATED at H25.4 (B376): and the product's composition, where the canvas's layers are declared (found by H25.4's second verifier)
-const ROOTS = ['app/src', 'model', 'planner', 'engine', 'kernel', 'network', 'server', 'cli', 'lab/src', 'devices', 'layouts', 'zones', 'groups', 'product'];   // O-e1: and the plugins
+const ROOTS = ['app/src', 'model', 'planner', 'engine', 'kernel', 'plugins/network', 'server', 'cli', 'lab/src', 'plugins/devices', 'plugins/layouts', 'plugins/zones', 'plugins/groups', 'plugins/simulation', 'product'];   // O-e1: and the plugins
 const walk = (d) => fs.readdirSync(path.join(root, d), { withFileTypes: true })
 	.flatMap((e) => (e.isDirectory() ? walk(path.join(d, e.name)) : /\.m?js$/.test(e.name) ? [path.join(d, e.name)] : []));
 // code lines only: block comments and whole-line comments are prose, which may say "waypoint" freely
@@ -90,14 +90,14 @@ function codeLines(text) {
 const LITERAL = /['"`]waypoints?['"`-]|\.waypoints\b/;
 
 const RECORD = {
-	'devices/anchor-words.mjs': [2, 'the drawn word, derived from a stored entity (`drawnKind`, `isAnchorWord`) -- moved from model/ at O-e1'],
-	'devices/make-node.mjs': [1, 'a new waypoint\'s NAME, `waypoint-<n>` -- the word people use (F4); moved with `makeWaypoint` from model/model.mjs at O-e1'],
-	'network/keys.mjs': [1, 'the situation\'s drawn word for a bare anchor (`waypoint`), F4 (B349)'],
-	'network/link-reactions.mjs': [1, 'a reaction\'s id, `waypoint-links`, which names it in the generated table'],
+	'plugins/devices/anchor-words.mjs': [2, 'the drawn word, derived from a stored entity (`drawnKind`, `isAnchorWord`) -- moved from model/ at O-e1'],
+	'plugins/devices/make-node.mjs': [1, 'a new waypoint\'s NAME, `waypoint-<n>` -- the word people use (F4); moved with `makeWaypoint` from model/model.mjs at O-e1'],
+	'plugins/network/keys.mjs': [1, 'the situation\'s drawn word for a bare anchor (`waypoint`), F4 (B349)'],
+	'plugins/network/link-reactions.mjs': [1, 'a reaction\'s id, `waypoint-links`, which names it in the generated table'],
 	'cli/verbs.mjs': [19, 'the verbs\' words for the two shapes of node, read through the CLI\'s own view (F4)'],
 	// kernel/adapt.mjs, kernel/engine.mjs, kernel/fixtures.mjs, kernel/svg-scene.mjs and their scene helpers in
-	// kernel/geometry.mjs and network/appearance.mjs went at H25.5 (B378, D4)
-	'network/anchor-points.mjs': [1, 'the word a waypoint is picked by at a point, as its drawn pick names it -- F4; C-e step three'],
+	// kernel/geometry.mjs and plugins/network/appearance.mjs went at H25.5 (B378, D4)
+	'plugins/network/anchor-points.mjs': [1, 'the word a waypoint is picked by at a point, as its drawn pick names it -- F4; C-e step three'],
 	'engine/situation.mjs': [3, 'the situation\'s word for what the pointer is over, derived through the module (F4)'],
 	// app/src/pick.js's one -- the waypoint's hit -- moved to the network's marks at C-b (H19.30)
 	// app/src/recognize.js's four -- the press rows' hit words -- went at C-d step four (D4): the rows read the plugins' facts
@@ -107,7 +107,7 @@ const RECORD = {
 	// app/src/help.js's one -- the run-mode region word for an endpoint -- went at C-f step one: the region is what a part aims at
 	'app/src/keymap.js': [1, 'the `w` key\'s id, F4'],
 	// app/src/releases.js's one -- a waypoint hand the retype refused -- went at C-e step fourteen: no hand holds a waypoint
-	'network/anchor-appearance.mjs': [2, 'the drawn waypoint\'s class and its layer -- the network\'s marks, F4; moved from app/src/renderer.js at C-a (D3) -- and its pick, the hit\'s word, moved from app/src/pick.js at C-b'],
+	'plugins/network/anchor-appearance.mjs': [2, 'the drawn waypoint\'s class and its layer -- the network\'s marks, F4; moved from app/src/renderer.js at C-a (D3) -- and its pick, the hit\'s word, moved from app/src/pick.js at C-b'],
 	// lab/src/root.js's one -- the page's waypoint layer id -- went at H25.4: the lab checks for the canvas's declared layers
 	'product/canvas.mjs': [1, 'the canvas\'s waypoint layer id in `CANVAS_LAYERS`, the composition declaring the layers back to front -- moved from the lab and the pages at H25.4'],
 };

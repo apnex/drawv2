@@ -13,7 +13,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { makeInput, pointer, key, seedNodes } from './fixtures/client-harness.mjs';
 import { Model, plan } from './fixtures/composed.mjs';
-import { makeNode, makeWaypoint } from '../devices/make-node.mjs';
+import { makeNode, makeWaypoint } from '../plugins/devices/make-node.mjs';
 import { resolveAnchor } from '../server/anchor.mjs';
 
 const code = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
@@ -100,7 +100,7 @@ test('WD-a: a click with a type held on a covered cell lands on the device -- a 
 test('WD-a: the index keys an anchor by its own cell -- a covered cell is free, and the index and the scan agree', async () => {
 	const { attachRelations } = await import('../engine/store.mjs');
 	const { NODE_GRID } = await import('../kernel/geometry.mjs');
-	const { occupiedAt } = await import('../devices/occupancy.mjs');
+	const { occupiedAt } = await import('../plugins/devices/occupancy.mjs');
 	const withIndex = new Model(); attachRelations(withIndex, { nearest: NODE_GRID.nearest });
 	const scan = new Model();
 	for (const m of [withIndex, scan]) wide(m, 'host', 0);

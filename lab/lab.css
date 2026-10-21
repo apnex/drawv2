@@ -17,6 +17,6 @@ colour it draws, and adding a third while that row is open would be the same def
 /* the notice sink the planner's refusals reach (G11); the product shows these in its own chrome */
 #lab-notice { opacity: 0.75; }
 
-/* Pipes take their look from network/appearance.mjs, as attributes. There is deliberately no pipe rule
+/* Pipes take their look from plugins/network/appearance.mjs, as attributes. There is deliberately no pipe rule
    here: the first one used currentColor, which inherited black, and two authorities for one colour is
    the defect family B255 records. */

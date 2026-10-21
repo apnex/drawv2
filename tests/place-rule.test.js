@@ -19,14 +19,14 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Model } from './fixtures/composed.mjs';   // the network's kinds, the link among them (S-e)
 import { situationOf, inReadView, onOpenGround, onEndpoint } from '../engine/situation.mjs';
-import { waypointRoles } from '../network/roles.mjs';
-import { worldOf } from '../engine/rules.mjs';
+import { waypointRoles } from '../plugins/network/roles.mjs';
+import { worldOf } from '../plugins/simulation/rules.mjs';
 import { createEntity } from '../app/src/commands.js';
 import { validateEntity } from './fixtures/composed.mjs';   // the composition production runs; the validator takes no default since S-f
 import { applyOps } from '../model/ops.mjs';
 import '../product/types.mjs';
-import { TOWERS } from '../engine/kinds.mjs';
-import { makeNode } from '../devices/make-node.mjs';   // O-e1: the devices plugin's factories
+import { TOWERS } from '../plugins/simulation/kinds.mjs';
+import { makeNode } from '../plugins/devices/make-node.mjs';   // O-e1: the devices plugin's factories
 
 const NOW = 1_700_000_000_000;
 const WP_A = 'node-aaaaaa', WP_B = 'node-bbbbbb', LINK = 'link-cccccc';

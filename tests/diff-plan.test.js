@@ -10,11 +10,11 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Model as RealModel } from '../model/model.mjs';
 import { productKinds } from '../product/kinds.mjs';
-import { NETWORK_ROWS } from '../network/kinds.mjs';
-import { createNetwork } from '../network/network.mjs';
-import { createTransit } from '../network/transit.mjs';
+import { NETWORK_ROWS } from '../plugins/network/kinds.mjs';
+import { createNetwork } from '../plugins/network/network.mjs';
+import { createTransit } from '../plugins/network/transit.mjs';
 import { plan as realPlan } from '../planner/txn.mjs';
-import { linkTenant } from '../network/link-reactions.mjs';
+import { linkTenant } from '../plugins/network/link-reactions.mjs';
 /*
 AMENDED 2026-10-03 (S-b, H18.12): the frozen oracle is the pre-CS1 planner, whose rules are the classic tenant's -- a link that
 loses a bend keeps the rest of its intent, a pinned waypoint and a link's end survive the sweep. Production no longer runs

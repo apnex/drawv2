@@ -1,5 +1,5 @@
 /*
-THE PIPE KIND (network/pipe-kind.mjs) -- the network plugin's own kind, held in the planner one stage before the lab
+THE PIPE KIND (plugins/network/pipe-kind.mjs) -- the network plugin's own kind, held in the planner one stage before the lab
 composes it (H17.22 N-b; ruled 2026-10-02, N1, N2, N5, N6).
 
 Its id is its two anchors' hex, lower first; its row refuses an id that does not match its ends, ends that do not exist
@@ -18,9 +18,9 @@ import { productKinds } from '../product/kinds.mjs';
 const PRODUCT_KINDS = productKinds();   // the product's own kinds; the export went at S-f with the defaults it served
 import { commit, plan, undo } from './fixtures/composed.mjs';
 import { Log } from '../planner/log.mjs';
-import { createNetwork } from '../network/network.mjs';
-import { PIPE_ROW, pipeId, pipeEntity } from '../network/pipe-kind.mjs';
-import { LINK_ROW } from '../network/link-kind.mjs';
+import { createNetwork } from '../plugins/network/network.mjs';
+import { PIPE_ROW, pipeId, pipeEntity } from '../plugins/network/pipe-kind.mjs';
+import { LINK_ROW } from '../plugins/network/link-kind.mjs';
 
 const KINDS = composeKinds([...PRODUCT_KINDS.list.map((k) => PRODUCT_KINDS.row(k)), LINK_ROW, PIPE_ROW], 'a test');   // the link is the network's (S-e)
 const A = 'node-00000a', B = 'node-00000b', W = 'node-00000c';
@@ -105,6 +105,6 @@ test('N-d: a link crossing a pipe in either direction is using it -- the sweep k
 test('N-b: a composition without the network\'s rows refuses a pipe', async () => {
 	const { Model: Bare } = await import('../model/model.mjs');
 	const { plan: bare } = await import('../planner/txn.mjs');
-	const { linkTenant } = await import('../network/link-reactions.mjs');
+	const { linkTenant } = await import('../plugins/network/link-reactions.mjs');
 	assert.equal(bare(new Bare({ kinds: PRODUCT_KINDS }), [putPipe(A, B, 'hand')], { links: linkTenant({ owner: 't', keepsOrphan: () => false, says: {} }), kinds: PRODUCT_KINDS }).error, 'unknown kind: pipe');
 });

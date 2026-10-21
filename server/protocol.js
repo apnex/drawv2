@@ -65,7 +65,7 @@ export function snapshotBody(model, store, locks, principal = null, hub = null) 
 		/*
 		H12.4: the server's instant, so every peer can share ONE clock.
 
-		A mover's position is a function of `t` (`engine/movers.mjs`), which means two browsers agree
+		A mover's position is a function of `t` (`plugins/simulation/movers.mjs`), which means two browsers agree
 		on where a thing is exactly as far as their clocks agree -- and nothing enforces that a
 		laptop's clock is right. Stamping the instant here makes the server authoritative and costs
 		one field on a message every client already receives, rather than a protocol of its own.

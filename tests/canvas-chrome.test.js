@@ -14,9 +14,9 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { makeInput, pointer, seedNodes } from './fixtures/client-harness.mjs';
 import { PRODUCT_CANVAS } from '../product/canvas.mjs';
-import { makeZone } from '../zones/make-zone.mjs';
-import { makeWaypoint } from '../devices/make-node.mjs';
-import { makeLink } from '../network/link-queries.mjs';
+import { makeZone } from '../plugins/zones/make-zone.mjs';
+import { makeWaypoint } from '../plugins/devices/make-node.mjs';
+import { makeLink } from '../plugins/network/link-queries.mjs';
 
 const code = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
 // a target answering a selector list as a page would: any of its classes in the list

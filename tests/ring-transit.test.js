@@ -7,18 +7,18 @@ waypoints. Ruled: the ring OPENS at that waypoint into one link that starts ther
 there again (a LOOP), the waypoint its endpoint; turning transit back on closes it into a ring again; undo restores it.
 The drawing does not move: the loop runs the ring's own legs, its closing leg among them.
 */
-import { pathOf, isLinkDown } from '../network/network-queries.mjs';   // Q-a: the network's questions
+import { pathOf, isLinkDown } from '../plugins/network/network-queries.mjs';   // Q-a: the network's questions
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Model } from '../model/model.mjs';
 import { applyOps } from '../model/ops.mjs';
 import { plan } from '../planner/txn.mjs';
-import { createNetwork } from '../network/network.mjs';
-import { createTransit } from '../network/transit.mjs';
+import { createNetwork } from '../plugins/network/network.mjs';
+import { createTransit } from '../plugins/network/transit.mjs';
 import { productKinds } from '../product/kinds.mjs';
-import { NETWORK_ROWS } from '../network/kinds.mjs';
-import { pipeEntity } from '../network/pipe-kind.mjs';
-import { waypointRolesIn } from '../network/roles.mjs';
+import { NETWORK_ROWS } from '../plugins/network/kinds.mjs';
+import { pipeEntity } from '../plugins/network/pipe-kind.mjs';
+import { waypointRolesIn } from '../plugins/network/roles.mjs';
 import { validateDoc, heldLayouts } from './fixtures/composed.mjs';
 
 const KINDS = productKinds(...NETWORK_ROWS);
@@ -102,7 +102,7 @@ test('B299: a loop is valid only open and round two or more other stops; a close
 });
 
 test('B299: the transit edit says what it did to the ring -- opened, or closed again', async () => {
-	const { transitSummary } = await import('../network/transit.mjs');
+	const { transitSummary } = await import('../plugins/network/transit.mjs');
 	const m = ring();
 	const off = transitSummary(transit(m, [[P, false]]).ops);
 	assert.deepEqual([off.opened, off.closed, off.cut], [1, 0, null], 'opened, and nothing cut');

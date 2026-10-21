@@ -4,10 +4,10 @@ peer, stored with the format batch; B10, undo restores an item to its place; B25
 dev/design/unification/FORMAT-BATCH.md section 6.
 */
 import { PRODUCT_CANVAS } from '../product/canvas.mjs';   // C-a: the plugins' canvas parts, their painters among them
-import { isLinkDown } from '../network/network-queries.mjs';   // Q-a: the network's questions
-import { makeLink } from '../network/link-queries.mjs';   // K13d: the network's link queries
+import { isLinkDown } from '../plugins/network/network-queries.mjs';   // Q-a: the network's questions
+import { makeLink } from '../plugins/network/link-queries.mjs';   // K13d: the network's link queries
 import { test } from 'node:test';
-import { makeZone } from '../zones/make-zone.mjs';   // O-b1: the zones plugin's factory
+import { makeZone } from '../plugins/zones/make-zone.mjs';   // O-b1: the zones plugin's factory
 import assert from 'node:assert/strict';
 import { Model } from './fixtures/composed.mjs';   // the composition production runs (S-b)
 import { nextOrder } from '../model/order.mjs';
@@ -16,12 +16,12 @@ import { plan, commit, undo } from './fixtures/composed.mjs';
 import { Log } from '../planner/log.mjs';
 import { svgDocument } from '../server/svg.mjs';   // H25.5 (B378, D4): the real export renderer
 import { KINDS } from './fixtures/composed.mjs';
-import { createNetwork } from '../network/network.mjs';
+import { createNetwork } from '../plugins/network/network.mjs';
 import { productKinds } from '../product/kinds.mjs';
-import { PIPE_ROW, pipeEntity } from '../network/pipe-kind.mjs';
-import { NETWORK_ROWS } from '../network/kinds.mjs';   // the network's kind and the field it contributes (S-a)
+import { PIPE_ROW, pipeEntity } from '../plugins/network/pipe-kind.mjs';
+import { NETWORK_ROWS } from '../plugins/network/kinds.mjs';   // the network's kind and the field it contributes (S-a)
 import { makeRenderer } from './fixtures/client-harness.mjs';
-import { makeNode, makeWaypoint } from '../devices/make-node.mjs';   // O-e1: the devices plugin's factories
+import { makeNode, makeWaypoint } from '../plugins/devices/make-node.mjs';   // O-e1: the devices plugin's factories
 
 const router = (id, x, extra = {}) => ({ id, name: id, type: 'router', x, y: 0, ...extra });
 

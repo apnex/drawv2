@@ -19,9 +19,9 @@ These assert BEHAVIOUR, not structure, so they survive the move:
 Nothing here reads `input.mode` or `input.ctx`; `tools/scan-writers.mjs` enforces that.
 */
 
-import { makeLink } from '../network/link-queries.mjs';   // K13d: the network's link queries
+import { makeLink } from '../plugins/network/link-queries.mjs';   // K13d: the network's link queries
 import { test } from 'node:test';
-import { makeZone } from '../zones/make-zone.mjs';   // O-b1: the zones plugin's factory
+import { makeZone } from '../plugins/zones/make-zone.mjs';   // O-b1: the zones plugin's factory
 import assert from 'node:assert/strict';
 import { makeInput, key, pointer, seedNodes } from './fixtures/client-harness.mjs';
 
@@ -149,7 +149,7 @@ test('a selected link lights its waypoints, and releases them when selection mov
 	model.put('link', { id: 'link-aa0001', name: 'link-aa0001', src: 'node-aa0001', dst: 'node-ea0001', via: ['node-aa0002'] });
 
 	// RESTATED at C-e step fourteen (H19.33): the path's light is the network's reflection, marked by the renderer's one step
-	const { NETWORK_REFLECTS } = await import('../network/selection-reflects.mjs');
+	const { NETWORK_REFLECTS } = await import('../plugins/network/selection-reflects.mjs');
 	const state = new Map();
 	const host = { model, selectedSet: new Set(['link-aa0001']), reflects: NETWORK_REFLECTS.filter((r) => r.cls === 'on-selected-path'), marked: new Map(),
 		setState: (id, cls, on) => state.set(`${id}:${cls}`, on) };

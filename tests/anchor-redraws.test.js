@@ -14,7 +14,7 @@ import { Model } from './fixtures/composed.mjs';
 import { Renderer } from '../app/src/renderer.js';
 import { PRODUCT_CANVAS } from '../product/canvas.mjs';
 import { makeRenderer } from './fixtures/client-harness.mjs';
-import { pathOf } from '../network/network-queries.mjs';
+import { pathOf } from '../plugins/network/network-queries.mjs';
 import { roundedPath } from '../kernel/router.mjs';
 import { BEND_R } from '../kernel/spec.mjs';
 

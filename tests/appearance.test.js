@@ -17,7 +17,7 @@ import { attachRelations } from '../engine/store.mjs';
 import { NODE_GRID } from '../kernel/geometry.mjs';   // H26.1: the relation index is injected the node grid's nearest (it was cellOf)
 import { Renderer } from '../app/src/renderer.js';
 import { makeRenderer } from './fixtures/client-harness.mjs';
-import { pipeEntity } from '../network/pipe-kind.mjs';   // H24.6: a pipe under a link, so it is up
+import { pipeEntity } from '../plugins/network/pipe-kind.mjs';   // H24.6: a pipe under a link, so it is up
 
 // a subtree as plain data: tag, attributes, text and children, in order
 const ser = (n) => ({ tag: n.tagName, attrs: Object.fromEntries(Object.entries(n.attrs || {}).sort()), text: n.textContent ?? null, kids: (n.children || []).map(ser) });

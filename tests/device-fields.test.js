@@ -17,7 +17,7 @@ import { composeKinds, CORE_ROWS } from '../model/shape.mjs';
 import { validateEntity, validateDoc } from '../planner/validate.js';
 
 const code = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
-const plugin = async () => ({ ...(await import('../devices/device-fields.mjs')), ...(await import('../engine/spawn-field.mjs')) });
+const plugin = async () => ({ ...(await import('../plugins/devices/device-fields.mjs')), ...(await import('../plugins/simulation/spawn-field.mjs')) });
 const device = { id: 'node-0d0001', name: 'r', type: 'router', shape: 'circle', x: 0, y: 0 };
 const waypoint = { id: 'node-0d0002', name: 'w', x: 60, y: 0 };
 const spawner = { interval: 1000, speed: 1, kind: 'packet', since: 1_700_000_000_000 };   // within model/limits.mjs

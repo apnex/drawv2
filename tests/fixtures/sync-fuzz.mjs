@@ -17,12 +17,12 @@ From the command line, a tally over many seeds:
 import { placesOf } from '../../app/src/snap.js';
 import { PRODUCT_CANVAS } from '../../product/canvas.mjs';
 const PLACES = placesOf(PRODUCT_CANVAS);
-import { makeLink } from '../../network/link-queries.mjs';   // K13d: the network's link queries
+import { makeLink } from '../../plugins/network/link-queries.mjs';   // K13d: the network's link queries
 import { loadCode, makeWorld, clock, shape, shapeDoc, diffDocs } from './sync-world.mjs';
 import path from 'node:path';
 import url from 'node:url';
-import { makeNode, makeWaypoint } from '../../devices/make-node.mjs';   // O-e1: the devices plugin's factories
-import { makeGroup } from '../../groups/make-group.mjs';
+import { makeNode, makeWaypoint } from '../../plugins/devices/make-node.mjs';   // O-e1: the devices plugin's factories
+import { makeGroup } from '../../plugins/groups/make-group.mjs';
 import { linkCommand, directionCommand } from './plugin-edits.mjs';   // C-e: the network's link keys, run as their rows run   // C-e: the groups plugin's factory, as its Ctrl+G makes a group
 
 const here = path.dirname(url.fileURLToPath(import.meta.url));

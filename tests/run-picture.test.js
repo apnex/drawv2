@@ -1,5 +1,5 @@
 // P4 R-c (H18.21; ruled H2, refined 2026-10-04) -- run mode and the SVG download are ONE rendering, decided in one place in code
-// (network/appearance.mjs RUN_PICTURE): the canvas in run mode and the export draw the same picture, and the export
+// (plugins/network/appearance.mjs RUN_PICTURE): the canvas in run mode and the export draw the same picture, and the export
 // draws each link along its route, a down link with the canvas's down look (H1). CONSUMERS-ROUTE.md, stage R-c.
 
 import { PRODUCT_CANVAS, CANVAS_LAYERS } from '../product/canvas.mjs';   // C-a: the plugins' canvas parts, their painters among them; H25.4: the canvas's layers
@@ -12,10 +12,10 @@ import { Renderer } from '../app/src/renderer.js';
 import { makeRenderer } from './fixtures/client-harness.mjs';
 import { fakeLayer } from './fixtures/fake-svg.mjs';
 import { svgDocument } from '../server/svg.mjs';
-import { readModel } from '../network/read-model.mjs';
-import { attachNetwork } from '../network/host.mjs';
-import { pipeEntity } from '../network/pipe-kind.mjs';
-import { RUN_PICTURE, waypointLayers, downStroke, NETWORK_TOKENS } from '../network/appearance.mjs';
+import { readModel } from '../plugins/network/read-model.mjs';
+import { attachNetwork } from '../plugins/network/host.mjs';
+import { pipeEntity } from '../plugins/network/pipe-kind.mjs';
+import { RUN_PICTURE, waypointLayers, downStroke, NETWORK_TOKENS } from '../plugins/network/appearance.mjs';
 import { TOKENS } from '../kernel/theme.mjs';
 
 /*
@@ -89,7 +89,7 @@ test('R-c: authoring draws the whole waypoint -- the run picture leaves out the 
 test('R-c: what is left out is decided in one place -- no stylesheet hides authoring geometry in run mode', async () => {
 	assert.equal(RUN_PICTURE.pipes, false);
 	const { PAGE_STYLESHEETS } = await import('../product/canvas.mjs');
-	assert.ok(PAGE_STYLESHEETS.includes('network/network.css') && PAGE_STYLESHEETS.includes('app/style.css'), 'control: the sheets this read before are among them');
+	assert.ok(PAGE_STYLESHEETS.includes('plugins/network/network.css') && PAGE_STYLESHEETS.includes('app/style.css'), 'control: the sheets this read before are among them');
 	for (const f of PAGE_STYLESHEETS) {
 		const css = fs.readFileSync(new URL(`../${f}`, import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
 		assert.doesNotMatch(css, /\.run-mode\s+[^{]*\.(wp-anchor|wp-dot|pipe|pipe-hit)\b/, `${f} hides a layer in run mode, a second place deciding the picture`);

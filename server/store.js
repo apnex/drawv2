@@ -22,7 +22,7 @@ import { fsFiles } from './files.mjs';
 import { NAME_MAX } from '../model/limits.mjs';   // truncates where validate.js rejects (B86)
 import { SCHEMA, completeAlwaysHeld } from '../model/shape.mjs';   // the document generation; WD-b1: the always-held completion
 import { composeProductTypes, COMPOSED_KINDS } from '../product/types.mjs';
-import { readerNetwork } from '../network/read-model.mjs';   // each Model draws with a network of its own (R-a)
+import { readerNetwork } from '../plugins/network/read-model.mjs';   // each Model draws with a network of its own (R-a)
 
 // U4-1, U4-3 (H21.3, B282): hand the server's plugins their slices of the device type declarations at composition
 composeProductTypes();
@@ -37,7 +37,7 @@ the lab runs, transit's cut and join. One composition, built once; the lab compo
 
 The Models are given no network to DRAW with: the server's path consumers keep their straight drawing until P4 routes them
 through one shared function (SERVER-COMPOSES-NETWORK.md section 4). Only the planner reads the network here.
-AMENDED 2026-10-04 (P4 R-a, H18.19): each Model draws with a network of its own (`readerNetwork`, network/read-model.mjs), so
+AMENDED 2026-10-04 (P4 R-a, H18.19): each Model draws with a network of its own (`readerNetwork`, plugins/network/read-model.mjs), so
 every path the server answers is the route the lab draws. One per Model, as the network caches one derivation per board.
 */
 const KINDS = COMPOSED_KINDS;

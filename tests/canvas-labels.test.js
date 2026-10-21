@@ -13,9 +13,9 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { makeInput, pointer, key, seedNodes } from './fixtures/client-harness.mjs';
 import { PRODUCT_CANVAS } from '../product/canvas.mjs';
-import { makeZone } from '../zones/make-zone.mjs';
-import { makeTextBox } from '../devices/make-node.mjs';
-import { makeLink } from '../network/link-queries.mjs';
+import { makeZone } from '../plugins/zones/make-zone.mjs';
+import { makeTextBox } from '../plugins/devices/make-node.mjs';
+import { makeLink } from '../plugins/network/link-queries.mjs';
 
 const code = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
 const opened = (h) => h.stateCalls('labels.open').map(([kind, id]) => `${kind}:${id}`);
@@ -63,7 +63,7 @@ test('C-e: F2 renames among the selection only the named kinds -- a zone with a 
 });
 
 test('C-e: the devices plugin says a device\'s label sits under it, centred; a waypoint\'s, the canvas default', async () => {
-	const { DEVICE_LABELS } = await import('../devices/device-labels.mjs');
+	const { DEVICE_LABELS } = await import('../plugins/devices/device-labels.mjs');
 	const at = DEVICE_LABELS.labelAt;
 	assert.deepEqual(at({ id: 'node-aa0001', type: 'host', x: 60, y: 120 }), { x: 60, y: 146, centred: true });
 	assert.equal(at({ id: 'node-aa0002', x: 60, y: 120 }), null, 'a waypoint: no word from the devices plugin');
@@ -79,7 +79,7 @@ test('C-e: the canvas holds no double-click target, label placement or F2 filter
 
 test('C-e: a Tab rename run advances to the next entity of the same drawn kind -- a device to a device, a waypoint to a waypoint', async () => {
 	const { LabelEditor } = await import('../app/src/labeledit.js');
-	const { makeWaypoint } = await import('../devices/make-node.mjs');
+	const { makeWaypoint } = await import('../plugins/devices/make-node.mjs');
 	const h = makeInput();
 	try {
 		const [a, b] = seedNodes(h.model, [[0, 0], [240, 0]]);
@@ -106,7 +106,7 @@ test('C-e: a double-click on a device inside a zone edits the device\'s name -- 
 // B321 -- F2 renamed among the selection everything but a link and a group, so a selected pipe (selected by clicking it, a
 // plugin's mark) opened a name editor with no place and no name, and a name typed into it was dropped (measured on the page)
 test('B321: F2 with a pipe selected opens no name editor', async () => {
-	const { pipeEntity } = await import('../network/pipe-kind.mjs');
+	const { pipeEntity } = await import('../plugins/network/pipe-kind.mjs');
 	const h = makeInput();
 	try {
 		const [a, b] = seedNodes(h.model, [[0, 0], [240, 0]]);
@@ -120,8 +120,8 @@ test('B321: F2 with a pipe selected opens no name editor', async () => {
 /*
 H24.1 (B264) -- every zone interaction takes Shift, and a double-click was the one that did not.
 
-A zone is an inert backdrop: a press reaches it only with Shift held (zones/zone-painter.mjs, its pick's `modifier`), so a
-plain click or marquee passes through it. The double-click asked the zones plugin's edit (`zones/zone-labels.mjs`) with no
+A zone is an inert backdrop: a press reaches it only with Shift held (plugins/zones/zone-painter.mjs, its pick's `modifier`), so a
+plain click or marquee passes through it. The double-click asked the zones plugin's edit (`plugins/zones/zone-labels.mjs`) with no
 such test, so a plain double-click anywhere in a zone opened its name editor and selected it -- the gap B264 recorded and
 the director ruled closed: "all zone interaction requires shift".
 

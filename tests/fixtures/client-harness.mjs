@@ -42,11 +42,11 @@ import { RUN_PRESSES } from '../../app/src/run-mode.js';
 import { Capture } from '../../app/src/capture.js';
 import { picksOf, regionsOf } from '../../app/src/pick.js';
 import { PRODUCT_CANVAS } from '../../product/canvas.mjs';
-import { networkInput } from '../../network/keys.mjs';
-import { createNetworkSession } from '../../network/session.mjs';
+import { networkInput } from '../../plugins/network/keys.mjs';
+import { createNetworkSession } from '../../plugins/network/session.mjs';
 import { productKinds } from '../../product/kinds.mjs';
-import { NETWORK_ROWS } from '../../network/kinds.mjs';
-import { makeNode } from '../../devices/make-node.mjs';   // O-e1: the devices plugin's factories
+import { NETWORK_ROWS } from '../../plugins/network/kinds.mjs';
+import { makeNode } from '../../plugins/devices/make-node.mjs';   // O-e1: the devices plugin's factories
 const PAGE_KINDS = productKinds(...NETWORK_ROWS);
 
 // ---- the smallest DOM the client's constructors actually touch ----
@@ -169,7 +169,7 @@ export function makeInput({ readOnly = false, bare = false, host: hostOverride =
 	const restore = installDom();
 
 	// the kinds the product page composes (S-b, G1), and its network: a Model holding links draws with one (V-e, J2) -- the
-	// network SESSION's, as the page's is (network/page.mjs), so the real drag judge below judges on the network the Model draws with
+	// network SESSION's, as the page's is (plugins/network/page.mjs), so the real drag judge below judges on the network the Model draws with
 	const session = createNetworkSession();
 	const pageNetwork = session.network;
 	const model = new Model({ kinds: PAGE_KINDS, attached: { network: pageNetwork }});
@@ -260,7 +260,7 @@ export function makeInput({ readOnly = false, bare = false, host: hostOverride =
 			: new Input({ svg, model, history, selection, renderer, labels, readout, tools, dataview, host, help, snap, runRules,
 				/*
 				P7 X-a (H18.37) -- THE PRODUCT PAGE'S INPUT, as app/src/main.js composes it since V-b: the network's keys and its REAL
-				drag judge (network/session.mjs `judge`, what network/page.mjs attaches), judging on the board the tab holds. Before
+				drag judge (plugins/network/session.mjs `judge`, what plugins/network/page.mjs attaches), judging on the board the tab holds. Before
 				X-a this harness composed the network only when a test passed a stub judge, so every other test -- and 69 of the
 				gesture corpus's 75 scenarios -- ran the page as it was before P5, with no g and no x.
 				`routeHook` stays: a STUB judge, for tests of the plugin seam itself; `plugins`, a composition given whole.

@@ -8,12 +8,12 @@ import assert from 'node:assert/strict';
 import { Model } from '../model/model.mjs';
 import { plan } from '../planner/txn.mjs';
 import { productKinds } from '../product/kinds.mjs';
-import { PIPE_ROW, pipeEntity } from '../network/pipe-kind.mjs';
-import { NETWORK_ROWS } from '../network/kinds.mjs';   // the network's kind and the field it contributes (S-a)
-import { createNetwork } from '../network/network.mjs';
+import { PIPE_ROW, pipeEntity } from '../plugins/network/pipe-kind.mjs';
+import { NETWORK_ROWS } from '../plugins/network/kinds.mjs';   // the network's kind and the field it contributes (S-a)
+import { createNetwork } from '../plugins/network/network.mjs';
 import { CASES, composeCase } from './fixtures/planner-corpus.mjs';
-import { createNetwork as netFor } from '../network/network.mjs';
-import { createTransit as transitFor } from '../network/transit.mjs';
+import { createNetwork as netFor } from '../plugins/network/network.mjs';
+import { createTransit as transitFor } from '../plugins/network/transit.mjs';
 const aNetwork = () => netFor(transitFor());   // a Model holding links is given one (V-e, J2)
 
 const P = 60, KINDS = productKinds(...NETWORK_ROWS);
@@ -43,7 +43,7 @@ test('TG-4: a rename calls nothing, and a plane change calls only the join', () 
 });
 
 // F-c (H18.5): a waypoint is a node with no type, so `node-links` hears its delete as well, and does nothing with it -- each
-// clear reaction acts on its own shape of node (network/link-reactions.mjs)
+// clear reaction acts on its own shape of node (plugins/network/link-reactions.mjs)
 test('TG-4: deleting a pin calls what listens to a waypoint deleted, and then what its consequences wake', () => {
 	assert.deepEqual(calls([{ op: 'del', kind: 'node', id: 'node-00000e' }]),
 		// junction-cut since H19.10 (B303): the strip re-pins a link, and a link re-pinned is asked whether it now passes a stop

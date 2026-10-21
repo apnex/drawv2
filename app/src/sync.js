@@ -87,7 +87,7 @@ export class Sync {
 	/*
 	V-b (H18.26) -- three hooks, for whoever settles the board after Sync has applied what the server said: `onAnswered(request,
 	answer)` after an accepted answer to this tab's own request, `onChanged()` after another writer's change or a snapshot, and
-	`onRefused(answer)` after a refusal. The network's attach (network/host.mjs) is the page's; Sync knows nothing of it.
+	`onRefused(answer)` after a refusal. The network's attach (plugins/network/host.mjs) is the page's; Sync knows nothing of it.
 	*/
 	constructor({ model, net, history, selection, onState, clock, watchdog = null, onAnswered = null, onChanged = null, onRefused = null }) {
 		this.onAnswered = onAnswered;

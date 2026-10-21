@@ -3,7 +3,7 @@
 // the SVG download, `draw movers`; each held to the lab's derivation. dev/design/unification/CONSUMERS-ROUTE.md, stage R-e.
 
 import { PRODUCT_CANVAS } from '../product/canvas.mjs';   // C-a: the plugins' canvas parts, their painters among them
-import { pathOf, isLinkDown, blockersOf, networkOf } from '../network/network-queries.mjs';   // Q-a: the network's questions
+import { pathOf, isLinkDown, blockersOf, networkOf } from '../plugins/network/network-queries.mjs';   // Q-a: the network's questions
 import { test } from 'node:test';
 import { KINDS, heldLayouts } from './fixtures/composed.mjs';   // O-b1: a reader is handed its caller's kinds
 import assert from 'node:assert/strict';
@@ -12,11 +12,11 @@ import os from 'node:os';
 import path from 'node:path';
 import { Model } from '../model/model.mjs';
 import { productKinds } from '../product/kinds.mjs';
-import { NETWORK_ROWS } from '../network/kinds.mjs';
-import { createNetworkSession } from '../network/session.mjs';
-import { pipeEntity } from '../network/pipe-kind.mjs';
-import { readModel, linkReading } from '../network/read-model.mjs';
-import { spawnersOf } from '../engine/spawners.mjs';
+import { NETWORK_ROWS } from '../plugins/network/kinds.mjs';
+import { createNetworkSession } from '../plugins/network/session.mjs';
+import { pipeEntity } from '../plugins/network/pipe-kind.mjs';
+import { readModel, linkReading } from '../plugins/network/read-model.mjs';
+import { spawnersOf } from '../plugins/simulation/spawners.mjs';
 import { svgDocument } from '../server/svg.mjs';
 import { serialize, parse } from '../server/docfile.mjs';
 import { Renderer } from '../app/src/renderer.js';

@@ -1,0 +1,22 @@
+/*
+THE DEVICES PLUGIN'S STYLESHEET -- the look of what the devices plugin draws: its glyph art, its sockets, a panel's clickable
+regions, a node in link band, a text box's draw preview (plugins/devices/device-appearance.mjs, device-types.mjs, device-gestures.mjs).
+H25.1 (B366): moved here from app/style.css word for word, in their order.
+*/
+
+/* W5 — run mode: clickable content regions ACT. The transparent hit rect captures only in run mode,
+   so view/edit clicks pass through to the node for normal gestures. A green border cues run mode. */
+.clickable { pointer-events: none; }
+#container.run-mode .clickable { pointer-events: all; cursor: pointer; }
+#container.run-mode .clickable[data-input] { cursor: text; }   /* W6 — an editable input region */
+#container.run-mode .clickable:hover { fill: var(--tok-clickable-hover); }
+
+/* ---- the glyph art's primitives (plugins/devices/device-types.mjs) ---- */
+.hollow { fill: var(--fill, var(--tok-hollow)); stroke: var(--icon, var(--tok-accent)); stroke-width: 2; }
+.solid  { fill: var(--icon, var(--tok-accent)); stroke: var(--icon, var(--tok-accent)); stroke-width: 0.2; }
+.icon   { transform: scale(0.3); }
+.socket { fill: none; stroke: var(--tok-socket); stroke-width: 0.6; stroke-dasharray: 2 2; }
+.node.linkband { cursor: crosshair; }
+
+/* A1 -- the text-box draw preview (hold 't' + drag) */
+.textbox-preview { rx: 5px; fill: var(--tok-panel); fill-opacity: 0.3; stroke: var(--tok-accent); stroke-width: 2; stroke-dasharray: 4 3; pointer-events: none; }

@@ -14,10 +14,10 @@ import { PRODUCT_CANVAS } from '../product/canvas.mjs';
 import { helpSections } from '../app/src/help.js';
 import { Readout } from '../app/src/readout.js';
 import { Selection } from '../app/src/selection.js';
-import { makeWaypoint } from '../devices/make-node.mjs';
-import { makeZone } from '../zones/make-zone.mjs';
-import { makeLink } from '../network/link-queries.mjs';
-import { makeGroup } from '../groups/make-group.mjs';
+import { makeWaypoint } from '../plugins/devices/make-node.mjs';
+import { makeZone } from '../plugins/zones/make-zone.mjs';
+import { makeLink } from '../plugins/network/link-queries.mjs';
+import { makeGroup } from '../plugins/groups/make-group.mjs';
 
 const code = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
 const keyLines = (h) => helpSections(h.input.bindings()).find((s) => s.title === 'keys').lines;

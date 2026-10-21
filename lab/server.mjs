@@ -45,11 +45,7 @@ const MOUNTS = {
 	'/model/': 'model',
 	'/engine/': 'engine',
 	'/planner/': 'planner',   // K4 (H17-D5): the planner, whole -- the page commits through it
-	'/network/': 'network',   // the incubating plugin (ruled 2026-09-28)
-	'/layouts/': 'layouts',   // the layouts plugin (WD-b1, H19.45)
-	'/zones/': 'zones',       // the zones plugin (O-b1, H19.19)
-	'/groups/': 'groups',     // the groups plugin (O-c, H19.20)
-	'/devices/': 'devices',   // the devices plugin (O-e1, H19.21)
+	'/plugins/': 'plugins',   // H26.7: every plugin, each in its folder -- network, layouts, zones, groups, devices, the simulation
 	'/product/': 'product',   // the product's composition (O-d, H19.22)
 };
 

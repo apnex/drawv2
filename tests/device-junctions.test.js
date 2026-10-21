@@ -2,14 +2,14 @@
 H19.10 (B301, B303; dev/design/unification/DEVICE-JUNCTIONS.md) -- a device that passes routes may be a junction.
 
 Ruled 2026-10-07: a device is an endpoint or a junction by what the network plugin gives it, a junction needing transit on;
-Z1, a device pin follows transit's rules only. One predicate, `nodeOffersTransit` (network/transit-offers.mjs), decides
+Z1, a device pin follows transit's rules only. One predicate, `nodeOffersTransit` (plugins/network/transit-offers.mjs), decides
 whether a node may be passed, in place of four rules each asking whether it was a bare waypoint.
 */
-import { isLinkDown } from '../network/network-queries.mjs';   // Q-a: the network's questions
+import { isLinkDown } from '../plugins/network/network-queries.mjs';   // Q-a: the network's questions
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { validateDoc, heldLayouts } from './fixtures/composed.mjs';
-import { nodeOffersTransit } from '../network/transit-offers.mjs';
+import { nodeOffersTransit } from '../plugins/network/transit-offers.mjs';
 
 const A = 'node-00000a', B = 'node-00000b', R = 'node-0000c1';
 // RESTATED at WD-b1 (H19.45): schema 3 -- a document holds its two layouts (tests/fixtures/composed.mjs `heldLayouts`)
@@ -43,11 +43,11 @@ test('Z-a: whether a node offers transit is the plugin\'s table, read through on
 import { Model } from '../model/model.mjs';
 import { applyOps } from '../model/ops.mjs';
 import { plan } from '../planner/txn.mjs';
-import { createNetwork } from '../network/network.mjs';
-import { createTransit } from '../network/transit.mjs';
+import { createNetwork } from '../plugins/network/network.mjs';
+import { createTransit } from '../plugins/network/transit.mjs';
 import { productKinds } from '../product/kinds.mjs';
-import { NETWORK_ROWS } from '../network/kinds.mjs';
-import { pipeEntity } from '../network/pipe-kind.mjs';
+import { NETWORK_ROWS } from '../plugins/network/kinds.mjs';
+import { pipeEntity } from '../plugins/network/pipe-kind.mjs';
 
 const KINDS = productKinds(...NETWORK_ROWS);
 const NET = createNetwork(createTransit());

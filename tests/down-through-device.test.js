@@ -7,11 +7,11 @@ answered null for any other: written when every pin was a waypoint. H19.10 (Z1) 
 transit is on, so a down link through one had no path at all -- REST and the CLI answered `path: null`, and the canvas drew
 it from the same null. A via is any anchor now: the anchor's position is the intent, whether a device is composed on it.
 */
-import { pathOf, isLinkDown, straightPath } from '../network/network-queries.mjs';   // Q-a: the network's questions
+import { pathOf, isLinkDown, straightPath } from '../plugins/network/network-queries.mjs';   // Q-a: the network's questions
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Model, KINDS } from './fixtures/composed.mjs';
-import { readModel, linkReading } from '../network/read-model.mjs';
+import { readModel, linkReading } from '../plugins/network/read-model.mjs';
 
 const nodes = [
 	{ id: 'node-0a0001', name: 'a', type: 'host', shape: 'circle', x: 0, y: 0 },

@@ -8,7 +8,7 @@ configured in one place; the other five each assumed a capacity of one in their 
 `some(...)`, a `find(...)`. Raising the limit would have changed what the planner accepts and nothing else, so every
 other site would have refused what the planner allows.
 
-T4 gives the five one question to ask, `pairHolders(link, among, model)` in network/link-rules.mjs (model/invariants.mjs until S-b, model/link-rules.mjs until S-e) -- the straight links
+T4 gives the five one question to ask, `pairHolders(link, among, model)` in plugins/network/link-rules.mjs (model/invariants.mjs until S-b, model/link-rules.mjs until S-e) -- the straight links
 holding the pair against a link, empty when there is room -- beside the invariant and the capacity it reads. What the sites decide is unchanged: the tests of each (tests/input.test.js B72/B80,
 tests/txn.test.js and tests/commands.test.js B81, tests/guide-gesture.test.js) pass unedited.
 
@@ -16,7 +16,7 @@ THE GUARD is the last test here. It copies the tree, raises `straightCapacity` t
 sites there: each must then admit a second straight link. It is the property T4 exists for -- one change, every site
 follows -- and it fails on any site that decides the limit for itself.
 */
-import { makeLink } from '../network/link-queries.mjs';   // K13d: the network's link queries
+import { makeLink } from '../plugins/network/link-queries.mjs';   // K13d: the network's link queries
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -25,8 +25,8 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { makeInput, pointer, seedNodes } from './fixtures/client-harness.mjs';
-import { pairHolders } from '../network/link-rules.mjs';
-import { makeWaypoint } from '../devices/make-node.mjs';   // O-e1: the devices plugin's factories
+import { pairHolders } from '../plugins/network/link-rules.mjs';
+import { makeWaypoint } from '../plugins/devices/make-node.mjs';   // O-e1: the devices plugin's factories
 
 // admitted = no link holds the pair against it
 const admits = (link, among) => pairHolders(link, among).length === 0;
@@ -118,11 +118,11 @@ import { violations } from './model/invariants.mjs';
 import { attachRelations } from './engine/store.mjs';
 import { NODE_GRID } from './kernel/geometry.mjs';
 import { commit } from './planner/txn.mjs';
-import { linkTenant } from './network/link-reactions.mjs';
+import { linkTenant } from './plugins/network/link-reactions.mjs';
 import { productKinds } from './product/kinds.mjs';
-import { NETWORK_ROWS } from './network/kinds.mjs';
-import { createNetwork } from './network/network.mjs';
-import { createTransit } from './network/transit.mjs';
+import { NETWORK_ROWS } from './plugins/network/kinds.mjs';
+import { createNetwork } from './plugins/network/network.mjs';
+import { createTransit } from './plugins/network/transit.mjs';
 // the product's kinds and the network's rows (S-e), and a network to draw with (V-e, J2) -- the strip's tenant lays no pipe
 const K = productKinds(...NETWORK_ROWS);
 const N = () => createNetwork(createTransit());
@@ -130,8 +130,8 @@ const N = () => createNetwork(createTransit());
 const STRIP = { links: linkTenant({ owner: 'the strip', keepsOrphan: () => false, says: {} }), kinds: K };
 import { Log } from './planner/log.mjs';
 import { deleteSelection } from './app/src/commands.js';
-import { judgeDrag } from './network/guide.mjs';
-import { makeLink } from './network/link-queries.mjs';
+import { judgeDrag } from './plugins/network/guide.mjs';
+import { makeLink } from './plugins/network/link-queries.mjs';
 
 const P = 60, A = 'node-00000a', B = 'node-00000b', W = 'node-00000c';
 const out = {};
@@ -192,11 +192,11 @@ const NEEDLE = 'export function straightCapacity(_model, _a, _b) {\n\treturn 1;\
 test('ONE HOME: raise straightCapacity to 2 in a copy, and all six sites admit a second straight link', () => {
 	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pair-capacity-'));
 	try {
-		for (const d of ['kernel', 'model', 'engine', 'app', 'server', 'planner', 'network', 'layouts', 'zones', 'groups', 'devices', 'product', 'tests/fixtures']) fs.cpSync(path.join(ROOT, d), path.join(dir, d), { recursive: true });
+		for (const d of ['kernel', 'model', 'engine', 'app', 'server', 'planner', 'plugins', 'product', 'tests/fixtures']) fs.cpSync(path.join(ROOT, d), path.join(dir, d), { recursive: true });
 		fs.cpSync(path.join(ROOT, 'package.json'), path.join(dir, 'package.json'));
 		// RESTATED at H26.1: the kernel imports snap-grid by name (SNAP-GRID.md section 5), so the copy resolves the root's dependencies
 		fs.symlinkSync(path.join(ROOT, 'node_modules'), path.join(dir, 'node_modules'));
-		const inv = path.join(dir, 'network/pair-capacity.mjs');
+		const inv = path.join(dir, 'plugins/network/pair-capacity.mjs');
 		const src = fs.readFileSync(inv, 'utf8');
 		assert.equal(src.split(NEEDLE).length, 2, 'the guard is INVALID: straightCapacity no longer reads as it did -- re-point NEEDLE');
 		fs.writeFileSync(inv, src.replace(NEEDLE, NEEDLE.replace('return 1;', 'return 2;')));

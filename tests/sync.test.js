@@ -107,7 +107,7 @@ sat empty against a server that was holding the documents. The bug was unreachab
 until the first HTTPS deployment, so the fix is a pure function specifically to make it reachable.
 */
 import { wsUrl } from '../app/src/net.js';
-import { makeNode } from '../devices/make-node.mjs';   // O-e1: the devices plugin's factories
+import { makeNode } from '../plugins/devices/make-node.mjs';   // O-e1: the devices plugin's factories
 
 test('B60: an https page gets wss, and an http page still gets ws', () => {
 	assert.equal(wsUrl({ protocol: 'https:', host: 'draw.apnex.io' }), 'wss://draw.apnex.io/ws',

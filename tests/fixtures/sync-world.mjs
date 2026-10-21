@@ -3,7 +3,7 @@ THE SYNC WORLD -- a real server (Store + protocol Session + Hub) and N real tabs
 queues that a scheduler drains one message at a time. H19.13 (U-a; dev/design/unification/SYNC-HARDENING.md): the lab's K1
 attack harness, kept in the private lab-design archive since 2026-09-28, ported into the repository and onto the composition
 production runs since the cutover -- each tab's Model draws with the network and its Changes preview every commit with the
-planner, as the product page composes them (app/src/compose-canvas.js, network/page.mjs).
+planner, as the product page composes them (app/src/compose-canvas.js, plugins/network/page.mjs).
 
 
 Oracles (all computed from the harness's OWN bookkeeping, never from Sync.pendingOps):
@@ -32,15 +32,15 @@ import * as commands from '../../app/src/commands.js';
 import { Session } from '../../server/protocol.js';
 import { Hub } from '../../server/hub.js';
 import { OWNER, openStore } from './app.mjs';
-import { createPageNetwork } from '../../network/page.mjs';
+import { createPageNetwork } from '../../plugins/network/page.mjs';
 import { plan } from '../../planner/txn.mjs';
 import { validateDoc } from '../../planner/validate.js';
 import { productKinds } from '../../product/kinds.mjs';
 import '../../product/types.mjs';
-import { NETWORK_ROWS } from '../../network/kinds.mjs';
-import { linkReading, readModel } from '../../network/read-model.mjs';
-import { createTransit } from '../../network/transit.mjs';
-import { pipeEntity } from '../../network/pipe-kind.mjs';
+import { NETWORK_ROWS } from '../../plugins/network/kinds.mjs';
+import { linkReading, readModel } from '../../plugins/network/read-model.mjs';
+import { createTransit } from '../../plugins/network/transit.mjs';
+import { pipeEntity } from '../../plugins/network/pipe-kind.mjs';
 
 let NOW = 1_700_000_000_000;
 const realNow = Date.now;

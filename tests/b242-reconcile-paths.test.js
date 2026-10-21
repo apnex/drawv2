@@ -41,9 +41,9 @@ import { Hub } from '../server/hub.js';
 import { OWNER, openStore } from './fixtures/app.mjs';
 import { makeInput, pointer } from './fixtures/client-harness.mjs';
 import { productKinds } from '../product/kinds.mjs';
-import { NETWORK_ROWS } from '../network/kinds.mjs';
-import { createNetwork as netFor } from '../network/network.mjs';
-import { createTransit as transitFor } from '../network/transit.mjs';
+import { NETWORK_ROWS } from '../plugins/network/kinds.mjs';
+import { createNetwork as netFor } from '../plugins/network/network.mjs';
+import { createTransit as transitFor } from '../plugins/network/transit.mjs';
 const aNetwork = () => netFor(transitFor());   // a Model holding links is given one (V-e, J2)
 const PAGE_KINDS = productKinds(...NETWORK_ROWS);
 
@@ -552,8 +552,8 @@ the tab applied, changes nothing. A snapshot after a lost connection re-plans wh
 */
 const previewing = async () => {
 	const { plan } = await import('../planner/txn.mjs');
-	const { createNetwork } = await import('../network/network.mjs');
-	const { createTransit } = await import('../network/transit.mjs');
+	const { createNetwork } = await import('../plugins/network/network.mjs');
+	const { createTransit } = await import('../plugins/network/transit.mjs');
 	const tenant = createNetwork(createTransit()).links;
 	const model = new Model({ kinds: PAGE_KINDS, attached: { network: aNetwork() }});
 	return { model, changes: new Changes(model, { coalesceMs: 3_600_000, preview: (m, ops) => plan(m, ops, { links: tenant, kinds: PAGE_KINDS }) }) };
