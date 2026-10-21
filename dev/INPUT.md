@@ -223,6 +223,8 @@ B42 becomes structurally impossible rather than fixed.
 
 ## 7. The gesture lifecycle
 
+AMENDED 2026-10-21 (H26.2, H26-6): which phase of a gesture is due -- start, update, commit, cancel, and a press's click or drop -- is decided by a gesture session from `@apnex/input-binding`, opened by the canvas; `app/src/input.js` runs each phase's body on the session's outcome, assigns no `mode`, and every cancel goes through the session first (`dev/design/components/INPUT-BINDING.md` sections 5 and 6.3); the rest is as written.
+
 All ten modes, one contract:
 ```js
 GESTURES[mode] = { start(ctx, pos, evt) -> ctx, update(ctx, pos, evt), commit(ctx, pos, evt), cancel(ctx) }

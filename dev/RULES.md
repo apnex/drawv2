@@ -298,6 +298,8 @@ Q4: binding now -- the situation is model-level, serialisable and DOM-free.
 
 ## 11. The design as built -- step T3 of the ruleset audit, approved 2026-09-30
 
+AMENDED 2026-10-21 (H26.2, H26-6): the matcher this section describes as `kernel/input-rules.mjs`'s now lives in the sovereign component `@apnex/input-binding` -- one match or none, guards declared per table, the trace and the overlaps -- and `kernel/input-rules.mjs` is draw's adapter, keeping `composeRules`, `resolveInput` and `overlapsIn` and adding `openGestures` (`dev/design/components/INPUT-BINDING.md` section 5); the rest is as written.
+
 The director's intent (`dev/DECISIONS.md`, 2026-09-30): the Rules system is foundational to the plugin and capability system, and a plugin's rules are the plugin's.\
 The shape is P4, a neutral core with tenants: the core owns the mechanism, and each tenant owns its semantics.
 

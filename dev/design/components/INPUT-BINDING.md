@@ -859,6 +859,21 @@ Read through context-lab's review panel, `--tools on --verify`, the document rea
 
 ---
 
+## 11. Settled at build
+
+`apnex/input-binding` was built from section 3 by an agent that had not drafted it, sealed by an independent run-verifier, and released as `v0.1.0` by its own CI; draw was moved onto it in H26.2, and a second independent verifier passed the move.\
+Where section 3 was silent or open, the builder chose and the verifier judged; each rule is stated in the component's `CONTRACT.md` and listed in its own decision record, D2.\
+None changes a decision of section 8.
+
+- **Reading.** Reading a value stops at the first reflection that refuses it; each row is read whole before the next; a phantom key -- listed by a proxy's own keys, its descriptor `undefined` -- is absent where IB2's order reads its descriptor and judged by its key alone where it reads none; a guard state's keys are judged each at its own descriptor; `pressMatched` reads no own keys of a match, so a table entry's other properties are accepted, while a gesture argument refuses any property its form does not name; a fact is judged by `typeof` alone; an array index is a canonical integer below 2^32 - 1.
+- **Forms.** A table and a session are frozen plain objects in fixed key orders, their functions needing no receiver; `match` is the table entry itself; a guard state given to a table with no guards is malformed if it names any state; all-zero travel is not beyond; the press holds no button; the TypeScript context of `traceInput` and `matchInput` is optional exactly when `undefined` is assignable to it.
+- **Checks.** IB13's clause -- no clock, no randomness, no timer -- is held by a check of the component's own gate over its built files, bracket access and destructuring included.
+- **Size.** The table half is 18,872 bytes as built and the session half 22,135, so a consumer of the table alone, as draw's server and export are through the drag grammar, loads about 4 KB gzipped of session code it never runs (D11).
+- **Draw's move.** The side-by-side test of acceptance step 4 keeps draw's old matcher and press as verbatim copies under `tests/fixtures/`, each pinned by its SHA-256, so the comparison runs in every gate; `GESTURES` is exported for that fixture alone; `tests/input-rules.test.js` stays, as tests of draw's guard and claim policy through the adapter.
+- **Refused at load.** Draw now refuses, when Input composes its tables, a press row that both runs an action and opens a gesture, and a row opening a gesture `GESTURES` does not declare -- forms nothing in draw produces, which after the move would have started a gesture whose body never ran, or thrown with the previous gesture left live; with the tenant forms the adapter refuses, they complete section 6.3's list of inputs nothing produces; every refusal names the tenant's owner and the row's id.
+
+---
+
 ## Appendix A -- `input-binding`'s vision, the draft put to the director
 
 Ratified by the director as written, with section 8 (H26-6); `input-binding`'s `VISION.md` is made from it when its repository is.
