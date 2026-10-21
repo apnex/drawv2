@@ -87,6 +87,8 @@ test('H26.1 (G8): this tree\'s two real servers pass the check the probe makes o
 	try {
 		for (const p of [port, labPort]) for (let i = 0; i < 100; i++) { try { if ((await fetch(`http://127.0.0.1:${p}/health`)).ok) break; } catch { /* not up */ } await new Promise((r) => setTimeout(r, 100)); }
 		const r = await sideProblems({ name: 'candidate', root: ROOT, pages: [`http://127.0.0.1:${port}/`, `http://127.0.0.1:${labPort}/`] });
-		assert.deepEqual(r, { problems: [], checked: [`@apnex/snap-grid@${version}`] });
+		// RESTATED at H26.2: the map names the second component, input-binding, which each server answers at its installed version
+		const binding = JSON.parse(fs.readFileSync(path.join(ROOT, 'node_modules/@apnex/input-binding/package.json'), 'utf8')).version;
+		assert.deepEqual(r, { problems: [], checked: [`@apnex/input-binding@${binding}`, `@apnex/snap-grid@${version}`] });
 	} finally { for (const p of procs) await stopProcess(p); }
 });

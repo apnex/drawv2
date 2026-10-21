@@ -68,7 +68,7 @@ Noted for PC1: AR1 asks for the system's north star and this one is the programm
 - **H9, access** (amended 2026-08-20; `docs/spec/ACCESS.md`, "Decided"): access is per diagram and per owner, a principal is a person's identity or an agent's, and a connection code is an agent's credential.
 - **The palette** (2026-10-01): one core palette, roles per owner.
 - **WD1, WD6, WD7, WD10:** a wide device is one anchor (WD1); a diagram stores its grids as layout records (WD6) holding today's values (WD7); a device owns its size (WD10).
-- **H26-1, H26-2, H26-4:** a grid's arithmetic is `snap-grid`'s, a component of one duty that knows nothing of drawv2 (H26-1); each component is its own public repository, released by its own CI, drawv2 pinning the release file by its hash, its server importing it by name and its pages through a generated import map (H26-2); `snap-grid`'s design is ratified, the `lattice` part alone composing it (H26-4).
+- **H26-1, H26-2, H26-4, H26-6:** a grid's arithmetic is `snap-grid`'s, and what an input means, and when each phase of a gesture is due, is `input-binding`'s, each a component of one duty that knows nothing of drawv2 (H26-1); each component is its own public repository, released by its own CI, drawv2 pinning the release file by its hash, its server importing it by name and its pages through a generated import map (H26-2); `snap-grid`'s design is ratified, the `lattice` part alone composing it (H26-4); `input-binding`'s design is ratified, the `rules` part alone composing it (H26-6).
 <!-- END GENERATED: architecture-justification -->
 
 **Model, as built.**\

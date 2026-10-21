@@ -16,6 +16,7 @@
 		"prepare": "[ ! -f tools/install-hook.sh ] || sh tools/install-hook.sh"
 	},
 	"dependencies": {
+		"@apnex/input-binding": "https://github.com/apnex/input-binding/releases/download/v0.1.0/apnex-input-binding-0.1.0.tgz",
 		"@apnex/snap-grid": "https://github.com/apnex/snap-grid/releases/download/v0.1.0/apnex-snap-grid-0.1.0.tgz",
 		"ws": "^8.21.0"
 	}

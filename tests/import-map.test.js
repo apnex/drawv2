@@ -24,6 +24,7 @@ const TOOL = path.join(ROOT, 'tools/import-map.mjs');
 const run = (root, mode = '--check') => spawnSync(process.execPath, [TOOL, mode, ...(root ? ['--root', root] : [])], { encoding: 'utf8' });
 const read = (root, f) => fs.readFileSync(path.join(root, f), 'utf8');
 const installed = JSON.parse(read(ROOT, 'node_modules/@apnex/snap-grid/package.json'));
+const binding = JSON.parse(read(ROOT, 'node_modules/@apnex/input-binding/package.json'));   // H26.2: the second component draw installs
 
 // a copy of what the generator reads: the declared pages, package.json, and the installed components -- each case edits its own
 const made = [];
@@ -53,8 +54,10 @@ test('H26.1: each page holds the one import map the installed components make, i
 	const r = run(null);
 	assert.equal(r.status, 0, r.stdout + r.stderr);
 	const base = `/vendor/@apnex/snap-grid@${installed.version}/`;
-	assert.deepEqual(importMapOf(ROOT).imports, { '@apnex/snap-grid': `${base}index.js`, '@apnex/snap-grid/conformance': `${base}conformance.js` },
-		'one entry per export of the installed release, at its version -- the conformance kit a URL ending .js, never a trailing-slash prefix');
+	// RESTATED at H26.2 (dev/design/components/INPUT-BINDING.md section 7): input-binding's one export path, `.`, is one line more
+	assert.deepEqual(importMapOf(ROOT).imports, { '@apnex/input-binding': `/vendor/@apnex/input-binding@${binding.version}/index.js`,
+		'@apnex/snap-grid': `${base}index.js`, '@apnex/snap-grid/conformance': `${base}conformance.js` },
+		'one entry per export of each installed release, at its version -- the conformance kit a URL ending .js, never a trailing-slash prefix');
 	assert.deepEqual({ begin: region.begin, end: region.end }, markersOf('importmap', COPIES.generated.importmap), 'the region the manifest names');
 	for (const page of Object.keys(PAGES)) {
 		const html = read(ROOT, page), at = html.indexOf(region.begin), to = html.indexOf(region.end);

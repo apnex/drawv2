@@ -35,8 +35,9 @@ function install(edit = () => {}) {
 test('H26.1: every installed component\'s dist/ holds no word of draw\'s -- the real install passes, and a copy of it', () => {
 	const r = run(null);
 	assert.equal(r.status, 0, r.stdout + r.stderr);
-	const files = fs.readdirSync(path.join(ROOT, 'node_modules/@apnex/snap-grid/dist')).length;
-	assert.match(r.stdout, new RegExp(`scan-components: PASS -- 1 component\\(s\\), ${files} file\\(s\\)`), 'every file of dist/ read, the maps and declarations among them');
+	// RESTATED at H26.2 (INPUT-BINDING.md section 7): the second component's dist/ is read unchanged, beside the first's
+	const files = ['snap-grid', 'input-binding'].reduce((n, c) => n + fs.readdirSync(path.join(ROOT, 'node_modules/@apnex', c, 'dist')).length, 0);
+	assert.match(r.stdout, new RegExp(`scan-components: PASS -- 2 component\\(s\\), ${files} file\\(s\\)`), 'every file of each dist/ read, the maps and declarations among them');
 	assert.equal(run(install()).status, 0, 'a copy of the install passes too, so each finding below is its plant alone');
 });
 

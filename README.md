@@ -3,7 +3,7 @@
 A strictly minimal diagramming tool with precise, programmable geometry, drivable by a human or an agent.
 
 **Status:** working.\
-Node 22+, no build step, two runtime dependencies: `ws`, and `@apnex/snap-grid`, a component installed from its own release.
+Node 22+, no build step, three runtime dependencies: `ws`, and two components, `@apnex/snap-grid` and `@apnex/input-binding`, each installed from its own release.
 
 Diagrams are a browser SVG editor over a server-held JSON document.\
 Everything is snapped to a center-origin grid, every edit is undoable across restarts, and a server-side agent can drive the same document over REST while a human watches it change.

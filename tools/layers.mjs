@@ -158,6 +158,9 @@ chain does not cite. The tools and the tests are no part: they may import any la
 export const COMPONENTS = {
 	// the lattice alone; every other part asks the grids the lattice and the layouts plugin open (SNAP-GRID.md section 5)
 	'@apnex/snap-grid': { parts: ['lattice'], by: ['H26-1', 'H26-2', 'H26-4'] },
+	// H26.2: the rules part alone, draw's adapter (kernel/input-rules.mjs); the canvas and the network ask it through that part
+	// (dev/design/components/INPUT-BINDING.md section 5, D10)
+	'@apnex/input-binding': { parts: ['rules'], by: ['H26-1', 'H26-2', 'H26-6'] },
 };
 
 /*
