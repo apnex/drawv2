@@ -200,6 +200,24 @@ export const SCENARIOS = [
 	// B263: a run-mode click is the next gesture and not a drag, so the w that placed the source no longer counts (ruled 2026-09-30)
 	{ id: 'plugin-source-w-spent-by-run-press', board: 'pair', judge: 'accept', steps: [['at', 180, 240], ['key', 'w'], ['mode', 'run'], ['down', 0, 0, 'n0'], ['up', 0, 0, 'n0', { up: true }], ['mode', 'view'], ['down', 180, 240, 'last'], ['move', 360, 0, 'n1'], ['up', 360, 0, 'n1', { up: true }]] },
 	{ id: 'plugin-source-w', board: 'pair', judge: 'accept', steps: [['at', 180, 240], ['key', 'w'], ['down', 180, 240, 'last'], ['move', 360, 0, 'n1'], ['up', 360, 0, 'n1', { up: true }]] },
+	/*
+	H26.2 (dev/design/components/INPUT-BINDING.md section 4, acceptance step 4) -- recorded from the code as it stood before draw's
+	matcher and gesture lifecycle moved onto input-binding: Shift over a live move, the pointer released with no move after either
+	key -- the release commits the frame last drawn (section 2.3, item 7) -- and every cancel route of section 2.3 the corpus did not
+	yet drive, each over a live gesture: Escape over a clone, a resize, a box and a marquee; a lock; a document replaced; a press a row
+	matches; and a double click that edits.
+	*/
+	{ id: 'move-shift-then-release-no-move', board: 'pair', steps: [['down', 0, 0, 'n0', { button: 2 }], ['move', 120, 60, 'n0', { button: 2 }], ['key', 'Shift', { shift: true }], ['up', 120, 60, 'n0', { button: 2, shift: true, up: true }]] },
+	{ id: 'move-shift-down-up-then-release-no-move', board: 'pair', steps: [['down', 0, 0, 'n0', { button: 2 }], ['move', 120, 60, 'n0', { button: 2 }], ['key', 'Shift', { shift: true }], ['keyup', 'Shift'], ['up', 120, 60, 'n0', { button: 2, up: true }]] },
+	{ id: 'escape-cancels-clone', board: 'pair', steps: [['down', 0, 0, 'n0', { ctrl: true }], ['move', 120, 120, 'n0', { ctrl: true }], ['key', 'Escape'], ['up', 120, 120, 'n0', { ctrl: true, up: true }]] },
+	{ id: 'escape-cancels-resize', board: 'zone', steps: [['select', ['z0']], ['down', 150, 150, { corner: 'se' }], ['move', 270, 270, { corner: 'se' }], ['key', 'Escape'], ['up', 270, 270, { corner: 'se' }, { up: true }]] },
+	{ id: 'escape-cancels-box', board: 'empty', steps: [['down', 0, 0, null, { shift: true }], ['move', 240, 180, null, { shift: true }], ['key', 'Escape'], ['up', 240, 180, null, { shift: true, up: true }]] },
+	{ id: 'escape-cancels-marquee', board: 'pair', steps: [['down', -60, -60], ['move', 420, 60], ['key', 'Escape'], ['up', 420, 60, null, { up: true }]] },
+	{ id: 'lock-cancels-move', board: 'pair', steps: [['down', 0, 0, 'n0', { button: 2 }], ['move', 120, 60, 'n0', { button: 2 }], ['readOnly'], ['up', 120, 60, 'n0', { button: 2, up: true }]] },
+	{ id: 'document-replaced-cancels-link', board: 'pair', steps: [['down', 0, 0, 'n0'], ['move', 180, 120], ['key', 'w'], ['load'], ['up', 360, 0, 'n1', { up: true }]] },
+	{ id: 'press-cancels-move', board: 'pair', steps: [['down', 0, 0, 'n0', { button: 2 }], ['move', 120, 60, 'n0', { button: 2 }], ['down', 360, 0, 'n1'], ['move', 360, 360], ['up', 360, 360, null, { up: true }]] },
+	{ id: 'press-cancels-chain', board: 'three', steps: [['down', 0, 0, 'n0'], ['move', 360, 0, 'n1'], ['up', 360, 0, 'n1', { shift: true, up: true }], ['move', 200, 200], ['down', 0, 0, 'n0', { button: 2 }], ['up', 0, 0, 'n0', { button: 2, up: true }]] },
+	{ id: 'dblclick-edits-cancels-chain', board: 'three', steps: [['down', 0, 0, 'n0'], ['move', 360, 0, 'n1'], ['up', 360, 0, 'n1', { shift: true, up: true }], ['move', 0, 0, 'n0'], ['dbl', 0, 0, 'n0']] },
 ];
 
 // the targets a `run-mode-action` press needs: an element carrying data-action
@@ -255,6 +273,7 @@ export function record(scenario, { withHarness = null } = {}) {
 			else if (op === 'link') { const l = makeLink(h.model, ids[a[0]], ids[a[1]]); h.model.put('link', l); lastLink = l.id; }
 			else if (op === 'hand') h.tools.setHand(a[0]);
 			else if (op === 'readOnly') h.input.setReadOnly(true);
+			else if (op === 'load') run(() => h.model.load(h.model.toJSON()));   // H26.2: a document replaced mid-gesture
 			else if (op === 'mode') h.renderer.mode = a[0];
 			else if (op === 'at') run(() => h.capture.onMove(pointerEvent(ids, a[0], a[1], null, { up: true })));
 			else throw new Error(`corpus: unknown step ${op}`);

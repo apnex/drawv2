@@ -5344,5 +5344,594 @@
 				"link#1"
 			]
 		}
+	},
+	"move-shift-then-release-no-move": {
+		"claims": [
+			false,
+			false,
+			true,
+			false
+		],
+		"threw": [],
+		"commits": [
+			{
+				"ops": [
+					{
+						"op": "set",
+						"kind": "node",
+						"id": "node#1",
+						"patch": {
+							"x": 120,
+							"y": 0
+						}
+					}
+				],
+				"label": "move"
+			}
+		],
+		"judged": [],
+		"said": [],
+		"editor": [],
+		"palette": [],
+		"host": [],
+		"final": {
+			"nodes": [
+				{
+					"id": "node#1",
+					"name": "host-1",
+					"order": 1,
+					"type": "host",
+					"shape": "circle",
+					"x": 120,
+					"y": 0
+				},
+				{
+					"id": "node#2",
+					"name": "host-2",
+					"order": 2,
+					"type": "host",
+					"shape": "circle",
+					"x": 360,
+					"y": 0
+				}
+			],
+			"waypoints": [],
+			"links": [],
+			"zones": [],
+			"groups": [],
+			"selection": [
+				"node#1"
+			]
+		}
+	},
+	"move-shift-down-up-then-release-no-move": {
+		"claims": [
+			false,
+			false,
+			true,
+			false,
+			false
+		],
+		"threw": [],
+		"commits": [
+			{
+				"ops": [
+					{
+						"op": "set",
+						"kind": "node",
+						"id": "node#1",
+						"patch": {
+							"x": 120,
+							"y": 60
+						}
+					}
+				],
+				"label": "move"
+			}
+		],
+		"judged": [],
+		"said": [],
+		"editor": [],
+		"palette": [],
+		"host": [],
+		"final": {
+			"nodes": [
+				{
+					"id": "node#1",
+					"name": "host-1",
+					"order": 1,
+					"type": "host",
+					"shape": "circle",
+					"x": 120,
+					"y": 60
+				},
+				{
+					"id": "node#2",
+					"name": "host-2",
+					"order": 2,
+					"type": "host",
+					"shape": "circle",
+					"x": 360,
+					"y": 0
+				}
+			],
+			"waypoints": [],
+			"links": [],
+			"zones": [],
+			"groups": [],
+			"selection": [
+				"node#1"
+			]
+		}
+	},
+	"escape-cancels-clone": {
+		"claims": [
+			false,
+			false,
+			false,
+			false
+		],
+		"threw": [],
+		"commits": [],
+		"judged": [],
+		"said": [],
+		"editor": [],
+		"palette": [],
+		"host": [],
+		"final": {
+			"nodes": [
+				{
+					"id": "node#1",
+					"name": "host-1",
+					"order": 1,
+					"type": "host",
+					"shape": "circle",
+					"x": 0,
+					"y": 0
+				},
+				{
+					"id": "node#2",
+					"name": "host-2",
+					"order": 2,
+					"type": "host",
+					"shape": "circle",
+					"x": 360,
+					"y": 0
+				}
+			],
+			"waypoints": [],
+			"links": [],
+			"zones": [],
+			"groups": [],
+			"selection": []
+		}
+	},
+	"escape-cancels-resize": {
+		"claims": [
+			false,
+			false,
+			false,
+			false
+		],
+		"threw": [],
+		"commits": [],
+		"judged": [],
+		"said": [],
+		"editor": [],
+		"palette": [],
+		"host": [],
+		"final": {
+			"nodes": [
+				{
+					"id": "node#1",
+					"name": "host-1",
+					"order": 1,
+					"type": "host",
+					"shape": "circle",
+					"x": 0,
+					"y": 0
+				},
+				{
+					"id": "node#2",
+					"name": "host-2",
+					"order": 2,
+					"type": "host",
+					"shape": "circle",
+					"x": 360,
+					"y": 0
+				}
+			],
+			"waypoints": [],
+			"links": [],
+			"zones": [
+				{
+					"id": "zone#1",
+					"name": "zone-1",
+					"order": 1,
+					"x": -150,
+					"y": -150,
+					"w": 300,
+					"h": 300
+				}
+			],
+			"groups": [],
+			"selection": [
+				"zone#1"
+			]
+		}
+	},
+	"escape-cancels-box": {
+		"claims": [
+			false,
+			false,
+			false,
+			false
+		],
+		"threw": [],
+		"commits": [],
+		"judged": [],
+		"said": [],
+		"editor": [],
+		"palette": [],
+		"host": [],
+		"final": {
+			"nodes": [],
+			"waypoints": [],
+			"links": [],
+			"zones": [],
+			"groups": [],
+			"selection": []
+		}
+	},
+	"escape-cancels-marquee": {
+		"claims": [
+			false,
+			false,
+			false,
+			false
+		],
+		"threw": [],
+		"commits": [],
+		"judged": [],
+		"said": [],
+		"editor": [],
+		"palette": [],
+		"host": [],
+		"final": {
+			"nodes": [
+				{
+					"id": "node#1",
+					"name": "host-1",
+					"order": 1,
+					"type": "host",
+					"shape": "circle",
+					"x": 0,
+					"y": 0
+				},
+				{
+					"id": "node#2",
+					"name": "host-2",
+					"order": 2,
+					"type": "host",
+					"shape": "circle",
+					"x": 360,
+					"y": 0
+				}
+			],
+			"waypoints": [],
+			"links": [],
+			"zones": [],
+			"groups": [],
+			"selection": []
+		}
+	},
+	"lock-cancels-move": {
+		"claims": [
+			false,
+			false,
+			false
+		],
+		"threw": [],
+		"commits": [],
+		"judged": [],
+		"said": [],
+		"editor": [],
+		"palette": [
+			[
+				"tools.setHand",
+				null
+			],
+			[
+				"tools.setTextTool",
+				false
+			]
+		],
+		"host": [],
+		"final": {
+			"nodes": [
+				{
+					"id": "node#1",
+					"name": "host-1",
+					"order": 1,
+					"type": "host",
+					"shape": "circle",
+					"x": 0,
+					"y": 0
+				},
+				{
+					"id": "node#2",
+					"name": "host-2",
+					"order": 2,
+					"type": "host",
+					"shape": "circle",
+					"x": 360,
+					"y": 0
+				}
+			],
+			"waypoints": [],
+			"links": [],
+			"zones": [],
+			"groups": [],
+			"selection": [
+				"node#1"
+			]
+		}
+	},
+	"document-replaced-cancels-link": {
+		"claims": [
+			false,
+			false,
+			true,
+			false
+		],
+		"threw": [],
+		"commits": [],
+		"judged": [],
+		"said": [],
+		"editor": [],
+		"palette": [
+			[
+				"tools.setHand",
+				null
+			]
+		],
+		"host": [],
+		"final": {
+			"nodes": [
+				{
+					"id": "node#1",
+					"name": "host-1",
+					"order": 1,
+					"type": "host",
+					"shape": "circle",
+					"x": 0,
+					"y": 0
+				},
+				{
+					"id": "node#2",
+					"name": "host-2",
+					"order": 2,
+					"type": "host",
+					"shape": "circle",
+					"x": 360,
+					"y": 0
+				}
+			],
+			"waypoints": [],
+			"links": [],
+			"zones": [],
+			"groups": [],
+			"selection": []
+		}
+	},
+	"press-cancels-move": {
+		"claims": [
+			false,
+			false,
+			false,
+			false,
+			false
+		],
+		"threw": [],
+		"commits": [],
+		"judged": [],
+		"said": [],
+		"editor": [],
+		"palette": [],
+		"host": [],
+		"final": {
+			"nodes": [
+				{
+					"id": "node#1",
+					"name": "host-1",
+					"order": 1,
+					"type": "host",
+					"shape": "circle",
+					"x": 0,
+					"y": 0
+				},
+				{
+					"id": "node#2",
+					"name": "host-2",
+					"order": 2,
+					"type": "host",
+					"shape": "circle",
+					"x": 360,
+					"y": 0
+				}
+			],
+			"waypoints": [],
+			"links": [],
+			"zones": [],
+			"groups": [],
+			"selection": [
+				"node#1"
+			]
+		}
+	},
+	"press-cancels-chain": {
+		"claims": [
+			false,
+			false,
+			false,
+			false,
+			false,
+			false
+		],
+		"threw": [],
+		"commits": [
+			{
+				"ops": [
+					{
+						"op": "put",
+						"kind": "link",
+						"entity": {
+							"id": "link#1",
+							"name": "link-1",
+							"order": 1,
+							"src": "node#1",
+							"dst": "node#2"
+						}
+					}
+				],
+				"label": "link"
+			}
+		],
+		"judged": [],
+		"said": [],
+		"editor": [],
+		"palette": [],
+		"host": [],
+		"final": {
+			"nodes": [
+				{
+					"id": "node#1",
+					"name": "host-1",
+					"order": 1,
+					"type": "host",
+					"shape": "circle",
+					"x": 0,
+					"y": 0
+				},
+				{
+					"id": "node#2",
+					"name": "host-2",
+					"order": 2,
+					"type": "host",
+					"shape": "circle",
+					"x": 360,
+					"y": 0
+				},
+				{
+					"id": "node#3",
+					"name": "host-3",
+					"order": 3,
+					"type": "host",
+					"shape": "circle",
+					"x": 360,
+					"y": 360
+				}
+			],
+			"waypoints": [],
+			"links": [
+				{
+					"id": "link#1",
+					"name": "link-1",
+					"order": 1,
+					"src": "node#1",
+					"dst": "node#2"
+				}
+			],
+			"zones": [],
+			"groups": [],
+			"selection": [
+				"node#1"
+			]
+		}
+	},
+	"dblclick-edits-cancels-chain": {
+		"claims": [
+			false,
+			false,
+			false,
+			false,
+			false
+		],
+		"threw": [],
+		"commits": [
+			{
+				"ops": [
+					{
+						"op": "put",
+						"kind": "link",
+						"entity": {
+							"id": "link#1",
+							"name": "link-1",
+							"order": 1,
+							"src": "node#1",
+							"dst": "node#2"
+						}
+					}
+				],
+				"label": "link"
+			}
+		],
+		"judged": [],
+		"said": [],
+		"editor": [
+			[
+				"labels.open",
+				"node",
+				"node#1"
+			]
+		],
+		"palette": [],
+		"host": [],
+		"final": {
+			"nodes": [
+				{
+					"id": "node#1",
+					"name": "host-1",
+					"order": 1,
+					"type": "host",
+					"shape": "circle",
+					"x": 0,
+					"y": 0
+				},
+				{
+					"id": "node#2",
+					"name": "host-2",
+					"order": 2,
+					"type": "host",
+					"shape": "circle",
+					"x": 360,
+					"y": 0
+				},
+				{
+					"id": "node#3",
+					"name": "host-3",
+					"order": 3,
+					"type": "host",
+					"shape": "circle",
+					"x": 360,
+					"y": 360
+				}
+			],
+			"waypoints": [],
+			"links": [
+				{
+					"id": "link#1",
+					"name": "link-1",
+					"order": 1,
+					"src": "node#1",
+					"dst": "node#2"
+				}
+			],
+			"zones": [],
+			"groups": [],
+			"selection": [
+				"node#1"
+			]
+		}
 	}
 }
