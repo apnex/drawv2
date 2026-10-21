@@ -15,14 +15,15 @@ decision record, each decidable from the text; status lives on the board, and pr
             `AMENDED` or `CORRECTED` line naming the ruling it amends; a bold paragraph of any other kind there fails
   ABSORBED  each path a ruling block's `Affects:` names exists and cites the ruling's id (H21.6; mission-kit AR4's `affects`,
             the walk AR1 asks for so a target architecture is living rather than a shape) -- a path that moved read where it is
-            now (tools/layers.mjs MOVED, H26.7), since the ruling keeps the path it was written with (RU2)
+            now (tools/layers.mjs MOVED, H26.7), since the ruling keeps the path it was written with (RU2) -- for the rulings
+            recorded before the move's own (MOVED_BY) alone; a ruling written after it names where a file is
 
 Usage: node tools/scan-designs.mjs [--root <dir>]
 */
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { MOVED } from './layers.mjs';
+import { MOVED, MOVED_BY } from './layers.mjs';
 import { movedTo } from './records.mjs';
 
 const i = process.argv.indexOf('--root');
@@ -77,7 +78,10 @@ if (exists('dev/DECISIONS.md')) {
 	else {
 		const after = text.slice(at + MARKER.length);
 		const paras = after.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
-		for (const p of paras) {
+		// H26.7 (V7): the rulings before the move's own may name a moved path's old place; none there, the move not yet recorded, all may
+		const heads = paras.map((p) => /^\*\*([A-Z][A-Za-z0-9.-]*(?:,\s*[A-Z][A-Za-z0-9.-]*)*)\s+--\s/.exec(p.split('\n')[0].replace(/^>\s*/, ''))?.[1] ?? '');
+		const moveAt = heads.findIndex((h) => h.split(',').map((x) => x.trim()).includes(MOVED_BY));
+		for (const [i, p] of paras.entries()) {
 			const first = p.split('\n')[0].replace(/^>\s*/, '');
 			if (!first.startsWith('**')) continue;
 			if (/^\*\*(AMENDED|CORRECTED)\b/.test(first)) {
@@ -92,7 +96,7 @@ if (exists('dev/DECISIONS.md')) {
 			}
 			const affects = /^Affects: (.+?)\\?$/m.exec(p);
 			for (const f of affects ? affects[1].split(',').map((x) => x.trim().replace(/^`|`$/g, '')).filter(Boolean) : []) {
-				const at = exists(f) ? f : movedTo(f, MOVED);   // H26.7: a path that moved, read where it is now
+				const at = exists(f) || (moveAt > -1 && i >= moveAt) ? f : movedTo(f, MOVED);   // H26.7: a path that moved, read where it is now
 				if (!exists(at)) fail(`dev/DECISIONS.md ${head[1]}: Affects names ${f}, which does not exist`);
 				else for (const id of head[1].split(',').map((x) => x.trim())) {
 					// every id in the head, as a whole id: H21.5 is not cited by H21.5.1, and a sentence's full stop still ends it

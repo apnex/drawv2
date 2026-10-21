@@ -1000,12 +1000,23 @@ export const UNUSED_EXPORTS = {
 };
 
 /*
-H26.7 (H26-7) -- WHERE A MOVED PATH IS NOW. A record keeps the paths it was written with (RU2): a ruling's `Affects:`, and the K0
-closure frozen above. A check that must open a recorded path's file finds it here, through tools/records.mjs `movedTo`: scan-designs
-reads a ruling's affected document (ABSORBED) at its moved place when nothing is at the path the ruling names, and L10 judges a module
-the frozen closure names where it is now (C2(c), `byDeparture`). A key ending in `/` names every path under it. scan-docrefs records
-the same moves as its own `*:` allowances, one per path a record cites.
+H26.7 (H26-7) -- WHERE A MOVED PATH IS NOW. A record keeps the paths it was written with (RU2): a ruling's `Affects:`, a row's
+citation, and the K0 closure frozen above. A check that must open a recorded path's file finds it here, through tools/records.mjs
+`movedTo`; a key ending in `/` names every path under it. Its readers:
+  - scan-designs (ABSORBED) reads a ruling's affected document at its moved place when nothing is at the path it names -- for the
+    rulings recorded before MOVED_BY alone, so a ruling written after the move names where a file is now (the verifier's V7);
+  - L10 judges a module the frozen closure names where it is now (C2(c), `byDeparture`, and K2a's test);
+  - scan-docrefs allows a record (a file under dev/) citing a moved path whose new place is in the repository, and reads the old roots
+    as a path's, so a live file citing one fails (V3, V1(c)).
+L10's frozen K0 BASELINE is not translated (V8): `engine/kinds.mjs:MOVERS` stays as K0 wrote it. Admission holds because K2c lets a
+module that exports a vacated name now claim the place its old path vacated: the baseline entry at the old path vacates one place
+for its name, and the moved module, exporting that name under a path outside the baseline, claims it -- so the move frees no place
+a borrowed spelling could take. Measured at H26.7: the free places per name (vacated less claimed) are the same 41 names with the
+baseline as written, with it translated through MOVED, and at origin/main before the move.
+scan-layers L1 holds the table: each key gone from the tree, each value in it, a folder to a folder and a file to a file of its name,
+and no key a module the planner loads (V2). tests/scan-layers.test.js pins its hash beside the frozen K0 list's.
 */
+export const MOVED_BY = 'H26-7';   // the ruling the moves are recorded under; rulings before it may name a moved path's old place
 export const MOVED = {
 	'layouts/': 'plugins/layouts/', 'devices/': 'plugins/devices/', 'network/': 'plugins/network/', 'zones/': 'plugins/zones/', 'groups/': 'plugins/groups/',
 	'engine/kinds.mjs': 'plugins/simulation/kinds.mjs', 'engine/movers.mjs': 'plugins/simulation/movers.mjs', 'engine/rules.mjs': 'plugins/simulation/rules.mjs',

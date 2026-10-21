@@ -672,6 +672,22 @@ const rules = {
 		for (const file of walk('', [], [...unscanned, ...skipped])) {
 			if (!folderOf[file]) fail('L1', `${file} is outside every folder in FOLDERS -- add its folder, or record it in UNSCANNED with the reason`);
 		}
+		/*
+		H26.7 (the verifier's V2): MOVED says where a moved path is now, and L10 and scan-designs read a recorded path through it. A key
+		at a live path would make L10 read a module the closure still holds as departed -- the verifier's `'model/limits.mjs':
+		'app/src/main.js'` let a refused listing through -- so each key is gone from the tree, each value is in it, a folder moves to
+		a folder and a file to a file of its own name, and no key is a module the planner loads.
+		*/
+		const isDir = (rel) => exists(rel) && fs.statSync(path.join(ROOT, rel)).isDirectory();
+		for (const [k, v] of Object.entries(M.MOVED ?? {})) {
+			const folder = k.endsWith('/');
+			if (exists(k.replace(/\/$/, ''))) fail('L1', `MOVED names ${k}, which is in the tree -- a moved path is gone from its old place`);
+			if (!exists(v.replace(/\/$/, ''))) fail('L1', `MOVED moves ${k} to ${v}, which is not in the tree`);
+			else if (folder !== v.endsWith('/') || folder !== isDir(v.replace(/\/$/, ''))) fail('L1', `MOVED moves ${k} to ${v} -- a folder moves to a folder, a file to a file`);
+			if (!folder && path.posix.basename(k) !== path.posix.basename(v)) fail('L1', `MOVED moves ${k} to ${v}, another file name -- a move keeps the name`);
+			const loaded = (M.ENTRIES.planner?.modules ?? []).filter((m) => m === k || (folder && m.startsWith(k)));
+			if (loaded.length) fail('L1', `MOVED names ${k}, which the planner loads (${loaded.join(', ')}) -- L10 would read a module its closure holds as departed`);
+		}
 		for (const [scanner, dirs] of Object.entries(M.SCANNER_ROOTS)) {
 			// H26.7: scan-writers' list may name one module in a scanned folder, its walk reading a file root; every other list names folders
 			for (const d of dirs) if (!M.FOLDERS.some((f) => f.dir === d) && !(scanner === 'writers' && folderOf[d])) fail('L1', `SCANNER_ROOTS.${scanner} names ${d}, which is not a folder in FOLDERS${scanner === 'writers' ? ' nor a module in one' : ''}`);

@@ -393,6 +393,26 @@ const MUTANTS = [
 	// H26.7: model/'s reveal module, moved to plugins/simulation/, stays on model/'s side of C9 (RULES.L3) -- reading the grid is L3's to refuse
 	{ id: 'P2', rule: 'L3', needle: /plugins\/simulation\/reveal\.mjs:\d+ import '\.\.\/\.\.\/kernel\/spec\.mjs' -- kernel\/ and model\/ \(with plugins\/simulation\/reveal\.mjs\) import nothing from each other/,
 		edits: [{ file: 'plugins/simulation/reveal.mjs', append: "\nimport { STD as __std } from '../../kernel/spec.mjs';\n" }] },
+	/*
+	H26.7 (the verifier's V2): L1 holds MOVED, through which L10 reads the frozen closure. P3 is the verifier's mutant -- a key at a
+	live path the planner loads, moved to a module outside the closure, so L10 counted it departed and admitted a refused listing;
+	P4 to P7 each break one of the table's rules alone.
+	*/
+	{ id: 'P3', rule: 'L1', needle: /MOVED names model\/limits\.mjs, which the planner loads \(model\/limits\.mjs\)/,
+		edits: [{ file: MAN, replace: ["'engine/simulation.css': 'plugins/simulation/simulation.css',", "'engine/simulation.css': 'plugins/simulation/simulation.css', 'model/limits.mjs': 'app/src/main.js',"] }] },
+	{ id: 'P4', rule: 'L1', needle: /MOVED names app\/src\/main\.js, which is in the tree -- a moved path is gone from its old place/,
+		edits: [{ file: MAN, replace: ["'engine/simulation.css': 'plugins/simulation/simulation.css',", "'engine/simulation.css': 'plugins/simulation/simulation.css', 'app/src/main.js': 'app/src/main.js',"] }] },
+	{ id: 'P5', rule: 'L1', needle: /MOVED moves engine\/kinds\.mjs to plugins\/simulation\/kind\.mjs, which is not in the tree/,
+		edits: [{ file: MAN, replace: ["'engine/kinds.mjs': 'plugins/simulation/kinds.mjs',", "'engine/kinds.mjs': 'plugins/simulation/kind.mjs',"] }] },
+	{ id: 'P6', rule: 'L1', needle: /MOVED moves engine\/kinds\.mjs to plugins\/simulation\/rules\.mjs, another file name -- a move keeps the name/,
+		edits: [{ file: MAN, replace: ["'engine/kinds.mjs': 'plugins/simulation/kinds.mjs',", "'engine/kinds.mjs': 'plugins/simulation/rules.mjs',"] }] },
+	{ id: 'P7', rule: 'L1', needle: /MOVED moves zones\/ to plugins\/zones\/zone-kind\.mjs -- a folder moves to a folder, a file to a file/,
+		edits: [{ file: MAN, replace: ["'zones/': 'plugins/zones/',", "'zones/': 'plugins/zones/zone-kind.mjs',"] }] },
+	// and each half of that rule alone: a folder written without its slash, and a file written with one
+	{ id: 'P8', rule: 'L1', needle: /MOVED moves zones\/ to plugins\/zones -- a folder moves to a folder, a file to a file/,
+		edits: [{ file: MAN, replace: ["'zones/': 'plugins/zones/',", "'zones/': 'plugins/zones',"] }] },
+	{ id: 'P9', rule: 'L1', needle: /MOVED moves zones\/ to plugins\/zones\/zone-kind\.mjs\/ -- a folder moves to a folder, a file to a file/,
+		edits: [{ file: MAN, replace: ["'zones/': 'plugins/zones/',", "'zones/': 'plugins/zones/zone-kind.mjs/',"] }] },
 ];
 
 /*
@@ -567,6 +587,16 @@ before-state is frozen once and `departed` is derived from it at every later cut
 Pinned the same way as RATCHET_CEILING and the L10 baseline: editing the frozen list means editing
 this line in the same diff, where a reviewer sees it.
 */
+/*
+H26.7 (the verifier's V2) -- MOVED is pinned beside the frozen K0 list, which L10 reads through it: a changed table is an edit to this
+line in the same diff, where a reviewer sees it. 17 entries: the five plugin folders and the simulation's twelve files.
+*/
+test('H26.7: MOVED is the table H26.7 recorded', () => {
+	assert.equal(Object.keys(MOVED).length, 17);
+	assert.equal(crypto.createHash('sha256').update(JSON.stringify(MOVED)).digest('hex'),
+		'37fdc04da9890b08e435022e6e56e87b5c706efddbed339a733bcdfc002d25f8');
+});
+
 test('H17 K2a: the K0 closure is frozen, and it is the one K0 recorded', () => {
 	const k0 = UNUSED_EXPORTS.planner.k0closure;
 	assert.equal(k0.length, 31, 'the planner loaded 31 modules at K0');

@@ -115,3 +115,27 @@ test('H26.7 ABSORBED: a path a ruling names that moved is read at its new place,
 	r = scan(moved({ 'network/x.css': '/* H9.9 */\n', 'plugins/simulation/kinds.mjs': '// H9.9\n' }));
 	assert.equal(r.status, 0, 'a path present at its own place is read there');
 });
+
+/*
+H26.7 (the verifier's V7) -- ONLY A RULING RECORDED BEFORE THE MOVE'S OWN MAY NAME A MOVED PATH'S OLD PLACE. Those were written
+while the path lived; a ruling recorded at or after H26-7 (tools/layers.mjs MOVED_BY) was written after the move and names where a
+file is, so an old place there fails as any missing path.
+*/
+test('H26.7 ABSORBED: a ruling after the move\'s own naming an old place fails; one before it is read at the new place', () => {
+	const block = (id, affects) => RULING.replace('H9.9 --', `${id} --`).replace('Affects: dev/design/unification/A.md', `Affects: ${affects}`);
+	const run = (later, own = 'plugins/network/x.css') => {
+		const dir = tree({ decisions: `${MARKER}\n\n${block('H9.9', 'network/x.css')}\n\n${block('H26-7', own)}\n\n${block('H9.10', later)}\n` });
+		fs.mkdirSync(path.join(dir, 'plugins/network'), { recursive: true });
+		fs.writeFileSync(path.join(dir, 'plugins/network/x.css'), '/* H9.9, H26-7 and H9.10 */\n');
+		return scan(dir);
+	};
+	let r = run('plugins/network/x.css');
+	assert.equal(r.status, 0, `the control: the earlier ruling read at the new place, the later one naming it\n${r.stdout}`);
+	r = run('network/x.css');
+	assert.equal(r.status, 1, 'a ruling after the move naming the old place');
+	assert.match(r.stdout, /H9\.10: Affects names network\/x\.css, which does not exist/);
+	assert.doesNotMatch(r.stdout, /H9\.9: Affects/, 'the ruling before it still reads the new place');
+	r = run('plugins/network/x.css', 'network/x.css');
+	assert.equal(r.status, 1, 'nor is the move\'s own ruling before itself');
+	assert.match(r.stdout, /H26-7: Affects names network\/x\.css, which does not exist/);
+});
