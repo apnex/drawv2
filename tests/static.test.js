@@ -64,6 +64,42 @@ test('K9, K4: the lab serves its mounts, the planner whole, and nothing else, ho
 });
 
 /*
+H26.7 (H26-7; the verifier's V9) -- the lab mounts the plugins once, '/plugins/' on plugins/, bounded by fileWithin as every mount is:
+a module of each of the six plugins is served; a plugin folder that is not there, an old root address and a walk out of plugins/,
+sent raw, are each a 404.
+*/
+test('H26.7: the lab serves every plugin from /plugins/, and nothing else there -- an absent plugin, an old root, a walk out', async () => {
+	const { spawnGroup, stopProcess } = await import('./fixtures/teardown.mjs');
+	const http = await import('node:http');
+	const net = await import('node:net');
+	const port = await new Promise((resolve) => { const s = net.createServer().listen(0, () => { const p = s.address().port; s.close(() => resolve(p)); }); });
+	const root = new URL('../', import.meta.url).pathname;
+	const srv = spawnGroup('node', ['lab/server.mjs'], { cwd: root, env: { ...process.env, PORT: String(port) }, stdio: 'ignore' });
+	const ask = (p) => new Promise((resolve, reject) => {
+		const req = http.request({ host: '127.0.0.1', port, path: p, method: 'GET' }, (res) => { res.resume(); resolve({ status: res.statusCode, type: res.headers['content-type'] }); });
+		req.on('error', reject); req.end();
+	});
+	try {
+		for (let i = 0; i < 50; i++) { try { await ask('/health'); break; } catch { await new Promise((r) => setTimeout(r, 100)); } }
+		for (const p of ['/plugins/layouts/layout-table.mjs', '/plugins/devices/device-types.mjs', '/plugins/network/link-head.mjs',
+			'/plugins/zones/zone-painter.mjs', '/plugins/groups/group-kind.mjs', '/plugins/simulation/kinds.mjs']) {
+			const r = await ask(p);
+			assert.equal(r.status, 200, p);
+			assert.match(r.type, /^text\/javascript/, p);
+		}
+		assert.equal((await ask('/plugins/simulation/simulation.css')).status, 200, 'and a plugin\'s stylesheet');
+		assert.equal((await ask('/plugins/nowhere/x.mjs')).status, 404, 'a plugin folder that is not there');
+		for (const p of ['/layouts/layout-table.mjs', '/devices/device-types.mjs', '/network/link-head.mjs', '/zones/zone-painter.mjs', '/groups/group-kind.mjs',
+			'/engine/kinds.mjs', '/engine/simulation.css', '/model/reveal.mjs']) assert.equal((await ask(p)).status, 404, `${p}, an old root address`);
+		for (const p of ['/plugins/../server/store.js', '/plugins/%2e%2e/server/store.js', '/plugins/..%2fserver%2fstore.js', '/plugins/..%2Fpackage.json',
+			'/plugins/network/../../server/store.js', '/plugins/network/%2e%2e/%2e%2e/package.json', '/plugins/network/..%2f..%2fpackage.json',
+			'/plugins/..%5cpackage.json', '/plugins/%2fetc%2fpasswd', '/plugins/server/store.js', '/plugins/package.json', '/plugins/', '/plugins/network/']) {
+			assert.equal((await ask(p)).status, 404, `${p} is outside plugins/`);
+		}
+	} finally { await stopProcess(srv); }
+});
+
+/*
 B386 (H24.16, H24.16-1) -- the responder sends a file compressed, and never lets the browser keep it.
 
 Every file went uncompressed, so each visit downloaded the page's files at full size. A file now goes brotli or gzip as the request

@@ -1429,6 +1429,36 @@ test('K9: a path that walks out of a mount is answered 404, exactly, however it 
 	}
 });
 
+/*
+H26.7 (H26-7; the verifier's V9) -- the plugins are served from one mount, `/plugins`, read from plugins/ through the one responder's
+bound (server/static.mjs fileWithin). A module of each of the six plugins is served; a plugin folder that is not there, an old root
+address, and a request that walks out of plugins/ -- sent raw, since `fetch` resolves dot segments -- are each a 404.
+*/
+const PLUGIN_MODULES = ['/plugins/layouts/layout-table.mjs', '/plugins/devices/device-types.mjs', '/plugins/network/link-head.mjs',
+	'/plugins/zones/zone-painter.mjs', '/plugins/groups/group-kind.mjs', '/plugins/simulation/kinds.mjs'];
+const OLD_ROOTS = ['/layouts/layout-table.mjs', '/devices/device-types.mjs', '/network/link-head.mjs', '/zones/zone-painter.mjs', '/groups/group-kind.mjs',
+	'/engine/kinds.mjs', '/engine/simulation.css', '/model/reveal.mjs'];
+const OUT_OF_PLUGINS = ['/plugins/../server/store.js', '/plugins/%2e%2e/server/store.js', '/plugins/..%2fserver%2fstore.js', '/plugins/..%2Fpackage.json',
+	'/plugins/network/../../server/store.js', '/plugins/network/%2e%2e/%2e%2e/package.json', '/plugins/network/..%2f..%2fpackage.json',
+	'/plugins/..%5cpackage.json', '/plugins/%2fetc%2fpasswd', '/plugins/server/store.js', '/plugins/package.json', '/plugins/', '/plugins/network/'];
+test('H26.7: the product serves every plugin from /plugins, and nothing else there -- an absent plugin, an old root, a walk out', async () => {
+	const http = await import('node:http');
+	const raw = (p) => new Promise((resolve, reject) => {
+		const req = http.request({ host: 'localhost', port: new URL(base).port, path: p, method: 'GET' }, (res) => { res.resume(); resolve(res); });
+		req.on('error', reject); req.end();
+	});
+	for (const p of PLUGIN_MODULES) {
+		const res = await raw(p);
+		assert.equal(res.statusCode, 200, p);
+		assert.match(res.headers['content-type'], /^text\/javascript/, `${p} as a module`);
+		assert.equal(res.headers['cache-control'], 'no-store', `${p} is not kept`);
+	}
+	assert.equal((await raw('/plugins/simulation/simulation.css')).statusCode, 200, 'and a plugin\'s stylesheet');
+	assert.equal((await raw('/plugins/nowhere/x.mjs')).statusCode, 404, 'a plugin folder that is not there');
+	for (const p of OLD_ROOTS) assert.equal((await raw(p)).statusCode, 404, `${p}, an old root address`);
+	for (const p of OUT_OF_PLUGINS) assert.equal((await raw(p)).statusCode, 404, `${p} is outside plugins/`);
+});
+
 test('K4 (H17-D5): the product serves the planner whole and never `server/` -- the store, identity and anchor above all', async () => {
 	assert.equal((await fetch(`${base}/planner/txn.mjs`)).status, 200);
 	for (const p of ['/server/store.js', '/server/identity.mjs', '/server/anchor.mjs', '/server/txn.mjs', '/server/app.js']) {
