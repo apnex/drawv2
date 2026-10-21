@@ -22,6 +22,7 @@ import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { SCANNER_ROOTS } from './layers.mjs';
 import { MOVED } from './layers.mjs';   // H26.7: where a moved path is now -- its old root is still read as a path's
+import { movedTo } from './records.mjs';
 
 /*
 Files skipped WHOLE, and the bar for being one is now proportionality.
@@ -61,6 +62,21 @@ for (const f of tracked) {
 	for (let i = 1; i < parts.length; i++) trackedDirs.add(parts.slice(0, i).join('/'));
 }
 const inRepo = (rel) => tracked.has(rel) || trackedDirs.has(rel.replace(/\/$/, ''));
+
+/*
+H26.7 (H26-7) -- A RECORD KEEPS THE PATHS IT WAS WRITTEN WITH (RU2); A LIVE FILE DOES NOT.
+
+The move put every plugin under `plugins/`. A record -- a file under `dev/`: rows, rulings, the board's history, design documents
+of record -- still cites the old place, and is allowed to when the path moved (tools/layers.mjs MOVED) and its new place is in the
+repository. A live file -- README.md, docs/, kernel/README.md, code -- citing an old place is BROKEN, as any other dead path: it
+was repointed by the move, and a new citation must name where the file is. The move's first build listed 83 `*:` entries here,
+which exempted every file, live ones too (the verifier's V3).
+*/
+const isRecord = (doc) => doc.startsWith('dev/');
+function movedFor(doc, ref) {
+	const now = movedTo(ref, MOVED);
+	return isRecord(doc) && inRepo(now) ? `moved to ${now} at H26.7 (H26-7); a record written while it lived here cites it here` : null;
+}
 
 // reference -> why it does not resolve in the repository. Reviewed at each milestone close.
 const ALLOW = {
@@ -119,95 +135,6 @@ const ALLOW = {
 	'*:network/pipeset.mjs': 'the session pipe set, deleted at H17.22 N-d once pipes were entities in the model (network/pipe-kind.mjs); records written while it lived cite it',
 	'*:server/edges.mjs': 'moved to planner/edges.mjs at K4 (H17-D5); a record written while it lived here cites it here',
 	'*:engine/policy.mjs': 'moved to planner/policy.mjs at K4 (H17-D5); a record written while it lived here cites it here',
-	/*
-	H26.7 (H26-7) moved every plugin under `plugins/` -- the five plugin folders whole, and the simulation's modules out of `engine/` and
-	`model/` into `plugins/simulation/`. Records written while these paths lived cite them -- rows, rulings, board history, design
-	documents of record -- and RU2 keeps them as written. Live documents and code were repointed in the commit that moved them. One
-	entry per moved path a record cites; the scanner has no prefix record.
-	*/
-	'*:devices/anchor-words.mjs': 'moved to plugins/devices/anchor-words.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:devices/device-appearance.mjs': 'moved to plugins/devices/device-appearance.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:devices/device-facts.mjs': 'moved to plugins/devices/device-facts.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:devices/device-fields.mjs': 'moved to plugins/devices/device-fields.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:devices/device-footprint.mjs': 'moved to plugins/devices/device-footprint.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:devices/device-gestures.mjs': 'moved to plugins/devices/device-gestures.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:devices/device-hand.mjs': 'moved to plugins/devices/device-hand.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:devices/device-keys.mjs': 'moved to plugins/devices/device-keys.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:devices/device-labels.mjs': 'moved to plugins/devices/device-labels.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:devices/device-panels.mjs': 'moved to plugins/devices/device-panels.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:devices/device-shapes.mjs': 'moved to plugins/devices/device-shapes.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:devices/device-size.mjs': 'moved to plugins/devices/device-size.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:devices/device-types.mjs': 'moved to plugins/devices/device-types.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:devices/devices.css': 'moved to plugins/devices/devices.css at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:devices/make-node.mjs': 'moved to plugins/devices/make-node.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:devices/occupancy.mjs': 'moved to plugins/devices/occupancy.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:engine/kinds.mjs': 'moved to plugins/simulation/kinds.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:engine/mover-painter.mjs': 'moved to plugins/simulation/mover-painter.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:engine/movers.mjs': 'moved to plugins/simulation/movers.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:engine/paintloop.mjs': 'moved to plugins/simulation/paintloop.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:engine/reveal-painter.mjs': 'moved to plugins/simulation/reveal-painter.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:engine/rules.mjs': 'moved to plugins/simulation/rules.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:engine/simulation.css': 'moved to plugins/simulation/simulation.css at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:engine/spawn-appearance.mjs': 'moved to plugins/simulation/spawn-appearance.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:engine/spawn-field.mjs': 'moved to plugins/simulation/spawn-field.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:engine/spawn-runs.mjs': 'moved to plugins/simulation/spawn-runs.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:engine/spawners.mjs': 'moved to plugins/simulation/spawners.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:groups/group-clone.mjs': 'moved to plugins/groups/group-clone.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:groups/group-keys.mjs': 'moved to plugins/groups/group-keys.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:groups/group-kind.mjs': 'moved to plugins/groups/group-kind.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:groups/group-of.mjs': 'moved to plugins/groups/group-of.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:groups/group-painter.mjs': 'moved to plugins/groups/group-painter.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:groups/group-rules.mjs': 'moved to plugins/groups/group-rules.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:groups/groups.css': 'moved to plugins/groups/groups.css at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:groups/make-group.mjs': 'moved to plugins/groups/make-group.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:layouts/layout-canvas.mjs': 'moved to plugins/layouts/layout-canvas.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:layouts/layout-records.mjs': 'moved to plugins/layouts/layout-records.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:layouts/layout-table.mjs': 'moved to plugins/layouts/layout-table.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:layouts/layouts.css': 'moved to plugins/layouts/layouts.css at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:network/anchor-appearance.mjs': 'moved to plugins/network/anchor-appearance.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:network/anchor-points.mjs': 'moved to plugins/network/anchor-points.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:network/appearance.mjs': 'moved to plugins/network/appearance.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:network/canvas.mjs': 'moved to plugins/network/canvas.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:network/grammar.mjs': 'moved to plugins/network/grammar.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:network/guide.mjs': 'moved to plugins/network/guide.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:network/host.mjs': 'moved to plugins/network/host.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:network/keys.mjs': 'moved to plugins/network/keys.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:network/kinds.mjs': 'moved to plugins/network/kinds.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:network/link-clone.mjs': 'moved to plugins/network/link-clone.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:network/link-facts.mjs': 'moved to plugins/network/link-facts.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:network/link-handles.mjs': 'moved to plugins/network/link-handles.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:network/link-head.mjs': 'moved to plugins/network/link-head.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:network/link-keys.mjs': 'moved to plugins/network/link-keys.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:network/link-kind.mjs': 'moved to plugins/network/link-kind.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:network/link-painter.mjs': 'moved to plugins/network/link-painter.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:network/link-queries.mjs': 'moved to plugins/network/link-queries.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:network/link-reactions.mjs': 'moved to plugins/network/link-reactions.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:network/link-references.mjs': 'moved to plugins/network/link-references.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:network/link-rules.mjs': 'moved to plugins/network/link-rules.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:network/network-queries.mjs': 'moved to plugins/network/network-queries.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:network/network.css': 'moved to plugins/network/network.css at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:network/network.mjs': 'moved to plugins/network/network.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:network/page.mjs': 'moved to plugins/network/page.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:network/pair-capacity.mjs': 'moved to plugins/network/pair-capacity.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:network/pipe-kind.mjs': 'moved to plugins/network/pipe-kind.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:network/pipes.mjs': 'moved to plugins/network/pipes.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:network/read-model.mjs': 'moved to plugins/network/read-model.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:network/resolve.mjs': 'moved to plugins/network/resolve.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:network/roles.mjs': 'moved to plugins/network/roles.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:network/selection-reflects.mjs': 'moved to plugins/network/selection-reflects.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:network/session.mjs': 'moved to plugins/network/session.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:network/tokens.css': 'moved to plugins/network/tokens.css at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:network/transit-offers.mjs': 'moved to plugins/network/transit-offers.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:network/transit.mjs': 'moved to plugins/network/transit.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:network/view.mjs': 'moved to plugins/network/view.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:zones/make-zone.mjs': 'moved to plugins/zones/make-zone.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:zones/zone-facts.mjs': 'moved to plugins/zones/zone-facts.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:zones/zone-gestures.mjs': 'moved to plugins/zones/zone-gestures.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:zones/zone-keys.mjs': 'moved to plugins/zones/zone-keys.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:zones/zone-kind.mjs': 'moved to plugins/zones/zone-kind.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:zones/zone-labels.mjs': 'moved to plugins/zones/zone-labels.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:zones/zone-painter.mjs': 'moved to plugins/zones/zone-painter.mjs at H26.7 (H26-7); a record written while it lived here cites it here',
-	'*:zones/zones.css': 'moved to plugins/zones/zones.css at H26.7 (H26-7); a record written while it lived here cites it here',
 	// K12 (2026-10-01) deleted the design-rule checker by the director's ruling; these records name it as it stood
 	'dev/BACKLOG.md:kernel/grc.mjs': 'deleted at K12 by ruling (dev/DECISIONS.md); a record naming it as it stood',
 	'dev/COMMIT-DELETIONS.md:kernel/grc.mjs': 'deleted at K12 by ruling (dev/DECISIONS.md); a record naming it as it stood',
@@ -459,7 +386,8 @@ for (const doc of docs) {
 		const candidates = [ref, path.join(path.dirname(doc), ref)];
 		if (candidates.some((c) => inRepo(c))) continue;
 		const key = `${doc}:${ref}`;
-		broken.push({ key, doc, ref, allowed: !!ALLOW[key] || !!ALLOW[`*:${ref}`] });
+		const reason = ALLOW[key] || ALLOW[`*:${ref}`] || movedFor(doc, ref);
+		broken.push({ key, doc, ref, allowed: !!reason, reason });
 	}
 }
 
@@ -471,7 +399,8 @@ for (const src of CODE_ROOTS.flatMap((r) => codeFiles(r))) {
 		if (ref.startsWith('http') || !ref.includes('/')) continue;   // a bare filename may be a forward reference
 		if (inRepo(ref)) continue;
 		const key = `${src}:${ref}`;
-		broken.push({ key, doc: src, ref, allowed: !!ALLOW[key] || !!ALLOW[`*:${ref}`] });
+		const reason = ALLOW[key] || ALLOW[`*:${ref}`];   // code is live: it cites where a moved file is now (H26.7)
+		broken.push({ key, doc: src, ref, allowed: !!reason, reason });
 	}
 }
 
@@ -516,7 +445,7 @@ if (fs.existsSync(DOCKERFILE)) {
 		reason to be about the BUILD rather than inherited from a note about documentation.
 		*/
 		broken.push({ key: `${DOCKERFILE}:${clean}`, doc: DOCKERFILE, ref: clean,
-			allowed: !!ALLOW[`${DOCKERFILE}:${clean}`] });
+			allowed: !!ALLOW[`${DOCKERFILE}:${clean}`], reason: ALLOW[`${DOCKERFILE}:${clean}`] });
 	}
 }
 
@@ -529,7 +458,7 @@ if (process.argv.includes('--verbose') || unlisted.length) {
 		// the reason must come from whichever entry MATCHED. Reading only the exact key printed
 		// `undefined` for every wildcard exemption, which is an allow-list entry a reader cannot
 		// check -- and the point of the list is that each one carries an argument.
-		if (b.allowed) console.log(`               \u2514 ${ALLOW[b.key] || ALLOW[`*:${b.ref}`]}`);
+		if (b.allowed) console.log(`               \u2514 ${b.reason}`);
 	}
 }
 
@@ -538,7 +467,8 @@ if (total === 0) {
 	process.exit(1);
 }
 
-console.log(`  scan-docrefs: ${total} path reference(s) across ${docs.length - HISTORICAL.size} live doc(s); ${broken.length} unresolved, ${Object.keys(ALLOW).length} allowed`);
+const moved = broken.filter((b) => b.allowed && !ALLOW[b.key] && !ALLOW[`*:${b.ref}`]).length;   // H26.7: a record citing a moved path
+console.log(`  scan-docrefs: ${total} path reference(s) across ${docs.length - HISTORICAL.size} live doc(s); ${broken.length} unresolved, ${Object.keys(ALLOW).length} allowed, ${moved} moved and cited by a record`);
 if (unlisted.length) {
 	console.log(`\n  FAIL — ${unlisted.length} reference(s) point at nothing. Repoint, delete, or record why the path is legitimately absent.\n`);
 	process.exit(1);

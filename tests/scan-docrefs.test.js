@@ -45,3 +45,27 @@ test('H26.7: a live code file citing a path under an old plugin root is read, an
 		assert.equal(r.status, 1, `${root}/ is read as a root\n${r.stdout}`);
 	}
 });
+
+/*
+H26.7 (the verifier's V3) -- A MOVED PATH IS ALLOWED IN A RECORD ALONE. A record (a file under dev/) keeps the paths it was written
+with (RU2), so it may cite a path that moved when its new place is in the repository (tools/layers.mjs MOVED). The move's first
+build allowed each moved path with a `*:` entry, which exempted every file: a live document citing `network/view.mjs` passed.
+*/
+test('H26.7: a record may cite a moved path whose new place exists; a live document or code file citing it fails', () => {
+	let r = scan({ ...BASE, 'dev/R.md': '# R\n\nWritten when the view was `network/view.mjs`, and `engine/kinds.mjs` the kinds.\n',
+		'plugins/simulation/kinds.mjs': 'export const k = 1;\n' });
+	assert.equal(r.status, 0, `the control: a record citing a moved folder's file and a moved file\n${r.stdout}`);
+	assert.match(r.stdout, /allowed\s+network\/view\.mjs\n\s+\S+ moved to plugins\/network\/view\.mjs at H26\.7/);
+	assert.match(r.stdout, /allowed\s+engine\/kinds\.mjs\n\s+\S+ moved to plugins\/simulation\/kinds\.mjs at H26\.7/);
+	r = scan({ ...BASE, 'docs/L.md': '# L\n\nThe view is `network/view.mjs`.\n' });
+	assert.equal(r.status, 1, `the verifier's case: a live document citing the old place\n${r.stdout}`);
+	assert.match(r.stdout, /docs\/L\.md\n\s+BROKEN\s+network\/view\.mjs/);
+	r = scan({ ...BASE, 'README.md': '# R\n\nSee `network/view.mjs`.\n' });
+	assert.equal(r.status, 1, 'the README is live');
+	r = scan({ ...BASE, 'server/app.js': '// see network/view.mjs\nexport const a = 1;\n' });
+	assert.equal(r.status, 1, 'so is code');
+	assert.match(r.stdout, /server\/app\.js\n\s+BROKEN\s+network\/view\.mjs/);
+	r = scan({ ...BASE, 'dev/R.md': '# R\n\nWritten when `network/gone.mjs` lived.\n' });
+	assert.equal(r.status, 1, 'a record citing a moved path whose new place is not in the repository: nothing is there to have moved to');
+	assert.match(r.stdout, /BROKEN\s+network\/gone\.mjs/);
+});
