@@ -8,13 +8,20 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { MOVED_BY } from '../tools/layers.mjs';
 
 const SCANNER = path.resolve(import.meta.dirname, '../tools/scan-designs.mjs');
 const MARKER = '## Rulings recorded from 2026-10-11 -- each a structured block';
 const RULING = ['**H9.9 -- a thing ruled -- 2026-10-11.**\\', 'Director: "yes, build it"\\', 'Shown: dev/design/X.md@abc1234\\', 'Recorder: the proposer recommended it.\\', 'Affects: dev/design/unification/A.md'].join('\n');
 
-function tree({ index = '| `A.md` | a | Delta; H1.1. |', files = ['A.md'], title = '# A thing (DELTA, proposed)', banner = true, decisions = `old text\n\n${MARKER}\n\n${RULING}\n` } = {}) {
+/*
+RESTATED at H26.7's second verification (R2-3): the scanner refuses a record that does not hold the ruling tools/layers.mjs MOVED_BY
+names, so each tree's decisions end with that ruling, its Affects: a file citing it -- unless a case states its own (`move: false`).
+*/
+const MOVE_RULING = [`**${MOVED_BY} -- the plugins moved -- 2026-10-21.**\\`, 'Director: "approved"\\', 'Shown: tools/layers.mjs@abc1234\\', 'Recorder: the move.\\', 'Affects: MOVE.md'].join('\n');
+function tree({ index = '| `A.md` | a | Delta; H1.1. |', files = ['A.md'], title = '# A thing (DELTA, proposed)', banner = true, decisions = `old text\n\n${MARKER}\n\n${RULING}\n`, move = true } = {}) {
 	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-designs-'));
+	if (move) { decisions = `${decisions}\n${MOVE_RULING}\n`; fs.writeFileSync(path.join(dir, 'MOVE.md'), `absorbing ${MOVED_BY}\n`); }
 	const u = path.join(dir, 'dev/design/unification');
 	fs.mkdirSync(u, { recursive: true });
 	fs.writeFileSync(path.join(u, 'README.md'), `| File | What it is | Standing |\n|---|---|---|\n${index}\n`);
@@ -124,7 +131,7 @@ file is, so an old place there fails as any missing path.
 test('H26.7 ABSORBED: a ruling after the move\'s own naming an old place fails; one before it is read at the new place', () => {
 	const block = (id, affects) => RULING.replace('H9.9 --', `${id} --`).replace('Affects: dev/design/unification/A.md', `Affects: ${affects}`);
 	const run = (later, own = 'plugins/network/x.css') => {
-		const dir = tree({ decisions: `${MARKER}\n\n${block('H9.9', 'network/x.css')}\n\n${block('H26-7', own)}\n\n${block('H9.10', later)}\n` });
+		const dir = tree({ decisions: `${MARKER}\n\n${block('H9.9', 'network/x.css')}\n\n${block('H26-7', own)}\n\n${block('H9.10', later)}\n`, move: false });
 		fs.mkdirSync(path.join(dir, 'plugins/network'), { recursive: true });
 		fs.writeFileSync(path.join(dir, 'plugins/network/x.css'), '/* H9.9, H26-7 and H9.10 */\n');
 		return scan(dir);
@@ -139,3 +146,21 @@ test('H26.7 ABSORBED: a ruling after the move\'s own naming an old place fails; 
 	assert.equal(r.status, 1, 'nor is the move\'s own ruling before itself');
 	assert.match(r.stdout, /H26-7: Affects names network\/x\.css, which does not exist/);
 });
+
+/*
+H26.7's second verification (R2-3) -- THE CUT-OFF MUST BE FOUND. ABSORBED reads an old place for the rulings before the one
+tools/layers.mjs MOVED_BY names, by that ruling's position; with MOVED non-empty and no ruling heading naming it, the cut-off is
+nowhere, so the record is refused rather than every ruling read as recorded before the move.
+*/
+test('H26.7 (R2-3): with MOVED non-empty, a record holding no ruling heading MOVED_BY names is refused', () => {
+	assert.equal(scan(tree()).status, 0, 'the control: the record holds it');
+	let r = scan(tree({ move: false }));
+	assert.equal(r.status, 1);
+	assert.match(r.stdout, new RegExp(`dev/DECISIONS\\.md holds no ruling heading ${MOVED_BY}, which tools/layers\\.mjs MOVED_BY names`));
+	r = scan(tree({ move: false, decisions: `${MARKER}\n\n${RULING}\n\nThe plugins moved under ${MOVED_BY}.\n` }));
+	assert.equal(r.status, 1, 'a mention in a paragraph is no ruling heading');
+	r = scan(tree({ move: false, decisions: `${MARKER}\n\n${RULING.replace('H9.9 --', `H9.9, ${MOVED_BY} --`).replace('A.md', 'B.md')}\n`, files: ['A.md', 'B.md'], index: '| `A.md` | a | Delta; H1.1. |\n| `B.md` | b | Delta; H1.1. |' }));
+	assert.match(r.stdout, /B\.md, which does not cite H26-7/, 'a heading naming it among other ids is the ruling: its Affects: is held to cite it');
+	assert.doesNotMatch(r.stdout, /holds no ruling heading/, 'and it is found');
+});
+

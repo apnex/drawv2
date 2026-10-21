@@ -71,6 +71,7 @@ Usage: node tools/scan-layers.mjs [--verbose] [--root <dir>] [--manifest <file.j
 import fs from 'node:fs';
 import path from 'node:path';
 import { builtinModules } from 'node:module';
+import { execFileSync } from 'node:child_process';
 import {
 	ALLOWED, FOLDERS, UNSCANNED, LAYER, ENTRIES, PAGES, PRODUCT_LAYERS, RULES, RATCHETS, RATCHET_CEILING, UNUSED_EXPORTS, SCANNER_ROOTS,
 	RATCHET_REASONS, COPIES, PARTS, COMPONENTS, MOVED,
@@ -677,20 +678,38 @@ const rules = {
 		at a live path would make L10 read a module the closure still holds as departed -- the verifier's `'model/limits.mjs':
 		'app/src/main.js'` let a refused listing through -- so each key is gone from the tree, each value is in it, a folder moves to
 		a folder and a file to a file of its own name, and no key is a module the planner loads.
+		RESTATED at H26.7's second verification (R2-2): "the tree" is what git tracks, as scan-docrefs reads it, so an untracked
+		leftover at an old place (an editor's `network/.view.mjs.swp`) is not a path still there. Where there is no git -- a copy of
+		the tree, as the mutants below run in -- the files on disk stand in for it, as scan-board skips its git question there.
 		*/
-		const isDir = (rel) => exists(rel) && fs.statSync(path.join(ROOT, rel)).isDirectory();
+		const tracked = trackedFiles();
+		const inTree = (rel) => (tracked ? tracked.files.has(rel) || tracked.dirs.has(rel) : exists(rel));
+		const isDir = (rel) => (tracked ? tracked.dirs.has(rel) : exists(rel) && fs.statSync(path.join(ROOT, rel)).isDirectory());
 		for (const [k, v] of Object.entries(M.MOVED ?? {})) {
 			const folder = k.endsWith('/');
-			if (exists(k.replace(/\/$/, ''))) fail('L1', `MOVED names ${k}, which is in the tree -- a moved path is gone from its old place`);
-			if (!exists(v.replace(/\/$/, ''))) fail('L1', `MOVED moves ${k} to ${v}, which is not in the tree`);
+			if (inTree(k.replace(/\/$/, ''))) fail('L1', `MOVED names ${k}, which is in the tree -- a moved path is gone from its old place`);
+			if (!inTree(v.replace(/\/$/, ''))) fail('L1', `MOVED moves ${k} to ${v}, which is not in the tree`);
 			else if (folder !== v.endsWith('/') || folder !== isDir(v.replace(/\/$/, ''))) fail('L1', `MOVED moves ${k} to ${v} -- a folder moves to a folder, a file to a file`);
 			if (!folder && path.posix.basename(k) !== path.posix.basename(v)) fail('L1', `MOVED moves ${k} to ${v}, another file name -- a move keeps the name`);
 			const loaded = (M.ENTRIES.planner?.modules ?? []).filter((m) => m === k || (folder && m.startsWith(k)));
 			if (loaded.length) fail('L1', `MOVED names ${k}, which the planner loads (${loaded.join(', ')}) -- L10 would read a module its closure holds as departed`);
 		}
+		/*
+		H26.7, RESTATED at its second verification (R2-1): a scanner's list names folders in FOLDERS, and still reaches every path MOVED
+		took out of a folder it names -- a listed folder or module holds it -- so a move cannot quietly take a module out of a scan (V1(b)
+		was scan-writers losing model/'s reveal module). scan-writers' list may also name a module, its walk reading a file root, but
+		only one MOVED took out of a folder the list names: its modules are its folders' moved files, exactly, so a module entry cannot
+		narrow a folder to one file (`'model/ops.mjs'` for `'model'`, which origin/main refused).
+		*/
+		const isFolder = (d) => M.FOLDERS.some((f) => f.dir === d);
 		for (const [scanner, dirs] of Object.entries(M.SCANNER_ROOTS)) {
-			// H26.7: scan-writers' list may name one module in a scanned folder, its walk reading a file root; every other list names folders
-			for (const d of dirs) if (!M.FOLDERS.some((f) => f.dir === d) && !(scanner === 'writers' && folderOf[d])) fail('L1', `SCANNER_ROOTS.${scanner} names ${d}, which is not a folder in FOLDERS${scanner === 'writers' ? ' nor a module in one' : ''}`);
+			const folders = dirs.filter(isFolder);
+			const owed = Object.entries(M.MOVED ?? {}).filter(([k]) => folders.some((f) => k.startsWith(`${f}/`))).map(([, v]) => v.replace(/\/$/, ''));
+			for (const d of dirs) {
+				if (isFolder(d) || (scanner === 'writers' && folderOf[d] && owed.includes(d))) continue;
+				fail('L1', `SCANNER_ROOTS.${scanner} names ${d}, which is not a folder in FOLDERS${scanner === 'writers' ? ', nor a module MOVED took out of a folder the list names' : ''}`);
+			}
+			for (const o of owed) if (!dirs.some((d) => o === d || o.startsWith(`${d}/`))) fail('L1', `SCANNER_ROOTS.${scanner} no longer reaches ${o}, which MOVED took out of a folder it names -- name it, or the folder it is in`);
 		}
 		if (M.SCANNER_ROOTS.dead) {
 			for (const f of M.FOLDERS) {
@@ -1030,6 +1049,19 @@ const rules = {
 		}
 	},
 };
+
+// H26.7 (R2-2): the files git tracks under ROOT, and their folders; null where there is no git (a copy of the tree), which is no fault
+function trackedFiles() {
+	try {
+		const files = new Set(execFileSync('git', ['-C', ROOT, 'ls-files', '-z'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 1 << 26 }).split('\0').filter(Boolean));
+		const dirs = new Set([...files].flatMap((f) => f.split('/').slice(0, -1).map((_, i, a) => a.slice(0, i + 1).join('/'))));
+		return { files, dirs };
+	} catch (e) {
+		if (/not a git repository|ENOENT/i.test(`${e.message} ${e.stderr ?? ''}`)) return null;
+		fail('L1', `git ls-files could not run: ${e.message.split('\n')[0]}`);
+		return null;
+	}
+}
 
 function closure(roots) {
 	const seen = new Set();

@@ -22,7 +22,7 @@ import path from 'node:path';
 import os from 'node:os';
 import crypto from 'node:crypto';
 import { execFileSync, execFile } from 'node:child_process';
-import { UNUSED_EXPORTS, SCANNER_ROOTS, FOLDERS, PAGES, RATCHETS, RATCHET_CEILING, ENTRIES, MOVED } from '../tools/layers.mjs';
+import { UNUSED_EXPORTS, SCANNER_ROOTS, FOLDERS, PAGES, RATCHETS, RATCHET_CEILING, ENTRIES, MOVED, MOVED_BY } from '../tools/layers.mjs';
 import { movedTo } from '../tools/records.mjs';
 import { NETWORK_ROWS } from '../plugins/network/kinds.mjs';   // the network's kind and the field it contributes (S-a)
 import { createNetwork as netFor } from '../plugins/network/network.mjs';
@@ -413,6 +413,20 @@ const MUTANTS = [
 		edits: [{ file: MAN, replace: ["'zones/': 'plugins/zones/',", "'zones/': 'plugins/zones',"] }] },
 	{ id: 'P9', rule: 'L1', needle: /MOVED moves zones\/ to plugins\/zones\/zone-kind\.mjs\/ -- a folder moves to a folder, a file to a file/,
 		edits: [{ file: MAN, replace: ["'zones/': 'plugins/zones/',", "'zones/': 'plugins/zones/zone-kind.mjs/',"] }] },
+	/*
+	H26.7's second verification (R2-1): a scanner's list reaches every path MOVED took out of a folder it names, and scan-writers' names
+	a module for that alone. P10 is the verifier's narrowing, model/ to one of its files, which origin/main refused; P11 adds a module
+	beside its folder; P12 drops the reveal module, which model/ held; P13 drops the simulation's folder from scan-dead's method scope,
+	which engine/ and model/ held for it.
+	*/
+	{ id: 'P10', rule: 'L1', needle: /SCANNER_ROOTS\.writers names model\/ops\.mjs, which is not a folder in FOLDERS, nor a module MOVED took out of a folder the list names/,
+		edits: [{ file: MAN, replace: ["writers: ['server', 'planner', 'model', 'plugins/simulation/reveal.mjs'],", "writers: ['server', 'planner', 'model/ops.mjs', 'plugins/simulation/reveal.mjs'],"] }] },
+	{ id: 'P11', rule: 'L1', needle: /SCANNER_ROOTS\.writers names model\/ops\.mjs, which is not a folder in FOLDERS, nor a module MOVED took out/,
+		edits: [{ file: MAN, replace: ["writers: ['server', 'planner', 'model', 'plugins/simulation/reveal.mjs'],", "writers: ['server', 'planner', 'model', 'model/ops.mjs', 'plugins/simulation/reveal.mjs'],"] }] },
+	{ id: 'P12', rule: 'L1', needle: /SCANNER_ROOTS\.writers no longer reaches plugins\/simulation\/reveal\.mjs, which MOVED took out of a folder it names/,
+		edits: [{ file: MAN, replace: ["writers: ['server', 'planner', 'model', 'plugins/simulation/reveal.mjs'],", "writers: ['server', 'planner', 'model'],"] }] },
+	{ id: 'P13', rule: 'L1', needle: /SCANNER_ROOTS\.deadMethods no longer reaches plugins\/simulation\/kinds\.mjs, which MOVED took out of a folder it names/,
+		edits: [{ file: MAN, replace: ["deadMethods: ['server', 'planner', 'model', 'engine', 'kernel', 'plugins/simulation'],", "deadMethods: ['server', 'planner', 'model', 'engine', 'kernel'],"] }] },
 ];
 
 /*
@@ -425,6 +439,16 @@ const CONTROLS = [
 		{ file: 'tests/__c0.test.js', create: "import { openGrid } from '@apnex/snap-grid';\nexport const __c0 = openGrid;\n" }] },
 ];
 
+// a copy of the tree scan-layers reads: every folder it scans and the pages it names (the mutants below each run in one)
+const copyTree = (to) => {
+	for (const f of FOLDERS) {
+		fs.cpSync(path.join(root, f.dir), path.join(to, f.dir), {
+			recursive: true, filter: (src) => !(f.skip ?? []).some((s) => src === path.join(root, s) || src.startsWith(path.join(root, s) + path.sep)),
+		});
+	}
+	for (const f of ['package.json', ...Object.keys(PAGES)]) fs.cpSync(path.join(root, f), path.join(to, f));
+};
+
 const scanOwn = (dir) => new Promise((done) => {
 	execFile('node', [path.join(dir, 'tools/scan-layers.mjs')], { encoding: 'utf8' }, (err, stdout, stderr) => done({ out: stdout + stderr, code: err ? err.code : 0 }));
 });
@@ -432,15 +456,7 @@ const scanOwn = (dir) => new Promise((done) => {
 test('K0 M1-M7 and the attack\'s A-mutants (on copies of this tree): each lands and each fails its rule', async () => {
 	const base = fs.mkdtempSync(path.join(os.tmpdir(), 'k0-mutants-'));
 	try {
-		const copy = (to) => {
-			for (const f of FOLDERS) {
-				fs.cpSync(path.join(root, f.dir), path.join(to, f.dir), {
-					recursive: true, filter: (src) => !(f.skip ?? []).some((s) => src === path.join(root, s) || src.startsWith(path.join(root, s) + path.sep)),
-				});
-			}
-			for (const f of ['package.json', ...Object.keys(PAGES)]) fs.cpSync(path.join(root, f), path.join(to, f));
-		};
-		copy(path.join(base, 'control'));
+		copyTree(path.join(base, 'control'));
 		const control = await scanOwn(path.join(base, 'control'));
 		assert.equal(control.code, 0, `the unmutated copy must pass before any mutant is read:\n${control.out}`);
 
@@ -464,6 +480,28 @@ test('K0 M1-M7 and the attack\'s A-mutants (on copies of this tree): each lands 
 			if (m.needle) assert.match(r.out, m.needle, `${m.id} must be refused for its own reason`);
 		}
 	} finally { fs.rmSync(base, { recursive: true, force: true }); }
+});
+
+/*
+H26.7's second verification (R2-2) -- L1 judges MOVED against what git tracks, as scan-docrefs does. An untracked leftover at an old
+place -- an editor's swap file left in network/ -- is not the moved path still there; once tracked, it is. The mutants above run in
+copies with no git, where the files on disk stand in, so this case is a copy made a repository.
+*/
+test('H26.7 (R2-2): a moved path\'s old place is judged against what git tracks -- an untracked leftover there is no fault, a tracked one is', async () => {
+	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'k0-tracked-'));
+	try {
+		copyTree(dir);
+		execFileSync('git', ['init', '-q'], { cwd: dir });
+		execFileSync('git', ['add', '-A'], { cwd: dir });
+		fs.mkdirSync(path.join(dir, 'network'));
+		fs.writeFileSync(path.join(dir, 'network/.view.mjs.swp'), 'an editor\'s leftover\n');
+		let r = await scanOwn(dir);
+		assert.equal(r.code, 0, `an untracked leftover at an old place is not the path still there:\n${r.out}`);
+		execFileSync('git', ['add', '-f', 'network/.view.mjs.swp'], { cwd: dir });
+		r = await scanOwn(dir);
+		assert.equal(r.code, 1, `tracked, it is:\n${r.out}`);
+		assert.match(r.out, /L1 MOVED names network\/, which is in the tree -- a moved path is gone from its old place/);
+	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
 
 /*
@@ -590,11 +628,13 @@ this line in the same diff, where a reviewer sees it.
 /*
 H26.7 (the verifier's V2) -- MOVED is pinned beside the frozen K0 list, which L10 reads through it: a changed table is an edit to this
 line in the same diff, where a reviewer sees it. 17 entries: the five plugin folders and the simulation's twelve files.
+RESTATED at H26.7's second verification (R2-3): with MOVED_BY, the ruling whose place in dev/DECISIONS.md is scan-designs' cut-off.
 */
-test('H26.7: MOVED is the table H26.7 recorded', () => {
+test('H26.7: MOVED is the table H26.7 recorded, under the ruling it names', () => {
 	assert.equal(Object.keys(MOVED).length, 17);
-	assert.equal(crypto.createHash('sha256').update(JSON.stringify(MOVED)).digest('hex'),
-		'37fdc04da9890b08e435022e6e56e87b5c706efddbed339a733bcdfc002d25f8');
+	assert.equal(MOVED_BY, 'H26-7');
+	assert.equal(crypto.createHash('sha256').update(JSON.stringify({ MOVED_BY, MOVED })).digest('hex'),
+		'd84d7bce51a0b0b51e26b6faace1c4a28b225564c9e30e385640e2036206d1f5');
 });
 
 test('H17 K2a: the K0 closure is frozen, and it is the one K0 recorded', () => {

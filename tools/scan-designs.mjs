@@ -78,9 +78,11 @@ if (exists('dev/DECISIONS.md')) {
 	else {
 		const after = text.slice(at + MARKER.length);
 		const paras = after.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
-		// H26.7 (V7): the rulings before the move's own may name a moved path's old place; none there, the move not yet recorded, all may
+		// H26.7 (V7): the rulings before the move's own may name a moved path's old place. RESTATED at its second verification (R2-3):
+		// the cut-off is that ruling's place, so a MOVED_BY naming no ruling heading is refused rather than read as "every ruling"
 		const heads = paras.map((p) => /^\*\*([A-Z][A-Za-z0-9.-]*(?:,\s*[A-Z][A-Za-z0-9.-]*)*)\s+--\s/.exec(p.split('\n')[0].replace(/^>\s*/, ''))?.[1] ?? '');
 		const moveAt = heads.findIndex((h) => h.split(',').map((x) => x.trim()).includes(MOVED_BY));
+		if (Object.keys(MOVED).length && moveAt < 0) fail(`dev/DECISIONS.md holds no ruling heading ${MOVED_BY}, which tools/layers.mjs MOVED_BY names as the ruling its moves are recorded under -- the rulings before it may name a moved path's old place, so it must be found`);
 		for (const [i, p] of paras.entries()) {
 			const first = p.split('\n')[0].replace(/^>\s*/, '');
 			if (!first.startsWith('**')) continue;
@@ -96,7 +98,7 @@ if (exists('dev/DECISIONS.md')) {
 			}
 			const affects = /^Affects: (.+?)\\?$/m.exec(p);
 			for (const f of affects ? affects[1].split(',').map((x) => x.trim().replace(/^`|`$/g, '')).filter(Boolean) : []) {
-				const at = exists(f) || (moveAt > -1 && i >= moveAt) ? f : movedTo(f, MOVED);   // H26.7: a path that moved, read where it is now
+				const at = exists(f) || i >= moveAt ? f : movedTo(f, MOVED);   // H26.7: a path that moved, read where it is now
 				if (!exists(at)) fail(`dev/DECISIONS.md ${head[1]}: Affects names ${f}, which does not exist`);
 				else for (const id of head[1].split(',').map((x) => x.trim())) {
 					// every id in the head, as a whole id: H21.5 is not cited by H21.5.1, and a sentence's full stop still ends it
