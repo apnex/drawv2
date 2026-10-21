@@ -997,6 +997,16 @@ export const UNUSED_EXPORTS = {
 };
 
 /*
+H26.7 (H26-7) -- WHERE A MOVED PATH IS NOW. A record keeps the paths it was written with (RU2): a ruling's `Affects:`, and the K0
+closure frozen above. A check that must open a recorded path's file finds it here, through tools/records.mjs `movedTo`: scan-designs
+reads a ruling's affected document (ABSORBED) at its moved place when nothing is at the path the ruling names, and L10 judges a module
+the frozen closure names where it is now (C2(c), `byDeparture`). A key ending in `/` names every path under it. scan-docrefs records
+the same moves as its own `*:` allowances, one per path a record cites.
+*/
+export const MOVED = {
+};
+
+/*
 The folder lists of the other scanners, moved here unchanged (K0) so that a new folder is added in
 one place. The ORDER is part of each scanner's behaviour (it orders their output), so each list
 keeps the order it had in its scanner. L1 checks that every entry is a folder in FOLDERS, and that

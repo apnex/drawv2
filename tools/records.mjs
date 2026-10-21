@@ -12,6 +12,7 @@ as open.
   readRows(text)       the register's rows: id -> { cells, disposition, verdict, kind }
   readItems(text)      the board's item rows: [{ h, state, ids, line }]
   heldRows(text)       the rows of the first table under `## Held`: [{ id, index, cells }], index the line's number from 0
+  movedTo(path, moved) where a path a record keeps is now (tools/layers.mjs MOVED, H26.7), or the path when it never moved
 */
 
 export const splitCells = (line) => line.split(/(?<!\\)\|/).map((c) => c.trim());
@@ -88,3 +89,9 @@ export function heldRows(text) {
 	}
 	return out;
 }
+
+// H26.7: a key ending in `/` names every path under it
+export const movedTo = (p, moved) => {
+	const key = Object.keys(moved).find((k) => p === k || (k.endsWith('/') && p.startsWith(k)));
+	return key === undefined ? p : moved[key] + p.slice(key.length);
+};

@@ -73,9 +73,10 @@ import path from 'node:path';
 import { builtinModules } from 'node:module';
 import {
 	ALLOWED, FOLDERS, UNSCANNED, LAYER, ENTRIES, PAGES, PRODUCT_LAYERS, RULES, RATCHETS, RATCHET_CEILING, UNUSED_EXPORTS, SCANNER_ROOTS,
-	RATCHET_REASONS, COPIES, PARTS, COMPONENTS,
+	RATCHET_REASONS, COPIES, PARTS, COMPONENTS, MOVED,
 } from './layers.mjs';
 import { exceptionFaults } from './exceptions.mjs';
+import { movedTo } from './records.mjs';   // H26.7: where a path the frozen K0 closure keeps is now
 import { markersOf } from './regions.mjs';   // H26.1: the import map's generated region, the one place L6 admits an inline script
 
 const argOf = (flag) => { const i = process.argv.indexOf(flag); return i > -1 ? process.argv[i + 1] : null; };
@@ -88,8 +89,8 @@ const M = J ? {
 	ALLOWED: J.ALLOWED ?? {}, FOLDERS: J.FOLDERS ?? [], UNSCANNED: J.UNSCANNED ?? {}, LAYER: J.LAYER ?? {},
 	ENTRIES: J.ENTRIES ?? {}, PAGES: J.PAGES ?? {}, PRODUCT_LAYERS: J.PRODUCT_LAYERS ?? [], RULES: J.RULES ?? {}, RATCHETS: J.RATCHETS ?? {},
 	RATCHET_CEILING: J.RATCHET_CEILING, UNUSED_EXPORTS: J.UNUSED_EXPORTS ?? {}, SCANNER_ROOTS: J.SCANNER_ROOTS ?? {},
-	COPIES: J.COPIES ?? {}, PARTS: J.PARTS ?? {}, COMPONENTS: J.COMPONENTS ?? {},
-} : { ALLOWED, FOLDERS, UNSCANNED, LAYER, ENTRIES, PAGES, PRODUCT_LAYERS, RULES, RATCHETS, RATCHET_CEILING, UNUSED_EXPORTS, SCANNER_ROOTS, COPIES, PARTS, COMPONENTS };
+	COPIES: J.COPIES ?? {}, PARTS: J.PARTS ?? {}, COMPONENTS: J.COMPONENTS ?? {}, MOVED: J.MOVED ?? {},
+} : { ALLOWED, FOLDERS, UNSCANNED, LAYER, ENTRIES, PAGES, PRODUCT_LAYERS, RULES, RATCHETS, RATCHET_CEILING, UNUSED_EXPORTS, SCANNER_ROOTS, COPIES, PARTS, COMPONENTS, MOVED };
 const R = M.RULES;
 
 // ---------------------------------------------------------------------------------------------
@@ -956,7 +957,8 @@ const rules = {
 			A14 through, which is the borrowed-spelling hole C2(c) exists to close.
 			*/
 			const k0 = new Set(rec.k0closure ?? []);
-			const departed = [...k0].filter((m) => !C.has(m));
+			// H26.7: the frozen list keeps the paths K0 knew (RU2); a module that moved is judged and read where it is now (MOVED)
+			const departed = [...k0].map((m) => movedTo(m, M.MOVED)).filter((m) => !C.has(m));
 			const byDeparture = (k) => departed.some((m) => (A[m]?.edges ?? []).some((e) =>
 				e.kind !== 'reexport' && e.to === modOf(k) && (e.names === null || e.names.includes(nameOf(k)))));
 			const tags = R.L10?.tags ?? [];

@@ -14,13 +14,16 @@ decision record, each decidable from the text; status lives on the board, and pr
             then `Director: "<words>"`, `Shown: <document>@<commit>`, `Recorder: <account>`, `Affects: <path>[, <path>]` -- or an
             `AMENDED` or `CORRECTED` line naming the ruling it amends; a bold paragraph of any other kind there fails
   ABSORBED  each path a ruling block's `Affects:` names exists and cites the ruling's id (H21.6; mission-kit AR4's `affects`,
-            the walk AR1 asks for so a target architecture is living rather than a shape)
+            the walk AR1 asks for so a target architecture is living rather than a shape) -- a path that moved read where it is
+            now (tools/layers.mjs MOVED, H26.7), since the ruling keeps the path it was written with (RU2)
 
 Usage: node tools/scan-designs.mjs [--root <dir>]
 */
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { MOVED } from './layers.mjs';
+import { movedTo } from './records.mjs';
 
 const i = process.argv.indexOf('--root');
 const ROOT = i > -1 ? process.argv[i + 1] : '.';
@@ -89,10 +92,11 @@ if (exists('dev/DECISIONS.md')) {
 			}
 			const affects = /^Affects: (.+?)\\?$/m.exec(p);
 			for (const f of affects ? affects[1].split(',').map((x) => x.trim().replace(/^`|`$/g, '')).filter(Boolean) : []) {
-				if (!exists(f)) fail(`dev/DECISIONS.md ${head[1]}: Affects names ${f}, which does not exist`);
+				const at = exists(f) ? f : movedTo(f, MOVED);   // H26.7: a path that moved, read where it is now
+				if (!exists(at)) fail(`dev/DECISIONS.md ${head[1]}: Affects names ${f}, which does not exist`);
 				else for (const id of head[1].split(',').map((x) => x.trim())) {
 					// every id in the head, as a whole id: H21.5 is not cited by H21.5.1, and a sentence's full stop still ends it
-					if (!new RegExp(`(^|[^\\w.-])${id.replace(/[.]/g, '\\.')}(?![\\w-]|\\.\\d)`).test(read(f))) fail(`dev/DECISIONS.md ${head[1]}: Affects names ${f}, which does not cite ${id} -- a ruling a document must absorb is cited there`);
+					if (!new RegExp(`(^|[^\\w.-])${id.replace(/[.]/g, '\\.')}(?![\\w-]|\\.\\d)`).test(read(at))) fail(`dev/DECISIONS.md ${head[1]}: Affects names ${f}, which does not cite ${id} -- a ruling a document must absorb is cited there`);
 				}
 			}
 		}

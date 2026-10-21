@@ -22,7 +22,8 @@ import path from 'node:path';
 import os from 'node:os';
 import crypto from 'node:crypto';
 import { execFileSync, execFile } from 'node:child_process';
-import { UNUSED_EXPORTS, SCANNER_ROOTS, FOLDERS, PAGES, RATCHETS, RATCHET_CEILING, ENTRIES } from '../tools/layers.mjs';
+import { UNUSED_EXPORTS, SCANNER_ROOTS, FOLDERS, PAGES, RATCHETS, RATCHET_CEILING, ENTRIES, MOVED } from '../tools/layers.mjs';
+import { movedTo } from '../tools/records.mjs';
 import { NETWORK_ROWS } from '../network/kinds.mjs';   // the network's kind and the field it contributes (S-a)
 import { createNetwork as netFor } from '../network/network.mjs';
 import { createTransit as transitFor } from '../network/transit.mjs';
@@ -580,7 +581,8 @@ test('H17 K2a: a name is admitted only when a DEPARTED module imported it, not m
 	const rec = UNUSED_EXPORTS.planner;
 	const k0 = new Set(rec.k0closure);
 	const now = new Set(ENTRIES.planner.modules);
-	const departed = [...k0].filter((m) => !now.has(m));
+	// H26.7: the frozen list keeps the paths K0 knew (RU2); a module that moved since is judged and read where it is now (MOVED)
+	const departed = [...k0].map((m) => movedTo(m, MOVED)).filter((m) => !now.has(m));
 	assert.ok(departed.length > 0, 'K2a must have dropped modules, or this proves nothing');
 
 	// every listed name outside the frozen baseline must be importable from a departed module
