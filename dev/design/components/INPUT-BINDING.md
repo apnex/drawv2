@@ -4,7 +4,7 @@ The second piece of H26's design of record (`dev/DECISIONS.md` H26-3, as H26-5 a
 It designs `input-binding`, the component that decides what each input means: the one declared row it resolves to in its context, and the phase of a gesture it makes due.\
 It builds on part 1 (`SNAP-GRID.md`), whose section 7 -- the repository, the checks, the gate, the release, the import map -- is settled and built, and states only where this piece differs.
 
-**Standing:** a design under review, revision 5, drafted 2026-10-20 after its fourth reading, confirming revision 4 (section 10.4); revisions 1 to 4 were `5b4997b`, `e131855`, `355a25d` and `d275205`; the code read is `d275205`'s, identical in code to `5b4997b` and `6078018`; not ratified.
+**Standing:** a design under review, revision 5, drafted 2026-10-20 after its fourth reading, confirming revision 4 (section 10.4); revisions 1 to 4 were `5b4997b`, `e131855`, `355a25d` and `d275205`; the code read is `d275205`'s, identical in code to `5b4997b` and `6078018`; ratified by the director on 2026-10-20, all fourteen decisions of section 8 as recommended and appendix A as `input-binding`'s vision (`dev/DECISIONS.md` H26-6); built in H26.2.
 
 ---
 
@@ -669,7 +669,7 @@ Where this piece differs:
 ## 8. Decisions owed
 
 Each is offered with a recommendation; they may be ratified together, or one at a time.\
-The ruling that ratifies this piece is written `H26-r` below until it has its number.
+Ratified together, all fourteen as recommended, on 2026-10-20 (`dev/DECISIONS.md` H26-6); `H26-6` stands below where the draft wrote its placeholder.
 
 | # | Decision | Recommendation, and why |
 |---|---|---|
@@ -688,7 +688,7 @@ The ruling that ratifies this piece is written `H26-r` below until it has its nu
 | D13 | What documents the bindings reads the rows, never the component's internals: draw's help overlay reads each composed table's rows, projected from `table.rows`, in table order; `tools/gesture-table.mjs` keeps reading draw's row arrays, and `tools/reaction-table.mjs`, which reads the planner, is untouched; the component describes no row | yes: the rows are draw's one master and every projection a view of it (P3), so the overlay lists exactly the rows an input resolves against (RULES I4, A5); the input grammar a help line is written in (`app/src/help.js:9-15`) is draw's, and a component that rendered rows would carry it |
 | D14 | The palette's tile drag stays draw's own mechanism in H26.2, outside the session | yes: its click rule differs from the canvas's -- 5 screen pixels, `<`, measured where the release lands, and only off the canvas (`app/src/palette.js:29`, `:167-169`) -- so moving it onto the session would change what a tile does: a press travelling 20 pixels and released 3 from where it began toggles the hand today and would be a drop. It is page chrome in screen units, and how events outside the canvas reach binding is H26.3's to design (H26 named it a second input path to clean); registered below |
 
-**Registered when this is ratified,** each with its revival trigger (RU3):
+**Registered on ratification (H26-6),** each with its revival trigger (RU3), as B404 to B410:
 - travel measured on screen: when H26.6 designs pan and zoom, a fact may carry a screen point beside `at` and the session's declaration name which it measures;
 - a timed trigger: when an application needs a hold or a double click decided by time, its time a field of the facts;
 - held keys and several pointers told apart: when an application's row needs a key other than a modifier held, or a second pointer's press kept;
@@ -861,7 +861,7 @@ Read through context-lab's review panel, `--tools on --verify`, the document rea
 
 ## Appendix A -- `input-binding`'s vision, the draft put to the director
 
-To be ratified by the director with section 8; `input-binding`'s `VISION.md` is made from it when its repository is.
+Ratified by the director as written, with section 8 (H26-6); `input-binding`'s `VISION.md` is made from it when its repository is.
 
 **North star.**\
 Let every application decide what an input means in one place, from rows it declares, the same way every time.
@@ -951,9 +951,9 @@ From the inventory of `5b4997b`, rechecked at `355a25d`, identical in code: prod
 | `tools/layers.mjs:93-94` | `PARTS.rules`'s duty | plumbing: "Decide what an input means"; modules and consumes unchanged |
 | `tools/layers.mjs:113-120,305-309` | the canvas part's modules; `LAYER.canvas` | plumbing: `app/src/triggers.js` leaves both |
 | `tools/layers.mjs:358-367,432-437` | `ENTRIES.page` and `ENTRIES.lab` | plumbing: `app/src/triggers.js` leaves both |
-| `tools/layers.mjs:158-161` | `COMPONENTS` | plumbing: `'@apnex/input-binding': { parts: ['rules'], by: ['H26-1', 'H26-2', 'H26-r'] }` |
-| `tools/layers.mjs:172-190` | `MISSION_KIT_READ`; `input-binding`'s standing | plumbing: `'proposed in drawv2, released from its own repository, composed (H26-r)'`, the date renewed |
-| `tools/layers.mjs:191-207` | `ALIGNMENT.rules`, `ALIGNMENT.canvas` | plumbing: `rules` waits `'composed (H26-r); its matcher and gesture session moved onto it at H26.2'`; `canvas` waits `'consumes it through rules (H26-r); its rows and gesture bodies stay draw\'s (B389)'` |
+| `tools/layers.mjs:158-161` | `COMPONENTS` | plumbing: `'@apnex/input-binding': { parts: ['rules'], by: ['H26-1', 'H26-2', 'H26-6'] }` |
+| `tools/layers.mjs:172-190` | `MISSION_KIT_READ`; `input-binding`'s standing | plumbing: `'proposed in drawv2, released from its own repository, composed (H26-6)'`, the date renewed |
+| `tools/layers.mjs:191-207` | `ALIGNMENT.rules`, `ALIGNMENT.canvas` | plumbing: `rules` waits `'composed (H26-6); its matcher and gesture session moved onto it at H26.2'`; `canvas` waits `'consumes it through rules (H26-6); its rows and gesture bodies stay draw\'s (B389)'` |
 | `tools/layers.mjs:284` | `LAYER.core`'s note for the matcher | plumbing: restated as draw's adapter over `input-binding` |
 | `tools/layers.mjs:876-994` | `UNUSED_EXPORTS` | unchanged: `kernel/input-rules.mjs` is not in the planner entry's closure, and no deleted name is in its baseline, so nothing joins `retired` |
 | `tools/scan-dead.mjs:79` | the allowance for `overlapsIn` | unchanged: it stays the adapter's gate instrument, consumed by tests alone; `openGestures` needs none, `app/src/input.js` calling it |
@@ -963,7 +963,7 @@ From the inventory of `5b4997b`, rechecked at `355a25d`, identical in code: prod
 | `dev/COMMIT-DELETIONS.md` | the deletion register | unchanged: H26.1 added no row for its deletions, and H26.2 follows it |
 | `kernel/README.md:15` | the matcher's line | plumbing: restated as draw's adapter over `input-binding` |
 | `docs/ARCHITECTURE.md` | generated parts and alignment | plumbing: regenerated with the manifest; its run-time steps cite no test H26.2 moves |
-| `docs/ARCHITECTURE-TARGET.md` | generated parts and alignment; the authored sections 2, 4.2 and 9.3 | plumbing: regenerated; the justification chain cites `H26-r`; section 4.2's `rules` row reads "one match, or none, for an input among declared rows, and a gesture session deciding when each phase of a gesture is due, both from `input-binding` (H26-r)"; section 9.3's first sentence reads "The anchored core composes two components, `snap-grid` through its `lattice` part and `input-binding` through its `rules` part, each through that part alone (H26-1, H26-2, H26-4, H26-r; `tools/layers.mjs` `COMPONENTS`), where A-0 found it composed none." |
+| `docs/ARCHITECTURE-TARGET.md` | generated parts and alignment; the authored sections 2, 4.2 and 9.3 | plumbing: regenerated; the justification chain cites `H26-6`; section 4.2's `rules` row reads "one match, or none, for an input among declared rows, and a gesture session deciding when each phase of a gesture is due, both from `input-binding` (H26-6)"; section 9.3's first sentence reads "The anchored core composes two components, `snap-grid` through its `lattice` part and `input-binding` through its `rules` part, each through that part alone (H26-1, H26-2, H26-4, H26-6; `tools/layers.mjs` `COMPONENTS`), where A-0 found it composed none." |
 | `tests/input-rules.test.js` | the matcher's tests; the neutrality test; `table.map` at `:22` | moves: the matcher's tests to the component's own; the neutrality test stays on the adapter, which imports `@apnex/input-binding` alone; the owner test reads `table.rows` |
 | `tests/input-state.test.js:15-19,30-37,68-84` | the press, in the state's whole value and on its own | moves: the press's tests to the component's; the state's value restated without a press |
 | `tests/triggers.test.js` | the click rule | moves: to the component (IB10's tests); its "decided once" test stays in draw, restated -- `app/src/input.js` names the threshold once and the link release alone reads it |
