@@ -1573,8 +1573,8 @@ Opened 2026-10-18 by the director (`dev/DECISIONS.md` H26): the canvas and the i
 |---|---|---|---|---|
 | H26.0 | Design of record: each component's duty and contract, what draw supplies to each, the vocabulary check in each gate, the repository template, the release workflow, draw's generated import map and the tester's scope; checked against the axioms (M7), reviewed by several model families (context-lab), ratified with each component's vision (H26.0); part 1, `snap-grid` and the shared parts, ratified (H26-4); part 2, `input-binding`, ratified (H26-6) | **B346** | S3 | `WIP` |
 | H26.1 | `snap-grid`: the grid's arithmetic out of draw into its own repository, released, and draw on it -- the pipeline proven on the smallest (H26.1); built before the rest of H26.0 (H26-5); live in production (`draw-00237-rzm`, `416c062`) | feature | S3 | `DONE` |
-| H26.2 | `input-binding`: the rule matcher and the gesture lifecycle out of draw, draw's rules supplied as data (H26.2) | **B274** | S3 | `WIP` |
-| H26.3 | `input-capture`: device events into input facts, the hit test and the coordinates supplied by the app (H26.3) | feature | S3 | `TODO` |
+| H26.2 | `input-binding`: the rule matcher and the gesture lifecycle out of draw, draw's rules supplied as data (H26.2); live in production (`draw-00238-bvl`, `6e7631d`) | **B274** | S3 | `DONE` |
+| H26.3 | `input-capture`: device events into input facts, the hit test and the coordinates supplied by the app (H26.3) | **B274** | S3 | `TODO` |
 | H26.4 | `vector-scene`: the drawing loop, its layers and what lies under a point out of draw, draw's painters supplied (H26.4) | feature | S3 | `TODO` |
 | H26.5 | The gesture tester at `input.apnex.io`, built from the four alone, after a fresh agent tries to build it from the contracts (H26.5) | feature | S3 | `TODO` |
 | H26.6 | Pan and zoom: in `vector-scene`, then the tester, then draw -- overturning decision 1 and firing B289 and B325, ruled when reached (H26.6) | feature | S3 | `TODO` |
