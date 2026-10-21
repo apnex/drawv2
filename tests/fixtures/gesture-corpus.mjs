@@ -217,6 +217,8 @@ export const SCENARIOS = [
 	{ id: 'document-replaced-cancels-link', board: 'pair', steps: [['down', 0, 0, 'n0'], ['move', 180, 120], ['key', 'w'], ['load'], ['up', 360, 0, 'n1', { up: true }]] },
 	{ id: 'press-cancels-move', board: 'pair', steps: [['down', 0, 0, 'n0', { button: 2 }], ['move', 120, 60, 'n0', { button: 2 }], ['down', 360, 0, 'n1'], ['move', 360, 360], ['up', 360, 360, null, { up: true }]] },
 	{ id: 'press-cancels-chain', board: 'three', steps: [['down', 0, 0, 'n0'], ['move', 360, 0, 'n1'], ['up', 360, 0, 'n1', { shift: true, up: true }], ['move', 200, 200], ['down', 0, 0, 'n0', { button: 2 }], ['up', 0, 0, 'n0', { button: 2, up: true }]] },
+	// and a clone dragged on after it became one, so the clone's own update runs -- the one body no scenario reached (H26.2's lifecycle record)
+	{ id: 'clone-ctrl-drag-moved-on', board: 'pair', steps: [['down', 0, 0, 'n0', { ctrl: true }], ['move', 60, 60, 'n0', { ctrl: true }], ['move', 120, 120, 'n0', { ctrl: true }], ['up', 120, 120, 'n0', { ctrl: true, up: true }]] },
 	{ id: 'dblclick-edits-cancels-chain', board: 'three', steps: [['down', 0, 0, 'n0'], ['move', 360, 0, 'n1'], ['up', 360, 0, 'n1', { shift: true, up: true }], ['move', 0, 0, 'n0'], ['dbl', 0, 0, 'n0']] },
 ];
 
@@ -235,7 +237,8 @@ const JUDGES = {
 };
 
 // `withHarness(h)`: called with the harness before the board is seeded -- for a test that watches the commits as they pass (V-d)
-export function record(scenario, { withHarness = null } = {}) {
+// `afterStep(h, i)`: called after each step -- for H26.2's side-by-side, which records which gesture is live after each input
+export function record(scenario, { withHarness = null, afterStep = null } = {}) {
 	const realNow = Date.now, realRandom = Math.random;
 	Date.now = () => 1790000000000;
 	/*
@@ -277,6 +280,7 @@ export function record(scenario, { withHarness = null } = {}) {
 			else if (op === 'mode') h.renderer.mode = a[0];
 			else if (op === 'at') run(() => h.capture.onMove(pointerEvent(ids, a[0], a[1], null, { up: true })));
 			else throw new Error(`corpus: unknown step ${op}`);
+			afterStep?.(h, i);
 		});
 		h.history.flush?.();
 		// what the gesture SENT, its intent (V-d): what the tab applied for each is the tab's own, and shows in `final`

@@ -164,7 +164,8 @@ A real Model, a real Changes, a real Selection, a real Input. The collaborators 
 stubbed, because nothing here asserts on drawing — `renderer` and `labels` are recorded so a test
 can show a gesture did not, say, open the label editor, without asserting on pixels.
 */
-export function makeInput({ readOnly = false, bare = false, host: hostOverride = null, routeHook = null, plugins = null, parts = PRODUCT_CANVAS } = {}) {   // parts: the canvas parts, the page's by default (C-d)
+// runRules: run mode's rows, the product page's by default; the lab composes none (lab/src/root.js), which H26.2's side-by-side asks for
+export function makeInput({ readOnly = false, bare = false, host: hostOverride = null, routeHook = null, plugins = null, parts = PRODUCT_CANVAS, runRules = RUN_PRESSES } = {}) {   // parts: the canvas parts, the page's by default (C-d)
 	const restore = installDom();
 
 	// the kinds the product page composes (S-b, G1), and its network: a Model holding links draws with one (V-e, J2) -- the
@@ -256,7 +257,7 @@ export function makeInput({ readOnly = false, bare = false, host: hostOverride =
 		input = bare
 			? new Input({ svg, model, history, selection, renderer, labels, host, help, snap, parts })   // places are composition, not a collaborator (C-c)
 			// run mode's rows as the production root hands them in (K5); `bare` omits them as it omits every collaborator
-			: new Input({ svg, model, history, selection, renderer, labels, readout, tools, dataview, host, help, snap, runRules: RUN_PRESSES,
+			: new Input({ svg, model, history, selection, renderer, labels, readout, tools, dataview, host, help, snap, runRules,
 				/*
 				P7 X-a (H18.37) -- THE PRODUCT PAGE'S INPUT, as app/src/main.js composes it since V-b: the network's keys and its REAL
 				drag judge (network/session.mjs `judge`, what network/page.mjs attaches), judging on the board the tab holds. Before

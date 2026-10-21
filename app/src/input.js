@@ -74,7 +74,9 @@ The bodies are the branches they replace, moved not rewritten. `move` and `clone
 existing startMove/startClone, which already had this shape — the design was latent in three of ten
 modes and this finishes it rather than imposing it.
 */
-const GESTURES = {
+// H26.2: exported for tests/input-binding-parity.test.js alone, which records which body runs for each input before the move onto
+// input-binding and after it (dev/design/components/INPUT-BINDING.md acceptance step 4); no module reads it
+export const GESTURES = {
 	move: {
 		update: (i, pos, evt) => i.updateMove(pos, evt.shiftKey),
 		commit: (i, ctx, pos) => {

@@ -5849,6 +5849,78 @@
 			]
 		}
 	},
+	"clone-ctrl-drag-moved-on": {
+		"claims": [
+			false,
+			false,
+			false,
+			false
+		],
+		"threw": [],
+		"commits": [
+			{
+				"ops": [
+					{
+						"op": "put",
+						"kind": "node",
+						"entity": {
+							"id": "node#1",
+							"name": "host-3",
+							"order": 3,
+							"type": "host",
+							"shape": "circle",
+							"x": 120,
+							"y": 120
+						}
+					}
+				],
+				"label": "clone"
+			}
+		],
+		"judged": [],
+		"said": [],
+		"editor": [],
+		"palette": [],
+		"host": [],
+		"final": {
+			"nodes": [
+				{
+					"id": "node#2",
+					"name": "host-1",
+					"order": 1,
+					"type": "host",
+					"shape": "circle",
+					"x": 0,
+					"y": 0
+				},
+				{
+					"id": "node#3",
+					"name": "host-2",
+					"order": 2,
+					"type": "host",
+					"shape": "circle",
+					"x": 360,
+					"y": 0
+				},
+				{
+					"id": "node#1",
+					"name": "host-3",
+					"order": 3,
+					"type": "host",
+					"shape": "circle",
+					"x": 120,
+					"y": 120
+				}
+			],
+			"waypoints": [],
+			"links": [],
+			"zones": [],
+			"groups": [],
+			"selection": [
+				"node#1"
+			]
+		}
+	},
 	"dblclick-edits-cancels-chain": {
 		"claims": [
 			false,

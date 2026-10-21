@@ -1,0 +1,537 @@
+{
+	"readAt": "97d9bd0",
+	"scenarios": {
+		"link-plain": [
+			"link.start>link",
+			"link.update>link",
+			"link.commit>-"
+		],
+		"link-duplicate-straight": [
+			"link.start>link",
+			"link.update>link",
+			"link.commit>-"
+		],
+		"link-w-bend": [
+			"link.start>link",
+			"link.update>link",
+			">link",
+			"link.update>link",
+			"link.commit>-"
+		],
+		"link-w-thread-existing": [
+			"link.start>link",
+			"link.update>link",
+			">link",
+			"link.update>link",
+			"link.commit>-"
+		],
+		"link-w-thread-free": [
+			"link.start>link",
+			"link.update>link",
+			">link",
+			"link.update>link",
+			"link.commit>-"
+		],
+		"link-w-free-cancelled": [
+			"link.start>link",
+			"link.update>link",
+			">link",
+			"link.cancel>-"
+		],
+		"link-release-ground-after-w": [
+			"link.start>link",
+			"link.update>link",
+			">link",
+			"link.update>link",
+			"link.commit>-"
+		],
+		"link-release-ground-no-key": [
+			"link.start>link",
+			"link.update>link",
+			"link.commit>-"
+		],
+		"link-w-on-node": [
+			"link.start>link",
+			"link.update>link",
+			">link",
+			"link.update>link",
+			"link.commit>-"
+		],
+		"link-g": [
+			"link.start>link",
+			"link.update>link",
+			">link",
+			"link.update>link",
+			"link.commit>-"
+		],
+		"link-shift-chain": [
+			"link.start>link",
+			"link.update>link",
+			"link.commit,chainFrom>link",
+			"link.update>link",
+			">link",
+			"link.commit>-"
+		],
+		"link-shift-chain-then-w": [
+			"link.start>link",
+			"link.update>link",
+			"link.commit,chainFrom>link",
+			"link.update>link",
+			">link",
+			"link.update>link",
+			"link.commit>-"
+		],
+		"link-digit-chain": [
+			"link.start>link",
+			"link.update>link",
+			"chainFrom>link",
+			"link.update>link",
+			"link.commit>-"
+		],
+		"link-digit-chain-click-keeps-type": [
+			">-",
+			"link.start>link",
+			"link.update>link",
+			"chainFrom>link",
+			"link.commit>-"
+		],
+		"link-out-and-back-is-a-drag": [
+			"link.start>link",
+			"link.update>link",
+			"link.update>link",
+			"link.commit>-"
+		],
+		"marquee-diagonal-over-4px-no-stamp": [
+			">-",
+			"marquee.start>marquee",
+			"marquee.update>marquee",
+			"marquee.commit>-"
+		],
+		"link-chain-ended-on-anchor": [
+			"link.start>link",
+			"link.update>link",
+			"link.commit,chainFrom>link",
+			"link.update>link",
+			"link.update>link",
+			">link",
+			"link.commit>-"
+		],
+		"link-chain-ended-elsewhere": [
+			"link.start>link",
+			"link.update>link",
+			"link.commit,chainFrom>link",
+			"link.update>link",
+			">link",
+			"link.commit>-"
+		],
+		"link-right-button-release-ignored": [
+			"link.start>link",
+			"link.update>link",
+			">link",
+			"link.commit>-"
+		],
+		"link-to-waypoint-end": [
+			"link.start>link",
+			"link.update>link",
+			"link.commit>-"
+		],
+		"click-node-selects": [
+			"link.start>link",
+			"link.commit>-"
+		],
+		"click-node-shift-toggles": [
+			">-",
+			"link.start>link",
+			"link.commit>-"
+		],
+		"click-node-retypes-with-hand": [
+			">-",
+			"link.start>link",
+			"link.commit>-"
+		],
+		"click-waypoint-selects": [
+			"link.start>link",
+			"link.commit>-"
+		],
+		"move-node-right-drag": [
+			"pending.start>pending",
+			"pending.update,startMove>move",
+			"move.commit>-"
+		],
+		"move-zone-shift-drag": [
+			"pending.start>pending",
+			"pending.update,startMove>move",
+			"move.commit>-"
+		],
+		"move-link-refused": [
+			"pending.start>pending",
+			"pending.update>pending",
+			">-"
+		],
+		"move-shift-held-ortho": [
+			"pending.start>pending",
+			"pending.update,startMove>move",
+			">move",
+			"move.update>move",
+			"move.commit>-"
+		],
+		"clone-ctrl-drag": [
+			"clone-pending.start>clone-pending",
+			"clone-pending.update,startClone>clone",
+			"clone.commit>-"
+		],
+		"clone-ctrl-click-toggles": [
+			"clone-pending.start>clone-pending",
+			"clone-pending.commit>-"
+		],
+		"clone-ctrl-click-with-jitter-toggles": [
+			"clone-pending.start>clone-pending",
+			"clone-pending.update>clone-pending",
+			"clone-pending.commit>-"
+		],
+		"clone-ctrl-right-drag": [
+			"clone-pending.start>clone-pending",
+			"clone-pending.update,startClone>clone",
+			"clone.commit>-"
+		],
+		"delete-chord-alt-right": [
+			">-",
+			">-"
+		],
+		"marquee-selects": [
+			"marquee.start>marquee",
+			"marquee.update>marquee",
+			"marquee.commit>-"
+		],
+		"shift-drag-canvas-draws-zone-not-marquee": [
+			">-",
+			"box.start>box",
+			"box.update>box",
+			"box.commit>-"
+		],
+		"marquee-one-end-of-link": [
+			"marquee.start>marquee",
+			"marquee.update>marquee",
+			"marquee.commit>-"
+		],
+		"marquee-both-ends-of-link": [
+			"marquee.start>marquee",
+			"marquee.update>marquee",
+			"marquee.commit>-"
+		],
+		"marquee-click-clears": [
+			">-",
+			"marquee.start>marquee",
+			"marquee.commit>-"
+		],
+		"marquee-click-stamps-hand": [
+			">-",
+			"marquee.start>marquee",
+			"marquee.commit>-"
+		],
+		"zone-draw": [
+			"box.start>box",
+			"box.update>box",
+			"box.commit>-"
+		],
+		"zone-draw-zero": [
+			"box.start>box",
+			"box.commit>-"
+		],
+		"zone-draw-over-zone": [
+			"box.start>box",
+			"box.update>box",
+			"box.commit>-"
+		],
+		"resize-zone-corner": [
+			">-",
+			"handle.start>handle",
+			"handle.update>handle",
+			"handle.commit>-"
+		],
+		"replug-straight-to-free-pair": [
+			">-",
+			">-",
+			"handle.start>handle",
+			"handle.update>handle",
+			"handle.commit>-"
+		],
+		"replug-straight-to-held-pair": [
+			">-",
+			">-",
+			">-",
+			"handle.start>handle",
+			"handle.update>handle",
+			"handle.commit>-"
+		],
+		"text-tool-box": [
+			">-",
+			"box.start>box",
+			"box.update>box",
+			"box.commit>-"
+		],
+		"dblclick-node-opens-editor": [
+			">-"
+		],
+		"escape-cancels-link-drag": [
+			"link.start>link",
+			"link.update>link",
+			">link",
+			"link.cancel>-"
+		],
+		"pointercancel-mid-move": [
+			"pending.start>pending",
+			"pending.update,startMove>move",
+			"move.cancel>-"
+		],
+		"key-w-idle-then-drag": [
+			">-",
+			">-",
+			"link.start>link",
+			"link.update>link",
+			"link.commit>-"
+		],
+		"key-c-bent": [
+			">-",
+			">-",
+			">-"
+		],
+		"key-c-straight": [
+			">-",
+			">-"
+		],
+		"key-c-nothing": [
+			">-"
+		],
+		"key-f-and-k": [
+			">-",
+			">-",
+			">-",
+			">-"
+		],
+		"key-l-chain-and-star": [
+			">-",
+			">-",
+			">-",
+			">-",
+			">-"
+		],
+		"key-group-ungroup": [
+			">-",
+			">-",
+			">-"
+		],
+		"key-delete-and-undo-redo": [
+			">-",
+			">-",
+			">-",
+			">-",
+			">-"
+		],
+		"key-delete-nothing-selected": [
+			">-",
+			">-"
+		],
+		"key-arrows-nudge-resize": [
+			">-",
+			">-",
+			">-",
+			">-",
+			">-"
+		],
+		"key-duplicate": [
+			">-",
+			">-"
+		],
+		"key-wrap-and-reshape": [
+			">-",
+			">-",
+			">-",
+			">-"
+		],
+		"key-hand-stamp-pipette": [
+			">-",
+			">-",
+			">-",
+			">-",
+			">-",
+			">-"
+		],
+		"key-view-keys": [
+			">-",
+			">-",
+			">-",
+			">-",
+			">-",
+			">-",
+			">-",
+			">-",
+			">-"
+		],
+		"key-select-all-with-waypoint": [
+			">-"
+		],
+		"key-select-all-and-rename": [
+			">-",
+			">-",
+			">-"
+		],
+		"key-up-shift-alt": [
+			">-",
+			">-",
+			">-",
+			">-"
+		],
+		"read-only-refuses": [
+			">-",
+			"pending.start>pending",
+			"pending.update>pending",
+			">-",
+			">-",
+			">-",
+			">-",
+			">-",
+			">-"
+		],
+		"read-only-right-drag-does-not-move": [
+			">-",
+			"pending.start>pending",
+			"pending.update>pending",
+			">-"
+		],
+		"run-mode-places-tower": [
+			">-",
+			">-",
+			">-"
+		],
+		"run-mode-action": [
+			">-",
+			">-"
+		],
+		"plugin-g-accepted": [
+			"link.start>link",
+			"link.update>link",
+			">link",
+			"link.update>link",
+			"link.commit>-"
+		],
+		"plugin-g-refused-keeps": [
+			"link.start>link",
+			"link.update>link",
+			">link",
+			"link.update>link",
+			">link",
+			"link.update>link",
+			"link.commit>-"
+		],
+		"plugin-w-on-node": [
+			"link.start>link",
+			"link.update>link",
+			">link",
+			"link.update>link",
+			"link.commit>-"
+		],
+		"plugin-duplicate-reaches-judge": [
+			"link.start>link",
+			"link.update>link",
+			"link.commit>-"
+		],
+		"plugin-source-w-spent-by-run-press": [
+			">-",
+			">-",
+			">-",
+			">-",
+			">-",
+			">-",
+			"link.start>link",
+			"link.update>link",
+			"link.commit>-"
+		],
+		"plugin-source-w": [
+			">-",
+			">-",
+			"link.start>link",
+			"link.update>link",
+			"link.commit>-"
+		],
+		"move-shift-then-release-no-move": [
+			"pending.start>pending",
+			"pending.update,startMove>move",
+			">move",
+			"move.commit>-"
+		],
+		"move-shift-down-up-then-release-no-move": [
+			"pending.start>pending",
+			"pending.update,startMove>move",
+			">move",
+			">move",
+			"move.commit>-"
+		],
+		"escape-cancels-clone": [
+			"clone-pending.start>clone-pending",
+			"clone-pending.update,startClone>clone",
+			"clone.cancel>-",
+			">-"
+		],
+		"escape-cancels-resize": [
+			">-",
+			"handle.start>handle",
+			"handle.update>handle",
+			"handle.cancel>-",
+			">-"
+		],
+		"escape-cancels-box": [
+			"box.start>box",
+			"box.update>box",
+			"box.cancel>-",
+			">-"
+		],
+		"escape-cancels-marquee": [
+			"marquee.start>marquee",
+			"marquee.update>marquee",
+			"marquee.cancel>-",
+			">-"
+		],
+		"lock-cancels-move": [
+			"pending.start>pending",
+			"pending.update,startMove>move",
+			"move.cancel>-",
+			">-"
+		],
+		"document-replaced-cancels-link": [
+			"link.start>link",
+			"link.update>link",
+			">link",
+			"link.cancel>-",
+			">-"
+		],
+		"press-cancels-move": [
+			"pending.start>pending",
+			"pending.update,startMove>move",
+			"move.cancel,link.start>link",
+			"link.update>link",
+			"link.commit>-"
+		],
+		"press-cancels-chain": [
+			"link.start>link",
+			"link.update>link",
+			"link.commit,chainFrom>link",
+			"link.update>link",
+			"link.cancel,pending.start>pending",
+			">-"
+		],
+		"clone-ctrl-drag-moved-on": [
+			"clone-pending.start>clone-pending",
+			"clone-pending.update,startClone>clone",
+			"clone.update>clone",
+			"clone.commit>-"
+		],
+		"dblclick-edits-cancels-chain": [
+			"link.start>link",
+			"link.update>link",
+			"link.commit,chainFrom>link",
+			"link.update>link",
+			"link.cancel>-"
+		]
+	}
+}
