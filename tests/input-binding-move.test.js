@@ -10,7 +10,7 @@ chain's start, only on an outcome naming that phase, the session private to it. 
 with its module.
 
 THE EMPTY HANDLE, both answers (acceptance step 4; section 6.3). A handle press whose start finds no entity leaves the handle
-gesture live with an empty context -- kept, B409 -- and it is reachable with two pointers: a zone selected, its corner pressed with
+gesture live with an empty context -- kept, B410 -- and it is reachable with two pointers: a zone selected, its corner pressed with
 Shift held, Shift released with the pointer still down, and the still-drawn handle pressed by a second pointer. That press cancels the
 live handle gesture first, whose teardown drops the zone from the selection (H24.3), so the new start finds no zone. What a pointer
 cancel then does is the one behaviour, beside the exact threshold, that H26.2 changes: before the move the cancel body throws on the
@@ -47,7 +47,7 @@ const NOW = 'after';
 const corner = (x, y, m = {}) => pointer(x, y, { ...m, target: { tagName: 'rect', classList: { contains: (c) => c === 'handle' }, dataset: { corner: 'se' }, closest: () => null } });
 const thrown = (fn) => { try { fn(); return null; } catch (e) { return e.message; } };
 
-test(`H26.2 (section 6.3; B409 kept): a pointer cancel over the empty handle gesture -- the ${NOW === 'before' ? 'old' : 'new'} answer, both stated`, () => {
+test(`H26.2 (section 6.3; B410 kept): a pointer cancel over the empty handle gesture -- the ${NOW === 'before' ? 'old' : 'new'} answer, both stated`, () => {
 	const h = makeInput();
 	try {
 		const z = makeZone(h.model, { x: -150, y: -150, w: 300, h: 300 });

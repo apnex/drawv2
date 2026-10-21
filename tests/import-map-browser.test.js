@@ -6,6 +6,9 @@ The product page and the lab page, each served by its real server from this tree
 names -- each export the map names asked through the page's own resolution and answered 200 from the vendor mount, the component
 working once loaded. No page imports the component yet (the arithmetic moves onto it later in H26.1), so the test asks for it the
 way a module of the page will: by its bare name, which only the map can resolve.
+AMENDED H26.2 (dev/design/components/INPUT-BINDING.md acceptance step 7): both pages load both components with themselves now --
+snap-grid through the lattice, input-binding through the rules part -- each graph answered 200 from the vendor mount, and each export
+of both resolved by name and working, input-binding deciding an exact travel in Chrome.
 */
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
@@ -19,6 +22,7 @@ import { createTab, sleep } from './fixtures/matrix-runner.mjs';   // the one-ta
 
 const root = path.resolve(import.meta.dirname, '..');
 const { version } = JSON.parse(fs.readFileSync(path.join(root, 'node_modules/@apnex/snap-grid/package.json'), 'utf8'));
+const binding = JSON.parse(fs.readFileSync(path.join(root, 'node_modules/@apnex/input-binding/package.json'), 'utf8')).version;   // H26.2
 const free = () => new Promise((resolve) => { const s = net.createServer().listen(0, '127.0.0.1', () => { const p = s.address().port; s.close(() => resolve(p)); }); });
 let dir, procs = [], port, labPort, cdp, theTab;
 
@@ -57,11 +61,16 @@ const THROUGH_THE_MAP = `(async () => {
 	const grid = await import('@apnex/snap-grid');
 	const kit = await import('@apnex/snap-grid/conformance');
 	const opened = grid.openGrid({ shape: 'square', pitch: 60, origin: { x: 0, y: 0 } });
-	return { maps: maps.length, ok: opened.ok, point: opened.grid.pointOf(opened.grid.nearest({ x: 61, y: 29 })), kit: kit.checkGridShape(grid.square, []).length };
+	// H26.2: the second component, by its one name -- a session decides a travel of exactly the threshold a click, one step past it a drop
+	const ib = await import('@apnex/input-binding');
+	const session = ib.openGestureSession({ threshold: 4, gestures: [] }).session;
+	const exact = [4, 4 + 2 ** -50].map((x) => { session.pointerDown({ at: { x: 0, y: 0 }, button: 0 }); session.pointerMove({ at: { x, y: 0 } }); return session.pointerUp({ button: 0 }).trigger; });
+	return { maps: maps.length, ok: opened.ok, point: opened.grid.pointOf(opened.grid.nearest({ x: 61, y: 29 })), kit: kit.checkGridShape(grid.square, []).length,
+		binding: Object.keys(ib).sort(), exact };
 })()`;
 
 for (const [name, at, booted] of [['the product page', () => `http://127.0.0.1:${port}/`, '!!(window.draw && window.draw.renderer)'], ['the lab page', () => `http://127.0.0.1:${labPort}/?seed=bend`, '!!window.lab']]) {
-	test(`H26.1: ${name} loads every module answered 200, and its import map resolves each export of the component from the vendor mount`, { skip: NO_CHROME, timeout: 60000 }, async () => {
+	test(`H26.1, H26.2: ${name} loads every module answered 200, and its import map resolves each export of both components from the vendor mount`, { skip: NO_CHROME, timeout: 60000 }, async () => {
 		const { t, answered } = await load(at(), booted);
 		const modules = answered().filter((r) => r.type === 'Script');
 		assert.ok(modules.length > 40, `the page's module graph was loaded, not ${modules.length} script(s)`);
@@ -69,7 +78,8 @@ for (const [name, at, booted] of [['the product page', () => `http://127.0.0.1:$
 		assert.deepEqual(t.thrown, [], 'nothing failed while it loaded');
 		const mark = Date.now() - t.clock.t0;
 		const got = await t.run(THROUGH_THE_MAP);
-		assert.deepEqual(got, { maps: 1, ok: true, point: { x: 60, y: 0 }, kit: 0 }, 'one map; both exports resolved by name, and working');
+		assert.deepEqual(got, { maps: 1, ok: true, point: { x: 60, y: 0 }, kit: 0, binding: ['composeBindingTable', 'openGestureSession'], exact: ['click', 'drop'] },
+			'one map; each export of both components resolved by name, and working -- the exact travel decided in Chrome, BigInt and all');
 		await sleep(200);
 		/*
 		RESTATED at H26.1's move (SNAP-GRID.md sections 5 and 7.6): the kernel composes the component, so the page loads its entry while
@@ -78,6 +88,10 @@ for (const [name, at, booted] of [['the product page', () => `http://127.0.0.1:$
 		*/
 		const ownVendored = modules.filter((r) => r.url.startsWith('/vendor/'));
 		assert.ok(ownVendored.some((r) => r.url === `/vendor/@apnex/snap-grid@${version}/index.js` && r.status === 200), `index.js loaded with the page from the vendor mount and answered 200: ${JSON.stringify(ownVendored)}`);
+		// RESTATED at H26.2's move: the rules part composes input-binding, so it too loads with the page, its whole graph from the mount
+		const bindingFiles = ownVendored.filter((r) => r.url.startsWith(`/vendor/@apnex/input-binding@${binding}/`));
+		assert.ok(bindingFiles.some((r) => r.url.endsWith('/index.js')) && bindingFiles.length >= 6 && bindingFiles.every((r) => r.status === 200),
+			`input-binding's graph loaded with the page from the vendor mount, every file answered 200: ${JSON.stringify(bindingFiles)}`);
 		const vendored = answered(mark).filter((r) => r.url.startsWith('/vendor/'));
 		assert.ok(vendored.some((r) => r.url === `/vendor/@apnex/snap-grid@${version}/conformance.js` && r.status === 200), `conformance.js asked of the vendor mount and answered 200: ${JSON.stringify(vendored)}`);
 		assert.deepEqual(vendored.filter((r) => r.status !== 200), [], 'and every module it imports in turn');

@@ -1,0 +1,870 @@
+{
+	"readAt": "7c8215b",
+	"sections": {
+		"page": [
+			{
+				"title": "keys",
+				"lines": [
+					{
+						"inputs": [
+							"Shift"
+						],
+						"label": "hold for the zone layer; mid-drag, lock to an axis",
+						"context": null
+					},
+					{
+						"inputs": [
+							"Alt"
+						],
+						"label": "arm the chord under the pointer: Alt to delete, Ctrl to clone",
+						"context": null
+					},
+					{
+						"inputs": [
+							"Control"
+						],
+						"label": "arm the chord under the pointer: Alt to delete, Ctrl to clone",
+						"context": null
+					},
+					{
+						"inputs": [
+							"Escape"
+						],
+						"label": "cancel the gesture, drop the tool or the held type, or clear the selection",
+						"context": null
+					},
+					{
+						"inputs": [
+							"/",
+							"?"
+						],
+						"label": "show or hide this overlay",
+						"context": null
+					},
+					{
+						"inputs": [
+							"e"
+						],
+						"label": "edit mode: show the socket grid on content panels",
+						"context": null
+					},
+					{
+						"inputs": [
+							"r"
+						],
+						"label": "run mode: panel buttons act, and inputs edit",
+						"context": null
+					},
+					{
+						"inputs": [
+							"Tab"
+						],
+						"label": "show or hide names",
+						"context": null
+					},
+					{
+						"inputs": [
+							"Ctrl+A"
+						],
+						"label": "select every node, zone and link",
+						"context": null
+					},
+					{
+						"inputs": [
+							"Space"
+						],
+						"label": "set the datum at the pointer",
+						"context": null
+					},
+					{
+						"inputs": [
+							"Shift+Space"
+						],
+						"label": "clear the datum",
+						"context": null
+					},
+					{
+						"inputs": [
+							"w"
+						],
+						"label": "drop a waypoint; while drawing a link, pin a bend",
+						"context": null
+					},
+					{
+						"inputs": [
+							"t"
+						],
+						"label": "arm the text tool: then drag a text box, or click for one cell",
+						"context": null
+					},
+					{
+						"inputs": [
+							"1-6"
+						],
+						"label": "pick up a node type to stamp; while drawing a link, place one and chain on",
+						"context": null
+					},
+					{
+						"inputs": [
+							"q"
+						],
+						"label": "pick up the type of the node under the pointer",
+						"context": null
+					},
+					{
+						"inputs": [
+							"Enter"
+						],
+						"label": "stamp the held type at the pointer",
+						"context": null
+					},
+					{
+						"inputs": [
+							"arrow keys"
+						],
+						"label": "nudge the selection one cell",
+						"context": null
+					},
+					{
+						"inputs": [
+							"Shift+arrow keys"
+						],
+						"label": "resize the selected zone, or grow the selected node",
+						"context": null
+					},
+					{
+						"inputs": [
+							"F2"
+						],
+						"label": "rename the selection",
+						"context": null
+					},
+					{
+						"inputs": [
+							"Ctrl+Shift+Backspace"
+						],
+						"label": "undo another writer's whole run",
+						"context": null
+					},
+					{
+						"inputs": [
+							"Ctrl+Z"
+						],
+						"label": "undo",
+						"context": null
+					},
+					{
+						"inputs": [
+							"Ctrl+Shift+Z",
+							"Ctrl+Y"
+						],
+						"label": "redo",
+						"context": null
+					},
+					{
+						"inputs": [
+							"Ctrl+D"
+						],
+						"label": "duplicate the selection at the remembered pitch",
+						"context": null
+					},
+					{
+						"inputs": [
+							"Delete",
+							"Backspace"
+						],
+						"label": "delete the selection",
+						"context": null
+					},
+					{
+						"inputs": [
+							"c"
+						],
+						"label": "close or open the selected route",
+						"context": "one link with a bend selected"
+					},
+					{
+						"inputs": [
+							"c"
+						],
+						"label": "say why a straight link cannot close",
+						"context": "one link without a bend selected"
+					},
+					{
+						"inputs": [
+							"f"
+						],
+						"label": "cycle the selected link's direction: forward, reverse, none",
+						"context": null
+					},
+					{
+						"inputs": [
+							"k"
+						],
+						"label": "toggle the selected link's control plane (dashed; carries no data)",
+						"context": null
+					},
+					{
+						"inputs": [
+							"l"
+						],
+						"label": "link the selected nodes in a chain",
+						"context": null
+					},
+					{
+						"inputs": [
+							"Shift+L"
+						],
+						"label": "link the selected nodes as a star",
+						"context": null
+					},
+					{
+						"inputs": [
+							"g"
+						],
+						"label": "g during a link drag: a guide -- the route passes this anchor, placed or existing, node or waypoint, and the link does not pin it",
+						"context": "while drawing a link"
+					},
+					{
+						"inputs": [
+							"w"
+						],
+						"label": "w on a node during a link drag: a pin, the node a junction if it passes routes, cut there if it does not; released on it, the node is the destination",
+						"context": "over a node while drawing a link"
+					},
+					{
+						"inputs": [
+							"x"
+						],
+						"label": "x: flip transit on each selected anchor or node -- off, links stop there and a dashed ring shows it; a host offers no choice",
+						"context": "anchors or nodes selected"
+					},
+					{
+						"inputs": [
+							"z"
+						],
+						"label": "wrap the selection in a zone",
+						"context": null
+					},
+					{
+						"inputs": [
+							"Ctrl+G"
+						],
+						"label": "group the selection",
+						"context": null
+					},
+					{
+						"inputs": [
+							"Ctrl+Shift+G"
+						],
+						"label": "ungroup",
+						"context": null
+					},
+					{
+						"inputs": [
+							"s"
+						],
+						"label": "reshape the selected nodes",
+						"context": null
+					}
+				]
+			},
+			{
+				"title": "pointer",
+				"lines": [
+					{
+						"inputs": [
+							"Alt + right-press a node, a link or a waypoint",
+							"Alt+Shift + right-press a zone"
+						],
+						"label": "delete what is under the pointer",
+						"context": null
+					},
+					{
+						"inputs": [
+							"Ctrl + right-press a node or a waypoint",
+							"Ctrl+Shift + right-press a zone"
+						],
+						"label": "clone: drag the copy into place",
+						"context": null
+					},
+					{
+						"inputs": [
+							"right-press a node or a waypoint",
+							"Shift + right-press a zone"
+						],
+						"label": "select; drag to move",
+						"context": null
+					},
+					{
+						"inputs": [
+							"Ctrl + left-press a node or a link"
+						],
+						"label": "clone: drag the copy into place",
+						"context": null
+					},
+					{
+						"inputs": [
+							"left-press a node or a waypoint"
+						],
+						"label": "draw a link: release on a node or waypoint",
+						"context": null
+					},
+					{
+						"inputs": [
+							"left-press a link",
+							"left-press a plugin's mark"
+						],
+						"label": "select; drag to move",
+						"context": null
+					},
+					{
+						"inputs": [
+							"left-press the canvas"
+						],
+						"label": "marquee select, with every link whose ends are both inside",
+						"context": null
+					},
+					{
+						"inputs": [
+							"Shift + left-press the canvas or a zone"
+						],
+						"label": "draw a zone",
+						"context": null
+					},
+					{
+						"inputs": [
+							"left-press a corner handle"
+						],
+						"label": "resize the zone",
+						"context": "a zone selected"
+					},
+					{
+						"inputs": [
+							"left-press the canvas, a node, a waypoint, a zone or a link"
+						],
+						"label": "place a text box",
+						"context": "the text tool held"
+					},
+					{
+						"inputs": [
+							"left-press a link end"
+						],
+						"label": "re-plug the link onto another node",
+						"context": "a link selected"
+					},
+					{
+						"inputs": [
+							"double-click"
+						],
+						"label": "edit the label under the pointer",
+						"context": null
+					}
+				]
+			},
+			{
+				"title": "when a gesture ends",
+				"lines": [
+					{
+						"inputs": [
+							"Shift + release a link on a node"
+						],
+						"label": "make the link and carry on drawing from where it landed",
+						"context": null
+					},
+					{
+						"inputs": [
+							"Shift + release a link on a node it already joins"
+						],
+						"label": "carry on drawing from a node already linked",
+						"context": null
+					},
+					{
+						"inputs": [
+							"click a node with a different type held"
+						],
+						"label": "retype the node in place",
+						"context": null
+					},
+					{
+						"inputs": [
+							"Shift + click a node or waypoint"
+						],
+						"label": "add it to the selection, or take it out",
+						"context": null
+					},
+					{
+						"inputs": [
+							"click the canvas with a type held"
+						],
+						"label": "stamp the held type there",
+						"context": null
+					},
+					{
+						"inputs": [
+							"hold Shift as a marquee is released"
+						],
+						"label": "add what the marquee takes to the selection",
+						"context": null
+					},
+					{
+						"inputs": [
+							"Ctrl + click a node, zone or link"
+						],
+						"label": "add it to the selection, or take it out",
+						"context": null
+					}
+				]
+			},
+			{
+				"title": "run mode",
+				"lines": [
+					{
+						"inputs": [
+							"left-press an endpoint"
+						],
+						"label": "arm or disarm the spawner",
+						"context": "in run mode, on an endpoint"
+					},
+					{
+						"inputs": [
+							"left-press open ground"
+						],
+						"label": "place a tower",
+						"context": "in run mode, where the cell is free"
+					},
+					{
+						"inputs": [
+							"left-press a panel button"
+						],
+						"label": "press the panel button",
+						"context": null
+					},
+					{
+						"inputs": [
+							"left-press a panel input"
+						],
+						"label": "edit the panel input",
+						"context": null
+					}
+				]
+			}
+		],
+		"lab": [
+			{
+				"title": "keys",
+				"lines": [
+					{
+						"inputs": [
+							"Shift"
+						],
+						"label": "hold for the zone layer; mid-drag, lock to an axis",
+						"context": null
+					},
+					{
+						"inputs": [
+							"Alt"
+						],
+						"label": "arm the chord under the pointer: Alt to delete, Ctrl to clone",
+						"context": null
+					},
+					{
+						"inputs": [
+							"Control"
+						],
+						"label": "arm the chord under the pointer: Alt to delete, Ctrl to clone",
+						"context": null
+					},
+					{
+						"inputs": [
+							"Escape"
+						],
+						"label": "cancel the gesture, drop the tool or the held type, or clear the selection",
+						"context": null
+					},
+					{
+						"inputs": [
+							"/",
+							"?"
+						],
+						"label": "show or hide this overlay",
+						"context": null
+					},
+					{
+						"inputs": [
+							"e"
+						],
+						"label": "edit mode: show the socket grid on content panels",
+						"context": null
+					},
+					{
+						"inputs": [
+							"r"
+						],
+						"label": "run mode: panel buttons act, and inputs edit",
+						"context": null
+					},
+					{
+						"inputs": [
+							"Tab"
+						],
+						"label": "show or hide names",
+						"context": null
+					},
+					{
+						"inputs": [
+							"Ctrl+A"
+						],
+						"label": "select every node, zone and link",
+						"context": null
+					},
+					{
+						"inputs": [
+							"Space"
+						],
+						"label": "set the datum at the pointer",
+						"context": null
+					},
+					{
+						"inputs": [
+							"Shift+Space"
+						],
+						"label": "clear the datum",
+						"context": null
+					},
+					{
+						"inputs": [
+							"w"
+						],
+						"label": "drop a waypoint; while drawing a link, pin a bend",
+						"context": null
+					},
+					{
+						"inputs": [
+							"t"
+						],
+						"label": "arm the text tool: then drag a text box, or click for one cell",
+						"context": null
+					},
+					{
+						"inputs": [
+							"1-6"
+						],
+						"label": "pick up a node type to stamp; while drawing a link, place one and chain on",
+						"context": null
+					},
+					{
+						"inputs": [
+							"q"
+						],
+						"label": "pick up the type of the node under the pointer",
+						"context": null
+					},
+					{
+						"inputs": [
+							"Enter"
+						],
+						"label": "stamp the held type at the pointer",
+						"context": null
+					},
+					{
+						"inputs": [
+							"arrow keys"
+						],
+						"label": "nudge the selection one cell",
+						"context": null
+					},
+					{
+						"inputs": [
+							"Shift+arrow keys"
+						],
+						"label": "resize the selected zone, or grow the selected node",
+						"context": null
+					},
+					{
+						"inputs": [
+							"F2"
+						],
+						"label": "rename the selection",
+						"context": null
+					},
+					{
+						"inputs": [
+							"Ctrl+Shift+Backspace"
+						],
+						"label": "undo another writer's whole run",
+						"context": null
+					},
+					{
+						"inputs": [
+							"Ctrl+Z"
+						],
+						"label": "undo",
+						"context": null
+					},
+					{
+						"inputs": [
+							"Ctrl+Shift+Z",
+							"Ctrl+Y"
+						],
+						"label": "redo",
+						"context": null
+					},
+					{
+						"inputs": [
+							"Ctrl+D"
+						],
+						"label": "duplicate the selection at the remembered pitch",
+						"context": null
+					},
+					{
+						"inputs": [
+							"Delete",
+							"Backspace"
+						],
+						"label": "delete the selection",
+						"context": null
+					},
+					{
+						"inputs": [
+							"c"
+						],
+						"label": "close or open the selected route",
+						"context": "one link with a bend selected"
+					},
+					{
+						"inputs": [
+							"c"
+						],
+						"label": "say why a straight link cannot close",
+						"context": "one link without a bend selected"
+					},
+					{
+						"inputs": [
+							"f"
+						],
+						"label": "cycle the selected link's direction: forward, reverse, none",
+						"context": null
+					},
+					{
+						"inputs": [
+							"k"
+						],
+						"label": "toggle the selected link's control plane (dashed; carries no data)",
+						"context": null
+					},
+					{
+						"inputs": [
+							"l"
+						],
+						"label": "link the selected nodes in a chain",
+						"context": null
+					},
+					{
+						"inputs": [
+							"Shift+L"
+						],
+						"label": "link the selected nodes as a star",
+						"context": null
+					},
+					{
+						"inputs": [
+							"g"
+						],
+						"label": "g during a link drag: a guide -- the route passes this anchor, placed or existing, node or waypoint, and the link does not pin it",
+						"context": "while drawing a link"
+					},
+					{
+						"inputs": [
+							"w"
+						],
+						"label": "w on a node during a link drag: a pin, the node a junction if it passes routes, cut there if it does not; released on it, the node is the destination",
+						"context": "over a node while drawing a link"
+					},
+					{
+						"inputs": [
+							"x"
+						],
+						"label": "x: flip transit on each selected anchor or node -- off, links stop there and a dashed ring shows it; a host offers no choice",
+						"context": "anchors or nodes selected"
+					},
+					{
+						"inputs": [
+							"z"
+						],
+						"label": "wrap the selection in a zone",
+						"context": null
+					},
+					{
+						"inputs": [
+							"Ctrl+G"
+						],
+						"label": "group the selection",
+						"context": null
+					},
+					{
+						"inputs": [
+							"Ctrl+Shift+G"
+						],
+						"label": "ungroup",
+						"context": null
+					},
+					{
+						"inputs": [
+							"s"
+						],
+						"label": "reshape the selected nodes",
+						"context": null
+					}
+				]
+			},
+			{
+				"title": "pointer",
+				"lines": [
+					{
+						"inputs": [
+							"Alt + right-press a node, a link or a waypoint",
+							"Alt+Shift + right-press a zone"
+						],
+						"label": "delete what is under the pointer",
+						"context": null
+					},
+					{
+						"inputs": [
+							"Ctrl + right-press a node or a waypoint",
+							"Ctrl+Shift + right-press a zone"
+						],
+						"label": "clone: drag the copy into place",
+						"context": null
+					},
+					{
+						"inputs": [
+							"right-press a node or a waypoint",
+							"Shift + right-press a zone"
+						],
+						"label": "select; drag to move",
+						"context": null
+					},
+					{
+						"inputs": [
+							"Ctrl + left-press a node or a link"
+						],
+						"label": "clone: drag the copy into place",
+						"context": null
+					},
+					{
+						"inputs": [
+							"left-press a node or a waypoint"
+						],
+						"label": "draw a link: release on a node or waypoint",
+						"context": null
+					},
+					{
+						"inputs": [
+							"left-press a link",
+							"left-press a plugin's mark"
+						],
+						"label": "select; drag to move",
+						"context": null
+					},
+					{
+						"inputs": [
+							"left-press the canvas"
+						],
+						"label": "marquee select, with every link whose ends are both inside",
+						"context": null
+					},
+					{
+						"inputs": [
+							"Shift + left-press the canvas or a zone"
+						],
+						"label": "draw a zone",
+						"context": null
+					},
+					{
+						"inputs": [
+							"left-press a corner handle"
+						],
+						"label": "resize the zone",
+						"context": "a zone selected"
+					},
+					{
+						"inputs": [
+							"left-press the canvas, a node, a waypoint, a zone or a link"
+						],
+						"label": "place a text box",
+						"context": "the text tool held"
+					},
+					{
+						"inputs": [
+							"left-press a link end"
+						],
+						"label": "re-plug the link onto another node",
+						"context": "a link selected"
+					},
+					{
+						"inputs": [
+							"double-click"
+						],
+						"label": "edit the label under the pointer",
+						"context": null
+					}
+				]
+			},
+			{
+				"title": "when a gesture ends",
+				"lines": [
+					{
+						"inputs": [
+							"Shift + release a link on a node"
+						],
+						"label": "make the link and carry on drawing from where it landed",
+						"context": null
+					},
+					{
+						"inputs": [
+							"Shift + release a link on a node it already joins"
+						],
+						"label": "carry on drawing from a node already linked",
+						"context": null
+					},
+					{
+						"inputs": [
+							"click a node with a different type held"
+						],
+						"label": "retype the node in place",
+						"context": null
+					},
+					{
+						"inputs": [
+							"Shift + click a node or waypoint"
+						],
+						"label": "add it to the selection, or take it out",
+						"context": null
+					},
+					{
+						"inputs": [
+							"click the canvas with a type held"
+						],
+						"label": "stamp the held type there",
+						"context": null
+					},
+					{
+						"inputs": [
+							"hold Shift as a marquee is released"
+						],
+						"label": "add what the marquee takes to the selection",
+						"context": null
+					},
+					{
+						"inputs": [
+							"Ctrl + click a node, zone or link"
+						],
+						"label": "add it to the selection, or take it out",
+						"context": null
+					}
+				]
+			}
+		]
+	}
+}

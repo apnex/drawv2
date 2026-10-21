@@ -16,6 +16,7 @@ import fs from 'node:fs';
 import { READ_AT, MOVED, ORIGINALS, OLD, NEW, tenantsOf, idsOf, tablesOf, GRAMMAR, COMPOSITIONS, withInput, SWEEPS, compareMatcher, grammarAgrees,
 	STREAMS, SEED, THRESHOLD, pressStreams, pressDifferences, classOf, lifecycleOf, PRESS_RECORD, LIFECYCLE_RECORD } from './fixtures/binding-parity.mjs';
 import { SCENARIOS } from './fixtures/gesture-corpus.mjs';
+import { helpSections } from '../app/src/help.js';
 
 const readJson = (url) => JSON.parse(fs.readFileSync(url, 'utf8'));
 
@@ -104,4 +105,16 @@ test('H26.2 (acceptance step 4): over every scenario of the gesture corpus, the 
 		'box.start', 'box.update', 'box.commit', 'box.cancel', 'marquee.start', 'marquee.update', 'marquee.commit', 'marquee.cancel', 'chainFrom', 'startMove', 'startClone']) {
 		assert.ok(bodies.has(b), `the corpus runs ${b} somewhere, so the record can see it`);
 	}
+});
+
+/*
+The help overlay is generated from the tables an input resolves against (D13), and moving the tables onto input-binding must not move a
+line of it: its sections, on the page's composition and the lab's, as the old code generated them -- recorded at 7c8215b, whose product
+code is 8793699's -- 37 key lines, 12 pointer lines, 7 release lines and the page's 4 run-mode lines (acceptance step 5).
+*/
+test('H26.2 (acceptance step 5; D13): the help overlay\'s sections are line for line those the old code generated, on the page and in the lab', () => {
+	const rec = readJson(new URL('./fixtures/binding-parity-help.json', import.meta.url));
+	for (const [composition, opts] of COMPOSITIONS) withInput(opts, (h) => assert.deepEqual(helpSections(h.input.bindings()), rec.sections[composition], composition));
+	assert.deepEqual(rec.sections.page.map((s) => s.lines.length), [37, 12, 7, 4]);
+	assert.deepEqual(rec.sections.lab.map((s) => s.lines.length), [37, 12, 7]);
 });

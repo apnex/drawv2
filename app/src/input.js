@@ -621,7 +621,9 @@ export class Input {
 		// than a rule, because it is a mode of the whole surface (INPUT.md §4).
 		if (this.renderer.mode === 'run') return this.runModePress(evt);
 
-		// chain wiring: the live gesture CONSUMES this press -- one its declared button names (GESTURES), taken by the session
+		// chain wiring: the live gesture CONSUMES this press -- one its declared button names (GESTURES), taken by the session. KEPT (B409):
+		// facts carry no pointer id, so the session holds one press for every pointer -- a second contact's press replaces the first's,
+		// a live link takes it, and its button-0 release commits the link where it lifted
 		if (taken) return;   // the press already ended the chain (input state)
 
 		if (this.labels.isOpen()) this.labels.close(true);
@@ -647,7 +649,9 @@ export class Input {
 		evt.capture = true;   // capture takes the pointer once this returns (app/src/capture.js)
 
 		if (rule.run) return this[rule.run](hit, evt, pos);
-		if (outcome.phase === 'start') this.ctx = GESTURES[outcome.gesture.name].start(this, hit, pos, evt, rule) || {};   // C-d: the row too -- a shared gesture reads what its row declares
+		// C-d: the row too -- a shared gesture reads what its row declares. KEPT (B410): a start answering null leaves its gesture live with
+		// an empty context -- a handle press that finds no entity -- as it always did
+		if (outcome.phase === 'start') this.ctx = GESTURES[outcome.gesture.name].start(this, hit, pos, evt, rule) || {};
 	}
 
 
