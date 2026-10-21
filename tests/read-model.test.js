@@ -73,7 +73,8 @@ test('R-a: no module outside the network composes the network but the store, the
 			if (/\{[^}]*\b(NETWORK_ROWS|createNetwork)\b[^}]*\}\s*(from|=\s*await\s+import)/.test(src)) found.push(rel);
 		}
 	};
-	for (const dir of ['app', 'server', 'cli', 'lab', 'tools', 'kernel', 'engine', 'model', 'planner', 'product']) walk(dir);
+	// H26.7: and the simulation's folder, whose modules engine/ and model/ held when this list was written
+	for (const dir of ['app', 'server', 'cli', 'lab', 'tools', 'kernel', 'engine', 'model', 'plugins/simulation', 'planner', 'product']) walk(dir);
 	assert.deepEqual(found.sort(), [...ALLOWED].sort());
 });
 

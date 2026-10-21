@@ -41,11 +41,11 @@ test('S-e: the product composes three kinds and names no link; the network bring
 
 test('S-e: no core or planner module imports network/ -- the link reaches them only through a composition', () => {
 	const offenders = [];
-	for (const dir of ['model', 'planner']) {
-		for (const f of fs.readdirSync(path.join(root, dir)).filter((x) => /\.m?js$/.test(x))) {
-			const src = fs.readFileSync(path.join(root, dir, f), 'utf8');
-			for (const m of src.matchAll(/(?:from|import\()\s*['"]([^'"]+)['"]/g)) if (/(^|\/)network\//.test(m[1])) offenders.push(`${dir}/${f} -> ${m[1]}`);
-		}
+	// H26.7: and model/'s reveal module where it is now, which this read while it lived in model/
+	const files = ['model', 'planner'].flatMap((dir) => fs.readdirSync(path.join(root, dir)).filter((x) => /\.m?js$/.test(x)).map((f) => `${dir}/${f}`));
+	for (const f of [...files, 'plugins/simulation/reveal.mjs']) {
+		const src = fs.readFileSync(path.join(root, f), 'utf8');
+		for (const m of src.matchAll(/(?:from|import\()\s*['"]([^'"]+)['"]/g)) if (/(^|\/)network\//.test(m[1])) offenders.push(`${f} -> ${m[1]}`);
 	}
 	assert.deepEqual(offenders, []);
 });

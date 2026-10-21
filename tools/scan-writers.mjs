@@ -238,6 +238,7 @@ const ALLOW = {
 // untestable in isolation -- which is the state that let B125's first version flag 21 healthy builders.
 function walk(dir, out = []) {
 	if (!fs.existsSync(dir)) return out;
+	if (fs.statSync(dir).isFile()) return EXT.test(dir) ? [...out, dir] : out;   // H26.7: a root may be one module (SCANNER_ROOTS.writers)
 	for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
 		const p = path.join(dir, e.name);
 		if (e.isDirectory()) walk(p, out);

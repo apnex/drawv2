@@ -673,7 +673,8 @@ const rules = {
 			if (!folderOf[file]) fail('L1', `${file} is outside every folder in FOLDERS -- add its folder, or record it in UNSCANNED with the reason`);
 		}
 		for (const [scanner, dirs] of Object.entries(M.SCANNER_ROOTS)) {
-			for (const d of dirs) if (!M.FOLDERS.some((f) => f.dir === d)) fail('L1', `SCANNER_ROOTS.${scanner} names ${d}, which is not a folder in FOLDERS`);
+			// H26.7: scan-writers' list may name one module in a scanned folder, its walk reading a file root; every other list names folders
+			for (const d of dirs) if (!M.FOLDERS.some((f) => f.dir === d) && !(scanner === 'writers' && folderOf[d])) fail('L1', `SCANNER_ROOTS.${scanner} names ${d}, which is not a folder in FOLDERS${scanner === 'writers' ? ' nor a module in one' : ''}`);
 		}
 		if (M.SCANNER_ROOTS.dead) {
 			for (const f of M.FOLDERS) {
@@ -716,13 +717,14 @@ const rules = {
 	},
 
 	L3: () => {
-		const [a, b] = R.L3?.folders ?? [];
+		// H26.7: a side is a top-level folder, or a list of it and the modules that left it and stay held (plugins/simulation/reveal.mjs)
+		const [a, b] = (R.L3?.folders ?? []).map((s) => [].concat(s));
 		if (!a) return;
-		const top = (f) => f.split('/')[0];
+		const on = (f, side) => f.split('/')[0] === side[0] || side.slice(1).includes(f);
+		const name = (side) => `${side[0]}/${side.length > 1 ? ` (with ${side.slice(1).join(', ')})` : ''}`;
 		for (const file of modules) for (const e of A[file].edges) {
 			if (!e.to) continue;
-			const x = top(file), y = top(e.to);
-			if ((x === a && y === b) || (x === b && y === a)) fail('L3', `${site(file, e)} -- ${a}/ and ${b}/ import nothing from each other (C9)`);
+			if ((on(file, a) && on(e.to, b)) || (on(file, b) && on(e.to, a))) fail('L3', `${site(file, e)} -- ${name(a)} and ${name(b)} import nothing from each other (C9)`);
 		}
 	},
 

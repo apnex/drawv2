@@ -162,7 +162,8 @@ test('the engine names no tenant: no product or plugin vocabulary anywhere in it
 	const TENANT = /\b(links?|nodes?|waypoints?|anchors?|pipes?|guides?|routes?|routing|network|zones?|groups?|flows?|spawn\w*|towers?|pins?|pinned|via|keymap|canvas|selection|drag\w*|close[ds]?)\b/gi;
 	const found = [...new Set((src.match(TENANT) ?? []).map((w) => w.toLowerCase()))];
 	assert.deepEqual(found, [], `tenant words in the core: ${found.join(', ')}`);
-	assert.doesNotMatch(src, /from '\.\.\/(app|network|engine|server|model|lab)\//, 'and it imports no tenant');
+	// H26.7: the network under plugins/, and engine/'s and model/'s simulation modules with it
+	assert.doesNotMatch(src, /from '\.\.\/(app|plugins\/(network|simulation)|engine|server|model|lab)\//, 'and it imports no tenant');
 	// RESTATED at H26.2: the adapter imports the component, and nothing else
 	assert.deepEqual([...src.matchAll(/^import [^;]*? from '([^']+)';/gm)].map((m) => m[1]), ['@apnex/input-binding'], 'it imports input-binding alone');
 });

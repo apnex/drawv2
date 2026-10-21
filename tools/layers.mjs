@@ -522,7 +522,8 @@ export const RULES = {
 	*/
 	L2: { plain: [...PRODUCT_LAYERS, 'lab'] },
 	// C9, as the H17 plan states it: kernel/ and model/ import nothing from each other
-	L3: { folders: ['kernel', 'model'] },
+	// H26.7: model/'s side keeps model/'s reveal module where it is now (plugins/simulation/reveal.mjs), which C9 held while it lived there
+	L3: { folders: ['kernel', ['model', 'plugins/simulation/reveal.mjs']] },
 	/*
 	Both halves are PROXIES for "the core has no notion of connection" (C3): they read names, not
 	meaning. `names` is the fixed list the design measured; `pattern` catches a new name the list
@@ -1033,7 +1034,9 @@ export const SCANNER_ROOTS = {
 	// H25.0 (B365): every product folder, read from FOLDERS, so a new plugin's folder is compared without an edit here. It was
 	// the six folders the product had when the scanner was written, and read none of the plugins' folders
 	twins: PRODUCT_FOLDERS,     // scan-twins ROOTS: where shared arithmetic is compared
-	writers: ['server', 'planner', 'model'],     // scan-writers ROOTS: where the one-writer rule is held
+	// H26.7: and model/'s reveal module where it is now, the one module of the simulation's model/ held -- a module, not its folder,
+	// so the rule holds what it held (L1 lets this list name a module in a scanned folder; scan-writers reads a file root)
+	writers: ['server', 'planner', 'model', 'plugins/simulation/reveal.mjs'],     // scan-writers ROOTS: where the one-writer rule is held
 	copies: PRODUCT_FOLDERS,    // H25.0 scan-copies: where a copied fact is looked for
 };
 

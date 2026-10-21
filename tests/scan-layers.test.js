@@ -390,6 +390,9 @@ const MUTANTS = [
 	*/
 	{ id: 'P1', rule: 'L10', needle: /kernel\/spec\.mjs:BEND_R is listed but is not in the frozen K0 baseline, no baseline symbol of that name left its module for it \(0 vacated, 1 claimed\), and its module is not one the closure dropped/,
 		edits: [{ file: MAN, replace: ["'engine/spawners.mjs': 'plugins/simulation/spawners.mjs',", ''] }] },
+	// H26.7: model/'s reveal module, moved to plugins/simulation/, stays on model/'s side of C9 (RULES.L3) -- reading the grid is L3's to refuse
+	{ id: 'P2', rule: 'L3', needle: /plugins\/simulation\/reveal\.mjs:\d+ import '\.\.\/\.\.\/kernel\/spec\.mjs' -- kernel\/ and model\/ \(with plugins\/simulation\/reveal\.mjs\) import nothing from each other/,
+		edits: [{ file: 'plugins/simulation/reveal.mjs', append: "\nimport { STD as __std } from '../../kernel/spec.mjs';\n" }] },
 ];
 
 /*

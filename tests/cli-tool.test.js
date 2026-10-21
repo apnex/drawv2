@@ -2112,7 +2112,8 @@ test('H17.3: draw add calls a waypoint a node with no type, in its help and in i
 // serves `/combat` and `/movers` so `cli/verbs.mjs` imports no product module
 test('B339 / SD1: REST and draw about serve an anchor\'s derived role, and the CLI imports no product module', async () => {
 	const src = fs.readFileSync(path.join(root, 'cli/verbs.mjs'), 'utf8');
-	assert.doesNotMatch(src, /\.\.\/(network|product|engine|devices|zones|groups|layouts|planner|kernel|model)\//,
+	// H26.7: plugins/ holds the five plugin folders and the simulation's modules, which engine/ and model/ held
+	assert.doesNotMatch(src, /\.\.\/(plugins|product|engine|planner|kernel|model)\//,
 		'the CLI imports no product module (SD1, B339)');
 	await boot();
 	try {

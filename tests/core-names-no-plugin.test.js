@@ -168,7 +168,8 @@ test('O-d: the planner composes nothing and imports no plugin', () => {
 	assert.equal(fs.existsSync(path.join(root, 'planner/policy.mjs')), false, 'and the cap arithmetic it held went with the kinds it capped');
 	// RESTATED at H21.8 (B332, B341): model/invariants.mjs is in core, so the planner imports the core and itself alone
 	assert.deepEqual(ALLOWED.planner, ['core', 'planner'], 'the planner may import the core and itself alone');
-	for (const f of plannerModules()) assert.doesNotMatch(code(f), /from '\.\.\/(zones|groups|devices|product|engine)\//, `${f} imports a plugin`);
+	// H26.7: the plugins under plugins/, and engine/'s simulation modules with them
+	for (const f of plannerModules()) assert.doesNotMatch(code(f), /from '\.\.\/(plugins\/(zones|groups|devices|simulation)|product|engine)\//, `${f} imports a plugin`);
 	assert.equal(ALLOWED.cli.includes('planner'), false, 'the CLI\'s interim allowance is gone: it reads with the product\'s composition');
 });
 

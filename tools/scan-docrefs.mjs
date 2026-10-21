@@ -21,6 +21,7 @@ import fs from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { SCANNER_ROOTS } from './layers.mjs';
+import { MOVED } from './layers.mjs';   // H26.7: where a moved path is now -- its old root is still read as a path's
 
 /*
 Files skipped WHOLE, and the bar for being one is now proportionality.
@@ -430,8 +431,10 @@ const docs = [];
 })('.');
 
 const PATHLIKE = /`([A-Za-z0-9_.\-/]+\.(?:js|mjs|md|json|sh|html|css|svg))(?:[:#][^`]*)?`/g;
-// in code, the common form carries no backticks; prefixes derived from FOLDERS so plugin folders are read too (H25.7)
-const BARE_ROOTS = [...new Set(['docs', 'dev', 'design', 'tests', ...SCANNER_ROOTS.dead.map((d) => d.split('/')[0])])].join('|');
+// in code, the common form carries no backticks; prefixes derived from FOLDERS so plugin folders are read too (H25.7) -- and from
+// MOVED's keys (H26.7), so `network/x.mjs` in a live file is still read as a path, and fails if nothing is there
+const BARE_ROOTS = [...new Set(['docs', 'dev', 'design', 'tests', ...SCANNER_ROOTS.dead.map((d) => d.split('/')[0]),
+	...Object.keys(MOVED).map((k) => k.split('/')[0])])].join('|');
 const BARE = new RegExp(`(?<![\\w/\`])((?:${BARE_ROOTS})\\/[A-Za-z0-9_.\\-/]+\\.(?:json|mjs|js|md|sh|html|css|svg))(?!\\w)`, 'g');
 
 function codeFiles(dir, out = []) {

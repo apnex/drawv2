@@ -113,8 +113,9 @@ test('WD-a: the index keys an anchor by its own cell -- a covered cell is free, 
 });
 
 test('WD-a: nothing below the plugins reads a device\'s span', () => {
+	// H26.7: and model/'s reveal module where it is now, which this read while it lived in model/
 	const below = ['engine/relations.mjs', ...fs.readdirSync(new URL('../model', import.meta.url)).filter((f) => f.endsWith('.mjs')).map((f) => `model/${f}`),
-		...fs.readdirSync(new URL('../planner', import.meta.url)).filter((f) => /\.m?js$/.test(f)).map((f) => `planner/${f}`)];
+		'plugins/simulation/reveal.mjs', ...fs.readdirSync(new URL('../planner', import.meta.url)).filter((f) => /\.m?js$/.test(f)).map((f) => `planner/${f}`)];
 	for (const f of below) assert.doesNotMatch(code(f), /\.span\b/, `${f} reads span`);
 });
 
