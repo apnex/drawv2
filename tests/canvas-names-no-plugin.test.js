@@ -45,7 +45,9 @@ const D2_LINK = 'permanent';
 const KIND_RECORD = {
 	'app/src/commands.js': { count: 9, cites: ['D2'], trigger: D2_LINK,
 		reason: 'the draw-a-link gesture\'s commit builders -- `routeLink`, `routeLinks`, `chainHop` -- its `.links` list, and the label of the pipes a refused drag keeps' },
-	'app/src/input.js': { count: 9, cites: ['D2'], trigger: D2_LINK,
+	// LOWERED at H26.2 (dev/design/components/INPUT-BINDING.md appendix B), 9 to 8: the taken press's `this.mode === 'link'` went, its rule
+	// now the gesture's declared `button`, the session's to apply
+	'app/src/input.js': { count: 8, cites: ['D2'], trigger: D2_LINK,
 		reason: 'the draw-a-link gesture\'s name and its `link:` release-rule keys, the product\'s shared gesture with the network as its judge' },
 	'app/src/recognize.js': { count: 2, cites: ['D2'], trigger: D2_LINK,
 		reason: 'the press row that opens the draw-a-link gesture, and its gesture name' },

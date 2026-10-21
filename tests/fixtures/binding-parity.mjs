@@ -19,7 +19,7 @@ THE OLD CODE is kept whole, verbatim, in tests/fixtures/pre-binding/ -- kernel/i
 app/src/triggers.js as they stood at READ_AT, each held to its SHA-256 -- so the old side of the matcher and the press runs on every
 gate after the move, as tests/pointer-bindings.test.js keeps the old press table as its oracle. The old lifecycle is the whole of
 app/src/input.js, which no copy can stand in for, so it is a record. THE NEW SIDE is the adapter: tests/fixtures/binding-adapter.mjs
-until the move, which moves that very file to kernel/input-rules.mjs, and that module after.
+until the move, which moved that very file to kernel/input-rules.mjs, and that module since.
 
   node tests/fixtures/binding-parity.mjs --write     writes both records from the code as it stands -- before the move only
 */
@@ -28,7 +28,7 @@ import crypto from 'node:crypto';
 import * as OLD_RULES from './pre-binding/input-rules.mjs';
 import * as OLD_STATE from './pre-binding/input-state.js';
 import * as OLD_TRIGGERS from './pre-binding/triggers.js';
-import * as ADAPTER from './binding-adapter.mjs';   // the adapter as section 5 states it, until the move puts it at kernel/input-rules.mjs
+import * as ADAPTER from '../../kernel/input-rules.mjs';   // the adapter, the file this fixture held as binding-adapter.mjs until the move
 import { makeInput } from './client-harness.mjs';
 import { SCENARIOS, record } from './gesture-corpus.mjs';
 import { Input, GESTURES } from '../../app/src/input.js';
@@ -36,7 +36,7 @@ import { DRAG_KINDS, LEGS, kindOf, pipeFor } from '../../network/grammar.mjs';
 import { DEVICE_HAND } from '../../devices/device-hand.mjs';
 
 export const READ_AT = '8793699';   // the last commit holding draw's matcher, press and lifecycle whole
-export const MOVED = false;         // the move flips it, with the new side's import
+export const MOVED = true;          // the move flipped it, with the new side's import
 const root = new URL('../../', import.meta.url);
 const sha256 = (url) => crypto.createHash('sha256').update(fs.readFileSync(url)).digest('hex');
 export const ORIGINALS = [

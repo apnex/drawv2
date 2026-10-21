@@ -976,7 +976,8 @@ test('Q3: composed with the network plugin, still no keystroke matches two rows'
 });
 
 test('Q3: composed with every canvas part\'s key rows, still no keystroke matches two rows', () => {
-	assert.deepEqual(PAGE_KEYS.filter((r) => r.owner === 'zones' || r.owner === 'groups').map((r) => r.id), ['wrap', 'group', 'ungroup'], 'the parts\' rows are in it');
+	// RESTATED at H26.2 (INPUT-BINDING.md appendix B): a composed table is input-binding's, its entries in `table.rows`
+	assert.deepEqual(PAGE_KEYS.rows.filter((r) => r.owner === 'zones' || r.owner === 'groups').map((r) => r.id), ['wrap', 'group', 'ungroup'], 'the parts\' rows are in it');
 	const found = overlapsIn(PAGE_KEYS, KEY_INPUTS, SITUATIONS, GUARD_STATES).map((o) => `${o.situation.gesture}/${o.situation.step} ${o.input.key} -> ${o.ids.join('/')}`);
 	assert.deepEqual(found, []);
 });
@@ -984,7 +985,7 @@ test('Q3: composed with every canvas part\'s key rows, still no keystroke matche
 test('the product names no routing key: g means nothing in production, and the network\'s rows are its own', () => {
 	for (const s of SITUATIONS) assert.equal(resolveKey(key('g'), { gesturing: !!s.gesture }, s), null, 'no product row is about g');
 	// RESTATED at C-e step seven (H19.33; D5): the link keys are the network's rows, first in its list
-	assert.deepEqual(LAB_KEYS.filter((r) => r.owner === 'network').map((r) => r.id), ['close', 'close-refused', 'direction', 'plane', 'chain', 'star', 'guide', 'stop-on-node', 'transit']);
+	assert.deepEqual(LAB_KEYS.rows.filter((r) => r.owner === 'network').map((r) => r.id), ['close', 'close-refused', 'direction', 'plane', 'chain', 'star', 'guide', 'stop-on-node', 'transit']);   // RESTATED at H26.2: `table.rows`
 	const drawing = (step) => sit(undefined, 'link', step);
 	const lab = (k, s) => resolveInput(LAB_KEYS, key(k), s, { gesturing: !!s.gesture }).rule?.id ?? null;
 	assert.equal(lab('g', drawing('ground')), 'guide', 'g during a link drag is the network\'s guide');

@@ -219,6 +219,15 @@ export const SCENARIOS = [
 	{ id: 'press-cancels-chain', board: 'three', steps: [['down', 0, 0, 'n0'], ['move', 360, 0, 'n1'], ['up', 360, 0, 'n1', { shift: true, up: true }], ['move', 200, 200], ['down', 0, 0, 'n0', { button: 2 }], ['up', 0, 0, 'n0', { button: 2, up: true }]] },
 	// and a clone dragged on after it became one, so the clone's own update runs -- the one body no scenario reached (H26.2's lifecycle record)
 	{ id: 'clone-ctrl-drag-moved-on', board: 'pair', steps: [['down', 0, 0, 'n0', { ctrl: true }], ['move', 60, 60, 'n0', { ctrl: true }], ['move', 120, 120, 'n0', { ctrl: true }], ['up', 120, 120, 'n0', { ctrl: true, up: true }]] },
+	/*
+	H26.2: and four the move's mutation proofs found no scenario for, recorded from the code before the move (8793699, in a worktree):
+	a press not yet a drag -- a press, a Ctrl press -- is no gesture in progress, so a key not admitted during one still acts; and a press whose drag finds
+	nothing to move, or nothing to clone, ends there -- so a `w` that follows places a bend as it does with nothing live.
+	*/
+	{ id: 'delete-key-during-pending', board: 'pair', steps: [['down', 0, 0, 'n0', { button: 2 }], ['key', 'Delete'], ['up', 0, 0, 'n0', { button: 2, up: true }]] },
+	{ id: 'delete-key-during-clone-pending', board: 'pair', steps: [['select', ['n1']], ['down', 0, 0, 'n0', { ctrl: true }], ['key', 'Delete'], ['up', 0, 0, 'n0', { ctrl: true, up: true }]] },
+	{ id: 'move-nothing-placed-ends-press', board: 'straight', steps: [['select', ['l0', 'n0']], ['down', 0, 0, 'n0', { button: 2, shift: true }], ['move', 120, 60, 'n0', { button: 2, shift: true }], ['key', 'w'], ['up', 120, 60, 'n0', { button: 2, shift: true, up: true }]] },
+	{ id: 'clone-of-link-ends-press', board: 'straight', steps: [['down', 180, 0, 'l0', { ctrl: true }], ['move', 180, 120, null, { ctrl: true }], ['key', 'w'], ['up', 180, 120, null, { ctrl: true, up: true }]] },
 	{ id: 'dblclick-edits-cancels-chain', board: 'three', steps: [['down', 0, 0, 'n0'], ['move', 360, 0, 'n1'], ['up', 360, 0, 'n1', { shift: true, up: true }], ['move', 0, 0, 'n0'], ['dbl', 0, 0, 'n0']] },
 ];
 

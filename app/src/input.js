@@ -36,13 +36,12 @@ Input — pointer/keyboard state machine. Two-button gestures (`dev/DECISIONS.md
 import { Overlay } from './overlay.js';
 import { pressRows, hitFactsOf, DOUBLE_CLICKS } from './recognize.js';
 import { KEYMAP, KEY_RELEASES } from './keymap.js';
-import { composeRules, resolveInput } from '../../kernel/input-rules.mjs';
+import { composeRules, resolveInput, openGestures } from '../../kernel/input-rules.mjs';   // H26.2: the rules part, draw's adapter over input-binding
 import { occupiedAnyAt, picksOf, pointsOf, grabbedAt, takenIn } from './pick.js';
 import { GAP, orthoDelta, snappedDelta, clampDelta, snapNode, snapIn, placesOf, gridsOf, resolveBox, dist } from './snap.js';
 import { el, crosshair, previewRect, previewLine, previewPath, isShown, setShown, layerOf } from './painter.js';
 import { emitToHost } from './capture.js';
 import { initialInputState, track } from './input-state.js';
-import { DRAG_THRESHOLD, dragging, releaseTrigger } from './triggers.js';
 import { LINK_RELEASES, MARQUEE_RELEASES, CTRL_CLICKS, PRESS_DRAGS, CLONE_DRAGS } from './releases.js';
 import { roundedPath } from '../../kernel/router.mjs';
 import { BEND_R } from '../../kernel/spec.mjs';
@@ -53,6 +52,12 @@ import { BARE_KIND, ANCHOR_KINDS } from '../../model/anchors.mjs';   // the bare
 
 
 const ARROW = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
+/*
+H26.2 (dev/design/components/INPUT-BINDING.md section 5) -- THE CLICK THRESHOLD, named once: canvas units a press may travel and still
+be a click, ruled 2026-09-30 (dev/design/input/GESTURE-SYSTEM.md section 13, stage 3). The gesture session decides a drag by it, exactly
+(input-binding IB10, D7); the link release alone reads it again, asking whether a click landed at the drag's start -- draw's policy.
+*/
+const DRAG_THRESHOLD = 4;
 // H25.3 (B373): the selection rectangle's class, declared as a box row declares its preview (zones/zone-gestures.mjs), where the
 // copy measure reads what a module puts on its elements (tools/copies.mjs) -- passed bare to previewRect, it read as never drawn
 const MARQUEE = { preview: 'marquee' };
@@ -73,6 +78,11 @@ net went red.
 The bodies are the branches they replace, moved not rewritten. `move` and `clone` delegate to the
 existing startMove/startClone, which already had this shape — the design was latent in three of ten
 modes and this finishes it rather than imposing it.
+
+H26.2 (dev/design/components/INPUT-BINDING.md section 5; G9): WHEN each body runs is the gesture session's to decide -- input-binding,
+opened from this table by kernel/input-rules.mjs `openGestures` -- and Input runs a body only on an outcome naming its phase. Each slot
+declares what the session needs of it: `button`, the button whose presses it takes while live and the only one whose release commits
+it, absent for any; and `engaged: false` for a press not yet a gesture in progress (`isGesturing`), absent for one that is.
 */
 // H26.2: exported for tests/input-binding-parity.test.js alone, which records which body runs for each input before the move onto
 // input-binding and after it (dev/design/components/INPUT-BINDING.md acceptance step 4); no module reads it
@@ -105,6 +115,7 @@ export const GESTURES = {
 	},
 
 	pending: {
+		engaged: false,   // a press, not yet a gesture in progress: no guard sees it until it becomes a move (H26.2)
 		/*
 		B203 -- a LEFT drag never moves a waypoint. Left is the link button on a waypoint, and the
 		gesture it must not turn into is a move.
@@ -134,6 +145,7 @@ export const GESTURES = {
 	},
 
 	'clone-pending': {
+		engaged: false,   // a press, not yet a gesture in progress, until it becomes a clone (H26.2)
 		// Ctrl+click without drag: toggle selection (draw.io behavior) -- app/src/releases.js CTRL_CLICKS
 		commit: (i, ctx, pos, evt) => i.act(i.decide('ctrlClick', evt, { exists: !!i.model.get(kindOf(ctx.hit.id), ctx.hit.id) }), ctx),
 		update: (i, pos, evt) => i.escalate(pos, evt, 'cloneDrag', {}, 'clone'),
@@ -206,9 +218,9 @@ export const GESTURES = {
 
 	link: {
 		// only the LEFT button drives link mode: a right-button release during a chain (chord delete,
-		// stray right-click) must never commit a segment. A precondition on the release, so it has to
-		// run before the common teardown — hence its own slot rather than a line inside `commit`.
-		ignoreUp: (evt) => evt.button !== 0,
+		// stray right-click) must never commit a segment, and a left press during a chain is the chain's
+		// own. H26.2: declared to the session, which takes that press and commits on that release alone.
+		button: 0,
 		commit: (i, ctx, pos, evt) => {
 			ctx.path.remove();
 			if (ctx.target) i.renderer.setState(ctx.target, 'hover', false);
@@ -335,6 +347,13 @@ export const GESTURES = {
 };
 
 export class Input {
+	/*
+	H26.2 (dev/design/components/INPUT-BINDING.md section 5; G7) -- THE GESTURE SESSION, this surface's presses and its one live gesture:
+	which press a live gesture takes, whether a press is a drag, which release commits a gesture, and that a press or a lost pointer
+	cancels it, all input-binding's. Private, so no module but this one can read the gesture state, the language refusing it; `mode`
+	is the live gesture's name, read through the getter below.
+	*/
+	#session;
 	/*
 	`host` is the surface that owns GLOBAL key events and receives outbound host actions — `window` in
 	the browser. Injected rather than reached for (B45): Input is the class H6 exists to decompose, and
@@ -496,13 +515,15 @@ export class Input {
 		this.now = typeof now === 'function' ? now : () => Date.now();
 		// L1: what the input has done, as one value -- the pointer, the armed `w`, a chain (app/src/input-state.js)
 		this.state = initialInputState();
+		// H26.2: the session, from the threshold and the gestures this table declares -- each by its name, once
+		this.#session = openGestures({ threshold: DRAG_THRESHOLD,
+			gestures: Object.entries(GESTURES).map(([name, g]) => ({ name, engaged: g.engaged ?? true, button: g.button ?? null })) });
 		this.overlay = layerOf(svg, 'overlay');
 		// H6.3 — transient feedback is overlay.js's: hovered, armed, the datum marker and the
 		// crosshair moved with it. Input keeps only what a GESTURE needs (mode, ctx, and the input state).
 		this.overlayUi = new Overlay({ svg, model, selection, renderer, snap, handles: () => this.handles, hitFacts: () => this.hitFacts, points: () => this.points,
 			grids: () => this.shownGrids });   // C-e: the grids a modifier shows   // C-d: the kinds' handles; D4: what each hit is
-		this.mode = null; // null | pending | clone-pending | move | clone | link | zone | marquee | resize
-		this.ctx = {};
+		this.ctx = {};   // the live gesture's working data: its bodies' (B389)
 
 
 		this.lastDelta = { x: GAP, y: 0 }; // remembered pitch for Ctrl+D duplicate
@@ -560,7 +581,12 @@ export class Input {
 	// distinguishable from `false` at a call site that compares strictly — and D12's defer rule
 	// is now such a caller (bindGestureDefer).
 	isGesturing() {
-		return !!this.mode && this.mode !== 'pending' && this.mode !== 'clone-pending';
+		return this.#session.state.gesture?.engaged === true;   // H26.2: the live gesture's declared `engaged`
+	}
+
+	// the live gesture's name, or null -- the session's (H26.2)
+	get mode() {
+		return this.#session.state.gesture?.name ?? null;
 	}
 
 	// ---- pointer down ----
@@ -587,14 +613,16 @@ export class Input {
 	surface-mode guard, a live-gesture hook, and an ordered table (app/src/recognize.js).
 	*/
 	press(evt) {
-		// L1 first: every press moves the pointer, hands the armed `w` over, and ends a chain (app/src/input-state.js)
+		// L1 first: every press moves the pointer, hands the armed `w` over, and ends a chain (app/src/input-state.js); and the session
+		// holds the press (H26.2)
 		this.state = track(this.state, evt);
+		const { taken } = this.#session.pointerDown(evt);
 		// W5 — RUN mode: the diagram ACTS as UI, and is not a gesture surface at all. A guard rather
 		// than a rule, because it is a mode of the whole surface (INPUT.md §4).
 		if (this.renderer.mode === 'run') return this.runModePress(evt);
 
-		// chain wiring: the live gesture CONSUMES this press. Not a rule about starting one.
-		if (this.mode === 'link' && evt.button === 0) return;   // the press already ended the chain (input state)
+		// chain wiring: the live gesture CONSUMES this press -- one its declared button names (GESTURES), taken by the session
+		if (taken) return;   // the press already ended the chain (input state)
 
 		if (this.labels.isOpen()) this.labels.close(true);
 		this.tools.hideHand();
@@ -608,17 +636,18 @@ export class Input {
 		const hit = evt.on;
 		const pos = evt.at;
 		// the ONE row this press means (Rules engine): read-only is the engine's guard, and a held tool is the situation's
-		const { rule } = resolveInput(this.pressRules, evt, this.situation(), { readOnly: this.readOnly });
+		const { rule, match } = resolveInput(this.pressRules, evt, this.situation(), { readOnly: this.readOnly });
 		if (!rule) return;
 
-		if (this.mode) this.cancelDrag(evt);   // a second press never stacks on an active gesture
+		// a second press never stacks on an active gesture: one that means something ends it, with this press's event, as cancelDrag
+		// ends one -- its afterShiftUpPress before the start -- and is then asked again for the start it opens (H26.2, section 5 step 1)
+		let outcome = this.#session.pressMatched(match);
+		if (outcome.phase === 'cancel') { this.#cancelled(outcome, evt); outcome = this.#session.pressMatched(match); }
 		this.overlayUi.showGrids(evt, false);
 		evt.capture = true;   // capture takes the pointer once this returns (app/src/capture.js)
 
 		if (rule.run) return this[rule.run](hit, evt, pos);
-		const handler = GESTURES[rule.gesture];
-		this.mode = rule.gesture;
-		this.ctx = handler.start(this, hit, pos, evt, rule) || {};   // C-d: the row too -- a shared gesture reads what its row declares
+		if (outcome.phase === 'start') this.ctx = GESTURES[outcome.gesture.name].start(this, hit, pos, evt, rule) || {};   // C-d: the row too -- a shared gesture reads what its row declares
 	}
 
 
@@ -679,8 +708,7 @@ export class Input {
 
 
 	beginPress(hit, pos, shift) {
-		this.mode = 'pending';
-		this.ctx = { hit, start: pos, shift };
+		this.ctx = { hit, start: pos, shift };   // the press opened `pending` (H26.2: the session's start)
 		this.labels.setFocus(hit.id); // F2's deterministic target within group selections
 		if (shift) {
 			this.selection.toggle(hit.id);
@@ -697,9 +725,9 @@ export class Input {
 			const entity = this.model.get(kind, id);
 			if (entity) moved.push({ kind, id, before: { x: entity.x, y: entity.y } });
 		});
-		if (moved.length === 0) { this.mode = null; return; }
+		if (moved.length === 0) { this.#session.cancelGesture(); return; }   // nothing to move: the press ends, no body to run (H26.2)
 		const base = this.ctx.hit;
-		this.mode = 'move';
+		this.#session.becomeGesture({ gesture: 'move' });
 		this.ctx = { ...this.ctx, moved, baseKind: base.kind, baseId: base.id };
 	}
 
@@ -712,13 +740,13 @@ export class Input {
 		const hit = this.ctx.hit;
 		// links can't anchor a clone; the entity may also have died mid-press (undo)
 		if (!this.hitFacts.get(hit.kind)?.placed || !this.model.get(kindOf(hit.id), hit.id)) {   // only what is placed anchors a clone -- not a link (D4)
-			this.mode = null;
+			this.#session.cancelGesture();   // nothing to clone: the press ends, no body to run (H26.2)
 			this.ctx = {};
 			return;
 		}
 		if (!this.selection.has(hit.id)) this.selection.set([hit.id]);
 		const result = commands.cloneSubgraph(this.model, this.selection.list(), this.places, this.followers);
-		if (!result) { this.mode = null; this.ctx = {}; return; }
+		if (!result) { this.#session.cancelGesture(); this.ctx = {}; return; }
 		const { clones, idMap } = result;
 
 		// the clones come back inert. A drag has to SHOW them, so they go into the live model here —
@@ -730,7 +758,7 @@ export class Input {
 			.filter((c) => this.places.has(c.kind))
 			.map((c) => ({ kind: c.kind, id: c.entity.id, before: { x: c.entity.x, y: c.entity.y } }));
 		const picked = this.selection.list().filter((id) => this.places.has(kindOf(id))).map((id) => idMap.get(id)).filter(Boolean);
-		this.mode = 'clone';
+		this.#session.becomeGesture({ gesture: 'clone' });
 		this.ctx = { ...this.ctx, clones, moved, baseKind: hit.kind, baseId: idMap.get(hit.id) };
 		this.selection.set(picked);   // the copies of what was selected
 	}
@@ -946,19 +974,18 @@ export class Input {
 	*/
 	move(evt) {
 		this.state = track(this.state, evt);
+		const outcome = this.#session.pointerMove(evt);   // H26.2: the press's travel, and an update when a gesture is live
 		const moving = this.mode === 'move' || this.mode === 'clone';
 		this.overlayUi.showGrids(evt, moving);
 		const pos = evt.at;
 
-		if (!this.mode) {
-			// idle: the stamp ghost rides the snapped cell and the readout states the landing
-			const snapped = snapNode(pos);
-			const blocked = this.handBlocked(pos);
-			this.tools.trackHand(snapped, blocked);
-			this.readout.setCursor(snapped, this.tools.hand, blocked);
-			return this.idleAffordance(evt);
-		}
-		GESTURES[this.mode].update?.(this, pos, evt);
+		if (outcome.phase === 'update') return GESTURES[outcome.gesture.name].update?.(this, pos, evt);
+		// idle: the stamp ghost rides the snapped cell and the readout states the landing
+		const snapped = snapNode(pos);
+		const blocked = this.handBlocked(pos);
+		this.tools.trackHand(snapped, blocked);
+		this.readout.setCursor(snapped, this.tools.hand, blocked);
+		return this.idleAffordance(evt);
 	}
 
 	// pending → move / clone-pending → clone: the escalation, and the SECOND gate point. A press is
@@ -985,7 +1012,7 @@ export class Input {
 	}
 
 	escalate(pos, evt, table, facts, become) {
-		if (!dragging(this.state)) return;   // not a drag yet: the one rule (triggers.js)
+		if (!this.#session.state.press?.beyond) return;   // not a drag yet: the one rule, the session's, decided exactly (H26.2)
 		const rule = this.decide(table, evt, facts);   // what the drag becomes, if anything (app/src/releases.js)
 		if (!rule) return;
 		this[rule.run](pos);
@@ -1042,9 +1069,9 @@ export class Input {
 	*/
 	release(evt) {
 		const wasGesturing = this.isGesturing();
-		evt.trigger = releaseTrigger(this.state);   // L2: a click or a drop, from the press the input state tracked
-		try { this.dispatchUp(evt); } finally {
-			this.state = track(this.state, evt);   // the press is over
+		const outcome = this.#session.pointerUp(evt);   // H26.2: the press ends, and the live gesture commits if it takes this button
+		evt.trigger = outcome.trigger;   // L2: a click or a drop, from the press the session tracked
+		try { this.dispatchUp(evt, outcome); } finally {
 			if (wasGesturing) this.onGestureEnd();
 			this.afterShiftUpPress(evt);   // H24.3
 		}
@@ -1057,18 +1084,16 @@ export class Input {
 	gesture BY CONSTRUCTION rather than by fourteen branches each remembering to return. (`onUp` is `release` since
 	stage 1 of the gesture system: capture hands it an input event.)
 	*/
-	dispatchUp(evt) {
-		if (!this.mode) return;
-		const g = GESTURES[this.mode];
-		if (g.ignoreUp?.(evt)) return;   // a release this gesture does not accept: stay live
+	// H26.2: on the session's commit alone -- a release the live gesture does not take leaves it live, and the session decided which
+	dispatchUp(evt, outcome) {
+		if (outcome.phase !== 'commit') return;
 		const pos = evt.at;
 		const ctx = this.ctx;
-		this.mode = null;
 		this.ctx = {};
 		this.readout.clearTransient();
 		this.overlayUi.refreshHover(pos);
 		this.overlayUi.showGrids(evt, false);   // gesture over: the layer indicator follows Shift again
-		g.commit?.(this, ctx, pos, evt);
+		GESTURES[outcome.gesture.name].commit?.(this, ctx, pos, evt);
 	}
 
 	/*
@@ -1078,10 +1103,11 @@ export class Input {
 	*/
 	// the composed tables, for what documents them (app/src/help.js): keys, presses, double clicks, run mode, and the
 	// release outcomes that are controls of their own -- the help overlay is generated from exactly what is resolved
+	// H26.2 (D13): each table's rows, read off the component's table -- arrays of rows, as the overlay always took
 	bindings() {
-		const m = this.meaningRules;
-		return { keys: this.keyRules, presses: this.pressRules, double: this.doubleRules, run: this.runRules,
-			releases: [...m.link, ...m.marquee, ...m.ctrlClick], words: this.helpWords };
+		const m = this.meaningRules, rows = (table) => table.rows.map((entry) => entry.row);
+		return { keys: rows(this.keyRules), presses: rows(this.pressRules), double: rows(this.doubleRules), run: rows(this.runRules),
+			releases: [...rows(m.link), ...rows(m.marquee), ...rows(m.ctrlClick)], words: this.helpWords };
 	}
 
 	decide(table, evt, facts) {
@@ -1192,9 +1218,13 @@ export class Input {
 		this.labels.setFocus(ctx.hit.id);
 	}
 
+	// H26.2: a chain is a request -- the live gesture becomes the link drag (a digit mid-drag), or none is live and it starts one (a
+	// commit that chains) -- and a press still held restarts from where the chain began; the chain's start runs on that outcome
 	chainFrom(node, pos) {
-		this.mode = 'link';
-		this.state = track(this.state, { type: 'chained', at: pos });   // a chain began this drag, not a press (input state)
+		const chain = { gesture: 'link', from: pos };
+		const outcome = this.#session.state.gesture ? this.#session.becomeGesture(chain) : this.#session.startGesture(chain);
+		this.state = track(this.state, { type: 'chained' });   // a chain began this drag, not a press (input state)
+		if (outcome.phase !== 'start' && outcome.phase !== 'become') return;
 		this.ctx = this.linkDrag(node, pos);   // B261: the same drag context as any other
 		this.updateLinkPreview(pos);
 		this.readout.setLink(node.name || '?', snapNode(pos));
@@ -1239,16 +1269,28 @@ export class Input {
 	// One abort → the live gesture's own `cancel`, then the same teardown a commit does. Reached by
 	// pointercancel, Escape, and a document swap mid-gesture (a chain has no held button, so the
 	// header menu is live during one).
+	// H26.2 (section 5 step 4; 6.3): outcome first, as a commit is -- the session ends the gesture, then the body runs on the outcome,
+	// and the teardown runs whatever the body does, in a finally, as the release runs its own
 	cancelDrag(evt) {
-		if (evt && evt.type === 'cancel') this.state = track(this.state, evt);   // the browser took the pointer: no press
-		GESTURES[this.mode]?.cancel?.(this, this.ctx);
-		this.mode = null;
-		this.ctx = {};
-		this.readout.clearTransient();
-		this.overlayUi.refreshHover(null);
-		if (evt) this.overlayUi.showGrids(evt, false);
-		this.onGestureEnd();
-		this.afterShiftUpPress(evt);   // H24.3
+		let outcome;
+		if (evt && evt.type === 'cancel') {   // the browser took the pointer: no press, and the gesture ends
+			this.state = track(this.state, evt);
+			outcome = this.#session.pointerLost();
+		} else outcome = this.#session.cancelGesture();   // draw's own causes: Escape, a lock, a document replaced, an edit, a snapshot
+		this.#cancelled(outcome, evt);
+	}
+
+	// a gesture the session cancelled: its body, then the teardown a commit does, onGestureEnd and H24.3's drop -- with the event that ended it
+	#cancelled(outcome, evt) {
+		const ctx = this.ctx;
+		try { if (outcome.phase === 'cancel') GESTURES[outcome.gesture.name].cancel?.(this, ctx); } finally {
+			this.ctx = {};
+			this.readout.clearTransient();
+			this.overlayUi.refreshHover(null);
+			if (evt) this.overlayUi.showGrids(evt, false);
+			this.onGestureEnd();
+			this.afterShiftUpPress(evt);   // H24.3
+		}
 	}
 
 	// ---- hover + arming ----

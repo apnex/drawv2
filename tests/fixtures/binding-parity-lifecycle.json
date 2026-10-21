@@ -526,6 +526,30 @@
 			"clone.update>clone",
 			"clone.commit>-"
 		],
+		"delete-key-during-pending": [
+			"pending.start>pending",
+			">pending",
+			">-"
+		],
+		"delete-key-during-clone-pending": [
+			">-",
+			"clone-pending.start>clone-pending",
+			">clone-pending",
+			"clone-pending.commit>-"
+		],
+		"move-nothing-placed-ends-press": [
+			">-",
+			"pending.start>pending",
+			"pending.update,startMove>-",
+			">-",
+			">-"
+		],
+		"clone-of-link-ends-press": [
+			"clone-pending.start>clone-pending",
+			"clone-pending.update,startClone>-",
+			">-",
+			">-"
+		],
 		"dblclick-edits-cancels-chain": [
 			"link.start>link",
 			"link.update>link",

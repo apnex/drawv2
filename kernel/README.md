@@ -12,7 +12,7 @@ The deterministic, self-contained core shared by the canvas, the SVG export, the
 | `palette.mjs` | the core Material colour palette and `resolveRoles`. |
 | `theme.mjs` | style tokens (`TOKENS`, `CANVAS_ROLES`) and `SHARED_GLYPH_DEFS`. |
 | `renderer.mjs` | shared frame and label primitives (`sharedDefs`, `selBox`, `nameLabel`, `showsSockets`, `hexColor`, `evenDash`). |
-| `input-rules.mjs` | declarative input-row matcher (`resolveInput`, `overlapsIn`). |
+| `input-rules.mjs` | draw's adapter over `@apnex/input-binding` (H26.2): its guards, claim and gesture field declared once (`composeRules`, `resolveInput`, `overlapsIn`), and a surface's gesture session (`openGestures`). |
 | `primitives.css` | the core primitives' stylesheet (`.frame`, `.label`, `.label-pill`, `.select-box`). |
 
 ## Where each name lives

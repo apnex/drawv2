@@ -144,7 +144,7 @@ Generated from `tools/layers.mjs` `PARTS`, and each part's components from its `
 | `relations` | Index which entities relate | core | O1 | `document`, `kind-contract`, `lattice` | -- |
 | `colours` | Hold the colours every role draws from | core | N1 | -- | -- |
 | `primitives` | Draw the shapes painters compose | core | N1, D3 | `lattice`, `colours` | -- |
-| `rules` | Match an input to one declared row | core | D2 | -- | `@apnex/input-binding` |
+| `rules` | Decide what an input means | core | D2 | -- | `@apnex/input-binding` |
 | `planner` | Make the one write every door applies | core | SD2, O1 | `kind-contract`, `document`, `relations`, `lattice` | -- |
 | `layouts` | Declare a diagram's grids | plugin | WD6, WD7 | `lattice`, `kind-contract`, `document` | -- |
 | `devices` | Compose a device onto an anchor | plugin | O4, WD10 | `lattice`, `kind-contract`, `document`, `relations`, `colours`, `primitives`, `rules` | -- |
@@ -178,7 +178,7 @@ Generated from `tools/layers.mjs` `PARTS`, and each part's components from its `
 | `relations` | the anchor capability's occupancy -- which anchor holds a cell (O1) -- and which entities refer to an anchor, by the references their rows declare |
 | `colours` | the one palette's values; each plugin names its own roles over it (the palette ruling) |
 | `primitives` | the shapes every painter composes, none a plugin's own (N1) |
-| `rules` | one match, or none, for an input among declared rows |
+| `rules` | one match, or none, for an input among declared rows, and a gesture session deciding when each phase of a gesture is due, both from `input-binding` (H26-6) |
 | `planner` | plan, commit, undo and redo over a composition's rows and every tenant it brings, each alike; document validation; the invariants a write keeps |
 | `layouts` | the layout kind, its two records in every diagram, the anchor's place, the grids drawn from the records |
 | `devices` | the device fields -- type, shape, span, content; the one type table, naming each type's pack in each family and its map letter (U4-1, U4-2); the appearance family -- glyph art and box, frames, content regions; a device's footprint and size (WD10) |
@@ -323,21 +323,21 @@ All five questions recorded here at ratification (H21.6) have been ruled: the an
 ### 9.3 Alignment with mission-kit -- a register (A-0)
 
 **Maturity: provisional; a register, not structure.**\
-The anchored core composes one component, `snap-grid`, through its `lattice` part alone (H26-1, H26-2, H26-4; `tools/layers.mjs` `COMPONENTS`), where A-0 found it composed none.\
+The anchored core composes two components, `snap-grid` through its `lattice` part and `input-binding` through its `rules` part, each through that part alone (H26-1, H26-2, H26-4, H26-6; `tools/layers.mjs` `COMPONENTS`), where A-0 found it composed none.\
 Each part below is mapped to the component it composes or the candidate it would take, declared in `tools/layers.mjs` `ALIGNMENT` and generated; the other parts are drawv2's own.\
 Why each mapping fits, and the rulings composing it would change, are `dev/design/unification/MISSION-KIT-ALIGNMENT.md`, sections 3 and 7.2.
 
 <!-- BEGIN GENERATED: architecture-target-alignment. Run tools/generate-architecture.mjs; do not edit by hand. -->
-| Part | Aligns to | Standing, read 2026-10-20 | Composing it waits on |
+| Part | Aligns to | Standing, read 2026-10-21 | Composing it waits on |
 |---|---|---|---|
 | `lattice` | `snap-grid` | snap-grid: proposed in drawv2, released from its own repository, composed (H26-4) | composed (H26-4); its grid arithmetic moved onto it at H26.1 |
 | `kind-contract` | `shape-check` | shape-check: proposed in zorg, certified | OD-3; the target's section 4.3 |
 | `document` | `entity-store` | entity-store: proposed in zorg, certified | OD-1 |
 | `store` | `entity-store` | entity-store: proposed in zorg, certified | OD-1 |
 | `primitives` | `vector-scene` | vector-scene: a drawv2 component by H26-1, its design owed (H26.0); a candidate in zorg D32, steered in D35 | a contract; OD-3 |
-| `rules` | `input-binding` | input-binding: a drawv2 component by H26-1, its design owed (H26.0); a candidate in zorg D32, steered in D35 | a contract; OD-3 |
+| `rules` | `input-binding` | input-binding: proposed in drawv2, released from its own repository, composed (H26-6) | composed (H26-6); its matcher and gesture session moved onto it at H26.2 |
 | `planner` | `change-planner` | change-planner: candidate, zorg D32, steered in D35 | a contract; OD-3 |
-| `canvas` | `input-binding` | input-binding: a drawv2 component by H26-1, its design owed (H26.0); a candidate in zorg D32, steered in D35 | a contract; OD-3 |
+| `canvas` | `input-binding` | input-binding: proposed in drawv2, released from its own repository, composed (H26-6) | consumes it through rules (H26-6); its rows and gesture bodies stay draw's (B389) |
 | `renderer` | `vector-scene` | vector-scene: a drawv2 component by H26-1, its design owed (H26.0); a candidate in zorg D32, steered in D35 | a contract; OD-3 |
 | `sync` | `entity-view`, `write-outbox` | entity-view: candidate, zorg D32; write-outbox: candidate, zorg D32 | OD-2; OD-3 |
 | `server` | `static-host` | static-host: candidate, zorg D32 | a contract |

@@ -1,6 +1,14 @@
 /*
 H26.2 (dev/design/components/INPUT-BINDING.md section 4, acceptance steps 3 and 4; section 6.3) -- DRAW ON INPUT-BINDING.
 
+WHAT MOVED, AND WHAT IS LEFT (acceptance step 3), as H26.1's tests/grid-arithmetic-gone.test.js held its own. app/src/triggers.js is
+gone; the input state holds no press; kernel/input-rules.mjs is draw's adapter -- its declarations and calls through to the component,
+no matching, guard or overlap code of its own; and app/src/input.js assigns no `mode`, holds no `ignoreUp`, decides neither which press
+a live gesture takes, nor which release commits it, nor that a press or a lost pointer cancels it, and runs a gesture's body, and a
+chain's start, only on an outcome naming that phase, the session private to it. It measures no distance but the link release's
+`atStart`, and names the click threshold once -- the "decided once" test of tests/triggers.test.js, restated here as that file went
+with its module.
+
 THE EMPTY HANDLE, both answers (acceptance step 4; section 6.3). A handle press whose start finds no entity leaves the handle
 gesture live with an empty context -- kept, B409 -- and it is reachable with two pointers: a zone selected, its corner pressed with
 Shift held, Shift released with the pointer still down, and the still-drawn handle pressed by a second pointer. That press cancels the
@@ -12,6 +20,9 @@ exception still propagates, the gesture has ended, the teardown and onGestureEnd
 */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import { Input } from '../app/src/input.js';
+import * as adapter from '../kernel/input-rules.mjs';
 import { makeInput, key, pointer } from './fixtures/client-harness.mjs';
 import { makeZone } from '../zones/make-zone.mjs';
 import { liveGesture } from './fixtures/binding-parity.mjs';
@@ -31,7 +42,7 @@ const ANSWERS = {
 		move: { threw: null, live: null, idle: true },
 	},
 };
-const NOW = 'before';
+const NOW = 'after';
 
 const corner = (x, y, m = {}) => pointer(x, y, { ...m, target: { tagName: 'rect', classList: { contains: (c) => c === 'handle' }, dataset: { corner: 'se' }, closest: () => null } });
 const thrown = (fn) => { try { fn(); return null; } catch (e) { return e.message; } };
@@ -59,4 +70,72 @@ test(`H26.2 (section 6.3; B409 kept): a pointer cancel over the empty handle ges
 		assert.deepEqual(got, ANSWERS[NOW]);
 		assert.notDeepEqual(ANSWERS.before, ANSWERS.after, 'the two answers differ, as section 6.3 says they do');
 	} finally { h.restore(); }
+});
+
+// ---- acceptance step 3 ----
+
+const read = (f) => fs.readFileSync(new URL(`../${f}`, import.meta.url), 'utf8');
+const code = (text) => text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/[^\n]*/g, '$1');
+const INPUT = code(read('app/src/input.js'));
+// a method of Input, by name, from its line to its closing brace at one tab
+const method = (name) => {
+	const at = INPUT.search(new RegExp(`\\n\\t(?:get )?${name.replace('#', '\\#')}\\(`));
+	assert.ok(at > 0, `${name} is a method of Input`);
+	return INPUT.slice(at, INPUT.indexOf('\n\t}', at + 1));
+};
+const methods = () => [...INPUT.matchAll(/\n\t(?:get )?(#?[A-Za-z]\w*)\([^)]*\) \{/g)].map((m) => m[1]);
+
+test('H26.2 (acceptance step 3): the triggers are gone, and the input state holds no press', () => {
+	assert.equal(fs.existsSync(new URL('../app/src/triggers.js', import.meta.url)), false, 'app/src/triggers.js is deleted');
+	for (const f of ['app/src/input.js', 'app/src/input-state.js', 'kernel/input-rules.mjs', 'lab/src/root.js', 'app/src/main.js']) assert.doesNotMatch(read(f), /triggers\.js'/, `${f} imports it nowhere`);
+	assert.doesNotMatch(code(read('app/src/input-state.js')), /\bpress\b|travel/, 'the input state holds no press');
+});
+
+test('H26.2 (acceptance step 3): kernel/input-rules.mjs holds draw\'s declarations and the calls through, and no matching, guard or overlap code of its own', () => {
+	const src = code(read('kernel/input-rules.mjs'));
+	assert.deepEqual(Object.keys(adapter).sort(), ['composeRules', 'openGestures', 'overlapsIn', 'resolveInput'], 'its four functions');
+	assert.deepEqual([...src.matchAll(/^import [^;]*? from '([^']+)';/gm)].map((m) => m[1]), ['@apnex/input-binding']);
+	const body = (name) => src.slice(src.indexOf(`export function ${name}(`), src.indexOf('\n}', src.indexOf(`export function ${name}(`)));
+	assert.match(body('composeRules'), /composeBindingTable\(/, 'composed by the component');
+	assert.match(body('resolveInput'), /\{\s*const \{ match, claimed \} = table\.matchInput\(input, situation, guards\);\s*return \{ rule: match \? match\.row : null, claimed, match \};\s*$/, 'resolved by the component, the row handed back');
+	assert.match(body('overlapsIn'), /return table\.findOverlaps\(inputs, situations, guardStates\)\.map\(/, 'its overlaps the component\'s');
+	assert.match(body('openGestures'), /openGestureSession\(declaration\)/, 'its sessions the component\'s');
+	assert.doesNotMatch(src, /\.on\(|\.when\(|\bfor \(|\bwhile \(|prevent\s*!==|(readOnly|helpOpen|gesturing)\s*(&&|\|\|)|&&\s*!?\w+\.(mutates|duringHelp|duringGesture|whileReadOnly)/,
+		'it calls no predicate, loops over no row, and combines no guard state with a flag');
+});
+
+test('H26.2 (acceptance step 3): app/src/input.js assigns no mode, holds no ignoreUp, and decides no taken press, commit or cancel itself', () => {
+	assert.doesNotMatch(INPUT, /\bthis\.mode\s*=(?!=)/, 'no `mode` assigned');
+	assert.doesNotMatch(INPUT, /ignoreUp/, 'no ignoreUp');
+	for (const m of ['press', 'release', 'dispatchUp', 'cancelDrag', '#cancelled']) assert.doesNotMatch(method(m), /\.button\s*[!=]==|this\.mode/, `${m} reads no button and no mode: the session decides`);
+	assert.doesNotMatch(method('press'), /cancelDrag\(/, 'a press ends a gesture on the session\'s cancel alone');
+	const desc = Object.getOwnPropertyDescriptor(Input.prototype, 'mode');
+	assert.equal(typeof desc?.get, 'function', '`mode` is read through a getter over the session');
+	assert.equal(desc.set, undefined, 'and is never written');
+});
+
+test('H26.2 (acceptance step 3; G7, G9): a body runs only on an outcome naming its phase, and only the lifecycle\'s methods ask the private session', () => {
+	const bodies = [...INPUT.matchAll(/GESTURES\[([^\]]+)\]\??\.(start|update|commit|cancel)\b/g)];
+	assert.deepEqual(bodies.map((m) => m[2]).sort(), ['cancel', 'commit', 'start', 'update'], 'one dispatch of each phase');
+	for (const [, index, phase] of bodies) {
+		assert.equal(index, 'outcome.gesture.name', `${phase}: the body of the gesture the outcome names`);
+		const holder = methods().find((m) => new RegExp(`GESTURES\\[outcome\\.gesture\\.name\\]\\??\\.${phase}\\b`).test(method(m)));
+		assert.match(method(holder), new RegExp(`outcome\\.phase\\s*[!=]==\\s*'${phase}'`), `${phase}: run in ${holder} on an outcome naming it`);
+	}
+	assert.match(method('chainFrom'), /outcome\.phase !== 'start' && outcome\.phase !== 'become'\) return;[\s\S]*this\.ctx = this\.linkDrag/, 'a chain\'s start runs on the outcome naming it');
+	assert.match(INPUT, /\n\t#session;/, 'the session is a private field');
+	assert.doesNotMatch(INPUT, /this\.session\b/, 'and no public one');
+	const asking = methods().filter((m) => /#session\b/.test(method(m))).sort();
+	assert.deepEqual(asking, ['cancelDrag', 'chainFrom', 'constructor', 'escalate', 'isGesturing', 'mode', 'move', 'press', 'release', 'startClone', 'startMove'].sort(),
+		'the lifecycle\'s methods alone; a key\'s action reaches the session only through a request (chainFrom, cancelDrag)');
+	for (const k of ['onShiftDown', 'onShiftUp', 'onWaypointKey', 'addStop', 'chainThroughNode', 'onHandDigit', 'onEscape']) assert.doesNotMatch(method(k), /#session/, `${k}: working data, no phase`);
+});
+
+test('H26.2 (acceptance step 3): decided once -- input.js measures no distance but the link release\'s atStart, and names the threshold once', () => {
+	assert.doesNotMatch(INPUT, /Math\.hypot|travelled|box\.w < DRAG_THRESHOLD|dist\(pos, this\.ctx\.start\)/, 'no click measured anywhere else');
+	assert.deepEqual([...INPUT.matchAll(/\bdist\(([^)]*)\)/g)].map((m) => m[1]), ['pos, ctx.start'], 'one distance: where a link release landed against its start');
+	assert.equal([...INPUT.matchAll(/\bDRAG_THRESHOLD\b/g)].length, 3, 'declared once, read twice');
+	assert.match(INPUT, /const DRAG_THRESHOLD = 4;/, 'the threshold the director ruled, in canvas units');
+	assert.match(INPUT, /openGestures\(\{ threshold: DRAG_THRESHOLD,/, 'the session decides a drag by it');
+	assert.match(INPUT, /atStart: dist\(pos, ctx\.start\) <= DRAG_THRESHOLD/, 'and the link release alone reads it again');
 });

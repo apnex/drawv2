@@ -87,6 +87,8 @@ const ALLOW = {
 	'*:server/migrate-schema-3.mjs': 'the schema 3 migration -- built at WD-b1 (H19.45), run once from history at its deploy and never carried (WD9); records written while it lived cite it',
 	'*:tools/migrate-down-to-schema-2.mjs': 'the way back from schema 3 -- built at WD-b1 (H19.45) and deleted before its deploy, the director ruling a full-forward deploy (WD9); records written while it lived cite it',
 	'*:zones/zone-grid.mjs': 'the zone grid, moved at WD-b2 (H19.46) to the layouts plugin\'s canvas part, layouts/layout-canvas.mjs; records written while it lived cite it',
+	'*:app/src/triggers.js': 'the click and drag triggers, deleted at H26.2: the press and its threshold moved to input-binding\'s gesture session (dev/design/components/INPUT-BINDING.md appendix B); records written while it lived cite it',
+	'dev/design/components/INPUT-BINDING.md:tests/triggers.test.js': 'the triggers\' tests, deleted with the module at H26.2 -- the press\'s to input-binding\'s own, the "decided once" test restated in tests/input-binding-move.test.js; the design names it as it stood',
 	'*:zones/zone-extent.mjs': 'the zone extent, moved at WD-b1 (H19.45) to the layouts plugin\'s table, layouts/layout-table.mjs; records written while it lived cite it',
 	'*:tools/migrate-schema.mjs': 'the format batch\'s dry run, deleted at H19.3 (B291) with the migration it proved; records written while it lived cite it',
 	'*:tools/migrate-version.mjs': 'the CS5 migration, deleted at H19.3 (B291) once every stored document was schema 2; records written while it lived cite it',

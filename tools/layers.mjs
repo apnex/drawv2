@@ -90,7 +90,7 @@ export const PARTS = {
 		modules: ['kernel/palette.mjs', 'kernel/theme.mjs'], consumes: [] },
 	primitives: { duty: 'Draw the shapes painters compose', kind: 'core', by: ['N1', 'D3'],
 		modules: ['kernel/renderer.mjs'], consumes: ['lattice', 'colours'] },
-	rules: { duty: 'Match an input to one declared row', kind: 'core', by: ['D2'],
+	rules: { duty: 'Decide what an input means', kind: 'core', by: ['D2'],   // H26.2 (INPUT-BINDING.md D10): the duty input-binding answers
 		modules: ['kernel/input-rules.mjs'], consumes: [] },
 	planner: { duty: 'Make the one write every door applies', kind: 'core', by: ['SD2', 'O1'],
 		modules: ['planner/', 'model/invariants.mjs'], consumes: ['kind-contract', 'document', 'relations', 'lattice'] },
@@ -115,8 +115,8 @@ export const PARTS = {
 			'app/src/input.js', 'app/src/input-state.js', 'app/src/keymap.js', 'app/src/labeledit.js', 'app/src/overlay.js', 'app/src/pick.js',
 			'app/src/readout.js', 'app/src/recognize.js', 'app/src/releases.js', 'app/src/selection.js', 'app/src/snap.js', 'app/src/tools.js',
 			// app/src/grids.js draws the grids placement snaps to, from the canvas's places (app/src/snap.js gridsOf); in the renderer
-			// it would make the renderer and the canvas consume each other
-			'app/src/triggers.js', 'app/src/grids.js', 'engine/situation.mjs'],
+			// it would make the renderer and the canvas consume each other. H26.2: the triggers module went, its press the session's
+			'app/src/grids.js', 'engine/situation.mjs'],
 		consumes: ['lattice', 'kind-contract', 'document', 'relations', 'rules', 'planner', 'renderer', 'primitives', 'colours'] },
 	renderer: { duty: 'Draw a document through the parts\' painters', kind: 'host', by: ['D1', 'D3'],
 		modules: ['app/src/renderer.js', 'app/src/painter.js'], consumes: ['lattice', 'document', 'primitives', 'colours'] },
@@ -167,12 +167,12 @@ export const COMPONENTS = {
 H21.9 (A-0) -- EACH PART'S ALIGNMENT WITH MISSION-KIT, a register, not structure: each part below is mapped to the component or
 candidate it takes or would take (dev/design/unification/MISSION-KIT-ALIGNMENT.md, section 3, says why each fits and which rulings
 composing it would change). AMENDED by H26.1: the anchored core composes its first component, `snap-grid`, through the lattice
-(COMPONENTS above); every other mapping is still a candidate's.
+(COMPONENTS above); AMENDED by H26.2: and its second, `input-binding`, through the rules part; every other mapping is still a candidate's.
 MISSION_KIT holds each component's or candidate's standing as read on MISSION_KIT_READ -- standings move, and are read again before
 a design that composes one is asked. tools/generate-architecture.mjs renders the register into the target's section 9.3 and fails
 on a part that is no part, a name MISSION_KIT does not hold, or an entry of MISSION_KIT no part aligns to.
 */
-export const MISSION_KIT_READ = '2026-10-20';
+export const MISSION_KIT_READ = '2026-10-21';
 export const MISSION_KIT = {
 	agp: 'registered in mission-kit, C1',
 	'snap-grid': 'proposed in drawv2, released from its own repository, composed (H26-4)',
@@ -183,7 +183,7 @@ export const MISSION_KIT = {
 	'operation-command': 'proposed in zorg, certified',
 	'credential-issuer': 'proposed in zorg, no code',
 	'change-planner': 'candidate, zorg D32, steered in D35',
-	'input-binding': 'a drawv2 component by H26-1, its design owed (H26.0); a candidate in zorg D32, steered in D35',
+	'input-binding': 'proposed in drawv2, released from its own repository, composed (H26-6)',
 	'vector-scene': 'a drawv2 component by H26-1, its design owed (H26.0); a candidate in zorg D32, steered in D35',
 	'entity-view': 'candidate, zorg D32',
 	'write-outbox': 'candidate, zorg D32',
@@ -197,9 +197,9 @@ export const ALIGNMENT = {
 	document: { to: ['entity-store'], waits: 'OD-1' },
 	store: { to: ['entity-store'], waits: 'OD-1' },
 	primitives: { to: ['vector-scene'], waits: 'a contract; OD-3' },
-	rules: { to: ['input-binding'], waits: 'a contract; OD-3' },
+	rules: { to: ['input-binding'], waits: 'composed (H26-6); its matcher and gesture session moved onto it at H26.2' },
 	planner: { to: ['change-planner'], waits: 'a contract; OD-3' },
-	canvas: { to: ['input-binding'], waits: 'a contract; OD-3' },
+	canvas: { to: ['input-binding'], waits: 'consumes it through rules (H26-6); its rows and gesture bodies stay draw\'s (B389)' },
 	renderer: { to: ['vector-scene'], waits: 'a contract; OD-3' },
 	sync: { to: ['entity-view', 'write-outbox'], waits: 'OD-2; OD-3' },
 	server: { to: ['static-host'], waits: 'a contract' },
@@ -284,7 +284,7 @@ export const LAYER = {
 	core: [
 		'kernel/spec.mjs', 'kernel/theme.mjs',
 		'kernel/router.mjs',     // path geometry on the grid (rounded turns, pathGeometry, pathLength, pointAtDistance)
-		'kernel/input-rules.mjs', // the Rules engine: tenants' rows, uniform guards, one match or none (dev/RULES.md section 11); names no tenant
+		'kernel/input-rules.mjs', // the Rules engine: draw's adapter over input-binding -- its guards, claim and gesture field, one match or none, the session (H26.2); names no tenant
 		'kernel/geometry.mjs',   // the grid and cell arithmetic; its link roles and appearance left for the network layer at K13a
 		'kernel/renderer.mjs',   // frame and selection primitives the canvas draws with; the SVG scene half left at K11
 		'model/model.mjs',       // the document store; its link methods moved to the network at K13d (H19.25, Q-a)
@@ -309,7 +309,7 @@ export const LAYER = {
 		'app/src/capture.js', 'app/src/changes.js', 'app/src/commands.js', 'app/src/input-state.js', 'app/src/input.js', 'app/src/keymap.js',
 		'app/src/labeledit.js',  // the label editor Input drives for t, F2 and double-click; the lab loads it, and its window reads are L11's canvas ratchet
 		'app/src/overlay.js', 'app/src/painter.js', 'app/src/pick.js', 'app/src/recognize.js', 'app/src/releases.js', 'app/src/renderer.js',
-		'app/src/selection.js', 'app/src/snap.js', 'app/src/triggers.js', 'app/src/grids.js',   // WD-b2 (H19.46): the grids, drawn from the open diagram
+		'app/src/selection.js', 'app/src/snap.js', 'app/src/grids.js',   // WD-b2 (H19.46): the grids, drawn from the open diagram
 		'app/src/actions.js',    // every action a binding names, with its label (gesture system stage 6)
 		'app/src/tools.js',      // K7: the held tools -- stamp hand, text tool, the hand's ghost; the palette is a view of them
 		'app/src/compose-canvas.js', // K8: the canvas half of a page, composed once for the product and the lab
@@ -363,7 +363,7 @@ export const ENTRIES = {
 			'devices/device-panels.mjs',   // C-e (H19.33): the devices plugin's panel rows, likewise
 			'app/src/actions.js', 'app/src/help.js', 'app/src/run-mode.js', 'app/src/labeledit.js', 'app/src/main.js', 'engine/mover-painter.mjs', 'app/src/net.js', 'app/src/overlay.js',
 			'app/src/painter.js', 'engine/paintloop.mjs', 'app/src/palette.js', 'app/src/pick.js', 'app/src/readout.js',
-			'app/src/recognize.js', 'app/src/releases.js', 'app/src/renderer.js', 'engine/reveal-painter.mjs', 'app/src/selection.js', 'app/src/snap.js', 'app/src/triggers.js', 'app/src/tools.js', 'app/src/compose-canvas.js',
+			'app/src/recognize.js', 'app/src/releases.js', 'app/src/renderer.js', 'engine/reveal-painter.mjs', 'app/src/selection.js', 'app/src/snap.js', 'app/src/tools.js', 'app/src/compose-canvas.js',
 			'app/src/spectate.js', 'app/src/sync.js', 'app/src/watchdog.js', 'engine/ivm.mjs',
 			'engine/kinds.mjs', 'engine/movers.mjs', 'engine/relations.mjs', 'engine/rules.mjs',
 			'engine/situation.mjs', 'engine/spawners.mjs', 'engine/store.mjs', 
@@ -434,7 +434,7 @@ export const ENTRIES = {
 			'network/host.mjs',    // the network attached to a page: its choreography around an edit (item 3, 2026-10-01)
 			'app/src/capture.js', 'app/src/changes.js', 'app/src/commands.js', 'app/src/input-state.js', 'app/src/input.js', 'app/src/keymap.js', 'app/src/labeledit.js',
 			'app/src/overlay.js', 'app/src/painter.js', 'app/src/pick.js', 'app/src/readout.js',
-			'app/src/recognize.js', 'app/src/releases.js', 'app/src/renderer.js', 'app/src/selection.js', 'app/src/snap.js', 'app/src/triggers.js', 'app/src/tools.js', 'app/src/compose-canvas.js', 
+			'app/src/recognize.js', 'app/src/releases.js', 'app/src/renderer.js', 'app/src/selection.js', 'app/src/snap.js', 'app/src/tools.js', 'app/src/compose-canvas.js', 
 			'engine/ivm.mjs', 'engine/relations.mjs',
 			'engine/situation.mjs', 'engine/store.mjs', 
 			'kernel/geometry.mjs', 'network/roles.mjs', 'network/appearance.mjs', 'kernel/input-rules.mjs', 'kernel/renderer.mjs',

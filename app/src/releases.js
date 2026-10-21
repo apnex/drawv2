@@ -20,7 +20,7 @@ THE FACTS each gesture hands over -- only what a row reads:
             hasVia       the drag drew stops -- a routed link, never chained on
             admitted     the pair has room for the link (B72, `pairHolders`)
             judged       a plugin judges this drag (the lab's network)
-            click        the release was a click (app/src/triggers.js)
+            click        the release was a click (the gesture session's trigger, input-binding, H26.2)
             atStart      it landed where the drag began -- a chained run's anchor, for a chained drag
             shift, ctrl, alt       held at the release; pressShift -- held at the press
             srcIsNode, hand, handIsSrcType, chained, srcSelected   for what a click means

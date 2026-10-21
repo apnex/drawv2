@@ -5921,6 +5921,248 @@
 			]
 		}
 	},
+	"delete-key-during-pending": {
+		"claims": [
+			false,
+			true,
+			false
+		],
+		"threw": [],
+		"commits": [
+			{
+				"ops": [
+					{
+						"op": "del",
+						"kind": "node",
+						"id": "node#1"
+					}
+				],
+				"label": "delete"
+			}
+		],
+		"judged": [],
+		"said": [],
+		"editor": [],
+		"palette": [],
+		"host": [],
+		"final": {
+			"nodes": [
+				{
+					"id": "node#2",
+					"name": "host-2",
+					"order": 2,
+					"type": "host",
+					"shape": "circle",
+					"x": 360,
+					"y": 0
+				}
+			],
+			"waypoints": [],
+			"links": [],
+			"zones": [],
+			"groups": [],
+			"selection": []
+		}
+	},
+	"delete-key-during-clone-pending": {
+		"claims": [
+			false,
+			true,
+			false
+		],
+		"threw": [],
+		"commits": [
+			{
+				"ops": [
+					{
+						"op": "del",
+						"kind": "node",
+						"id": "node#1"
+					}
+				],
+				"label": "delete"
+			}
+		],
+		"judged": [],
+		"said": [],
+		"editor": [],
+		"palette": [],
+		"host": [],
+		"final": {
+			"nodes": [
+				{
+					"id": "node#2",
+					"name": "host-1",
+					"order": 1,
+					"type": "host",
+					"shape": "circle",
+					"x": 0,
+					"y": 0
+				}
+			],
+			"waypoints": [],
+			"links": [],
+			"zones": [],
+			"groups": [],
+			"selection": [
+				"node#2"
+			]
+		}
+	},
+	"move-nothing-placed-ends-press": {
+		"claims": [
+			false,
+			false,
+			true,
+			false
+		],
+		"threw": [],
+		"commits": [
+			{
+				"ops": [
+					{
+						"op": "put",
+						"kind": "node",
+						"entity": {
+							"id": "waypoint#1",
+							"name": "waypoint-1",
+							"order": 3,
+							"x": 120,
+							"y": 60
+						}
+					}
+				],
+				"label": "create waypoint"
+			}
+		],
+		"judged": [],
+		"said": [],
+		"editor": [],
+		"palette": [],
+		"host": [],
+		"final": {
+			"nodes": [
+				{
+					"id": "node#1",
+					"name": "host-1",
+					"order": 1,
+					"type": "host",
+					"shape": "circle",
+					"x": 0,
+					"y": 0
+				},
+				{
+					"id": "node#2",
+					"name": "host-2",
+					"order": 2,
+					"type": "host",
+					"shape": "circle",
+					"x": 360,
+					"y": 0
+				}
+			],
+			"waypoints": [
+				{
+					"id": "waypoint#1",
+					"name": "waypoint-1",
+					"order": 3,
+					"x": 120,
+					"y": 60
+				}
+			],
+			"links": [
+				{
+					"id": "link#1",
+					"name": "link-1",
+					"order": 1,
+					"src": "node#1",
+					"dst": "node#2"
+				}
+			],
+			"zones": [],
+			"groups": [],
+			"selection": [
+				"waypoint#1"
+			]
+		}
+	},
+	"clone-of-link-ends-press": {
+		"claims": [
+			false,
+			false,
+			true,
+			false
+		],
+		"threw": [],
+		"commits": [
+			{
+				"ops": [
+					{
+						"op": "put",
+						"kind": "node",
+						"entity": {
+							"id": "waypoint#1",
+							"name": "waypoint-1",
+							"order": 3,
+							"x": 180,
+							"y": 120
+						}
+					}
+				],
+				"label": "create waypoint"
+			}
+		],
+		"judged": [],
+		"said": [],
+		"editor": [],
+		"palette": [],
+		"host": [],
+		"final": {
+			"nodes": [
+				{
+					"id": "node#1",
+					"name": "host-1",
+					"order": 1,
+					"type": "host",
+					"shape": "circle",
+					"x": 0,
+					"y": 0
+				},
+				{
+					"id": "node#2",
+					"name": "host-2",
+					"order": 2,
+					"type": "host",
+					"shape": "circle",
+					"x": 360,
+					"y": 0
+				}
+			],
+			"waypoints": [
+				{
+					"id": "waypoint#1",
+					"name": "waypoint-1",
+					"order": 3,
+					"x": 180,
+					"y": 120
+				}
+			],
+			"links": [
+				{
+					"id": "link#1",
+					"name": "link-1",
+					"order": 1,
+					"src": "node#1",
+					"dst": "node#2"
+				}
+			],
+			"zones": [],
+			"groups": [],
+			"selection": [
+				"waypoint#1"
+			]
+		}
+	},
 	"dblclick-edits-cancels-chain": {
 		"claims": [
 			false,

@@ -6,25 +6,50 @@ the one row an input means in a situation -- and names nothing any tenant is abo
 a plugin brings its own rows. The director's rulings bind it (2026-09-30): a rule sees the selection and what the
 current gesture step is on (Q1); two rows matching one situation is always a failure, never resolved by position (Q3);
 the situation is plain data (Q4).
+
+RESTATED at H26.2 (dev/design/components/INPUT-BINDING.md section 5, appendix B): kernel/input-rules.mjs is draw's adapter over
+input-binding, which holds the mechanism and its own tests (IB3 to IB8). What stays here holds draw's side of it: the guards, the
+claim and the field draw declares, each case below asked through the adapter as every call site asks it; the refusals at load; and
+the neutrality of the adapter's text.
 */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { composeRules, resolveInput, overlapsIn } from '../kernel/input-rules.mjs';
+import { composeRules, resolveInput, overlapsIn, openGestures } from '../kernel/input-rules.mjs';
 
 const on = (k) => (e) => e.key === k;
 const row = (id, key, extra = {}) => ({ id, on: on(key), run: `run-${id}`, ...extra });
 const ev = (k) => ({ key: k });
 const free = { readOnly: false, helpOpen: false, gesturing: false };
 
-test('composeRules joins tenants and stamps each row with its owner', () => {
-	const table = composeRules({ owner: 'a', rules: [row('x', 'x')] }, { owner: 'b', rules: [row('y', 'y')] });
-	assert.deepEqual(table.map((r) => [r.id, r.owner]), [['x', 'a'], ['y', 'b']]);
+// RESTATED at H26.2: the table is input-binding's, its entries in `table.rows`, each naming its owner beside the declared row
+test('composeRules joins tenants and names each row\'s owner', () => {
+	const x = row('x', 'x'), y = row('y', 'y');
+	const table = composeRules({ owner: 'a', rules: [x] }, { owner: 'b', rules: [y] });
+	assert.deepEqual(table.rows.map((r) => [r.id, r.owner]), [['x', 'a'], ['y', 'b']]);
+	assert.deepEqual(table.rows.map((r) => r.row), [x, y], 'the declared rows themselves, never copies');
+	assert.equal(resolveInput(table, ev('x'), {}, free).rule, x, 'and the row an input means is the declared row');
 });
 
-test('composeRules refuses a duplicate id, within a tenant or across two', () => {
-	assert.throws(() => composeRules({ owner: 'a', rules: [row('x', 'x'), row('x', 'y')] }), /x/);
-	assert.throws(() => composeRules({ owner: 'a', rules: [row('x', 'x')] }, { owner: 'b', rules: [row('x', 'z')] }), /x.*a.*b|x.*b.*a/);
+test('composeRules refuses a duplicate id, within a tenant or across two -- the message the matcher always gave', () => {
+	assert.throws(() => composeRules({ owner: 'a', rules: [row('x', 'x'), row('x', 'y')] }), { message: "input rule 'x' is brought by both a and a -- an id names one row" });
+	assert.throws(() => composeRules({ owner: 'a', rules: [row('x', 'x')] }, { owner: 'b', rules: [row('x', 'z')] }), { message: "input rule 'x' is brought by both a and b -- an id names one row" });
+	assert.throws(() => composeRules({ owner: 'a', rules: [row('y', 'y'), row('x', 'x')] }, { owner: 'b', rules: [row('x', 'z'), row('y', 'q')] }),
+		{ message: "input rule 'x' is brought by both a and b -- an id names one row" }, 'the first twice in table order, as the matcher met it');
+});
+
+/*
+H26.2 (section 6.3, inputs nothing in draw produces): a row the component's row form refuses -- an `on` that is no function, a flag
+that is no boolean, a `gesture` that is no name -- is refused when the composition loads, naming where it lies, where the matcher read
+a flag by its truthiness and threw at the first resolve; and a session declaration that is not one is refused the same way.
+*/
+test('H26.2: a malformed row is refused at load, naming its place, and so is a malformed session', () => {
+	assert.throws(() => composeRules({ owner: 'a', rules: [{ id: 'x', on: 'k' }] }), { message: 'input rules refused: /tenants/0/rows/0/on invalid-value' });
+	assert.throws(() => composeRules({ owner: 'a', rules: [row('x', 'x', { mutates: 1 })] }), { message: 'input rules refused: /tenants/0/rows/0/mutates invalid-value' });
+	assert.throws(() => composeRules({ owner: 'a', rules: [row('x', 'x', { gesture: '' })] }), { message: 'input rules refused: /tenants/0/rows/0/gesture invalid-value' });
+	assert.throws(() => openGestures({ threshold: -1, gestures: [] }), { message: 'gestures refused: /threshold invalid-value' });
+	const s = openGestures({ threshold: 4, gestures: [{ name: 'g', engaged: true, button: null }] });
+	assert.deepEqual(s.declaration, { threshold: 4, gestures: [{ name: 'g', engaged: true, button: null }] }, 'control: a session opened');
 });
 
 test('the guards are applied uniformly: mutating rows are skipped read-only, and help and gestures admit only rows that say so', () => {
@@ -68,9 +93,13 @@ test('a row that opts out of claiming leaves the key unclaimed, and a guard that
 test('two rows matching one situation are NEVER resolved by position (Q3): nothing runs, and overlapsIn names them', () => {
 	const table = composeRules({ owner: 'a', rules: [row('first', 'k')] }, { owner: 'b', rules: [row('second', 'k')] });
 	assert.equal(resolveInput(table, ev('k'), {}, free).rule, null, 'neither wins by being listed first');
-	const found = overlapsIn(table, [ev('k'), ev('z')], [{}], [free]);
+	const k = ev('k'), s = {};
+	const found = overlapsIn(table, [k, ev('z')], [s], [free]);
 	assert.equal(found.length, 1);
 	assert.deepEqual(found[0].ids, ['first', 'second']);
+	// H26.2: the record names the input, the situation and the guard state it was found in, each the value given (the gate prints them)
+	assert.deepEqual(Object.keys(found[0]), ['input', 'situation', 'guards', 'ids']);
+	assert.ok(found[0].input === k && found[0].situation === s && found[0].guards === free, 'each the value given, by reference');
 	assert.deepEqual(overlapsIn(composeRules({ owner: 'a', rules: [row('only', 'k')] }), [ev('k')], [{}], [free]), []);
 });
 
@@ -99,6 +128,8 @@ test('the engine names no tenant: no product or plugin vocabulary anywhere in it
 	const found = [...new Set((src.match(TENANT) ?? []).map((w) => w.toLowerCase()))];
 	assert.deepEqual(found, [], `tenant words in the core: ${found.join(', ')}`);
 	assert.doesNotMatch(src, /from '\.\.\/(app|network|engine|server|model|lab)\//, 'and it imports no tenant');
+	// RESTATED at H26.2: the adapter imports the component, and nothing else
+	assert.deepEqual([...src.matchAll(/^import [^;]*? from '([^']+)';/gm)].map((m) => m[1]), ['@apnex/input-binding'], 'it imports input-binding alone');
 });
 
 test('a row admitted only while writes are refused: the locked fallback a writer never gets', () => {
