@@ -21,11 +21,13 @@ exception still propagates, the gesture has ended, the teardown and onGestureEnd
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import { spawnSync } from 'node:child_process';
 import { Input } from '../app/src/input.js';
 import * as adapter from '../kernel/input-rules.mjs';
 import { makeInput, key, pointer } from './fixtures/client-harness.mjs';
 import { makeZone } from '../zones/make-zone.mjs';
 import { liveGesture } from './fixtures/binding-parity.mjs';
+import { PRODUCT_CANVAS } from '../product/canvas.mjs';
 
 // the two answers; the code answers the one NOW names
 const ANSWERS = {
@@ -138,4 +140,48 @@ test('H26.2 (acceptance step 3): decided once -- input.js measures no distance b
 	assert.match(INPUT, /const DRAG_THRESHOLD = 4;/, 'the threshold the director ruled, in canvas units');
 	assert.match(INPUT, /openGestures\(\{ threshold: DRAG_THRESHOLD,/, 'the session decides a drag by it');
 	assert.match(INPUT, /atStart: dist\(pos, ctx\.start\) <= DRAG_THRESHOLD/, 'and the link release alone reads it again');
+});
+
+/*
+F2 (H26.2's verification) -- TWO PRESS ROWS DRAW NEVER WRITES ARE REFUSED WHEN INPUT COMPOSES ITS TABLES, NAMING THE OWNER AND THE ROW.
+
+A press row runs an action or opens a gesture. One holding both ran its action and opened nothing before the move; after it, the
+session would start the gesture and Input run the action and return without the start body, every move then throwing on `update`.
+And a row opening a gesture the canvas does not declare cancelled the live gesture and jammed Input with an unknown `mode` before the
+move; after it, the session would refuse the match and leave the live gesture live. Neither row is in draw, and neither should behave
+differently and badly unseen: each is refused at load, as a malformed row is (section 6.3, inputs nothing in draw produces).
+*/
+const withPresses = (presses) => () => makeInput({ parts: [...PRODUCT_CANVAS, { owner: 'probe', presses }] }).restore();
+test('F2: a press row that both runs an action and opens a gesture is refused at load, naming its owner and id', () => {
+	assert.throws(withPresses([{ id: 'both', on: () => false, run: 'clearOnClick', gesture: 'marquee' }]),
+		{ message: "Input: probe's press row 'both' both runs clearOnClick and opens marquee -- a press row does one" });
+	assert.doesNotThrow(withPresses([{ id: 'either', on: () => false, gesture: 'marquee' }, { id: 'or', on: () => false, run: 'clearOnClick' }]),
+		'control: a row that opens a gesture, and one that runs an action, compose');
+});
+test('F2: a press row opening a gesture the canvas does not declare is refused at load, naming its owner and id', () => {
+	assert.throws(withPresses([{ id: 'nowhere', on: () => false, gesture: 'lasso' }]),
+		{ message: "Input: probe's press row 'nowhere' opens lasso, which is no gesture the canvas declares" });
+	assert.throws(withPresses([{ id: 'inherited', on: () => false, gesture: 'toString' }]), /press row 'inherited' opens toString, which is no gesture/, 'a name every object inherits is none either');
+	assert.doesNotThrow(() => makeInput().restore(), 'control: the product\'s own press rows compose');
+});
+
+/*
+F6 (H26.2's verification) -- A CHAIN MID-DRAG IS A BECOME, NOT A CANCEL AND A START. A digit mid-drag chains the link drag on from the
+node it places (section 5, step 5): the live gesture becomes the link drag, keeping the row that opened it, where cancelling it and
+starting another would leave a gesture of no row. Draw reads no `row`, so nothing it does can tell the two apart; the session can. So
+the gesture corpus's chains run in a process of their own whose adapter imports a logging copy of the component
+(tests/fixtures/session-spy/), and the outcomes each chain made are read: the digit's hop one become, its row kept, and no cancel; a
+Shift-release after the commit, with nothing live, one start of no row.
+*/
+test('F6: a chain mid-drag becomes the live gesture, its opening row kept, and a chain after a commit starts one -- the session\'s own outcomes', () => {
+	const r = spawnSync(process.execPath, ['--import', new URL('./fixtures/session-spy/register.mjs', import.meta.url).href, new URL('./fixtures/session-spy/corpus.mjs', import.meta.url).pathname,
+		'link-digit-chain', 'link-shift-chain'], { encoding: 'utf8' });
+	assert.equal(r.status, 0, r.stderr);
+	const log = JSON.parse(r.stdout);
+	const requests = (id) => log[id].filter((o) => ['startGesture', 'becomeGesture', 'cancelGesture'].includes(o.op));
+	assert.deepEqual(log['link-digit-chain'].find((o) => o.op === 'pressMatched'), { op: 'pressMatched', phase: 'start', gesture: { name: 'link', row: 'link' } },
+		'control: the window sees the session -- the press opened the link drag from its row');
+	assert.deepEqual(requests('link-digit-chain'), [{ op: 'becomeGesture', phase: 'become', gesture: { name: 'link', row: 'link' } }], 'the hop: one become, the row kept, no cancel');
+	assert.deepEqual(log['link-digit-chain'].at(-1), { op: 'pointerUp', phase: 'commit', gesture: { name: 'link', row: 'link' } }, 'and the release commits the gesture the press opened');
+	assert.deepEqual(requests('link-shift-chain'), [{ op: 'startGesture', phase: 'start', gesture: { name: 'link', row: null } }], 'after the commit, nothing live: one start, of no row');
 });

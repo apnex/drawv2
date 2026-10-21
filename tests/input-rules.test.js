@@ -34,22 +34,57 @@ test('composeRules joins tenants and names each row\'s owner', () => {
 test('composeRules refuses a duplicate id, within a tenant or across two -- the message the matcher always gave', () => {
 	assert.throws(() => composeRules({ owner: 'a', rules: [row('x', 'x'), row('x', 'y')] }), { message: "input rule 'x' is brought by both a and a -- an id names one row" });
 	assert.throws(() => composeRules({ owner: 'a', rules: [row('x', 'x')] }, { owner: 'b', rules: [row('x', 'z')] }), { message: "input rule 'x' is brought by both a and b -- an id names one row" });
+	// RESTATED at H26.2's verification (F5): every problem is listed, the first duplicate in table order first, in the matcher's words
 	assert.throws(() => composeRules({ owner: 'a', rules: [row('y', 'y'), row('x', 'x')] }, { owner: 'b', rules: [row('x', 'z'), row('y', 'q')] }),
-		{ message: "input rule 'x' is brought by both a and b -- an id names one row" }, 'the first twice in table order, as the matcher met it');
+		{ message: "input rule 'x' is brought by both a and b -- an id names one row; input rule 'y' is brought by both a and b -- an id names one row" },
+		'the first twice in table order first, as the matcher met it, and the second after it');
 });
 
 /*
 H26.2 (section 6.3, inputs nothing in draw produces): a row the component's row form refuses -- an `on` that is no function, a flag
 that is no boolean, a `gesture` that is no name -- is refused when the composition loads, naming where it lies, where the matcher read
 a flag by its truthiness and threw at the first resolve; and a session declaration that is not one is refused the same way.
+RESTATED at H26.2's verification (F5): named as draw names it -- the owner and the row's id, or its place when it has none -- and
+every problem listed, never the component's pointer alone.
 */
-test('H26.2: a malformed row is refused at load, naming its place, and so is a malformed session', () => {
-	assert.throws(() => composeRules({ owner: 'a', rules: [{ id: 'x', on: 'k' }] }), { message: 'input rules refused: /tenants/0/rows/0/on invalid-value' });
-	assert.throws(() => composeRules({ owner: 'a', rules: [row('x', 'x', { mutates: 1 })] }), { message: 'input rules refused: /tenants/0/rows/0/mutates invalid-value' });
-	assert.throws(() => composeRules({ owner: 'a', rules: [row('x', 'x', { gesture: '' })] }), { message: 'input rules refused: /tenants/0/rows/0/gesture invalid-value' });
+test('H26.2: a malformed row is refused at load, naming its owner and its id, and so is a malformed session', () => {
+	assert.throws(() => composeRules({ owner: 'a', rules: [{ id: 'x', on: 'k' }] }), { message: "input rules refused: a's row 'x': on invalid-value" });
+	assert.throws(() => composeRules({ owner: 'a', rules: [row('x', 'x', { mutates: 1 })] }), { message: "input rules refused: a's row 'x': mutates invalid-value" });
+	assert.throws(() => composeRules({ owner: 'a', rules: [row('x', 'x', { gesture: '' })] }), { message: "input rules refused: a's row 'x': gesture invalid-value" });
 	assert.throws(() => openGestures({ threshold: -1, gestures: [] }), { message: 'gestures refused: /threshold invalid-value' });
 	const s = openGestures({ threshold: 4, gestures: [{ name: 'g', engaged: true, button: null }] });
 	assert.deepEqual(s.declaration, { threshold: 4, gestures: [{ name: 'g', engaged: true, button: null }] }, 'control: a session opened');
+});
+
+test('F5: every problem is named by its owner and its row -- the row\'s id, or its place when it has none -- the duplicate in the matcher\'s words first', () => {
+	assert.throws(() => composeRules({ owner: 'a', rules: [{ id: 'x', on: 'k' }, { on: () => true }] }, { owner: 'b', rules: [row('y', 'y', { duringHelp: 'yes' }), 5] }),
+		{ message: "input rules refused: a's row 'x': on invalid-value; a's row 1: id missing-property; b's row 'y': duringHelp invalid-value; b's row 1: not-an-object" });
+	assert.throws(() => composeRules({ owner: 'a', rules: [row('x', 'x')] }, { owner: 'b', rules: [{ id: 'w', on: 3 }, row('x', 'z')] }),
+		{ message: "input rule 'x' is brought by both a and b -- an id names one row; b's row 'w': on invalid-value" }, 'a duplicate first, whatever else is wrong');
+	let reads = 0;
+	const getter = { on: () => true };
+	Object.defineProperty(getter, 'id', { get() { reads++; return 'sneaky'; }, enumerable: true });
+	assert.throws(() => composeRules({ owner: 'a', rules: [getter] }), { message: "input rules refused: a's row 0: id invalid-value" }, 'an id it cannot read without running code is named by its place');
+	assert.equal(reads, 0, 'and naming the refusal ran no getter');
+	const rows = Array.from({ length: 12 }, (_, n) => row(`r${n}`, 'k'));
+	rows[2] = { id: 'r2', on: 2 }; rows[10] = { id: 'r10', on: 10 };
+	assert.throws(() => composeRules({ owner: 'a', rules: rows }), { message: "input rules refused: a's row 'r2': on invalid-value; a's row 'r10': on invalid-value" },
+		'in table order -- the tenth row after the second, where the component\'s pointers sort it before');
+	assert.throws(() => composeRules({ owner: 'a', rules: [row('x', 'x')] }, { owner: 'b', rules: [row('x', 'y')] }, { owner: 'c', rules: [row('x', 'z')] }),
+		{ message: "input rule 'x' is brought by both a and b -- an id names one row; input rule 'x' is brought by both a and c -- an id names one row" }, 'each twice named against the owner that brought it first');
+});
+
+/*
+F2 (c) (H26.2's verification): a tenant's own form -- an owner that is no name, rules that are no dense list -- is refused at load as
+a row's is, naming the tenant; two tenants may share an owner.
+*/
+test('F2: a tenant whose owner is no name, or whose rules are no dense list of rows alone, is refused at load', () => {
+	assert.throws(() => composeRules({ owner: '', rules: [row('x', 'x')] }), { message: "input rules refused: tenant 0's owner: invalid-value" });
+	assert.throws(() => composeRules({ owner: 'a', rules: [] }, { rules: [row('x', 'x')] }), { message: "input rules refused: tenant 1's owner: invalid-value" }, 'an owner missing');
+	assert.throws(() => composeRules({ owner: 'a', rules: [row('x', 'x'), , row('y', 'y')] }), { message: "input rules refused: a's rules: invalid-value" }, 'a sparse list');   // eslint-disable-line no-sparse-arrays
+	assert.throws(() => composeRules({ owner: 'a', rules: Object.assign([row('x', 'x')], { extra: 1 }) }), { message: "input rules refused: a's rules: invalid-value" }, 'a list with another property');
+	assert.throws(() => composeRules({ owner: 'a', rules: 'x' }), { message: "input rules refused: a's rules: invalid-value" }, 'rules that are no list');
+	assert.deepEqual(composeRules({ owner: 'a', rules: [row('x', 'x')] }, { owner: 'a', rules: [row('y', 'y')] }).rows.map((r) => `${r.owner}:${r.id}`), ['a:x', 'a:y'], 'control: two tenants may share an owner');
 });
 
 test('the guards are applied uniformly: mutating rows are skipped read-only, and help and gestures admit only rows that say so', () => {

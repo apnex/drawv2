@@ -37,7 +37,7 @@ key and you own it (B47). An input no row means in this situation does nothing a
 THE SITUATION IS OPAQUE HERE. It is plain data (Q4), built by the host, read only by conditions, handed through unread.
 
 What each function answers, its signature as it always was:
-	composeRules(...{ owner, rules })                      a table, or a loud refusal at load -- a duplicate id named as it was
+	composeRules(...{ owner, rules })                      a table, or a loud refusal at load naming each owner and row -- a duplicate id as it was
 	resolveInput(table, input, situation, guards)          { rule, claimed, match }: the declared row, the claim, the component's match
 	overlapsIn(table, inputs, situations, guardStates)     [{ input, situation, guards, ids }], the gate's instrument
 	openGestures({ threshold, gestures })                  a session, or a loud refusal naming its problems
@@ -57,16 +57,39 @@ const DECLARED = {
 	opens: { field: 'gesture' },
 };
 
-// a refused declaration, said as the matcher said a duplicate id -- the first in table order -- and every other problem by its pointer
+/*
+A REFUSED DECLARATION, SAID AS DRAW NAMES ITS ROWS (F5, H26.2's verification). Each problem the component finds is named by the tenant's
+owner and the row's id -- or the row's place, when it has no id to read -- read as data, never through a getter, so naming a refusal runs
+no code of a tenant's. Every problem is listed, in table order; a duplicate id comes first, in the words the matcher always gave it --
+the first twice in table order -- and the rest follow it.
+*/
+const own = (value, key) => {
+	try { const d = value !== null && typeof value === 'object' ? Object.getOwnPropertyDescriptor(value, key) : undefined; return d && 'value' in d ? d.value : undefined; }
+	catch { return undefined; }
+};
+const named = (value) => (typeof value === 'string' && value !== '' ? value : null);
 function refusal(tenants, problems) {
-	const twice = problems.map((p) => p.problem === 'duplicate-id' && /^\/tenants\/(\d+)\/rows\/(\d+)\/id$/.exec(p.pointer)).filter(Boolean)
-		.map((m) => [Number(m[1]), Number(m[2])]).sort((a, b) => a[0] - b[0] || a[1] - b[1])[0];
-	if (twice) {
-		const [i, j] = twice, id = tenants[i].rules[j].id;
-		const first = tenants.find((t, k) => t.rules.some((r, n) => r.id === id && (k < i || (k === i && n < j))));
-		return `input rule '${id}' is brought by both ${first.owner} and ${tenants[i].owner} -- an id names one row`;
-	}
-	return `input rules refused: ${problems.map((p) => `${p.pointer || '/'} ${p.problem}`).join(', ')}`;
+	const place = (p) => /^\/tenants\/(\d+)(?:\/(owner|rows)(?:\/(\d+)(?:\/(.+))?)?)?$/.exec(p.pointer) ?? [];
+	const ownerOf = (i) => named(own(tenants[i], 'owner')) ?? `tenant ${i}`;
+	const idOf = (i, j) => named(own(own(own(tenants[i], 'rules'), j), 'id'));
+	const order = (p) => { const [, i = -1, , j = -1] = place(p); return [Number(i), Number(j)]; };
+	const said = (p) => {
+		const [, i, field, j, rest] = place(p);
+		if (i === undefined) return `the declaration${p.pointer ? ` at ${p.pointer}` : ''}: ${p.problem}`;
+		if (field === undefined) return `tenant ${i}: ${p.problem}`;
+		if (field === 'owner') return `tenant ${i}'s owner: ${p.problem}`;
+		if (j === undefined) return `${ownerOf(i)}'s rules: ${p.problem}`;
+		const id = idOf(i, j), row = id ? `${ownerOf(i)}'s row '${id}'` : `${ownerOf(i)}'s row ${j}`;
+		if (p.problem !== 'duplicate-id') return `${row}: ${rest ? `${rest} ` : ''}${p.problem}`;
+		// the owner that brought it first, as the matcher kept it: the first tenant holding a row of this id
+		const listed = (t) => { const rules = own(t, 'rules'); return Array.isArray(rules) ? rules : []; };
+		const first = tenants.findIndex((t) => listed(t).some((r) => named(own(r, 'id')) === id));
+		return `input rule '${id}' is brought by both ${ownerOf(first)} and ${ownerOf(i)} -- an id names one row`;
+	};
+	const sorted = [...problems].sort((x, y) => { const [a, b] = [order(x), order(y)]; return a[0] - b[0] || a[1] - b[1]; });
+	const twice = sorted.find((p) => p.problem === 'duplicate-id');
+	if (twice) return [twice, ...sorted.filter((p) => p !== twice)].map(said).join('; ');
+	return `input rules refused: ${sorted.map(said).join('; ')}`;
 }
 
 // join tenants' rows into one table, in order; a refused declaration throws when the composition loads

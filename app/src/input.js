@@ -463,6 +463,16 @@ export class Input {
 		if (hands.length > 1) throw new Error(`Input: a hand is brought by ${hands.map((p) => p.owner).join(' and by ')} -- one may`);
 		this.handSpec = hands[0]?.hand ?? null;
 		this.pressRules = composeRules({ owner: 'product', rules: pressRows(picksOf(parts), this.places) }, ...parts.map((p) => ({ owner: p.owner, rules: p.presses ?? [] })));
+		/*
+		F2 (H26.2's verification): a press row runs an action or opens a gesture this table declares -- one, never both, and never a
+		gesture it does not declare -- or Input refuses it as it loads, as the adapter refuses a malformed row: the session starts what a
+		row opens, so a row doing both would leave its gesture live with no start body run, and one opening an unknown gesture would be
+		refused by the session mid-press with the live gesture still live. No row of draw's is either (section 6.3).
+		*/
+		for (const { id, owner, opens, row } of this.pressRules.rows) {
+			if (opens !== null && !Object.hasOwn(GESTURES, opens)) throw new Error(`Input: ${owner}'s press row '${id}' opens ${opens}, which is no gesture the canvas declares`);
+			if (opens !== null && row.run) throw new Error(`Input: ${owner}'s press row '${id}' both runs ${typeof row.run === 'function' ? 'a function' : row.run} and opens ${opens} -- a press row does one`);
+		}
 		this.doubleRules = composeRules({ owner: 'product', rules: DOUBLE_CLICKS });
 		this.releaseRules = composeRules({ owner: 'product', rules: KEY_RELEASES });
 		// K5: run mode's rows come from the composition root (app/src/run-mode.js via main.js); a composition without the
