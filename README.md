@@ -140,6 +140,13 @@ app/         browser editor - kernel-rendered thin UI, vanilla ES modules
 model/       sovereign Model - entity store, id helpers, surface constants
 kernel/      sovereign geometry - resolve(schema) to scene, routing, locked spec
 engine/      sovereign relational substrate - incidence, membership, occupancy
+plugins/     the plugins the product composes, each in its own folder
+  layouts/     a diagram's grids, as stored layout records
+  devices/     what a device composed onto an anchor is, and how it looks
+  network/     connection - links, pipes, routes, junctions and transit
+  zones/       regions of cells
+  groups/      named sets of anchors
+  simulation/  derived motion - spawners, movers, towers and run mode
 server/      persistence server, REST, and validation
 cli/         draw.mjs - the agent's verb surface, and the manifest that declares it
 tests/       node:test suites and fixtures

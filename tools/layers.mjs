@@ -19,7 +19,8 @@ connection (SD11b), the planner knows nothing of the page, and nothing imports a
   canvas       the gesture machine and everything a canvas needs to draw and edit
   chrome       the production page around the canvas: sync, network status, palette, readouts,
                the simulation painters, and the composition root itself
-  simulation   movers, spawners, rules, kinds and the situation; production-only
+  simulation   movers, spawners, rules and kinds; production-only. The situation is the canvas's since K5, in engine/;
+               the simulation's modules are plugins/simulation/ since H26.7
   export       the headless SVG path
   server-only  the server's doors and storage, never served to a browser
   serve        K9: the one static responder (server/static.mjs) -- Node-side, never served to a browser, and the one
@@ -105,8 +106,8 @@ export const PARTS = {
 	groups: { duty: 'Name sets of anchors', kind: 'plugin', by: ['O1'],
 		modules: ['plugins/groups/'], consumes: ['lattice', 'kind-contract', 'document', 'relations', 'colours', 'primitives', 'rules'] },
 	simulation: { duty: 'Derive what the clock drives', kind: 'plugin', by: ['AX1', 'AX4', 'SD11b'],
-		modules: ['plugins/simulation/kinds.mjs', 'plugins/simulation/movers.mjs', 'plugins/simulation/rules.mjs', 'plugins/simulation/spawn-appearance.mjs', 'plugins/simulation/spawners.mjs', 'plugins/simulation/spawn-field.mjs',
-			'plugins/simulation/spawn-runs.mjs', 'plugins/simulation/reveal.mjs', 'plugins/simulation/mover-painter.mjs', 'plugins/simulation/reveal-painter.mjs', 'plugins/simulation/paintloop.mjs'],
+		// H26.7: its folder, the eleven modules it listed one by one while they lived in engine/ and model/
+		modules: ['plugins/simulation/'],
 		consumes: ['lattice', 'kind-contract', 'document', 'relations', 'colours', 'primitives', 'rules', 'network', 'devices'] },
 	product: { duty: 'Compose the plugins into the product', kind: 'composition', by: ['N1', 'D1'],
 		modules: ['product/'], consumes: ['kind-contract', 'lattice', 'colours', 'layouts', 'devices', 'network', 'zones', 'groups', 'simulation'] },
@@ -1056,8 +1057,8 @@ H25.0 (B365) -- WHAT scan-copies READS BEYOND THE FOLDERS, AND THE COPIES IT LET
   entries     the production entries a module must be reached from to count as the product's: the three product roots (L7),
               each page's script, and the lab's server, which the lab's service runs
   owners      the part owning a stylesheet no part's folder holds: the page's own sheet, the colour registry generated from
-              kernel/theme.mjs (tools/colour-tokens.mjs), the core primitives' sheet, and the simulation's, whose modules are listed
-              files in engine/ rather than a folder (H25.1); and the canvas's, split from the page's chrome (H25.2)
+              kernel/theme.mjs (tools/colour-tokens.mjs), the core primitives' sheet, and the canvas's, split from the page's chrome
+              (H25.2). The simulation's left the list at H26.7: its part names its folder, plugins/simulation/, which holds it
   exceptions  per measure, each copy the director ruled may stand: `{ cites: [ruling], trigger }`, resolved by tools/exceptions.mjs.
               H25's exit: every finding in tools/copies-record.json is one of these. H25-4 (B374): the spawner's two rules and the
               zone grid's cursor
@@ -1074,7 +1075,7 @@ export const COPIES = {
 		// H26.1 (SNAP-GRID.md section 7.6): the components' addresses, one entry per export, from what is installed (tools/components.mjs)
 		importmap: { tool: 'tools/import-map.mjs', source: 'package.json @apnex dependencies, each installed package.json exports and version' },
 	},
-	owners: { 'app/style.css': 'product-page', 'app/canvas.css': 'canvas', 'app/tokens.css': 'colours', 'kernel/primitives.css': 'primitives', 'plugins/simulation/simulation.css': 'simulation' },
+	owners: { 'app/style.css': 'product-page', 'app/canvas.css': 'canvas', 'app/tokens.css': 'colours', 'kernel/primitives.css': 'primitives' },
 	// H25-4 (B374): the three foreign style rules the director ruled may stand, each with what reopens it
 	exceptions: {
 		'foreign style rules': {
