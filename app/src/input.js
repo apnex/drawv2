@@ -84,8 +84,9 @@ opened from this table by kernel/input-rules.mjs `openGestures` -- and Input run
 declares what the session needs of it: `button`, the button whose presses it takes while live and the only one whose release commits
 it, absent for any; and `engaged: false` for a press not yet a gesture in progress (`isGesturing`), absent for one that is.
 */
-// H26.2: exported for tests/input-binding-parity.test.js alone, which records which body runs for each input before the move onto
-// input-binding and after it (dev/design/components/INPUT-BINDING.md acceptance step 4); no module reads it
+// H26.2: exported for tests/fixtures/binding-parity.mjs alone, the fixture of tests/input-binding-parity.test.js, which records which
+// body runs for each input before the move onto input-binding and after it (dev/design/components/INPUT-BINDING.md acceptance step 4);
+// no module reads it
 export const GESTURES = {
 	move: {
 		update: (i, pos, evt) => i.updateMove(pos, evt.shiftKey),
