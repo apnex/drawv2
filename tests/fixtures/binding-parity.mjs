@@ -35,7 +35,7 @@ import { Input, GESTURES } from '../../app/src/input.js';
 import { DRAG_KINDS, LEGS, kindOf, pipeFor } from '../../network/grammar.mjs';
 import { DEVICE_HAND } from '../../devices/device-hand.mjs';
 
-export const READ_AT = '97d9bd0';   // the last commit holding draw's matcher, press and lifecycle whole
+export const READ_AT = '8793699';   // the last commit holding draw's matcher, press and lifecycle whole
 export const MOVED = false;         // the move flips it, with the new side's import
 const root = new URL('../../', import.meta.url);
 const sha256 = (url) => crypto.createHash('sha256').update(fs.readFileSync(url)).digest('hex');

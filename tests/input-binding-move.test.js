@@ -18,7 +18,7 @@ import { liveGesture } from './fixtures/binding-parity.mjs';
 
 // the two answers; the code answers the one NOW names
 const ANSWERS = {
-	// read from app/src/input.js at 97d9bd0, before the move (tests/fixtures/binding-parity.mjs READ_AT)
+	// read from app/src/input.js at 8793699, before the move (tests/fixtures/binding-parity.mjs READ_AT)
 	before: {
 		started: 'handle',
 		cancel: { threw: "Cannot read properties of undefined (reading 'preview')", live: 'handle', teardown: 0, gestureEnd: 0 },
