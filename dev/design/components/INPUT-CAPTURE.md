@@ -4,7 +4,7 @@ The third piece of H26's design of record (`dev/DECISIONS.md` H26-3, as H26-5 am
 It designs `input-capture`, the component that stands between a platform's input events and an application: each event on the surface it is given becomes one fact, in the application's coordinates, and what the application asks of that fact is done to the event.\
 It builds on part 1 (`SNAP-GRID.md`), whose section 7 is settled and built twice, and on part 2 (`INPUT-BINDING.md`), whose D1 left the shape of a fact to this piece; it states only where it differs from either, and cites rather than restates what their readings and builds settled.
 
-**Standing:** a design under review, revision 3, drafted 2026-10-22 after its second multi-family reading (section 10.2); revisions 1 and 2 were `c7ea0c3` and `703bc19`; the code read is `703bc19`'s, identical in code to `3dcaba9`, after H26.7 moved every plugin under `plugins/`; the director answered D6 and D7 on 2026-10-22, each to be recorded as a ruling at ratification; not ratified.
+**Standing:** a design under review, revision 3, drafted 2026-10-22 after its second multi-family reading (section 10.2); revisions 1 and 2 were `c7ea0c3` and `703bc19`; the code read is `703bc19`'s, identical in code to `3dcaba9`, after H26.7 moved every plugin under `plugins/`; the director answered D6 and D7 on 2026-10-22, each to be recorded as a ruling at ratification; a third reading, confirming revision 3, found nothing (section 10.3); not ratified.
 
 ---
 
@@ -466,7 +466,7 @@ H26.0 part 3 at revision 3, read against `703bc19`, identical in code to `3dcaba
 **Verdict.**\
 Revision 1 was `revise-before-implementation`, by its first reading: how a capture opens when the platform throws, how it closes when a removal throws or re-enters, what a re-entrant `takePointer` answers, and where the reading of a platform object or an event stops were each open, and builders reading them two ways would differ in what the platform is left holding (section 10.1).\
 Revision 2 was `revise-before-implementation`, by its second reading: IC2 judged each event field as it was read while IC6 read `clientX` and `clientY` before judging either, and a `clientY` getter that closes the capture made the two orders leave the platform holding eight listeners or none; a reflection on the declaration that threw was refused at the property, not the declaration, as the adopted rule has it; an `addEventListener` that adds its listener and then throws left that listener behind; and the adapter ran the control test on keys typed into a field (section 10.2).\
-Revision 3 is `pass, with guardrails`, by its author.
+Revision 3 is `pass, with guardrails`, by its author, and a reading confirming it found nothing (section 10.3).
 
 | Layer | Axiom | Weight | How the design stands |
 |---|---|---|---|
@@ -575,6 +575,11 @@ Every finding was read against the code at `703bc19`, and each behavioural claim
 | x:F3 | key facts carry no `button` or `repeat` in IC5, but the adapter sets them | **Not changed**, as `a` and `o` found: IC5 gives a key fact `button` `null` and the event's `repeat`; the adapter writes draw's own event from the fact, `0` and `false` where today's literal wrote them (section 5, step 2; 6.2). |
 | x:F4 | IC6 step 2 reads coordinates and `button` for key events | **Not changed**, as `a` and `o` found: the step read them for a pointer event alone and said a key event's are never read; o:F1's fix restates the step. |
 | x:F5 | 6.3 omits refused events and the early `preventDefault` read | **Not changed**, as `a` and `o` found: 6.3 lists the refused events and 6.2 the early read; the one path the reading found absent was o:F4's, now gone. |
+
+### 10.3 Reading 3 -- 2026-10-22, of revision 3 at `3edf2e3`, confirming
+
+A reading scoped to revision 3's changes and section 10.2's dispositions, by `gemini-4-argon` (`a`) and `gpt-6-astra` (`o`), kept whole at `~/taceng/drawv2-eval-runs/h26-readings/ic/reading-3/`.\
+Each read the diff, ran the drafter's `reading-2.mjs` and `lifecycle.mjs`, and found nothing: no finding of section 10.2 only claimed, and no fault introduced.
 
 ---
 
