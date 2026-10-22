@@ -527,6 +527,19 @@ export const RULES = {
 	they quote imports in their literals on purpose, and the scanner itself reads node:module.
 	*/
 	L2: { plain: [...PRODUCT_LAYERS, 'lab'] },
+	/*
+	H26.3's verification (V6) -- L4's ONE NAMED EXCEPTION. A module kept verbatim as an oracle keeps its own relative imports, so each is
+	answered by a shim beside it re-exporting the live module's name -- a barrel, by L4's measure. Each `verbatim` entry names a copy
+	and the shims it imports, all of them test modules, and L4 counts neither the shims' re-exports nor the copy's imports of them. The
+	scan holds each to its form: a shim holds re-exports by name and nothing else, and its copy imports it; any other module importing a
+	shim, a shim that declares or imports anything, a product module named here, or an entry whose copy imports none of its shims, is
+	L4's as before. Each entry's cites resolve and its trigger says when it ends (tools/exceptions.mjs).
+	*/
+	L4: { verbatim: [
+		{ copy: 'tests/fixtures/pre-capture/capture.js', shims: ['tests/fixtures/pre-capture/painter.js', 'tests/fixtures/pre-capture/pick.js'], cites: ['H26-8', 'H26.3'],
+			reason: 'app/src/capture.js as it stood before H26.3, kept byte for byte (its SHA-256 pinned by tests/input-capture-parity.test.js) so the side-by-side runs its old side on every gate; its imports of ./pick.js and ./painter.js are answered by shims re-exporting the live modules\' names',
+			trigger: 'the verbatim copy is deleted' },
+	] },
 	// C9, as the H17 plan states it: kernel/ and model/ import nothing from each other
 	// H26.7: model/'s side keeps model/'s reveal module where it is now (plugins/simulation/reveal.mjs), which C9 held while it lived there
 	L3: { folders: ['kernel', ['model', 'plugins/simulation/reveal.mjs']] },

@@ -300,6 +300,7 @@ imports in txn.mjs, A6c's ID): when a cut changes that line, the mutant fails as
 re-points it.
 */
 const MAN = 'tools/layers.mjs';
+const RECORDS = ['dev/BACKLOG.md', 'dev/BOARD.md', 'dev/DECISIONS.md'];   // what tools/exceptions.mjs resolves cites against
 const MUTANTS = [
 	// RESTATED at H21.8 (B341): model/invariants.mjs is core now, so M1 imports model/ (L3) and network/ (L2)
 	{ id: 'M1', rule: 'L2', also: ['L3'], edits: [{ file: 'kernel/spec.mjs', append: "\nimport { violations } from '../model/invariants.mjs';\nimport { splitAtBend } from '../plugins/network/link-rules.mjs';\n" }] },
@@ -427,6 +428,29 @@ const MUTANTS = [
 		edits: [{ file: MAN, replace: ["writers: ['server', 'planner', 'model', 'plugins/simulation/reveal.mjs'],", "writers: ['server', 'planner', 'model'],"] }] },
 	{ id: 'P13', rule: 'L1', needle: /SCANNER_ROOTS\.deadMethods no longer reaches plugins\/simulation\/kinds\.mjs, which MOVED took out of a folder it names/,
 		edits: [{ file: MAN, replace: ["deadMethods: ['server', 'planner', 'model', 'engine', 'kernel', 'plugins/simulation'],", "deadMethods: ['server', 'planner', 'model', 'engine', 'kernel'],"] }] },
+	/*
+	H26.3's verification (V6): L4's one named exception, RULES.L4.verbatim -- the verbatim old capture and its two shims. V1 drops the
+	entry, and both shims are barrels again; V2 has another test module import a shim; V3 has a shim declare a name of its own; V4 one
+	import a module; V5 names a product module as a copy; V6 names a shim the copy does not import; V7 cites an id nothing holds, in a
+	copy holding the records the cites resolve against.
+	*/
+	{ id: 'V1', rule: 'L4', needle: /barrel tests\/fixtures\/pre-capture\/pick\.js: 1, recorded 0 -- RISE/, edits: [{ file: MAN, replace: ["L4: { verbatim: [", "L4: { verbatim: [] || ["] }] },
+	{ id: 'V2', rule: 'L4', needle: /tests\/__v2\.mjs -> tests\/fixtures\/pre-capture\/pick\.js: 1, recorded 0 -- RISE/,
+		edits: [{ file: 'tests/__v2.mjs', create: "import { hitWith } from './fixtures/pre-capture/pick.js';\nexport const __v2 = hitWith;\n" }] },
+	{ id: 'V3', rule: 'L4', needle: /tests\/fixtures\/pre-capture\/pick\.js is no shim/, edits: [{ file: 'tests/fixtures/pre-capture/pick.js', append: 'export const extra = 1;\n' }] },
+	{ id: 'V4', rule: 'L4', needle: /tests\/fixtures\/pre-capture\/painter\.js is no shim/, edits: [{ file: 'tests/fixtures/pre-capture/painter.js', append: "import '../../../app/src/pick.js';\n" }] },
+	{ id: 'V5', rule: 'L4', needle: /names app\/src\/capture\.js, a module of layer canvas -- a verbatim copy and its shims are tests' alone/,
+		edits: [{ file: MAN, replace: ["{ copy: 'tests/fixtures/pre-capture/capture.js',", "{ copy: 'app/src/capture.js',"] }] },
+	{ id: 'V6', rule: 'L4', needle: /tests\/fixtures\/pre-capture\/capture\.js imports no tests\/fixtures\/pre-capture\/stray\.js -- a stale shim/,
+		edits: [{ file: 'tests/fixtures/pre-capture/stray.js', create: "export { hitWith } from '../../../app/src/pick.js';\n" },
+			{ file: MAN, replace: ["'tests/fixtures/pre-capture/pick.js'], cites:", "'tests/fixtures/pre-capture/pick.js', 'tests/fixtures/pre-capture/stray.js'], cites:"] }] },
+	{ id: 'V7', rule: 'L4', needle: /RULES\.L4\.verbatim tests\/fixtures\/pre-capture\/capture\.js: cites H99-9, which is no row, no board item, and no ruling id/,
+		edits: [...RECORDS.map((f) => ({ file: f, create: fs.readFileSync(path.join(root, f), 'utf8') })), { file: MAN, replace: ["cites: ['H26-8', 'H26.3'],", "cites: ['H26-8', 'H99-9'],"] }] },
+	// and an entry naming a file that is no module, or no shim at all
+	{ id: 'V8', rule: 'L4', needle: /names tests\/fixtures\/pre-capture\/gone\.js, which is not a module in the scan/,
+		edits: [{ file: MAN, replace: ["'tests/fixtures/pre-capture/pick.js'], cites:", "'tests/fixtures/pre-capture/pick.js', 'tests/fixtures/pre-capture/gone.js'], cites:"] }] },
+	{ id: 'V9', rule: 'L4', needle: /RULES\.L4\.verbatim tests\/fixtures\/pre-capture\/capture\.js names no shim/,
+		edits: [{ file: MAN, replace: ["shims: ['tests/fixtures/pre-capture/painter.js', 'tests/fixtures/pre-capture/pick.js'],", "shims: [],"] }] },
 ];
 
 /*
@@ -434,6 +458,8 @@ The controls beside the mutants: edits that must PASS the scan, so a rule that r
 imports the component, the package and a subpath, and a test may too -- tools and tests are no part, and may import any layer.
 */
 const CONTROLS = [
+	// H26.3's verification (V6): the records copied, so the cites of RULES.L4.verbatim (and RATCHET_REASONS) are resolved, and pass
+	{ id: 'V0', edits: RECORDS.map((f) => ({ file: f, create: fs.readFileSync(path.join(root, f), 'utf8') })) },
 	{ id: 'C0', edits: [{ file: 'kernel/geometry.mjs', append: "\nimport { openGrid as __og } from '@apnex/snap-grid';\n" },
 		{ file: 'kernel/spec.mjs', append: "\nimport { checkGridShape as __k } from '@apnex/snap-grid/conformance';\n" },
 		{ file: 'tests/__c0.test.js', create: "import { openGrid } from '@apnex/snap-grid';\nexport const __c0 = openGrid;\n" }] },
@@ -468,6 +494,7 @@ test('K0 M1-M7 and the attack\'s A-mutants (on copies of this tree): each lands 
 				const before = fs.existsSync(p) ? fs.readFileSync(p, 'utf8') : null;
 				if (e.replace) assert.ok(before?.includes(e.replace[0]), `${m.id} is INVALID: its needle is gone from ${e.file}`);
 				const after = e.create ?? (e.append ? before + e.append : before.replace(e.replace[0], () => e.replace[1]));
+				fs.mkdirSync(path.dirname(p), { recursive: true });   // H26.3 (V6): a created file may sit in a folder the copy lacks, dev/
 				fs.writeFileSync(p, after);
 				assert.notEqual(fs.readFileSync(p, 'utf8'), before, `${m.id} did not land in ${e.file}`);
 			}

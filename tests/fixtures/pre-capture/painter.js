@@ -1,4 +1,3 @@
-// H26.3: the one name tests/fixtures/pre-capture/capture.js, kept verbatim, imports from './painter.js' -- app/src/painter.js's, unchanged;
-// bound here rather than re-exported, since no module of this tree is a barrel (tools/layers.mjs L4)
-import { toCanvas as live } from '../../../app/src/painter.js';
-export const toCanvas = live;
+// H26.3: the one name tests/fixtures/pre-capture/capture.js, kept verbatim, imports from './painter.js' -- app/src/painter.js's, unchanged.
+// A re-export, so a barrel by L4's measure, which names it as its one exception (tools/layers.mjs RULES.L4.verbatim; H26.3's verification, V6)
+export { toCanvas } from '../../../app/src/painter.js';

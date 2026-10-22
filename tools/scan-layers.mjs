@@ -764,10 +764,33 @@ const rules = {
 	},
 
 	L4: () => {
+		/*
+		H26.3's verification (V6): the one named exception, RULES.L4.verbatim -- a copy kept verbatim and the shims answering its imports,
+		each held to its form, then left uncounted: a shim's re-exports, and its copy's imports of it. Nothing else is excused.
+		*/
+		const SHIM = /^(?:export\s*\{\s*[\w$]+(?:\s+as\s+[\w$]+)?(?:\s*,\s*[\w$]+(?:\s+as\s+[\w$]+)?)*\s*\}\s*from\s*(['"])[^'"\n]+\1\s*;\s*)+$/;
+		const shimOf = new Map();   // an admitted shim -> its copy
+		for (const v of R.L4?.verbatim ?? []) {
+			const where = `RULES.L4.verbatim ${v.copy}`;
+			const shims = v.shims ?? [];
+			if (!shims.length) fail('L4', `${where} names no shim`);
+			let named = true;
+			for (const f of [v.copy, ...shims]) {
+				if (!A[f]) { fail('L4', `${where} names ${f}, which is not a module in the scan`); named = false; continue; }
+				if (layerOf[f] !== 'tests') { fail('L4', `${where} names ${f}, a module of layer ${layerOf[f]} -- a verbatim copy and its shims are tests' alone`); named = false; }
+			}
+			if (!named) continue;
+			for (const s of shims) {
+				const text = fs.readFileSync(path.join(ROOT, s), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '').trim();
+				if (!SHIM.test(text)) { fail('L4', `${where}: ${s} is no shim -- a shim holds re-exports by name and nothing else, declaring and importing nothing`); continue; }
+				if (!A[v.copy].edges.some((e) => e.to === s)) { fail('L4', `${where}: ${v.copy} imports no ${s} -- a stale shim`); continue; }
+				shimOf.set(s, v.copy);
+			}
+		}
 		for (const file of modules) {
 			// one count per re-exported name (or `*`), so a barrel that grows is a rise, not the same barrel
-			if (isBarrel(file)) for (const r of A[file].reexports) note('L4', `barrel ${file}`, `${file}:${r.line} export ${r.imported === '*' ? (r.exported === '*' ? '*' : `* as ${r.exported}`) : r.imported === r.exported ? r.exported : `${r.imported} as ${r.exported}`} from '${r.spec}'`);
-			for (const e of A[file].edges) if (e.to && isBarrel(e.to)) note('L4', `${file} -> ${e.to}`, site(file, e));
+			if (isBarrel(file) && !shimOf.has(file)) for (const r of A[file].reexports) note('L4', `barrel ${file}`, `${file}:${r.line} export ${r.imported === '*' ? (r.exported === '*' ? '*' : `* as ${r.exported}`) : r.imported === r.exported ? r.exported : `${r.imported} as ${r.exported}`} from '${r.spec}'`);
+			for (const e of A[file].edges) if (e.to && isBarrel(e.to) && shimOf.get(e.to) !== file) note('L4', `${file} -> ${e.to}`, site(file, e));
 		}
 	},
 
@@ -1133,6 +1156,8 @@ if (!J && fs.existsSync(path.join(ROOT, 'dev/BACKLOG.md'))) {
 		for (const k of reasons) if (!counts.includes(k)) fail(rule, `${k}: a reason in RATCHET_REASONS.${rule} for a key RATCHETS no longer records -- remove it`);
 		for (const f of exceptionFaults(Object.entries(RATCHET_REASONS[rule] ?? {}).map(([k, e]) => ({ where: `RATCHET_REASONS.${rule} ${k}`, ...e })), ROOT)) fail(rule, f);
 	}
+	// H26.3's verification (V6): and L4's named exception, its cites and its trigger
+	for (const f of exceptionFaults((R.L4?.verbatim ?? []).map((v) => ({ where: `RULES.L4.verbatim ${v.copy}`, ...v })), ROOT)) fail('L4', f);
 }
 
 const count = (rule) => findings.filter((f) => f.rule === rule).length;
