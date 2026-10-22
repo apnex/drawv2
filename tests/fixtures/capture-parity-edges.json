@@ -1,0 +1,752 @@
+{
+	"readAt": "7d71be6",
+	"edges": {
+		"coords-absent": {
+			"class": "coordinates",
+			"method": "onDown",
+			"equal": false,
+			"old": {
+				"handed": [
+					{
+						"route": "press",
+						"args": "[]",
+						"event": "{\"type\":\"down\",\"button\":0,\"key\":null,\"repeat\":false,\"shiftKey\":false,\"ctrlKey\":false,\"altKey\":false,\"metaKey\":false,\"at\":{\"x\":-40,\"y\":20},\"on\":{\"kind\":\"canvas\",\"id\":null},\"region\":{\"target\":null,\"overTarget\":false,\"action\":null,\"input\":null,\"owner\":null,\"control\":false,\"entity\":false},\"claimed\":false,\"capture\":false}"
+					}
+				],
+				"prevented": 0,
+				"asked": "[]",
+				"threw": null
+			},
+			"new": {
+				"handed": [],
+				"prevented": 0,
+				"asked": "[]",
+				"threw": "TypeError: pointerdown: the event's clientX must be a finite number"
+			}
+		},
+		"coords-nan": {
+			"class": "coordinates",
+			"method": "onMove",
+			"equal": false,
+			"old": {
+				"handed": [
+					{
+						"route": "move",
+						"args": "[]",
+						"event": "{\"type\":\"move\",\"button\":0,\"key\":null,\"repeat\":false,\"shiftKey\":false,\"ctrlKey\":false,\"altKey\":false,\"metaKey\":false,\"at\":{\"x\":\"#NaN\",\"y\":\"#NaN\"},\"on\":{\"kind\":\"canvas\",\"id\":null},\"claimed\":false,\"capture\":false}"
+					}
+				],
+				"prevented": 0,
+				"asked": "[]",
+				"threw": null
+			},
+			"new": {
+				"handed": [],
+				"prevented": 0,
+				"asked": "[]",
+				"threw": "TypeError: pointermove: the event's clientX must be a finite number"
+			}
+		},
+		"coords-string": {
+			"class": "coordinates",
+			"method": "onUp",
+			"equal": false,
+			"old": {
+				"handed": [
+					{
+						"route": "release",
+						"args": "[]",
+						"event": "{\"type\":\"up\",\"button\":0,\"key\":null,\"repeat\":false,\"shiftKey\":false,\"ctrlKey\":false,\"altKey\":false,\"metaKey\":false,\"at\":{\"x\":-25,\"y\":40},\"on\":{\"kind\":\"canvas\",\"id\":null},\"claimed\":false,\"capture\":false}"
+					}
+				],
+				"prevented": 0,
+				"asked": "[]",
+				"threw": null
+			},
+			"new": {
+				"handed": [],
+				"prevented": 0,
+				"asked": "[]",
+				"threw": "TypeError: pointerup: the event's clientY must be a finite number"
+			}
+		},
+		"coords-infinite": {
+			"class": "coordinates",
+			"method": "onDblClick",
+			"equal": false,
+			"old": {
+				"handed": [
+					{
+						"route": "double",
+						"args": "[]",
+						"event": "{\"type\":\"double\",\"button\":0,\"key\":null,\"repeat\":false,\"shiftKey\":false,\"ctrlKey\":false,\"altKey\":false,\"metaKey\":false,\"at\":{\"x\":\"#Infinity\",\"y\":\"#NaN\"},\"on\":{\"kind\":\"canvas\",\"id\":null},\"claimed\":false,\"capture\":false}"
+					}
+				],
+				"prevented": 0,
+				"asked": "[]",
+				"threw": null
+			},
+			"new": {
+				"handed": [],
+				"prevented": 0,
+				"asked": "[]",
+				"threw": "TypeError: dblclick: the event's clientX must be a finite number"
+			}
+		},
+		"event-primitive": {
+			"class": "refused-both",
+			"method": "onDown",
+			"equal": false,
+			"old": {
+				"handed": [],
+				"prevented": 0,
+				"asked": "[]",
+				"threw": "TypeError: Cannot read properties of undefined (reading 'closest')"
+			},
+			"new": {
+				"handed": [],
+				"prevented": 0,
+				"asked": "[]",
+				"threw": "TypeError: pointerdown: the event must be an object, not a function or a primitive"
+			}
+		},
+		"button-fraction": {
+			"class": "button",
+			"method": "onDown",
+			"equal": false,
+			"old": {
+				"handed": [
+					{
+						"route": "press",
+						"args": "[]",
+						"event": "{\"type\":\"down\",\"button\":1.5,\"key\":null,\"repeat\":false,\"shiftKey\":false,\"ctrlKey\":false,\"altKey\":false,\"metaKey\":false,\"at\":{\"x\":-25,\"y\":40},\"on\":{\"kind\":\"canvas\",\"id\":null},\"region\":{\"target\":null,\"overTarget\":false,\"action\":null,\"input\":null,\"owner\":null,\"control\":false,\"entity\":false},\"claimed\":false,\"capture\":false}"
+					}
+				],
+				"prevented": 0,
+				"asked": "[]",
+				"threw": null
+			},
+			"new": {
+				"handed": [],
+				"prevented": 0,
+				"asked": "[]",
+				"threw": "TypeError: pointerdown: the event's button must be undefined, null or a safe integer"
+			}
+		},
+		"button-string": {
+			"class": "button",
+			"method": "onUp",
+			"equal": false,
+			"old": {
+				"handed": [
+					{
+						"route": "release",
+						"args": "[]",
+						"event": "{\"type\":\"up\",\"button\":\"0\",\"key\":null,\"repeat\":false,\"shiftKey\":false,\"ctrlKey\":false,\"altKey\":false,\"metaKey\":false,\"at\":{\"x\":-25,\"y\":40},\"on\":{\"kind\":\"canvas\",\"id\":null},\"claimed\":false,\"capture\":false}"
+					}
+				],
+				"prevented": 0,
+				"asked": "[]",
+				"threw": null
+			},
+			"new": {
+				"handed": [],
+				"prevented": 0,
+				"asked": "[]",
+				"threw": "TypeError: pointerup: the event's button must be undefined, null or a safe integer"
+			}
+		},
+		"button-null": {
+			"class": "none",
+			"method": "onDown",
+			"equal": true,
+			"old": {
+				"handed": [
+					{
+						"route": "press",
+						"args": "[]",
+						"event": "{\"type\":\"down\",\"button\":0,\"key\":null,\"repeat\":false,\"shiftKey\":false,\"ctrlKey\":false,\"altKey\":false,\"metaKey\":false,\"at\":{\"x\":-25,\"y\":40},\"on\":{\"kind\":\"canvas\",\"id\":null},\"region\":{\"target\":null,\"overTarget\":false,\"action\":null,\"input\":null,\"owner\":null,\"control\":false,\"entity\":false},\"claimed\":false,\"capture\":false}"
+					}
+				],
+				"prevented": 0,
+				"asked": "[]",
+				"threw": null
+			},
+			"new": {
+				"handed": [
+					{
+						"route": "press",
+						"args": "[]",
+						"event": "{\"type\":\"down\",\"button\":0,\"key\":null,\"repeat\":false,\"shiftKey\":false,\"ctrlKey\":false,\"altKey\":false,\"metaKey\":false,\"at\":{\"x\":-25,\"y\":40},\"on\":{\"kind\":\"canvas\",\"id\":null},\"region\":{\"target\":null,\"overTarget\":false,\"action\":null,\"input\":null,\"owner\":null,\"control\":false,\"entity\":false},\"claimed\":false,\"capture\":false}"
+					}
+				],
+				"prevented": 0,
+				"asked": "[]",
+				"threw": null
+			}
+		},
+		"prevent-absent-unclaimed": {
+			"class": "preventDefault",
+			"method": "onDown",
+			"equal": false,
+			"old": {
+				"handed": [
+					{
+						"route": "press",
+						"args": "[]",
+						"event": "{\"type\":\"down\",\"button\":0,\"key\":null,\"repeat\":false,\"shiftKey\":false,\"ctrlKey\":false,\"altKey\":false,\"metaKey\":false,\"at\":{\"x\":-25,\"y\":40},\"on\":{\"kind\":\"canvas\",\"id\":null},\"region\":{\"target\":null,\"overTarget\":false,\"action\":null,\"input\":null,\"owner\":null,\"control\":false,\"entity\":false},\"claimed\":false,\"capture\":false}"
+					}
+				],
+				"prevented": 0,
+				"asked": "[]",
+				"threw": null
+			},
+			"new": {
+				"handed": [],
+				"prevented": 0,
+				"asked": "[]",
+				"threw": "TypeError: pointerdown: the event's preventDefault must be a function"
+			}
+		},
+		"prevent-absent-claimed": {
+			"class": "preventDefault",
+			"method": "onKeyDown",
+			"equal": false,
+			"old": {
+				"handed": [
+					{
+						"route": "keyDown",
+						"args": "[]",
+						"event": "{\"type\":\"key-down\",\"button\":0,\"key\":\"a\",\"repeat\":false,\"shiftKey\":false,\"ctrlKey\":false,\"altKey\":false,\"metaKey\":false,\"onControl\":false,\"claimed\":false,\"capture\":false}"
+					}
+				],
+				"prevented": 0,
+				"asked": "[]",
+				"threw": "TypeError: evt.preventDefault is not a function"
+			},
+			"new": {
+				"handed": [],
+				"prevented": 0,
+				"asked": "[]",
+				"threw": "TypeError: keydown: the event's preventDefault must be a function"
+			}
+		},
+		"prevent-getter-throws": {
+			"class": "preventDefault",
+			"method": "onMove",
+			"equal": false,
+			"old": {
+				"handed": [
+					{
+						"route": "move",
+						"args": "[]",
+						"event": "{\"type\":\"move\",\"button\":0,\"key\":null,\"repeat\":false,\"shiftKey\":false,\"ctrlKey\":false,\"altKey\":false,\"metaKey\":false,\"at\":{\"x\":-25,\"y\":40},\"on\":{\"kind\":\"canvas\",\"id\":null},\"claimed\":false,\"capture\":false}"
+					}
+				],
+				"prevented": 0,
+				"asked": "[]",
+				"threw": null
+			},
+			"new": {
+				"handed": [],
+				"prevented": 0,
+				"asked": "[]",
+				"threw": "TypeError: pointermove: the event's preventDefault could not be read: an object"
+			}
+		},
+		"key-event-primitive": {
+			"class": "preventDefault",
+			"method": "onKeyUp",
+			"equal": false,
+			"old": {
+				"handed": [
+					{
+						"route": "keyUp",
+						"args": "[]",
+						"event": "{\"type\":\"key-up\",\"button\":0,\"key\":null,\"repeat\":true,\"shiftKey\":false,\"ctrlKey\":false,\"altKey\":false,\"metaKey\":false,\"claimed\":false,\"capture\":false}"
+					}
+				],
+				"prevented": 0,
+				"asked": "[]",
+				"threw": null
+			},
+			"new": {
+				"handed": [],
+				"prevented": 0,
+				"asked": "[]",
+				"threw": "TypeError: keyup: the event must be an object, not a function or a primitive"
+			}
+		},
+		"pointerId-getter-throws": {
+			"class": "field-read",
+			"method": "onDown",
+			"equal": false,
+			"old": {
+				"handed": [
+					{
+						"route": "press",
+						"args": "[]",
+						"event": "{\"type\":\"down\",\"button\":0,\"key\":null,\"repeat\":false,\"shiftKey\":false,\"ctrlKey\":false,\"altKey\":false,\"metaKey\":false,\"at\":{\"x\":-25,\"y\":40},\"on\":{\"kind\":\"canvas\",\"id\":null},\"region\":{\"target\":null,\"overTarget\":false,\"action\":null,\"input\":null,\"owner\":null,\"control\":false,\"entity\":false},\"claimed\":false,\"capture\":false}"
+					}
+				],
+				"prevented": 0,
+				"asked": "[]",
+				"threw": null
+			},
+			"new": {
+				"handed": [],
+				"prevented": 0,
+				"asked": "[]",
+				"threw": "TypeError: pointerdown: the event's pointerId could not be read: an object"
+			}
+		},
+		"buttons-getter-throws": {
+			"class": "field-read",
+			"method": "onMove",
+			"equal": false,
+			"old": {
+				"handed": [
+					{
+						"route": "move",
+						"args": "[]",
+						"event": "{\"type\":\"move\",\"button\":0,\"key\":null,\"repeat\":false,\"shiftKey\":false,\"ctrlKey\":false,\"altKey\":false,\"metaKey\":false,\"at\":{\"x\":-25,\"y\":40},\"on\":{\"kind\":\"canvas\",\"id\":null},\"claimed\":false,\"capture\":false}"
+					}
+				],
+				"prevented": 0,
+				"asked": "[]",
+				"threw": null
+			},
+			"new": {
+				"handed": [],
+				"prevented": 0,
+				"asked": "[]",
+				"threw": "TypeError: pointermove: the event's buttons could not be read: an object"
+			}
+		},
+		"code-getter-throws": {
+			"class": "field-read",
+			"method": "onKeyDown",
+			"equal": false,
+			"old": {
+				"handed": [
+					{
+						"route": "keyDown",
+						"args": "[]",
+						"event": "{\"type\":\"key-down\",\"button\":0,\"key\":\"a\",\"repeat\":false,\"shiftKey\":false,\"ctrlKey\":false,\"altKey\":false,\"metaKey\":false,\"onControl\":false,\"claimed\":false,\"capture\":false}"
+					}
+				],
+				"prevented": 0,
+				"asked": "[]",
+				"threw": null
+			},
+			"new": {
+				"handed": [],
+				"prevented": 0,
+				"asked": "[]",
+				"threw": "TypeError: keydown: the event's code could not be read: an object"
+			}
+		},
+		"button-getter-throws": {
+			"class": "refused-both",
+			"method": "onDown",
+			"equal": false,
+			"old": {
+				"handed": [],
+				"prevented": 0,
+				"asked": "[]",
+				"threw": "Error: button getter"
+			},
+			"new": {
+				"handed": [],
+				"prevented": 0,
+				"asked": "[]",
+				"threw": "TypeError: pointerdown: the event's button could not be read: an object"
+			}
+		},
+		"key-getter-throws": {
+			"class": "refused-both",
+			"method": "onKeyUp",
+			"equal": false,
+			"old": {
+				"handed": [],
+				"prevented": 0,
+				"asked": "[]",
+				"threw": "Error: key getter"
+			},
+			"new": {
+				"handed": [],
+				"prevented": 0,
+				"asked": "[]",
+				"threw": "TypeError: keyup: the event's key could not be read: an object"
+			}
+		},
+		"target-getter-throws": {
+			"class": "refused-both",
+			"method": "onUp",
+			"equal": false,
+			"old": {
+				"handed": [],
+				"prevented": 0,
+				"asked": "[]",
+				"threw": "Error: target getter"
+			},
+			"new": {
+				"handed": [],
+				"prevented": 0,
+				"asked": "[]",
+				"threw": "TypeError: pointerup: the event's target could not be read: an object"
+			}
+		},
+		"event-null": {
+			"class": "refused-both",
+			"method": "onDown",
+			"equal": false,
+			"old": {
+				"handed": [],
+				"prevented": 0,
+				"asked": "[]",
+				"threw": "TypeError: Cannot read properties of null (reading 'button')"
+			},
+			"new": {
+				"handed": [],
+				"prevented": 0,
+				"asked": "[]",
+				"threw": "TypeError: pointerdown: the event must be an object, not a function or a primitive"
+			}
+		},
+		"pointer-carries-key": {
+			"class": "other-family",
+			"method": "onDown",
+			"equal": false,
+			"old": {
+				"handed": [
+					{
+						"route": "press",
+						"args": "[]",
+						"event": "{\"type\":\"down\",\"button\":0,\"key\":\"x\",\"repeat\":true,\"shiftKey\":false,\"ctrlKey\":false,\"altKey\":false,\"metaKey\":false,\"at\":{\"x\":-25,\"y\":40},\"on\":{\"kind\":\"canvas\",\"id\":null},\"region\":{\"target\":null,\"overTarget\":false,\"action\":null,\"input\":null,\"owner\":null,\"control\":false,\"entity\":false},\"claimed\":false,\"capture\":false}"
+					}
+				],
+				"prevented": 0,
+				"asked": "[]",
+				"threw": null
+			},
+			"new": {
+				"handed": [
+					{
+						"route": "press",
+						"args": "[]",
+						"event": "{\"type\":\"down\",\"button\":0,\"key\":null,\"repeat\":false,\"shiftKey\":false,\"ctrlKey\":false,\"altKey\":false,\"metaKey\":false,\"at\":{\"x\":-25,\"y\":40},\"on\":{\"kind\":\"canvas\",\"id\":null},\"region\":{\"target\":null,\"overTarget\":false,\"action\":null,\"input\":null,\"owner\":null,\"control\":false,\"entity\":false},\"claimed\":false,\"capture\":false}"
+					}
+				],
+				"prevented": 0,
+				"asked": "[]",
+				"threw": null
+			}
+		},
+		"key-carries-button": {
+			"class": "other-family",
+			"method": "onKeyDown",
+			"equal": false,
+			"old": {
+				"handed": [
+					{
+						"route": "keyDown",
+						"args": "[]",
+						"event": "{\"type\":\"key-down\",\"button\":2,\"key\":\"a\",\"repeat\":false,\"shiftKey\":false,\"ctrlKey\":false,\"altKey\":false,\"metaKey\":false,\"onControl\":false,\"claimed\":false,\"capture\":false}"
+					}
+				],
+				"prevented": 0,
+				"asked": "[]",
+				"threw": null
+			},
+			"new": {
+				"handed": [
+					{
+						"route": "keyDown",
+						"args": "[]",
+						"event": "{\"type\":\"key-down\",\"button\":0,\"key\":\"a\",\"repeat\":false,\"shiftKey\":false,\"ctrlKey\":false,\"altKey\":false,\"metaKey\":false,\"onControl\":false,\"claimed\":false,\"capture\":false}"
+					}
+				],
+				"prevented": 0,
+				"asked": "[]",
+				"threw": null
+			}
+		},
+		"capture-no-pointerId": {
+			"class": "no-pointerId",
+			"method": "onDown",
+			"equal": false,
+			"old": {
+				"handed": [
+					{
+						"route": "press",
+						"args": "[]",
+						"event": "{\"type\":\"down\",\"button\":0,\"key\":null,\"repeat\":false,\"shiftKey\":false,\"ctrlKey\":false,\"altKey\":false,\"metaKey\":false,\"at\":{\"x\":-25,\"y\":40},\"on\":{\"kind\":\"canvas\",\"id\":null},\"region\":{\"target\":null,\"overTarget\":false,\"action\":null,\"input\":null,\"owner\":null,\"control\":false,\"entity\":false},\"claimed\":false,\"capture\":false}"
+					}
+				],
+				"prevented": 0,
+				"asked": "[[\"#undefined\"]]",
+				"threw": null
+			},
+			"new": {
+				"handed": [
+					{
+						"route": "press",
+						"args": "[]",
+						"event": "{\"type\":\"down\",\"button\":0,\"key\":null,\"repeat\":false,\"shiftKey\":false,\"ctrlKey\":false,\"altKey\":false,\"metaKey\":false,\"at\":{\"x\":-25,\"y\":40},\"on\":{\"kind\":\"canvas\",\"id\":null},\"region\":{\"target\":null,\"overTarget\":false,\"action\":null,\"input\":null,\"owner\":null,\"control\":false,\"entity\":false},\"claimed\":false,\"capture\":false}"
+					}
+				],
+				"prevented": 0,
+				"asked": "[]",
+				"threw": null
+			}
+		},
+		"capture-string-pointerId": {
+			"class": "no-pointerId",
+			"method": "onDown",
+			"equal": false,
+			"old": {
+				"handed": [
+					{
+						"route": "press",
+						"args": "[]",
+						"event": "{\"type\":\"down\",\"button\":0,\"key\":null,\"repeat\":false,\"shiftKey\":false,\"ctrlKey\":false,\"altKey\":false,\"metaKey\":false,\"at\":{\"x\":-25,\"y\":40},\"on\":{\"kind\":\"canvas\",\"id\":null},\"region\":{\"target\":null,\"overTarget\":false,\"action\":null,\"input\":null,\"owner\":null,\"control\":false,\"entity\":false},\"claimed\":false,\"capture\":false}"
+					}
+				],
+				"prevented": 0,
+				"asked": "[[\"1\"]]",
+				"threw": null
+			},
+			"new": {
+				"handed": [
+					{
+						"route": "press",
+						"args": "[]",
+						"event": "{\"type\":\"down\",\"button\":0,\"key\":null,\"repeat\":false,\"shiftKey\":false,\"ctrlKey\":false,\"altKey\":false,\"metaKey\":false,\"at\":{\"x\":-25,\"y\":40},\"on\":{\"kind\":\"canvas\",\"id\":null},\"region\":{\"target\":null,\"overTarget\":false,\"action\":null,\"input\":null,\"owner\":null,\"control\":false,\"entity\":false},\"claimed\":false,\"capture\":false}"
+					}
+				],
+				"prevented": 0,
+				"asked": "[]",
+				"threw": null
+			}
+		},
+		"double-no-pointerId-claimed": {
+			"class": "none",
+			"method": "onDblClick",
+			"equal": true,
+			"old": {
+				"handed": [
+					{
+						"route": "double",
+						"args": "[]",
+						"event": "{\"type\":\"double\",\"button\":0,\"key\":null,\"repeat\":false,\"shiftKey\":false,\"ctrlKey\":false,\"altKey\":false,\"metaKey\":false,\"at\":{\"x\":-25,\"y\":40},\"on\":{\"kind\":\"canvas\",\"id\":null},\"claimed\":false,\"capture\":false}"
+					}
+				],
+				"prevented": 1,
+				"asked": "[]",
+				"threw": null
+			},
+			"new": {
+				"handed": [
+					{
+						"route": "double",
+						"args": "[]",
+						"event": "{\"type\":\"double\",\"button\":0,\"key\":null,\"repeat\":false,\"shiftKey\":false,\"ctrlKey\":false,\"altKey\":false,\"metaKey\":false,\"at\":{\"x\":-25,\"y\":40},\"on\":{\"kind\":\"canvas\",\"id\":null},\"claimed\":false,\"capture\":false}"
+					}
+				],
+				"prevented": 1,
+				"asked": "[]",
+				"threw": null
+			}
+		},
+		"conversion-nan": {
+			"class": "conversion",
+			"method": "onMove",
+			"equal": false,
+			"old": {
+				"handed": [
+					{
+						"route": "move",
+						"args": "[]",
+						"event": "{\"type\":\"move\",\"button\":0,\"key\":null,\"repeat\":false,\"shiftKey\":false,\"ctrlKey\":false,\"altKey\":false,\"metaKey\":false,\"at\":{\"x\":\"#NaN\",\"y\":40},\"on\":{\"kind\":\"canvas\",\"id\":null},\"claimed\":false,\"capture\":false}"
+					}
+				],
+				"prevented": 0,
+				"asked": "[]",
+				"threw": null
+			},
+			"new": {
+				"handed": [],
+				"prevented": 0,
+				"asked": "[]",
+				"threw": "TypeError: toDrawing: the answer must hold finite numbers x and y"
+			}
+		},
+		"leave-no-transform": {
+			"class": "conversion",
+			"method": "leave",
+			"equal": false,
+			"old": {
+				"handed": [
+					{
+						"route": "leave",
+						"args": "[]",
+						"event": "#none"
+					}
+				],
+				"prevented": 0,
+				"asked": "[]",
+				"threw": null
+			},
+			"new": {
+				"handed": [],
+				"prevented": 0,
+				"asked": "[]",
+				"threw": "TypeError: Cannot read properties of null (reading 'inverse')"
+			}
+		},
+		"move-no-transform": {
+			"class": "none",
+			"method": "onMove",
+			"equal": true,
+			"old": {
+				"handed": [],
+				"prevented": 0,
+				"asked": "[]",
+				"threw": "TypeError: Cannot read properties of null (reading 'inverse')"
+			},
+			"new": {
+				"handed": [],
+				"prevented": 0,
+				"asked": "[]",
+				"threw": "TypeError: Cannot read properties of null (reading 'inverse')"
+			}
+		},
+		"key-number": {
+			"class": "key",
+			"method": "onKeyDown",
+			"equal": false,
+			"old": {
+				"handed": [
+					{
+						"route": "keyDown",
+						"args": "[]",
+						"event": "{\"type\":\"key-down\",\"button\":0,\"key\":5,\"repeat\":false,\"shiftKey\":false,\"ctrlKey\":false,\"altKey\":false,\"metaKey\":false,\"onControl\":false,\"claimed\":false,\"capture\":false}"
+					}
+				],
+				"prevented": 0,
+				"asked": "[]",
+				"threw": null
+			},
+			"new": {
+				"handed": [
+					{
+						"route": "keyDown",
+						"args": "[]",
+						"event": "{\"type\":\"key-down\",\"button\":0,\"key\":null,\"repeat\":false,\"shiftKey\":false,\"ctrlKey\":false,\"altKey\":false,\"metaKey\":false,\"onControl\":false,\"claimed\":false,\"capture\":false}"
+					}
+				],
+				"prevented": 0,
+				"asked": "[]",
+				"threw": null
+			}
+		},
+		"key-absent": {
+			"class": "none",
+			"method": "onKeyUp",
+			"equal": true,
+			"old": {
+				"handed": [
+					{
+						"route": "keyUp",
+						"args": "[]",
+						"event": "{\"type\":\"key-up\",\"button\":0,\"key\":null,\"repeat\":false,\"shiftKey\":false,\"ctrlKey\":false,\"altKey\":false,\"metaKey\":false,\"claimed\":false,\"capture\":false}"
+					}
+				],
+				"prevented": 0,
+				"asked": "[]",
+				"threw": null
+			},
+			"new": {
+				"handed": [
+					{
+						"route": "keyUp",
+						"args": "[]",
+						"event": "{\"type\":\"key-up\",\"button\":0,\"key\":null,\"repeat\":false,\"shiftKey\":false,\"ctrlKey\":false,\"altKey\":false,\"metaKey\":false,\"claimed\":false,\"capture\":false}"
+					}
+				],
+				"prevented": 0,
+				"asked": "[]",
+				"threw": null
+			}
+		},
+		"surface-no-setPointerCapture": {
+			"class": "surface",
+			"method": "open",
+			"equal": false,
+			"old": {
+				"handed": [],
+				"prevented": 0,
+				"asked": "{\"added\":[\"svg:pointerleave\",\"svg:pointerdown\",\"svg:pointermove\",\"svg:pointerup\",\"svg:pointercancel\",\"svg:pointerover\",\"svg:pointerout\",\"svg:dblclick\",\"host:keydown\",\"host:keyup\",\"host:contextmenu\"],\"removed\":[],\"listening\":[\"svg:pointerleave\",\"svg:pointerdown\",\"svg:pointermove\",\"svg:pointerup\",\"svg:pointercancel\",\"svg:pointerover\",\"svg:pointerout\",\"svg:dblclick\",\"host:keydown\",\"host:keyup\",\"host:contextmenu\"]}",
+				"threw": null
+			},
+			"new": {
+				"handed": [],
+				"prevented": 0,
+				"asked": "{\"added\":[],\"removed\":[],\"listening\":[]}",
+				"threw": "Error: capture: input-capture refused the canvas -- invalid-value at /surface"
+			}
+		},
+		"surface-no-removeEventListener": {
+			"class": "surface",
+			"method": "open",
+			"equal": false,
+			"old": {
+				"handed": [],
+				"prevented": 0,
+				"asked": "{\"added\":[\"svg:pointerleave\",\"svg:pointerdown\",\"svg:pointermove\",\"svg:pointerup\",\"svg:pointercancel\",\"svg:pointerover\",\"svg:pointerout\",\"svg:dblclick\",\"host:keydown\",\"host:keyup\",\"host:contextmenu\"],\"removed\":[],\"listening\":[\"svg:pointerleave\",\"svg:pointerdown\",\"svg:pointermove\",\"svg:pointerup\",\"svg:pointercancel\",\"svg:pointerover\",\"svg:pointerout\",\"svg:dblclick\",\"host:keydown\",\"host:keyup\",\"host:contextmenu\"]}",
+				"threw": null
+			},
+			"new": {
+				"handed": [],
+				"prevented": 0,
+				"asked": "{\"added\":[],\"removed\":[],\"listening\":[]}",
+				"threw": "Error: capture: input-capture refused the canvas -- invalid-value at /surface"
+			}
+		},
+		"host-no-removeEventListener": {
+			"class": "surface",
+			"method": "open",
+			"equal": false,
+			"old": {
+				"handed": [],
+				"prevented": 0,
+				"asked": "{\"added\":[\"svg:pointerleave\",\"svg:pointerdown\",\"svg:pointermove\",\"svg:pointerup\",\"svg:pointercancel\",\"svg:pointerover\",\"svg:pointerout\",\"svg:dblclick\",\"host:keydown\",\"host:keyup\",\"host:contextmenu\"],\"removed\":[],\"listening\":[\"svg:pointerleave\",\"svg:pointerdown\",\"svg:pointermove\",\"svg:pointerup\",\"svg:pointercancel\",\"svg:pointerover\",\"svg:pointerout\",\"svg:dblclick\",\"host:keydown\",\"host:keyup\",\"host:contextmenu\"]}",
+				"threw": null
+			},
+			"new": {
+				"handed": [],
+				"prevented": 0,
+				"asked": "{\"added\":[],\"removed\":[],\"listening\":[]}",
+				"threw": "Error: capture: input-capture refused the canvas -- invalid-value at /keys"
+			}
+		},
+		"add-throws-at-keydown": {
+			"class": "opening",
+			"method": "open",
+			"equal": false,
+			"old": {
+				"handed": [],
+				"prevented": 0,
+				"asked": "{\"added\":[\"svg:pointerleave\",\"svg:pointerdown\",\"svg:pointermove\",\"svg:pointerup\",\"svg:pointercancel\",\"svg:pointerover\",\"svg:pointerout\",\"svg:dblclick\",\"host:keydown\"],\"removed\":[],\"listening\":[\"svg:pointerleave\",\"svg:pointerdown\",\"svg:pointermove\",\"svg:pointerup\",\"svg:pointercancel\",\"svg:pointerover\",\"svg:pointerout\",\"svg:dblclick\",\"host:keydown\"]}",
+				"threw": "Error: addEventListener keydown refused"
+			},
+			"new": {
+				"handed": [],
+				"prevented": 0,
+				"asked": "{\"added\":[\"svg:pointerleave\",\"svg:pointerdown\",\"svg:pointermove\",\"svg:pointerup\",\"svg:pointercancel\",\"svg:pointerover\",\"svg:pointerout\",\"svg:dblclick\",\"host:keydown\"],\"removed\":[\"host:keydown\",\"svg:dblclick\",\"svg:pointerout\",\"svg:pointerover\",\"svg:pointercancel\",\"svg:pointerup\",\"svg:pointermove\",\"svg:pointerdown\",\"svg:pointerleave\"],\"listening\":[]}",
+				"threw": "Error: addEventListener keydown refused"
+			}
+		}
+	}
+}

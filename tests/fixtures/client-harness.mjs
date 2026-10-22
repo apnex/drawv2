@@ -40,6 +40,7 @@ import { CANVAS, GAP } from '../../app/src/snap.js';
 import { Input } from '../../app/src/input.js';
 import { RUN_PRESSES } from '../../app/src/run-mode.js';
 import { Capture } from '../../app/src/capture.js';
+import { parityCapture } from './capture-parity.mjs';   // H26.3: the old capture and the adapter side by side, when DRAW_CAPTURE_PARITY is set
 import { picksOf, regionsOf } from '../../app/src/pick.js';
 import { PRODUCT_CANVAS } from '../../product/canvas.mjs';
 import { networkInput } from '../../plugins/network/keys.mjs';
@@ -270,7 +271,9 @@ export function makeInput({ readOnly = false, bare = false, host: hostOverride =
 	} catch (e) { restore(); throw e; }   // a refused composition must not leave the stub DOM installed
 	if (readOnly) input.setReadOnly(true);
 	// L0: tests drive the page's events through capture, as a browser does -- Input itself takes only input events
-	const capture = new Capture({ svg, host, sink: input, picks: picksOf(parts), regions: regionsOf(parts) });   // C-b: the plugins' picks; C-f: run mode's regions, as the page composes them
+	const opened = { svg, host, sink: input, picks: picksOf(parts), regions: regionsOf(parts) };   // C-b: the plugins' picks; C-f: run mode's regions, as the page composes them
+	// H26.3 (INPUT-CAPTURE.md acceptance step 4): with DRAW_CAPTURE_PARITY naming a folder, the old capture and the adapter side by side
+	const capture = parityCapture(opened) ?? new Capture(opened);
 
 	return {
 		input, capture, model, history, selection, svg, commits, calls, restore, renderer, labels, tools, help, snap,
@@ -290,6 +293,36 @@ export function makeInput({ readOnly = false, bare = false, host: hostOverride =
 		},
 		opsOf(i = 0) { return commits[i]?.ops ?? []; },
 		reset() { commits.length = 0; calls.length = 0; dispatched.length = 0; },
+	};
+}
+
+/*
+H26.3 (dev/design/components/INPUT-CAPTURE.md section 5) -- THE PAGE'S EVENTS THROUGH THE LISTENERS A CAPTURE ADDED. `dispatchFor(open)`
+answers a function of `{ svg, host, sink, picks, regions }` that makes the fakes it is handed record each listener added to them while
+`open` runs -- the component's eight on the surface and two on the host, and the adapter's menu -- calls `open` with them, and answers
+the nine methods tests drive the canvas by, each calling the listener added for its event, as a browser calls it. An object's own
+`addEventListener` is kept and still called, so a test's host sees what it always saw; nothing else of a fake is touched.
+*/
+export function dispatchFor(open) {
+	return ({ svg, host, sink, picks = [], regions = {} }) => {
+		const listeners = new Map();
+		let opening = false;
+		for (const [fake, tag] of [[svg, 'svg'], [host, 'host']]) {
+			const given = fake.addEventListener;
+			if (typeof given !== 'function') continue;
+			fake.addEventListener = function (name, listener) {
+				if (opening) listeners.set(`${tag}:${name}`, listener);
+				return Reflect.apply(given, this, [name, listener]);
+			};
+		}
+		opening = true;
+		try { open({ svg, host, sink, picks, regions }); } finally { opening = false; }
+		const call = (key) => (evt) => listeners.get(key)(evt);
+		return {
+			onDown: call('svg:pointerdown'), onMove: call('svg:pointermove'), onUp: call('svg:pointerup'), onCancel: call('svg:pointercancel'),
+			onHover: (evt, entering) => listeners.get(entering ? 'svg:pointerover' : 'svg:pointerout')(evt),
+			onDblClick: call('svg:dblclick'), onKeyDown: call('host:keydown'), onKeyUp: call('host:keyup'), onContextMenu: call('host:contextmenu'),
+		};
 	};
 }
 
