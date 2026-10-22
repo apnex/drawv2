@@ -4,7 +4,7 @@ The third piece of H26's design of record (`dev/DECISIONS.md` H26-3, as H26-5 am
 It designs `input-capture`, the component that stands between a platform's input events and an application: each event on the surface it is given becomes one fact, in the application's coordinates, and what the application asks of that fact is done to the event.\
 It builds on part 1 (`SNAP-GRID.md`), whose section 7 is settled and built twice, and on part 2 (`INPUT-BINDING.md`), whose D1 left the shape of a fact to this piece; it states only where it differs from either, and cites rather than restates what their readings and builds settled.
 
-**Standing:** a design under review, revision 2, drafted 2026-10-22 after its first multi-family reading (section 10.1); revision 1 was `c7ea0c3`; the code read is `c7ea0c3`'s, identical in code to `3dcaba9`, after H26.7 moved every plugin under `plugins/`; the director answered D6 and D7 on 2026-10-22, each to be recorded as a ruling at ratification; not ratified, and its standing to be confirmed by a second reading.
+**Standing:** a design under review, revision 3, drafted 2026-10-22 after its second multi-family reading (section 10.2); revisions 1 and 2 were `c7ea0c3` and `703bc19`; the code read is `703bc19`'s, identical in code to `3dcaba9`, after H26.7 moved every plugin under `plugins/`; the director answered D6 and D7 on 2026-10-22, each to be recorded as a ruling at ratification; not ratified.
 
 ---
 
@@ -33,7 +33,7 @@ It does not decide:
 
 ## 2. What draw does with platform events today
 
-Read from the code at `3dcaba9` and rechecked at `c7ea0c3`, identical in code; appendix B lists every site, one row each, with what H26.3 does with it.\
+Read from the code at `3dcaba9` and rechecked at `703bc19`, identical in code; appendix B lists every site, one row each, with what H26.3 does with it.\
 `INPUT-BINDING.md` section 2.4 inventoried the fields and routes at `5b4997b` as capture's starting obligation; this section restates them where H26.2 moved Input's line numbers.
 
 ### 2.1 The listeners and the round trip
@@ -70,7 +70,7 @@ No code reads anything of `at` but its `x` and `y`: no position is spread, mutat
 - Input asks for the pointer only on a press a row matches (`:660`), after run mode's diversion (`:633`). A mouse or pen pointer not captured loses its moves once it leaves the canvas, and its release there; a touch is captured by the browser to the element pressed -- a child of the canvas -- before any listener runs, so its moves and its release off the canvas still arrive, that child their target; once Input takes the pointer its events are retargeted to the canvas, so `on` is the canvas during a drag, and the gestures find what lies under the pointer from the drawing point (`anchorAt`). Shown in headless Chrome with trusted input (`~/taceng/drawv2-eval-runs/h26-readings/ic/drafting/v2/chrome-platform.mjs`).
 - Pointer Events deliver a second mouse button pressed while one is held as a `pointermove`, so one mouse makes one press; a touch contact or a pen is a pointer of its own, `button` 0 on a touch's press, and the canvas takes touch as pointer events (`touch-action: none`, `app/canvas.css:9`); facts keep no `pointerId`, so a second pointer replaces the first's press (B409).
 - Keys arrive on the window: the palette's own `keydown` listener is registered first and spends an Escape that cancels a tile drag (`app/src/palette.js:46-52`), so capture starts only when a root calls `listen()` after its own listeners (`app/src/compose-canvas.js:80-82`, `app/src/main.js:93-97`); the label editor's field stops each of its key-downs (`app/src/labeledit.js:80-97`, `:148-158`), so no key-down typed there reaches the window, while every key-up does -- a Shift released in a field still reaches the key-release rows.
-- Nothing listens for `wheel`, `focus`, `blur`, `pointerenter`, `gotpointercapture`, `lostpointercapture`, a touch event, `gesturestart` or, for input, `visibilitychange` -- the page's one listener for it refreshes the undelete offer (`app/src/main.js:278`): a trackpad pinch arrives as a `wheel` with `ctrlKey` and the browser zooms the page; a touch pinch is two pointers; a key released while the page lacks focus makes no key-up (6.3).
+- Capture listens for no `wheel`, `focus`, `blur`, `visibilitychange`, `pointerenter`, `gotpointercapture`, `lostpointercapture`, touch event or `gesturestart`, and Input receives none: a trackpad pinch arrives as a `wheel` with `ctrlKey` and the browser zooms the page; a touch pinch is two pointers; a key released while the page lacks focus makes no key-up (6.3); and the page itself listens for `visibilitychange` on `document`, refreshing the undelete offer when the tab is shown again (`app/src/main.js:278`) -- draw's chrome, outside capture and Input, and no input.
 - The palette's tiles have their own press, pointer capture, move and release, no `pointercancel` listener, and their own click rule in screen pixels (`app/src/palette.js:29`, `:104`, `:128-174`; B407).
 
 ### 2.4 Who opens it, and what holds it
@@ -159,9 +159,9 @@ So it cannot reach beyond the surface and the key source it is given, and the sa
 
 **IC2 -- How values are read.**\
 These are the rules the first two components settled (`SNAP-GRID.md` and `INPUT-BINDING.md` section 11, each component's decision record, D2):
-1. The declaration is read as `input-binding` reads one (`INPUT-BINDING.md` section 3.3, IB2 rules 1 to 3 and 6): a plain object's own data properties by descriptor, a property read only when its own keys hold it, an accessor of no form, an inherited property absent, a symbol-named property ignored, a property present as `undefined` of no form, reflection that throws making its value of no form, and a key its own keys list whose descriptor reads `undefined` absent.
+1. The declaration is read as `input-binding` reads one (`INPUT-BINDING.md` section 3.3, IB2 rules 1 to 3 and 6): a plain object's own data properties by descriptor, a property read only when its own keys hold it, an accessor of no form, an inherited property absent, a symbol-named property ignored, a property present as `undefined` of no form, and a key its own keys list whose descriptor reads `undefined` absent; and reading a value stops at the first reflection that refuses it, a reflection that throws refusing the value it was made on, as `input-binding` reads a record -- so a declaration whose prototype, own keys or descriptor cannot be read is `not-an-object` at `""`, nothing further read, and a surface or key source whose member cannot be read is refused at its own pointer.
 2. Its order: its prototype; its own keys; the descriptors of `surface`, `keys`, `toDrawing`, `hit`, `focus` and `deliver` its own keys hold, in that order; then, when `surface` holds an object, its `addEventListener`, `removeEventListener` and `setPointerCapture`, and when `keys` holds one, its `addEventListener` and `removeEventListener` -- each through ordinary property access, judged as it is read, the reading of that object stopping at the first member whose read throws or which is not a function; the key source's members are read whatever the surface's were.
-3. An event is judged by `typeof` alone, which runs no trap, and its prototype is never read; its fields are read once each through ordinary property access, a browser's being inherited accessors, in IC6's order, each judged as it is read, the reading stopping at the first refused.
+3. An event is judged by `typeof` alone, which runs no trap, and its prototype is never read; its fields are read once each through ordinary property access, a browser's being inherited accessors, in IC6's order, each judged as it is read, the reading stopping at the first refused -- `clientX` judged before `clientY` is read, since an event is not a point.
 4. The conversion's answer is judged by `typeof`, and its `x` and then its `y` are read through ordinary property access, so a `DOMPoint`'s getters answer, both before either is judged, as `snap-grid` reads a point.
 5. An object is a non-null value whose `typeof` is `'object'`, so a function never is one; a function is a value whose `typeof` is `'function'`.
 
@@ -178,7 +178,7 @@ A problem is `{ pointer, problem }` as `input-binding`'s IB3 defines one, ordere
 
 | Step | When | Problem, at pointer |
 |---|---|---|
-| 1 | the declaration is not a plain object | `not-an-object` at `""`, and nothing else |
+| 1 | the declaration is not a plain object, or a reflection on it throws | `not-an-object` at `""`, and nothing else |
 | 2 | an own property other than the six; `surface`, `toDrawing` or `deliver` absent | `unknown-property` at `/<name>`, one each; `missing-property` at `/<name>` |
 | 3 | `surface` an accessor or not an object, or a member of it refused as IC2 reads it | `invalid-value` at `/surface` |
 | 4 | `keys` present and an accessor or not an object, or a member of it refused | `invalid-value` at `/keys` |
@@ -188,11 +188,11 @@ A problem is `{ pointer, problem }` as `input-binding`'s IB3 defines one, ordere
 **The lifecycle,** each rule stated here once:
 1. A capture is *opening* while `openCapture` adds its listeners, *open* once every one is added, and *closed* from the moment `close` is first called; a listener of a capture not open reads nothing and calls nothing, so an event the platform delivers during opening, or once `close` has begun, makes no fact; a fact begun while the capture was open is made and delivered even if `close` is called meanwhile.
 2. `openCapture` calls no platform method until the declaration is judged; it then adds the listeners IC4 lists, in its order, each through the `addEventListener` read as it opened, with two arguments, the event's name and the listener.
-3. If an `addEventListener` throws, it removes the listeners already added, in the reverse of the order added, attempting every removal, and then throws the error the `addEventListener` threw, unchanged; the capture is never open.
+3. If an `addEventListener` throws, it removes that very listener -- which the platform may have added before throwing, and whose removal is harmless if not -- and then the listeners already added, in the reverse of the order added, attempting every removal, and then throws the error the `addEventListener` threw, unchanged; the capture is never open.
 4. Otherwise it returns `{ ok: true, capture }`, `capture` a frozen `{ close }`.
 5. `close()`, on its first call, closes the capture, then removes every listener it added, in the reverse of the order added, through the `removeEventListener` read as it opened, attempting every removal; it then throws the first error a removal threw, unchanged, or returns `undefined`; every later call, one from inside a removal among them, returns `undefined` and calls nothing.
 
-So an operation that calls the platform more than once attempts every call it owes and then throws the first error met; and a capture whose removal failed is closed all the same, the listener left on the platform making no fact.
+So an operation that calls the platform more than once attempts every call it owes and then throws the first error met; no listener of a capture that failed to open, or that closed, is left on the platform unless a removal threw; and a listener so left makes no fact.
 
 **IC4 -- Which events become facts.**\
 Each listener of an open capture makes one fact from the event it is called with, synchronously, and delivers it before it returns, unless it refuses the event (IC6); capture queues, merges, defers and synthesizes nothing, so the platform's own sequence -- a second mouse button as a move, a touch contact as a pointer of its own -- is the facts' sequence.
@@ -238,7 +238,7 @@ A fact holds no time, no event, no target and no function, so a fact made from p
 **IC6 -- Making a fact.**\
 For each event a listener of an open capture receives, in this order, refusing the event -- Errors' `TypeError`, nothing after it read or called -- where a step says so:
 1. it refuses the event unless it is an object;
-2. for a pointer event it reads `clientX` and `clientY`, refusing the event unless both are finite numbers; then `button`, refusing it unless `undefined`, `null` or a safe integer; then `buttons`, `pointerId`, `pointerType`, the modifiers, `target` and `preventDefault`, refusing it unless `preventDefault` is a function; for a key event it reads `key`, `code`, `repeat`, the modifiers, `target` and `preventDefault`, refusing it likewise, and reads and judges no coordinate and no button;
+2. for a pointer event it reads `clientX`, refusing the event unless it is a finite number, then `clientY`, likewise; then `button`, refusing it unless `undefined`, `null` or a safe integer; then `buttons`, `pointerId`, `pointerType`, the modifiers, `target` and `preventDefault`, refusing it unless `preventDefault` is a function; for a key event it reads `key`, `code`, `repeat`, the modifiers, `target` and `preventDefault`, refusing it likewise, and reads and judges no coordinate and no button;
 3. for a pointer event it calls the conversion with the screen point, a fresh frozen point, and reads the answer as IC2 rule 4 says, refusing the event unless it is an object whose `x` and `y` are finite numbers;
 4. it makes the fact with `hit` and `focus` `null`, hands it with the target to `hit` for a pointer fact or to `focus` for a key fact, when that function is given, and makes the fact to deliver, a fresh frozen record of the same form holding the answer;
 5. it calls `deliver` with the fact and a fresh reply.
@@ -304,11 +304,11 @@ There is no conformance kit (D10): nothing in `input-capture` is a port another 
 
 | # | Invariant | Held by |
 |---|---|---|
-| I1 | `openCapture` never throws while it judges a declaration, and answers every declaration with exactly IC3's problems, from a table of cases: present `undefined`, accessors, a phantom key, a revoked and a trapping `Proxy`, a function as the surface, a surface lacking each member in turn, a member that is not a function followed by one whose getter would change the key source -- never read -- and `focus` without `keys`. | `input-capture` |
-| I2 | An open capture has added exactly IC4's listeners, in its order, on the right object, with two arguments, before `openCapture` returns, and eight without a key source; an `addEventListener` throwing at each place in turn leaves none added and throws its error; `close` removes every listener in reverse order, attempting each when one throws and then throwing the first error; a second `close`, and one made from inside a removal, calls nothing; a listener called during opening or after `close` makes no fact, while a fact begun before `close` is delivered with a live reply. | `input-capture` |
+| I1 | `openCapture` never throws while it judges a declaration, and answers every declaration with exactly IC3's problems, from a table of cases: present `undefined`, accessors, a phantom key, a revoked and a trapping `Proxy`, a function as the surface, a surface lacking each member in turn, a member that is not a function followed by one whose getter would change the key source -- never read -- a declaration whose descriptor read throws -- `not-an-object` at `""`, no later descriptor read -- and `focus` without `keys`. | `input-capture` |
+| I2 | An open capture has added exactly IC4's listeners, in its order, on the right object, with two arguments, before `openCapture` returns, and eight without a key source; an `addEventListener` throwing at each place in turn, before or after adding its listener, leaves none added and throws its error; `close` removes every listener in reverse order, attempting each when one throws and then throwing the first error; a second `close`, and one made from inside a removal, calls nothing; a listener called during opening or after `close` makes no fact, while a fact begun before `close` is delivered with a live reply. | `input-capture` |
 | I3 | Capture touches nothing of the platform outside IC1: with a surface, key source, events and targets that are recording `Proxy` values and spies, opening, a `pointerdown` whose delivery claims and takes the pointer, a `keydown` whose delivery claims, and `close` log exactly IC1's reads in IC2's and IC6's orders and each platform call once, in IC3's and IC8's orders, the targets' logs empty. | `input-capture` |
 | I4 | Every reading of IC5 from a table of events: `button` absent, `null`, `-1` and `2`; `buttons`, `pointerId`, `pointerType`, `key` and `code` absent or of another type; modifiers and `repeat` of every truthiness; a fractional `clientX`; an ordinary key event, holding no pointer field. | `input-capture` |
-| I5 | Spies log each event's reads and calls in IC6's order; an event refused at each place stops the reading there, no later field read and no application function called; `hit` is never called for a key fact, nor `focus` for a pointer fact. | `input-capture` |
+| I5 | Spies log each event's reads and calls in IC6's order; an event refused at each place stops the reading there, no later field read and no application function called -- a `clientX` refused leaves a `clientY` getter that would close the capture unread; `hit` is never called for a key fact, nor `focus` for a pointer fact. | `input-capture` |
 | I6 | `screen` holds exactly the event's numbers and `at` exactly the conversion's, under `Object.is`, `-0` and a getter-backed point among them, `x` and `y` both read before either is judged; a conversion answering a function, `null`, `NaN` or an infinity refuses the event. | `input-capture` |
 | I7 | Every fact, its `at` and `screen`, every reply and every open result are fresh and frozen to their depth, not into `hit` or `focus`, which are the very values answered; keys in their written order; no function needs a receiver; a fact's JSON round trip loses only `-0`. | `input-capture` |
 | I8 | `claim` calls `preventDefault` once, at once, and a throwing one spends it; `takePointer` calls `setPointerCapture` once with the fact's `pointerId`, answering `false` when it throws and calling nothing when `pointerId` is `null`; a `takePointer` made again from inside `setPointerCapture`, through its getter or its body, throws and calls nothing, the outer call then answering as IC8 says; both throw once delivery has ended; what a throwing delivery asked is done. | `input-capture` |
@@ -341,10 +341,10 @@ The fakes are plain objects whose `addEventListener` records each listener, and 
 | `keys` | `host`, the page's `window`, as today |
 | `toDrawing` | `(screen) => toCanvas({ clientX: screen.x, clientY: screen.y }, svg)`, `app/src/painter.js:29-32` unchanged, reading the screen transform at each event |
 | `hit` | `(target, event) => ...`: `null` on a `leave`; otherwise `{ on, region }`, `on` from `hitWith(picks)` handed `{ target }` and the fact's modifiers (`app/src/pick.js:53-83`, unchanged), and `region` from `regionOf(target, regions)` on a `down` alone, else `null` (`app/src/capture.js:38-53`) |
-| `focus` | `(target, event) => ...`: on a `key-down` alone `{ typing, onControl }`, today's field test and control test (`:32-34`, `:64`, `:70`), else `null` |
+| `focus` | `(target, event) => ...`: on a `key-down` alone, today's field test first (`:70`) -- `{ typing: true, onControl: false }` when the key is typed into a field, the control test not run -- and otherwise `{ typing: false, onControl }`, today's control test (`:32-34`, `:64`); else `null` |
 | `deliver` | the round trip below |
 
-So the hit test runs on exactly the events `hitOf` ran on today, and the field and control tests on the one event they ran on; and the adapter names each function's fact `event`, so it reads `event.type`, the form `tests/canvas-names-no-plugin.test.js` exempts from its plugin-field count.
+So the hit test runs on exactly the events `hitOf` ran on today, the field test on every key-down and the control test on every key-down not typed into a field, as today; and the adapter names each function's fact `event`, so it reads `event.type`, the form `tests/canvas-names-no-plugin.test.js` exempts from its plugin-field count.
 
 **The round trip,** each step today's:
 1. A `leave` calls `sink.leave()`, and a `key-down` whose focus is `typing` is dropped, as today's capture drops it.
@@ -362,7 +362,7 @@ So every row, Input, the session and the plugins' rows read and write the event 
 **The test harness** gains `captureDispatch({ svg, host, sink, picks, regions })`, which makes the fakes it is handed record the listeners added to them, calls `captureCanvas`, and answers the nine methods of section 2.4, each calling the listener the component or the adapter added; `makeInput` hands it as `h.capture`, so the 428 calls are unchanged, and the harness's fake elements gain a `setPointerCapture` that throws, as a browser refuses a synthetic pointer and as today's capture swallowed the fakes' missing one.\
 `tests/input-capture.test.js` builds through `captureDispatch` where it built the class, its fakes gaining the `removeEventListener` IC3 requires; its tests stay as they are, the reading of fields moving to the component's own; `tests/input.test.js`'s B45 test finds the same three host listeners, two the component's and the menu's.
 
-A drafting prototype -- the component's reading, facts, reply and lifecycle as section 3 states them, the adapter, `captureDispatch` and the restated `tests/input-capture.test.js` as above, in a copy of the tree -- passes all 504 tests of the 40 files that drive or compose the canvas, the gesture corpus's 92 scenarios byte-identical among them, with `tests/canvas-names-no-plugin.test.js`, `tests/canvas-chrome.test.js` and `tools/scan-dead.mjs` (`~/taceng/drawv2-eval-runs/h26-readings/ic/drafting/`, `v2/` and `tree/`); of the 2,099 tests in the files that launch no browser, it fails five -- three that need a git checkout, failing on an untouched copy of the tree too, and two that run `scan-layers`, which refuses the prototype's import of the component by path, where the build imports the package by the name `COMPONENTS` admits; a recording run shows revision 1's prototype touching exactly IC1's members and never the target (`platform-members.mjs` there).
+A drafting prototype -- the component's reading, facts, reply and lifecycle as section 3 states them, revised for each finding of the second reading (`drafting/v3/`), the adapter, `captureDispatch` and the restated `tests/input-capture.test.js` as above, in a copy of the tree -- passes all 504 tests of the 40 files that drive or compose the canvas, the gesture corpus's 92 scenarios byte-identical among them, with `tests/canvas-names-no-plugin.test.js`, `tests/canvas-chrome.test.js` and `tools/scan-dead.mjs` (`~/taceng/drawv2-eval-runs/h26-readings/ic/drafting/`, `v2/` and `tree/`); of the 2,099 tests in the files that launch no browser, it fails five -- three that need a git checkout, failing on an untouched copy of the tree too, and two that run `scan-layers`, which refuses the prototype's import of the component by path, where the build imports the package by the name `COMPONENTS` admits; a recording run shows revision 1's prototype touching exactly IC1's members and never the target (`platform-members.mjs` there).
 
 **Stays draw's,** because it is draw's content or policy:
 - what lies under a pointer (`app/src/pick.js`), where a screen point lies in the drawing (`app/src/painter.js`), run mode's regions, which keys a field keeps and whether focus is on a control;
@@ -403,7 +403,7 @@ H26.3 is an extraction: it changes nothing any input of draw's pages produces, a
 - a conversion answering no point with finite coordinates refuses the event, where today Input received it and the session threw on a press or a move -- and a `leave` while the canvas has no screen transform, which only an unrendered canvas has and nothing in draw hides, now throws where `leave()` was called, as every other pointer event already threw;
 - a key event whose `key` is not a string has `key` `null`, where today it was carried;
 - a surface lacking `setPointerCapture`, `addEventListener` or `removeEventListener`, or a key source lacking either of its two, is refused when the capture opens, where today each pointer capture's failure was swallowed; draw's canvas and window hold them, and the harness's fakes gain the first;
-- an `addEventListener` that throws as the capture opens takes back the listeners added before it, where today those stayed.
+- an `addEventListener` that throws as the capture opens takes back every listener it added, the one whose adding threw among them, where today those added before it stayed.
 
 **Kept, each registered for its own ruling:**
 - one press for every pointer (B409), unchanged: the fact carries `pointerId`, draw's event does not;
@@ -458,14 +458,15 @@ The ruling that ratifies this piece is written `H26-r` below until it has its nu
 ## 9. Axiom alignment audit (M7)
 
 **Identity.**\
-H26.0 part 3 at revision 2, read against `c7ea0c3`, identical in code to `3dcaba9`, and mission-kit at `e33c850`, audited in three layers:
+H26.0 part 3 at revision 3, read against `703bc19`, identical in code to `3dcaba9`, and mission-kit at `e33c850`, audited in three layers:
 - the library: T1's test applied -- capture writes whether it is open, with the listeners it added, reads both back at every event and at `close`, and its owner relies on them, no fact following `close` -- so `declared-capture` is stateful, narrowly, and A1 binds it; the facts and the reply hold nothing between events; it coordinates no actors and runs no model;
 - the release process: unchanged from part 1, built twice;
 - the consumer: draw, stateful, multi-agent and autonomous as `MISSION-KIT-ALIGNMENT.md` section 5 reads it, to which the move adds a third installed component and changes no state it holds.
 
 **Verdict.**\
 Revision 1 was `revise-before-implementation`, by its first reading: how a capture opens when the platform throws, how it closes when a removal throws or re-enters, what a re-entrant `takePointer` answers, and where the reading of a platform object or an event stops were each open, and builders reading them two ways would differ in what the platform is left holding (section 10.1).\
-Revision 2 is `pass, with guardrails`, by its author; its standing is to be confirmed by a second reading.
+Revision 2 was `revise-before-implementation`, by its second reading: IC2 judged each event field as it was read while IC6 read `clientX` and `clientY` before judging either, and a `clientY` getter that closes the capture made the two orders leave the platform holding eight listeners or none; a reflection on the declaration that threw was refused at the property, not the declaration, as the adopted rule has it; an `addEventListener` that adds its listener and then throws left that listener behind; and the adapter ran the control test on keys typed into a field (section 10.2).\
+Revision 3 is `pass, with guardrails`, by its author.
 
 | Layer | Axiom | Weight | How the design stands |
 |---|---|---|---|
@@ -556,6 +557,25 @@ The director answered D6 and D7 while the reading ran.
 | x:F3 | the reply's lifetime and re-entry underspecified | **Not changed in substance**, as `a` and `o` found: revision 1 ended the reply when `deliver` returned or threw and allowed nesting; IC3 and IC8 now state each re-entry once (o:F2, o:F3). |
 | x:F4 | D7 carries fields against P4 | **Not changed**, as `a` and `o` found: the director answered D7 as recommended. |
 
+### 10.2 Reading 2 -- 2026-10-22, of revision 2 at `703bc19`
+
+Read cold through context-lab's review panel, `--tools on --verify`, the document read from disk, by the same three, none of which drafted it, the reading kept whole at `~/taceng/drawv2-eval-runs/h26-readings/ic/reading-2/` outside the repository.\
+It reported 9 findings: none from `a`, 4 from `o` and 5 from `x`; 2 blocking, 6 should-fix and 1 minor.\
+Every reader returned verdicts: `a` supported all 4 of `o`'s and `x` 3 of them, its verdict on the fourth refuting it in words that agree with it; `a` refuted all 5 of `x`'s, and `o` 4, supporting x:F2.\
+Every finding was read against the code at `703bc19`, and each behavioural claim was run, against revision 2's prototype and revision 3's, and today's capture against each revision's adapter (`~/taceng/drawv2-eval-runs/h26-readings/ic/drafting/v3/reading-2.mjs`); revision 2's lifecycle cases were run again on revision 3 (`lifecycle.mjs` there).
+
+| Finding | What it said | Disposition, and why |
+|---|---|---|
+| o:F1 | IC2 judges each event field as it is read, IC6 reads `clientX` and `clientY` before judging either | **Fixed**, reproduced: with `clientX` `NaN` and a `clientY` getter that closes the capture, revision 2's prototype read both and was closed, eight listeners gone, where IC2's order leaves all eight. IC6 step 2 now reads and judges `clientX` before reading `clientY`, IC2 rule 3 saying why -- an event is not a point, whose `x` and `y` are read together -- and I5 holds the case. |
+| o:F2 | a throwing reflection on the declaration is refused at the property, against the rule adopted from `input-binding` | **Fixed**, reproduced: revision 2's prototype answered `invalid-value` at `/toDrawing` and read on, where `input-binding`'s reader refuses the record whose reflection threw. IC2 rule 1 states the rule as binding applies it -- `not-an-object` at `""`, nothing further read -- IC3's step 1 names it, and I1 holds the case. |
+| o:F3 | an `addEventListener` that adds its listener and then throws leaves it behind | **Fixed**, reproduced -- revision 2's prototype left `pointermove` added: lifecycle rule 3 removes that very listener first, harmless if it was never added, then the rest in reverse; I2 throws before and after adding, and the closing sentence names the one way a listener can still be left, a removal that throws. |
+| o:F4 | the adapter runs the control test on a key-down typed into a field, which today's capture drops first | **Fixed**, reproduced: with a typed key-down whose target's `closest` throws, today's capture and revision 3's adapter return, revision 2's threw. Draw's `focus` runs the field test first and the control test only on a key not typed into a field (section 5). |
+| x:F1 | section 2.1 misses `pointerenter`, `gotpointercapture`, `lostpointercapture`, focus and blur | **Not changed**, as `a` and `o` found: section 2.1 lists the listeners draw adds today, which include none of them, and section 2.3 and IC4 name each as absent. |
+| x:F2 | section 2.3 claims no `visibilitychange` listener, but `app/src/main.js:278` has one | **Clarified**, as `o` supported: the listener exists, on `document`, and revision 2 named it, but in a sentence opening "Nothing listens"; section 2.3 now says capture listens for none and the page's own listener refreshes the undelete offer, draw's chrome outside capture. IC4's list is capture's, and stays. |
+| x:F3 | key facts carry no `button` or `repeat` in IC5, but the adapter sets them | **Not changed**, as `a` and `o` found: IC5 gives a key fact `button` `null` and the event's `repeat`; the adapter writes draw's own event from the fact, `0` and `false` where today's literal wrote them (section 5, step 2; 6.2). |
+| x:F4 | IC6 step 2 reads coordinates and `button` for key events | **Not changed**, as `a` and `o` found: the step read them for a pointer event alone and said a key event's are never read; o:F1's fix restates the step. |
+| x:F5 | 6.3 omits refused events and the early `preventDefault` read | **Not changed**, as `a` and `o` found: 6.3 lists the refused events and 6.2 the early read; the one path the reading found absent was o:F4's, now gone. |
+
 ---
 
 ## Appendix A -- `input-capture`'s vision, the draft put to the director
@@ -592,7 +612,7 @@ Held by the director; drafted by anyone, ratified only by the director; amended,
 
 ## Appendix B -- every site H26.3 touches
 
-From the inventory of `3dcaba9`, rechecked at `c7ea0c3`, paths as H26.7 left them: product code, and the records that name it.\
+From the inventory of `3dcaba9`, rechecked at `703bc19`, paths as H26.7 left them: product code, and the records that name it.\
 *moves* -- to `input-capture`, through the adapter; *stays* -- draw's content or policy, unchanged; *kept* -- behaviour kept exactly, registered (6.3); *plumbing* -- an import, a record or a line that goes or is repointed; *unchanged* -- a site that names what moves, or lies on an input route, and needs no edit.
 
 | Site | Today | H26.3 |
