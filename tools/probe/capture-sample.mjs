@@ -15,6 +15,17 @@ in its key order -- `at` as its x and y -- with what Input wrote back (`claimed`
 `defaultPrevented`, read once its dispatch has ended by a window listener registered before the page's own. The two sides' records must
 be equal, scenario by scenario. What `at` is on each side is reported apart: the conversion's own `DOMPoint` before the move, a frozen
 `{ x, y }` record of the same numbers after it (section 6.2).
+AMENDED at H26.3's verification (V7): a boundary event Chrome fires while it processes a pointer capture -- the pointerout and
+pointerover it fires as the press that took the pointer is processed (before its `gotpointercapture`, as measured), and those after
+a `lostpointercapture`, each reaching Input as a hover -- carries the `button` of whichever pointer event Chrome processes the capture
+with, the press's or release's or the next move's, as its timing falls; so a hover arriving after a press that took the pointer, or
+after a capture was lost, and before Input's next press, move, release, cancel or double click, has its `button` recorded as
+`capture-boundary` on both sides. Nothing in draw reads a hover's `button` (app/src/input.js `hover`, app/src/overlay.js), and the
+side-by-side holds it field for field over synthetic events (tests/input-capture-parity.test.js). The report counts them.
+And a boundary event Chrome repeats on its own clock -- the pointerover it fires again when the drawing under a still pointer is
+redrawn, as a committed link redraws its end device, early or late as the redraw falls -- reaches Input as a hover identical to the
+one before it, with nothing between, and changes nothing there; such a repeat is folded into the one before, in Input's events and
+in the platform's alike, and the report counts the repeats folded on each side apart from what is compared.
 
   node tools/probe/capture-sample.mjs [--baseline <commit>] [--candidate <commit>] [--out DIR]
       the baseline defaults to 87d206b, the last commit before the move; the candidate is the working tree when not named
@@ -111,7 +122,10 @@ async function tab(url) {
 		window.__platform = [];
 		for (const type of ['pointerdown','pointermove','pointerup','pointercancel','pointerover','pointerout','pointerleave','dblclick','keydown','keyup','contextmenu','click','mousedown','touchstart','touchmove','touchend']) {
 			window.addEventListener(type, (e) => { const rec = [type, e.target && (e.target.id || e.target.tagName), e.pointerType ?? null, e.key ?? null]; setTimeout(() => { rec.push(e.defaultPrevented); window.__platform.push(rec); }, 0); }, { capture: true });
-		}` });
+		}
+		// V7: a pointer capture taken or lost -- the boundary events Chrome fires with it carry a button of its timing's choosing
+		window.__captureEdge = false;
+		for (const type of ['gotpointercapture', 'lostpointercapture']) window.addEventListener(type, () => { window.__captureEdge = true; }, { capture: true });` });
 	await send('Page.navigate', { url });
 	const close = async () => { ws.close(); await fetch(`http://127.0.0.1:${cdpPort}/json/close/${t.id}`); };
 	return { send, ev, close, thrown };
@@ -165,14 +179,26 @@ const HOOK = `(() => {
 	for (const m of ['press', 'move', 'release', 'cancelDrag', 'hover', 'double', 'keyDown', 'keyUp', 'leave']) {
 		const f = i[m].bind(i);
 		i[m] = (e, ...more) => {
-			const before = e ? JSON.stringify(Object.fromEntries(Object.entries(e).map(([k, v]) => [k, k === 'at' ? [v.x, v.y] : v]))) : null;
+			// V7: a hover after a press that took the pointer, or after a capture changed, before the next pointer event of Input's own,
+			// is a capture's boundary event
+			const pointer = ['press', 'move', 'release', 'cancelDrag', 'double'].includes(m);
+			if (pointer) window.__captureEdge = false;
+			const boundary = m === 'hover' && window.__captureEdge;
+			const before = e ? JSON.stringify(Object.fromEntries(Object.entries(e).map(([k, v]) => [k, k === 'at' ? [v.x, v.y] : boundary && k === 'button' ? 'capture-boundary' : v]))) : null;
 			if (e && e.at) window.__atShape.add((Object.isFrozen(e.at) ? 'frozen ' : '') + (Object.getPrototypeOf(e.at)?.constructor?.name ?? 'null') + ' ' + Object.keys(e.at).join(','));
-			try { return f(e, ...more); } finally { window.__input.push([m, before, more, e ? [e.claimed, e.capture, e.trigger ?? null] : null]); }
+			try { return f(e, ...more); } finally {
+				window.__input.push([m, before, more, e ? [e.claimed, e.capture, e.trigger ?? null] : null]);
+				if (pointer && e?.capture) window.__captureEdge = true;   // the press took the pointer: Chrome's boundary events follow
+			}
 		};
 	}
 	return true;
 })()`;
 const READ = `(() => {
+	// V7: a hover identical to the one before it, nothing between, is a boundary event Chrome repeated: folded into it; and the platform's
+	const input = window.__input.filter((x, k, all) => !(k && x[0] === 'hover' && JSON.stringify(x) === JSON.stringify(all[k - 1])));
+	const raw = window.__platform.map((r) => r.join(' '));
+	const platform = raw.filter((x, k) => !(k && /^pointer(over|out) /.test(x) && x === raw[k - 1]));
 	const doc = window.draw.model.toJSON(), names = new Map(), seen = {};
 	const name = (id) => { if (!names.has(id)) { const e = [...doc.nodes, ...doc.links, ...doc.zones].find((x) => x.id === id); const k = id.split('-')[0]; seen[k] = (seen[k] ?? 0) + 1; names.set(id, e?.name && /^[abcz]$/.test(e.name) ? e.name : k + '#' + seen[k]); } return names.get(id); };
 	const c = document.getElementById('container');
@@ -183,8 +209,8 @@ const READ = `(() => {
 		selection: window.draw.selection.list().map(name).sort(),
 		container: [...c.classList].sort(), zoneGrid: getComputedStyle(document.getElementById('grid-zones')).visibility,
 		editor: !!document.querySelector('#label-editor:not([hidden]), input.label-editor') , active: document.activeElement ? (document.activeElement.id || document.activeElement.tagName) : null,
-		input: window.__input, triggers: window.__input.filter((x) => x[0] === 'release').map((x) => x[3][2]),
-		platform: window.__platform.map((r) => r.join(' ')),
+		input, triggers: input.filter((x) => x[0] === 'release').map((x) => x[3][2]), boundary: input.filter((x) => x[0] === 'hover' && x[1].includes('"capture-boundary"')).length,
+		platform, repeats: [window.__input.length - input.length, window.__platform.length - platform.length],
 	};
 })()`;
 
@@ -213,13 +239,13 @@ try {
 			got.push({ page, stored: { nodes: stored.nodes.map((x) => [x.name, x.type ?? null, x.x, x.y]).sort(), links: stored.links.length, zones: stored.zones.map((z) => [z.x, z.y, z.w, z.h]) }, thrown: t.thrown, atShape });
 			await t.close();
 		}
-		const strip = (g) => ({ ...g, atShape: undefined });
+		const strip = (g) => ({ ...g, atShape: undefined, page: { ...g.page, repeats: undefined } });
 		const same = JSON.stringify(strip(got[0])) === JSON.stringify(strip(got[1]));
 		if (!same) failed = true;
 		report.scenarios[title] = { same, baseline: got[0], candidate: got[1] };
 		const p = got[1].page;
 		const prevented = p.platform.filter((x) => x.endsWith(' true')).map((x) => x.split(' ')[0]);
-		console.log(`  ${same ? 'same' : 'DIFFERENT'}  ${title}: ${p.input.length} input event(s) [${[...new Set(p.input.map((x) => x[0]))].join(' ')}], ${p.platform.length} platform event(s), prevented [${[...new Set(prevented)].join(' ')}], triggers [${p.triggers.join(' ')}], selection [${p.selection.join(' ')}], links ${p.links.length}, thrown ${got[1].thrown.length}`);
+		console.log(`  ${same ? 'same' : 'DIFFERENT'}  ${title}: ${p.input.length} input event(s) [${[...new Set(p.input.map((x) => x[0]))].join(' ')}], ${p.platform.length} platform event(s), prevented [${[...new Set(prevented)].join(' ')}], triggers [${p.triggers.join(' ')}], selection [${p.selection.join(' ')}], links ${p.links.length}, thrown ${got[1].thrown.length}, capture-boundary hovers ${p.boundary}, repeats folded ${got.map((g) => g.page.repeats.join('+')).join(' / ')}`);
 	}
 	const shapes = Object.values(report.scenarios).map((s) => [s.baseline.atShape, s.candidate.atShape]);
 	console.log(`  at, as Input received it -- baseline: ${[...new Set(shapes.flatMap((s) => s[0]))].join('; ')}; candidate: ${[...new Set(shapes.flatMap((s) => s[1]))].join('; ')}`);
