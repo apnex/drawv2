@@ -4,6 +4,10 @@ L0, CAPTURE -- stage 1 of the gesture system (dev/design/input/GESTURE-SYSTEM.md
 Capture is the only code that reads a browser event. It turns each one into an INPUT EVENT -- plain data -- hands it to
 the input layers, and then does on the real event what they asked for and cannot do themselves: claim it, and take the
 pointer. These hold that contract, and G1 itself: the input layers read no DOM.
+RESTATED at H26.3 (dev/design/components/INPUT-CAPTURE.md section 5, appendix B): capture is draw's adapter over input-capture, which
+reads each event into a fact and does what its reply asks; the adapter makes draw's input event from the fact. So these build it
+through the harness's captureDispatch, calling the listeners the component and the adapter added, over fakes that gain the
+removeEventListener the component requires; the reading of each field is the component's own tests', and these hold draw's side.
 */
 // RESTATED at C-b (H19.30): what a press lands on is answered by the plugins' picks, which the page hands Capture
 import { picksOf, regionsOf } from '../app/src/pick.js';
@@ -13,8 +17,7 @@ const REGIONS = regionsOf(PRODUCT_CANVAS);   // C-f: run mode's regions, the par
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { makeInput, pointer, key, seedNodes, installDom } from './fixtures/client-harness.mjs';
-import { Capture } from '../app/src/capture.js';
+import { makeInput, pointer, key, seedNodes, installDom, captureDispatch } from './fixtures/client-harness.mjs';
 
 // a sink that records what it is handed, and optionally claims or captures
 function probe({ claim = false, capture = false } = {}) {
@@ -23,12 +26,12 @@ function probe({ claim = false, capture = false } = {}) {
 	return { got, sink: { press: take('press'), move: take('move'), release: take('release'), cancelDrag: take('cancel'),
 		hover: take('hover'), double: take('double'), keyDown: take('keyDown'), keyUp: take('keyUp'), leave: take('leave') } };
 }
-const quietSvg = () => { const s = { calls: [], addEventListener() {}, setPointerCapture: (id) => s.calls.push(id), getScreenCTM: () => ({ inverse: () => ({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }) }) }; return s; };
-const quietHost = { addEventListener() {} };
-// the input event a sink is handed for one DOM event -- seen as the input layers see it, through a Capture
+const quietSvg = () => { const s = { calls: [], addEventListener() {}, removeEventListener() {}, setPointerCapture: (id) => s.calls.push(id), getScreenCTM: () => ({ inverse: () => ({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }) }) }; return s; };
+const quietHost = () => ({ addEventListener() {}, removeEventListener() {} });
+// the input event a sink is handed for one DOM event -- seen as the input layers see it, through capture
 function seen(svg, method, evt) {
 	const { got, sink } = probe();
-	new Capture({ svg, host: quietHost, sink, picks: PICKS, regions: REGIONS })[method](evt);   // RESTATED at C-f: and the parts' run-mode regions
+	captureDispatch({ svg, host: quietHost(), sink, picks: PICKS, regions: REGIONS })[method](evt);   // RESTATED at C-f: and the parts' run-mode regions
 	return got[0][1];
 }
 
@@ -55,20 +58,20 @@ test('a target that cannot be asked gives no region -- run mode places nothing t
 test('what the input layers ask for is done on the real event: a claim is preventDefault, a capture takes the pointer', () => {
 	const svg = quietSvg();
 	const { sink } = probe({ claim: true, capture: true });
-	const c = new Capture({ svg, host: quietHost, sink, picks: PICKS });
+	const c = captureDispatch({ svg, host: quietHost(), sink, picks: PICKS });
 	let prevented = 0;
 	c.onDown({ clientX: 0, clientY: 0, pointerId: 7, target: {}, preventDefault: () => { prevented++; } });
 	assert.equal(prevented, 1);
 	assert.deepEqual(svg.calls, [7]);
 	const { sink: quiet } = probe();
 	let untouched = 0;
-	new Capture({ svg: quietSvg(), host: quietHost, sink: quiet }).onDown({ clientX: 0, clientY: 0, pointerId: 7, target: {}, preventDefault: () => { untouched++; } });
+	captureDispatch({ svg: quietSvg(), host: quietHost(), sink: quiet }).onDown({ clientX: 0, clientY: 0, pointerId: 7, target: {}, preventDefault: () => { untouched++; } });
 	assert.equal(untouched, 0, 'nothing asked, nothing done');
 });
 
 test('keys typed into a field never reach the input layers; key-ups and other keys do', () => {
 	const { got, sink } = probe();
-	const c = new Capture({ svg: quietSvg(), host: quietHost, sink });
+	const c = captureDispatch({ svg: quietSvg(), host: quietHost(), sink });
 	for (const tagName of ['INPUT', 'TEXTAREA', 'SELECT']) c.onKeyDown(key('c', { target: { tagName } }));
 	assert.deepEqual(got, []);
 	c.onKeyDown(key('c'));
@@ -83,7 +86,7 @@ test('a key says whether focus is on a control, which Tab must leave to the brow
 });
 
 test('B75: the context menu is suppressed everywhere but a field -- the browser\'s question, answered in capture', () => {
-	const c = new Capture({ svg: quietSvg(), host: quietHost, sink: probe().sink });
+	const c = captureDispatch({ svg: quietSvg(), host: quietHost(), sink: probe().sink });
 	const menu = (target) => { let n = 0; c.onContextMenu({ target, preventDefault: () => { n++; } }); return n; };
 	assert.equal(menu({ closest: () => null }), 1, 'on the canvas: suppressed');
 	assert.equal(menu({ closest: (s) => (s.includes('textarea') ? {} : null) }), 0, 'in a field: the browser keeps it');
@@ -104,10 +107,10 @@ test('G1: app/src/input.js reads no DOM event and touches no DOM API -- that is 
 test('B268: a press on a link\'s hit twin is a press on the link', () => {
 	const restore = installDom();
 	try {
-	const svg = { addEventListener() {}, setPointerCapture() {}, getScreenCTM: () => ({ inverse: () => ({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }) }) };
+	const svg = { addEventListener() {}, removeEventListener() {}, setPointerCapture() {}, getScreenCTM: () => ({ inverse: () => ({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }) }) };
 	const got = [];
 	const sink = new Proxy({}, { get: () => (e) => got.push(e) });
-	const c = new Capture({ svg, host: { addEventListener() {} }, sink, picks: PICKS });
+	const c = captureDispatch({ svg, host: { addEventListener() {}, removeEventListener() {} }, sink, picks: PICKS });
 	const twin = { tagName: 'path', id: '', dataset: { link: 'link-000001' }, classList: { contains: (k) => k === 'link-hit' }, closest: () => null };
 	c.onDown({ clientX: 0, clientY: 0, button: 0, target: twin, preventDefault() {} });
 	assert.deepEqual(got[0].on, { kind: 'link', id: 'link-000001' });

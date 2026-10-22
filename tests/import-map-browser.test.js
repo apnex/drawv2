@@ -116,9 +116,10 @@ for (const [name, at, booted] of [['the product page', () => `http://127.0.0.1:$
 			`input-binding's graph loaded with the page from the vendor mount, every file answered 200: ${JSON.stringify(bindingFiles)}`);
 		const vendored = answered(mark).filter((r) => r.url.startsWith('/vendor/'));
 		assert.ok(vendored.some((r) => r.url === `/vendor/@apnex/snap-grid@${version}/conformance.js` && r.status === 200), `conformance.js asked of the vendor mount and answered 200: ${JSON.stringify(vendored)}`);
-		// H26.3: no page module imports input-capture before its move, so its graph is asked when the check imports it by name
-		const captureFiles = vendored.filter((r) => r.url.startsWith(`/vendor/@apnex/input-capture@${capture}/`));
-		assert.ok(captureFiles.some((r) => r.url.endsWith('/index.js')) && captureFiles.length >= 7, `input-capture's graph asked of the vendor mount: ${JSON.stringify(captureFiles)}`);
+		// RESTATED at H26.3's move: the canvas part composes input-capture, so it too loads with the page, its whole graph from the mount
+		const captureFiles = ownVendored.filter((r) => r.url.startsWith(`/vendor/@apnex/input-capture@${capture}/`));
+		assert.ok(captureFiles.some((r) => r.url.endsWith('/index.js')) && captureFiles.length >= 7 && captureFiles.every((r) => r.status === 200),
+			`input-capture's graph loaded with the page from the vendor mount, every file answered 200: ${JSON.stringify(captureFiles)}`);
 		assert.deepEqual(vendored.filter((r) => r.status !== 200), [], 'and every module it imports in turn');
 		assert.ok(ownVendored.length + vendored.length >= 4, `the component's own module graph came with it: ${ownVendored.length + vendored.length} request(s)`);
 		assert.deepEqual(t.thrown, [], 'nothing failed after');

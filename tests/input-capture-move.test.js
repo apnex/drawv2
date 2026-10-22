@@ -1,0 +1,143 @@
+/*
+H26.3 (dev/design/components/INPUT-CAPTURE.md section 4, acceptance step 3; section 5; D9; guardrails G1, G2, G5) -- DRAW'S CAPTURE IS AN
+ADAPTER OVER `@apnex/input-capture`.
+
+`app/src/capture.js` exports `captureCanvas` and `emitToHost` and no class; it adds no listener for a pointer, double-click or key event
+and reads no field of one -- the component adds those listeners and reads those events, handing the adapter a frozen fact and the
+platform's target alone -- its one listener being the B75 menu's; Input's entry points take the input events they took, each in today's
+form and key order; and only that module, of the product's, names the component. Each is found by what the code does where it can be:
+which module's code adds each listener and reads each field is read off the stack at the moment it happens.
+*/
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { FOLDERS, PARTS } from '../tools/layers.mjs';
+import * as adapter from '../app/src/capture.js';
+import { picksOf, regionsOf } from '../app/src/pick.js';
+import { PRODUCT_CANVAS } from '../product/canvas.mjs';
+import { installDom } from './fixtures/client-harness.mjs';
+
+const ROOT = path.resolve(import.meta.dirname, '..');
+const HERE = fileURLToPath(import.meta.url);
+const ADAPTER = path.join(ROOT, 'app/src/capture.js');
+const COMPONENT = path.join(ROOT, 'node_modules/@apnex/input-capture/dist/');
+
+// the module whose code is running where this is called: the first frame of the stack outside this file and the runtime's own
+function caller() {
+	const frames = new Error().stack.split('\n').slice(1).map((l) => l.match(/\((?:file:\/\/)?([^():]+):\d+:\d+\)|at (?:file:\/\/)?([^():\s]+):\d+:\d+/)).filter(Boolean).map((m) => m[1] ?? m[2]);
+	const file = frames.find((f) => f !== HERE && !f.startsWith('node:'));
+	return file?.startsWith(COMPONENT) ? 'component' : file === ADAPTER ? 'adapter' : file ?? 'none';
+}
+
+// fakes that record each listener added to them and who added it, and each removal
+function fakes() {
+	const added = [], removed = [], listeners = new Map();
+	const fake = (tag, extra = {}) => ({
+		addEventListener(name, l) { added.push([`${tag}:${name}`, caller()]); listeners.set(`${tag}:${name}`, l); },
+		removeEventListener(name) { removed.push(`${tag}:${name}`); },
+		...extra,
+	});
+	const svg = fake('svg', { setPointerCapture() {}, getScreenCTM: () => ({ inverse: () => ({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }) }) });
+	return { svg, host: fake('host', { dispatchEvent() { return true; } }), added, removed, listeners };
+}
+
+// an event as a recording Proxy: each field read and who read it
+function recorded(fields) {
+	const reads = [];
+	const evt = new Proxy(fields, { get(t, k, r) { if (typeof k === 'string') reads.push([k, caller()]); return Reflect.get(t, k, r); } });
+	return { evt, reads };
+}
+
+const SINK = ['press', 'move', 'release', 'cancelDrag', 'hover', 'double', 'keyDown', 'keyUp', 'leave'];
+const recordingSink = (got, answer = () => {}) => Object.fromEntries(SINK.map((m) => [m, (...args) => { got.push([m, args]); answer(m, args[0]); }]));
+const open = (got = [], answer) => {
+	const f = fakes();
+	const capture = adapter.captureCanvas({ svg: f.svg, host: f.host, sink: recordingSink(got, answer), picks: picksOf(PRODUCT_CANVAS), regions: regionsOf(PRODUCT_CANVAS) });
+	return { ...f, capture, got };
+};
+
+test('H26.3 step 3: app/src/capture.js exports captureCanvas and emitToHost, and no class', () => {
+	assert.deepEqual(Object.keys(adapter).sort(), ['captureCanvas', 'emitToHost']);
+	for (const [name, f] of Object.entries(adapter)) assert.doesNotMatch(Function.prototype.toString.call(f), /^class\b/, `${name} is no class`);
+	assert.doesNotMatch(fs.readFileSync(ADAPTER, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, ''), /\bclass\b/, 'and the module declares none');
+});
+
+test('H26.3 step 3: the component adds every pointer, double-click and key listener, in today\'s order; the adapter adds the menu\'s alone, after them', () => {
+	const restore = installDom();
+	try {
+		const o = open();
+		assert.deepEqual(o.added, [
+			...['pointerleave', 'pointerdown', 'pointermove', 'pointerup', 'pointercancel', 'pointerover', 'pointerout', 'dblclick'].map((n) => [`svg:${n}`, 'component']),
+			['host:keydown', 'component'], ['host:keyup', 'component'], ['host:contextmenu', 'adapter']]);
+		// a frozen { close }, closing both: the component's listeners in reverse, then the menu's; once
+		assert.deepEqual(Object.keys(o.capture), ['close']);
+		assert.ok(Object.isFrozen(o.capture));
+		assert.equal(o.capture.close(), undefined);
+		assert.deepEqual(o.removed, ['host:keyup', 'host:keydown', 'svg:dblclick', 'svg:pointerout', 'svg:pointerover', 'svg:pointercancel', 'svg:pointerup',
+			'svg:pointermove', 'svg:pointerdown', 'svg:pointerleave', 'host:contextmenu']);
+		o.capture.close();
+		assert.equal(o.removed.length, 11, 'a second close calls nothing');
+		// and a declaration the component refuses throws as the canvas opens, before any listener is added
+		const f = fakes();
+		delete f.svg.setPointerCapture;
+		assert.throws(() => adapter.captureCanvas({ svg: f.svg, host: f.host, sink: recordingSink([]) }), /^Error: capture: input-capture refused the canvas -- invalid-value at \/surface$/);
+		assert.deepEqual(f.added, []);
+	} finally { restore(); }
+});
+
+const POINTER = { clientX: 30, clientY: 40, button: 0, buttons: 1, pointerId: 1, pointerType: 'mouse', shiftKey: true, ctrlKey: false, altKey: false, metaKey: false,
+	target: { tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: (s) => (s.includes('node') ? { id: 'node-000001' } : null) }, preventDefault() {} };
+const KEY = { key: 'Tab', code: 'Tab', repeat: false, shiftKey: false, ctrlKey: true, altKey: false, metaKey: false, target: { tagName: 'BODY', closest: () => null }, preventDefault() {} };
+const FORM = {
+	press: ['type', 'button', 'key', 'repeat', 'shiftKey', 'ctrlKey', 'altKey', 'metaKey', 'at', 'on', 'region', 'claimed', 'capture'],
+	pointer: ['type', 'button', 'key', 'repeat', 'shiftKey', 'ctrlKey', 'altKey', 'metaKey', 'at', 'on', 'claimed', 'capture'],
+	keyDown: ['type', 'button', 'key', 'repeat', 'shiftKey', 'ctrlKey', 'altKey', 'metaKey', 'onControl', 'claimed', 'capture'],
+	keyUp: ['type', 'button', 'key', 'repeat', 'shiftKey', 'ctrlKey', 'altKey', 'metaKey', 'claimed', 'capture'],
+};
+
+test('H26.3 step 3: the adapter reads no field of a pointer or key event -- the component reads each -- and Input\'s entry points take today\'s input events', () => {
+	const restore = installDom();
+	try {
+		const o = open([], (m, e) => { if (m === 'press') { e.claimed = true; e.capture = true; } if (m === 'keyDown') e.claimed = true; });
+		const reads = [];
+		const fire = (key, fields) => { const r = recorded(fields); o.listeners.get(key)(r.evt); reads.push(...r.reads.map(([f, who]) => [key, f, who])); };
+		for (const n of ['pointerdown', 'pointermove', 'pointerup', 'pointercancel', 'pointerover', 'pointerout', 'dblclick', 'pointerleave']) fire(`svg:${n}`, { ...POINTER });
+		fire('host:keydown', { ...KEY });
+		fire('host:keyup', { ...KEY, key: 'Shift' });
+		fire('host:keydown', { ...KEY, target: { tagName: 'INPUT', closest: () => null } });   // typed into a field: dropped
+		assert.deepEqual(reads.filter(([, , who]) => who !== 'component'), [], 'every field of every pointer and key event read by the component, none by the adapter');
+		assert.ok(reads.length > 100, `the reads were seen: ${reads.length}`);
+		assert.deepEqual(o.got.map(([m, args]) => [m, args.length]), [['press', 1], ['move', 1], ['release', 1], ['cancelDrag', 1], ['hover', 2], ['hover', 2], ['double', 1], ['leave', 0], ['keyDown', 1], ['keyUp', 1]],
+			'each to the entry point the old capture called, over and out to hover entering and not, the leave with nothing, the typed key to none');
+		const [press, move, , , over, out, , , keyDown, keyUp] = o.got.map(([, args]) => args);
+		assert.deepEqual(Object.keys(press[0]), FORM.press);
+		assert.deepEqual(Object.keys(move[0]), FORM.pointer);
+		assert.deepEqual([over[1], out[1]], [true, false]);
+		assert.deepEqual(Object.keys(keyDown[0]), FORM.keyDown);
+		assert.deepEqual(Object.keys(keyUp[0]), FORM.keyUp);
+		assert.deepEqual({ ...press[0], at: { ...press[0].at } }, { type: 'down', button: 0, key: null, repeat: false, shiftKey: true, ctrlKey: false, altKey: false, metaKey: false,
+			at: { x: 30, y: 40 }, on: { kind: 'node', id: 'node-000001' }, region: press[0].region, claimed: true, capture: true });
+		assert.equal(keyDown[0].onControl, false);
+	} finally { restore(); }
+});
+
+test('H26.3 step 3: the menu is the adapter\'s own listener, reading the target and claiming as B75 says', () => {
+	const o = open();
+	const menu = (target) => { const r = recorded({ target, preventDefault() {} }); o.listeners.get('host:contextmenu')(r.evt); return r.reads.map(([f, who]) => `${f} ${who}`); };
+	assert.deepEqual(menu({ closest: () => null }), ['target adapter', 'target adapter', 'preventDefault adapter'], 'off a field: suppressed');
+	assert.deepEqual(menu({ closest: (s) => (s.includes('textarea') ? {} : null) }), ['target adapter', 'target adapter'], 'in a field: the browser keeps it');
+});
+
+test('H26.3 step 3 (G5, D9): of the product\'s modules, app/src/capture.js alone names @apnex/input-capture, and it is a canvas module', () => {
+	const walk = (d) => fs.readdirSync(path.join(ROOT, d), { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(d, e.name)) : /\.m?js$/.test(e.name) ? [path.join(d, e.name)] : []));
+	const product = FOLDERS.filter((f) => f.dir !== 'tools' && f.dir !== 'tests').flatMap((f) => walk(f.dir));
+	assert.ok(product.length > 150, `the product's modules were read: ${product.length}`);
+	assert.deepEqual(product.filter((f) => fs.readFileSync(path.join(ROOT, f), 'utf8').includes('@apnex/input-capture')), ['app/src/capture.js']);
+	assert.ok(PARTS.canvas.modules.includes('app/src/capture.js'), 'the adapter is the canvas part\'s');
+	const compose = fs.readFileSync(path.join(ROOT, 'app/src/compose-canvas.js'), 'utf8');
+	assert.match(compose, /import \{ captureCanvas \} from '\.\/capture\.js';/);
+	assert.match(compose, /const listen = \(\) => \(capture \?\?= captureCanvas\(\{ svg, host, sink: input, picks: picksOf\(parts\), regions: regionsOf\(parts\) \}\)\);/,
+		'listen() keeps its place, calling captureCanvas where it made the class');
+});

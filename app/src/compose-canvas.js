@@ -30,7 +30,7 @@ import { Selection } from './selection.js';
 import { LabelEditor } from './labeledit.js';
 import { Tools } from './tools.js';
 import { Input } from './input.js';
-import { Capture } from './capture.js';
+import { captureCanvas } from './capture.js';
 import { picksOf, regionsOf } from './pick.js';
 import { Readout } from './readout.js';
 import { Grids } from './grids.js';   // WD-b2: the grids, from the open diagram's records
@@ -44,7 +44,7 @@ import { Grids } from './grids.js';   // WD-b2: the grids, from the open diagram
              here (it was handed in as a chrome factory until the lab's import of it was the last layer-debt edge)
   tools      true to hold the stamp hand and text tool (the product); the lab holds none
   help, now, plugins, runRules   handed to Input as they are
-Returns every part, and `listen()`, which starts event capture and answers the Capture.
+Returns every part, and `listen()`, which starts event capture and answers its `{ close }` (app/src/capture.js `captureCanvas`, H26.3).
 */
 export function composeCanvas({ svg, defs, host, network = null, kinds = undefined, parts = [], readoutEl = null, tools = false, help = null, now, plugins = [], runRules = [] }) {
 	// the kernel's glyph and frame defs: the kernel owns the look
@@ -78,8 +78,8 @@ export function composeCanvas({ svg, defs, host, network = null, kinds = undefin
 	const input = new Input({ svg, model, history, selection, renderer, labels, readout: shownReadout, tools: heldTools,
 		host, help, now, snap, plugins, runRules, parts });   // C-c, C-d: the canvas parts -- places, press rows, handles
 	let capture = null;
-	// the DOM's events, as input events (dev/design/input/GESTURE-SYSTEM.md, L0) -- once the root's own listeners are in
-	const listen = () => (capture ??= new Capture({ svg, host, sink: input, picks: picksOf(parts), regions: regionsOf(parts) }));   // C-b: the plugins' picks; C-f: run mode's regions
+	// the platform's events, as input events (dev/design/input/GESTURE-SYSTEM.md, L0), through input-capture (H26.3) -- once the root's own listeners are in
+	const listen = () => (capture ??= captureCanvas({ svg, host, sink: input, picks: picksOf(parts), regions: regionsOf(parts) }));   // C-b: the plugins' picks; C-f: run mode's regions
 	return { model, history, renderer, selection, labels, readout: shownReadout, snap, tools: heldTools, input, listen };
 }
 

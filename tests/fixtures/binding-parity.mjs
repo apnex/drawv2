@@ -96,7 +96,7 @@ const combos = (names, extra = {}) => {
 export const GUARD_STATES = [{}, ...Array.from({ length: 8 }, (_, n) => ({ readOnly: !!(n & 1), helpOpen: !!(n & 2), gesturing: !!(n & 4) }))];
 const LOCKS = [{ readOnly: false }, { readOnly: true }];
 const MODSETS = combos(['shiftKey', 'ctrlKey', 'altKey'], { metaKey: false });
-// tests/input.test.js's keys and modifier sets, as capture makes a key event (app/src/capture.js inputEvent)
+// tests/input.test.js's keys and modifier sets, as capture makes a key event (app/src/capture.js inputEvent; `inputEventOf` since H26.3)
 const KEYS = [' ', 'Escape', 'Tab', 'Enter', 'Delete', 'Backspace', 'F2', 'F9', '/', '?', 'Shift', 'Alt', 'Control',
 	...'abcdefghijklmnopqrstuvwxyz', ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ', ...'1234567', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'];
 const KEY_MODS = [{}, { shiftKey: true }, { ctrlKey: true }, { ctrlKey: true, shiftKey: true }, { altKey: true }, { metaKey: true }];

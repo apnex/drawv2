@@ -1,31 +1,34 @@
 /*
-capture.js -- L0 of the gesture system: the only code that touches a browser event
-(dev/design/input/GESTURE-SYSTEM.md, section 5.1; stage 1).
+capture.js -- L0 of the gesture system (dev/design/input/GESTURE-SYSTEM.md, section 5.1): draw's adapter over `@apnex/input-capture`
+(dev/design/components/INPUT-CAPTURE.md section 5, H26-8). The component listens on the canvas and the window, reads each platform
+event into one frozen fact, and does what a fact's reply asks; this module is draw's side of that boundary, and the only one that
+names the component (D9).
 
-ONE CONCERN: turn DOM events into INPUT EVENTS -- plain data -- and hand them to the input layers; then do, on the
-event, what those layers asked for and could not do themselves, because they never see it: claim it
-(`preventDefault`) and capture the pointer. It decides nothing. No mode, no read-only, no meaning.
+WHAT DRAW SUPPLIES, each draw's content or policy:
 
-AN INPUT EVENT keeps the DOM's own names for what a gesture reads -- `button`, `key`, `repeat`, `shiftKey`, `ctrlKey`,
-`altKey`, `metaKey` -- so the gesture handlers read it as they read an event. What it adds is what used to take the DOM
-to work out:
+	surface     the canvas element, `#container`
+	keys        the host, the page's `window`
+	toDrawing   where a screen point lies in the drawing: painter.js `toCanvas`, the canvas's screen transform read at each event
+	hit         what is under the pointer: `on`, by the parts' picks (pick.js `hitWith`), and on a press `region`, run mode's controls
+	            under it -- the waypoint, a `data-action` or `data-input` region and its node, whether any entity is there; null when
+	            the target cannot be asked, which is itself an answer: run mode places nothing then. Null on a `leave`
+	focus       on a key-down alone: a key typed into a field (the header's inputs, the label editor), which canvas shortcuts never
+	            see; otherwise whether focus is on a button, link, field or tabbable element, where Tab must keep its meaning
+	deliver     the round trip: each fact made into draw's INPUT EVENT, handed to the input layers, and in a `finally` the reply asked
+	            to claim the event (`claimed`, preventDefault) and to take the pointer (`capture`), as the input layers wrote
 
-	at        the pointer in canvas coordinates (painter.js `toCanvas`)
-	on        what is under it: node, waypoint, zone (Shift only), link, a handle, or canvas (pick.js `hitOf`)
-	region    on a press only: the run-mode controls under the pointer -- the waypoint, a `data-action` or `data-input`
-	          region and its node, and whether any entity is there. Null when the target cannot be asked, which is
-	          itself an answer: run mode places nothing then, exactly as before
-	onControl on a key only: focus is in a button, link, field or tabbable element, where Tab must keep its meaning
+AN INPUT EVENT is today's, field for field and in today's key order (section 5, G7): `type`; `button`, `0` for a key; `key`; `repeat`,
+`false` for a pointer; the modifiers; on a pointer `at` and `on`; on a press `region`; on a key-down `onControl`; `claimed` and `capture`
+false, which the input layers write and this acts on. `trigger` is the input layers' own field, and never read here.
 
-and what the input layers set, for capture to act on:
+WHAT NEVER REACHES THE INPUT LAYERS. Keys typed into a field: canvas shortcuts do not apply there. The context menu: suppressed
+everywhere but a field, which is the browser's question, not a gesture's (B75) -- draw's own listener, on the host, after the keys,
+since the component makes no menu fact (D5, B412).
 
-	claimed   the event is ours: capture calls `preventDefault`
-	capture   the press began a gesture: capture takes the pointer, so the drag keeps its events off the canvas
-
-WHAT NEVER REACHES THE INPUT LAYERS. Keys typed into a field (the header's inputs, the label editor): canvas shortcuts
-do not apply there. The context menu: suppressed everywhere but a field, which is the browser's question, not a
-gesture's (B75).
+KEPT, each registered (section 6.3): one press for every pointer -- draw's event carries no `pointerId`, so a second pointer replaces the
+first's press (B409); and a key released while the page lacks focus makes no key-up, since nothing listens for `blur` (B413).
 */
+import { openCapture } from '@apnex/input-capture';
 import { hitWith } from './pick.js';
 import { toCanvas } from './painter.js';
 
@@ -52,76 +55,86 @@ function regionOf(target, { drawn = '', target: aim = '' } = {}) {
 	};
 }
 
-// one DOM event as an input event -- plain data, and the only place a DOM event is read
-function inputEvent(evt, svg, type, hitOf, regions) {
-	const pointer = type !== 'key-down' && type !== 'key-up';
+// a key typed into a field: canvas shortcuts never apply there
+const typing = (target) => ['INPUT', 'TEXTAREA', 'SELECT'].includes(target && target.tagName);
+
+// the input layers' method for each fact; `over` and `out` are `hover`, entering or not
+const ROUTE = { down: 'press', move: 'move', up: 'release', cancel: 'cancelDrag', double: 'double', 'key-down': 'keyDown', 'key-up': 'keyUp' };
+
+// draw's input event from one fact -- today's form, field for field and in today's key order
+function inputEventOf(event) {
+	const pointer = event.at !== null;
 	return {
-		type,
-		button: evt.button ?? 0, key: evt.key ?? null, repeat: !!evt.repeat,   // null, never undefined: plain data survives JSON
-		shiftKey: !!evt.shiftKey, ctrlKey: !!evt.ctrlKey, altKey: !!evt.altKey, metaKey: !!evt.metaKey,
-		...(pointer ? { at: toCanvas(evt, svg), on: hitOf(evt) } : {}),
-		...(type === 'down' ? { region: regionOf(evt.target, regions) } : {}),
-		...(type === 'key-down' ? { onControl: askable(evt.target) && !!evt.target.closest(CONTROL) } : {}),
+		type: event.type,
+		button: pointer ? event.button : 0, key: event.key, repeat: pointer ? false : event.repeat,
+		shiftKey: event.shiftKey, ctrlKey: event.ctrlKey, altKey: event.altKey, metaKey: event.metaKey,
+		...(pointer ? { at: event.at, on: event.hit.on } : {}),
+		...(event.type === 'down' ? { region: event.hit.region } : {}),
+		...(event.type === 'key-down' ? { onControl: event.focus.onControl } : {}),
 		claimed: false, capture: false,
 	};
 }
 
-// a key typed into a field: canvas shortcuts never apply there
-const typing = (evt) => ['INPUT', 'TEXTAREA', 'SELECT'].includes(evt.target && evt.target.tagName);
-
 /*
-The listeners, and the round trip: convert, hand over, then act on what came back. `sink` is the input layers' side --
-Input today -- and receives only input events.
+The canvas's capture, opened once a root's own listeners are in (app/src/compose-canvas.js `listen`). `sink` is the input layers' side
+-- Input -- and receives only input events. C-b: `picks`, the canvas parts' (pick.js `picksOf`); C-f: `regions`, their run-mode
+selectors (pick.js `regionsOf`). Answers a frozen `{ close }`, closing the component's capture and the menu's listener, which nothing in
+draw calls today; a declaration the component refuses throws here, before any listener is added.
 */
-export class Capture {
-	// C-b: `picks`, the canvas parts' (app/src/pick.js `picksOf`) -- what a press lands on is answered by the plugin that drew it
-	// C-f: `regions`, the parts' run-mode selectors (app/src/pick.js `regionsOf`)
-	constructor({ svg, host, sink, picks = [], regions = {} }) {
-		this.svg = svg; this.sink = sink; this.hitOf = hitWith(picks); this.regions = regions;
-		svg.addEventListener('pointerleave', () => sink.leave());
-		svg.addEventListener('pointerdown', (e) => this.onDown(e));
-		svg.addEventListener('pointermove', (e) => this.onMove(e));
-		svg.addEventListener('pointerup', (e) => this.onUp(e));
-		svg.addEventListener('pointercancel', (e) => this.onCancel(e));
-		svg.addEventListener('pointerover', (e) => this.onHover(e, true));
-		svg.addEventListener('pointerout', (e) => this.onHover(e, false));
-		svg.addEventListener('dblclick', (e) => this.onDblClick(e));
-		host.addEventListener('keydown', (e) => this.onKeyDown(e));
-		host.addEventListener('keyup', (e) => this.onKeyUp(e));
-		// B75: on the HOST, not the svg -- the right button is a gesture button here, so a hand is already on it when the
-		// pointer crosses onto the palette or the header, and bound to the canvas alone the native menu opened there
-		host.addEventListener('contextmenu', (e) => this.onContextMenu(e));
-	}
-
-	// hand one event over, then claim it and take the pointer if the input layers said to
-	#round(evt, type, deliver) {
-		const e = inputEvent(evt, this.svg, type, this.hitOf, this.regions);
-		try { deliver(e); } finally {
-			if (e.claimed) evt.preventDefault();
-			if (e.capture) { try { this.svg.setPointerCapture(evt.pointerId); } catch { /* synthetic events */ } }
-		}
-	}
-
-	onDown(evt) { this.#round(evt, 'down', (e) => this.sink.press(e)); }
-	onMove(evt) { this.#round(evt, 'move', (e) => this.sink.move(e)); }
-	onUp(evt) { this.#round(evt, 'up', (e) => this.sink.release(e)); }
-	onCancel(evt) { this.#round(evt, 'cancel', (e) => this.sink.cancelDrag(e)); }
-	onHover(evt, entering) { this.#round(evt, entering ? 'over' : 'out', (e) => this.sink.hover(e, entering)); }
-	onDblClick(evt) { this.#round(evt, 'double', (e) => this.sink.double(e)); }
-	onKeyDown(evt) { if (!typing(evt)) this.#round(evt, 'key-down', (e) => this.sink.keyDown(e)); }
-	onKeyUp(evt) { this.#round(evt, 'key-up', (e) => this.sink.keyUp(e)); }
-
+export function captureCanvas({ svg, host, sink, picks = [], regions = {} }) {
+	const hitOf = hitWith(picks);
+	const opened = openCapture({
+		surface: svg,
+		keys: host,
+		toDrawing: (screen) => toCanvas({ clientX: screen.x, clientY: screen.y }, svg),
+		hit: (target, event) => (event.type === 'leave' ? null : {
+			on: hitOf({ target, shiftKey: event.shiftKey, ctrlKey: event.ctrlKey, altKey: event.altKey, metaKey: event.metaKey }),
+			region: event.type === 'down' ? regionOf(target, regions) : null,
+		}),
+		// the field test first, and the control test only on a key not typed into a field, as the old capture dropped the key first
+		focus: (target, event) => {
+			if (event.type !== 'key-down') return null;
+			return typing(target) ? { typing: true, onControl: false } : { typing: false, onControl: askable(target) && !!target.closest(CONTROL) };
+		},
+		deliver: (event, reply) => {
+			if (event.type === 'leave') return sink.leave();
+			if (event.type === 'key-down' && event.focus.typing) return;
+			const e = inputEventOf(event);
+			try {
+				if (event.type === 'over' || event.type === 'out') sink.hover(e, event.type === 'over');
+				else sink[ROUTE[event.type]](e);
+			} finally {
+				// what the input layers asked before a throw is done, as it was
+				if (e.claimed) reply.claim();
+				if (e.capture) reply.takePointer();   // answers false when the platform refuses the pointer, as for a synthetic event
+			}
+		},
+	});
+	if (!opened.ok) throw new Error(`capture: input-capture refused the canvas -- ${opened.problems.map((p) => `${p.problem} at ${p.pointer || '""'}`).join(', ')}`);
 	/*
-	B75 -- suppress the browser menu everywhere EXCEPT a real affordance: cut, copy, paste and the spell-checker in a text
-	field. The test is the target's nearest form field rather than a list of ids, so a field added later is covered.
-	`contenteditable` is matched explicitly, since bare presence also matches `contenteditable="false"`.
+	B75 -- suppress the browser menu everywhere EXCEPT a real affordance: cut, copy, paste and the spell-checker in a text field. The
+	test is the target's nearest form field rather than a list of ids, so a field added later is covered; `contenteditable` is matched
+	explicitly, since bare presence also matches `contenteditable="false"`. On the HOST, not the canvas: the right button is a gesture
+	button here, so a hand is already on it when the pointer crosses onto the palette or the header.
 	*/
-	onContextMenu(evt) {
-		if (!(askable(evt.target) && evt.target.closest(FIELD))) evt.preventDefault();
-	}
+	const menu = (evt) => { if (!(askable(evt.target) && evt.target.closest(FIELD))) evt.preventDefault(); };
+	host.addEventListener('contextmenu', menu);
+	let closed = false;
+	return Object.freeze({
+		// closes the component's capture and removes the menu's listener, attempting both and throwing the first error, once
+		close() {
+			if (closed) return undefined;
+			closed = true;
+			const errors = [];
+			try { opened.capture.close(); } catch (e) { errors.push(e); }
+			try { host.removeEventListener('contextmenu', menu); } catch (e) { errors.push(e); }
+			if (errors.length) throw errors[0];
+			return undefined;
+		},
+	});
 }
 
-// an event handed OUT to the host -- run mode's `draw:action` (W5). The DOM event API, kept here with the rest of it
+// an event handed OUT to the host -- run mode's `draw:action` (W5). The platform's event API, kept here beside the boundary
 export function emitToHost(host, type, detail) {
 	host.dispatchEvent(new CustomEvent(type, { detail }));
 }

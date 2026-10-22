@@ -39,7 +39,7 @@ import { crosshair } from '../../app/src/painter.js';
 import { CANVAS, GAP } from '../../app/src/snap.js';
 import { Input } from '../../app/src/input.js';
 import { RUN_PRESSES } from '../../app/src/run-mode.js';
-import { Capture } from '../../app/src/capture.js';
+import { captureCanvas } from '../../app/src/capture.js';
 import { parityCapture } from './capture-parity.mjs';   // H26.3: the old capture and the adapter side by side, when DRAW_CAPTURE_PARITY is set
 import { picksOf, regionsOf } from '../../app/src/pick.js';
 import { PRODUCT_CANVAS } from '../../product/canvas.mjs';
@@ -100,6 +100,9 @@ export function fakeEl(tag = 'div', id = '') {
 		},
 		addEventListener() {},
 		removeEventListener() {},
+		// H26.3 (INPUT-CAPTURE.md section 5): a browser refuses to take a synthetic pointer, and so does this, as the old capture swallowed
+		// the fakes' missing method; input-capture's reply answers false
+		setPointerCapture() { throw new Error('setPointerCapture: no active pointer -- a synthetic event'); },
 		closest() { return null; },
 		/*
 		H15.9 -- a real DESCENDANT lookup for the selectors the renderer uses (`.cls`, `[attr="v"]`, a tag), before the
@@ -272,8 +275,9 @@ export function makeInput({ readOnly = false, bare = false, host: hostOverride =
 	if (readOnly) input.setReadOnly(true);
 	// L0: tests drive the page's events through capture, as a browser does -- Input itself takes only input events
 	const opened = { svg, host, sink: input, picks: picksOf(parts), regions: regionsOf(parts) };   // C-b: the plugins' picks; C-f: run mode's regions, as the page composes them
-	// H26.3 (INPUT-CAPTURE.md acceptance step 4): with DRAW_CAPTURE_PARITY naming a folder, the old capture and the adapter side by side
-	const capture = parityCapture(opened) ?? new Capture(opened);
+	// H26.3 (INPUT-CAPTURE.md section 5): through the listeners input-capture and the adapter add, as the page's events arrive; with
+	// DRAW_CAPTURE_PARITY naming a folder, the old capture beside it (acceptance step 4)
+	const capture = parityCapture(opened) ?? captureDispatch(opened);
 
 	return {
 		input, capture, model, history, selection, svg, commits, calls, restore, renderer, labels, tools, help, snap,
@@ -325,6 +329,8 @@ export function dispatchFor(open) {
 		};
 	};
 }
+// the page's canvas through draw's adapter (app/src/capture.js `captureCanvas`): `makeInput` hands it as `h.capture`
+export const captureDispatch = (opened) => dispatchFor(captureCanvas)(opened);
 
 // ---- synthetic events: methods are called directly, so these are plain shapes ----
 

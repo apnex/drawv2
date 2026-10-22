@@ -17,7 +17,8 @@ same events, each side over fakes of its own:
 
 THE OLD CODE is kept whole, verbatim, in tests/fixtures/pre-capture/capture.js -- app/src/capture.js as it stood at READ_AT, held to its
 SHA-256, its two imports answered by shims beside it -- so the old side runs on every gate after the move. THE NEW SIDE is the adapter:
-tests/fixtures/capture-adapter.js until the move, which moves that very file to app/src/capture.js, and that module since.
+tests/fixtures/capture-adapter.js until the move, which moved that very file to app/src/capture.js, and that module since, through the
+harness's captureDispatch.
 
   node tests/fixtures/capture-parity.mjs --write     writes the edges' record from the code as it stands -- before the move only
 */
@@ -25,14 +26,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { Capture as OldCapture } from './pre-capture/capture.js';
-import { Capture as LiveCapture } from '../../app/src/capture.js';   // today's capture, the real side until the move
-import { captureCanvas } from './capture-adapter.js';   // the adapter, the file that becomes app/src/capture.js at the move
-import { dispatchFor, installDom } from './client-harness.mjs';
+import { captureDispatch, installDom } from './client-harness.mjs';   // the adapter, app/src/capture.js, through the harness (H26.3's move)
 import { picksOf, regionsOf } from '../../app/src/pick.js';
 import { PRODUCT_CANVAS } from '../../product/canvas.mjs';
 
 export const READ_AT = '7d71be6';   // the last commit holding draw's capture whole
-export const MOVED = false;         // the move flips it, with the new side's import
+export const MOVED = true;          // the move flipped it, with the new side's import
 const root = new URL('../../', import.meta.url);
 const sha256 = (url) => crypto.createHash('sha256').update(fs.readFileSync(url)).digest('hex');
 export const ORIGINAL = {
@@ -46,7 +45,7 @@ export const EDGE_RECORD = new URL('./capture-parity-edges.json', import.meta.ur
 
 const METHODS = ['onDown', 'onMove', 'onUp', 'onCancel', 'onHover', 'onDblClick', 'onKeyDown', 'onKeyUp', 'onContextMenu'];
 export const oldSide = (args) => { const c = new OldCapture(args); return Object.fromEntries(METHODS.map((m) => [m, (...a) => c[m](...a)])); };
-export const newSide = (args) => dispatchFor(captureCanvas)(args);
+export const newSide = (args) => captureDispatch(args);
 
 // ---- what one side did with one event ----
 
@@ -128,10 +127,9 @@ const bare = ({ thrownIdentity, ...a }) => a;   // eslint-disable-line no-unused
 
 // ---- the tests' events: the harness's capture, when DRAW_CAPTURE_PARITY names a folder ----
 
-// the real side: today's capture until the move, the adapter through the harness's dispatch after it; the other side, the other one
-const liveSide = (args) => { const c = new LiveCapture(args); return Object.fromEntries(METHODS.map((m) => [m, (...a) => c[m](...a)])); };
+// the real side: today's capture until the move, the adapter through the harness's dispatch since; the other side, the old copy
 export function parityCapture(args, folder = process.env.DRAW_CAPTURE_PARITY) {
-	return folder ? dualCapture({ ...args, real: MOVED ? newSide : liveSide, other: MOVED ? oldSide : newSide, folder }) : null;
+	return folder ? dualCapture({ ...args, real: newSide, other: oldSide, folder }) : null;
 }
 
 /*
