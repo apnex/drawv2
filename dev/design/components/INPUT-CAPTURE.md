@@ -4,7 +4,7 @@ The third piece of H26's design of record (`dev/DECISIONS.md` H26-3, as H26-5 am
 It designs `input-capture`, the component that stands between a platform's input events and an application: each event on the surface it is given becomes one fact, in the application's coordinates, and what the application asks of that fact is done to the event.\
 It builds on part 1 (`SNAP-GRID.md`), whose section 7 is settled and built twice, and on part 2 (`INPUT-BINDING.md`), whose D1 left the shape of a fact to this piece; it states only where it differs from either, and cites rather than restates what their readings and builds settled.
 
-**Standing:** a design under review, revision 3, drafted 2026-10-22 after its second multi-family reading (section 10.2); revisions 1 and 2 were `c7ea0c3` and `703bc19`; the code read is `703bc19`'s, identical in code to `3dcaba9`, after H26.7 moved every plugin under `plugins/`; the director answered D6 and D7 on 2026-10-22, each to be recorded as a ruling at ratification; a third reading, confirming revision 3, found nothing (section 10.3); not ratified.
+**Standing:** a design under review, revision 3, drafted 2026-10-22 after its second multi-family reading (section 10.2); revisions 1 and 2 were `c7ea0c3` and `703bc19`; the code read is `703bc19`'s, identical in code to `3dcaba9`, after H26.7 moved every plugin under `plugins/`; the director answered D6 and D7 on 2026-10-22, each to be recorded as a ruling at ratification; a third reading, confirming revision 3, found nothing (section 10.3); ratified by the director on 2026-10-22, all eleven decisions of section 8 as recommended and appendix A as `input-capture`'s vision (`dev/DECISIONS.md` H26-8); built in H26.3.
 
 ---
 
@@ -431,7 +431,7 @@ Where this piece differs:
 ## 8. Decisions owed
 
 Each is offered with a recommendation; they may be ratified together, or one at a time.\
-The ruling that ratifies this piece is written `H26-r` below until it has its number.
+Ratified together, all eleven as recommended, D6 and D7 as the director answered them, on 2026-10-22 (`dev/DECISIONS.md` H26-8); `H26-8` stands below where the draft wrote its placeholder.
 
 | # | Decision | Recommendation, and why |
 |---|---|---|
@@ -447,7 +447,7 @@ The ruling that ratifies this piece is written `H26-r` below until it has its nu
 | D10 | No conformance kit; no clock, no timer, no randomness | yes: nothing in capture is a port another party implements, and a double click is the platform's own event, as binding's D2 has it |
 | D11 | `@apnex/input-capture` released as `0.1.0` from `apnex/input-capture`, its one export path `.` | yes: `SNAP-GRID.md` section 7 unchanged; `0.x` until mission-kit admits it |
 
-**Registered when this is ratified,** each with its revival trigger (RU3):
+**Registered on ratification (H26-8),** each with its revival trigger (RU3), as B411 to B413, and B407 held again:
 - wheel and pinch facts: when their first consumer is designed -- the gesture tester's scope (H26.5) or pan and zoom (H26.6), whichever comes first (D6);
 - a context-menu fact: when an application other than draw needs the menu suppressed over its surface, or draw's B75 rule is next changed;
 - a key-up lost to the page's focus (6.3): when a person reports a key, a Shift layer or a zone left behind by switching away, or capture next adds a listener;
@@ -585,7 +585,7 @@ Each read the diff, ran the drafter's `reading-2.mjs` and `lifecycle.mjs`, and f
 
 ## Appendix A -- `input-capture`'s vision, the draft put to the director
 
-To be ratified by the director with section 8; `input-capture`'s `VISION.md` is made from it when its repository is.
+Ratified by the director as written, with section 8 (H26-8); `input-capture`'s `VISION.md` is made from it when its repository is.
 
 **North star.**\
 Let every application meet the platform's input in one place, and receive it as the same plain facts everywhere.
@@ -649,14 +649,14 @@ From the inventory of `3dcaba9`, rechecked at `703bc19`, paths as H26.7 left the
 | `app/src/main.js:278` | `visibilitychange`, the undelete offer | unchanged: no input |
 | `package.json`, `package-lock.json` | the dependencies | plumbing: the release file pinned by its hash |
 | `app/index.html:8-18`, `lab/index.html:29-39` | the import map | plumbing: regenerated, one entry more |
-| `tools/layers.mjs:159-166` | `COMPONENTS` | plumbing: `'@apnex/input-capture': { parts: ['canvas'], by: ['H26-1', 'H26-2', 'H26-r'] }` |
-| `tools/layers.mjs:176-194` | `MISSION_KIT_READ`, `MISSION_KIT` | plumbing: `'input-capture': 'proposed in drawv2, released from its own repository, composed (H26-r)'`, the date renewed |
-| `tools/layers.mjs:195-211` | `ALIGNMENT.canvas` | plumbing: `to: ['input-binding', 'input-capture']`, waiting `'consumes input-binding through rules (H26-6) and input-capture itself (H26-r); its rows and gesture bodies stay draw\'s (B389)'` |
+| `tools/layers.mjs:159-166` | `COMPONENTS` | plumbing: `'@apnex/input-capture': { parts: ['canvas'], by: ['H26-1', 'H26-2', 'H26-8'] }` |
+| `tools/layers.mjs:176-194` | `MISSION_KIT_READ`, `MISSION_KIT` | plumbing: `'input-capture': 'proposed in drawv2, released from its own repository, composed (H26-8)'`, the date renewed |
+| `tools/layers.mjs:195-211` | `ALIGNMENT.canvas` | plumbing: `to: ['input-binding', 'input-capture']`, waiting `'consumes input-binding through rules (H26-6) and input-capture itself (H26-8); its rows and gesture bodies stay draw\'s (B389)'` |
 | `tools/layers.mjs:114-121` | the canvas part's modules | unchanged: `app/src/capture.js` stays in them |
 | `tools/scan-dead.mjs` | exports with no production consumer | unchanged: `captureCanvas` has `compose-canvas.js`, and the class goes (run on the prototype's tree) |
 | `tools/import-map.mjs`, `tools/scan-components.mjs`, `server/static.mjs` | the map, the vocabulary scan, the vendor mount | unchanged: they read and serve a third package as they do two |
 | `docs/ARCHITECTURE.md` | generated parts and alignment | plumbing: regenerated |
-| `docs/ARCHITECTURE-TARGET.md:90,190,326,340` | the justification chain, section 4.2's `canvas` row, section 9.3 | plumbing: the chain cites `H26-r`; the `canvas` row reads "press rows, gestures, keys and the hand, each a part's declaration over shared gestures, the platform's events reaching them through `input-capture` (D1, D2, H26-r)"; section 9.3's first sentence names three components, `input-capture` through the `canvas` part |
+| `docs/ARCHITECTURE-TARGET.md:90,190,326,340` | the justification chain, section 4.2's `canvas` row, section 9.3 | plumbing: the chain cites `H26-8`; the `canvas` row reads "press rows, gestures, keys and the hand, each a part's declaration over shared gestures, the platform's events reaching them through `input-capture` (D1, D2, H26-8)"; section 9.3's first sentence names three components, `input-capture` through the `canvas` part |
 | `tests/import-map.test.js:57-60` | the whole import map | plumbing: restated with `input-capture`'s entry |
 | `tests/fixtures/client-harness.mjs:42-43,273` and its fake elements | the harness's `Capture` | plumbing: `captureDispatch` and its nine methods; the fakes' throwing `setPointerCapture` (section 5) |
 | `tests/input-capture.test.js:17,26-33,58-71,86,107-110` | the class built over the test's own fakes | plumbing: built through `captureDispatch`, the fakes gaining `removeEventListener`; the reading of fields to the component's tests; the region, typing, Tab, B75 and B268 tests and G1 stay |
