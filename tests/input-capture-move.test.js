@@ -14,22 +14,29 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { FOLDERS, PARTS } from '../tools/layers.mjs';
 import * as adapter from '../app/src/capture.js';
 import { picksOf, regionsOf } from '../app/src/pick.js';
 import { PRODUCT_CANVAS } from '../product/canvas.mjs';
 import { installDom } from './fixtures/client-harness.mjs';
 
-const ROOT = path.resolve(import.meta.dirname, '..');
-const HERE = fileURLToPath(import.meta.url);
-const ADAPTER = path.join(ROOT, 'app/src/capture.js');
-const COMPONENT = path.join(ROOT, 'node_modules/@apnex/input-capture/dist/');
+/*
+RESTATED at H26.3's verification (V5): each path compared as the file system resolves it. Node names a module on the stack by its real
+path, so a tree whose node_modules is a symlink -- a worktree linking its root's -- names the component by the link's target, and the
+paths are compared only once both sides are resolved.
+*/
+const real = (p) => { try { return fs.realpathSync(p); } catch { return p; } };
+const ROOT = real(path.resolve(import.meta.dirname, '..'));
+const HERE = real(fileURLToPath(import.meta.url));
+const ADAPTER = real(path.join(ROOT, 'app/src/capture.js'));
+const COMPONENT = real(path.join(ROOT, 'node_modules/@apnex/input-capture/dist')) + path.sep;
+const COMPONENT_ENTRY = pathToFileURL(real(path.join(ROOT, 'node_modules/@apnex/input-capture/dist/index.js'))).href;
 
 // the module whose code is running where this is called: the first frame of the stack outside this file and the runtime's own
 function caller() {
 	const frames = new Error().stack.split('\n').slice(1).map((l) => l.match(/\((?:file:\/\/)?([^():]+):\d+:\d+\)|at (?:file:\/\/)?([^():\s]+):\d+:\d+/)).filter(Boolean).map((m) => m[1] ?? m[2]);
-	const file = frames.find((f) => f !== HERE && !f.startsWith('node:'));
+	const file = frames.map(real).find((f) => f !== HERE && !f.startsWith('node:'));
 	return file?.startsWith(COMPONENT) ? 'component' : file === ADAPTER ? 'adapter' : file ?? 'none';
 }
 
@@ -87,6 +94,43 @@ test('H26.3 step 3: the component adds every pointer, double-click and key liste
 		assert.throws(() => adapter.captureCanvas({ svg: f.svg, host: f.host, sink: recordingSink([]) }), /^Error: capture: input-capture refused the canvas -- invalid-value at \/surface$/);
 		assert.deepEqual(f.added, []);
 	} finally { restore(); }
+});
+
+/*
+H26.3's verification (V4): the menu's listener is the adapter's own, added after the component's capture is open. Should the host refuse
+it -- its addEventListener throwing, before or after adding the listener, as a malformed host can and no browser does -- the adapter
+takes back what it added: the menu's listener, whose removal is harmless if it was never added, then the component's capture, closed,
+removing its ten in reverse; and then throws the host's error, unchanged. So no listener of a canvas that failed to open is left, as
+the component holds its own opening (IC3, lifecycle rule 3); one so left makes no fact.
+*/
+test('H26.3 (V4): a host that refuses the menu\'s listener leaves nothing listening -- the component closed, the error the host\'s', () => {
+	for (const after of [false, true]) {
+		const f = fakes();
+		const refused = new Error('contextmenu refused');
+		const add = f.host.addEventListener;
+		f.host.addEventListener = function (name, l) {
+			if (name !== 'contextmenu') return add.call(this, name, l);
+			if (after) add.call(this, name, l);
+			throw refused;
+		};
+		const got = [];
+		let threw = null;
+		try { adapter.captureCanvas({ svg: f.svg, host: f.host, sink: recordingSink(got) }); } catch (e) { threw = e; }
+		assert.equal(threw, refused, `${after ? 'added, then' : ''} refused: the host's error, unchanged`);
+		assert.deepEqual(f.removed, ['host:contextmenu', 'host:keyup', 'host:keydown', 'svg:dblclick', 'svg:pointerout', 'svg:pointerover', 'svg:pointercancel', 'svg:pointerup',
+			'svg:pointermove', 'svg:pointerdown', 'svg:pointerleave'], 'the menu\'s listener, then the component\'s ten in reverse');
+		f.listeners.get('svg:pointerdown')({ ...POINTER });
+		f.listeners.get('host:keydown')({ ...KEY });
+		assert.deepEqual(got, [], 'a listener left by a platform that ignored a removal makes no fact: the capture is closed');
+	}
+	// and a removal that throws while it is taken back is attempted past: the host's error is still the one thrown
+	const f = fakes();
+	const refused = new Error('contextmenu refused');
+	const add = f.host.addEventListener, remove = f.host.removeEventListener;
+	f.host.addEventListener = function (name, l) { if (name === 'contextmenu') throw refused; return add.call(this, name, l); };
+	f.host.removeEventListener = function (name) { remove.call(this, name); throw new Error(`${name} removal refused`); };
+	assert.throws(() => adapter.captureCanvas({ svg: f.svg, host: f.host, sink: recordingSink([]) }), (e) => e === refused);
+	assert.deepEqual(f.removed.filter((n) => n.startsWith('svg:')).length, 8, 'every removal attempted past the ones that threw');
 });
 
 const POINTER = { clientX: 30, clientY: 40, button: 0, buttons: 1, pointerId: 1, pointerType: 'mouse', shiftKey: true, ctrlKey: false, altKey: false, metaKey: false,
@@ -164,6 +208,6 @@ test('H26.3 step 7: the server and the export load no file of input-capture; the
 		assert.ok(server.length > 100 && server.some((u) => u.includes('/@apnex/input-binding/')), `the server's graph was logged: ${server.length} resolution(s)`);
 		assert.deepEqual(server.filter((u) => u.includes('/@apnex/input-capture/') || u.endsWith('/app/src/capture.js')), [], 'no file of the component, nor its adapter');
 		const page = loads("await import('./app/src/compose-canvas.js');");
-		assert.ok(page.some((u) => u.endsWith('/node_modules/@apnex/input-capture/dist/index.js')), 'the control: the canvas\'s composition loads it');
+		assert.ok(page.includes(COMPONENT_ENTRY), 'the control: the canvas\'s composition loads it');
 	} finally { fs.rmSync(path.dirname(log), { recursive: true, force: true }); }
 });

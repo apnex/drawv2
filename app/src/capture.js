@@ -118,7 +118,18 @@ export function captureCanvas({ svg, host, sink, picks = [], regions = {} }) {
 	button here, so a hand is already on it when the pointer crosses onto the palette or the header.
 	*/
 	const menu = (evt) => { if (!(askable(evt.target) && evt.target.closest(FIELD))) evt.preventDefault(); };
-	host.addEventListener('contextmenu', menu);
+	/*
+	H26.3's verification (V4): a host refusing the menu's listener -- which no browser does -- leaves nothing listening, as the component
+	holds its own opening (IC3, lifecycle rule 3): the menu's listener removed, harmless if it was never added, the capture closed, each
+	attempted past an error, and the host's error thrown, unchanged.
+	*/
+	try {
+		host.addEventListener('contextmenu', menu);
+	} catch (refused) {
+		try { host.removeEventListener('contextmenu', menu); } catch { /* attempted; the host's error is the one thrown */ }
+		try { opened.capture.close(); } catch { /* likewise */ }
+		throw refused;
+	}
 	let closed = false;
 	return Object.freeze({
 		// closes the component's capture and removes the menu's listener, attempting both and throwing the first error, once
