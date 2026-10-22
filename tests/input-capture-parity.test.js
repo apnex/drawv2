@@ -15,7 +15,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { READ_AT, MOVED, ORIGINAL, EDGE_RECORD, EDGES, GENERATED, generatedComparisons, edgeAnswers } from './fixtures/capture-parity.mjs';
+import { READ_AT, MOVED, ORIGINAL, EDGE_RECORD, EDGES, GENERATED, generatedComparisons, edgeAnswers, recordOf, VERIFICATION_READ } from './fixtures/capture-parity.mjs';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const readJson = (url) => JSON.parse(fs.readFileSync(url, 'utf8'));
@@ -46,13 +46,13 @@ test('H26.3: over seeded streams of events shaped as a browser makes them, the t
 });
 
 /*
-Section 6.3's inputs, which nothing in draw produces: each case's two answers as the code before the move gave them, held in the record,
-and each difference of the kind its bullet says. `none` marks an input beside a bullet that both answer alike, showing where its line
-runs. Two classes are the build's, where 6.3 is silent: `field-read`, a field today's capture never read before delivery whose reading
-throws -- refused now, delivered then, the bullet on preventDefault's reading read as any field's; and `refused-both`, an event refused
-on both sides before anything is delivered -- a field today's capture read throwing, a null or primitive event -- whose error differs.
+Section 6.3's inputs, which nothing in draw produces: each case's two answers held in the record -- as the code before the move gave them,
+or, for the cases H26.3's verification added (V1, V4), as the verbatim old copy and the adapter after the move give them -- and each
+difference of the kind its class says. `none` marks an input beside a class that both answer alike, showing where its line runs. Each
+class outside 6.3's bullets is said where its cases are, in tests/fixtures/capture-parity.mjs EDGES.
 */
 const BEGINS = /^TypeError: (pointerdown|pointermove|pointerup|pointercancel|pointerover|pointerout|dblclick|keydown|keyup): /;
+const asked = (a) => JSON.parse(a.asked);
 const CLASSES = {
 	coordinates: (o, n) => o.handed.length === 1 && o.threw === null && n.handed.length === 0 && BEGINS.test(n.threw),
 	button: (o, n) => o.handed.length === 1 && n.handed.length === 0 && BEGINS.test(n.threw),
@@ -64,16 +64,25 @@ const CLASSES = {
 	conversion: (o, n) => o.handed.length === 1 && o.threw === null && n.handed.length === 0 && n.threw !== null,
 	key: (o, n) => o.handed[0].event !== n.handed[0].event && JSON.parse(n.handed[0].event).key === null,
 	surface: (o, n) => o.threw === null && /^Error: capture: input-capture refused the canvas -- /.test(n.threw) && JSON.parse(n.asked).added.length === 0,
-	opening: (o, n) => o.threw === n.threw && JSON.parse(o.asked).listening.length === 9 && JSON.parse(n.asked).listening.length === 0,
+	opening: (o, n) => o.threw === n.threw && o.threw !== null && asked(o).listening.length > 0 && asked(n).listening.length === 0,
+	// outside 6.3's bullets (H26.3's verification, V1)
+	'pointerId-not-integer': (o, n) => asked(o).length === 1 && asked(o)[0].length === 1 && n.asked === '[]' && o.handed[0].event === n.handed[0].event,
+	'target-read-twice': (o, n) => o.reads > 1 && n.reads === 1 && JSON.stringify(o.handed) !== JSON.stringify(n.handed) && o.threw === null && n.threw === null,
+	'leave-refused': (o, n) => o.handed.length === 1 && o.handed[0].route === 'leave' && o.threw === null && n.handed.length === 0 && /^TypeError: pointerleave: /.test(n.threw),
+	'typed-refused': (o, n) => o.handed.length === 0 && o.threw === null && n.handed.length === 0 && /^TypeError: keydown: /.test(n.threw),
 };
 
 test('H26.3: each input section 6.3 lists answers differently, of the kind its bullet says, both answers held -- and the inputs beside each alike', () => {
 	const live = edgeAnswers();
-	const record = readJson(EDGE_RECORD).edges;
+	const record = readJson(EDGE_RECORD);
 	assert.deepEqual(Object.keys(live), EDGES.map((c) => c.id), 'every case answered');
+	assert.equal(record.verification.read, VERIFICATION_READ, 'the verification section says where its answers were read');
+	const held = [...Object.keys(record.edges), ...Object.keys(record.verification.edges)];
+	assert.deepEqual([...held].sort(), EDGES.map((c) => c.id).sort(), 'the record holds every case, once');
+	assert.equal(new Set(held).size, held.length, 'and none in both sections');
 	for (const c of EDGES) {
 		const { old, new: neu, equal } = live[c.id];
-		assert.deepEqual(live[c.id], record[c.id], `${c.id}: both answers are the ones the record holds, read from the code before the move`);
+		assert.deepEqual(live[c.id], recordOf(record, c.id), `${c.id}: both answers are the ones the record holds`);
 		if (c.class === 'none') { assert.equal(equal, true, `${c.id}: both answer alike`); continue; }
 		assert.equal(equal, false, `${c.id}: the two answer differently`);
 		assert.ok(CLASSES[c.class](old, neu), `${c.id} differs as a ${c.class} case does:\nold ${JSON.stringify(old)}\nnew ${JSON.stringify(neu)}`);

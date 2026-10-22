@@ -502,7 +502,7 @@
 			}
 		},
 		"capture-string-pointerId": {
-			"class": "no-pointerId",
+			"class": "pointerId-not-integer",
 			"method": "onDown",
 			"equal": false,
 			"old": {
@@ -746,6 +746,368 @@
 				"prevented": 0,
 				"asked": "{\"added\":[\"svg:pointerleave\",\"svg:pointerdown\",\"svg:pointermove\",\"svg:pointerup\",\"svg:pointercancel\",\"svg:pointerover\",\"svg:pointerout\",\"svg:dblclick\",\"host:keydown\"],\"removed\":[\"host:keydown\",\"svg:dblclick\",\"svg:pointerout\",\"svg:pointerover\",\"svg:pointercancel\",\"svg:pointerup\",\"svg:pointermove\",\"svg:pointerdown\",\"svg:pointerleave\"],\"listening\":[]}",
 				"threw": "Error: addEventListener keydown refused"
+			}
+		}
+	},
+	"verification": {
+		"read": "after the move: the old side from tests/fixtures/pre-capture/capture.js, the new from app/src/capture.js as H26.3's verification left it",
+		"edges": {
+			"add-throws-at-contextmenu": {
+				"class": "opening",
+				"method": "open",
+				"equal": false,
+				"old": {
+					"handed": [],
+					"prevented": 0,
+					"asked": "{\"added\":[\"svg:pointerleave\",\"svg:pointerdown\",\"svg:pointermove\",\"svg:pointerup\",\"svg:pointercancel\",\"svg:pointerover\",\"svg:pointerout\",\"svg:dblclick\",\"host:keydown\",\"host:keyup\",\"host:contextmenu\"],\"removed\":[],\"listening\":[\"svg:pointerleave\",\"svg:pointerdown\",\"svg:pointermove\",\"svg:pointerup\",\"svg:pointercancel\",\"svg:pointerover\",\"svg:pointerout\",\"svg:dblclick\",\"host:keydown\",\"host:keyup\",\"host:contextmenu\"]}",
+					"threw": "Error: addEventListener contextmenu refused"
+				},
+				"new": {
+					"handed": [],
+					"prevented": 0,
+					"asked": "{\"added\":[\"svg:pointerleave\",\"svg:pointerdown\",\"svg:pointermove\",\"svg:pointerup\",\"svg:pointercancel\",\"svg:pointerover\",\"svg:pointerout\",\"svg:dblclick\",\"host:keydown\",\"host:keyup\",\"host:contextmenu\"],\"removed\":[\"host:contextmenu\",\"host:keyup\",\"host:keydown\",\"svg:dblclick\",\"svg:pointerout\",\"svg:pointerover\",\"svg:pointercancel\",\"svg:pointerup\",\"svg:pointermove\",\"svg:pointerdown\",\"svg:pointerleave\"],\"listening\":[]}",
+					"threw": "Error: addEventListener contextmenu refused"
+				}
+			},
+			"typed-target-getter-throws": {
+				"class": "refused-both",
+				"method": "onKeyDown",
+				"equal": false,
+				"old": {
+					"handed": [],
+					"prevented": 0,
+					"asked": "[]",
+					"threw": "Error: target getter"
+				},
+				"new": {
+					"handed": [],
+					"prevented": 0,
+					"asked": "[]",
+					"threw": "TypeError: keydown: the event's target could not be read: an object"
+				}
+			},
+			"key-event-null": {
+				"class": "refused-both",
+				"method": "onKeyUp",
+				"equal": false,
+				"old": {
+					"handed": [],
+					"prevented": 0,
+					"asked": "[]",
+					"threw": "TypeError: Cannot read properties of null (reading 'button')"
+				},
+				"new": {
+					"handed": [],
+					"prevented": 0,
+					"asked": "[]",
+					"threw": "TypeError: keyup: the event must be an object, not a function or a primitive"
+				}
+			},
+			"capture-fraction-pointerId": {
+				"class": "pointerId-not-integer",
+				"method": "onDown",
+				"equal": false,
+				"old": {
+					"handed": [
+						{
+							"route": "press",
+							"args": "[]",
+							"event": "{\"type\":\"down\",\"button\":0,\"key\":null,\"repeat\":false,\"shiftKey\":false,\"ctrlKey\":false,\"altKey\":false,\"metaKey\":false,\"at\":{\"x\":-25,\"y\":40},\"on\":{\"kind\":\"canvas\",\"id\":null},\"region\":{\"target\":null,\"overTarget\":false,\"action\":null,\"input\":null,\"owner\":null,\"control\":false,\"entity\":false},\"claimed\":false,\"capture\":false}"
+						}
+					],
+					"prevented": 0,
+					"asked": "[[1.5]]",
+					"threw": null
+				},
+				"new": {
+					"handed": [
+						{
+							"route": "press",
+							"args": "[]",
+							"event": "{\"type\":\"down\",\"button\":0,\"key\":null,\"repeat\":false,\"shiftKey\":false,\"ctrlKey\":false,\"altKey\":false,\"metaKey\":false,\"at\":{\"x\":-25,\"y\":40},\"on\":{\"kind\":\"canvas\",\"id\":null},\"region\":{\"target\":null,\"overTarget\":false,\"action\":null,\"input\":null,\"owner\":null,\"control\":false,\"entity\":false},\"claimed\":false,\"capture\":false}"
+						}
+					],
+					"prevented": 0,
+					"asked": "[]",
+					"threw": null
+				}
+			},
+			"capture-nan-pointerId": {
+				"class": "pointerId-not-integer",
+				"method": "onDown",
+				"equal": false,
+				"old": {
+					"handed": [
+						{
+							"route": "press",
+							"args": "[]",
+							"event": "{\"type\":\"down\",\"button\":0,\"key\":null,\"repeat\":false,\"shiftKey\":false,\"ctrlKey\":false,\"altKey\":false,\"metaKey\":false,\"at\":{\"x\":-25,\"y\":40},\"on\":{\"kind\":\"canvas\",\"id\":null},\"region\":{\"target\":null,\"overTarget\":false,\"action\":null,\"input\":null,\"owner\":null,\"control\":false,\"entity\":false},\"claimed\":false,\"capture\":false}"
+						}
+					],
+					"prevented": 0,
+					"asked": "[[\"#NaN\"]]",
+					"threw": null
+				},
+				"new": {
+					"handed": [
+						{
+							"route": "press",
+							"args": "[]",
+							"event": "{\"type\":\"down\",\"button\":0,\"key\":null,\"repeat\":false,\"shiftKey\":false,\"ctrlKey\":false,\"altKey\":false,\"metaKey\":false,\"at\":{\"x\":-25,\"y\":40},\"on\":{\"kind\":\"canvas\",\"id\":null},\"region\":{\"target\":null,\"overTarget\":false,\"action\":null,\"input\":null,\"owner\":null,\"control\":false,\"entity\":false},\"claimed\":false,\"capture\":false}"
+						}
+					],
+					"prevented": 0,
+					"asked": "[]",
+					"threw": null
+				}
+			},
+			"capture-null-pointerId": {
+				"class": "pointerId-not-integer",
+				"method": "onDown",
+				"equal": false,
+				"old": {
+					"handed": [
+						{
+							"route": "press",
+							"args": "[]",
+							"event": "{\"type\":\"down\",\"button\":0,\"key\":null,\"repeat\":false,\"shiftKey\":false,\"ctrlKey\":false,\"altKey\":false,\"metaKey\":false,\"at\":{\"x\":-25,\"y\":40},\"on\":{\"kind\":\"canvas\",\"id\":null},\"region\":{\"target\":null,\"overTarget\":false,\"action\":null,\"input\":null,\"owner\":null,\"control\":false,\"entity\":false},\"claimed\":false,\"capture\":false}"
+						}
+					],
+					"prevented": 0,
+					"asked": "[[null]]",
+					"threw": null
+				},
+				"new": {
+					"handed": [
+						{
+							"route": "press",
+							"args": "[]",
+							"event": "{\"type\":\"down\",\"button\":0,\"key\":null,\"repeat\":false,\"shiftKey\":false,\"ctrlKey\":false,\"altKey\":false,\"metaKey\":false,\"at\":{\"x\":-25,\"y\":40},\"on\":{\"kind\":\"canvas\",\"id\":null},\"region\":{\"target\":null,\"overTarget\":false,\"action\":null,\"input\":null,\"owner\":null,\"control\":false,\"entity\":false},\"claimed\":false,\"capture\":false}"
+						}
+					],
+					"prevented": 0,
+					"asked": "[]",
+					"threw": null
+				}
+			},
+			"press-target-per-read": {
+				"class": "target-read-twice",
+				"method": "onDown",
+				"equal": false,
+				"old": {
+					"handed": [
+						{
+							"route": "press",
+							"args": "[]",
+							"event": "{\"type\":\"down\",\"button\":0,\"key\":null,\"repeat\":false,\"shiftKey\":false,\"ctrlKey\":false,\"altKey\":false,\"metaKey\":false,\"at\":{\"x\":-25,\"y\":40},\"on\":{\"kind\":\"node\",\"id\":\"node-000001\"},\"region\":{\"target\":null,\"overTarget\":false,\"action\":\"toggle\",\"input\":null,\"owner\":\"node-000005\",\"control\":true,\"entity\":true},\"claimed\":false,\"capture\":false}"
+						}
+					],
+					"prevented": 0,
+					"asked": "[]",
+					"threw": null,
+					"reads": 2
+				},
+				"new": {
+					"handed": [
+						{
+							"route": "press",
+							"args": "[]",
+							"event": "{\"type\":\"down\",\"button\":0,\"key\":null,\"repeat\":false,\"shiftKey\":false,\"ctrlKey\":false,\"altKey\":false,\"metaKey\":false,\"at\":{\"x\":-25,\"y\":40},\"on\":{\"kind\":\"node\",\"id\":\"node-000001\"},\"region\":{\"target\":null,\"overTarget\":false,\"action\":null,\"input\":null,\"owner\":null,\"control\":false,\"entity\":true},\"claimed\":false,\"capture\":false}"
+						}
+					],
+					"prevented": 0,
+					"asked": "[]",
+					"threw": null,
+					"reads": 1
+				}
+			},
+			"key-target-per-read": {
+				"class": "target-read-twice",
+				"method": "onKeyDown",
+				"equal": false,
+				"old": {
+					"handed": [],
+					"prevented": 0,
+					"asked": "[]",
+					"threw": null,
+					"reads": 2
+				},
+				"new": {
+					"handed": [
+						{
+							"route": "keyDown",
+							"args": "[]",
+							"event": "{\"type\":\"key-down\",\"button\":0,\"key\":\"a\",\"repeat\":false,\"shiftKey\":false,\"ctrlKey\":false,\"altKey\":false,\"metaKey\":false,\"onControl\":false,\"claimed\":false,\"capture\":false}"
+						}
+					],
+					"prevented": 0,
+					"asked": "[]",
+					"threw": null,
+					"reads": 1
+				}
+			},
+			"move-target-per-read": {
+				"class": "none",
+				"method": "onMove",
+				"equal": true,
+				"old": {
+					"handed": [
+						{
+							"route": "move",
+							"args": "[]",
+							"event": "{\"type\":\"move\",\"button\":0,\"key\":null,\"repeat\":false,\"shiftKey\":false,\"ctrlKey\":false,\"altKey\":false,\"metaKey\":false,\"at\":{\"x\":-25,\"y\":40},\"on\":{\"kind\":\"node\",\"id\":\"node-000001\"},\"claimed\":false,\"capture\":false}"
+						}
+					],
+					"prevented": 0,
+					"asked": "[]",
+					"threw": null,
+					"reads": 1
+				},
+				"new": {
+					"handed": [
+						{
+							"route": "move",
+							"args": "[]",
+							"event": "{\"type\":\"move\",\"button\":0,\"key\":null,\"repeat\":false,\"shiftKey\":false,\"ctrlKey\":false,\"altKey\":false,\"metaKey\":false,\"at\":{\"x\":-25,\"y\":40},\"on\":{\"kind\":\"node\",\"id\":\"node-000001\"},\"claimed\":false,\"capture\":false}"
+						}
+					],
+					"prevented": 0,
+					"asked": "[]",
+					"threw": null,
+					"reads": 1
+				}
+			},
+			"leave-null": {
+				"class": "leave-refused",
+				"method": "onLeave",
+				"equal": false,
+				"old": {
+					"handed": [
+						{
+							"route": "leave",
+							"args": "[]",
+							"event": "#none"
+						}
+					],
+					"prevented": 0,
+					"asked": "[]",
+					"threw": null
+				},
+				"new": {
+					"handed": [],
+					"prevented": 0,
+					"asked": "[]",
+					"threw": "TypeError: pointerleave: the event must be an object, not a function or a primitive"
+				}
+			},
+			"leave-getter-throws": {
+				"class": "leave-refused",
+				"method": "onLeave",
+				"equal": false,
+				"old": {
+					"handed": [
+						{
+							"route": "leave",
+							"args": "[]",
+							"event": "#none"
+						}
+					],
+					"prevented": 0,
+					"asked": "[]",
+					"threw": null
+				},
+				"new": {
+					"handed": [],
+					"prevented": 0,
+					"asked": "[]",
+					"threw": "TypeError: pointerleave: the event's clientY could not be read: an object"
+				}
+			},
+			"leave-button-fraction": {
+				"class": "leave-refused",
+				"method": "onLeave",
+				"equal": false,
+				"old": {
+					"handed": [
+						{
+							"route": "leave",
+							"args": "[]",
+							"event": "#none"
+						}
+					],
+					"prevented": 0,
+					"asked": "[]",
+					"threw": null
+				},
+				"new": {
+					"handed": [],
+					"prevented": 0,
+					"asked": "[]",
+					"threw": "TypeError: pointerleave: the event's button must be undefined, null or a safe integer"
+				}
+			},
+			"leave-ordinary": {
+				"class": "none",
+				"method": "onLeave",
+				"equal": true,
+				"old": {
+					"handed": [
+						{
+							"route": "leave",
+							"args": "[]",
+							"event": "#none"
+						}
+					],
+					"prevented": 0,
+					"asked": "[]",
+					"threw": null
+				},
+				"new": {
+					"handed": [
+						{
+							"route": "leave",
+							"args": "[]",
+							"event": "#none"
+						}
+					],
+					"prevented": 0,
+					"asked": "[]",
+					"threw": null
+				}
+			},
+			"typed-no-preventDefault": {
+				"class": "typed-refused",
+				"method": "onKeyDown",
+				"equal": false,
+				"old": {
+					"handed": [],
+					"prevented": 0,
+					"asked": "[]",
+					"threw": null
+				},
+				"new": {
+					"handed": [],
+					"prevented": 0,
+					"asked": "[]",
+					"threw": "TypeError: keydown: the event's preventDefault must be a function"
+				}
+			},
+			"typed-key-number": {
+				"class": "none",
+				"method": "onKeyDown",
+				"equal": true,
+				"old": {
+					"handed": [],
+					"prevented": 0,
+					"asked": "[]",
+					"threw": null
+				},
+				"new": {
+					"handed": [],
+					"prevented": 0,
+					"asked": "[]",
+					"threw": null
+				}
 			}
 		}
 	}

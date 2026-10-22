@@ -10,7 +10,8 @@ same events, each side over fakes of its own:
               pointer id but on a double click, each kind of target the canvas meets; key events of every kind of key and target; the
               context menu -- handed to a sink that claims, takes the pointer on a press and throws as Input may; no difference allowed
   the edges   the inputs section 6.3 lists, which nothing in draw produces, each run on both sides and its two answers held in
-              capture-parity-edges.json, every difference classed by the 6.3 bullet it is
+              capture-parity-edges.json, every difference classed by the 6.3 bullet it is -- and, since H26.3's verification, each
+              class of input found outside 6.3's bullets, held the same way (V1)
   the tests   every event the gesture corpus and the 24 test files driving the canvas hand the harness, in a child run with
               DRAW_CAPTURE_PARITY naming a folder: the harness's capture is then `dualCapture`, which drives the real side with the
               real Input and the other with a sink replaying what Input wrote and threw, and records each comparison there
@@ -21,6 +22,8 @@ tests/fixtures/capture-adapter.js until the move, which moved that very file to 
 harness's captureDispatch.
 
   node tests/fixtures/capture-parity.mjs --write     writes the edges' record from the code as it stands -- before the move only
+  node tests/fixtures/capture-parity.mjs --add       after it: writes the cases the record lacks into its `verification` section,
+                                                     refusing to change the answers of any case it holds (a case's class may move)
 */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -287,10 +290,17 @@ const claimAll = () => ({ claimed: true, capture: false, threw: null });
 const captureAll = () => ({ claimed: false, capture: true, threw: null });
 const quiet = () => ({ claimed: false, capture: false, threw: null });
 const getterThrows = (base, field) => Object.defineProperty(base, field, { enumerable: true, configurable: true, get() { throw new Error(`${field} getter`); } });
+// an event whose `target` answers each read with the next of `targets` (the last thereafter), counting its reads in `__reads`
+const targetPerRead = (base, ...targets) => {
+	const counted = { n: 0 };
+	Object.defineProperty(base, '__reads', { value: counted, enumerable: false });
+	return Object.defineProperty(base, 'target', { enumerable: true, configurable: true, get() { counted.n++; return targets[Math.min(counted.n, targets.length) - 1](); } });
+};
 
 /*
 Each case names the 6.3 bullet it holds (`class`), what it drives, and the answers: the sink's, and the side's fakes when they are not the
 ordinary ones. A case of the class `none` holds an input both sides answer alike, beside a bullet's, to show where the bullet's line runs.
+The classes outside 6.3's bullets, which H26.3's verification found (V1), follow the bullets', each said where its cases are.
 */
 export const EDGES = [
 	// 6.3, bullet 1: a pointer event whose coordinates are not finite numbers
@@ -298,7 +308,6 @@ export const EDGES = [
 	{ id: 'coords-nan', class: 'coordinates', method: 'onMove', evt: () => ({ ...ok(), clientX: NaN }), answers: quiet },
 	{ id: 'coords-string', class: 'coordinates', method: 'onUp', evt: () => ({ ...ok(), clientY: '40' }), answers: quiet },
 	{ id: 'coords-infinite', class: 'coordinates', method: 'onDblClick', evt: () => ({ ...ok(), clientX: Infinity }), answers: quiet },
-	{ id: 'event-primitive', class: 'refused-both', method: 'onDown', evt: () => 'pointerdown', answers: quiet },
 	// bullet 2: a button neither absent, null nor a safe integer
 	{ id: 'button-fraction', class: 'button', method: 'onDown', evt: () => ({ ...ok(), button: 1.5 }), answers: quiet },
 	{ id: 'button-string', class: 'button', method: 'onUp', evt: () => ({ ...ok(), button: '0' }), answers: quiet },
@@ -308,19 +317,16 @@ export const EDGES = [
 	{ id: 'prevent-absent-claimed', class: 'preventDefault', method: 'onKeyDown', evt: () => { const e = okKey(); delete e.preventDefault; return e; }, answers: claimAll },
 	{ id: 'prevent-getter-throws', class: 'preventDefault', method: 'onMove', evt: () => getterThrows(ok(), 'preventDefault'), answers: quiet },
 	{ id: 'key-event-primitive', class: 'preventDefault', method: 'onKeyUp', evt: () => 'keyup', answers: quiet },
+	// a field the old capture never read before delivering whose reading throws -- refused now, delivered then: the bullet's "whose reading
+	// throws" read as any field's (`field-read`)
 	{ id: 'pointerId-getter-throws', class: 'field-read', method: 'onDown', evt: () => getterThrows(ok(), 'pointerId'), answers: captureAll },
 	{ id: 'buttons-getter-throws', class: 'field-read', method: 'onMove', evt: () => getterThrows(ok(), 'buttons'), answers: quiet },
 	{ id: 'code-getter-throws', class: 'field-read', method: 'onKeyDown', evt: () => getterThrows(okKey(), 'code'), answers: quiet },
-	{ id: 'button-getter-throws', class: 'refused-both', method: 'onDown', evt: () => getterThrows(ok(), 'button'), answers: quiet },
-	{ id: 'key-getter-throws', class: 'refused-both', method: 'onKeyUp', evt: () => getterThrows(okKey(), 'key'), answers: quiet },
-	{ id: 'target-getter-throws', class: 'refused-both', method: 'onUp', evt: () => getterThrows(ok(), 'target'), answers: quiet },
-	{ id: 'event-null', class: 'refused-both', method: 'onDown', evt: () => null, answers: quiet },
 	// bullet 4: another family's fields
 	{ id: 'pointer-carries-key', class: 'other-family', method: 'onDown', evt: () => ({ ...ok(), key: 'x', repeat: true }), answers: quiet },
 	{ id: 'key-carries-button', class: 'other-family', method: 'onKeyDown', evt: () => ({ ...okKey(), button: 2 }), answers: quiet },
 	// bullet 5: a press Input captures, carrying no pointer id
 	{ id: 'capture-no-pointerId', class: 'no-pointerId', method: 'onDown', evt: () => { const e = ok(); delete e.pointerId; return e; }, answers: captureAll },
-	{ id: 'capture-string-pointerId', class: 'no-pointerId', method: 'onDown', evt: () => ({ ...ok(), pointerId: '1' }), answers: captureAll },
 	{ id: 'double-no-pointerId-claimed', class: 'none', method: 'onDblClick', evt: () => { const e = ok(); delete e.pointerId; return e; }, answers: claimAll },
 	// bullet 6: a conversion answering no finite point; a leave while the canvas has no screen transform
 	{ id: 'conversion-nan', class: 'conversion', method: 'onMove', evt: ok, answers: quiet, svg: () => screenSvg(() => ({ inverse: () => ({ a: NaN, b: 0, c: 0, d: 1, e: 0, f: 0 }) })) },
@@ -333,8 +339,48 @@ export const EDGES = [
 	{ id: 'surface-no-setPointerCapture', class: 'surface', method: 'open', svg: () => ({ getScreenCTM: () => null, addEventListener() {}, removeEventListener() {} }), bareSurface: true },
 	{ id: 'surface-no-removeEventListener', class: 'surface', method: 'open', svg: () => ({ getScreenCTM: () => null, addEventListener() {}, setPointerCapture() {} }), bareSurface: true },
 	{ id: 'host-no-removeEventListener', class: 'surface', method: 'open', host: () => ({ addEventListener() {} }) },
-	// bullet 9: an addEventListener that throws as the capture opens
+	// bullet 9: an addEventListener that throws as the capture opens -- the component's, or since H26.3's verification (V4) the adapter's
+	// own menu listener, after which the adapter closes the open capture
 	{ id: 'add-throws-at-keydown', class: 'opening', method: 'open', throwAt: 'keydown' },
+	{ id: 'add-throws-at-contextmenu', class: 'opening', method: 'open', throwAt: 'contextmenu' },
+
+	/*
+	OUTSIDE 6.3'S BULLETS (H26.3's verification, V1): inputs nothing in draw produces, answered differently, of a kind no bullet names.
+
+	`refused-both` -- an event refused before anything is delivered on both sides, on every listener but pointerleave's (whose old
+	listener read nothing; `leave-refused` below): a getter of a field the old capture read before delivery throwing -- the old capture
+	rethrows the getter's own error, the component throws its TypeError naming the event and the field -- or a null or primitive event,
+	which the old capture failed on reading, with the runtime's TypeError, and the component refuses as no object.
+	*/
+	{ id: 'button-getter-throws', class: 'refused-both', method: 'onDown', evt: () => getterThrows(ok(), 'button'), answers: quiet },
+	{ id: 'target-getter-throws', class: 'refused-both', method: 'onUp', evt: () => getterThrows(ok(), 'target'), answers: quiet },
+	{ id: 'key-getter-throws', class: 'refused-both', method: 'onKeyUp', evt: () => getterThrows(okKey(), 'key'), answers: quiet },
+	{ id: 'typed-target-getter-throws', class: 'refused-both', method: 'onKeyDown', evt: () => getterThrows(okKey(), 'target'), answers: quiet },
+	{ id: 'event-null', class: 'refused-both', method: 'onDown', evt: () => null, answers: quiet },
+	{ id: 'event-primitive', class: 'refused-both', method: 'onDown', evt: () => 'pointerdown', answers: quiet },
+	{ id: 'key-event-null', class: 'refused-both', method: 'onKeyUp', evt: () => null, answers: quiet },
+	// `pointerId-not-integer` -- a press Input captures whose pointerId is present and no safe integer: the old capture asked the platform
+	// to take that very value, the component's reply asks nothing (bullet 5 names an absent pointerId alone)
+	{ id: 'capture-string-pointerId', class: 'pointerId-not-integer', method: 'onDown', evt: () => ({ ...ok(), pointerId: '1' }), answers: captureAll },
+	{ id: 'capture-fraction-pointerId', class: 'pointerId-not-integer', method: 'onDown', evt: () => ({ ...ok(), pointerId: 1.5 }), answers: captureAll },
+	{ id: 'capture-nan-pointerId', class: 'pointerId-not-integer', method: 'onDown', evt: () => ({ ...ok(), pointerId: NaN }), answers: captureAll },
+	{ id: 'capture-null-pointerId', class: 'pointerId-not-integer', method: 'onDown', evt: () => ({ ...ok(), pointerId: null }), answers: captureAll },
+	// `target-read-twice` -- a target getter answering differently at each read: the old capture read it more than once and acted on
+	// each answer (a press's hit from the first, its run-mode region from the second; a key-down's field test from the second), the
+	// component reads it once and hands that one target to both functions; `reads` holds each side's count
+	{ id: 'press-target-per-read', class: 'target-read-twice', method: 'onDown', evt: () => targetPerRead(ok(), TARGETS.node, TARGETS.action), answers: quiet, reads: true },
+	{ id: 'key-target-per-read', class: 'target-read-twice', method: 'onKeyDown', evt: () => targetPerRead(okKey(), TARGETS.body, TARGETS.field), answers: quiet, reads: true },
+	{ id: 'move-target-per-read', class: 'none', method: 'onMove', evt: () => targetPerRead(ok(), TARGETS.node, TARGETS.action), answers: quiet, reads: true },
+	// `leave-refused` -- a pointerleave the component refuses: the old listener called leave() and read nothing of the event, the component
+	// reads it and throws before delivering
+	{ id: 'leave-null', class: 'leave-refused', method: 'onLeave', evt: () => null, answers: quiet },
+	{ id: 'leave-getter-throws', class: 'leave-refused', method: 'onLeave', evt: () => getterThrows(ok(), 'clientY'), answers: quiet },
+	{ id: 'leave-button-fraction', class: 'leave-refused', method: 'onLeave', evt: () => ({ ...ok(), button: 1.5 }), answers: quiet },
+	{ id: 'leave-ordinary', class: 'none', method: 'onLeave', evt: ok, answers: quiet },
+	// `typed-refused` -- a key-down typed into a field that the component refuses: the old capture dropped it before reading anything else,
+	// the component judges the event before the adapter's field test runs, and throws
+	{ id: 'typed-no-preventDefault', class: 'typed-refused', method: 'onKeyDown', evt: () => { const e = { ...okKey(), target: TARGETS.field() }; delete e.preventDefault; return e; }, answers: quiet },
+	{ id: 'typed-key-number', class: 'none', method: 'onKeyDown', evt: () => ({ ...okKey(), key: 5, target: TARGETS.field() }), answers: quiet },
 ];
 
 // the listeners a side added, and its answer to opening, over fakes that may lack a method or throw on one add
@@ -381,16 +427,45 @@ export function edgeAnswers() {
 	try {
 		const out = {};
 		for (const c of EDGES) {
-			const [o, n] = [oldSide, newSide].map((side) => (c.method === 'open' ? openOne(side, c) : c.method === 'leave' ? leaveOne(side, c)
-				: bare(runOne(side, c.method, c.evt(), c.answers, { svg: c.svg ? c.svg() : screenSvg() }))));
+			const [o, n] = [oldSide, newSide].map((side) => {
+				if (c.method === 'open') return openOne(side, c);
+				if (c.method === 'leave') return leaveOne(side, c);
+				const evt = c.evt();
+				const answer = bare(runOne(side, c.method, evt, c.answers, { svg: c.svg ? c.svg() : screenSvg() }));
+				return c.reads ? { ...answer, reads: evt.__reads.n } : answer;
+			});
 			out[c.id] = { class: c.class, method: c.method, equal: text(o) === text(n), old: o, new: n };
 		}
 		return out;
 	} finally { restore(); }
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname) && process.argv.includes('--write')) {
-	if (MOVED) { console.error('capture-parity: the record is read from the code before the move'); process.exit(1); }
+// the record's two sections: `edges`, read from the code before the move, and `verification`, the cases H26.3's verification added after it
+export const VERIFICATION_READ = 'after the move: the old side from tests/fixtures/pre-capture/capture.js, the new from app/src/capture.js as H26.3\'s verification left it';
+export const recordOf = (record, id) => record.edges[id] ?? record.verification?.edges?.[id];
+
+const running = process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname);
+if (running && process.argv.includes('--write')) {
+	if (MOVED) { console.error('capture-parity: the record is read from the code before the move -- use --add'); process.exit(1); }
 	fs.writeFileSync(EDGE_RECORD, `${JSON.stringify({ readAt: READ_AT, edges: edgeAnswers() }, null, '\t')}\n`);
 	console.log(`capture-parity: wrote ${path.relative(process.cwd(), new URL(EDGE_RECORD).pathname)}, ${EDGES.length} case(s)`);
+}
+if (running && process.argv.includes('--add')) {
+	const record = JSON.parse(fs.readFileSync(EDGE_RECORD, 'utf8'));
+	const live = edgeAnswers();
+	const verification = { read: VERIFICATION_READ, edges: {} };
+	const same = (a, b) => text([a.method, a.equal, a.old, a.new]) === text([b.method, b.equal, b.old, b.new]);
+	for (const [id, held] of Object.entries(record.edges)) {
+		if (!live[id]) { console.error(`capture-parity: the record holds ${id}, which no case drives`); process.exit(1); }
+		if (!same(live[id], held)) { console.error(`capture-parity: ${id} answers otherwise than the record, read before the move, holds`); process.exit(1); }
+		held.class = live[id].class;
+	}
+	for (const [id, answer] of Object.entries(live)) {
+		if (record.edges[id]) continue;
+		const held = record.verification?.edges?.[id];
+		if (held && !same(answer, held)) { console.error(`capture-parity: ${id} answers otherwise than the record holds`); process.exit(1); }
+		verification.edges[id] = answer;
+	}
+	fs.writeFileSync(EDGE_RECORD, `${JSON.stringify({ readAt: record.readAt, edges: record.edges, verification }, null, '\t')}\n`);
+	console.log(`capture-parity: ${Object.keys(verification.edges).length} case(s) in the verification section, ${Object.keys(record.edges).length} read before the move`);
 }
