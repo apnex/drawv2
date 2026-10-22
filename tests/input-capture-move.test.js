@@ -11,7 +11,9 @@ which module's code adds each listener and reads each field is read off the stac
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
+import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { FOLDERS, PARTS } from '../tools/layers.mjs';
 import * as adapter from '../app/src/capture.js';
@@ -140,4 +142,28 @@ test('H26.3 step 3 (G5, D9): of the product\'s modules, app/src/capture.js alone
 	assert.match(compose, /import \{ captureCanvas \} from '\.\/capture\.js';/);
 	assert.match(compose, /const listen = \(\) => \(capture \?\?= captureCanvas\(\{ svg, host, sink: input, picks: picksOf\(parts\), regions: regionsOf\(parts\) \}\)\);/,
 		'listen() keeps its place, calling captureCanvas where it made the class');
+});
+
+/*
+H26.3 step 7 -- the pages load input-capture through their import map (tests/import-map-browser.test.js); the server and the export never
+load it, since only the pages compose a canvas. Each module graph is loaded in a process of its own whose every resolution is logged
+(tests/fixtures/resolve-log/): the server's app and the export's renderer resolve no file of the component, and the canvas's composition,
+the control, resolves its entry.
+*/
+test('H26.3 step 7: the server and the export load no file of input-capture; the canvas\'s composition does', () => {
+	const log = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'resolve-log-')), 'log');
+	try {
+		const loads = (code) => {
+			fs.writeFileSync(log, '');
+			const env = { ...Object.fromEntries(Object.entries(process.env).filter(([k]) => k !== 'NODE_TEST_CONTEXT')), RESOLVE_LOG: log };
+			const r = spawnSync(process.execPath, ['--import', './tests/fixtures/resolve-log/register.mjs', '--input-type=module', '-e', code], { cwd: ROOT, env, encoding: 'utf8' });
+			assert.equal(r.status, 0, r.stderr);
+			return fs.readFileSync(log, 'utf8').split('\n').filter(Boolean);
+		};
+		const server = loads("await import('./server/app.js'); await import('./server/svg.mjs');");
+		assert.ok(server.length > 100 && server.some((u) => u.includes('/@apnex/input-binding/')), `the server's graph was logged: ${server.length} resolution(s)`);
+		assert.deepEqual(server.filter((u) => u.includes('/@apnex/input-capture/') || u.endsWith('/app/src/capture.js')), [], 'no file of the component, nor its adapter');
+		const page = loads("await import('./app/src/compose-canvas.js');");
+		assert.ok(page.some((u) => u.endsWith('/node_modules/@apnex/input-capture/dist/index.js')), 'the control: the canvas\'s composition loads it');
+	} finally { fs.rmSync(path.dirname(log), { recursive: true, force: true }); }
 });
