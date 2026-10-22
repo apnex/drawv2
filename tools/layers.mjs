@@ -162,18 +162,22 @@ export const COMPONENTS = {
 	// H26.2: the rules part alone, draw's adapter (kernel/input-rules.mjs); the canvas and the network ask it through that part
 	// (dev/design/components/INPUT-BINDING.md section 5, D10)
 	'@apnex/input-binding': { parts: ['rules'], by: ['H26-1', 'H26-2', 'H26-6'] },
+	// H26.3: the canvas part alone, draw's adapter (app/src/capture.js); the platform's events reach every other part through it
+	// (dev/design/components/INPUT-CAPTURE.md section 5, D9)
+	'@apnex/input-capture': { parts: ['canvas'], by: ['H26-1', 'H26-2', 'H26-8'] },
 };
 
 /*
 H21.9 (A-0) -- EACH PART'S ALIGNMENT WITH MISSION-KIT, a register, not structure: each part below is mapped to the component or
 candidate it takes or would take (dev/design/unification/MISSION-KIT-ALIGNMENT.md, section 3, says why each fits and which rulings
 composing it would change). AMENDED by H26.1: the anchored core composes its first component, `snap-grid`, through the lattice
-(COMPONENTS above); AMENDED by H26.2: and its second, `input-binding`, through the rules part; every other mapping is still a candidate's.
+(COMPONENTS above); AMENDED by H26.2: and its second, `input-binding`, through the rules part; AMENDED by H26.3: and its third,
+`input-capture`, through the canvas part; every other mapping is still a candidate's.
 MISSION_KIT holds each component's or candidate's standing as read on MISSION_KIT_READ -- standings move, and are read again before
 a design that composes one is asked. tools/generate-architecture.mjs renders the register into the target's section 9.3 and fails
 on a part that is no part, a name MISSION_KIT does not hold, or an entry of MISSION_KIT no part aligns to.
 */
-export const MISSION_KIT_READ = '2026-10-21';
+export const MISSION_KIT_READ = '2026-10-22';
 export const MISSION_KIT = {
 	agp: 'registered in mission-kit, C1',
 	'snap-grid': 'proposed in drawv2, released from its own repository, composed (H26-4)',
@@ -185,6 +189,7 @@ export const MISSION_KIT = {
 	'credential-issuer': 'proposed in zorg, no code',
 	'change-planner': 'candidate, zorg D32, steered in D35',
 	'input-binding': 'proposed in drawv2, released from its own repository, composed (H26-6)',
+	'input-capture': 'proposed in drawv2, released from its own repository, composed (H26-8)',
 	'vector-scene': 'a drawv2 component by H26-1, its design owed (H26.0); a candidate in zorg D32, steered in D35',
 	'entity-view': 'candidate, zorg D32',
 	'write-outbox': 'candidate, zorg D32',
@@ -200,7 +205,7 @@ export const ALIGNMENT = {
 	primitives: { to: ['vector-scene'], waits: 'a contract; OD-3' },
 	rules: { to: ['input-binding'], waits: 'composed (H26-6); its matcher and gesture session moved onto it at H26.2' },
 	planner: { to: ['change-planner'], waits: 'a contract; OD-3' },
-	canvas: { to: ['input-binding'], waits: 'consumes it through rules (H26-6); its rows and gesture bodies stay draw\'s (B389)' },
+	canvas: { to: ['input-binding', 'input-capture'], waits: 'consumes input-binding through rules (H26-6) and input-capture itself (H26-8); its rows and gesture bodies stay draw\'s (B389)' },
 	renderer: { to: ['vector-scene'], waits: 'a contract; OD-3' },
 	sync: { to: ['entity-view', 'write-outbox'], waits: 'OD-2; OD-3' },
 	server: { to: ['static-host'], waits: 'a contract' },

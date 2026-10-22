@@ -9,6 +9,9 @@ way a module of the page will: by its bare name, which only the map can resolve.
 AMENDED H26.2 (dev/design/components/INPUT-BINDING.md acceptance step 7): both pages load both components with themselves now --
 snap-grid through the lattice, input-binding through the rules part -- each graph answered 200 from the vendor mount, and each export
 of both resolved by name and working, input-binding deciding an exact travel in Chrome.
+AMENDED H26.3 (dev/design/components/INPUT-CAPTURE.md acceptance step 7): and the third, input-capture, resolved by its one name and
+working in Chrome -- a capture opened on an element of the page, a constructed pointer event and key event dispatched on it made into
+facts, the page refusing the synthetic pointer so takePointer answers false, and nothing made once closed.
 */
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
@@ -23,6 +26,7 @@ import { createTab, sleep } from './fixtures/matrix-runner.mjs';   // the one-ta
 const root = path.resolve(import.meta.dirname, '..');
 const { version } = JSON.parse(fs.readFileSync(path.join(root, 'node_modules/@apnex/snap-grid/package.json'), 'utf8'));
 const binding = JSON.parse(fs.readFileSync(path.join(root, 'node_modules/@apnex/input-binding/package.json'), 'utf8')).version;   // H26.2
+const capture = JSON.parse(fs.readFileSync(path.join(root, 'node_modules/@apnex/input-capture/package.json'), 'utf8')).version;   // H26.3
 const free = () => new Promise((resolve) => { const s = net.createServer().listen(0, '127.0.0.1', () => { const p = s.address().port; s.close(() => resolve(p)); }); });
 let dir, procs = [], port, labPort, cdp, theTab;
 
@@ -65,12 +69,28 @@ const THROUGH_THE_MAP = `(async () => {
 	const ib = await import('@apnex/input-binding');
 	const session = ib.openGestureSession({ threshold: 4, gestures: [] }).session;
 	const exact = [4, 4 + 2 ** -50].map((x) => { session.pointerDown({ at: { x: 0, y: 0 }, button: 0 }); session.pointerMove({ at: { x, y: 0 } }); return session.pointerUp({ button: 0 }).trigger; });
+	// H26.3: the third, by its one name -- a capture on an element of the page, whose constructed events become facts, a claim prevents
+	// the default, the page refuses the synthetic pointer, and a closed capture makes nothing
+	const ic = await import('@apnex/input-capture');
+	const el = document.createElement('div');
+	document.body.append(el);
+	const facts = [], taken = [];
+	const capture = ic.openCapture({ surface: el, keys: el, toDrawing: (s) => ({ x: s.x / 2, y: s.y / 2 }), hit: (t) => t === el, focus: (t) => t === el,
+		deliver: (fact, reply) => { facts.push(fact); if (fact.type === 'down') taken.push(reply.takePointer()); if (fact.type === 'key-down') reply.claim(); } });
+	el.dispatchEvent(new PointerEvent('pointerdown', { clientX: 10, clientY: 20, button: 0, buttons: 1, pointerId: 7, pointerType: 'mouse', shiftKey: true }));
+	const kd = new KeyboardEvent('keydown', { key: 'a', code: 'KeyA', cancelable: true });
+	el.dispatchEvent(kd);
+	capture.capture.close();
+	el.dispatchEvent(new PointerEvent('pointermove', { clientX: 1, clientY: 1 }));
+	el.remove();
+	const cap = { exports: Object.keys(ic).sort(), facts: facts.map((f) => [f.type, f.at, f.screen, f.hit, f.focus, f.button, f.pointerId, f.pointerType, f.key, f.code, f.shiftKey, Object.isFrozen(f)]),
+		taken, prevented: kd.defaultPrevented };
 	return { maps: maps.length, ok: opened.ok, point: opened.grid.pointOf(opened.grid.nearest({ x: 61, y: 29 })), kit: kit.checkGridShape(grid.square, []).length,
-		binding: Object.keys(ib).sort(), exact };
+		binding: Object.keys(ib).sort(), exact, capture: cap };
 })()`;
 
 for (const [name, at, booted] of [['the product page', () => `http://127.0.0.1:${port}/`, '!!(window.draw && window.draw.renderer)'], ['the lab page', () => `http://127.0.0.1:${labPort}/?seed=bend`, '!!window.lab']]) {
-	test(`H26.1, H26.2: ${name} loads every module answered 200, and its import map resolves each export of both components from the vendor mount`, { skip: NO_CHROME, timeout: 60000 }, async () => {
+	test(`H26.1, H26.2, H26.3: ${name} loads every module answered 200, and its import map resolves each export of all three components from the vendor mount`, { skip: NO_CHROME, timeout: 60000 }, async () => {
 		const { t, answered } = await load(at(), booted);
 		const modules = answered().filter((r) => r.type === 'Script');
 		assert.ok(modules.length > 40, `the page's module graph was loaded, not ${modules.length} script(s)`);
@@ -78,8 +98,10 @@ for (const [name, at, booted] of [['the product page', () => `http://127.0.0.1:$
 		assert.deepEqual(t.thrown, [], 'nothing failed while it loaded');
 		const mark = Date.now() - t.clock.t0;
 		const got = await t.run(THROUGH_THE_MAP);
-		assert.deepEqual(got, { maps: 1, ok: true, point: { x: 60, y: 0 }, kit: 0, binding: ['composeBindingTable', 'openGestureSession'], exact: ['click', 'drop'] },
-			'one map; each export of both components resolved by name, and working -- the exact travel decided in Chrome, BigInt and all');
+		const capturing = { exports: ['openCapture'], taken: [false], prevented: true,
+			facts: [['down', { x: 5, y: 10 }, { x: 10, y: 20 }, true, null, 0, 7, 'mouse', null, null, true, true], ['key-down', null, null, null, true, null, null, null, 'a', 'KeyA', false, true]] };
+		assert.deepEqual(got, { maps: 1, ok: true, point: { x: 60, y: 0 }, kit: 0, binding: ['composeBindingTable', 'openGestureSession'], exact: ['click', 'drop'], capture: capturing },
+			'one map; each export of the three components resolved by name, and working -- the exact travel decided in Chrome, BigInt and all; a real event made a fact');
 		await sleep(200);
 		/*
 		RESTATED at H26.1's move (SNAP-GRID.md sections 5 and 7.6): the kernel composes the component, so the page loads its entry while
@@ -94,6 +116,9 @@ for (const [name, at, booted] of [['the product page', () => `http://127.0.0.1:$
 			`input-binding's graph loaded with the page from the vendor mount, every file answered 200: ${JSON.stringify(bindingFiles)}`);
 		const vendored = answered(mark).filter((r) => r.url.startsWith('/vendor/'));
 		assert.ok(vendored.some((r) => r.url === `/vendor/@apnex/snap-grid@${version}/conformance.js` && r.status === 200), `conformance.js asked of the vendor mount and answered 200: ${JSON.stringify(vendored)}`);
+		// H26.3: no page module imports input-capture before its move, so its graph is asked when the check imports it by name
+		const captureFiles = vendored.filter((r) => r.url.startsWith(`/vendor/@apnex/input-capture@${capture}/`));
+		assert.ok(captureFiles.some((r) => r.url.endsWith('/index.js')) && captureFiles.length >= 7, `input-capture's graph asked of the vendor mount: ${JSON.stringify(captureFiles)}`);
 		assert.deepEqual(vendored.filter((r) => r.status !== 200), [], 'and every module it imports in turn');
 		assert.ok(ownVendored.length + vendored.length >= 4, `the component's own module graph came with it: ${ownVendored.length + vendored.length} request(s)`);
 		assert.deepEqual(t.thrown, [], 'nothing failed after');
