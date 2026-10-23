@@ -363,7 +363,7 @@ grids drawn into it as the composition draws them. Each tree is kept as data, at
 change only on a load, by the SHA-256 of that data and its count of dots.
 */
 export const harnessTree = (n, place = null) => ({ tag: n.tagName, attrs: Object.entries(n.attrs ?? {}).map(([k, v]) => [k, place?.(n, k, v) ?? v]), text: n.children?.length ? '' : (n.textContent ?? ''), children: (n.children ?? []).map((c) => harnessTree(c, place)) });
-const gridOf = (layer) => ({ dots: layer.children.length, sha256: sha256(JSON.stringify(harnessTree(layer))) });
+const gridOf = (layer) => ({ dots: layer.children.length, sha256: sha256(JSON.stringify(harnessTree(layer).children)) });
 /*
 A handle's place, as its offset from the point its part's spec answers for it now -- `point.x-6`, the overlay's half a handle short of the
 point, when it is exactly there -- so the record holds where the overlay put it against its point, and not the point, which the network
@@ -384,7 +384,8 @@ function handlePlaces(h) {
 }
 export function corpusTrees(scenario, { record, open }) {
 	const steps = [];
-	const capture = (h) => ({ overlay: harnessTree(h.layers['#overlay'], handlePlaces(h)), snaplayer: harnessTree(h.layers['#snaplayer']), grids: ['#grid-nodes', '#grid-zones'].map((id) => gridOf(h.layers[id])) });
+	// each layer's content, not the layer's own element, which the harness makes before the move and the scene after it
+	const capture = (h) => ({ overlay: harnessTree(h.layers['#overlay'], handlePlaces(h)).children, snaplayer: harnessTree(h.layers['#snaplayer']).children, grids: ['#grid-nodes', '#grid-zones'].map((id) => gridOf(h.layers[id])) });
 	record(scenario, { withHarness: (h) => { open(h); steps.push(capture(h)); }, afterStep: (h) => steps.push(capture(h)) });
 	return steps;
 }

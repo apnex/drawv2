@@ -90,7 +90,7 @@ test('H26.4 (acceptance step 4): the gesture corpus\'s overlay, snap layer and g
 	for (const s of SCENARIOS) {
 		const live = compact(corpusTrees(s, { record, open }));
 		assert.deepEqual(live, RECORD.trees[s.id], `${s.id}: every step's trees, attributes in order`);
-		drawn += live.states.filter((st) => st.overlay.children.length || st.snaplayer.children.length).length;
+		drawn += live.states.filter((st) => st.overlay.length || st.snaplayer.length).length;
 	}
 	assert.ok(drawn > 100, `the corpus draws on the overlay and the snap layer: ${drawn} states`);
 });
