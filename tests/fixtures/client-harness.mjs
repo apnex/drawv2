@@ -52,21 +52,51 @@ const PAGE_KINDS = productKinds(...NETWORK_ROWS);
 
 // ---- the smallest DOM the client's constructors actually touch ----
 
-function fakeClassList() {
-	const s = new Set();
+/*
+H26.4 (dev/design/components/VECTOR-SCENE.md section 5.1, "The test harness") -- THE PLATFORM'S SEMANTICS WHERE DRAW'S DRAWING CODE
+COULD TELL. A fake element's class list and its `class` attribute are one state, the list a DOMTokenList over the attribute (a token
+removed that is absent writes nothing, an add rewrites the set); `appendChild` detaches a child it moves, as `insertBefore` already
+did; `textContent` replaces the children; `dataset` reads and writes the `data-` attributes. None of this changed what any test
+measured while the renderer and the overlay wrote through these fakes: the class list was a set of its own, so a class the renderer
+toggled never reached the attribute and a class written as an attribute never reached the list, and a moved child stayed in two
+parents -- which no test met. vector-scene writes through `setAttribute` and reads nothing back, so the harness must answer as a
+browser does (INPUT-CAPTURE.md section 10.1 found the same of `insertBefore`).
+*/
+const tokensOf = (value) => [...new Set(String(value ?? '').split(/[\t\n\f\r ]+/).filter(Boolean))];
+const dataName = (key) => `data-${String(key).replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`)}`;
+const dataKey = (name) => name.slice(5).replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+function fakeClassList(el) {
+	// the DOMTokenList update steps: nothing written when the element has no class attribute and the set is empty
+	const write = (list) => { if (!Object.hasOwn(el.attrs, 'class') && !list.length) return; el.setAttribute('class', list.join(' ')); };
 	return {
-		add: (...c) => c.forEach((x) => s.add(x)),
-		remove: (...c) => c.forEach((x) => s.delete(x)),
-		toggle: (c, on) => (on === undefined ? (s.has(c) ? s.delete(c) : s.add(c)) : on ? s.add(c) : s.delete(c)),
-		contains: (c) => s.has(c),
+		add: (...cs) => { const list = tokensOf(el.attrs.class); for (const c of cs) if (!list.includes(c)) list.push(c); write(list); },
+		remove: (...cs) => write(tokensOf(el.attrs.class).filter((c) => !cs.includes(c))),
+		toggle: (c, force) => {
+			const list = tokensOf(el.attrs.class);
+			if (list.includes(c)) { if (force === undefined || force === false) { write(list.filter((x) => x !== c)); return false; } return true; }
+			if (force === undefined || force === true) { list.push(c); write(list); return true; }
+			return false;
+		},
+		contains: (c) => tokensOf(el.attrs.class).includes(c),
 	};
+}
+function fakeDataset(el) {
+	const names = () => Object.keys(el.attrs).filter((k) => k.startsWith('data-'));
+	return new Proxy({}, {
+		get: (_, k) => (typeof k === 'string' ? el.attrs[dataName(k)] : undefined),
+		set: (_, k, v) => { el.setAttribute(dataName(k), v); return true; },
+		has: (_, k) => typeof k === 'string' && Object.hasOwn(el.attrs, dataName(k)),
+		deleteProperty: (_, k) => { el.removeAttribute(dataName(k)); return true; },
+		ownKeys: () => names().map(dataKey),
+		getOwnPropertyDescriptor: (_, k) => (typeof k === 'string' && Object.hasOwn(el.attrs, dataName(k)) ? { value: el.attrs[dataName(k)], writable: true, enumerable: true, configurable: true } : undefined),
+	});
 }
 
 export function fakeEl(tag = 'div', id = '') {
 	const el = {
-		tagName: tag.toUpperCase(), id, hidden: true, children: [], dataset: {}, style: {},
-		classList: fakeClassList(),
+		tagName: tag.toUpperCase(), id, hidden: true, children: [], style: {},
 		attrs: {},
+		_text: '',
 		setAttribute(k, v) {
 			this.attrs[k] = String(v);
 			// B121: an id makes an element findable. The renderer reconciles by
@@ -79,8 +109,10 @@ export function fakeEl(tag = 'div', id = '') {
 		// here too -- registering only in setAttribute meant nothing was ever findable
 		setAttributeNS(_ns, k, v) { this.setAttribute(k, v); },
 		getAttribute(k) { return this.attrs[k] ?? null; },
+		hasAttribute(k) { return Object.hasOwn(this.attrs, k); },
 		removeAttribute(k) { delete this.attrs[k]; },
-		appendChild(c) { c.parentNode = this; this.children.push(c); return c; },
+		// H26.4: a child appended is detached from where it stood first, as a browser moves it
+		appendChild(c) { return this.insertBefore(c, null); },
 		// F-d: the renderer stacks an item among its layer's (app/src/renderer.js `place`); `ref` null appends
 		insertBefore(c, ref) {
 			if (c.parentNode) c.parentNode.children = c.parentNode.children.filter((x) => x !== c);
@@ -89,9 +121,12 @@ export function fakeEl(tag = 'div', id = '') {
 			if (at < 0) this.children.push(c); else this.children.splice(at, 0, c);
 			return c;
 		},
-		removeChild(c) { this.children = this.children.filter((x) => x !== c); return c; },
+		removeChild(c) { this.children = this.children.filter((x) => x !== c); c.parentNode = null; return c; },
 		// WD-b2: the grids clear a layer before redrawing it (app/src/grids.js)
-		replaceChildren(...nodes) { this.children = []; for (const c of nodes) this.appendChild(c); },
+		replaceChildren(...nodes) { for (const c of this.children) c.parentNode = null; this.children = []; for (const c of nodes) this.appendChild(c); },
+		// H26.4: the text an element holds, its children's when it has children; written, it replaces them
+		get textContent() { return this.children.length ? this.children.map((c) => c.textContent ?? '').join('') : this._text; },
+		set textContent(v) { for (const c of this.children) c.parentNode = null; this.children = []; this._text = v == null ? '' : String(v); },
 		// a real detach: setDatumMarker removes its marker and re-adds, so a no-op remove() would
 		// leave every datum ever placed in the layer and the count assertions would be meaningless
 		remove() {
@@ -130,6 +165,8 @@ export function fakeEl(tag = 'div', id = '') {
 		// harness would need the same fiction with more machinery around it.
 		getScreenCTM() { return { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0, inverse: () => ({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }) }; },
 	};
+	el.classList = fakeClassList(el);   // H26.4: one state with the class attribute
+	el.dataset = fakeDataset(el);       // H26.4: the data- attributes
 	return el;
 }
 

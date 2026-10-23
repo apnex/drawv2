@@ -538,11 +538,18 @@ export const RULES = {
 	scan holds each to its form: a shim holds re-exports by name and nothing else, and its copy imports it; any other module importing a
 	shim, a shim that declares or imports anything, a product module named here, or an entry whose copy imports none of its shims, is
 	L4's as before. Each entry's cites resolve and its trigger says when it ends (tools/exceptions.mjs).
+	AMENDED H26.4 (dev/design/components/VECTOR-SCENE.md acceptance step 4; appendix B): a second entry, the renderer's oracle -- today's
+	app/src/renderer.js and app/src/painter.js kept verbatim at tests/fixtures/pre-scene/app/src/, so their own relative imports resolve,
+	the renderer's four imports of the core answered by shims; and the capture oracle's painter shim re-exports the verbatim painter's
+	`toCanvas`, so the old capture keeps the old conversion while either oracle stands.
 	*/
 	L4: { verbatim: [
 		{ copy: 'tests/fixtures/pre-capture/capture.js', shims: ['tests/fixtures/pre-capture/painter.js', 'tests/fixtures/pre-capture/pick.js'], cites: ['H26-8', 'H26.3'],
 			reason: 'app/src/capture.js as it stood before H26.3, kept byte for byte (its SHA-256 pinned by tests/input-capture-parity.test.js) so the side-by-side runs its old side on every gate; its imports of ./pick.js and ./painter.js are answered by shims re-exporting the live modules\' names',
 			trigger: 'the verbatim copy is deleted' },
+		{ copy: 'tests/fixtures/pre-scene/app/src/renderer.js', shims: ['tests/fixtures/pre-scene/kernel/renderer.mjs', 'tests/fixtures/pre-scene/kernel/spec.mjs', 'tests/fixtures/pre-scene/model/model.mjs', 'tests/fixtures/pre-scene/model/stacking.mjs'], cites: ['H26-11', 'H26.4'],
+			reason: 'app/src/renderer.js as it stood before H26.4, kept byte for byte beside its app/src/painter.js (both SHA-256 pinned by tests/vector-scene-parity.test.js), so the side-by-side and the trace test run their old side on every gate; the painter copy is a module of its own, declaring what it exports and importing nothing, and the renderer copy\'s four imports of the core are answered by shims re-exporting the live modules\' names',
+			trigger: 'the verbatim copies are deleted (H26.8)' },
 	] },
 	// C9, as the H17 plan states it: kernel/ and model/ import nothing from each other
 	// H26.7: model/'s side keeps model/'s reveal module where it is now (plugins/simulation/reveal.mjs), which C9 held while it lived there
