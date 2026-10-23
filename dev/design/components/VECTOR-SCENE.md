@@ -6,7 +6,7 @@ It builds on part 1 (`SNAP-GRID.md`), whose section 7 is settled and built three
 H26-9 holds its contract to the target state draw adopts natively after it (board item H26.8): appendix B says what H26.4's adapter translates now and what H26.8 then retires.\
 H26-10 aims the programme beyond the four components, each boundary drawn first inside draw as a declared part: section 5.2 maps where each piece of draw's canvas layer lands, and section 5.3 declares the first such part, `editing`.
 
-**Standing:** a design under review, revision 3, drafted 2026-10-23 after its second multi-family reading (section 10.2); revisions 1 and 2 were `567caec` and `34def78`; the code read is `34def78`'s, identical in code to `f702102`, after H26.7 moved every plugin under `plugins/` and H26.3 moved draw onto `input-capture`; the director answered D1, D6 and D8 and ruled H26-10 on 2026-10-22, each answer to be recorded as a ruling at ratification; a third reading, confirming revision 3, found nothing (section 10.3); not ratified.
+**Standing:** a design under review, revision 3, drafted 2026-10-23 after its second multi-family reading (section 10.2); revisions 1 and 2 were `567caec` and `34def78`; the code read is `34def78`'s, identical in code to `f702102`, after H26.7 moved every plugin under `plugins/` and H26.3 moved draw onto `input-capture`; the director answered D1, D6 and D8 and ruled H26-10 on 2026-10-22, each answer to be recorded as a ruling at ratification; a third reading, confirming revision 3, found nothing (section 10.3); ratified by the director on 2026-10-23, all thirteen decisions of section 8 as recommended and appendix A as `vector-scene`'s vision (`dev/DECISIONS.md` H26-11); built in H26.4.
 
 ---
 
@@ -473,7 +473,7 @@ Where this piece differs:
 ## 8. Decisions owed
 
 Each is offered with a recommendation; D1, D6 and D8 the director has answered, each to be recorded as a ruling at ratification.\
-The ruling that ratifies this piece is written `H26-r` below until it has its number.
+Ratified together, all thirteen as recommended, D1, D6 and D8 as the director answered them, on 2026-10-23 (`dev/DECISIONS.md` H26-11); `H26-11` stands below where the draft wrote its placeholder.
 
 | # | Decision | Recommendation, and why |
 |---|---|---|
@@ -491,7 +491,7 @@ The ruling that ratifies this piece is written `H26-r` below until it has its nu
 | D12 | The reveal's trace runs as written: the shadow answers the three members it uses -- `style`, written into the `style` attribute; `getTotalLength`, a probe path of draw's own measuring the same `d`; `getBoundingClientRect`, putting the entity at once and settling the page's style through the root -- each only where the page hands the platform's measure and settle | yes: identical to today in Chrome in every mode the reveal has, a hide and a show in one task among them, computed values and pixels at 149 sampled times (6.2), and no plugin changes. Revision 1's CSS animation is withdrawn: its computed dash was normalised to 1 where today's is the length, it moved a closed ring's dash off its line once done (o:F4), and it restarts only if the page computes style between a hide and a show, which the reveal's loop does not promise. Weighed against that animation, against the scene measuring or settling (a platform read outside its slice, and time in the scene), and against the trace dropped to a fade (H14.12 ruled the trace). At H26.8 the reveal describes the trace's two states as two puts, measuring by its own probe and settling the page between them: the same steps, with no shadow |
 | D13 | Draw's editing duty is a declared part, `editing`, from H26.4: the selection and the editing visuals now, the five generic gestures' bodies at H26.8 (5.3) | yes: H26.4 writes every editing visual natively anyway, so declaring the part then costs a manifest entry and a module it writes regardless, and makes the later extraction a move held by the scanners -- measured in a copy of the tree, its imports `document` alone, the edge from `canvas` one way; the bodies wait for H26.8, which rewrites Input's entry points and the three places that pin `GESTURES`. Weighed against all of it at H26.4 (three tests restated for no drawing reason), against waiting for B389's trigger (the visuals written twice and the boundary unheld until then), and against a component now (no second consumer: P4) |
 
-**Registered when this is ratified,** each with its revival trigger (RU3):
+**Registered on ratification (H26-11),** each with its revival trigger (RU3), as B419 to B422, the H26.8 items on the board:
 - the view -- pan, zoom, the visible area and scale told to a layer: when its first consumer is designed, pan and zoom (H26.6) or the gesture tester's scope (H26.5) (D6);
 - a shape found by geometry: when an application needs the shape under a point with no platform, or under a captured pointer (D4);
 - children kept or reordered by key: when an application's shapes reorder, or gain siblings before elements it needs kept, often enough that items of their own or positional diffing are measured to cost (D3);
@@ -618,7 +618,7 @@ Each read the diff and the code it touches -- the palette, the overlay, `painter
 
 ## Appendix A -- `vector-scene`'s vision, the draft put to the director
 
-To be ratified by the director with section 8; `vector-scene`'s `VISION.md` is made from it when its repository is.
+Ratified by the director as written, with section 8 (H26-11); `vector-scene`'s `VISION.md` is made from it when its repository is.
 
 **North star.**\
 Let an application say what it shows as data, and have it shown exactly, in a browser or anywhere else.
@@ -698,11 +698,11 @@ The last column says what H26.8 does.
 | `package.json`, `package-lock.json`, `app/index.html:8-18`, `lab/index.html:29-39` | dependencies; the import map | plumbing: the release pinned; one map entry more | unchanged |
 | `tools/layers.mjs:114-123` | `PARTS` `canvas` and `renderer` | plumbing: `editing` added (5.3); `canvas` loses `app/src/selection.js` and `app/src/overlay.js` and consumes `editing`; `renderer` gains `shadow.js` | `editing` gains the gestures' module |
 | `tools/layers.mjs:218-240`, `:291-354`, `:365-512` | `ALLOWED`; `LAYER`; `ENTRIES` | plumbing: `ALLOWED` unchanged; `LAYER.canvas`, and the page's and the lab's `ENTRIES` lists (L6), name `shadow.js` and `editing-visuals.js` | unchanged |
-| `tools/layers.mjs:159-168` | `COMPONENTS` | plumbing: `'@apnex/vector-scene': { parts: ['renderer'], by: ['H26-1', 'H26-2', 'H26-r'] }` | unchanged |
-| `tools/layers.mjs:181-216` | `MISSION_KIT`; `ALIGNMENT` | plumbing: `'vector-scene': 'proposed in drawv2, released from its own repository, composed (H26-r); a candidate in zorg D32, steered in D35'`; `renderer` waits `'composed (H26-r); its drawing loop moved onto it at H26.4'`, `export` `'draws through it with no root (H26-r)'`, `primitives` `'draw's shapes, drawn through vector-scene (H26-r)'`; `editing` aligned to `'canvas-editing'`, `'a drawv2 candidate by H26-10, B389'` | `renderer` restated |
+| `tools/layers.mjs:159-168` | `COMPONENTS` | plumbing: `'@apnex/vector-scene': { parts: ['renderer'], by: ['H26-1', 'H26-2', 'H26-11'] }` | unchanged |
+| `tools/layers.mjs:181-216` | `MISSION_KIT`; `ALIGNMENT` | plumbing: `'vector-scene': 'proposed in drawv2, released from its own repository, composed (H26-11); a candidate in zorg D32, steered in D35'`; `renderer` waits `'composed (H26-11); its drawing loop moved onto it at H26.4'`, `export` `'draws through it with no root (H26-11)'`, `primitives` `'draw's shapes, drawn through vector-scene (H26-11)'`; `editing` aligned to `'canvas-editing'`, `'a drawv2 candidate by H26-10, B389'` | `renderer` restated |
 | `tools/layers.mjs:538-542` | `RULES.L4.verbatim`: the capture oracle's shims | plumbing: the renderer oracle's entry, its two copies and four shims; the capture shim re-exporting the verbatim painter, which stays while either oracle does | each entry goes with its copy |
 | `tools/scan-dead.mjs`, `tools/scan-writers.mjs:215-221` | exports with a consumer; DOM globals by file | unchanged: `toCanvas` and `layerOf` deleted, `openCanvasScene` consumed; `shadow.js` reaches none, `app/src/painter.js` the probe | unchanged |
-| `docs/ARCHITECTURE.md`, `docs/ARCHITECTURE-TARGET.md` | generated parts and alignment; sections 2, 4.2 and 9.3 | plumbing: regenerated with `editing`; the chain cites `H26-10` and `H26-r`; 4.2 gains the `editing` row; 9.3 names four components | unchanged |
+| `docs/ARCHITECTURE.md`, `docs/ARCHITECTURE-TARGET.md` | generated parts and alignment; sections 2, 4.2 and 9.3 | plumbing: regenerated with `editing`; the chain cites `H26-10` and `H26-11`; 4.2 gains the `editing` row; 9.3 names four components | unchanged |
 | `tests/fixtures/client-harness.mjs:55-131,231-288,371-381` | fakes for the renderer and the canvas | plumbing: the platform's append, class, text and removal; a scene over the fake root, its layers found | unchanged |
 | `tests/renderer.test.js`, `tests/appearance.test.js`, `tests/appearance-pipeline.test.js`, `tests/drawing-order.test.js`, `tests/anchor-redraws.test.js`, `tests/canvas-painters.test.js`, `tests/canvas-reflects.test.js`, `tests/link-heads.test.js`, `tests/run-picture.test.js`, `tests/consumer-parity.test.js`, `tests/span.test.js` | build the renderer over the fake | plumbing: hand it the scene; `tests/span.test.js:805` restated to the export's scene | restated to shapes |
 | `tests/canvas-hand.test.js:93-99`, `tests/canvas-gestures.test.js:181`, `tests/layouts-canvas.test.js:44-79`, `tests/input.test.js:796-816` | `ghostNode`, `Grids` and `Tools` handed an element; Input's overlay element read | plumbing: hand the scene; read the layer the harness found; assertions unchanged | unchanged |
