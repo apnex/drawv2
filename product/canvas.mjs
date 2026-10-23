@@ -57,11 +57,24 @@ it into each page's `#container` between generated markers (the gate checks), th
 its layers in another order than the page. A part's painter names the layer it draws into; one this does not hold is refused.
 */
 export const CANVAS_VIEWBOX = '-960 -540 1920 1080';
+// H26.4: the two layers the plugins draw themselves, each by the part that draws it -- foreign in the scene below, and asked of it by
+// a page without the page typing a plugin's kind (app/src/main.js, lab/src/root.js)
+export const FOREIGN_LAYERS = { network: 'pipes', simulation: 'movers' };
 export const CANVAS_LAYERS = [
 	'grid-nodes', 'grid-zones', 'snaplayer', 'zones',
-	'pipes',       // V-b (H18.26): the network's pipes, beneath the links that run over them
+	FOREIGN_LAYERS.network,      // V-b (H18.26): the network's pipes, beneath the links that run over them
 	'groups', 'links', 'waypoints', 'nodes',
-	'movers',      // H12.8: over the graph, so a packet is never hidden by the line it travels; in a layer of their own, so the renderer's reconcile never sees them -- derived presentation, not document entities
+	FOREIGN_LAYERS.simulation,   // H12.8: over the graph, so a packet is never hidden by the line it travels; in a layer of their own, so the renderer's reconcile never sees them -- derived presentation, not document entities
 	'overlay',
 ];
+/*
+H26.4 (dev/design/components/VECTOR-SCENE.md section 5.1, D5, D9): THE CANVAS'S SCENE, declared once -- the layers above in order, each
+written with its id, and the two the plugins draw themselves foreign: the network's pipes and the simulation's movers, whose drawers write
+beneath the element the scene answers for each (`layerElement`). Declared here, where the product composes the plugins, since the canvas
+and the renderer may name no plugin's layer (tests/canvas-names-no-plugin.test.js) and consume no composition. The product page and the
+lab hand it to composeCanvas, which opens it on their root through the renderer's `openCanvasScene`, the scene appending the layers after
+the ground; the export opens it with no root (server/svg.mjs).
+*/
+const foreign = Object.values(FOREIGN_LAYERS);
+export const CANVAS_SCENE = { layers: CANVAS_LAYERS.map((name) => ({ name, attrs: { id: name }, ...(foreign.includes(name) ? { foreign: true } : {}) })) };
 export const PAGE_STYLESHEETS = ['app/tokens.css', 'kernel/primitives.css', ...PRODUCT_CANVAS.flatMap((p) => p.stylesheets ?? []), ...CHROME_STYLESHEETS, 'app/canvas.css'];

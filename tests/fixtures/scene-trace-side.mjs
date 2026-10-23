@@ -6,10 +6,9 @@ operations on both, read back as the layers' trees and which elements were kept,
 tests/vector-scene-trace.test.js puts two frames side by side and drives them.
 */
 import { Renderer as OldRenderer } from './pre-scene/app/src/renderer.js';
-import { Renderer as NewRenderer, openCanvasScene } from './scene-adapter/renderer.js';
-import { pathLengthOf, settleOf } from './scene-adapter/platform.js';
-import { CANVAS_SCENE } from './scene-adapter/canvas-scene.mjs';
-import { PRODUCT_CANVAS, CANVAS_LAYERS } from '../../product/canvas.mjs';
+import { Renderer as NewRenderer, openCanvasScene } from '../../app/src/renderer.js';
+import { pathLengthOf, settleOf } from '../../app/src/painter.js';   // the page's measure and settle (D12)
+import { PRODUCT_CANVAS, CANVAS_LAYERS, CANVAS_SCENE } from '../../product/canvas.mjs';
 import { COMPOSED_KINDS, readModel } from '../../product/types.mjs';
 import { Reveal } from '../../plugins/simulation/reveal-painter.mjs';
 

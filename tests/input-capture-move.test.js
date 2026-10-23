@@ -20,6 +20,7 @@ import * as adapter from '../app/src/capture.js';
 import { picksOf, regionsOf } from '../app/src/pick.js';
 import { PRODUCT_CANVAS } from '../product/canvas.mjs';
 import { installDom } from './fixtures/client-harness.mjs';
+import { sceneOver } from './fixtures/capture-parity.mjs';   // H26.4: a scene over a surface, whose toDrawing the adapter converts by
 
 /*
 RESTATED at H26.3's verification (V5): each path compared as the file system resolves it. Node names a module on the stack by its real
@@ -63,7 +64,8 @@ const SINK = ['press', 'move', 'release', 'cancelDrag', 'hover', 'double', 'keyD
 const recordingSink = (got, answer = () => {}) => Object.fromEntries(SINK.map((m) => [m, (...args) => { got.push([m, args]); answer(m, args[0]); }]));
 const open = (got = [], answer) => {
 	const f = fakes();
-	const capture = adapter.captureCanvas({ svg: f.svg, host: f.host, sink: recordingSink(got, answer), picks: picksOf(PRODUCT_CANVAS), regions: regionsOf(PRODUCT_CANVAS) });
+	// RESTATED at H26.4 (dev/design/components/VECTOR-SCENE.md appendix B): handed the canvas's scene, as the composition hands it
+	const capture = adapter.captureCanvas({ svg: f.svg, scene: sceneOver(f.svg), host: f.host, sink: recordingSink(got, answer), picks: picksOf(PRODUCT_CANVAS), regions: regionsOf(PRODUCT_CANVAS) });
 	return { ...f, capture, got };
 };
 
@@ -184,8 +186,10 @@ test('H26.3 step 3 (G5, D9): of the product\'s modules, app/src/capture.js alone
 	assert.ok(PARTS.canvas.modules.includes('app/src/capture.js'), 'the adapter is the canvas part\'s');
 	const compose = fs.readFileSync(path.join(ROOT, 'app/src/compose-canvas.js'), 'utf8');
 	assert.match(compose, /import \{ captureCanvas \} from '\.\/capture\.js';/);
-	assert.match(compose, /const listen = \(\) => \(capture \?\?= captureCanvas\(\{ svg, host, sink: input, picks: picksOf\(parts\), regions: regionsOf\(parts\) \}\)\);/,
+	// RESTATED at H26.4 (VECTOR-SCENE.md appendix B): handing the scene, whose toDrawing is capture's conversion
+	assert.match(compose, /const listen = \(\) => \(capture \?\?= captureCanvas\(\{ svg, scene, host, sink: input, picks: picksOf\(parts\), regions: regionsOf\(parts\) \}\)\);/,
 		'listen() keeps its place, calling captureCanvas where it made the class');
+	assert.match(fs.readFileSync(path.join(ROOT, 'app/src/capture.js'), 'utf8'), /toDrawing: \(screen\) => scene\.toDrawing\(screen\),/, 'and the adapter converts by the scene\'s toDrawing');
 });
 
 /*

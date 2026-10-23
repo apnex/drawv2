@@ -8,7 +8,8 @@ WHAT DRAW SUPPLIES, each draw's content or policy:
 
 	surface     the canvas element, `#container`
 	keys        the host, the page's `window`
-	toDrawing   where a screen point lies in the drawing: painter.js `toCanvas`, the canvas's screen transform read at each event
+	toDrawing   where a screen point lies in the drawing: the canvas's scene's (H26.4, app/src/renderer.js `openCanvasScene`), through the root's screen
+	            transform read at each event, the arithmetic `toCanvas` did
 	hit         what is under the pointer: `on`, by the parts' picks (pick.js `hitWith`), and on a press `region`, run mode's controls
 	            under it -- the waypoint, a `data-action` or `data-input` region and its node, whether any entity is there; null when
 	            the target cannot be asked, which is itself an answer: run mode places nothing then. Null on a `leave`
@@ -30,7 +31,6 @@ first's press (B409); and a key released while the page lacks focus makes no key
 */
 import { openCapture } from '@apnex/input-capture';
 import { hitWith } from './pick.js';
-import { toCanvas } from './painter.js';
 
 const FIELD = 'input, textarea, select, [contenteditable=""], [contenteditable="true"]';
 const CONTROL = 'button, a[href], select, input, textarea, [tabindex]';
@@ -78,15 +78,16 @@ function inputEventOf(event) {
 /*
 The canvas's capture, opened once a root's own listeners are in (app/src/compose-canvas.js `listen`). `sink` is the input layers' side
 -- Input -- and receives only input events. C-b: `picks`, the canvas parts' (pick.js `picksOf`); C-f: `regions`, their run-mode
-selectors (pick.js `regionsOf`). Answers a frozen `{ close }`, closing the component's capture and the menu's listener, which nothing in
-draw calls today; a declaration the component refuses throws here, before any listener is added.
+selectors (pick.js `regionsOf`); H26.4: `scene`, the canvas's (app/src/renderer.js `openCanvasScene`), whose `toDrawing` converts each
+point. Answers a frozen `{ close }`, closing the component's capture and the menu's listener, which nothing in draw calls today; a
+declaration the component refuses throws here, before any listener is added.
 */
-export function captureCanvas({ svg, host, sink, picks = [], regions = {} }) {
+export function captureCanvas({ svg, scene, host, sink, picks = [], regions = {} }) {
 	const hitOf = hitWith(picks);
 	const opened = openCapture({
 		surface: svg,
 		keys: host,
-		toDrawing: (screen) => toCanvas({ clientX: screen.x, clientY: screen.y }, svg),
+		toDrawing: (screen) => scene.toDrawing(screen),   // H26.4 (VECTOR-SCENE.md section 5.1): the scene's; H26.8 hands it whole
 		hit: (target, event) => (event.type === 'leave' ? null : {
 			on: hitOf({ target, shiftKey: event.shiftKey, ctrlKey: event.ctrlKey, altKey: event.altKey, metaKey: event.metaKey }),
 			region: event.type === 'down' ? regionOf(target, regions) : null,

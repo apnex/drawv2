@@ -24,6 +24,9 @@ harness's captureDispatch.
   node tests/fixtures/capture-parity.mjs --write     writes the edges' record from the code as it stands -- before the move only
   node tests/fixtures/capture-parity.mjs --add       after it: writes the cases the record lacks into its `verification` section,
                                                      refusing to change the answers of any case it holds (a case's class may move)
+  node tests/fixtures/capture-parity.mjs --restate   H26.4: writes each case whose adapter answer the scene's conversion changed into its
+                                                     `restated` section, both answers, refusing one whose old side moved or that is no
+                                                     conversion's case
 */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -32,6 +35,7 @@ import { Capture as OldCapture } from './pre-capture/capture.js';
 import { captureDispatch, installDom } from './client-harness.mjs';   // the adapter, app/src/capture.js, through the harness (H26.3's move)
 import { picksOf, regionsOf } from '../../app/src/pick.js';
 import { PRODUCT_CANVAS } from '../../product/canvas.mjs';
+import { openScene } from '@apnex/vector-scene';
 
 export const READ_AT = '7d71be6';   // the last commit holding draw's capture whole
 export const MOVED = true;          // the move flipped it, with the new side's import
@@ -48,7 +52,20 @@ export const EDGE_RECORD = new URL('./capture-parity-edges.json', import.meta.ur
 
 const METHODS = ['onDown', 'onMove', 'onUp', 'onCancel', 'onHover', 'onDblClick', 'onKeyDown', 'onKeyUp', 'onContextMenu'];
 export const oldSide = (args) => { const c = new OldCapture(args); return Object.fromEntries(METHODS.map((m) => [m, (...a) => c[m](...a)])); };
-export const newSide = (args) => captureDispatch(args);
+/*
+RESTATED at H26.4 (dev/design/components/VECTOR-SCENE.md section 5.1; appendix B): the adapter converts each point by the canvas's scene
+(`scene.toDrawing`), where it called painter.js `toCanvas`. So it is handed a scene over the surface each case gives it -- the root
+inheriting the surface, so the scene calls the surface's own `getScreenCTM`, at each event, as `toCanvas` read it -- and the old side
+keeps the old conversion through its shim (tests/fixtures/pre-capture/painter.js, the verbatim painter's).
+*/
+const sink = () => ({ setAttribute() {}, removeAttribute() {}, appendChild() {}, insertBefore() {}, remove() {} });
+export function sceneOver(surface) {
+	const root = Object.create(surface, { ownerDocument: { value: { createElementNS: sink } }, appendChild: { value() {} } });
+	const opened = openScene({ root, layers: [{ name: 'conversion' }] });
+	if (!opened.ok) throw new Error(`capture-parity: the surface takes no scene: ${JSON.stringify(opened.problems)}`);
+	return opened.scene;
+}
+export const newSide = (args) => captureDispatch({ ...args, scene: args.scene ?? sceneOver(args.svg) });
 
 // ---- what one side did with one event ----
 
@@ -331,7 +348,9 @@ export const EDGES = [
 	// bullet 6: a conversion answering no finite point; a leave while the canvas has no screen transform
 	{ id: 'conversion-nan', class: 'conversion', method: 'onMove', evt: ok, answers: quiet, svg: () => screenSvg(() => ({ inverse: () => ({ a: NaN, b: 0, c: 0, d: 1, e: 0, f: 0 }) })) },
 	{ id: 'leave-no-transform', class: 'conversion', method: 'leave', evt: ok, answers: quiet, svg: () => screenSvg(() => null) },
-	{ id: 'move-no-transform', class: 'none', method: 'onMove', evt: ok, answers: quiet, svg: () => screenSvg(() => null) },
+	// RESTATED at H26.4 (dev/design/components/VECTOR-SCENE.md section 6.3, its fourth bullet): the adapter converts by the scene, which
+	// refuses a root answering no transform with Errors' Error, where both threw the same TypeError; held in the record's `restated`
+	{ id: 'move-no-transform', class: 'scene-conversion', method: 'onMove', evt: ok, answers: quiet, svg: () => screenSvg(() => null) },
 	// bullet 7: a key that is not a string
 	{ id: 'key-number', class: 'key', method: 'onKeyDown', evt: () => ({ ...okKey(), key: 5 }), answers: quiet },
 	{ id: 'key-absent', class: 'none', method: 'onKeyUp', evt: () => { const e = okKey(); delete e.key; return e; }, answers: quiet },
@@ -442,7 +461,13 @@ export function edgeAnswers() {
 
 // the record's two sections: `edges`, read from the code before the move, and `verification`, the cases H26.3's verification added after it
 export const VERIFICATION_READ = 'after the move: the old side from tests/fixtures/pre-capture/capture.js, the new from app/src/capture.js as H26.3\'s verification left it';
-export const recordOf = (record, id) => record.edges[id] ?? record.verification?.edges?.[id];
+/*
+AMENDED H26.4 (dev/design/components/VECTOR-SCENE.md section 6.3; appendix B): and `restated`, the cases whose adapter answer the move onto
+vector-scene changed -- the adapter converting by the canvas's scene -- each with both answers, the old side's unchanged; read first, the
+sections before it kept as they were written.
+*/
+export const RESTATED_READ = 'H26.4: the adapter converting by the canvas\'s scene (dev/design/components/VECTOR-SCENE.md section 6.3, its fourth bullet); the old side from tests/fixtures/pre-capture/capture.js, its conversion the verbatim painter\'s, unchanged';
+export const recordOf = (record, id) => record.restated?.edges?.[id] ?? record.edges[id] ?? record.verification?.edges?.[id];
 
 const running = process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname);
 if (running && process.argv.includes('--write')) {
@@ -468,4 +493,18 @@ if (running && process.argv.includes('--add')) {
 	}
 	fs.writeFileSync(EDGE_RECORD, `${JSON.stringify({ readAt: record.readAt, edges: record.edges, verification }, null, '\t')}\n`);
 	console.log(`capture-parity: ${Object.keys(verification.edges).length} case(s) in the verification section, ${Object.keys(record.edges).length} read before the move`);
+}
+// H26.4: each case the scene's conversion answers otherwise, into `restated` -- refused unless its old side answers as held and its class is a conversion's
+if (running && process.argv.includes('--restate')) {
+	const record = JSON.parse(fs.readFileSync(EDGE_RECORD, 'utf8'));
+	const live = edgeAnswers(), restated = { read: RESTATED_READ, edges: {} };
+	for (const [id, answer] of Object.entries(live)) {
+		const held = record.edges[id] ?? record.verification?.edges?.[id];
+		if (text([answer.class, answer.method, answer.equal, answer.old, answer.new]) === text([held.class, held.method, held.equal, held.old, held.new])) continue;
+		if (text(answer.old) !== text(held.old)) { console.error(`capture-parity: ${id}'s old side answers otherwise than the record holds`); process.exit(1); }
+		if (!['conversion', 'scene-conversion'].includes(answer.class)) { console.error(`capture-parity: ${id} answers otherwise, and is no conversion's case`); process.exit(1); }
+		restated.edges[id] = answer;
+	}
+	fs.writeFileSync(EDGE_RECORD, `${JSON.stringify({ readAt: record.readAt, edges: record.edges, verification: record.verification, restated }, null, '\t')}\n`);
+	console.log(`capture-parity: ${Object.keys(restated.edges).length} case(s) restated at H26.4`);
 }

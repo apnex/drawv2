@@ -35,7 +35,9 @@ import { plan } from '../../planner/txn.mjs';
 import { LabelEditor } from '../../app/src/labeledit.js';
 import { Tools } from '../../app/src/tools.js';
 import { Selection } from '../../app/src/selection.js';
-import { crosshair } from '../../app/src/painter.js';
+import { crosshair } from '../../app/src/editing-visuals.js';   // H26.4: the editing part's, an item of the scene
+import { openCanvasScene } from '../../app/src/renderer.js';
+import { CANVAS_SCENE } from '../../product/canvas.mjs';
 import { CANVAS, GAP } from '../../app/src/snap.js';
 import { Input } from '../../app/src/input.js';
 import { RUN_PRESSES } from '../../app/src/run-mode.js';
@@ -188,7 +190,8 @@ export function installDom() {
 	globalThis.CustomEvent = class { constructor(type, init) { this.type = type; Object.assign(this, init); } };
 	// painter.toCanvas builds a DOMPoint and applies the inverse screen CTM. With the identity CTM
 	// above, canvas coordinates equal client coordinates — which is what lets a test say
-	// `pointer(60, 60)` and mean the cell at (60, 60).
+	// `pointer(60, 60)` and mean the cell at (60, 60). RESTATED at H26.4: the scene's toDrawing computes the same over the same
+	// transform; the DOMPoint stays for the verbatim painter's toCanvas, which the old capture converts by (H26.3's side-by-side)
 	globalThis.DOMPoint = class {
 		constructor(x = 0, y = 0) { this.x = x; this.y = y; }
 		matrixTransform(m) { return { x: this.x * m.a + this.y * m.c + m.e, y: this.x * m.b + this.y * m.d + m.f }; }
@@ -265,8 +268,8 @@ export function makeInput({ readOnly = false, bare = false, host: hostOverride =
 	};
 	const dataview = { toggle: rec('dataview.toggle') };
 
-	const svg = fakeEl('svg', 'canvas');
-	svg.byId = { '#overlay': fakeEl('g', 'overlay'), '#snaplayer': fakeEl('g', 'snaplayer') };
+	// H26.4 (VECTOR-SCENE.md section 5.1): the canvas's scene, opened over the fake root as the page opens it, and its layers found
+	const { svg, scene } = sceneOver(fakeEl('svg', 'canvas'));
 
 	/*
 	B45 — the host surface and the help element are INJECTED, not reached for. Input used to take
@@ -286,7 +289,7 @@ export function makeInput({ readOnly = false, bare = false, host: hostOverride =
 	const help = fakeEl('div', 'help');
 	// B36 — the single crosshair main.js owns, injected here the same way. Sharing it is the point:
 	// two instances on one layer is the defect, so the harness must not quietly create a second.
-	const snap = crosshair(svg.byId['#snaplayer'], CANVAS, GAP);
+	const snap = crosshair(scene, CANVAS, GAP);
 
 	// the commit boundary — the ONLY surface these tests assert on
 	const commits = [];
@@ -296,9 +299,9 @@ export function makeInput({ readOnly = false, bare = false, host: hostOverride =
 	let input;
 	try {
 		input = bare
-			? new Input({ svg, model, history, selection, renderer, labels, host, help, snap, parts })   // places are composition, not a collaborator (C-c)
+			? new Input({ svg, scene, model, history, selection, renderer, labels, host, help, snap, parts })   // places are composition, not a collaborator (C-c)
 			// run mode's rows as the production root hands them in (K5); `bare` omits them as it omits every collaborator
-			: new Input({ svg, model, history, selection, renderer, labels, readout, tools, dataview, host, help, snap, runRules,
+			: new Input({ svg, scene, model, history, selection, renderer, labels, readout, tools, dataview, host, help, snap, runRules,
 				/*
 				P7 X-a (H18.37) -- THE PRODUCT PAGE'S INPUT, as app/src/main.js composes it since V-b: the network's keys and its REAL
 				drag judge (plugins/network/session.mjs `judge`, what plugins/network/page.mjs attaches), judging on the board the tab holds. Before
@@ -311,13 +314,13 @@ export function makeInput({ readOnly = false, bare = false, host: hostOverride =
 	} catch (e) { restore(); throw e; }   // a refused composition must not leave the stub DOM installed
 	if (readOnly) input.setReadOnly(true);
 	// L0: tests drive the page's events through capture, as a browser does -- Input itself takes only input events
-	const opened = { svg, host, sink: input, picks: picksOf(parts), regions: regionsOf(parts) };   // C-b: the plugins' picks; C-f: run mode's regions, as the page composes them
+	const opened = { svg, scene, host, sink: input, picks: picksOf(parts), regions: regionsOf(parts) };   // C-b: the plugins' picks; C-f: run mode's regions, as the page composes them
 	// H26.3 (INPUT-CAPTURE.md section 5): through the listeners input-capture and the adapter add, as the page's events arrive; with
 	// DRAW_CAPTURE_PARITY naming a folder, the old capture beside it (acceptance step 4)
 	const capture = parityCapture(opened) ?? captureDispatch(opened);
 
 	return {
-		input, capture, model, history, selection, svg, commits, calls, restore, renderer, labels, tools, help, snap,
+		input, capture, model, history, selection, svg, scene, commits, calls, restore, renderer, labels, tools, help, snap,
 		// events Input handed to the host (W5 `draw:action`) — an outbound boundary, so a fair assertion
 		dispatched,
 		// the transient-feedback layers, so a test can ask "what is drawn right now" without
@@ -345,7 +348,7 @@ the nine methods tests drive the canvas by, each calling the listener added for 
 `addEventListener` is kept and still called, so a test's host sees what it always saw; nothing else of a fake is touched.
 */
 export function dispatchFor(open) {
-	return ({ svg, host, sink, picks = [], regions = {} }) => {
+	return ({ svg, scene, host, sink, picks = [], regions = {} }) => {   // H26.4: and the canvas's scene, whose toDrawing converts
 		const listeners = new Map();
 		let opening = false;
 		for (const [fake, tag] of [[svg, 'svg'], [host, 'host']]) {
@@ -357,7 +360,7 @@ export function dispatchFor(open) {
 			};
 		}
 		opening = true;
-		try { open({ svg, host, sink, picks, regions }); } finally { opening = false; }
+		try { open({ svg, scene, host, sink, picks, regions }); } finally { opening = false; }
 		const call = (key) => (evt) => listeners.get(key)(evt);
 		return {
 			onDown: call('svg:pointerdown'), onMove: call('svg:pointermove'), onUp: call('svg:pointerup'), onCancel: call('svg:pointercancel'),
@@ -407,14 +410,19 @@ throw every node away.
 */
 export function makeRenderer() {
 	const restore = installDom();
-	const svg = fakeEl('svg', 'canvas');
-	svg.byId = {};
-	for (const id of ['zones', 'groups', 'links', 'waypoints', 'nodes', 'dataview', 'overlay']) {
-		const layer = fakeEl('g', id);
-		svg.byId[`#${id}`] = layer;
-		svg.appendChild(layer);
-	}
-	return { svg, restore };
+	const { svg, scene } = sceneOver(fakeEl('svg', 'canvas'));   // H26.4: the renderer draws into the scene, handed it
+	return { svg, scene, restore };
+}
+
+/*
+H26.4 (dev/design/components/VECTOR-SCENE.md section 5.1, "The test harness") -- THE CANVAS'S SCENE OVER A FAKE ROOT, as the page opens
+it over its own (app/src/compose-canvas.js): the composition's declaration, the layers appended to the root, each then found by its id,
+so `svg.querySelector('#nodes')` and the harness's `layers` answer the layer the scene made. Needs the stub DOM installed.
+*/
+export function sceneOver(svg) {
+	const scene = openCanvasScene(CANVAS_SCENE, svg);
+	svg.byId = Object.fromEntries(svg.children.map((layer) => [`#${layer.attrs.id}`, layer]));
+	return { svg, scene };
 }
 
 /*

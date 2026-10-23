@@ -9,14 +9,15 @@ digit does, and the tiles light up for whatever the tools hold.
 */
 
 import { CANVAS, snapNode } from './snap.js';
-import { toCanvas, ghostNode, buildPreview } from './painter.js';
+import { buildPreview } from './painter.js';   // each tile, a standalone <svg> in the sidebar outside the canvas (H26.4: it stays)
+import { ghostNode } from './editing-visuals.js';   // H26.4: the dragged tile's ghost, an item of the canvas's scene
 
 
 /*
 B36 asked whether this and input.js's DRAG_THRESHOLD are one constant written twice. They are not,
 and the reason is worth stating rather than leaving as two bare numbers.
 
-  DRAG_THRESHOLD  4   CANVAS units — a press becomes a drag. Measured after toCanvas(), so it is a
+  DRAG_THRESHOLD  4   CANVAS units -- a press becomes a drag. Measured after toDrawing(), so it is a
                       distance in document space and survives pan/zoom: four units is four units
                       whatever the viewport is doing.
   CLICK_SLOP      5   SCREEN pixels — a tile press was a click, not a drag off the palette. Measured
@@ -30,9 +31,10 @@ const CLICK_SLOP = 5;
 
 export class Palette {
 	// C-e: `hand` -- what can be held and how an item looks, the devices plugin's; `stamp(item, pos)` -- a drop, stamped by the canvas
-	constructor({ container, svg, snap, tools, hand = null, stamp = () => false }) {
-		this.svg = svg;
-		this.overlay = svg.querySelector('#overlay');
+	// H26.4 (dev/design/components/VECTOR-SCENE.md section 5.1): `scene`, the canvas's -- its ghost is put there, and a pointer's place
+	// in the drawing is its `toDrawing`, the arithmetic `toCanvas` did
+	constructor({ container, scene, snap, tools, hand = null, stamp = () => false }) {
+		this.scene = scene;
 		this.snap = snap;   // B36 — the one crosshair, shared with Overlay; see overlay.js
 		this.drag = null;
 		this.tools = tools;   // K7: the held tools this palette shows and arms (app/src/tools.js)
@@ -147,12 +149,12 @@ export class Palette {
 
 	onMove(evt) {
 		if (!this.drag) return;
-		const pos = toCanvas(evt, this.svg);
+		const pos = this.scene.toDrawing({ x: evt.clientX, y: evt.clientY });
 		if (!this.inCanvas(pos)) {
 			if (this.drag.ghost) { this.drag.ghost.remove(); this.drag.ghost = null; this.snap.hide(); }
 			return;
 		}
-		if (!this.drag.ghost) this.drag.ghost = ghostNode(this.overlay, this.preview(this.drag.type));   // the hand's preview (B318)
+		if (!this.drag.ghost) this.drag.ghost = ghostNode(this.scene, this.preview(this.drag.type));   // the hand's preview (B318)
 		this.drag.ghost.moveTo(pos);
 		this.snap.show(snapNode(pos));
 	}
@@ -163,7 +165,7 @@ export class Palette {
 		this.drag = null;
 		if (ghost) ghost.remove();
 		this.snap.hide();
-		const pos = toCanvas(evt, this.svg);
+		const pos = this.scene.toDrawing({ x: evt.clientX, y: evt.clientY });
 		if (!this.inCanvas(pos)) {
 			// a click on the tile (no drag) toggles the stamp hand
 			if (Math.hypot(evt.clientX - sx, evt.clientY - sy) < CLICK_SLOP) this.tools.toggleHand(type);

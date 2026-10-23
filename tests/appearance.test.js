@@ -26,10 +26,10 @@ const snapshot = (svg) => Object.fromEntries(['zones', 'groups', 'links', 'waypo
 	[l, Object.fromEntries(svg.byId[`#${l}`].children.map((c, i) => [c.attrs.id || `${c.attrs.class}#${c.attrs['data-link'] ?? i}`, ser(c)]))]));
 
 function world(board, change) {
-	const { svg, restore } = makeRenderer();
+	const { svg, scene, restore } = makeRenderer();
 	try {
 		const m = new Model(); attachRelations(m, { nearest: NODE_GRID.nearest });
-		new Renderer(m, svg, { parts: PRODUCT_CANVAS });
+		new Renderer(m, svg, { parts: PRODUCT_CANVAS, scene });
 		for (const [kind, e] of board) m.put(kind, structuredClone(e));
 		if (change) for (const [kind, id, patch] of change) m.set(kind, id, patch);
 		return snapshot(svg);

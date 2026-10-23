@@ -43,6 +43,9 @@ export function resolveBox(p1, p2) {
 }
 
 export function dist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
+// H26.4 (dev/design/components/VECTOR-SCENE.md section 5.3): draw's policy for keeping a hover -- the pointer within a node's frame of an
+// entity's origin -- which Input hands the overlay as `near`, so the `editing` part imports none of the canvas's arithmetic
+export const nearOrigin = (entity, pos) => dist(entity, pos) <= NODE_R;
 
 /*
 ── DRAG GEOMETRY ─────────────────────────────────────────────────────────────────────────────────

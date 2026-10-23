@@ -3,17 +3,20 @@
 canvas-layout -- H25.4 (B376). The canvas a page lays out is the composition's, written into the pages, never typed there.
 
 product/canvas.mjs declares the canvas's viewBox, whose rectangle is its ground, and its layers back to front
-(`CANVAS_VIEWBOX`, `CANVAS_LAYERS`). This writes them into each page the manifest declares (tools/layers.mjs `PAGES`) as its
+(`CANVAS_VIEWBOX`, `CANVAS_LAYERS`). This writes the root, its viewBox and its ground into each page the manifest declares
+(tools/layers.mjs `PAGES`) as its
 `<svg id="container">`, between its BEGIN and END GENERATED markers, and `--check` fails when a page lays out anything else --
 so the pages cannot drift from the composition, nor from each other (mission-kit P3), as tools/stylesheets.mjs holds the
 stylesheets they load. Before H25.4 each page typed its canvas, fifteen lines alike, and the export read the order from one.
+H26.4 (dev/design/components/VECTOR-SCENE.md section 5.1, D5): the region holds no layer -- the scene the canvas opens from the
+composition's declaration (product/canvas.mjs CANVAS_SCENE) appends the layers after the ground, in that order, so the page and the
+composition cannot disagree on them at all.
 
 Usage: node tools/canvas-layout.mjs --check | --write
 */
 import fs from 'node:fs';
 import path from 'node:path';
 import { PAGES } from './layers.mjs';
-import { CANVAS_LAYERS } from '../product/canvas.mjs';
 import { withRegion } from './regions.mjs';
 import { PAGE_REGIONS } from './page-regions.mjs';   // the region, declared once for this and the copy measure
 
@@ -33,4 +36,4 @@ for (const page of Object.keys(PAGES)) {
 	else problems.push(`${page} lays out another canvas than the composition -- run node tools/canvas-layout.mjs --write`);
 }
 if (problems.length) { for (const p of problems) console.error(`  \u2717 ${p}`); console.error(`canvas-layout: FAIL -- ${problems.length} finding(s)`); process.exit(1); }
-console.log(`canvas-layout: PASS -- ${Object.keys(PAGES).length} page(s) lay out the composition's canvas, its ${CANVAS_LAYERS.length} layers in order`);
+console.log(`canvas-layout: PASS -- ${Object.keys(PAGES).length} page(s) lay out the composition's canvas, its root and its ground, the scene appending its layers`);

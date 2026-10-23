@@ -17,7 +17,11 @@ const REGIONS = regionsOf(PRODUCT_CANVAS);   // C-f: run mode's regions, the par
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { makeInput, pointer, key, seedNodes, installDom, captureDispatch } from './fixtures/client-harness.mjs';
+import { makeInput, pointer, key, seedNodes, installDom, captureDispatch as dispatchWith } from './fixtures/client-harness.mjs';
+import { sceneOver } from './fixtures/capture-parity.mjs';
+// RESTATED at H26.4 (dev/design/components/VECTOR-SCENE.md section 5.1): the adapter converts by the canvas's scene, so each surface is
+// handed a scene over itself, which calls the surface's own getScreenCTM as toCanvas did
+const captureDispatch = (args) => dispatchWith({ ...args, scene: sceneOver(args.svg) });
 
 // a sink that records what it is handed, and optionally claims or captures
 function probe({ claim = false, capture = false } = {}) {

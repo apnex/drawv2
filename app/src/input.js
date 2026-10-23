@@ -38,8 +38,9 @@ import { pressRows, hitFactsOf, DOUBLE_CLICKS } from './recognize.js';
 import { KEYMAP, KEY_RELEASES } from './keymap.js';
 import { composeRules, resolveInput, openGestures } from '../../kernel/input-rules.mjs';   // H26.2: the rules part, draw's adapter over input-binding
 import { occupiedAnyAt, picksOf, pointsOf, grabbedAt, takenIn } from './pick.js';
-import { GAP, orthoDelta, snappedDelta, clampDelta, snapNode, snapIn, placesOf, gridsOf, resolveBox, dist } from './snap.js';
-import { el, crosshair, previewRect, previewLine, previewPath, isShown, setShown, layerOf } from './painter.js';
+import { GAP, orthoDelta, snappedDelta, clampDelta, snapNode, snapIn, placesOf, gridsOf, resolveBox, dist, nearOrigin } from './snap.js';
+import { isShown, setShown } from './painter.js';
+import { previewRect, previewLine, previewPath } from './editing-visuals.js';   // H26.4: the gestures' previews, items of the scene (section 5.3)
 import { emitToHost } from './capture.js';
 import { initialInputState, track } from './input-state.js';
 import { LINK_RELEASES, MARQUEE_RELEASES, CTRL_CLICKS, PRESS_DRAGS, CLONE_DRAGS } from './releases.js';
@@ -207,7 +208,7 @@ export const GESTURES = {
 				ctx.fixed = i.model.endpointOf(ctx.fixedId);   // an anchor is a node OR a waypoint (B29)
 				if (!ctx.fixed) return null;
 				i.renderer.setState(id, spec.dragState, true);   // de-emphasize the real one while its end is dragged
-				ctx.line = previewLine(i.overlay);
+				ctx.line = previewLine(i.scene);
 				ctx.target = null;
 				ctx.line.update(ctx.fixed, pos);
 			}
@@ -325,7 +326,7 @@ export const GESTURES = {
 		start: (i, hit, pos, evt, rule) => {
 			const place = i.places.get(rule.box.place);
 			const p1 = snapIn(place, pos);
-			const ctx = { p1, place, shape: rule.box.frame ?? resolveBox, releases: rule.id, rect: previewRect(i.overlay, rule.box.preview) };
+			const ctx = { p1, place, shape: rule.box.frame ?? resolveBox, releases: rule.id, rect: previewRect(i.scene, rule.box.preview) };
 			if (rule.box.previewOnPress !== false) ctx.rect.update(ctx.shape(p1, p1));
 			return ctx;
 		}
@@ -341,7 +342,7 @@ export const GESTURES = {
 		},
 		cancel: (i, ctx) => ctx.rect.remove(),
 		update: (i, pos) => i.ctx.rect.update(resolveBox(i.ctx.p1, pos)),
-		start: (i, hit, pos) => ({ p1: pos, rect: previewRect(i.overlay, MARQUEE.preview) })
+		start: (i, hit, pos) => ({ p1: pos, rect: previewRect(i.scene, MARQUEE.preview) })
 	},
 
 
@@ -362,7 +363,7 @@ export class Input {
 	`help` arrives the same way; main.js already had that element, and resolving it twice meant two
 	owners of one node.
 	*/
-	constructor({ svg, model, history, selection, renderer, labels, readout, tools, host, help, snap, now, plugins = [], runRules = [], parts = [] }) {
+	constructor({ svg, scene, model, history, selection, renderer, labels, readout, tools, host, help, snap, now, plugins = [], runRules = [], parts = [] }) {
 		// C-c: the kinds placed on the grid, and how -- the canvas parts' (snap.js placesOf); C-d: their press rows and handles, below
 		this.parts = parts;
 		this.places = placesOf(parts);
@@ -529,10 +530,12 @@ export class Input {
 		// H26.2: the session, from the threshold and the gestures this table declares -- each by its name, once
 		this.#session = openGestures({ threshold: DRAG_THRESHOLD,
 			gestures: Object.entries(GESTURES).map(([name, g]) => ({ name, engaged: g.engaged ?? true, button: g.button ?? null })) });
-		this.overlay = layerOf(svg, 'overlay');
+		// H26.4 (dev/design/components/VECTOR-SCENE.md section 5.1): the canvas's scene, a value -- the gestures' previews are its items
+		this.scene = scene;
 		// H6.3 — transient feedback is overlay.js's: hovered, armed, the datum marker and the
 		// crosshair moved with it. Input keeps only what a GESTURE needs (mode, ctx, and the input state).
-		this.overlayUi = new Overlay({ svg, model, selection, renderer, snap, handles: () => this.handles, hitFacts: () => this.hitFacts, points: () => this.points,
+		// H26.4 (section 5.3): handed the scene, and draw's policy for keeping a hover -- near an entity's origin, within NODE_R (snap.js)
+		this.overlayUi = new Overlay({ svg, scene, near: nearOrigin, model, selection, renderer, snap, handles: () => this.handles, hitFacts: () => this.hitFacts, points: () => this.points,
 			grids: () => this.shownGrids });   // C-e: the grids a modifier shows   // C-d: the kinds' handles; D4: what each hit is
 		this.ctx = {};   // the live gesture's working data: its bodies' (B389)
 
@@ -902,7 +905,7 @@ export class Input {
 	came to be, instead of flags set along the way. With no plugin every stop is a pin, so `route` is `via`.
 	*/
 	linkDrag(src, pos, { shift = false, srcKey = false } = {}) {
-		return { src, path: previewPath(this.overlay), target: null, start: pos, shift, srcKey,
+		return { src, path: previewPath(this.scene), target: null, start: pos, shift, srcKey,
 			via: [], route: [], placed: [], steps: [] };
 	}
 

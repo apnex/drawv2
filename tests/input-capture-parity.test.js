@@ -15,7 +15,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { READ_AT, MOVED, ORIGINAL, EDGE_RECORD, EDGES, GENERATED, generatedComparisons, edgeAnswers, recordOf, VERIFICATION_READ } from './fixtures/capture-parity.mjs';
+import { READ_AT, MOVED, ORIGINAL, EDGE_RECORD, EDGES, GENERATED, generatedComparisons, edgeAnswers, recordOf, VERIFICATION_READ, RESTATED_READ } from './fixtures/capture-parity.mjs';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const readJson = (url) => JSON.parse(fs.readFileSync(url, 'utf8'));
@@ -70,6 +70,9 @@ const CLASSES = {
 	'target-read-twice': (o, n) => o.reads > 1 && n.reads === 1 && JSON.stringify(o.handed) !== JSON.stringify(n.handed) && o.threw === null && n.threw === null,
 	'leave-refused': (o, n) => o.handed.length === 1 && o.handed[0].route === 'leave' && o.threw === null && n.handed.length === 0 && /^TypeError: pointerleave: /.test(n.threw),
 	'typed-refused': (o, n) => o.handed.length === 0 && o.threw === null && n.handed.length === 0 && /^TypeError: keydown: /.test(n.threw),
+	// H26.4 (dev/design/components/VECTOR-SCENE.md section 6.3, its fourth bullet): the adapter converts by the canvas's scene, which refuses a
+	// root answering no transform with Errors' Error where toCanvas threw a TypeError -- neither side handing Input anything
+	'scene-conversion': (o, n) => o.handed.length === 0 && n.handed.length === 0 && /^TypeError: /.test(o.threw) && /^Error: toDrawing: /.test(n.threw),
 };
 
 test('H26.3: each input section 6.3 lists answers differently, of the kind its bullet says, both answers held -- and the inputs beside each alike', () => {
@@ -80,6 +83,17 @@ test('H26.3: each input section 6.3 lists answers differently, of the kind its b
 	const held = [...Object.keys(record.edges), ...Object.keys(record.verification.edges)];
 	assert.deepEqual([...held].sort(), EDGES.map((c) => c.id).sort(), 'the record holds every case, once');
 	assert.equal(new Set(held).size, held.length, 'and none in both sections');
+	/*
+	AMENDED H26.4 (dev/design/components/VECTOR-SCENE.md section 6.3; appendix B): the cases whose adapter answer the scene's conversion
+	changed, restated with both answers -- the old side's as held before, the new refused by the scene's toDrawing -- and no other case.
+	*/
+	assert.equal(record.restated.read, RESTATED_READ, 'the restated section says where its answers were read');
+	assert.deepEqual(Object.keys(record.restated.edges), ['conversion-nan', 'leave-no-transform', 'move-no-transform'], 'the conversions alone');
+	for (const [id, r] of Object.entries(record.restated.edges)) {
+		const was = record.edges[id] ?? record.verification.edges[id];
+		assert.deepEqual(r.old, was.old, `${id}: the old side answers as the record held it`);
+		assert.match(r.new.threw, /^Error: toDrawing: /, `${id}: the scene's conversion refuses it`);
+	}
 	for (const c of EDGES) {
 		const { old, new: neu, equal } = live[c.id];
 		assert.deepEqual(live[c.id], recordOf(record, c.id), `${c.id}: both answers are the ones the record holds`);

@@ -20,10 +20,10 @@ import { BEND_R } from '../kernel/spec.mjs';
 
 const SPAWN = { interval: 1000, speed: 1, kind: 'packet', since: 1_700_000_000_000 };
 const board = (fn) => {
-	const { svg, restore } = makeRenderer();
+	const { svg, scene, restore } = makeRenderer();
 	try {
 		const m = new Model();
-		const r = new Renderer(m, svg, { parts: PRODUCT_CANVAS });
+		const r = new Renderer(m, svg, { parts: PRODUCT_CANVAS, scene });
 		m.put('node', { id: 'node-0d1001', name: 'a', type: 'host', shape: 'circle', x: 0, y: 0 });
 		m.put('node', { id: 'node-0d1002', name: 'r', type: 'router', shape: 'circle', x: 120, y: 0, transit: true });
 		m.put('node', { id: 'node-0d1003', name: 'b', type: 'host', shape: 'circle', x: 240, y: 0 });

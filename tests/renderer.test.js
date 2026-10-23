@@ -18,8 +18,8 @@ import { STD, L_STD } from '../kernel/spec.mjs';
 import { makeRenderer, classesIn } from './fixtures/client-harness.mjs';
 
 const withRenderer = (fn) => {
-	const { svg, restore } = makeRenderer();
-	try { fn({ svg, model: new Model(), Renderer, make: (m) => new Renderer(m, svg, { parts: PRODUCT_CANVAS }) }); } finally { restore(); }
+	const { svg, scene, restore } = makeRenderer();
+	try { fn({ svg, model: new Model(), Renderer, make: (m) => new Renderer(m, svg, { parts: PRODUCT_CANVAS, scene }) }); } finally { restore(); }
 };
 
 test('W4: a plain node shows its socket in edit mode and not in view', () => {

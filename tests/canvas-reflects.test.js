@@ -22,9 +22,9 @@ const DOWN = 'link-0c0e01', BLOCKER = 'link-0c0e02', BENT = 'link-0c0e03';
 const net = { pathOf: (l, m, straight) => straight(l), linksRoutedThrough: () => [], isLinkDown: (l) => l.id === DOWN,
 	blockersOf: (l) => (l.id === DOWN ? [BLOCKER] : []), declaresNoTransit: () => false, stopsAt: () => false };
 const board = (parts = PRODUCT_CANVAS) => {
-	const { svg, restore } = makeRenderer();
+	const { svg, scene, restore } = makeRenderer();
 	const m = new RealModel({ kinds: KINDS, attached: { network: net } });
-	const r = new Renderer(m, svg, { parts });
+	const r = new Renderer(m, svg, { parts, scene });
 	const node = (id, x, y, extra = {}) => m.put('node', { id, name: id.slice(-2), x, y, ...extra });
 	node('node-0c0e0a', 0, 0, { type: 'host', shape: 'circle' }); node('node-0c0e0b', 240, 0, { type: 'host', shape: 'circle' });
 	node('node-0c0e0c', 0, 240, { type: 'host', shape: 'circle' }); node('node-0c0e0d', 240, 240, { type: 'host', shape: 'circle' });

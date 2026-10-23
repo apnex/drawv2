@@ -98,11 +98,11 @@ test('F-d: the export stacks by the order the canvas stacks by', () => {
 });
 
 test('F-d (B10): the canvas draws an item put back in its place, and a new one on top', async () => {
-	const { svg, restore } = makeRenderer();
+	const { svg, scene, restore } = makeRenderer();
 	try {
 		const { Renderer } = await import('../app/src/renderer.js');
 		const m = new Model();
-		const r = new Renderer(m, svg, { parts: PRODUCT_CANVAS });
+		const r = new Renderer(m, svg, { parts: PRODUCT_CANVAS, scene });
 		const zone = (id, order) => ({ id, name: id, x: -90, y: -90, w: 180, h: 180, order });
 		for (const [id, order] of [['zone-00000a', 1], ['zone-00000b', 2], ['zone-00000c', 3]]) m.put('zone', zone(id, order));
 		// RESTATED at C-a (H19.29): the zones layer is the zones plugin's painter's, read from the page rather than the renderer

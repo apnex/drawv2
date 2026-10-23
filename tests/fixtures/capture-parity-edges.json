@@ -1110,5 +1110,73 @@
 				}
 			}
 		}
+	},
+	"restated": {
+		"read": "H26.4: the adapter converting by the canvas's scene (dev/design/components/VECTOR-SCENE.md section 6.3, its fourth bullet); the old side from tests/fixtures/pre-capture/capture.js, its conversion the verbatim painter's, unchanged",
+		"edges": {
+			"conversion-nan": {
+				"class": "conversion",
+				"method": "onMove",
+				"equal": false,
+				"old": {
+					"handed": [
+						{
+							"route": "move",
+							"args": "[]",
+							"event": "{\"type\":\"move\",\"button\":0,\"key\":null,\"repeat\":false,\"shiftKey\":false,\"ctrlKey\":false,\"altKey\":false,\"metaKey\":false,\"at\":{\"x\":\"#NaN\",\"y\":40},\"on\":{\"kind\":\"canvas\",\"id\":null},\"claimed\":false,\"capture\":false}"
+						}
+					],
+					"prevented": 0,
+					"asked": "[]",
+					"threw": null
+				},
+				"new": {
+					"handed": [],
+					"prevented": 0,
+					"asked": "[]",
+					"threw": "Error: toDrawing: the screen transform's a to f must be six finite numbers"
+				}
+			},
+			"leave-no-transform": {
+				"class": "conversion",
+				"method": "leave",
+				"equal": false,
+				"old": {
+					"handed": [
+						{
+							"route": "leave",
+							"args": "[]",
+							"event": "#none"
+						}
+					],
+					"prevented": 0,
+					"asked": "[]",
+					"threw": null
+				},
+				"new": {
+					"handed": [],
+					"prevented": 0,
+					"asked": "[]",
+					"threw": "Error: toDrawing: the root answers no screen transform"
+				}
+			},
+			"move-no-transform": {
+				"class": "scene-conversion",
+				"method": "onMove",
+				"equal": false,
+				"old": {
+					"handed": [],
+					"prevented": 0,
+					"asked": "[]",
+					"threw": "TypeError: Cannot read properties of null (reading 'inverse')"
+				},
+				"new": {
+					"handed": [],
+					"prevented": 0,
+					"asked": "[]",
+					"threw": "Error: toDrawing: the root answers no screen transform"
+				}
+			}
+		}
 	}
 }

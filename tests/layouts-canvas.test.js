@@ -18,7 +18,7 @@ refused when the canvas is composed, naming the parts (the design's rule as buil
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { installDom, fakeEl } from './fixtures/client-harness.mjs';
+import { installDom, fakeEl, sceneOver } from './fixtures/client-harness.mjs';
 import { Model } from './fixtures/composed.mjs';
 import { PRODUCT_CANVAS } from '../product/canvas.mjs';
 import { LAYOUTS_CANVAS } from '../plugins/layouts/layout-canvas.mjs';
@@ -28,11 +28,9 @@ import { gridDot } from '../kernel/geometry.mjs';
 import { LAYOUT_TABLE } from '../plugins/layouts/layout-table.mjs';
 
 const code = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
-const page = () => {
-	const svg = fakeEl('svg', 'canvas');
-	svg.byId = { '#grid-nodes': fakeEl('g', 'grid-nodes'), '#grid-zones': fakeEl('g', 'grid-zones') };
-	return svg;
-};
+// RESTATED at H26.4 (dev/design/components/VECTOR-SCENE.md appendix B): the canvas's scene over a fake root, its layers found by id --
+// each grid one item of its layer -- where the page's two grid layers were made here
+const page = () => sceneOver(fakeEl('svg', 'canvas'));
 const dots = (svg, layer) => svg.byId[`#${layer}`].children;
 const at = (c) => [Number(c.attrs.cx), Number(c.attrs.cy), Number(c.attrs.r)];
 const docWith = (node) => ({ meta: { id: '00000000000e0101', name: 'd' }, layouts: [node, structuredClone(LAYOUT_TABLE[1])], nodes: [] });
@@ -40,8 +38,8 @@ const docWith = (node) => ({ meta: { id: '00000000000e0101', name: 'd' }, layout
 test('WD-b2 test 9: the grids are drawn from the open diagram\'s records -- every dot on its lattice, within its extent', () => {
 	const restore = installDom();
 	try {
-		const svg = page();
-		new Grids({ svg, parts: PRODUCT_CANVAS, model: new Model() });
+		const { svg, scene } = page();
+		new Grids({ scene, parts: PRODUCT_CANVAS, model: new Model() });
 		const nodes = dots(svg, 'grid-nodes'), zones = dots(svg, 'grid-zones');
 		assert.equal(nodes.length, 31 * 17, 'the node grid: the node layout\'s lattice within its extent');
 		assert.deepEqual([at(nodes[0]), at(nodes.at(-1))], [[-900, -480, gridDot().radius], [900, 480, gridDot().radius]]);
@@ -53,8 +51,8 @@ test('WD-b2 test 9: the grids are drawn from the open diagram\'s records -- ever
 test('WD-b2 test 9: a load redraws the grids from the loaded records; an edit does not redraw them', () => {
 	const restore = installDom();
 	try {
-		const svg = page(), model = new Model();
-		new Grids({ svg, parts: PRODUCT_CANVAS, model });
+		const { svg, scene } = page(), model = new Model();
+		new Grids({ scene, parts: PRODUCT_CANVAS, model });
 		const first = dots(svg, 'grid-nodes')[0];
 		model.put('node', { id: 'node-0e0101', name: 'a', x: 0, y: 0 });
 		assert.equal(dots(svg, 'grid-nodes')[0], first, 'an edit leaves the dots as they were');
@@ -73,10 +71,10 @@ test('WD-b2: a diagram lacking a layout record is an error naming it; a page wit
 	const restore = installDom();
 	try {
 		const lacking = { get: () => undefined, onChange() {} };
-		assert.throws(() => new Grids({ svg: page(), parts: PRODUCT_CANVAS, model: lacking }), /the node layout \(layout-000001\) is missing/);
-		const svg = page();
+		assert.throws(() => new Grids({ scene: page().scene, parts: PRODUCT_CANVAS, model: lacking }), /the node layout \(layout-000001\) is missing/);
+		const { svg, scene } = page();
 		const noZones = PRODUCT_CANVAS.filter((p) => p.owner !== 'zones');
-		new Grids({ svg, parts: noZones, model: new Model() });
+		new Grids({ scene, parts: noZones, model: new Model() });
 		assert.equal(dots(svg, 'grid-zones').length, 0, 'nothing places on the zone lattice, so no zone grid');
 		assert.equal(dots(svg, 'grid-nodes').length, 31 * 17, 'and the node grid as ever');
 		assert.deepEqual(gridsOf(noZones).map((g) => g.layout), ['node']);

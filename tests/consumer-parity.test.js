@@ -113,10 +113,10 @@ test('R-e: REST and the CLI answer every link as the lab\'s tab does', async () 
 });
 
 test('R-e: the download draws every link exactly as the lab\'s tab draws it, and marks the down ones', () => {
-	const { svg, restore } = makeRenderer();
+	const { svg, scene, restore } = makeRenderer();
 	let drawn;
 	try {
-		const tab = lab(), r = new Renderer(tab, svg, { parts: PRODUCT_CANVAS });
+		const tab = lab(), r = new Renderer(tab, svg, { parts: PRODUCT_CANVAS, scene });
 		for (const l of tab.all('link')) r.render('link', l);
 		drawn = Object.fromEntries(svg.byId['#links'].children.filter((c) => c.attrs.class === 'link').map((c) => [c.attrs.id, { d: c.attrs.d, down: 'data-down' in c.attrs }]));
 	} finally { restore(); }

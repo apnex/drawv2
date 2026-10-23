@@ -800,7 +800,7 @@ test('B36: Overlay and the held tools share ONE crosshair, so #snaplayer has a s
 		assert.equal(layer.children.length, 0, 'nothing drawn at rest');
 
 		// the STAMP-HAND path: an armed hand tracks the snapped cell -- the tools' since K7, the palette's before
-		const tools = new Tools({ svg: h.svg, snap: h.snap });
+		const tools = new Tools({ svg: h.svg, scene: h.scene, snap: h.snap });   // RESTATED at H26.4: handed the scene, as the composition hands it
 		tools.setHand('host');
 		tools.trackHand({ x: 0, y: 0 }, false);
 		const oneCrosshair = layer.children.filter((c) => c.tagName !== 'G').length;

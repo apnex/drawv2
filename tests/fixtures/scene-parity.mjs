@@ -51,12 +51,12 @@ import { Movers } from '../../plugins/simulation/mover-painter.mjs';
 import { parityBoard } from '../../tools/probe/boards.mjs';
 import { Renderer as OldRenderer } from './pre-scene/app/src/renderer.js';
 import * as oldPainter from './pre-scene/app/src/painter.js';
-// the new side: the adapter, held here until the move puts it in app/src/ and server/svg.mjs
-import { Renderer as NewRenderer, openCanvasScene } from './scene-adapter/renderer.js';
-import { CANVAS_SCENE } from './scene-adapter/canvas-scene.mjs';
-import { svgDocument as newExport } from './scene-adapter/svg.mjs';
+// the new side: the adapter, held in tests/fixtures/scene-adapter/ until the move put it in app/src/ and server/svg.mjs (H26.4)
+import { Renderer as NewRenderer, openCanvasScene } from '../../app/src/renderer.js';
+import { CANVAS_SCENE } from '../../product/canvas.mjs';
+import { svgDocument as newExport } from '../../server/svg.mjs';
 import { svgDocument as oldExport } from './pre-export/server/svg.mjs';
-import * as newVisuals from './scene-adapter/editing-visuals.js';
+import * as newVisuals from '../../app/src/editing-visuals.js';
 
 const ROOT = path.resolve(import.meta.dirname, '..', '..');
 export const NEW = { Renderer: NewRenderer, openCanvasScene, CANVAS_SCENE, svgDocument: newExport, visuals: newVisuals };
@@ -499,7 +499,7 @@ export const EDGES = {
 
 // the commit at which the copies and the record were read, the code before the move whole; MOVED once app/src/renderer.js is the adapter
 export const READ_AT = 'afef004';
-export const MOVED = false;
+export const MOVED = true;   // H26.4: app/src/renderer.js and server/svg.mjs are the adapter
 export const ORIGINALS = [
 	{ file: 'app/src/renderer.js', copy: 'tests/fixtures/pre-scene/app/src/renderer.js', sha256: '43d6fdeee5d0b3124a53058ab57f1f52afe902f2ac3535d648fcbae320283425' },
 	{ file: 'app/src/painter.js', copy: 'tests/fixtures/pre-scene/app/src/painter.js', sha256: 'b8aaafb50e7c5265671eeb6e87e772bde8085bbabe5e5bee7e8234740c6b4f6e' },
@@ -508,11 +508,13 @@ export const ORIGINALS = [
 export const fileSha = (file) => sha256(fs.readFileSync(path.join(ROOT, file)));
 export const RECORD = new URL('./scene-parity-record.json', import.meta.url);
 export const readRecord = () => JSON.parse(fs.readFileSync(RECORD, 'utf8'));
-// the corpus's harness, its grids drawn into it as the composition draws them
+/*
+The corpus's harness, its grids drawn into it as the composition draws them. RESTATED at the move: the grids are items of the scene the
+harness opens, whose layers it finds; before the move they were drawn into layers made here, as the page's markup held them.
+*/
 export async function treesOpen() {
-	const { fakeEl } = await import('./client-harness.mjs');
 	const { Grids } = await import('../../app/src/grids.js');
-	return (h) => { for (const id of ['grid-nodes', 'grid-zones']) h.layers[`#${id}`] = fakeEl('g', id); new Grids({ svg: h.svg, parts: PRODUCT_CANVAS, model: h.model }); };
+	return (h) => { new Grids({ scene: h.scene, parts: PRODUCT_CANVAS, model: h.model }); };
 }
 export const edgeAnswers = (impl = NEW) => Object.fromEntries(Object.entries(EDGES).map(([id, e]) => [id, { class: e.class, old: e.old(), new: e.new(impl) }]));
 

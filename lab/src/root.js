@@ -33,7 +33,7 @@ import { composeCanvas } from '../../app/src/compose-canvas.js';   // K8: the ca
 import { commit, undo, redo } from '../../planner/txn.mjs';
 import { Log } from '../../planner/log.mjs';
 import { productKinds } from '../../product/kinds.mjs';
-import { PRODUCT_CANVAS, CANVAS_LAYERS } from '../../product/canvas.mjs';   // the plugins' canvas parts (C-a), and the canvas's layers (H25.4)
+import { PRODUCT_CANVAS, CANVAS_LAYERS, CANVAS_SCENE, FOREIGN_LAYERS } from '../../product/canvas.mjs';   // the plugins' canvas parts (C-a), the canvas's layers (H25.4) and its scene (H26.4)
 // the network plugin -- incubated here from 2026-09-28, composed into a page by its one function since V-b (H18.26), as the
 // product page composes it
 import { routeLink } from '../../plugins/network/pipes.mjs';
@@ -48,8 +48,10 @@ no error, which is the hardest kind of failure to attribute. The product page an
 the same ids, so a divergence between them is a real defect and is named here at boot.
 H25.4 (B376): the canvas's layers are the composition's (product/canvas.mjs CANVAS_LAYERS), written into this page by
 tools/canvas-layout.mjs; this checks for them rather than typing them a third time.
+AMENDED H26.4 (dev/design/components/VECTOR-SCENE.md section 5.1): the page's markup holds the root and its ground, and the scene the
+canvas opens appends the layers -- so the markup is checked for the root, and the layers once the canvas is composed, below.
 */
-const NEEDED = ['container', 'canvas', ...CANVAS_LAYERS, 'readout-bottom', 'lab-notice', 'kdefs'];
+const NEEDED = ['container', 'canvas', 'readout-bottom', 'lab-notice', 'kdefs'];
 const missing = NEEDED.filter((id) => !document.getElementById(id));
 if (missing.length) throw new Error(`the lab page is missing: ${missing.join(', ')}`);
 
@@ -71,12 +73,15 @@ K8 -- the canvas, composed by the one function the product page composes it with
 this network. The lab holds no tools and no run mode; its drag judge is the attached network's, below, reached lazily
 because the network attaches to the parts composed here.
 */
-const { model, history, renderer, selection, input, listen } = composeCanvas({
-	svg, defs: document.getElementById('kdefs'), host: window, network, kinds, parts: PRODUCT_CANVAS,   // C-a: the plugins' canvas parts
+const { scene, model, history, renderer, selection, input, listen } = composeCanvas({
+	svg, scene: CANVAS_SCENE, defs: document.getElementById('kdefs'), host: window, network, kinds, parts: PRODUCT_CANVAS,   // C-a: the plugins' canvas parts
 	readoutEl: document.getElementById('readout-bottom'),
 	help: null, now: () => Date.now(),
 	plugins: page.plugins,   // its own keys, and its judge of a drag (dev/RULES.md section 11)
 });
+// H26.4: the scene opened has appended every layer of the composition's, in order, after the ground
+const unlaid = CANVAS_LAYERS.filter((id, i) => document.getElementById(id) !== svg.children[i + 1]);
+if (unlaid.length) throw new Error(`the lab's canvas did not lay out: ${unlaid.join(', ')}`);
 
 /*
 The AUTHORITY model, and why there are two.
@@ -103,7 +108,7 @@ settle that follows every change -- the plugin's choreography, which promotion a
 What stays here is the lab's own: the in-page planner below (the authority model and its log), the refusal that takes the
 planner's document back, the notice, and which fixed board to load.
 */
-const net = page.attach({ model, renderer, selection, edit: (label, entries) => history.commit(editOf(label, entries)), pipeLayer: svg.querySelector('#pipes'), el, say });   // C-e (D5)
+const net = page.attach({ model, renderer, selection, edit: (label, entries) => history.commit(editOf(label, entries)), pipeLayer: scene.layerElement(FOREIGN_LAYERS.network), el, say });   // C-e (D5)
 const capture = listen();   // the DOM's events, as input events (L0)
 /*
 THE DOOR (G11): a planner refusal is VISIBLE.

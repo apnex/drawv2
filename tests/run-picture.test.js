@@ -47,12 +47,12 @@ const doc = () => ({
 
 // the radii of the circles each waypoint draws, in drawing order -- from the canvas's DOM
 const canvasWaypoints = (mode) => {
-	const { svg, restore } = makeRenderer();
+	const { svg, scene, restore } = makeRenderer();
 	try {
 		// a Model that draws with the network, as the lab's does and the product page's will at P5 (G1) -- the transit ring is the
 		// network's answer (`declaresNoTransit`), so a Model without one draws none
 		const m = readModel(doc(), KINDS);
-		const r = new Renderer(m, svg, { parts: PRODUCT_CANVAS });
+		const r = new Renderer(m, svg, { parts: PRODUCT_CANVAS, scene });
 		r.renderAll?.();
 		for (const e of m.all('node')) if (!e.type) r.render('node', e);
 		r.setMode(mode);

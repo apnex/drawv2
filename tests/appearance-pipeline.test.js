@@ -23,10 +23,10 @@ const canvas = async () => (await import('../product/canvas.mjs')).PRODUCT_CANVA
 const DEVICE = { id: 'node-0e3001', name: 'r', type: 'router', shape: 'circle', x: 0, y: 0, transit: false };
 const WAYPOINT = { id: 'node-0e3002', name: 'w', x: 120, y: 120 };
 const draw = (parts, fn) => {
-	const { svg, restore } = makeRenderer();
+	const { svg, scene, restore } = makeRenderer();
 	try {
 		const m = new Model();
-		new Renderer(m, svg, { parts });
+		new Renderer(m, svg, { parts, scene });
 		m.put('node', DEVICE); m.put('node', WAYPOINT);
 		const el = (id) => svg.ownerDocument.getElementById(id);
 		fn({ el, frame: (id) => el(id)?.querySelector('[data-layer="frame"]')?.getAttribute?.('data-layer') === 'frame', inLayer: (layer, id) => svg.querySelector(`#${layer}`).children.some((c) => c.getAttribute('id') === id), classes: (id) => (el(id) ? [...el(id).getAttribute('class').split(' '), ...classesIn(el(id))] : []) });
@@ -80,8 +80,8 @@ test('C-a: the renderer draws no device and no waypoint of its own', () => {
 test('C-a: a malformed appearance or order is refused when the canvas is built, naming its owner', async () => {
 	const parts = await canvas();
 	const refused = (extra, re) => {
-		const { svg, restore } = makeRenderer();
-		try { assert.throws(() => new Renderer(new Model(), svg, { parts: [...parts, extra] }), re); } finally { restore(); }
+		const { svg, scene, restore } = makeRenderer();
+		try { assert.throws(() => new Renderer(new Model(), svg, { parts: [...parts, extra], scene }), re); } finally { restore(); }
 	};
 	refused({ owner: 'p', appearances: [{ id: 'x', kind: 'node', state: () => 'x', composes: false }] }, /Renderer: p's appearance x competes and names no root/);
 	refused({ owner: 'p', appearances: [{ id: 'y', kind: 'node', state: () => 'y', composes: true, parts: { nowhere() {} } }] }, /Renderer: p's appearance y draws into layer nowhere, which the order for node does not list/);
@@ -119,10 +119,10 @@ test('H24.9 (B362): a device the graph makes a junction draws no junction mark -
 		{ id: 'link-0e3026', name: 'l7', src: 'node-0e3012', dst: 'node-0e3016' },
 		{ id: 'link-0e3027', name: 'l8', src: 'node-0e3012', dst: 'node-0e3017' },   // one ends at t, whose transit is off
 	];
-	const { svg, restore } = makeRenderer();
+	const { svg, scene, restore } = makeRenderer();
 	try {
 		const m = new Model();
-		const r = new Renderer(m, svg, { parts });
+		const r = new Renderer(m, svg, { parts, scene });
 		for (const n of NODES) m.put('node', n);
 		for (const l of LINKS) m.put('link', l);
 		const drawn = (id) => classesIn(svg.ownerDocument.getElementById(id));

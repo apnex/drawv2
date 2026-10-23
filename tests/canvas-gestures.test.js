@@ -178,7 +178,8 @@ test('C-d: the text box\'s frame shows once the pointer moves -- not at the pres
 	const { key } = await import('./fixtures/client-harness.mjs');
 	const h = makeInput();
 	try {
-		const preview = (cls) => h.input.overlay.children.find((c) => (c.getAttribute('class') || '').includes(cls));
+		// RESTATED at H26.4 (VECTOR-SCENE.md appendix B): the previews are items of the scene, read where the harness found its overlay
+		const preview = (cls) => h.layers['#overlay'].children.find((c) => (c.getAttribute('class') || '').includes(cls));
 		h.capture.onKeyDown(key('t'));
 		h.capture.onDown(pointer(60, 60));
 		assert.equal(Number(preview('textbox-preview').getAttribute('width')), 0, 'not yet');

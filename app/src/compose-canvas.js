@@ -16,16 +16,22 @@ ORDER IS BEHAVIOUR, so it is not hidden. Input's key handling runs after any lis
 palette's Escape -- cancel a sidebar drag, and spend the key so the held hand stays -- depends on registering first. So
 this does not start capturing: it returns `listen()`, and a root calls it once its own listeners are in place
 (tests/browser.test.js "K8: Escape during a sidebar drag").
+
+H26.4 (dev/design/components/VECTOR-SCENE.md section 5.1, D9) -- THE SCENE IS OPENED HERE, from the declaration the root hands in
+(product/canvas.mjs CANVAS_SCENE), on the page's root through the renderer's `openCanvasScene`: the scene appends the layers after the
+root's ground, and is handed on as a value -- to the grids, the renderer with the page's measure and settle (D12), the one crosshair,
+the held tools, Input and capture's adapter -- and returned, for what the root draws itself into the foreign layers and its palette.
 */
 import { sharedDefs } from '../../kernel/renderer.mjs';
 import { NODE_GRID } from '../../kernel/geometry.mjs';
-import { el, crosshair } from './painter.js';
+import { pathLengthOf, settleOf } from './painter.js';   // H26.4 (D12): the page's measure and settle, handed the renderer's shadow
+import { crosshair } from './editing-visuals.js';   // H26.4: the editing part's, an item of the scene
 import { CANVAS } from './snap.js';
 import { Model } from '../../model/model.mjs';
 import { attachRelations } from '../../engine/store.mjs';
 import { Changes, applyAnswer } from './changes.js';
 import { plan } from '../../planner/txn.mjs';   // the preview: the page plans its own view with the server's planner (V-d, PL-6)
-import { Renderer } from './renderer.js';
+import { Renderer, openCanvasScene } from './renderer.js';
 import { Selection } from './selection.js';
 import { LabelEditor } from './labeledit.js';
 import { Tools } from './tools.js';
@@ -37,6 +43,7 @@ import { Grids } from './grids.js';   // WD-b2: the grids, from the open diagram
 
 /*
   svg        the page's canvas element
+  scene      the canvas's scene, declared by the composition (product/canvas.mjs CANVAS_SCENE), opened here on `svg`
   defs       the element the kernel's glyph and frame defs go into (#kdefs) -- handed in, as every element is (B45)
   host       where events arrive and host events go -- the page's `window`, handed in: the canvas reads no host (L11)
   network    the network plugin's object, handed to the Model (the lab); none in production
@@ -44,18 +51,21 @@ import { Grids } from './grids.js';   // WD-b2: the grids, from the open diagram
              here (it was handed in as a chrome factory until the lab's import of it was the last layer-debt edge)
   tools      true to hold the stamp hand and text tool (the product); the lab holds none
   help, now, plugins, runRules   handed to Input as they are
-Returns every part, and `listen()`, which starts event capture and answers its `{ close }` (app/src/capture.js `captureCanvas`, H26.3).
+Returns every part, the opened scene among them, and `listen()`, which starts event capture and answers its `{ close }`
+(app/src/capture.js `captureCanvas`, H26.3).
 */
-export function composeCanvas({ svg, defs, host, network = null, kinds = undefined, parts = [], readoutEl = null, tools = false, help = null, now, plugins = [], runRules = [] }) {
+export function composeCanvas({ svg, scene: declared, defs, host, network = null, kinds = undefined, parts = [], readoutEl = null, tools = false, help = null, now, plugins = [], runRules = [] }) {
 	// the kernel's glyph and frame defs: the kernel owns the look
 	defs.innerHTML = sharedDefs(undefined, undefined, parts.map((p) => p.defs).filter(Boolean).join('\n'));
+	// H26.4: the canvas's scene, its layers appended after the root's ground -- opened, or refused naming each problem
+	const scene = openCanvasScene(declared, svg);
 
 	const model = new Model({ attached: { network }, kinds });   // the kinds a composition brings -- the core's when none are passed, so no links (S-e) (H17.22 N-a)
 	// R3: the maintained reverse indices, registered before any other subscriber so they see a fresh index; the node grid's
 	// `nearest` is injected here, at a composition root, so engine/ imports no kernel (H26.1: it was `cellOf`)
 	attachRelations(model, { nearest: NODE_GRID.nearest });
 	// WD-b2 (H19.46): each grid a part declares, drawn from the open diagram and again on every load -- the layouts plugin's two
-	new Grids({ svg, parts, model });
+	new Grids({ scene, parts, model });
 	const selection = new Selection(model);
 	/*
 	the commit boundary: a root's transport subscribes to it, not to the model. V-d (H18.28; PL-6): it previews each commit
@@ -64,7 +74,7 @@ export function composeCanvas({ svg, defs, host, network = null, kinds = undefin
 	*/
 	const preview = kinds ? (m, ops) => plan(m, ops, { kinds }) : null;
 	const history = new Changes(model, { preview, apply: (ops) => applyAnswer(model, selection, ops) });
-	const renderer = new Renderer(model, svg, { parts });   // C-a: the plugins' canvas parts, their painters among them
+	const renderer = new Renderer(model, svg, { parts, scene, platform: { lengthOf: pathLengthOf, settle: settleOf(svg) } });   // C-a: the plugins' canvas parts, their painters among them
 	selection.subscribe(() => renderer.reflectSelection(selection.list()));   // the renderer owns the selected look
 	// C-e: where each kind's label sits -- the first part that says so
 	const labels = new LabelEditor({ svg, model, history, labelAt: (e) => parts.map((p) => p.labels?.labelAt?.(e)).find((x) => x) ?? null,
@@ -72,15 +82,15 @@ export function composeCanvas({ svg, defs, host, network = null, kinds = undefin
 		contentOf: (e, idx) => parts.map((p) => p.labels?.content).filter(Boolean).find((c) => c.valueOf(e, idx) != null) ?? null });   // and a panel's regions
 	const shownReadout = readoutEl ? new Readout({ model, selection, elements: [readoutEl], parts }) : null;   // C-e: each kind's words, from its part
 	// B36 -- one crosshair on #snaplayer, owned here and shared by everything that draws it: Overlay inside Input, and the
-	// held tools' ghost. Two owners of one layer drew two crosshairs.
-	const snap = crosshair(svg.querySelector('#snaplayer'), CANVAS, NODE_GRID.declaration.pitch);   // H26.1: a box a pitch wide, the node grid's
-	const heldTools = tools ? new Tools({ svg, snap, preview: parts.find((p) => p.hand)?.hand.preview ?? null }) : null;   // C-e: the ghost draws the hand's preview
-	const input = new Input({ svg, model, history, selection, renderer, labels, readout: shownReadout, tools: heldTools,
+	// held tools' ghost. Two owners of one layer drew two crosshairs. H26.4: one item of the scene's snap layer
+	const snap = crosshair(scene, CANVAS, NODE_GRID.declaration.pitch);   // H26.1: a box a pitch wide, the node grid's
+	const heldTools = tools ? new Tools({ svg, scene, snap, preview: parts.find((p) => p.hand)?.hand.preview ?? null }) : null;   // C-e: the ghost draws the hand's preview
+	const input = new Input({ svg, scene, model, history, selection, renderer, labels, readout: shownReadout, tools: heldTools,
 		host, help, now, snap, plugins, runRules, parts });   // C-c, C-d: the canvas parts -- places, press rows, handles
 	let capture = null;
 	// the platform's events, as input events (dev/design/input/GESTURE-SYSTEM.md, L0), through input-capture (H26.3) -- once the root's own listeners are in
-	const listen = () => (capture ??= captureCanvas({ svg, host, sink: input, picks: picksOf(parts), regions: regionsOf(parts) }));   // C-b: the plugins' picks; C-f: run mode's regions
-	return { model, history, renderer, selection, labels, readout: shownReadout, snap, tools: heldTools, input, listen };
+	const listen = () => (capture ??= captureCanvas({ svg, scene, host, sink: input, picks: picksOf(parts), regions: regionsOf(parts) }));   // C-b: the plugins' picks; C-f: run mode's regions
+	return { scene, model, history, renderer, selection, labels, readout: shownReadout, snap, tools: heldTools, input, listen };
 }
 
 // C-f (H19.34): the header's counts, each part's (`tally`: a rank, a word, a count) -- devices, links, zones, as the page has always said

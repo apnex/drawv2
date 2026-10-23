@@ -17,7 +17,7 @@ import { Reveal } from '../../plugins/simulation/reveal-painter.mjs';
 import { makeSpectator, followTarget } from './spectate.js';
 import { RUN_PRESSES } from './run-mode.js';   // K5: run mode is the product's, handed to Input here
 import { productKinds } from '../../product/kinds.mjs';
-import { PRODUCT_CANVAS } from '../../product/canvas.mjs';
+import { PRODUCT_CANVAS, CANVAS_SCENE, FOREIGN_LAYERS } from '../../product/canvas.mjs';   // H26.4: and the canvas's scene, declared there
 import '../../product/types.mjs';   // the plugins' canvas parts (C-a)
 import { NETWORK_ROWS } from '../../plugins/network/kinds.mjs';   // the network's kind and the field it contributes (S-a)
 import { createPageNetwork } from '../../plugins/network/page.mjs';   // the network, composed into this page as into the lab's (V-b)
@@ -53,8 +53,9 @@ AMENDED 2026-10-04 (V-b, H18.26): removed. The page composes the network as the 
 with it -- routes over pipes, down links -- and Input takes its keys and drag judge, so `g` and `x` work here.
 */
 const pageNetwork = createPageNetwork();
-const { model, history, renderer, selection, labels, readout, snap, tools, input, listen } = composeCanvas({
+const { scene, model, history, renderer, selection, labels, readout, snap, tools, input, listen } = composeCanvas({
 	svg,
+	scene: CANVAS_SCENE,   // H26.4: its layers, the pipes and the movers foreign, opened on the root
 	kinds: productKinds(...NETWORK_ROWS),
 	parts: PRODUCT_CANVAS,   // C-a: the plugins' canvas parts (product/canvas.mjs)
 	network: pageNetwork.network,
@@ -81,7 +82,7 @@ warnings drawn after it.
 let networkSaid = null;   // { text, run }: the network's last word, and the undo log's foreign run when it was said
 const foreignKey = () => { const r = history.foreignRun && history.foreignRun(); return r ? `${r.actor}|${r.run}|${r.label}` : ''; };
 // C-e (D5): the network's edits reach history through the canvas's generic builder
-const networkHost = pageNetwork.attach({ model, renderer, selection, edit: (label, entries) => history.commit(editOf(label, entries)), pipeLayer: svg.querySelector('#pipes'), el,
+const networkHost = pageNetwork.attach({ model, renderer, selection, edit: (label, entries) => history.commit(editOf(label, entries)), pipeLayer: scene.layerElement(FOREIGN_LAYERS.network), el,
 	pending: () => sync.outbox.some((m) => !m.answered),
 	say: (text) => {
 		if (!text) return;
@@ -90,7 +91,7 @@ const networkHost = pageNetwork.attach({ model, renderer, selection, edit: (labe
 		if (banner) banner.textContent = text;
 	} });
 // C-e: the palette shows the hand's items in its preview, and a drop stamps through the canvas, as a click with the item held does
-const palette = new Palette({ container: document.getElementById('palette'), svg, snap, tools,
+const palette = new Palette({ container: document.getElementById('palette'), scene, snap, tools,
 	hand: PRODUCT_CANVAS.find((p) => p.hand)?.hand ?? null, stamp: (item, pos) => input.stampAt(pos, item) });
 // capture starts AFTER the palette's key listener is registered: its Escape cancels a sidebar drag and is spent there, so
 // the held hand stays (tests/browser.test.js "K8: Escape during a sidebar drag")
@@ -104,7 +105,7 @@ Both wires live here rather than inside either party: the renderer does not know
 the movers do not listen to the renderer. The root connects them, which is the only place that
 legitimately knows about both.
 */
-const movers = new Movers({ model, renderer, layer: svg.querySelector('#movers'), now: () => clock.now(), el });
+const movers = new Movers({ model, renderer, layer: scene.layerElement(FOREIGN_LAYERS.simulation), now: () => clock.now(), el });   // H26.4: a foreign layer, drawn by the movers
 renderer.watchMode(() => movers.sync());
 model.onChange(() => movers.sync());
 

@@ -90,13 +90,15 @@ test('B318: the ghost draws each item\'s glyph fitted to the socket box, as the 
 	const { STD } = await import('../kernel/spec.mjs');
 	// RESTATED at H21.3 (U4-1, B282): the glyph boxes live with the device type declaration in plugins/devices/device-types.mjs
 	const { GLYPH_BB } = await import('../plugins/devices/device-types.mjs');
-	const { ghostNode } = await import('../app/src/painter.js');
+	// RESTATED at H26.4 (dev/design/components/VECTOR-SCENE.md appendix B): the ghost is an editing visual, an item of the scene it is
+	// handed, and read where the harness found the scene's overlay layer
+	const { ghostNode } = await import('../app/src/editing-visuals.js');
 	const hand = PRODUCT_CANVAS.find((p) => p.hand).hand;
 	const h = makeInput();
 	try {
 		for (const item of hand.items) {
-			ghostNode(h.input.overlay, hand.preview(item));
-			const g = h.input.overlay.children.at(-1);
+			ghostNode(h.scene, hand.preview(item));
+			const g = h.layers['#overlay'].children.at(-1);
 			const fit = g.children.find((c) => c.tagName.toLowerCase() === 'svg');   // the harness's elements carry an upper-case tag
 			assert.ok(fit, `${item}: a fit box`);
 			const S = STD.socket;

@@ -18,16 +18,20 @@ I in" and "what is highlighted" were one object with thirteen fields and no boun
 Two inputs stay OUT: whether the client is read-only, and whether a gesture is in flight. Both are
 the gesture layer's to know, so `arm()` takes them rather than reaching for them — this module must
 not acquire an opinion about mutation, which is precisely the coupling that produced B18/B37/B42.
+
+H26.4 (dev/design/components/VECTOR-SCENE.md sections 5.1 and 5.3; D13) -- THE `editing` PART'S, NATIVE. Its datum and handles are items
+of the scene it is handed -- `datum` in the snap layer, `handles` in the overlay, each removed and put afresh so it lands on top as
+before -- and it builds no element. Its one piece of draw's arithmetic, keeping a hover while the pointer is near an entity's origin,
+is Input's `near` (snap.js's distance within NODE_R), handed in, so it imports neither the painter nor snap.js and consumes the
+document alone, for `kindOf`.
 ─────────────────────────────────────────────────────────────────────────────────────────────────*/
 
-import { el } from './painter.js';
-import { NODE_R, dist } from './snap.js';
 import { kindOf } from '../../model/model.mjs';
 
 const HANDLE = 12;
 
 export class Overlay {
-	constructor({ svg, model, selection, renderer, snap, handles = () => new Map(), hitFacts = () => new Map(), points = () => [], grids = () => [] }) {
+	constructor({ svg, scene, near, model, selection, renderer, snap, handles = () => new Map(), hitFacts = () => new Map(), points = () => [], grids = () => [] }) {
 		this.grids = grids;   // C-e: the grids shown by a modifier -- the zones plugin's, by Shift (by Input)
 		this.points = points;       // C-e: what each part's items cover (by Input)
 		this.hitFacts = hitFacts;   // D4: what each hit word is, from the canvas parts (by Input)
@@ -37,12 +41,12 @@ export class Overlay {
 		this.model = model;
 		this.selection = selection;
 		this.renderer = renderer;
-		this.layer = svg.querySelector('#overlay');
-		this.snapLayer = svg.querySelector('#snaplayer');
+		this.scene = scene;   // H26.4: the handles and the datum are items of its overlay and snap layers
+		this.near = near;     // H26.4 (section 5.3): Input's -- whether a point is near enough an entity's origin to keep its hover
 
 		this.hovered = null;      // the entity under the pointer, or null
 		this.armed = null;        // { id, cls } — the delete / clone chord's target
-		this.datumEl = null;      // the local-origin marker
+		this.datumEl = null;      // the local-origin marker: whether it is drawn
 		// B36 — ONE crosshair on #snaplayer, injected. Overlay and Palette each used to construct their
 		// own on that same layer, so two could be drawn at once. Nothing showed it because Input's
 		// onDown happens to hide the stamp hand first, which is correctness by remembering rather
@@ -75,7 +79,7 @@ export class Overlay {
 		const ent = this.model.get(kindOf(id), id);
 		// what keeps it is what its part says it covers (C-e): a device's frame, a waypoint's radius; anything else, near its origin
 		const cover = this.points().find((a) => a.word === this.hoveredWord && a.under);
-		const still = pos && ent && ent.x !== undefined && (cover ? cover.under(ent, pos) : dist(ent, pos) <= NODE_R);
+		const still = pos && ent && ent.x !== undefined && (cover ? cover.under(ent, pos) : this.near(ent, pos));
 		if (!still) {
 			this.renderer.clearState(id, 'hover', ...this.idleStates());
 			this.hovered = null;
@@ -119,17 +123,19 @@ export class Overlay {
 
 	// ---- datum: a local origin for the readout (KiCad's space-bar convention) ----
 
+	// removed and put afresh each time it moves, so it lands on top, as its element did
 	datum(pos) {
 		if (this.datumEl) {
-			this.datumEl.remove();
+			this.scene.remove('snaplayer', 'datum');
 			this.datumEl = null;
 		}
 		if (!pos) return;
-		this.datumEl = el('path', {
+		this.scene.put('snaplayer', 'datum', [{ tag: 'path', attrs: {
 			class: 'datum',
 			d: 'M 0 -8 L 8 0 L 0 8 L -8 0 Z M 0 -13 L 0 -8 M 0 8 L 0 13 M -13 0 L -8 0 M 8 0 L 13 0',
 			transform: `translate(${pos.x},${pos.y})`
-		}, this.snapLayer);
+		} }]);
+		this.datumEl = true;
 	}
 
 	// ---- handles: the grab points a single selection offers ----
@@ -143,7 +149,7 @@ export class Overlay {
 	`querySelectorAll` stopped returning [] (H2.6).
 	*/
 	handles() {
-		this.layer.querySelectorAll('.handle').forEach((h) => h.remove());
+		this.scene.remove('overlay', 'handles');
 		const ids = this.selection.list();
 		if (ids.length !== 1) return;
 		const id = ids[0];
@@ -157,13 +163,12 @@ export class Overlay {
 		this.#place(points, spec.rx, spec.key);
 	}
 
-	// one rect per named point, tagged with the dataset key the recognizer reads back
+	// one rect per named point, tagged with the dataset key the recognizer reads back -- one item, put afresh on top (H26.4)
 	#place(points, rx, datasetKey) {
-		Object.entries(points).forEach(([name, p]) => {
-			const h = el('rect', { class: 'handle', width: HANDLE, height: HANDLE,
-				x: p.x - HANDLE / 2, y: p.y - HANDLE / 2, rx }, this.layer);
-			h.dataset[datasetKey] = name;
-		});
+		const data = `data-${datasetKey.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`)}`;   // the attribute `dataset[datasetKey]` wrote
+		const shapes = Object.entries(points).map(([name, p]) => ({ tag: 'rect', attrs: { class: 'handle', width: HANDLE, height: HANDLE,
+			x: p.x - HANDLE / 2, y: p.y - HANDLE / 2, rx, [data]: name } }));
+		if (shapes.length) this.scene.put('overlay', 'handles', shapes);
 	}
 
 	// C-f: every idle state the parts' picks show -- what a hover's end clears

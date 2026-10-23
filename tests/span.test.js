@@ -59,10 +59,10 @@ test('renderElement: 1×1 keeps the <use> frame; a span draws a sized rect frame
 
 test('selBox: default args are byte-identical to the pre-span box; a span extends it', () => {
 	assert.equal(selBox(L_STD), selBox(L_STD, 0, 0));                       // 1×1 brackets unchanged
-	const { svg, restore } = makeRenderer();
+	const { svg, scene, restore } = makeRenderer();
 	try {
 		const m = new Model();
-		new Renderer(m, svg, { parts: PRODUCT_CANVAS });
+		new Renderer(m, svg, { parts: PRODUCT_CANVAS, scene });
 		m.put('node', { id: 'node-000001', name: 'r', type: 'router', shape: 'circle', x: 0, y: 0 });
 		m.put('node', { id: 'node-000002', name: 'h', type: 'host', shape: 'square', x: 2 * P, y: 0, span: { cols: 3, rows: 2 } });
 		const selOf = (id) => svg.byId['#nodes'].children.find((g) => g.attrs.id === id).children.find((c) => c.attrs.class === 'select-box').attrs.d;
@@ -160,10 +160,10 @@ test('W4: the socket grid is gated behind the sockets render opt (off by default
 	const bare = { id: 'node-000031', name: '', type: 'router', shape: 'circle', x: 240, y: 0 };
 	assert.equal((renderNodeSvg(panel).match(/class="socket"/g) || []).length, 0, 'default: no grid (a clean export carries no edit-mode aid)');
 	assert.equal((renderNodeSvg(bare).match(/class="socket"/g) || []).length, 0, 'default: a plain node carries no socket either');
-	const { svg, restore } = makeRenderer();
+	const { svg, scene, restore } = makeRenderer();
 	try {
 		const m = new Model();
-		const r = new Renderer(m, svg, { parts: PRODUCT_CANVAS });
+		const r = new Renderer(m, svg, { parts: PRODUCT_CANVAS, scene });
 		r.setMode('edit');
 		m.put('node', panel);
 		m.put('node', bare);
@@ -424,9 +424,9 @@ test('W4: both node shapes obey showsSockets, which is what drifted', () => {
 	const mk = (extra) => ({ id: 'node-000032', name: '', type: 'router', shape: 'circle', x: 0, y: 0, ...extra });
 	for (const [what, node] of [['plain', mk({})], ['panel', mk({ content: [{ content: 'text', value: 'x' }] })]]) {
 		assert.equal(/class="socket"/.test(renderNodeSvg(node)), false, `${what}: none by default`);
-		const { svg, restore } = makeRenderer();
+		const { svg, scene, restore } = makeRenderer();
 		try {
-			const m = new Model(), r = new Renderer(m, svg, { parts: PRODUCT_CANVAS });
+			const m = new Model(), r = new Renderer(m, svg, { parts: PRODUCT_CANVAS, scene });
 			r.setMode('edit');
 			m.put('node', node);
 			assert.equal(svg.byId['#nodes'].children.find((g) => g.attrs.id === 'node-000032').children.some((c) => c.attrs.class === 'socket'), true, `${what}: shown when asked`);
@@ -802,7 +802,8 @@ test('B200: the node grid and the waypoint centre are one dot, from one source',
 
 	assert.match(main, /gridDot\(\)\.radius/, 'the node grid must draw the kernel dot, not a literal of its own');
 	assert.match(renderer, /waypointLayers\(/, 'the waypoint centre comes from the kernel layer list');
-	assert.match(exportDoor, /new Renderer\(model, svg, \{ parts: PRODUCT_CANVAS \}\)/, 'the SVG export drives the same Renderer and parts');
+	// RESTATED at H26.4 (dev/design/components/VECTOR-SCENE.md appendix B): over the scene it opens with no root, the root being none
+	assert.match(exportDoor, /new Renderer\(model, null, \{ parts: PRODUCT_CANVAS, scene \}\)/, 'the SVG export drives the same Renderer and parts');
 
 	/*
 	B224 -- THE GUARD NAMED THREE FILES, AND A FOURTH WAS ADDED.

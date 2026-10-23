@@ -19,10 +19,10 @@ const code = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), '
 const ZONE = { id: 'zone-0c0a01', name: 'dmz', x: 30, y: 30, w: 120, h: 60 };
 const parts = async () => (await import('../product/canvas.mjs')).PRODUCT_CANVAS;
 const drawn = async (renderParts) => {
-	const { svg, restore } = makeRenderer();
+	const { svg, scene, restore } = makeRenderer();
 	try {
 		const m = new Model();
-		const r = renderParts === undefined ? new Renderer(m, svg) : new Renderer(m, svg, { parts: renderParts });
+		const r = renderParts === undefined ? new Renderer(m, svg, { scene }) : new Renderer(m, svg, { parts: renderParts, scene });
 		m.put('zone', ZONE);
 		const g = svg.ownerDocument.getElementById(ZONE.id);
 		return { g, classes: g ? classesIn(g) : [], r };
@@ -49,15 +49,14 @@ test('C-a: the zones plugin brings the zone\'s painter, and the renderer names n
 });
 
 test('C-a: a malformed canvas part is refused when the canvas is built, naming its owner', async () => {
-	const { svg, restore } = makeRenderer();
+	const { svg, scene, restore } = makeRenderer();
 	try {
 		const m = new Model();
-		assert.throws(() => new Renderer(m, svg, { parts: [{ owner: 'p', painters: [{ kind: 'zone', layer: 'zones' }] }] }), /Renderer: p's painter for zone has no create/);
-		// a page with no such layer -- the harness's svg answers any selector with a fresh element, so a bare one stands in
-		const page = { querySelector: () => null };
-		assert.throws(() => new Renderer(m, page, { parts: [{ owner: 'p', painters: [{ kind: 'zone', layer: 'nowhere', create() {}, update() {} }] }] }), /Renderer: p's painter for zone draws into #nowhere, which the page does not have/);
+		assert.throws(() => new Renderer(m, svg, { parts: [{ owner: 'p', painters: [{ kind: 'zone', layer: 'zones' }] }], scene }), /Renderer: p's painter for zone has no create/);
+		// a page with no such layer -- RESTATED at H26.4: a layer the canvas's scene does not hold, which the renderer checks against it
+		assert.throws(() => new Renderer(m, svg, { parts: [{ owner: 'p', painters: [{ kind: 'zone', layer: 'nowhere', create() {}, update() {} }] }], scene }), /Renderer: p's painter for zone draws into #nowhere, which the page does not have/);
 		const z = (await parts()).find((p) => p.owner === 'zones');   // RESTATED at D3: the product's order part comes first now
-		assert.throws(() => new Renderer(m, svg, { parts: [z, { ...z, owner: 'again' }] }), /Renderer: zone is painted by zones and by again/);
+		assert.throws(() => new Renderer(m, svg, { parts: [z, { ...z, owner: 'again' }], scene }), /Renderer: zone is painted by zones and by again/);
 	} finally { restore(); }
 });
 
@@ -69,9 +68,9 @@ const NODES = [
 ];
 const GROUP = { id: 'group-0c0b03', name: 'g', members: ['node-0c0b01', 'node-0c0b02'] };
 const grouped = (renderParts) => {
-	const { svg, restore } = makeRenderer();
+	const { svg, scene, restore } = makeRenderer();
 	const m = new Model();
-	const r = new Renderer(m, svg, { parts: renderParts });
+	const r = new Renderer(m, svg, { parts: renderParts, scene });
 	for (const n of NODES) m.put('node', n);
 	m.put('group', GROUP);
 	const hull = () => { const g = svg.ownerDocument.getElementById(GROUP.id); return g ? g.querySelector('.group-hull') : null; };
@@ -114,10 +113,10 @@ test('C-a: a group none of whose members resolves loses its hull on its next upd
 // B314 -- C-a step one returned from `draw` for a painted kind before re-applying the session states, so a selected zone put
 // again (undo, redo, an answer) lost its selected look until the selection next changed
 test('B314: a selected zone drawn again keeps its selected look', async () => {
-	const { svg, restore } = makeRenderer();
+	const { svg, scene, restore } = makeRenderer();
 	try {
 		const m = new Model();
-		const r = new Renderer(m, svg, { parts: await parts() });
+		const r = new Renderer(m, svg, { parts: await parts(), scene });
 		m.put('zone', ZONE);
 		r.reflectSelection([ZONE.id]);
 		const selected = () => svg.ownerDocument.getElementById(ZONE.id).classList.contains('selected');
@@ -130,10 +129,10 @@ test('B314: a selected zone drawn again keeps its selected look', async () => {
 // B315 -- the reveal marks an entity through `renderer.byId`, which searched the renderer's own layers; each painter took its
 // kind's layer off that list, so a zone (from C-a step one) and a group (step two) could no longer be withheld by a beat
 test('B315: the renderer finds the element of every drawn kind, a painted one or an appearance\'s included', async () => {
-	const { svg, restore } = makeRenderer();
+	const { svg, scene, restore } = makeRenderer();
 	try {
 		const m = new Model();
-		const r = new Renderer(m, svg, { parts: await parts() });
+		const r = new Renderer(m, svg, { parts: await parts(), scene });
 		m.put('zone', ZONE);
 		for (const n of NODES) m.put('node', n);
 		m.put('group', GROUP);
@@ -151,10 +150,10 @@ const LINKED = [
 	['link', { id: 'link-0c0c03', name: 'l', src: 'node-0c0c01', dst: 'node-0c0c02' }],
 ];
 const linked = (renderParts, fn) => {
-	const { svg, restore } = makeRenderer();
+	const { svg, scene, restore } = makeRenderer();
 	try {
 		const m = new Model();
-		const r = new Renderer(m, svg, { parts: renderParts });
+		const r = new Renderer(m, svg, { parts: renderParts, scene });
 		for (const [k, e] of LINKED) m.put(k, e);
 		const twins = () => svg.querySelector('#links').children.filter((c) => c.getAttribute('data-link') === 'link-0c0c03');
 		fn({ m, r, el: (id) => svg.ownerDocument.getElementById(id), twins });
@@ -191,10 +190,10 @@ test('C-a: the network brings the link\'s painter, and the renderer draws no lin
 });
 
 test('C-a: a link put back in its place keeps its click twin just after it (B268, F-d)', async () => {
-	const { svg, restore } = makeRenderer();
+	const { svg, scene, restore } = makeRenderer();
 	try {
 		const m = new Model();
-		new Renderer(m, svg, { parts: await parts() });
+		new Renderer(m, svg, { parts: await parts(), scene });
 		for (const [k, e] of LINKED.slice(0, 2)) m.put(k, e);
 		m.put('node', { id: 'node-0c0c04', name: 'b', type: 'host', shape: 'circle', x: 0, y: 120 });
 		const l1 = { id: 'link-0c0c05', name: 'l1', src: 'node-0c0c01', dst: 'node-0c0c02', order: 1 };

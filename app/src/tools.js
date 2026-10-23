@@ -11,14 +11,16 @@ The lab passes none, as before -- its Input holds nothing, so digits and `t` sta
 
 AMENDED 2026-10-09 (C-e, H19.33): what can be held is the devices plugin's hand (plugins/devices/device-hand.mjs `DEVICE_HAND.items`),
 which the digits index and the palette shows; it was `NODE_TYPES` here.
+AMENDED H26.4 (dev/design/components/VECTOR-SCENE.md sections 5.1 and 5.3): the ghost is an editing visual, an item of the canvas's
+scene, handed in as a value; it was built into the page's overlay element.
 */
-import { ghostNode } from './painter.js';
+import { ghostNode } from './editing-visuals.js';
 
 
 export class Tools {
-	constructor({ svg, snap, preview = null }) {
+	constructor({ svg, scene, snap, preview = null }) {
 		this.svg = svg;
-		this.overlay = svg.querySelector('#overlay');
+		this.scene = scene;   // H26.4: the canvas's scene, whose overlay the ghost is put in
 		this.snap = snap;   // B36 — the one crosshair, shared with Overlay; see overlay.js
 		this.preview = preview;   // how a held item looks -- the hand's (C-e): the ghost draws it
 		/*
@@ -84,7 +86,7 @@ export class Tools {
 	trackHand(pos, blocked) {
 		if (!this.hand) return;
 		// the ghost draws the hand's preview; a composition handing none still shows the crosshair (C-e)
-		if (!this.handGhost && this.preview) this.handGhost = ghostNode(this.overlay, this.preview(this.hand));
+		if (!this.handGhost && this.preview) this.handGhost = ghostNode(this.scene, this.preview(this.hand));
 		this.handGhost?.moveTo(pos);
 		this.handGhost?.setBlocked(blocked);
 		this.snap.show(pos);

@@ -1,0 +1,135 @@
+/*
+H26.4 (dev/design/components/VECTOR-SCENE.md section 4, acceptance steps 3 and 7; sections 5.1 and 5.3; D8, D9, D13; guardrails G1, G5,
+G6, G9) -- DRAW'S DRAWING IS ON `@apnex/vector-scene`.
+
+`app/src/renderer.js` writes no platform element: it opens draw's scene (`openCanvasScene`) and puts what its painters draw there through
+the live shadow, so it draws whole with no root and no `document` at all. `app/src/painter.js` holds no `toCanvas` and no widget of the
+canvas -- `buildPreview` alone stays, for the palette's tiles, beside `el` for the foreign layers' drawers and the trace's probe and
+settle. The `editing` part's modules and `app/src/grids.js` make no element. `server/svg.mjs` swaps no `document` and builds no tree of
+its own. Each page's canvas region holds no layer. `PARTS.editing` holds the modules and consumes what section 5.3 names. Of the
+product's modules only the renderer's names the component, and the server and the export load it by name, the export drawing through it.
+*/
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { spawnSync } from 'node:child_process';
+import { pathToFileURL } from 'node:url';
+import { FOLDERS, PARTS, PAGES } from '../tools/layers.mjs';
+import { PAGE_REGIONS } from '../tools/page-regions.mjs';
+
+const real = (p) => { try { return fs.realpathSync(p); } catch { return p; } };
+const ROOT = real(path.resolve(import.meta.dirname, '..'));
+const COMPONENT_ENTRY = pathToFileURL(real(path.join(ROOT, 'node_modules/@apnex/vector-scene/dist/index.js'))).href;
+// a module's code, its comments taken out, so a word a comment names is not a call
+const code = (file) => fs.readFileSync(path.join(ROOT, file), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
+const EDITING = ['app/src/selection.js', 'app/src/overlay.js', 'app/src/editing-visuals.js'];
+// what makes or reaches a platform element: the painter's builder (not the renderer's own `this.el`, which builds shadow nodes), the
+// document, a lookup on the page, or a write through an element's own method
+const MAKES = /(?<![.\w])el\(|\bcreateElementNS\b|\bcreateElement\b|\bdocument\b|\bownerDocument\b|\.appendChild\(|\.insertBefore\(|\.replaceChildren\(|\.innerHTML\b|\bgetElementById\b|\b(svg|layer|overlay|snapLayer)\.querySelector(All)?\(/g;
+
+test('H26.4 step 3: app/src/renderer.js writes no platform element -- it names no builder and no document, and draws whole with neither', async () => {
+	assert.deepEqual(code('app/src/renderer.js').match(MAKES) ?? [], [], 'no builder, no document, no element written through its own method');
+	assert.doesNotMatch(code('app/src/renderer.js'), /from '\.\/painter\.js'/, 'it imports nothing of app/src/painter.js');
+	// of the root it holds, it writes only draw's own classes -- modes and labels -- which stay draw's (section 5.3)
+	assert.deepEqual([...code('app/src/renderer.js').matchAll(/this\.svg\b(\??\.\w+)*/g)].map((m) => m[0]), ['this.svg', ...Array(3).fill('this.svg?.classList.toggle')],
+		'the root kept, and its classes toggled; nothing else of it read or written');
+	// and in a process with no document at all, a scene with no root holds what the renderer draws -- every stored template's
+	const r = spawnSync(process.execPath, ['--input-type=module', '-e', `
+		delete globalThis.document;
+		const { Renderer, openCanvasScene } = await import('./app/src/renderer.js');
+		const { PRODUCT_CANVAS, CANVAS_SCENE } = await import('./product/canvas.mjs');
+		const { COMPOSED_KINDS, readModel } = await import('./product/types.mjs');
+		const fs = await import('node:fs');
+		let items = 0;
+		for (const f of fs.readdirSync('templates').filter((x) => x.endsWith('.json'))) {
+			const scene = openCanvasScene(CANVAS_SCENE);
+			const r = new Renderer(readModel(JSON.parse(fs.readFileSync('templates/' + f, 'utf8')), COMPOSED_KINDS), null, { parts: PRODUCT_CANVAS, scene });
+			r.syncAll(); r.setMode('edit'); r.setMode('run'); r.toggleLabels();
+			items += scene.layers.filter((l) => !l.foreign).reduce((n, l) => n + scene.items(l.name).length, 0);
+		}
+		console.log(items, typeof globalThis.document);
+	`], { cwd: ROOT, encoding: 'utf8', env: { ...process.env, NODE_TEST_CONTEXT: '' } });
+	assert.equal(r.status, 0, r.stderr);
+	const [items, doc] = r.stdout.trim().split(' ');
+	assert.ok(Number(items) > 40 && doc === 'undefined', `the scene holds what the renderer drew, with no document: ${r.stdout}`);
+});
+
+test('H26.4 step 3: app/src/painter.js holds no toCanvas and no widget of the canvas -- buildPreview alone stays, for the palette\'s tiles', async () => {
+	const painter = await import('../app/src/painter.js');
+	assert.deepEqual(Object.keys(painter).sort(), ['buildPreview', 'el', 'isShown', 'pathLengthOf', 'setAttrs', 'setShown', 'settleOf'],
+		'el and setAttrs for the foreign layers\' drawers; the trace\'s probe and settle (D12); the palette\'s builder; the help panel\'s two questions');
+	const palette = code('app/src/palette.js');
+	assert.match(palette, /import \{ buildPreview \} from '\.\/painter\.js';/, 'the palette builds its tiles with buildPreview, outside the canvas');
+	assert.match(palette, /import \{ ghostNode \} from '\.\/editing-visuals\.js';/, 'and its dragged ghost is an editing visual');
+});
+
+test('H26.4 step 3 (G9): the editing part\'s modules and app/src/grids.js make no element; the overlay imports neither the painter nor snap.js', () => {
+	for (const f of [...EDITING, 'app/src/grids.js']) assert.deepEqual(code(f).match(MAKES) ?? [], [], `${f} makes no element and reaches no document`);
+	const overlay = code('app/src/overlay.js');
+	assert.doesNotMatch(overlay, /from '\.\/(painter|snap)\.js'/, 'the overlay\'s hover is kept by the `near` Input hands it (section 5.3)');
+	assert.deepEqual([...code('app/src/editing-visuals.js').matchAll(/^import /gm)], [], 'the editing visuals import nothing');
+	assert.deepEqual([...code('app/src/selection.js').matchAll(/^import .* from '([^']+)'/gm)].map((m) => m[1]), [], 'the selection imports nothing');
+});
+
+test('H26.4 step 3 (G6): server/svg.mjs swaps no document and builds no tree of its own -- it draws through the scene with no root', () => {
+	const svg = code('server/svg.mjs');
+	assert.doesNotMatch(svg, /globalThis\.document|\bdocument\s*=|createElementNS|appendChild|insertBefore|headless/, 'no document swapped, no tree built');
+	assert.match(svg, /openCanvasScene\(CANVAS_SCENE\)/, 'the composition\'s scene, opened with no root');
+});
+
+test('H26.4 step 3: each page\'s canvas region holds the root, its viewBox and its ground, and no layer -- the scene appends them', () => {
+	for (const page of Object.keys(PAGES)) {
+		const html = fs.readFileSync(path.join(ROOT, page), 'utf8');
+		const region = html.slice(html.indexOf(PAGE_REGIONS.canvas.begin), html.indexOf(PAGE_REGIONS.canvas.end));
+		assert.match(region, /<svg id="container" viewBox="-960 -540 1920 1080"/, `${page}: the root and its viewBox`);
+		assert.match(region, /<rect id="canvas" /, `${page}: its ground`);
+		assert.doesNotMatch(region, /<g\b/, `${page}: no layer`);
+	}
+});
+
+test('H26.4 step 3 (D13, section 5.3): PARTS.editing holds the selection, the overlay and the editing visuals, and consumes the document alone', () => {
+	const e = PARTS.editing;
+	assert.ok(e, 'the part is declared');
+	assert.deepEqual([...e.modules].sort(), [...EDITING].sort(), 'its modules at H26.4');
+	assert.deepEqual(e.consumes, ['document'], 'it consumes the document alone, for kindOf');
+	assert.equal(e.kind, 'host', 'a host: it names no plugin');
+	assert.ok(e.by.includes('D1') && e.by.includes('H26-10'), 'by D1 and H26-10');
+	assert.ok(PARTS.canvas.consumes.includes('editing'), 'the canvas consumes it, the edge one way');
+	for (const f of EDITING) assert.ok(!PARTS.canvas.modules.includes(f), `${f} is no longer the canvas's`);
+	const page = PARTS['product-page'].consumes;
+	assert.ok(page === '*' || page.includes('editing'), 'the palette, the product page\'s, consumes it for its ghost -- a composition root consumes every part');
+	assert.ok(PARTS.renderer.modules.includes('app/src/shadow.js'), 'the shadow joins the renderer part');
+});
+
+test('H26.4 step 3 (G5, D9): of the product\'s modules, app/src/renderer.js alone names @apnex/vector-scene, and it is a renderer module', () => {
+	const walk = (d) => fs.readdirSync(path.join(ROOT, d), { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(d, e.name)) : /\.m?js$/.test(e.name) ? [path.join(d, e.name)] : []));
+	const product = FOLDERS.filter((f) => f.dir !== 'tools' && f.dir !== 'tests').flatMap((f) => walk(f.dir));
+	assert.ok(product.length > 150, `the product's modules were read: ${product.length}`);
+	assert.deepEqual(product.filter((f) => fs.readFileSync(path.join(ROOT, f), 'utf8').includes('@apnex/vector-scene')), ['app/src/renderer.js']);
+	assert.ok(PARTS.renderer.modules.includes('app/src/renderer.js'), 'the adapter is the renderer part\'s');
+});
+
+/*
+H26.4 step 7 (D8) -- the pages load vector-scene through their import map (tests/import-map-browser.test.js); the server and the export
+load it by name, since the export draws through it. Each module graph is loaded in a process of its own whose every resolution is logged
+(tests/fixtures/resolve-log/): the server's app, and the export drawing a diagram, resolve the component's entry.
+*/
+test('H26.4 step 7 (D8): the server and the export load vector-scene by name, the export drawing a diagram through it', () => {
+	const log = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'resolve-log-')), 'log');
+	try {
+		const loads = (source) => {
+			fs.writeFileSync(log, '');
+			const env = { ...Object.fromEntries(Object.entries(process.env).filter(([k]) => k !== 'NODE_TEST_CONTEXT')), RESOLVE_LOG: log };
+			const r = spawnSync(process.execPath, ['--import', './tests/fixtures/resolve-log/register.mjs', '--input-type=module', '-e', source], { cwd: ROOT, env, encoding: 'utf8' });
+			assert.equal(r.status, 0, r.stderr);
+			return { resolved: fs.readFileSync(log, 'utf8').split('\n').filter(Boolean), out: r.stdout };
+		};
+		const server = loads("await import('./server/app.js');");
+		assert.ok(server.resolved.length > 100, `the server's graph was logged: ${server.resolved.length} resolution(s)`);
+		assert.ok(server.resolved.includes(COMPONENT_ENTRY), 'the server loads it by name, through the export it serves');
+		const drawn = loads("const { svgDocument } = await import('./server/svg.mjs'); const { parityBoard } = await import('./tools/probe/boards.mjs'); console.log(svgDocument(parityBoard()).length);");
+		assert.ok(drawn.resolved.includes(COMPONENT_ENTRY) && Number(drawn.out) > 1000, 'the export resolves it, and draws through it');
+	} finally { fs.rmSync(path.dirname(log), { recursive: true, force: true }); }
+});

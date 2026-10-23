@@ -113,14 +113,23 @@ export const PARTS = {
 		modules: ['product/'], consumes: ['kind-contract', 'lattice', 'colours', 'layouts', 'devices', 'network', 'zones', 'groups', 'simulation'] },
 	canvas: { duty: 'Turn input into edits through the parts\' declarations', kind: 'host', by: ['D1', 'D2', 'D5'],
 		modules: ['app/src/actions.js', 'app/src/capture.js', 'app/src/changes.js', 'app/src/commands.js', 'app/src/compose-canvas.js', 'app/src/help.js',
-			'app/src/input.js', 'app/src/input-state.js', 'app/src/keymap.js', 'app/src/labeledit.js', 'app/src/overlay.js', 'app/src/pick.js',
-			'app/src/readout.js', 'app/src/recognize.js', 'app/src/releases.js', 'app/src/selection.js', 'app/src/snap.js', 'app/src/tools.js',
+			'app/src/input.js', 'app/src/input-state.js', 'app/src/keymap.js', 'app/src/labeledit.js', 'app/src/pick.js',
+			'app/src/readout.js', 'app/src/recognize.js', 'app/src/releases.js', 'app/src/snap.js', 'app/src/tools.js',
 			// app/src/grids.js draws the grids placement snaps to, from the canvas's places (app/src/snap.js gridsOf); in the renderer
 			// it would make the renderer and the canvas consume each other. H26.2: the triggers module went, its press the session's
 			'app/src/grids.js', 'engine/situation.mjs'],
-		consumes: ['lattice', 'kind-contract', 'document', 'relations', 'rules', 'planner', 'renderer', 'primitives', 'colours'] },
+		consumes: ['lattice', 'kind-contract', 'document', 'relations', 'rules', 'planner', 'renderer', 'editing', 'primitives', 'colours'] },
+	/*
+	H26.4 (dev/design/components/VECTOR-SCENE.md section 5.3, D13; H26-10) -- THE EDITING DUTY, declared inside draw: the selection and
+	the visuals that show what an edit will do, written natively as items of the scene they are handed; the five generic gestures' bodies
+	join at H26.8. It names no plugin, and its modules import the document alone (kindOf), the scene, the renderer's states and the
+	parts' declarations arriving as values; the canvas and the product page consume it, so the edge runs one way (B389).
+	*/
+	editing: { duty: 'Let a person select, move and resize what the canvas draws', kind: 'host', by: ['D1', 'H26-10'],
+		modules: ['app/src/selection.js', 'app/src/overlay.js', 'app/src/editing-visuals.js'], consumes: ['document'] },
+	// H26.4: the live shadow joins it, draw's translation onto vector-scene, retired by H26.8 (VECTOR-SCENE.md section 5.1)
 	renderer: { duty: 'Draw a document through the parts\' painters', kind: 'host', by: ['D1', 'D3'],
-		modules: ['app/src/renderer.js', 'app/src/painter.js'], consumes: ['lattice', 'document', 'primitives', 'colours'] },
+		modules: ['app/src/renderer.js', 'app/src/shadow.js', 'app/src/painter.js'], consumes: ['lattice', 'document', 'primitives', 'colours'] },
 	sync: { duty: 'Keep a tab converged with the server', kind: 'host', by: ['SD2'],
 		modules: ['app/src/sync.js', 'app/src/net.js', 'app/src/watchdog.js', 'app/src/clock.js'], consumes: ['document', 'kind-contract', 'canvas'] },
 	'product-page': { duty: 'Compose the product page', kind: 'composition root', by: ['D1'],
@@ -195,6 +204,8 @@ export const MISSION_KIT = {
 	'input-binding': 'proposed in drawv2, released from its own repository, composed (H26-6)',
 	'input-capture': 'proposed in drawv2, released from its own repository, composed (H26-8)',
 	'vector-scene': 'proposed in drawv2, released from its own repository, composed (H26-11); a candidate in zorg D32, steered in D35',
+	// H26.4 (VECTOR-SCENE.md section 5.3): the editing duty, declared inside draw as the `editing` part, extracted when a second app needs it
+	'canvas-editing': 'a drawv2 candidate by H26-10, B389',
 	'entity-view': 'candidate, zorg D32',
 	'write-outbox': 'candidate, zorg D32',
 	'resource-lease': 'candidate, zorg D32',
@@ -217,6 +228,7 @@ export const ALIGNMENT = {
 	hub: { to: ['entity-api', 'agp', 'resource-lease'], waits: 'OD-2' },
 	cli: { to: ['operation-command'], waits: 'OD-3' },
 	export: { to: ['vector-scene'], waits: 'draws through it with no root (H26-11)' },
+	editing: { to: ['canvas-editing'], waits: 'declared inside draw (H26-10); its gestures\' bodies join at H26.8, extracted when a second app needs it (B389)' },
 };
 
 export const ALLOWED = {
@@ -321,6 +333,7 @@ export const LAYER = {
 		'app/src/capture.js', 'app/src/changes.js', 'app/src/commands.js', 'app/src/input-state.js', 'app/src/input.js', 'app/src/keymap.js',
 		'app/src/labeledit.js',  // the label editor Input drives for t, F2 and double-click; the lab loads it, and its window reads are L11's canvas ratchet
 		'app/src/overlay.js', 'app/src/painter.js', 'app/src/pick.js', 'app/src/recognize.js', 'app/src/releases.js', 'app/src/renderer.js',
+		'app/src/shadow.js', 'app/src/editing-visuals.js',   // H26.4: the renderer's live shadow, and the editing part's native visuals
 		'app/src/selection.js', 'app/src/snap.js', 'app/src/grids.js',   // WD-b2 (H19.46): the grids, drawn from the open diagram
 		'app/src/actions.js',    // every action a binding names, with its label (gesture system stage 6)
 		'app/src/tools.js',      // K7: the held tools -- stamp hand, text tool, the hand's ghost; the palette is a view of them
@@ -374,8 +387,8 @@ export const ENTRIES = {
 			'plugins/simulation/spawn-runs.mjs',   // C-e (H19.33): the simulation's run-mode rows, which run-mode.js hands in -- the page's alone
 			'plugins/devices/device-panels.mjs',   // C-e (H19.33): the devices plugin's panel rows, likewise
 			'app/src/actions.js', 'app/src/help.js', 'app/src/run-mode.js', 'app/src/labeledit.js', 'app/src/main.js', 'plugins/simulation/mover-painter.mjs', 'app/src/net.js', 'app/src/overlay.js',
-			'app/src/painter.js', 'plugins/simulation/paintloop.mjs', 'app/src/palette.js', 'app/src/pick.js', 'app/src/readout.js',
-			'app/src/recognize.js', 'app/src/releases.js', 'app/src/renderer.js', 'plugins/simulation/reveal-painter.mjs', 'app/src/selection.js', 'app/src/snap.js', 'app/src/tools.js', 'app/src/compose-canvas.js',
+			'app/src/editing-visuals.js', 'app/src/painter.js', 'plugins/simulation/paintloop.mjs', 'app/src/palette.js', 'app/src/pick.js', 'app/src/readout.js',
+			'app/src/recognize.js', 'app/src/releases.js', 'app/src/renderer.js', 'plugins/simulation/reveal-painter.mjs', 'app/src/selection.js', 'app/src/shadow.js', 'app/src/snap.js', 'app/src/tools.js', 'app/src/compose-canvas.js',
 			'app/src/spectate.js', 'app/src/sync.js', 'app/src/watchdog.js', 'engine/ivm.mjs',
 			'plugins/simulation/kinds.mjs', 'plugins/simulation/movers.mjs', 'engine/relations.mjs', 'plugins/simulation/rules.mjs',
 			'engine/situation.mjs', 'plugins/simulation/spawners.mjs', 'engine/store.mjs', 
@@ -445,8 +458,8 @@ export const ENTRIES = {
 			'plugins/network/transit.mjs', // transit: the per-type table and the session's settings (TRANSIT.md section 12)
 			'plugins/network/host.mjs',    // the network attached to a page: its choreography around an edit (item 3, 2026-10-01)
 			'app/src/capture.js', 'app/src/changes.js', 'app/src/commands.js', 'app/src/input-state.js', 'app/src/input.js', 'app/src/keymap.js', 'app/src/labeledit.js',
-			'app/src/overlay.js', 'app/src/painter.js', 'app/src/pick.js', 'app/src/readout.js',
-			'app/src/recognize.js', 'app/src/releases.js', 'app/src/renderer.js', 'app/src/selection.js', 'app/src/snap.js', 'app/src/tools.js', 'app/src/compose-canvas.js', 
+			'app/src/overlay.js', 'app/src/editing-visuals.js', 'app/src/painter.js', 'app/src/pick.js', 'app/src/readout.js',
+			'app/src/recognize.js', 'app/src/releases.js', 'app/src/renderer.js', 'app/src/selection.js', 'app/src/shadow.js', 'app/src/snap.js', 'app/src/tools.js', 'app/src/compose-canvas.js', 
 			'engine/ivm.mjs', 'engine/relations.mjs',
 			'engine/situation.mjs', 'engine/store.mjs', 
 			'kernel/geometry.mjs', 'plugins/network/roles.mjs', 'plugins/network/appearance.mjs', 'kernel/input-rules.mjs', 'kernel/renderer.mjs',
@@ -1107,7 +1120,7 @@ export const COPIES = {
 	// each holds make tools/page-regions.mjs PAGE_REGIONS -- the only text the copied-lines measure leaves out of a page's typed lines
 	generated: {
 		stylesheets: { tool: 'tools/stylesheets.mjs', source: 'product/canvas.mjs PAGE_STYLESHEETS' },
-		canvas: { tool: 'tools/canvas-layout.mjs', source: 'product/canvas.mjs CANVAS_VIEWBOX, CANVAS_LAYERS' },
+		canvas: { tool: 'tools/canvas-layout.mjs', source: 'product/canvas.mjs CANVAS_VIEWBOX' },   // H26.4: the scene appends the layers
 		// H26.1 (SNAP-GRID.md section 7.6): the components' addresses, one entry per export, from what is installed (tools/components.mjs)
 		importmap: { tool: 'tools/import-map.mjs', source: 'package.json @apnex dependencies, each installed package.json exports and version' },
 	},

@@ -7,13 +7,14 @@ measure only when it holds exactly these lines (tools/regions.mjs). One definiti
 region by construction.
 
   PAGE_REGIONS.stylesheets  the stylesheets a page loads, in the composition's order (product/canvas.mjs PAGE_STYLESHEETS)
-  PAGE_REGIONS.canvas       the canvas a page lays out: its viewBox, its ground and its layers (CANVAS_VIEWBOX, CANVAS_LAYERS)
+  PAGE_REGIONS.canvas       the canvas a page lays out: its root, its viewBox and its ground (CANVAS_VIEWBOX); H26.4: no layer, the
+                            scene the canvas opens appending them after the ground (product/canvas.mjs CANVAS_SCENE)
   PAGE_REGIONS.importmap    H26.1: the page's one import map, an entry per export of each component installed (tools/components.mjs)
   importMapRegion(imports)  that region for any map -- the generator writes it for the tree it is given, the measure for this one
 */
 import path from 'node:path';
 import { COPIES } from './layers.mjs';
-import { PAGE_STYLESHEETS, CANVAS_LAYERS, CANVAS_VIEWBOX } from '../product/canvas.mjs';
+import { PAGE_STYLESHEETS, CANVAS_VIEWBOX } from '../product/canvas.mjs';
 import { markersOf } from './regions.mjs';
 import { importMapOf } from './components.mjs';
 
@@ -33,7 +34,6 @@ export const PAGE_REGIONS = {
 		lines: [
 			`<svg id="container" viewBox="${CANVAS_VIEWBOX}" xmlns="http://www.w3.org/2000/svg">`,
 			`\t<rect id="canvas" x="${x}" y="${y}" width="${width}" height="${height}"/>`,
-			...CANVAS_LAYERS.map((id) => `\t<g id="${id}"></g>`),
 			'</svg>',
 		],
 	},

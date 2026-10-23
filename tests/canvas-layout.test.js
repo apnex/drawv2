@@ -11,7 +11,7 @@ export read the declaration itself.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { CANVAS_LAYERS, CANVAS_VIEWBOX } from '../product/canvas.mjs';
+import { CANVAS_LAYERS, CANVAS_VIEWBOX, CANVAS_SCENE } from '../product/canvas.mjs';
 import { PAGES, COPIES } from '../tools/layers.mjs';
 import { markersOf, withRegion } from '../tools/regions.mjs';
 import { PAGE_REGIONS } from '../tools/page-regions.mjs';
@@ -36,14 +36,20 @@ test('H25.4: each page lays out the canvas the composition declares -- its viewB
 		const html = read(page), from = html.indexOf(begin), to = html.indexOf(end);
 		assert.ok(from > 0 && to > from, `${page} holds the generated canvas region`);
 		const region = html.slice(from, to);
-		assert.deepEqual(containerOf(region), { viewBox: CANVAS_VIEWBOX, ground: CANVAS_VIEWBOX, layers: CANVAS_LAYERS }, `${page}: the canvas is the declaration's`);
+		// RESTATED at H26.4 (dev/design/components/VECTOR-SCENE.md section 5.1, appendix B): the region holds the root, its viewBox and its
+		// ground, and no layer -- the scene the canvas opens from the composition's declaration appends them after the ground
+		assert.deepEqual(containerOf(region), { viewBox: CANVAS_VIEWBOX, ground: CANVAS_VIEWBOX, layers: [] }, `${page}: the canvas is the declaration's`);
 		// and exactly so, character for character, indent and all -- an attribute added to a layer is a hand edit too (H25.4's verifiers)
 		const [x, y, w, h] = CANVAS_VIEWBOX.split(' '), indent = html.slice(html.lastIndexOf('\n', from) + 1, from);
-		const svg = [`<svg id="container" viewBox="${CANVAS_VIEWBOX}" xmlns="http://www.w3.org/2000/svg">`, `\t<rect id="canvas" x="${x}" y="${y}" width="${w}" height="${h}"/>`, ...CANVAS_LAYERS.map((id) => `\t<g id="${id}"></g>`), '</svg>'];
+		const svg = [`<svg id="container" viewBox="${CANVAS_VIEWBOX}" xmlns="http://www.w3.org/2000/svg">`, `\t<rect id="canvas" x="${x}" y="${y}" width="${w}" height="${h}"/>`, '</svg>'];
 		assert.equal(html.slice(from, to + end.length), [begin, ...svg, end].join(`\n${indent}`), `${page}: its region holds the declaration's canvas and nothing else`);
 		assert.match(html.slice(0, from), /<main id="stage">\s*$/, `${page}: the canvas is the first thing in its stage`);
 		assert.equal(containerOf(html.slice(0, from) + html.slice(to)), null, `${page} lays out no other canvas outside the region`);
 	}
+	// H26.4: the layers in order are the scene's, each the declaration's layer by name, the pipes and the movers foreign
+	assert.deepEqual(CANVAS_SCENE.layers.map((l) => l.name), CANVAS_LAYERS, 'the scene declares the canvas\'s layers, in order');
+	assert.deepEqual(CANVAS_SCENE.layers.filter((l) => l.foreign).map((l) => l.name), ['pipes', 'movers'], 'the two the plugins draw themselves, foreign');
+	assert.ok(CANVAS_SCENE.layers.every((l) => l.attrs.id === l.name), 'each written with its id, as the page\'s markup held it');
 });
 
 test('H25.4: a region is rewritten between its markers and nowhere else, at the marker\'s indent; a page without them, or holding them twice, is refused', () => {
@@ -59,7 +65,8 @@ test('H25.4: a region is rewritten between its markers and nowhere else, at the 
 
 test('H25.4: nothing else types the layers -- the lab checks for the declared ones, and the export stacks by them', () => {
 	assert.doesNotMatch(read('lab/src/root.js'), /'grid-zones'|'snaplayer'|'waypoints'/, 'the lab names no layer of its own');
-	assert.match(read('lab/src/root.js'), /\.\.\.CANVAS_LAYERS/, 'it checks for the declared ones');
+	// RESTATED at H26.4: the scene appends them, so the lab checks each declared one stands where the scene put it, after the ground
+	assert.match(read('lab/src/root.js'), /CANVAS_LAYERS\.filter\(\(id, i\) => document\.getElementById\(id\) !== svg\.children\[i \+ 1\]\)/, 'it checks for the declared ones');
 	assert.doesNotMatch(read('server/svg.mjs'), /index\.html/, 'the export reads no page');
 	assert.match(read('server/svg.mjs'), /CANVAS_LAYERS/, 'it stacks by the declaration');
 });

@@ -141,10 +141,10 @@ for (const [name, at, booted] of [['the product page', () => `http://127.0.0.1:$
 		const captureFiles = ownVendored.filter((r) => r.url.startsWith(`/vendor/@apnex/input-capture@${capture}/`));
 		assert.ok(captureFiles.some((r) => r.url.endsWith('/index.js')) && captureFiles.length >= 7 && captureFiles.every((r) => r.status === 200),
 			`input-capture's graph loaded with the page from the vendor mount, every file answered 200: ${JSON.stringify(captureFiles)}`);
-		// H26.4: no page module imports vector-scene yet, so its graph is asked of the vendor mount when the check imports it by name
-		const sceneFiles = vendored.filter((r) => r.url.startsWith(`/vendor/@apnex/vector-scene@${scene}/`));
-		assert.ok(sceneFiles.some((r) => r.url.endsWith('/index.js')) && sceneFiles.every((r) => r.status === 200),
-			`vector-scene's graph asked of the vendor mount by name, every file answered 200: ${JSON.stringify(sceneFiles)}`);
+		// RESTATED at H26.4's move: the renderer part composes vector-scene, so it too loads with the page, its whole graph from the mount
+		const sceneFiles = ownVendored.filter((r) => r.url.startsWith(`/vendor/@apnex/vector-scene@${scene}/`));
+		assert.ok(sceneFiles.some((r) => r.url.endsWith('/index.js')) && sceneFiles.length >= 6 && sceneFiles.every((r) => r.status === 200),
+			`vector-scene's graph loaded with the page from the vendor mount, every file answered 200: ${JSON.stringify(sceneFiles)}`);
 		assert.deepEqual(vendored.filter((r) => r.status !== 200), [], 'and every module it imports in turn');
 		assert.ok(ownVendored.length + vendored.length >= 4, `the component's own module graph came with it: ${ownVendored.length + vendored.length} request(s)`);
 		assert.deepEqual(t.thrown, [], 'nothing failed after');
