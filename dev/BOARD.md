@@ -1611,7 +1611,7 @@ Scored so the comparison is a judgement, not an omission.\
 | **B343** | S3 | Which of drawv2's parts become mission-kit components, reasoned with agp's and zorg's own | the director starts it for a part other than the canvas and the input system. |
 | **B387** | S4 | A bundler for draw's pages (H26-2) | TypeScript is wanted in draw's own code, or the page's load time is shown to be a problem with B386's compression in place. |
 | **B388** | S5 | The components on the npm registry (H26-2) | an app outside this organisation's repositories, or one that needs a version range rather than an exact file, depends on a component. |
-| **B389** | S4 | A fifth component: marquee, resize handles, drag-to-move with a preview (H26-1) | a second app needs marquee selection, resize handles or drag-to-move with a preview. |
+| **B389** | S4 | A fifth component, the editing duty: marquee, resize handles, drag-to-move with a preview, their visuals and the selection (H26-1, H26-10) | a second app needs marquee selection, resize handles or drag-to-move with a preview. |
 | **B390** | S4 | `snap-grid`'s radial, hex and isometric grids (H26-1) | an app needs a grid that is not square. |
 | **B391** | S4 | Draw on Node 24 (H26-2) | a component draw consumes needs Node 24, or Node 22 reaches the end of its maintenance, April 2027. |
 | **B394** | S4 | The page's answer to `access-lost` (H24.15) | the image ships no template, or `Store#first` stops falling back to one. |
@@ -1632,6 +1632,10 @@ Scored so the comparison is a judgement, not an omission.\
 | **B412** | S5 | A context-menu fact in `input-capture` (H26-8) | an application other than draw needs the menu suppressed over its surface, or draw's B75 rule is next changed. |
 | **B413** | S5 | A key released while the page lacks focus makes no key-up (H26-8) | a person reports a key, a Shift layer or a zone left behind by switching away, or capture next adds a listener. |
 | **B414** | S5 | The first two components' checks refuse fewer clock and global forms than `input-capture`'s (H26.3) | the next release of `snap-grid` or `input-binding`, which takes the wider checks. |
+| **B415** | S5 | Drawing a grid as a shared piece (H26-10) | a second application draws a grid -- the gesture tester's scope (H26.5) among them -- or H26.6 designs pan and zoom. |
+| **B416** | S5 | The inline text editor as a component (H26-10) | a second application needs a drawn text edited in place. |
+| **B417** | S5 | The help overlay from the bindings as a component (H26-10) | a second application shows the inputs its bindings declare -- the gesture tester (H26.5) among them. |
+| **B418** | S4 | What a person sees, readable by an agent (H26-10) | an agent needs to perceive what a person sees on the canvas, or H26.8 makes draw's description native. |
 | **B344** | S4 | OD-1: a diagram kept in mission-kit's entity-store | the director selects it, or entity-store's record rules the adjustments it needs -- an asynchronous durable storage port, and names optional per kind. |
 | **B345** | S4 | OD-2: clients reaching the server over agp | OD-1 is ruled, entity-api is certified, and its follows are unparked (zorg's D15). |
 | **B347** | S4 | The towerless-combat timing test failed once under machine load | it fails a second time, or B333's flake ledger is built. |
