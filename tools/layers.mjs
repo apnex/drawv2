@@ -165,6 +165,9 @@ export const COMPONENTS = {
 	// H26.3: the canvas part alone, draw's adapter (app/src/capture.js); the platform's events reach every other part through it
 	// (dev/design/components/INPUT-CAPTURE.md section 5, D9)
 	'@apnex/input-capture': { parts: ['canvas'], by: ['H26-1', 'H26-2', 'H26-8'] },
+	// H26.4: the renderer part alone, draw's adapter (app/src/renderer.js `openCanvasScene`); the canvas, the editing part and the export
+	// use the scene it opens, a value (dev/design/components/VECTOR-SCENE.md section 5.1, D9)
+	'@apnex/vector-scene': { parts: ['renderer'], by: ['H26-1', 'H26-2', 'H26-11'] },
 };
 
 /*
@@ -172,12 +175,13 @@ H21.9 (A-0) -- EACH PART'S ALIGNMENT WITH MISSION-KIT, a register, not structure
 candidate it takes or would take (dev/design/unification/MISSION-KIT-ALIGNMENT.md, section 3, says why each fits and which rulings
 composing it would change). AMENDED by H26.1: the anchored core composes its first component, `snap-grid`, through the lattice
 (COMPONENTS above); AMENDED by H26.2: and its second, `input-binding`, through the rules part; AMENDED by H26.3: and its third,
-`input-capture`, through the canvas part; every other mapping is still a candidate's.
+`input-capture`, through the canvas part; AMENDED by H26.4: and its fourth, `vector-scene`, through the renderer part, the export and
+the primitives drawing through it; every other mapping is still a candidate's.
 MISSION_KIT holds each component's or candidate's standing as read on MISSION_KIT_READ -- standings move, and are read again before
 a design that composes one is asked. tools/generate-architecture.mjs renders the register into the target's section 9.3 and fails
 on a part that is no part, a name MISSION_KIT does not hold, or an entry of MISSION_KIT no part aligns to.
 */
-export const MISSION_KIT_READ = '2026-10-22';
+export const MISSION_KIT_READ = '2026-10-23';
 export const MISSION_KIT = {
 	agp: 'registered in mission-kit, C1',
 	'snap-grid': 'proposed in drawv2, released from its own repository, composed (H26-4)',
@@ -190,7 +194,7 @@ export const MISSION_KIT = {
 	'change-planner': 'candidate, zorg D32, steered in D35',
 	'input-binding': 'proposed in drawv2, released from its own repository, composed (H26-6)',
 	'input-capture': 'proposed in drawv2, released from its own repository, composed (H26-8)',
-	'vector-scene': 'a drawv2 component by H26-1, its design owed (H26.0); a candidate in zorg D32, steered in D35',
+	'vector-scene': 'proposed in drawv2, released from its own repository, composed (H26-11); a candidate in zorg D32, steered in D35',
 	'entity-view': 'candidate, zorg D32',
 	'write-outbox': 'candidate, zorg D32',
 	'resource-lease': 'candidate, zorg D32',
@@ -202,17 +206,17 @@ export const ALIGNMENT = {
 	'kind-contract': { to: ['shape-check'], waits: 'OD-3; the target\'s section 4.3' },
 	document: { to: ['entity-store'], waits: 'OD-1' },
 	store: { to: ['entity-store'], waits: 'OD-1' },
-	primitives: { to: ['vector-scene'], waits: 'a contract; OD-3' },
+	primitives: { to: ['vector-scene'], waits: 'draw\'s shapes, drawn through vector-scene (H26-11)' },
 	rules: { to: ['input-binding'], waits: 'composed (H26-6); its matcher and gesture session moved onto it at H26.2' },
 	planner: { to: ['change-planner'], waits: 'a contract; OD-3' },
 	canvas: { to: ['input-binding', 'input-capture'], waits: 'consumes input-binding through rules (H26-6) and input-capture itself (H26-8); its rows and gesture bodies stay draw\'s (B389)' },
-	renderer: { to: ['vector-scene'], waits: 'a contract; OD-3' },
+	renderer: { to: ['vector-scene'], waits: 'composed (H26-11); its drawing loop moved onto it at H26.4' },
 	sync: { to: ['entity-view', 'write-outbox'], waits: 'OD-2; OD-3' },
 	server: { to: ['static-host'], waits: 'a contract' },
 	access: { to: ['caller-identity', 'credential-issuer', 'access-grants'], waits: 'OD-2' },
 	hub: { to: ['entity-api', 'agp', 'resource-lease'], waits: 'OD-2' },
 	cli: { to: ['operation-command'], waits: 'OD-3' },
-	export: { to: ['vector-scene'], waits: 'a contract' },
+	export: { to: ['vector-scene'], waits: 'draws through it with no root (H26-11)' },
 };
 
 export const ALLOWED = {

@@ -87,7 +87,7 @@ Noted for PC1: AR1 asks for the system's north star and this one is the programm
 - **H9, access** (amended 2026-08-20; `docs/spec/ACCESS.md`, "Decided"): access is per diagram and per owner, a principal is a person's identity or an agent's, and a connection code is an agent's credential.
 - **The palette** (2026-10-01): one core palette, roles per owner.
 - **WD1, WD6, WD7, WD10:** a wide device is one anchor (WD1); a diagram stores its grids as layout records (WD6) holding today's values (WD7); a device owns its size (WD10).
-- **H26-1, H26-2, H26-4, H26-6, H26-8:** a grid's arithmetic is `snap-grid`'s, what an input means, and when each phase of a gesture is due, is `input-binding`'s, and the platform's input events reach the canvas as facts through `input-capture`, each a component of one duty that knows nothing of drawv2 (H26-1); each component is its own public repository, released by its own CI, drawv2 pinning the release file by its hash, its server importing it by name and its pages through a generated import map (H26-2); `snap-grid`'s design is ratified, the `lattice` part alone composing it (H26-4); `input-binding`'s design is ratified, the `rules` part alone composing it (H26-6); `input-capture`'s design is ratified, the `canvas` part alone composing it (H26-8).
+- **H26-1, H26-2, H26-4, H26-6, H26-8, H26-11:** a grid's arithmetic is `snap-grid`'s, what an input means, and when each phase of a gesture is due, is `input-binding`'s, the platform's input events reach the canvas as facts through `input-capture`, and what the canvas draws is shown through `vector-scene`, each a component of one duty that knows nothing of drawv2 (H26-1); each component is its own public repository, released by its own CI, drawv2 pinning the release file by its hash, its server importing it by name and its pages through a generated import map (H26-2); `snap-grid`'s design is ratified, the `lattice` part alone composing it (H26-4); `input-binding`'s design is ratified, the `rules` part alone composing it (H26-6); `input-capture`'s design is ratified, the `canvas` part alone composing it (H26-8); `vector-scene`'s design is ratified, the `renderer` part alone composing it (H26-11).
 
 **Model.**\
 The **anchor** is the core: identity and position on one cell (SD11b, O4); connection is the network plugin's.\
@@ -154,7 +154,7 @@ Generated from `tools/layers.mjs` `PARTS`, and each part's components from its `
 | `simulation` | Derive what the clock drives | plugin | AX1, AX4, SD11b | `lattice`, `kind-contract`, `document`, `relations`, `colours`, `primitives`, `rules`, `network`, `devices` | -- |
 | `product` | Compose the plugins into the product | composition | N1, D1 | `kind-contract`, `lattice`, `colours`, `layouts`, `devices`, `network`, `zones`, `groups`, `simulation` | -- |
 | `canvas` | Turn input into edits through the parts' declarations | host | D1, D2, D5 | `lattice`, `kind-contract`, `document`, `relations`, `rules`, `planner`, `renderer`, `primitives`, `colours` | `@apnex/input-capture` |
-| `renderer` | Draw a document through the parts' painters | host | D1, D3 | `lattice`, `document`, `primitives`, `colours` | -- |
+| `renderer` | Draw a document through the parts' painters | host | D1, D3 | `lattice`, `document`, `primitives`, `colours` | `@apnex/vector-scene` |
 | `sync` | Keep a tab converged with the server | host | SD2 | `document`, `kind-contract`, `canvas` | -- |
 | `product-page` | Compose the product page | composition root | D1 | any part -- a composition root | -- |
 | `lab` | Compose the canvas over the real modules, without storage | composition root | H17-D1 | any part -- a composition root | -- |
@@ -188,7 +188,7 @@ Generated from `tools/layers.mjs` `PARTS`, and each part's components from its `
 | `simulation` | the spawn field; the behaviour family -- a run-mode behaviour pack's stats, such as a tower's, handed each type's pack at composition (U4-1, U4-3); what the clock drives -- movers along routes, towers, the reveal -- and their appearances |
 | `product` | the product's composition: every kind, the network's among them, every canvas part, and handing each plugin its slice of the type declarations (U4-1) |
 | `canvas` | press rows, gestures, keys and the hand, each a part's declaration over shared gestures, the platform's events reaching them through `input-capture` (D1, D2, H26-8) |
-| `renderer` | every kind drawn through its part's painter or appearances, composed per state (D3) |
+| `renderer` | every kind drawn through its part's painter or appearances, composed per state (D3), and shown through `vector-scene` (H26-11) |
 | `sync` | an outbox replayed after reconnect; the server's answer applied; a tab reloaded onto a new revision |
 | `product-page`, `lab`, `server` | the product page, the lab page and the server, each composed from the product |
 | `access` | who a request comes from: a person's identity, an agent's connection code, a websocket's origin |
@@ -323,28 +323,28 @@ All five questions recorded here at ratification (H21.6) have been ruled: the an
 ### 9.3 Alignment with mission-kit -- a register (A-0)
 
 **Maturity: provisional; a register, not structure.**\
-The anchored core composes three components, `snap-grid` through its `lattice` part, `input-binding` through its `rules` part and `input-capture` through its `canvas` part, each through that part alone (H26-1, H26-2, H26-4, H26-6, H26-8; `tools/layers.mjs` `COMPONENTS`), where A-0 found it composed none.\
+The anchored core composes four components, `snap-grid` through its `lattice` part, `input-binding` through its `rules` part, `input-capture` through its `canvas` part and `vector-scene` through its `renderer` part, each through that part alone (H26-1, H26-2, H26-4, H26-6, H26-8, H26-11; `tools/layers.mjs` `COMPONENTS`), where A-0 found it composed none.\
 Each part below is mapped to the component it composes or the candidate it would take, declared in `tools/layers.mjs` `ALIGNMENT` and generated; the other parts are drawv2's own.\
 Why each mapping fits, and the rulings composing it would change, are `dev/design/unification/MISSION-KIT-ALIGNMENT.md`, sections 3 and 7.2.
 
 <!-- BEGIN GENERATED: architecture-target-alignment. Run tools/generate-architecture.mjs; do not edit by hand. -->
-| Part | Aligns to | Standing, read 2026-10-22 | Composing it waits on |
+| Part | Aligns to | Standing, read 2026-10-23 | Composing it waits on |
 |---|---|---|---|
 | `lattice` | `snap-grid` | snap-grid: proposed in drawv2, released from its own repository, composed (H26-4) | composed (H26-4); its grid arithmetic moved onto it at H26.1 |
 | `kind-contract` | `shape-check` | shape-check: proposed in zorg, certified | OD-3; the target's section 4.3 |
 | `document` | `entity-store` | entity-store: proposed in zorg, certified | OD-1 |
 | `store` | `entity-store` | entity-store: proposed in zorg, certified | OD-1 |
-| `primitives` | `vector-scene` | vector-scene: a drawv2 component by H26-1, its design owed (H26.0); a candidate in zorg D32, steered in D35 | a contract; OD-3 |
+| `primitives` | `vector-scene` | vector-scene: proposed in drawv2, released from its own repository, composed (H26-11); a candidate in zorg D32, steered in D35 | draw's shapes, drawn through vector-scene (H26-11) |
 | `rules` | `input-binding` | input-binding: proposed in drawv2, released from its own repository, composed (H26-6) | composed (H26-6); its matcher and gesture session moved onto it at H26.2 |
 | `planner` | `change-planner` | change-planner: candidate, zorg D32, steered in D35 | a contract; OD-3 |
 | `canvas` | `input-binding`, `input-capture` | input-binding: proposed in drawv2, released from its own repository, composed (H26-6); input-capture: proposed in drawv2, released from its own repository, composed (H26-8) | consumes input-binding through rules (H26-6) and input-capture itself (H26-8); its rows and gesture bodies stay draw's (B389) |
-| `renderer` | `vector-scene` | vector-scene: a drawv2 component by H26-1, its design owed (H26.0); a candidate in zorg D32, steered in D35 | a contract; OD-3 |
+| `renderer` | `vector-scene` | vector-scene: proposed in drawv2, released from its own repository, composed (H26-11); a candidate in zorg D32, steered in D35 | composed (H26-11); its drawing loop moved onto it at H26.4 |
 | `sync` | `entity-view`, `write-outbox` | entity-view: candidate, zorg D32; write-outbox: candidate, zorg D32 | OD-2; OD-3 |
 | `server` | `static-host` | static-host: candidate, zorg D32 | a contract |
 | `access` | `caller-identity`, `credential-issuer`, `access-grants` | caller-identity: proposed in zorg, certified; credential-issuer: proposed in zorg, no code; access-grants: candidate, zorg BL20 | OD-2 |
 | `hub` | `entity-api`, `agp`, `resource-lease` | entity-api: proposed in zorg, certified; agp: registered in mission-kit, C1; resource-lease: candidate, zorg D32 | OD-2 |
 | `cli` | `operation-command` | operation-command: proposed in zorg, certified | OD-3 |
-| `export` | `vector-scene` | vector-scene: a drawv2 component by H26-1, its design owed (H26.0); a candidate in zorg D32, steered in D35 | a contract |
+| `export` | `vector-scene` | vector-scene: proposed in drawv2, released from its own repository, composed (H26-11); a candidate in zorg D32, steered in D35 | draws through it with no root (H26-11) |
 <!-- END GENERATED: architecture-target-alignment -->
 
 **The owed designs,** each designed and asked on its own when its trigger fires:

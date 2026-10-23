@@ -26,6 +26,7 @@ const read = (root, f) => fs.readFileSync(path.join(root, f), 'utf8');
 const installed = JSON.parse(read(ROOT, 'node_modules/@apnex/snap-grid/package.json'));
 const binding = JSON.parse(read(ROOT, 'node_modules/@apnex/input-binding/package.json'));   // H26.2: the second component draw installs
 const capture = JSON.parse(read(ROOT, 'node_modules/@apnex/input-capture/package.json'));   // H26.3: and the third
+const scene = JSON.parse(read(ROOT, 'node_modules/@apnex/vector-scene/package.json'));   // H26.4: and the fourth
 
 // a copy of what the generator reads: the declared pages, package.json, and the installed components -- each case edits its own
 const made = [];
@@ -57,9 +58,11 @@ test('H26.1: each page holds the one import map the installed components make, i
 	const base = `/vendor/@apnex/snap-grid@${installed.version}/`;
 	// RESTATED at H26.2 (dev/design/components/INPUT-BINDING.md section 7): input-binding's one export path, `.`, is one line more
 	// RESTATED at H26.3 (dev/design/components/INPUT-CAPTURE.md section 7): and input-capture's one export path, `.`, one more again
+	// RESTATED at H26.4 (dev/design/components/VECTOR-SCENE.md section 7): and vector-scene's one export path, `.`, one more again
 	assert.deepEqual(importMapOf(ROOT).imports, { '@apnex/input-binding': `/vendor/@apnex/input-binding@${binding.version}/index.js`,
 		'@apnex/input-capture': `/vendor/@apnex/input-capture@${capture.version}/index.js`,
-		'@apnex/snap-grid': `${base}index.js`, '@apnex/snap-grid/conformance': `${base}conformance.js` },
+		'@apnex/snap-grid': `${base}index.js`, '@apnex/snap-grid/conformance': `${base}conformance.js`,
+		'@apnex/vector-scene': `/vendor/@apnex/vector-scene@${scene.version}/index.js` },
 		'one entry per export of each installed release, at its version -- the conformance kit a URL ending .js, never a trailing-slash prefix');
 	assert.deepEqual({ begin: region.begin, end: region.end }, markersOf('importmap', COPIES.generated.importmap), 'the region the manifest names');
 	for (const page of Object.keys(PAGES)) {

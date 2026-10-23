@@ -12,6 +12,9 @@ of both resolved by name and working, input-binding deciding an exact travel in 
 AMENDED H26.3 (dev/design/components/INPUT-CAPTURE.md acceptance step 7): and the third, input-capture, resolved by its one name and
 working in Chrome -- a capture opened on an element of the page, a constructed pointer event and key event dispatched on it made into
 facts, the page refusing the synthetic pointer so takePointer answers false, and nothing made once closed.
+AMENDED H26.4 (dev/design/components/VECTOR-SCENE.md acceptance step 7): and the fourth, vector-scene, resolved by its one name and
+working in Chrome -- a scene opened on an <svg> of the page, an item put and the element of one of its shapes mapped back to it, a
+screen point converted through the root's screen transform and back, and the root left as found once closed.
 */
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
@@ -27,6 +30,7 @@ const root = path.resolve(import.meta.dirname, '..');
 const { version } = JSON.parse(fs.readFileSync(path.join(root, 'node_modules/@apnex/snap-grid/package.json'), 'utf8'));
 const binding = JSON.parse(fs.readFileSync(path.join(root, 'node_modules/@apnex/input-binding/package.json'), 'utf8')).version;   // H26.2
 const capture = JSON.parse(fs.readFileSync(path.join(root, 'node_modules/@apnex/input-capture/package.json'), 'utf8')).version;   // H26.3
+const scene = JSON.parse(fs.readFileSync(path.join(root, 'node_modules/@apnex/vector-scene/package.json'), 'utf8')).version;   // H26.4
 const free = () => new Promise((resolve) => { const s = net.createServer().listen(0, '127.0.0.1', () => { const p = s.address().port; s.close(() => resolve(p)); }); });
 let dir, procs = [], port, labPort, cdp, theTab;
 
@@ -85,12 +89,27 @@ const THROUGH_THE_MAP = `(async () => {
 	el.remove();
 	const cap = { exports: Object.keys(ic).sort(), facts: facts.map((f) => [f.type, f.at, f.screen, f.hit, f.focus, f.button, f.pointerId, f.pointerType, f.key, f.code, f.shiftKey, Object.isFrozen(f)]),
 		taken, prevented: kd.defaultPrevented };
+	// H26.4: the fourth, by its one name -- a scene on an <svg> of the page, 200 px showing 100 units: an item put, the element of its
+	// nested shape mapped back to it, a screen point converted and back, and the root left as found once closed
+	const vs = await import('@apnex/vector-scene');
+	const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+	svg.setAttribute('viewBox', '0 0 100 100');
+	svg.style.cssText = 'position: fixed; left: 0; top: 0; width: 200px; height: 200px; margin: 0; padding: 0; border: 0';
+	document.body.append(svg);
+	const sc = vs.openScene({ root: svg, layers: [{ name: 'shown', attrs: { id: 'vs-shown' } }, { name: 'drawn', foreign: true }] }).scene;
+	sc.put('shown', 'item', [{ tag: 'rect', attrs: { x: 1, y: 2, width: 3, height: 4 } }, { tag: 'g', children: [{ tag: 'circle', attrs: { r: 5 } }] }]);
+	const drawing = sc.toDrawing({ x: 20, y: 40 });
+	const shown = { exports: Object.keys(vs).sort(), item: sc.itemOf(svg.querySelector('#vs-shown circle')), layers: [...svg.children].map((c) => c.getAttribute('id')),
+		elements: svg.querySelector('#vs-shown').children.length, drawing, back: sc.toScreen(drawing) };
+	sc.close();
+	shown.left = svg.children.length;
+	svg.remove();
 	return { maps: maps.length, ok: opened.ok, point: opened.grid.pointOf(opened.grid.nearest({ x: 61, y: 29 })), kit: kit.checkGridShape(grid.square, []).length,
-		binding: Object.keys(ib).sort(), exact, capture: cap };
+		binding: Object.keys(ib).sort(), exact, capture: cap, scene: shown };
 })()`;
 
 for (const [name, at, booted] of [['the product page', () => `http://127.0.0.1:${port}/`, '!!(window.draw && window.draw.renderer)'], ['the lab page', () => `http://127.0.0.1:${labPort}/?seed=bend`, '!!window.lab']]) {
-	test(`H26.1, H26.2, H26.3: ${name} loads every module answered 200, and its import map resolves each export of all three components from the vendor mount`, { skip: NO_CHROME, timeout: 60000 }, async () => {
+	test(`H26.1, H26.2, H26.3, H26.4: ${name} loads every module answered 200, and its import map resolves each export of all four components from the vendor mount`, { skip: NO_CHROME, timeout: 60000 }, async () => {
 		const { t, answered } = await load(at(), booted);
 		const modules = answered().filter((r) => r.type === 'Script');
 		assert.ok(modules.length > 40, `the page's module graph was loaded, not ${modules.length} script(s)`);
@@ -100,8 +119,10 @@ for (const [name, at, booted] of [['the product page', () => `http://127.0.0.1:$
 		const got = await t.run(THROUGH_THE_MAP);
 		const capturing = { exports: ['openCapture'], taken: [false], prevented: true,
 			facts: [['down', { x: 5, y: 10 }, { x: 10, y: 20 }, true, null, 0, 7, 'mouse', null, null, true, true], ['key-down', null, null, null, true, null, null, null, 'a', 'KeyA', false, true]] };
-		assert.deepEqual(got, { maps: 1, ok: true, point: { x: 60, y: 0 }, kit: 0, binding: ['composeBindingTable', 'openGestureSession'], exact: ['click', 'drop'], capture: capturing },
-			'one map; each export of the three components resolved by name, and working -- the exact travel decided in Chrome, BigInt and all; a real event made a fact');
+		// H26.4: the scene's item, its nested shape at path [1, 0]; a 200 px root over 100 units halves a screen point, and doubles it back
+		const showing = { exports: ['openScene'], item: { layer: 'shown', key: 'item', path: [1, 0] }, layers: ['vs-shown', null], elements: 2, drawing: { x: 10, y: 20 }, back: { x: 20, y: 40 }, left: 0 };
+		assert.deepEqual(got, { maps: 1, ok: true, point: { x: 60, y: 0 }, kit: 0, binding: ['composeBindingTable', 'openGestureSession'], exact: ['click', 'drop'], capture: capturing, scene: showing },
+			'one map; each export of the four components resolved by name, and working -- the exact travel decided in Chrome, BigInt and all; a real event made a fact; a shape shown and found');
 		await sleep(200);
 		/*
 		RESTATED at H26.1's move (SNAP-GRID.md sections 5 and 7.6): the kernel composes the component, so the page loads its entry while
@@ -120,6 +141,10 @@ for (const [name, at, booted] of [['the product page', () => `http://127.0.0.1:$
 		const captureFiles = ownVendored.filter((r) => r.url.startsWith(`/vendor/@apnex/input-capture@${capture}/`));
 		assert.ok(captureFiles.some((r) => r.url.endsWith('/index.js')) && captureFiles.length >= 7 && captureFiles.every((r) => r.status === 200),
 			`input-capture's graph loaded with the page from the vendor mount, every file answered 200: ${JSON.stringify(captureFiles)}`);
+		// H26.4: no page module imports vector-scene yet, so its graph is asked of the vendor mount when the check imports it by name
+		const sceneFiles = vendored.filter((r) => r.url.startsWith(`/vendor/@apnex/vector-scene@${scene}/`));
+		assert.ok(sceneFiles.some((r) => r.url.endsWith('/index.js')) && sceneFiles.every((r) => r.status === 200),
+			`vector-scene's graph asked of the vendor mount by name, every file answered 200: ${JSON.stringify(sceneFiles)}`);
 		assert.deepEqual(vendored.filter((r) => r.status !== 200), [], 'and every module it imports in turn');
 		assert.ok(ownVendored.length + vendored.length >= 4, `the component's own module graph came with it: ${ownVendored.length + vendored.length} request(s)`);
 		assert.deepEqual(t.thrown, [], 'nothing failed after');

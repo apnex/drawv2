@@ -91,6 +91,8 @@ test('H26.1 (G8): this tree\'s two real servers pass the check the probe makes o
 		const binding = JSON.parse(fs.readFileSync(path.join(ROOT, 'node_modules/@apnex/input-binding/package.json'), 'utf8')).version;
 		// RESTATED at H26.3: and the third, input-capture
 		const capture = JSON.parse(fs.readFileSync(path.join(ROOT, 'node_modules/@apnex/input-capture/package.json'), 'utf8')).version;
-		assert.deepEqual(r, { problems: [], checked: [`@apnex/input-binding@${binding}`, `@apnex/input-capture@${capture}`, `@apnex/snap-grid@${version}`] });
+		// RESTATED at H26.4: and the fourth, vector-scene
+		const scene = JSON.parse(fs.readFileSync(path.join(ROOT, 'node_modules/@apnex/vector-scene/package.json'), 'utf8')).version;
+		assert.deepEqual(r, { problems: [], checked: [`@apnex/input-binding@${binding}`, `@apnex/input-capture@${capture}`, `@apnex/snap-grid@${version}`, `@apnex/vector-scene@${scene}`] });
 	} finally { for (const p of procs) await stopProcess(p); }
 });
