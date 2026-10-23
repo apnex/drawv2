@@ -327,30 +327,31 @@ What `npm run gate` runs, before every commit and again before every push.
 <!-- BEGIN GENERATED: architecture-gate. Run tools/generate-architecture.mjs; do not edit by hand. -->
 | # | Step |
 |---|---|
-| 1 | `node --test tests/*.test.js` |
-| 2 | `node tools/scan-skips.mjs` |
-| 3 | `node tools/scan-writers.mjs` |
-| 4 | `node tools/scan-claims.mjs dev/COMMIT-DELIVERY.md#2 dev/COMMIT-DELETIONS.md` |
-| 5 | `node tools/scan-board.mjs` |
-| 6 | `node tools/scan-triggers.mjs` |
-| 7 | `node tools/scan-designs.mjs` |
-| 8 | `node tools/generate-architecture.mjs --check` |
-| 9 | `node tools/scan-docstyle.mjs` |
-| 10 | `node tools/scan-dead.mjs` |
-| 11 | `node tools/scan-twins.mjs` |
-| 12 | `node tools/scan-copies.mjs` |
-| 13 | `node tools/scan-docrefs.mjs` |
-| 14 | `node tools/scan-wiring.mjs` |
-| 15 | `node tools/scan-cli.mjs` |
-| 16 | `node tools/scan-layers.mjs` |
-| 17 | `node tools/lab-matrix.mjs --check` |
-| 18 | `node tools/gesture-table.mjs --check` |
-| 19 | `node tools/reaction-table.mjs --check` |
-| 20 | `node tools/colour-tokens.mjs --check` |
-| 21 | `node tools/stylesheets.mjs --check` |
-| 22 | `node tools/canvas-layout.mjs --check` |
-| 23 | `node tools/import-map.mjs --check` |
-| 24 | `node tools/scan-components.mjs` |
+| 1 | `node tools/gate-runtime.mjs` |
+| 2 | `node --test tests/*.test.js` |
+| 3 | `node tools/scan-skips.mjs` |
+| 4 | `node tools/scan-writers.mjs` |
+| 5 | `node tools/scan-claims.mjs dev/COMMIT-DELIVERY.md#2 dev/COMMIT-DELETIONS.md` |
+| 6 | `node tools/scan-board.mjs` |
+| 7 | `node tools/scan-triggers.mjs` |
+| 8 | `node tools/scan-designs.mjs` |
+| 9 | `node tools/generate-architecture.mjs --check` |
+| 10 | `node tools/scan-docstyle.mjs` |
+| 11 | `node tools/scan-dead.mjs` |
+| 12 | `node tools/scan-twins.mjs` |
+| 13 | `node tools/scan-copies.mjs` |
+| 14 | `node tools/scan-docrefs.mjs` |
+| 15 | `node tools/scan-wiring.mjs` |
+| 16 | `node tools/scan-cli.mjs` |
+| 17 | `node tools/scan-layers.mjs` |
+| 18 | `node tools/lab-matrix.mjs --check` |
+| 19 | `node tools/gesture-table.mjs --check` |
+| 20 | `node tools/reaction-table.mjs --check` |
+| 21 | `node tools/colour-tokens.mjs --check` |
+| 22 | `node tools/stylesheets.mjs --check` |
+| 23 | `node tools/canvas-layout.mjs --check` |
+| 24 | `node tools/import-map.mjs --check` |
+| 25 | `node tools/scan-components.mjs` |
 <!-- END GENERATED: architecture-gate -->
 
 ---

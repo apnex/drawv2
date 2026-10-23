@@ -46,6 +46,7 @@ test('GR1: the gate is composed of the suite and every scanner it claims to run'
 	// each component GR1 names, and the file it invokes, so dropping either fails here
 	for (const [what, needle, file] of [
 		['the test suite', 'npm test', 'package.json'],
+		['B423 gate-runtime', 'node tools/gate-runtime.mjs', 'tools/gate-runtime.mjs'],   // the gate runs on the image's Node.js major, as CI does
 		['GR3 scan-writers', 'tools/scan-writers.mjs', 'tools/scan-writers.mjs'],
 		['GR2 scan-claims', 'tools/scan-claims.mjs', 'tools/scan-claims.mjs'],
 		['GR14 scan-board', 'tools/scan-board.mjs', 'tools/scan-board.mjs'],
@@ -65,6 +66,35 @@ test('GR1: the gate is composed of the suite and every scanner it claims to run'
 	// pass the gate, which is the difference between a proof and a sequence of noises.
 	assert.ok(!gate.includes(';'), 'the gate chains with `;` — a failing step would not stop it');
 	assert.ok(gate.includes('&&'), 'the gate does not chain on success');
+});
+
+/*
+B423 -- the gate runs on the runtime the image runs. For eleven pushes the local gate ran on a newer Node.js than the image and CI,
+and a test whose sweep differed by engine passed here while CI's gate failed on every push. The runtime check is the gate's first
+step, and it refuses a major other than the Dockerfile's; a falsifier on another major and a control on this one, each against a
+Dockerfile of its own, so this test runs on any Node.js.
+*/
+test('B423: the gate runs on the image\'s Node.js major -- its first step refuses any other', async () => {
+	const { execFileSync, spawnSync } = await import('node:child_process');
+	const os = await import('node:os');
+	assert.ok(pkg.scripts.gate.startsWith('node tools/gate-runtime.mjs && '), 'the runtime check is the gate\'s first step, before the suite');
+	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gate-runtime-'));
+	try {
+		const major = Number(process.versions.node.split('.')[0]);
+		const run = (from) => { fs.writeFileSync(path.join(dir, 'Dockerfile'), `# a test image\nFROM ${from}\n`); return spawnSync(process.execPath, [path.join(root, 'tools/gate-runtime.mjs'), '--dockerfile', path.join(dir, 'Dockerfile')], { encoding: 'utf8' }); };
+		const same = run(`node:${major}-alpine`);
+		assert.equal(same.status, 0, `control: the running major (${major}) passes -- ${same.stderr}`);
+		const other = run(`node:${major + 1}-alpine`);
+		assert.equal(other.status, 1, 'a major other than the image\'s fails the gate');
+		assert.match(other.stderr, new RegExp(`image runs Node\\.js ${major + 1}`), 'naming the image\'s major');
+		const none = run('alpine:3');
+		assert.equal(none.status, 1, 'a Dockerfile naming no node image fails, never passes by default');
+		assert.match(fs.readFileSync(path.join(root, 'Dockerfile'), 'utf8'), /^FROM node:22\b/m, 'the image is Node.js 22, which CI and .nvmrc name');
+		assert.equal(fs.readFileSync(path.join(root, '.nvmrc'), 'utf8').trim(), '22', '.nvmrc names the image\'s major');
+		void execFileSync;
+	} finally {
+		fs.rmSync(dir, { recursive: true, force: true });
+	}
 });
 
 test('GR1: the registers the gate depends on exist', () => {
