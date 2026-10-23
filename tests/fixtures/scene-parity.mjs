@@ -183,8 +183,13 @@ export function pageSideBySide(name, doc, { measure = false, impl = NEW } = {}) 
 	const dDoc = makeDocument(), dRoot = dDoc.attach(dDoc.createElementNS('', 'svg'));
 	ground(dDoc, dRoot);
 	const scene = impl.openCanvasScene(impl.CANVAS_SCENE, dRoot);
+	// each put the load makes, by kind: an item made, one put again in place (a patch), or one moved by a `before`
 	let puts = 0, loading = false;
-	const counted = { ...scene, put: (...a) => { if (loading) puts++; return scene.put(...a); } };
+	const loadKinds = { new: 0, patch: 0, move: 0 };
+	const counted = { ...scene, put: (layer, key, shapes, place) => {
+		if (loading) { puts++; loadKinds[!scene.items(layer).some((x) => x.key === key) ? 'new' : place && 'before' in place ? 'move' : 'patch']++; }
+		return scene.put(layer, key, shapes, place);
+	} };
 	const prev = globalThis.document;
 	const mA = readModel(structuredClone(doc), COMPOSED_KINDS), mB = readModel(structuredClone(doc), COMPOSED_KINDS);
 	let rA;
@@ -194,7 +199,7 @@ export function pageSideBySide(name, doc, { measure = false, impl = NEW } = {}) 
 	const sides = { A: { m: mA, r: rA, root: tRoot, doc: tDoc }, B: { m: mB, r: rB, root: dRoot, doc: dDoc } };
 	for (const s of Object.values(sides)) s.reveal = new Reveal({ model: s.m, renderer: s.r, now: () => 0, onCaption() {} });
 	const glyphs = { A: 0, B: 0 };
-	const out = { name, measure, steps: [], glyphs, loadPuts: 0 };
+	const out = { name, measure, steps: [], glyphs, loadPuts: 0, loadKinds };
 	let before = { A: [], B: [] };
 	const both = (label, f) => {
 		const mark = { A: tDoc.serial(), B: dDoc.serial() }, threw = {};

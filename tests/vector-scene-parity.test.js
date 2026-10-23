@@ -55,12 +55,20 @@ test('H26.4 (acceptance step 4): over every document, today\'s renderer and the 
 	for (const kind of ['link', 'node', 'zone', 'group', 'pipe']) assert.ok(n(`delete a ${kind}`) > 0 && n(`put the ${kind} back`) > 0, `a ${kind} deleted and put back`);
 });
 
-test('H26.4 (acceptance step 4): on load the adapter puts each item once, with no patch and no move beyond the items it ends with (a:F10)', () => {
-	for (const [name, doc] of BOARDS.slice(0, 5)) {
+/*
+a:F10: revision 1's adapter put every new item twice, 515 moves beyond its items on load. On load each put makes an item: none patches one
+or moves one. Puts beyond the items the load ends with are the items a link's creation removes and makes afresh -- the waypoints at its
+ends, whose roles it changes (B218), drawn afresh as today's renderer draws them afresh -- which the side-by-side holds to today's.
+*/
+test('H26.4 (acceptance step 4): on load the adapter puts each item once, with no patch and no move (a:F10)', () => {
+	let made = 0, items = 0;
+	for (const [name, doc] of BOARDS) {
 		const run = pageSideBySide(name, doc);
-		const removed = run.loadPuts - run.loadItems;
-		assert.ok(removed >= 0 && run.loadItems > 0, `${name}: ${run.loadPuts} puts for ${run.loadItems} items`);
+		assert.deepEqual({ patch: run.loadKinds.patch, move: run.loadKinds.move }, { patch: 0, move: 0 }, `${name}: no put on load patches or moves an item`);
+		assert.equal(run.loadKinds.new, run.loadPuts, `${name}: every put on load makes an item`);
+		made += run.loadKinds.new; items += run.loadItems;
 	}
+	assert.ok(items > 200 && made >= items, `${made} item(s) made for the ${items} the loads end with`);
 });
 
 test('H26.4 (acceptance step 4): today\'s five editing visuals and the native ones draw alike after every call, the same elements kept', () => {
