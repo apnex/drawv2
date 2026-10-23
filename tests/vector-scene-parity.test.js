@@ -3,26 +3,27 @@ H26.4 (dev/design/components/VECTOR-SCENE.md section 4, acceptance step 4; secti
 DRAWING, OLD AND NEW, SIDE BY SIDE: BEFORE ANYTHING IS DELETED, AND ON EVERY GATE AFTER.
 
 Draw moves its drawing onto vector-scene and changes nothing any input of its pages produces, keeping every element it keeps. So today's
-renderer and painter, kept verbatim at tests/fixtures/pre-scene/app/src/, run beside the adapter over every stored diagram and
-template, the parity board and the lab's boards, through what a page does -- a load, a put, a set and a delete of every kind, a head
+renderer and painter, kept verbatim at tests/fixtures/pre-scene/app/src/, run beside the adapter over every document the repository
+stores -- its templates -- the parity board and the lab's boards, through what a page does -- a load, a put, a set and a delete of every kind, a head
 gained and lost, selections, hover and arming, each mode, labels, the real reveal and the real towers -- with the platform's measure
 handed to both sides and without; after every step the trees are equal, element for element and attribute for attribute in order, the
 same elements kept and made afresh, each kept one at its former place, the scene's items are what stands under its layers, and the
-towers look their glyphs up alike. Today's five editing visuals and the native ones run side by side the same way. The export is
-byte-identical for every one of those documents; the gesture corpus's overlay, snap layer and grids are, after every step, the trees
+towers look their glyphs up alike. Today's five editing visuals and the native ones run side by side the same way. The export runs
+both ways, today's server/svg.mjs kept verbatim at tests/fixtures/pre-export/, byte-identical for every one of those documents; the
+stored diagrams, a server's data and outside the repository, go through the same side-by-side by the fixture's `--docs`. The gesture corpus's overlay, snap layer and grids are, after every step, the trees
 today's code wrote; and each input section 6.3 lists is held with both answers. The fixture, tests/fixtures/scene-parity.mjs, says
 what each side is and where the old code is kept.
 */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { READ_AT, MOVED, ORIGINALS, fileSha, readRecord, boards, pageSideBySide, VISUAL_SEQUENCES, visualSideBySide, exportBytes, OLD, NEW,
+import { READ_AT, MOVED, ORIGINALS, fileSha, readRecord, boards, pageSideBySide, VISUAL_SEQUENCES, visualSideBySide, OLD, NEW,
 	corpusTrees, compact, treesOpen, edgeAnswers, EDGES } from './fixtures/scene-parity.mjs';
 import { SCENARIOS, record } from './fixtures/gesture-corpus.mjs';
 
 const RECORD = readRecord();
 const BOARDS = boards();
 
-test('H26.4: today\'s renderer and painter are kept whole -- each copy the file as it stood at READ_AT, byte for byte', () => {
+test('H26.4: today\'s renderer, painter and export are kept whole -- each copy the file as it stood at READ_AT, byte for byte', () => {
 	for (const o of ORIGINALS) {
 		assert.equal(fileSha(o.copy), o.sha256, `${o.copy} is ${o.file} as it stood at ${READ_AT}`);
 		if (!MOVED) assert.equal(fileSha(o.file), o.sha256, `before the move, ${o.file} is still the original`);
@@ -32,9 +33,10 @@ test('H26.4: today\'s renderer and painter are kept whole -- each copy the file 
 
 test('H26.4 (acceptance step 4): over every document, today\'s renderer and the adapter draw alike after every step -- trees, identity, items and glyph lookups', { timeout: 120000 }, () => {
 	const names = BOARDS.map(([name]) => name);
-	assert.equal(names.filter((n) => n.startsWith('diagrams/') || n.startsWith('templates/')).length, 16, 'every stored diagram and template');
+	assert.equal(names.filter((n) => n.startsWith('templates/')).length, 4, 'every template the repository stores');
 	assert.ok(names.includes('the parity board') && names.filter((n) => n.startsWith('lab ')).length === 13, 'the parity board and the lab\'s thirteen boards');
-	let steps = 0, glyphs = 0, heads = 0, reveals = 0;
+	let steps = 0, glyphs = 0;
+	const reached = new Map();
 	for (const [name, doc] of BOARDS) {
 		for (const measure of [false, true]) {
 			const run = pageSideBySide(name, doc, { measure });
@@ -42,13 +44,15 @@ test('H26.4 (acceptance step 4): over every document, today\'s renderer and the 
 			assert.deepEqual(differ.slice(0, 2), [], `${name}${measure ? ', measured' : ''}: ${differ.length} of ${run.steps.length} steps differ`);
 			assert.equal(run.glyphs.A, run.glyphs.B, `${name}: the towers look their glyphs up as often through the shadow as today (o:F10)`);
 			steps += run.steps.length; glyphs += run.glyphs.A;
-			heads += run.steps.filter(([l]) => l === 'direct a link forward').length;
-			reveals += run.steps.filter(([l]) => l === 'reveal shows').length;
+			for (const [label] of run.steps) reached.set(label, (reached.get(label) ?? 0) + 1);
 		}
 	}
-	// the documents reach what the side-by-side must cover, or a pass proves nothing of it
-	assert.ok(steps > 2500, `${steps} steps`);
-	assert.ok(heads > 100 && reveals > 150 && glyphs > 100, `heads gained ${heads}, reveals ${reveals}, glyph lookups ${glyphs}`);
+	// the documents reach what the side-by-side must cover, or a pass proves nothing of it -- measured at READ_AT: 1752 steps, a head
+	// gained 84 times, 124 reveals, 158 glyph lookups, and every kind deleted and put back
+	assert.ok(steps > 1700, `${steps} steps`);
+	const n = (label) => reached.get(label) ?? 0;
+	assert.ok(n('direct a link forward') >= 80 && n('reveal shows') >= 120 && glyphs > 150, `heads gained ${n('direct a link forward')}, reveals ${n('reveal shows')}, glyph lookups ${glyphs}`);
+	for (const kind of ['link', 'node', 'zone', 'group', 'pipe']) assert.ok(n(`delete a ${kind}`) > 0 && n(`put the ${kind} back`) > 0, `a ${kind} deleted and put back`);
 });
 
 test('H26.4 (acceptance step 4): on load the adapter puts each item once, with no patch and no move beyond the items it ends with (a:F10)', () => {
@@ -69,12 +73,14 @@ test('H26.4 (acceptance step 4): today\'s five editing visuals and the native on
 	assert.ok(calls > 50, `${calls} calls`);
 });
 
-test('H26.4 (acceptance step 4, G6): the export is byte-identical for every document, to the bytes today\'s export wrote', () => {
-	assert.deepEqual(Object.keys(RECORD.exports), BOARDS.map(([name]) => name), 'the record holds every document\'s bytes');
+test('H26.4 (acceptance step 4, G6): the export runs both ways, byte-identical for every document -- today\'s, kept verbatim, and the scene\'s', () => {
+	let bytes = 0;
 	for (const [name, doc] of BOARDS) {
-		assert.equal(exportBytes(NEW.svgDocument, doc), RECORD.exports[name], `${name}: the scene's export writes today's bytes`);
-		if (!MOVED) assert.equal(exportBytes(OLD.svgDocument, doc), RECORD.exports[name], `${name}: and today's export, before the move, the bytes recorded`);
+		const before = OLD.svgDocument(structuredClone(doc)), after = NEW.svgDocument(structuredClone(doc));
+		assert.equal(after, before, `${name}: the scene's export writes today's bytes`);
+		bytes += after.length;
 	}
+	assert.ok(bytes > 100000, `the documents drew something to compare: ${bytes} bytes`);
 });
 
 test('H26.4 (acceptance step 4): the gesture corpus\'s overlay, snap layer and grids are, after every step, the trees today\'s code wrote', { timeout: 120000 }, async () => {

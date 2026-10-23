@@ -1,38 +1,6 @@
 {
-	"about": "H26.4: the side-by-side's record, written by tests/fixtures/scene-parity.mjs --write from the code before the move: the export's bytes for every document the side-by-side draws, by the SHA-256 of each; the overlay's, the snap layer's and the grids' trees after every step of the gesture corpus, each distinct state once; and each input section 6.3 lists, both answers. Never written by hand.",
-	"readAt": "dfafe81",
-	"exports": {
-		"diagrams/diagram-000001.json": "0d9ab4e9d090de73b28d1e6b3ceb8bf9252a8d2a86440af4bdcd84fae2f76e9e",
-		"diagrams/diagram-36ab9d.json": "0ad4c7e6f748b00f9dd46da993aeaab0e9aba77b1817e7280cc0edccb1091908",
-		"diagrams/diagram-488e8e.json": "f426da92ebd7d86fafa6d123cc2b276d4fffcbb0de0930a9224a9fad2f25ae9d",
-		"diagrams/diagram-4b26f1.json": "94fb541011a3868770eac42c21a0403b2dfdc3c03cc28e80b14ab9c23fc44113",
-		"diagrams/diagram-4d5898.json": "a50878f3ea0d90103c5fc8561a3ba9d4ca33b19763d6a887d293976b8cbb62a2",
-		"diagrams/diagram-6b2e44.json": "a9f18fbbf32c8d1438452c9b83c6dfd43694d249d2386cb35ef96acfab4dd32c",
-		"diagrams/diagram-7bc886.json": "27c39536bab926a74689fedb62d33ed045a0cd84152b15050185d8b9bcaa55a2",
-		"diagrams/diagram-81674c.json": "8ac36a02adf7caf04fe3abda80b46e4889e4e1c05a9f23b5491f17dd0c96370f",
-		"diagrams/diagram-b2d92f.json": "bbea222796421ff0bc75e423ea0bfd135388ed1ba0ee8ca67648beef32f0c04e",
-		"diagrams/diagram-bc3f9d.json": "387e28dc27585167d7849f057742c7768747bab45a234a7d488b971ceaab868f",
-		"diagrams/diagram-bc73dd.json": "ce4a14bb9659ee81d2888a50a4b25d23d3195c8a886969647a271a568871a975",
-		"diagrams/diagram-cba001.json": "9b62968bd238cc5dde0daa911a7f7a6c87aa6c41008bdb4a5c294551d5dd4c4d",
-		"templates/template-1ced1f.json": "e4c3b9500bc1a312207866708000d4c9d7b05b7216172e3d44f9070a4271a93d",
-		"templates/template-3acaca.json": "b413c579a36c42d51361c2ffb5120d52223247b4b256ec681c4e79301fa5a826",
-		"templates/template-47f426.json": "e9f0a3a29c5d510b8e9cd805c8700c769f1c7bde4e50ff01bad1dea0f08d5ab5",
-		"templates/template-c8d87c.json": "971895e08684558bd44bdb197c0fa2491ed9d8da183e155313500fae1565a88e",
-		"the parity board": "f45a2180e06d9da13027c7605875f2d1c2569d3d56af90c551072e9ea24646eb",
-		"lab cross": "9144b0845f24eeef7ac520b354513119d53a39f939de1e07063333268a634882",
-		"lab bend": "54d20e66c19d74fc99e969ca1de7413480fea252a3cf0ad419784a8538b89a98",
-		"lab detour": "9a282bf2c7d111440534066ff080f94427b3b68c13fb892d60935d4fcc5c6275",
-		"lab compare": "521d8ddd5b790e380a3aac8d23dabb7731e0039b32da5f3b2b18c939237a37e8",
-		"lab tri": "615159bbc1f5471a9b54fdc65d130da1f306ee617163f08cea0c22dcf663cd09",
-		"lab trunk": "6c1f95664c5b054b4778804ff7ee50d9c8af6664320e78f130939501145147b7",
-		"lab transit": "452241ccebf3b9887852bda2f03336d75d5b43e98ba7c6da41194d4dcd511441",
-		"lab transit-detour": "127f72f89d7d0ec554608524f4306c7e2c44b1d8f6877c81dfa7cefa77a2eeab",
-		"lab transit-pin": "54d20e66c19d74fc99e969ca1de7413480fea252a3cf0ad419784a8538b89a98",
-		"lab transit-two-pins": "52cbba94965c79d12ee11d0760c20691546f0f9a3a3d7ae97bee7f82c1467b4c",
-		"lab transit-junction": "847c1a44fb6e0e12cb861ba75405d685551ddece005a084e7cd061a8ba8fcbfc",
-		"lab transit-ring": "ef885ab62de249d54a4c369645c19c9a1755b8c8b053804f957e11c3598f964e",
-		"lab transit-router-pin": "7a2e0ad7c942416817fec0c39b0a4a64431dd2ff9ccf9a8f57963ddbd6ed2de3"
-	},
+	"about": "H26.4: the side-by-side's record, written by tests/fixtures/scene-parity.mjs --write from the code before the move: the overlay's, the snap layer's and the grids' trees after every step of the gesture corpus, each distinct state once, a handle at its offset from its point; and each input section 6.3 lists, both answers. Never written by hand.",
+	"readAt": "afef004",
 	"trees": {
 		"link-plain": {
 			"states": [
@@ -171,11 +139,11 @@
 									],
 									[
 										"x",
-										"20"
+										"point.x-6"
 									],
 									[
 										"y",
-										"-6"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -206,11 +174,11 @@
 									],
 									[
 										"x",
-										"328"
+										"point.x-6"
 									],
 									[
 										"y",
-										"-6"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -598,11 +566,11 @@
 									],
 									[
 										"x",
-										"15.633307652783937"
+										"point.x-6"
 									],
 									[
 										"y",
-										"8.422205101855958"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -633,11 +601,11 @@
 									],
 									[
 										"x",
-										"332.3666923472161"
+										"point.x-6"
 									],
 									[
 										"y",
-										"8.422205101855958"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -1117,11 +1085,11 @@
 									],
 									[
 										"x",
-										"15.633307652783937"
+										"point.x-6"
 									],
 									[
 										"y",
-										"8.422205101855958"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -1152,11 +1120,11 @@
 									],
 									[
 										"x",
-										"332.3666923472161"
+										"point.x-6"
 									],
 									[
 										"y",
-										"8.422205101855958"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -1591,11 +1559,11 @@
 									],
 									[
 										"x",
-										"15.633307652783937"
+										"point.x-6"
 									],
 									[
 										"y",
-										"8.422205101855958"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -1626,11 +1594,11 @@
 									],
 									[
 										"x",
-										"152.36669234721606"
+										"point.x-6"
 									],
 									[
 										"y",
-										"99.57779489814405"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -2356,11 +2324,11 @@
 									],
 									[
 										"x",
-										"20"
+										"point.x-6"
 									],
 									[
 										"y",
-										"-6"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -2391,11 +2359,11 @@
 									],
 									[
 										"x",
-										"328"
+										"point.x-6"
 									],
 									[
 										"y",
-										"-6"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -2470,11 +2438,11 @@
 									],
 									[
 										"x",
-										"20"
+										"point.x-6"
 									],
 									[
 										"y",
-										"-6"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -2505,11 +2473,11 @@
 									],
 									[
 										"x",
-										"328"
+										"point.x-6"
 									],
 									[
 										"y",
-										"-6"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -2584,11 +2552,11 @@
 									],
 									[
 										"x",
-										"354"
+										"point.x-6"
 									],
 									[
 										"y",
-										"20"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -2619,11 +2587,11 @@
 									],
 									[
 										"x",
-										"354"
+										"point.x-6"
 									],
 									[
 										"y",
-										"328"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -2804,11 +2772,11 @@
 									],
 									[
 										"x",
-										"20"
+										"point.x-6"
 									],
 									[
 										"y",
-										"-6"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -2839,11 +2807,11 @@
 									],
 									[
 										"x",
-										"328"
+										"point.x-6"
 									],
 									[
 										"y",
-										"-6"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -2918,11 +2886,11 @@
 									],
 									[
 										"x",
-										"20"
+										"point.x-6"
 									],
 									[
 										"y",
-										"-6"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -2953,11 +2921,11 @@
 									],
 									[
 										"x",
-										"328"
+										"point.x-6"
 									],
 									[
 										"y",
-										"-6"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -3032,11 +3000,11 @@
 									],
 									[
 										"x",
-										"20"
+										"point.x-6"
 									],
 									[
 										"y",
-										"-6"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -3067,11 +3035,11 @@
 									],
 									[
 										"x",
-										"328"
+										"point.x-6"
 									],
 									[
 										"y",
-										"-6"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -3146,11 +3114,11 @@
 									],
 									[
 										"x",
-										"20"
+										"point.x-6"
 									],
 									[
 										"y",
-										"-6"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -3181,11 +3149,11 @@
 									],
 									[
 										"x",
-										"328"
+										"point.x-6"
 									],
 									[
 										"y",
-										"-6"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -3260,11 +3228,11 @@
 									],
 									[
 										"x",
-										"368.422205101856"
+										"point.x-6"
 									],
 									[
 										"y",
-										"15.633307652783937"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -3295,11 +3263,11 @@
 									],
 									[
 										"x",
-										"368.422205101856"
+										"point.x-6"
 									],
 									[
 										"y",
-										"332.3666923472161"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -3569,11 +3537,11 @@
 									],
 									[
 										"x",
-										"189.6"
+										"point.x-6"
 									],
 									[
 										"y",
-										"213.2"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -3604,11 +3572,11 @@
 									],
 									[
 										"x",
-										"338.4"
+										"point.x-6"
 									],
 									[
 										"y",
-										"14.8"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -4218,11 +4186,11 @@
 									],
 									[
 										"x",
-										"20"
+										"point.x-6"
 									],
 									[
 										"y",
-										"-6"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -4253,11 +4221,11 @@
 									],
 									[
 										"x",
-										"328"
+										"point.x-6"
 									],
 									[
 										"y",
-										"-6"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -4332,11 +4300,11 @@
 									],
 									[
 										"x",
-										"20"
+										"point.x-6"
 									],
 									[
 										"y",
-										"-6"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -4367,11 +4335,11 @@
 									],
 									[
 										"x",
-										"328"
+										"point.x-6"
 									],
 									[
 										"y",
-										"-6"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -4572,11 +4540,11 @@
 									],
 									[
 										"x",
-										"20"
+										"point.x-6"
 									],
 									[
 										"y",
-										"-6"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -4607,11 +4575,11 @@
 									],
 									[
 										"x",
-										"328"
+										"point.x-6"
 									],
 									[
 										"y",
-										"-6"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -4686,11 +4654,11 @@
 									],
 									[
 										"x",
-										"20"
+										"point.x-6"
 									],
 									[
 										"y",
-										"-6"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -4721,11 +4689,11 @@
 									],
 									[
 										"x",
-										"328"
+										"point.x-6"
 									],
 									[
 										"y",
-										"-6"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -4800,11 +4768,11 @@
 									],
 									[
 										"x",
-										"20"
+										"point.x-6"
 									],
 									[
 										"y",
-										"-6"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -4835,11 +4803,11 @@
 									],
 									[
 										"x",
-										"328"
+										"point.x-6"
 									],
 									[
 										"y",
-										"-6"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -5020,11 +4988,11 @@
 									],
 									[
 										"x",
-										"20"
+										"point.x-6"
 									],
 									[
 										"y",
-										"-6"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -5055,11 +5023,11 @@
 									],
 									[
 										"x",
-										"328"
+										"point.x-6"
 									],
 									[
 										"y",
-										"-6"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -5722,11 +5690,11 @@
 									],
 									[
 										"x",
-										"-156"
+										"point.x-6"
 									],
 									[
 										"y",
-										"-156"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -5757,11 +5725,11 @@
 									],
 									[
 										"x",
-										"144"
+										"point.x-6"
 									],
 									[
 										"y",
-										"-156"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -5792,11 +5760,11 @@
 									],
 									[
 										"x",
-										"-156"
+										"point.x-6"
 									],
 									[
 										"y",
-										"144"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -5827,11 +5795,11 @@
 									],
 									[
 										"x",
-										"144"
+										"point.x-6"
 									],
 									[
 										"y",
-										"144"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -5887,11 +5855,11 @@
 									],
 									[
 										"x",
-										"-96"
+										"point.x-6"
 									],
 									[
 										"y",
-										"-36"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -5922,11 +5890,11 @@
 									],
 									[
 										"x",
-										"204"
+										"point.x-6"
 									],
 									[
 										"y",
-										"-36"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -5957,11 +5925,11 @@
 									],
 									[
 										"x",
-										"-96"
+										"point.x-6"
 									],
 									[
 										"y",
-										"264"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -5992,11 +5960,11 @@
 									],
 									[
 										"x",
-										"204"
+										"point.x-6"
 									],
 									[
 										"y",
-										"264"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -6110,178 +6078,13 @@
 							"sha256": "440b7abe745b5a410e6d5899d46f788adbd78af271c15bbbc71a0516d3b9b16d"
 						}
 					]
-				},
-				{
-					"overlay": {
-						"tag": "G",
-						"attrs": [],
-						"text": "",
-						"children": [
-							{
-								"tag": "RECT",
-								"attrs": [
-									[
-										"class",
-										"handle"
-									],
-									[
-										"width",
-										"12"
-									],
-									[
-										"height",
-										"12"
-									],
-									[
-										"x",
-										"-96"
-									],
-									[
-										"y",
-										"-36"
-									],
-									[
-										"rx",
-										"2"
-									],
-									[
-										"data-corner",
-										"nw"
-									]
-								],
-								"text": "",
-								"children": []
-							},
-							{
-								"tag": "RECT",
-								"attrs": [
-									[
-										"class",
-										"handle"
-									],
-									[
-										"width",
-										"12"
-									],
-									[
-										"height",
-										"12"
-									],
-									[
-										"x",
-										"204"
-									],
-									[
-										"y",
-										"-36"
-									],
-									[
-										"rx",
-										"2"
-									],
-									[
-										"data-corner",
-										"ne"
-									]
-								],
-								"text": "",
-								"children": []
-							},
-							{
-								"tag": "RECT",
-								"attrs": [
-									[
-										"class",
-										"handle"
-									],
-									[
-										"width",
-										"12"
-									],
-									[
-										"height",
-										"12"
-									],
-									[
-										"x",
-										"-96"
-									],
-									[
-										"y",
-										"264"
-									],
-									[
-										"rx",
-										"2"
-									],
-									[
-										"data-corner",
-										"sw"
-									]
-								],
-								"text": "",
-								"children": []
-							},
-							{
-								"tag": "RECT",
-								"attrs": [
-									[
-										"class",
-										"handle"
-									],
-									[
-										"width",
-										"12"
-									],
-									[
-										"height",
-										"12"
-									],
-									[
-										"x",
-										"204"
-									],
-									[
-										"y",
-										"264"
-									],
-									[
-										"rx",
-										"2"
-									],
-									[
-										"data-corner",
-										"se"
-									]
-								],
-								"text": "",
-								"children": []
-							}
-						]
-					},
-					"snaplayer": {
-						"tag": "G",
-						"attrs": [],
-						"text": "",
-						"children": []
-					},
-					"grids": [
-						{
-							"dots": 527,
-							"sha256": "9e4d2ab4764927bb8eb36ec7f39699e927c727b74f8393ee6e8c65c78edd098d"
-						},
-						{
-							"dots": 576,
-							"sha256": "440b7abe745b5a410e6d5899d46f788adbd78af271c15bbbc71a0516d3b9b16d"
-						}
-					]
 				}
 			],
 			"steps": [
 				0,
 				1,
 				2,
-				3
+				1
 			]
 		},
 		"move-link-refused": {
@@ -6333,11 +6136,11 @@
 									],
 									[
 										"x",
-										"20"
+										"point.x-6"
 									],
 									[
 										"y",
-										"-6"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -6368,11 +6171,11 @@
 									],
 									[
 										"x",
-										"328"
+										"point.x-6"
 									],
 									[
 										"y",
-										"-6"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -7226,11 +7029,11 @@
 									],
 									[
 										"x",
-										"-36"
+										"point.x-6"
 									],
 									[
 										"y",
-										"-36"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -7261,11 +7064,11 @@
 									],
 									[
 										"x",
-										"84"
+										"point.x-6"
 									],
 									[
 										"y",
-										"-36"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -7296,11 +7099,11 @@
 									],
 									[
 										"x",
-										"-36"
+										"point.x-6"
 									],
 									[
 										"y",
-										"84"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -7331,11 +7134,11 @@
 									],
 									[
 										"x",
-										"84"
+										"point.x-6"
 									],
 									[
 										"y",
-										"84"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -7978,11 +7781,11 @@
 									],
 									[
 										"x",
-										"24"
+										"point.x-6"
 									],
 									[
 										"y",
-										"24"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -8013,11 +7816,11 @@
 									],
 									[
 										"x",
-										"264"
+										"point.x-6"
 									],
 									[
 										"y",
-										"24"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -8048,11 +7851,11 @@
 									],
 									[
 										"x",
-										"24"
+										"point.x-6"
 									],
 									[
 										"y",
-										"204"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -8083,11 +7886,11 @@
 									],
 									[
 										"x",
-										"264"
+										"point.x-6"
 									],
 									[
 										"y",
-										"204"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -8366,11 +8169,11 @@
 									],
 									[
 										"x",
-										"-36"
+										"point.x-6"
 									],
 									[
 										"y",
-										"-36"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -8401,11 +8204,11 @@
 									],
 									[
 										"x",
-										"84"
+										"point.x-6"
 									],
 									[
 										"y",
-										"-36"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -8436,11 +8239,11 @@
 									],
 									[
 										"x",
-										"-36"
+										"point.x-6"
 									],
 									[
 										"y",
-										"84"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -8471,11 +8274,11 @@
 									],
 									[
 										"x",
-										"84"
+										"point.x-6"
 									],
 									[
 										"y",
-										"84"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -8565,11 +8368,11 @@
 									],
 									[
 										"x",
-										"-156"
+										"point.x-6"
 									],
 									[
 										"y",
-										"-156"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -8600,11 +8403,11 @@
 									],
 									[
 										"x",
-										"144"
+										"point.x-6"
 									],
 									[
 										"y",
-										"-156"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -8635,11 +8438,11 @@
 									],
 									[
 										"x",
-										"-156"
+										"point.x-6"
 									],
 									[
 										"y",
-										"144"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -8670,176 +8473,11 @@
 									],
 									[
 										"x",
-										"144"
+										"point.x-6"
 									],
 									[
 										"y",
-										"144"
-									],
-									[
-										"rx",
-										"2"
-									],
-									[
-										"data-corner",
-										"se"
-									]
-								],
-								"text": "",
-								"children": []
-							}
-						]
-					},
-					"snaplayer": {
-						"tag": "G",
-						"attrs": [],
-						"text": "",
-						"children": []
-					},
-					"grids": [
-						{
-							"dots": 527,
-							"sha256": "9e4d2ab4764927bb8eb36ec7f39699e927c727b74f8393ee6e8c65c78edd098d"
-						},
-						{
-							"dots": 576,
-							"sha256": "440b7abe745b5a410e6d5899d46f788adbd78af271c15bbbc71a0516d3b9b16d"
-						}
-					]
-				},
-				{
-					"overlay": {
-						"tag": "G",
-						"attrs": [],
-						"text": "",
-						"children": [
-							{
-								"tag": "RECT",
-								"attrs": [
-									[
-										"class",
-										"handle"
-									],
-									[
-										"width",
-										"12"
-									],
-									[
-										"height",
-										"12"
-									],
-									[
-										"x",
-										"-156"
-									],
-									[
-										"y",
-										"-156"
-									],
-									[
-										"rx",
-										"2"
-									],
-									[
-										"data-corner",
-										"nw"
-									]
-								],
-								"text": "",
-								"children": []
-							},
-							{
-								"tag": "RECT",
-								"attrs": [
-									[
-										"class",
-										"handle"
-									],
-									[
-										"width",
-										"12"
-									],
-									[
-										"height",
-										"12"
-									],
-									[
-										"x",
-										"264"
-									],
-									[
-										"y",
-										"-156"
-									],
-									[
-										"rx",
-										"2"
-									],
-									[
-										"data-corner",
-										"ne"
-									]
-								],
-								"text": "",
-								"children": []
-							},
-							{
-								"tag": "RECT",
-								"attrs": [
-									[
-										"class",
-										"handle"
-									],
-									[
-										"width",
-										"12"
-									],
-									[
-										"height",
-										"12"
-									],
-									[
-										"x",
-										"-156"
-									],
-									[
-										"y",
-										"264"
-									],
-									[
-										"rx",
-										"2"
-									],
-									[
-										"data-corner",
-										"sw"
-									]
-								],
-								"text": "",
-								"children": []
-							},
-							{
-								"tag": "RECT",
-								"attrs": [
-									[
-										"class",
-										"handle"
-									],
-									[
-										"width",
-										"12"
-									],
-									[
-										"height",
-										"12"
-									],
-									[
-										"x",
-										"264"
-									],
-									[
-										"y",
-										"264"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -8877,8 +8515,8 @@
 				0,
 				1,
 				1,
-				2,
-				2
+				1,
+				1
 			]
 		},
 		"replug-straight-to-free-pair": {
@@ -8930,11 +8568,11 @@
 									],
 									[
 										"x",
-										"354"
+										"point.x-6"
 									],
 									[
 										"y",
-										"328"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -8965,11 +8603,11 @@
 									],
 									[
 										"x",
-										"354"
+										"point.x-6"
 									],
 									[
 										"y",
-										"20"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -9025,11 +8663,11 @@
 									],
 									[
 										"x",
-										"354"
+										"point.x-6"
 									],
 									[
 										"y",
-										"328"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -9060,11 +8698,11 @@
 									],
 									[
 										"x",
-										"354"
+										"point.x-6"
 									],
 									[
 										"y",
-										"20"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -9147,11 +8785,11 @@
 									],
 									[
 										"x",
-										"354"
+										"point.x-6"
 									],
 									[
 										"y",
-										"328"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -9182,11 +8820,11 @@
 									],
 									[
 										"x",
-										"354"
+										"point.x-6"
 									],
 									[
 										"y",
-										"20"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -9222,101 +8860,6 @@
 									[
 										"y2",
 										"0"
-									]
-								],
-								"text": "",
-								"children": []
-							}
-						]
-					},
-					"snaplayer": {
-						"tag": "G",
-						"attrs": [],
-						"text": "",
-						"children": []
-					},
-					"grids": [
-						{
-							"dots": 527,
-							"sha256": "9e4d2ab4764927bb8eb36ec7f39699e927c727b74f8393ee6e8c65c78edd098d"
-						},
-						{
-							"dots": 576,
-							"sha256": "440b7abe745b5a410e6d5899d46f788adbd78af271c15bbbc71a0516d3b9b16d"
-						}
-					]
-				},
-				{
-					"overlay": {
-						"tag": "G",
-						"attrs": [],
-						"text": "",
-						"children": [
-							{
-								"tag": "RECT",
-								"attrs": [
-									[
-										"class",
-										"handle"
-									],
-									[
-										"width",
-										"12"
-									],
-									[
-										"height",
-										"12"
-									],
-									[
-										"x",
-										"20"
-									],
-									[
-										"y",
-										"-6"
-									],
-									[
-										"rx",
-										"6"
-									],
-									[
-										"data-end",
-										"src"
-									]
-								],
-								"text": "",
-								"children": []
-							},
-							{
-								"tag": "RECT",
-								"attrs": [
-									[
-										"class",
-										"handle"
-									],
-									[
-										"width",
-										"12"
-									],
-									[
-										"height",
-										"12"
-									],
-									[
-										"x",
-										"328"
-									],
-									[
-										"y",
-										"-6"
-									],
-									[
-										"rx",
-										"6"
-									],
-									[
-										"data-end",
-										"dst"
 									]
 								],
 								"text": "",
@@ -9348,7 +8891,7 @@
 				1,
 				2,
 				3,
-				4
+				1
 			]
 		},
 		"replug-straight-to-held-pair": {
@@ -9400,11 +8943,11 @@
 									],
 									[
 										"x",
-										"354"
+										"point.x-6"
 									],
 									[
 										"y",
-										"328"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -9435,11 +8978,11 @@
 									],
 									[
 										"x",
-										"354"
+										"point.x-6"
 									],
 									[
 										"y",
-										"20"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -9495,11 +9038,11 @@
 									],
 									[
 										"x",
-										"354"
+										"point.x-6"
 									],
 									[
 										"y",
-										"328"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -9530,11 +9073,11 @@
 									],
 									[
 										"x",
-										"354"
+										"point.x-6"
 									],
 									[
 										"y",
-										"20"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -9617,11 +9160,11 @@
 									],
 									[
 										"x",
-										"354"
+										"point.x-6"
 									],
 									[
 										"y",
-										"328"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -9652,11 +9195,11 @@
 									],
 									[
 										"x",
-										"354"
+										"point.x-6"
 									],
 									[
 										"y",
-										"20"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -10342,11 +9885,11 @@
 									],
 									[
 										"x",
-										"189.6"
+										"point.x-6"
 									],
 									[
 										"y",
-										"213.2"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -10377,11 +9920,11 @@
 									],
 									[
 										"x",
-										"338.4"
+										"point.x-6"
 									],
 									[
 										"y",
-										"14.8"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -10473,11 +10016,11 @@
 									],
 									[
 										"x",
-										"15.633307652783937"
+										"point.x-6"
 									],
 									[
 										"y",
-										"8.422205101855958"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -10508,11 +10051,11 @@
 									],
 									[
 										"x",
-										"332.3666923472161"
+										"point.x-6"
 									],
 									[
 										"y",
-										"8.422205101855958"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -10602,11 +10145,11 @@
 									],
 									[
 										"x",
-										"20"
+										"point.x-6"
 									],
 									[
 										"y",
-										"-6"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -10637,11 +10180,11 @@
 									],
 									[
 										"x",
-										"328"
+										"point.x-6"
 									],
 									[
 										"y",
-										"-6"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -10762,11 +10305,11 @@
 									],
 									[
 										"x",
-										"20"
+										"point.x-6"
 									],
 									[
 										"y",
-										"-6"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -10797,11 +10340,11 @@
 									],
 									[
 										"x",
-										"328"
+										"point.x-6"
 									],
 									[
 										"y",
-										"-6"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -10892,11 +10435,11 @@
 									],
 									[
 										"x",
-										"20"
+										"point.x-6"
 									],
 									[
 										"y",
-										"-6"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -10927,11 +10470,11 @@
 									],
 									[
 										"x",
-										"328"
+										"point.x-6"
 									],
 									[
 										"y",
-										"-6"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -11126,11 +10669,11 @@
 									],
 									[
 										"x",
-										"-156"
+										"point.x-6"
 									],
 									[
 										"y",
-										"-156"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -11161,11 +10704,11 @@
 									],
 									[
 										"x",
-										"144"
+										"point.x-6"
 									],
 									[
 										"y",
-										"-156"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -11196,11 +10739,11 @@
 									],
 									[
 										"x",
-										"-156"
+										"point.x-6"
 									],
 									[
 										"y",
-										"144"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -11231,176 +10774,11 @@
 									],
 									[
 										"x",
-										"144"
+										"point.x-6"
 									],
 									[
 										"y",
-										"144"
-									],
-									[
-										"rx",
-										"2"
-									],
-									[
-										"data-corner",
-										"se"
-									]
-								],
-								"text": "",
-								"children": []
-							}
-						]
-					},
-					"snaplayer": {
-						"tag": "G",
-						"attrs": [],
-						"text": "",
-						"children": []
-					},
-					"grids": [
-						{
-							"dots": 527,
-							"sha256": "9e4d2ab4764927bb8eb36ec7f39699e927c727b74f8393ee6e8c65c78edd098d"
-						},
-						{
-							"dots": 576,
-							"sha256": "440b7abe745b5a410e6d5899d46f788adbd78af271c15bbbc71a0516d3b9b16d"
-						}
-					]
-				},
-				{
-					"overlay": {
-						"tag": "G",
-						"attrs": [],
-						"text": "",
-						"children": [
-							{
-								"tag": "RECT",
-								"attrs": [
-									[
-										"class",
-										"handle"
-									],
-									[
-										"width",
-										"12"
-									],
-									[
-										"height",
-										"12"
-									],
-									[
-										"x",
-										"-156"
-									],
-									[
-										"y",
-										"-156"
-									],
-									[
-										"rx",
-										"2"
-									],
-									[
-										"data-corner",
-										"nw"
-									]
-								],
-								"text": "",
-								"children": []
-							},
-							{
-								"tag": "RECT",
-								"attrs": [
-									[
-										"class",
-										"handle"
-									],
-									[
-										"width",
-										"12"
-									],
-									[
-										"height",
-										"12"
-									],
-									[
-										"x",
-										"144"
-									],
-									[
-										"y",
-										"-156"
-									],
-									[
-										"rx",
-										"2"
-									],
-									[
-										"data-corner",
-										"ne"
-									]
-								],
-								"text": "",
-								"children": []
-							},
-							{
-								"tag": "RECT",
-								"attrs": [
-									[
-										"class",
-										"handle"
-									],
-									[
-										"width",
-										"12"
-									],
-									[
-										"height",
-										"12"
-									],
-									[
-										"x",
-										"-156"
-									],
-									[
-										"y",
-										"204"
-									],
-									[
-										"rx",
-										"2"
-									],
-									[
-										"data-corner",
-										"sw"
-									]
-								],
-								"text": "",
-								"children": []
-							},
-							{
-								"tag": "RECT",
-								"attrs": [
-									[
-										"class",
-										"handle"
-									],
-									[
-										"width",
-										"12"
-									],
-									[
-										"height",
-										"12"
-									],
-									[
-										"x",
-										"144"
-									],
-									[
-										"y",
-										"204"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -11440,7 +10818,7 @@
 				0,
 				0,
 				1,
-				2
+				1
 			]
 		},
 		"key-duplicate": {
@@ -11525,11 +10903,11 @@
 									],
 									[
 										"x",
-										"-36"
+										"point.x-6"
 									],
 									[
 										"y",
-										"-36"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -11560,11 +10938,11 @@
 									],
 									[
 										"x",
-										"384"
+										"point.x-6"
 									],
 									[
 										"y",
-										"-36"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -11595,11 +10973,11 @@
 									],
 									[
 										"x",
-										"-36"
+										"point.x-6"
 									],
 									[
 										"y",
-										"24"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -11630,11 +11008,11 @@
 									],
 									[
 										"x",
-										"384"
+										"point.x-6"
 									],
 									[
 										"y",
-										"24"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -11947,11 +11325,11 @@
 									],
 									[
 										"x",
-										"20"
+										"point.x-6"
 									],
 									[
 										"y",
-										"-6"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -11982,11 +11360,11 @@
 									],
 									[
 										"x",
-										"328"
+										"point.x-6"
 									],
 									[
 										"y",
-										"-6"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -12360,11 +11738,11 @@
 									],
 									[
 										"x",
-										"20"
+										"point.x-6"
 									],
 									[
 										"y",
-										"-6"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -12395,11 +11773,11 @@
 									],
 									[
 										"x",
-										"328"
+										"point.x-6"
 									],
 									[
 										"y",
-										"-6"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -13215,11 +12593,11 @@
 									],
 									[
 										"x",
-										"189.6"
+										"point.x-6"
 									],
 									[
 										"y",
-										"213.2"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -13250,11 +12628,11 @@
 									],
 									[
 										"x",
-										"338.4"
+										"point.x-6"
 									],
 									[
 										"y",
-										"14.8"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -13438,11 +12816,11 @@
 									],
 									[
 										"x",
-										"189.6"
+										"point.x-6"
 									],
 									[
 										"y",
-										"213.2"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -13473,11 +12851,11 @@
 									],
 									[
 										"x",
-										"338.4"
+										"point.x-6"
 									],
 									[
 										"y",
-										"14.8"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -14205,11 +13583,11 @@
 									],
 									[
 										"x",
-										"-156"
+										"point.x-6"
 									],
 									[
 										"y",
-										"-156"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -14240,11 +13618,11 @@
 									],
 									[
 										"x",
-										"144"
+										"point.x-6"
 									],
 									[
 										"y",
-										"-156"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -14275,11 +13653,11 @@
 									],
 									[
 										"x",
-										"-156"
+										"point.x-6"
 									],
 									[
 										"y",
-										"144"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -14310,176 +13688,11 @@
 									],
 									[
 										"x",
-										"144"
+										"point.x-6"
 									],
 									[
 										"y",
-										"144"
-									],
-									[
-										"rx",
-										"2"
-									],
-									[
-										"data-corner",
-										"se"
-									]
-								],
-								"text": "",
-								"children": []
-							}
-						]
-					},
-					"snaplayer": {
-						"tag": "G",
-						"attrs": [],
-						"text": "",
-						"children": []
-					},
-					"grids": [
-						{
-							"dots": 527,
-							"sha256": "9e4d2ab4764927bb8eb36ec7f39699e927c727b74f8393ee6e8c65c78edd098d"
-						},
-						{
-							"dots": 576,
-							"sha256": "440b7abe745b5a410e6d5899d46f788adbd78af271c15bbbc71a0516d3b9b16d"
-						}
-					]
-				},
-				{
-					"overlay": {
-						"tag": "G",
-						"attrs": [],
-						"text": "",
-						"children": [
-							{
-								"tag": "RECT",
-								"attrs": [
-									[
-										"class",
-										"handle"
-									],
-									[
-										"width",
-										"12"
-									],
-									[
-										"height",
-										"12"
-									],
-									[
-										"x",
-										"-156"
-									],
-									[
-										"y",
-										"-156"
-									],
-									[
-										"rx",
-										"2"
-									],
-									[
-										"data-corner",
-										"nw"
-									]
-								],
-								"text": "",
-								"children": []
-							},
-							{
-								"tag": "RECT",
-								"attrs": [
-									[
-										"class",
-										"handle"
-									],
-									[
-										"width",
-										"12"
-									],
-									[
-										"height",
-										"12"
-									],
-									[
-										"x",
-										"264"
-									],
-									[
-										"y",
-										"-156"
-									],
-									[
-										"rx",
-										"2"
-									],
-									[
-										"data-corner",
-										"ne"
-									]
-								],
-								"text": "",
-								"children": []
-							},
-							{
-								"tag": "RECT",
-								"attrs": [
-									[
-										"class",
-										"handle"
-									],
-									[
-										"width",
-										"12"
-									],
-									[
-										"height",
-										"12"
-									],
-									[
-										"x",
-										"-156"
-									],
-									[
-										"y",
-										"264"
-									],
-									[
-										"rx",
-										"2"
-									],
-									[
-										"data-corner",
-										"sw"
-									]
-								],
-								"text": "",
-								"children": []
-							},
-							{
-								"tag": "RECT",
-								"attrs": [
-									[
-										"class",
-										"handle"
-									],
-									[
-										"width",
-										"12"
-									],
-									[
-										"height",
-										"12"
-									],
-									[
-										"x",
-										"264"
-									],
-									[
-										"y",
-										"264"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -14517,7 +13730,7 @@
 				0,
 				1,
 				1,
-				2,
+				1,
 				1,
 				1
 			]
@@ -15476,11 +14689,11 @@
 									],
 									[
 										"x",
-										"20"
+										"point.x-6"
 									],
 									[
 										"y",
-										"-6"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -15511,11 +14724,11 @@
 									],
 									[
 										"x",
-										"328"
+										"point.x-6"
 									],
 									[
 										"y",
-										"-6"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -15590,11 +14803,11 @@
 									],
 									[
 										"x",
-										"20"
+										"point.x-6"
 									],
 									[
 										"y",
-										"-6"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -15625,11 +14838,11 @@
 									],
 									[
 										"x",
-										"328"
+										"point.x-6"
 									],
 									[
 										"y",
-										"-6"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -16057,11 +15270,11 @@
 									],
 									[
 										"x",
-										"20"
+										"point.x-6"
 									],
 									[
 										"y",
-										"-6"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -16092,11 +15305,11 @@
 									],
 									[
 										"x",
-										"328"
+										"point.x-6"
 									],
 									[
 										"y",
-										"-6"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -16311,11 +15524,11 @@
 									],
 									[
 										"x",
-										"20"
+										"point.x-6"
 									],
 									[
 										"y",
-										"-6"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -16346,11 +15559,11 @@
 									],
 									[
 										"x",
-										"328"
+										"point.x-6"
 									],
 									[
 										"y",
-										"-6"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -16425,11 +15638,11 @@
 									],
 									[
 										"x",
-										"20"
+										"point.x-6"
 									],
 									[
 										"y",
-										"-6"
+										"point.y-6"
 									],
 									[
 										"rx",
@@ -16460,11 +15673,11 @@
 									],
 									[
 										"x",
-										"328"
+										"point.x-6"
 									],
 									[
 										"y",
-										"-6"
+										"point.y-6"
 									],
 									[
 										"rx",

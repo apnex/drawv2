@@ -8,10 +8,20 @@ on a tree of its own with the platform's semantics, driven through what a page d
 a link's head gained, turned and lost, selections, hover and arming, each mode, labels, the real reveal and the real towers. After
 every step: the two trees equal, element for element and attribute for attribute in order; the same elements kept and the same made
 afresh, each kept one at its former place; the scene's items equal to what stands under its layers; and the towers' glyph lookups
-equal. The same over every stored diagram and template, the parity board and the lab's boards, with the platform's measure and
-settle handed to both sides and without them, as the page and the harness differ. The export is run both ways over the same
-documents and must be byte-identical. And the gesture corpus is replayed, the overlay's, snap layer's and grids' trees after every
-step held to a record today's code wrote before the move (tests/fixtures/scene-parity-record.json, `trees`).
+equal. The same over every document the repository stores -- its templates -- the parity board and the lab's boards, with the
+platform's measure and settle handed to both sides and without them, as the page and the harness differ. The export is run both
+ways over the same documents, today's server/svg.mjs kept verbatim at tests/fixtures/pre-export/ beside the scene's, and must be
+byte-identical. And the gesture corpus is replayed, the overlay's, snap layer's and grids' trees after every step held to a record
+today's code wrote before the move (tests/fixtures/scene-parity-record.json, `trees`).
+
+The stored diagrams are a server's data, never the repository's (.gitignore `diagrams/*.json`), and the owner's are read-only copies
+outside it (tools/probe/parity.mjs `fetch`), so the gate holds neither; `node tests/fixtures/scene-parity.mjs --docs <dir>...` runs the
+same side-by-side and the export both ways over every document in the folders named, on whoever's machine holds them.
+
+Nothing here is pinned that an engine may approximate (B176, B423): the side-by-side and the export compare two sides live; the record
+holds trees whose numbers are the pointer's, the grids' and the kernel's exact arithmetic, but for a handle's place, which the network
+answers by `Math.hypot` (plugins/network/link-handles.mjs) -- so a handle is recorded at its offset from the point its part's spec
+answers then, read live, and not at that point.
 
   makeDocument     a DOM-shaped tree with the platform's semantics: one class state, read and written through the attribute and a
                    DOMTokenList; appendChild and insertBefore detaching a node first; textContent; isConnected; getElementById over
@@ -31,7 +41,7 @@ import { PRODUCT_CANVAS, CANVAS_LAYERS } from '../../product/canvas.mjs';
 import { COMPOSED_KINDS, readModel } from '../../product/types.mjs';
 import { productKinds } from '../../product/kinds.mjs';
 import { NODE_GRID } from '../../kernel/geometry.mjs';
-import { Model } from '../../model/model.mjs';
+import { Model, kindOf } from '../../model/model.mjs';
 import { attachRelations } from '../../engine/store.mjs';
 import { commit } from '../../planner/txn.mjs';
 import { Log } from '../../planner/log.mjs';
@@ -45,7 +55,7 @@ import * as oldPainter from './pre-scene/app/src/painter.js';
 import { Renderer as NewRenderer, openCanvasScene } from './scene-adapter/renderer.js';
 import { CANVAS_SCENE } from './scene-adapter/canvas-scene.mjs';
 import { svgDocument as newExport } from './scene-adapter/svg.mjs';
-import { svgDocument as oldExport } from '../../server/svg.mjs';
+import { svgDocument as oldExport } from './pre-export/server/svg.mjs';
 import * as newVisuals from './scene-adapter/editing-visuals.js';
 
 const ROOT = path.resolve(import.meta.dirname, '..', '..');
@@ -147,11 +157,11 @@ function labDocument(name, board) {
 	if (!answer.ok) throw new Error(`lab board ${name} refused: ${answer.error}`);
 	return authority.toJSON();
 }
+// the documents in a folder, each by its path
+export const documentsIn = (dir, as = dir) => fs.readdirSync(dir).filter((x) => x.endsWith('.json')).sort().map((f) => [`${as}/${f}`, JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'))]);
+// every document the repository stores and the side-by-side draws: the templates, the parity board, and the lab's boards
 export function boards() {
-	const out = [];
-	for (const dir of ['diagrams', 'templates']) {
-		for (const f of fs.readdirSync(path.join(ROOT, dir)).filter((x) => x.endsWith('.json')).sort()) out.push([`${dir}/${f}`, JSON.parse(fs.readFileSync(path.join(ROOT, dir, f), 'utf8'))]);
-	}
+	const out = documentsIn(path.join(ROOT, 'templates'), 'templates');
 	out.push(['the parity board', parityBoard()]);
 	const seeds = JSON.parse(fs.readFileSync(path.join(ROOT, 'lab/seeds.json'), 'utf8'));
 	for (const [name, board] of Object.entries(seeds)) out.push([`lab ${name}`, labDocument(name, board)]);
@@ -352,11 +362,29 @@ The overlay's, the snap layer's and the grids' trees after each step of a scenar
 grids drawn into it as the composition draws them. Each tree is kept as data, attributes in order; the grids', whose dots are many and
 change only on a load, by the SHA-256 of that data and its count of dots.
 */
-export const harnessTree = (n) => ({ tag: n.tagName, attrs: Object.entries(n.attrs ?? {}), text: n.children?.length ? '' : (n.textContent ?? ''), children: (n.children ?? []).map(harnessTree) });
+export const harnessTree = (n, place = null) => ({ tag: n.tagName, attrs: Object.entries(n.attrs ?? {}).map(([k, v]) => [k, place?.(n, k, v) ?? v]), text: n.children?.length ? '' : (n.textContent ?? ''), children: (n.children ?? []).map((c) => harnessTree(c, place)) });
 const gridOf = (layer) => ({ dots: layer.children.length, sha256: sha256(JSON.stringify(harnessTree(layer))) });
+/*
+A handle's place, as its offset from the point its part's spec answers for it now -- `point.x-6`, the overlay's half a handle short of the
+point, when it is exactly there -- so the record holds where the overlay put it against its point, and not the point, which the network
+computes by Math.hypot. Its point: the lone selected entity's spec (Overlay `handleSpecs`), its name the handle's data attribute.
+*/
+const HALF_HANDLE = 6;   // app/src/overlay.js HANDLE / 2
+function handlePlaces(h) {
+	const ids = h.selection.list();
+	const spec = ids.length === 1 ? h.input.overlayUi.handleSpecs().get(kindOf(ids[0])) : null;
+	const entity = spec && h.model.get(kindOf(ids[0]), ids[0]);
+	const points = (entity && spec.points(entity, h.model)) || {};
+	const attr = spec ? `data-${spec.key.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`)}` : null;
+	return (n, k, v) => {
+		if (!attr || (k !== 'x' && k !== 'y') || !(n.attrs?.class ?? '').split(' ').includes('handle')) return null;
+		const p = points[n.attrs[attr]];
+		return p && Number(v) === p[k] - HALF_HANDLE ? `point.${k}-${HALF_HANDLE}` : `${v} (off its point)`;
+	};
+}
 export function corpusTrees(scenario, { record, open }) {
 	const steps = [];
-	const capture = (h) => ({ overlay: harnessTree(h.layers['#overlay']), snaplayer: harnessTree(h.layers['#snaplayer']), grids: ['#grid-nodes', '#grid-zones'].map((id) => gridOf(h.layers[id])) });
+	const capture = (h) => ({ overlay: harnessTree(h.layers['#overlay'], handlePlaces(h)), snaplayer: harnessTree(h.layers['#snaplayer']), grids: ['#grid-nodes', '#grid-zones'].map((id) => gridOf(h.layers[id])) });
 	record(scenario, { withHarness: (h) => { open(h); steps.push(capture(h)); }, afterStep: (h) => steps.push(capture(h)) });
 	return steps;
 }
@@ -468,12 +496,13 @@ export const EDGES = {
 
 // ---- the record, and where the old code is kept
 
-// the commit at which the copies were read, the code before the move whole; MOVED once app/src/renderer.js is the adapter
-export const READ_AT = 'dfafe81';
+// the commit at which the copies and the record were read, the code before the move whole; MOVED once app/src/renderer.js is the adapter
+export const READ_AT = 'afef004';
 export const MOVED = false;
 export const ORIGINALS = [
 	{ file: 'app/src/renderer.js', copy: 'tests/fixtures/pre-scene/app/src/renderer.js', sha256: '43d6fdeee5d0b3124a53058ab57f1f52afe902f2ac3535d648fcbae320283425' },
 	{ file: 'app/src/painter.js', copy: 'tests/fixtures/pre-scene/app/src/painter.js', sha256: 'b8aaafb50e7c5265671eeb6e87e772bde8085bbabe5e5bee7e8234740c6b4f6e' },
+	{ file: 'server/svg.mjs', copy: 'tests/fixtures/pre-export/server/svg.mjs', sha256: 'c659aad767cbaaf121d72902dce65553c7aa76fef0c3024a6d2d0e6cb036c07e' },
 ];
 export const fileSha = (file) => sha256(fs.readFileSync(path.join(ROOT, file)));
 export const RECORD = new URL('./scene-parity-record.json', import.meta.url);
@@ -492,12 +521,33 @@ if (process.argv[1] && new URL(import.meta.url).pathname === process.argv[1] && 
 	const { SCENARIOS, record } = await import('./gesture-corpus.mjs');
 	const open = await treesOpen();
 	const out = {
-		about: 'H26.4: the side-by-side\'s record, written by tests/fixtures/scene-parity.mjs --write from the code before the move: the export\'s bytes for every document the side-by-side draws, by the SHA-256 of each; the overlay\'s, the snap layer\'s and the grids\' trees after every step of the gesture corpus, each distinct state once; and each input section 6.3 lists, both answers. Never written by hand.',
+		about: 'H26.4: the side-by-side\'s record, written by tests/fixtures/scene-parity.mjs --write from the code before the move: the overlay\'s, the snap layer\'s and the grids\' trees after every step of the gesture corpus, each distinct state once, a handle at its offset from its point; and each input section 6.3 lists, both answers. Never written by hand.',
 		readAt: READ_AT,
-		exports: Object.fromEntries(boards().map(([name, doc]) => [name, exportBytes(OLD.svgDocument, doc)])),
 		trees: Object.fromEntries(SCENARIOS.map((s) => [s.id, compact(corpusTrees(s, { record, open }))])),
 		edges: edgeAnswers(),
 	};
 	fs.writeFileSync(RECORD, `${JSON.stringify(out, null, '\t')}\n`);
-	console.log(`scene-parity: wrote ${Object.keys(out.exports).length} exports, ${Object.keys(out.trees).length} scenarios' trees and ${Object.keys(out.edges).length} edges to ${RECORD.pathname}`);
+	console.log(`scene-parity: wrote ${Object.keys(out.trees).length} scenarios' trees and ${Object.keys(out.edges).length} edges to ${RECORD.pathname}`);
+}
+
+// the documents a machine holds outside the repository -- a server's diagrams, the probe's read-only copies -- through the side-by-side and
+// the export both ways; each document said by its path and a count, never its content
+if (process.argv[1] && new URL(import.meta.url).pathname === process.argv[1] && process.argv[2] === '--docs') {
+	let docs = 0, steps = 0, differ = 0, exportsUnequal = 0, glyphsUnequal = 0;
+	for (const dir of process.argv.slice(3)) {
+		for (const [name, doc] of documentsIn(dir)) {
+			docs++;
+			for (const measure of [false, true]) {
+				const run = pageSideBySide(name, doc, { measure });
+				steps += run.steps.length;
+				const bad = run.steps.filter(([, found]) => found.length);
+				differ += bad.length;
+				if (run.glyphs.A !== run.glyphs.B) glyphsUnequal++;
+				if (bad.length) console.log(`  ${name}${measure ? ', measured' : ''}: ${bad.length} step(s) differ, first ${bad[0][0]}: ${bad[0][1].join('; ').slice(0, 300)}`);
+			}
+			if (exportBytes(OLD.svgDocument, doc) !== exportBytes(NEW.svgDocument, doc)) { exportsUnequal++; console.log(`  ${name}: the export differs`); }
+		}
+	}
+	console.log(`scene-parity --docs: ${docs} document(s), ${steps} step(s), ${differ} differing, ${glyphsUnequal} with glyph lookups unequal, ${exportsUnequal} export(s) not byte-identical`);
+	process.exit(differ || exportsUnequal || glyphsUnequal ? 1 : 0);
 }

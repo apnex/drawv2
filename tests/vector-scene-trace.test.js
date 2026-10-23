@@ -23,10 +23,16 @@ import { teardown } from './fixtures/teardown.mjs';
 import { NO_CHROME, launchChrome } from './fixtures/chrome.mjs';
 import { createTab, sleep } from './fixtures/matrix-runner.mjs';
 import { PAGE_STYLESHEETS, CANVAS_LAYERS, CANVAS_VIEWBOX } from '../product/canvas.mjs';
+import { parityBoard } from '../tools/probe/boards.mjs';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
-const DOC = fs.readFileSync(path.join(ROOT, 'diagrams/diagram-000001.json'), 'utf8');
-const SOLID = 'link-439c5a', CONTROL = 'link-ead55a', RING = 'link-a00001';
+/*
+The parity board (tools/probe/boards.mjs), which the repository holds, its first link made a control link: an undirected link over a pipe,
+drawn solid with no head, and a control link, dashed -- the two lines a trace draws differently -- and a ring added on the page.
+*/
+const BOARD = parityBoard(), SOLID = 'link-fa0005', CONTROL = 'link-fa0001', RING = 'link-a00001';
+BOARD.links = BOARD.links.map((l) => (l.id === CONTROL ? (({ direction, ...rest }) => ({ ...rest, control: true }))(l) : l));
+const DOC = JSON.stringify(BOARD);
 const T = [0, 1, 60, 125, 250, 375, 450, 499, 500, 750];
 const W = 960, H = 540;
 const free = () => new Promise((resolve) => { const s = net.createServer().listen(0, '127.0.0.1', () => { const p = s.address().port; s.close(() => resolve(p)); }); });
