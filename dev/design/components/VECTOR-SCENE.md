@@ -6,7 +6,7 @@ It builds on part 1 (`SNAP-GRID.md`), whose section 7 is settled and built three
 H26-9 holds its contract to the target state draw adopts natively after it (board item H26.8): appendix B says what H26.4's adapter translates now and what H26.8 then retires.\
 H26-10 aims the programme beyond the four components, each boundary drawn first inside draw as a declared part: section 5.2 maps where each piece of draw's canvas layer lands, and section 5.3 declares the first such part, `editing`.
 
-**Standing:** a design under review, revision 3, drafted 2026-10-23 after its second multi-family reading (section 10.2); revisions 1 and 2 were `567caec` and `34def78`; the code read is `34def78`'s, identical in code to `f702102`, after H26.7 moved every plugin under `plugins/` and H26.3 moved draw onto `input-capture`; the director answered D1, D6 and D8 and ruled H26-10 on 2026-10-22, each answer to be recorded as a ruling at ratification; not ratified, and its standing to be confirmed by a further reading.
+**Standing:** a design under review, revision 3, drafted 2026-10-23 after its second multi-family reading (section 10.2); revisions 1 and 2 were `567caec` and `34def78`; the code read is `34def78`'s, identical in code to `f702102`, after H26.7 moved every plugin under `plugins/` and H26.3 moved draw onto `input-capture`; the director answered D1, D6 and D8 and ruled H26-10 on 2026-10-22, each answer to be recorded as a ruling at ratification; a third reading, confirming revision 3, found nothing (section 10.3); not ratified.
 
 ---
 
@@ -511,7 +511,7 @@ H26.0 part 4 at revision 3, read against `34def78` and mission-kit at `e33c850`,
 **Verdict.**\
 Revision 1 was `revise-before-implementation`, by its first reading: how the screen transform is read and refused, the order declarations and shapes are read in and what re-entry sees, whether a move re-inserts and what a throwing platform call leaves, whether a returned description could be put back, and the trace's end state were each open or wrong, and the adapter replaced elements draw keeps (section 10.1).\
 Revision 2 was `revise-before-implementation`, by its second reading: moving every widget out of `app/src/painter.js` left the palette's tiles, built outside the canvas, with no builder, and the `editing` part still imported a canvas module, against its declared consumes (section 10.2).\
-Revision 3 is `pass, with guardrails`, by its author; its standing is to be confirmed by a further reading.
+Revision 3 is `pass, with guardrails`, by its author, and a reading confirming it found nothing (section 10.3).
 
 | Layer | Axiom | Weight | How the design stands |
 |---|---|---|---|
@@ -607,6 +607,12 @@ Every finding was read against the code at `34def78`, and each behavioural claim
 | o:F3 | a `close` re-entered from its own removals has two specified outcomes | **Fixed**, as `input-capture`'s IC3 settled: `close` marks the scene closed first, so every later call, one from inside a removal among them, returns `undefined` and calls nothing, and the scene "writes" only during a put or a removal; run on revision 2's prototype, whose order this already was (`close-reentry.mjs`), and I2 holds it. |
 | o:F4 | the trace check never ran a hide and a show in one task | **Fixed**, confirmed: revision 2's script awaited each in its own evaluation, so the "one task" its 6.2 and section 10.1's o:F6 claimed was not run. Revision 3's runs them in one evaluation with nothing read between -- a first trace, a retrace after a completed trace, a whole second trace begun in the same task, and a show hidden again, on a solid link and a closed ring -- and finds all 149 samples identical; a control mismatch now fails the run. |
 | x:F1 | VS7 step 3 is ambiguous for a child list whose tags match but whose structure differs | **Not changed**, as `a` and `o` found: step 3 keeps and patches the element wherever the tags at a position match, and step 4 compares its children by step 3 again, so a deeper difference is patched one level down, never by replacing the element; revision 2's side-by-side compares the identity of every element at every depth (`page-side-by-side.mjs`). |
+
+### 10.3 Reading 3 -- 2026-10-23, of revision 3 at `371e13c`, confirming
+
+A reading scoped to revision 3's changes and section 10.2's dispositions, by `gemini-4-argon` (`a`) and `gpt-6-astra` (`o`), kept whole at `~/taceng/drawv2-eval-runs/h26-readings/vs/reading-3/`.\
+Each read the diff and the code it touches -- the palette, the overlay, `painter.js`, the manifest -- ran the drafter's trace check, and found nothing: no finding of section 10.2 only claimed, and no fault introduced.\
+`a`, which timed out in reading 2, finished within the limit here.
 
 ---
 
