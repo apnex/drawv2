@@ -583,6 +583,22 @@ Each read the diff, ran the drafter's `reading-2.mjs` and `lifecycle.mjs`, and f
 
 ---
 
+## 11. Settled at build
+
+`apnex/input-capture` was built from section 3 by an agent that had not drafted it, sealed by an independent run-verifier, and released as `v0.1.0` by its own CI; draw was moved onto it in H26.3, and a second independent verifier passed the move.\
+Where section 3 was silent or open, the builder chose and the verifier judged; each rule is stated in the component's `CONTRACT.md` and listed in its own decision record, D2.\
+None changes a decision of section 8.
+
+- **Errata to this design,** each settled in the component's record: I10's "nothing delivered off the surface" delivers the `out` and the `leave` the platform fires at the exit; I8's re-entrant `takePointer` "through its getter" has no such route, `setPointerCapture` being read once as the capture opens, its body or a proxy's `apply` trap being the routes; IC1's "read once" reads the listener methods once per role, so twice, when the key source is the surface; and a reply spent while live still throws once its delivery has ended.
+- **Reading and errors.** A thrown object or function is named by its `typeof` alone, so no getter, trap or `toString` of it runs after a refusal; a declaration made in another realm is refused as not a plain object; the types admit `undefined` for an optional member where `exactOptionalPropertyTypes` is off, and the run time refuses it.
+- **Checks.** The clock-and-chance check also refuses `Intl`, `Temporal`, `WeakRef` and `FinalizationRegistry`, and the runtime check `eval`, `Function` and a call through a `constructor` property -- wider than `snap-grid`'s and `input-binding`'s, which take them later (B414).
+- **The release.** Its first release run failed in I10's teardown -- Chrome's child processes writing to its profile after the main process was killed -- before anything was drafted; the teardown now kills Chrome's process group and cannot fail or hang a run, and the tag was moved before any release existed.
+- **Draw's move.** The side-by-side of acceptance step 4 is its own test, `tests/input-capture-parity.test.js`, beside acceptance step 3's, with today's capture kept as a verbatim copy pinned by its SHA-256, whose two import shims are the one exception L4 names (`RULES.L4.verbatim`); a parity mode drives the 24 test files through both captures until the copy is deleted -- when B409 or B413 is ruled, or capture next changes.
+- **Refused, and closed.** `captureCanvas` throws, naming the problems, when the component refuses the canvas, adding no listener; if the host refuses the menu's listener it closes the component and rethrows, leaving nothing listening; `close` closes the component, then removes the menu's listener, each attempted, the first error thrown, once.
+- **Inputs nothing produces, beyond section 6.3's bullets** -- found by the verifier, held as cases with both answers in `tests/fixtures/capture-parity-edges.json`, and listed here so that 6.3 stays exhaustive: an event refused by both captures, by a throwing getter or as null or a primitive, refused now by the component's `TypeError` naming the field, where today the original error propagated; a pointer id that is not a safe integer on a captured press, which asks nothing of the platform where today `setPointerCapture` was called with it; a target getter answering differently on each read, read once where today it was read twice; a `pointerleave` that is null, has a throwing getter or a `button` not an integer, refused where today `leave()` was called reading nothing; and a key-down typed into a field with no `preventDefault`, refused where today it was dropped.
+
+---
+
 ## Appendix A -- `input-capture`'s vision, the draft put to the director
 
 Ratified by the director as written, with section 8 (H26-8); `input-capture`'s `VISION.md` is made from it when its repository is.

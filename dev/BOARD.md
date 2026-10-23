@@ -1630,6 +1630,7 @@ Scored so the comparison is a judgement, not an omission.\
 | **B411** | S4 | Wheel and pinch facts in `input-capture` (H26-8) | the first consumer of the wheel or a pinch is designed -- the gesture tester's scope (H26.5) or pan and zoom (H26.6), whichever comes first. |
 | **B412** | S5 | A context-menu fact in `input-capture` (H26-8) | an application other than draw needs the menu suppressed over its surface, or draw's B75 rule is next changed. |
 | **B413** | S5 | A key released while the page lacks focus makes no key-up (H26-8) | a person reports a key, a Shift layer or a zone left behind by switching away, or capture next adds a listener. |
+| **B414** | S5 | The first two components' checks refuse fewer clock and global forms than `input-capture`'s (H26.3) | the next release of `snap-grid` or `input-binding`, which takes the wider checks. |
 | **B344** | S4 | OD-1: a diagram kept in mission-kit's entity-store | the director selects it, or entity-store's record rules the adjustments it needs -- an asynchronous durable storage port, and names optional per kind. |
 | **B345** | S4 | OD-2: clients reaching the server over agp | OD-1 is ruled, entity-api is certified, and its follows are unparked (zorg's D15). |
 | **B347** | S4 | The towerless-combat timing test failed once under machine load | it fails a second time, or B333's flake ledger is built. |

@@ -113,6 +113,8 @@ A tenant -- the product, the network plugin, a future one -- adds rows at L3 and
 
 The only code that reads a DOM event.
 
+AMENDED 2026-10-22 (H26.3, H26-8): the listeners and the reading of a browser event are the sovereign component `@apnex/input-capture`'s, which makes a frozen fact of each event; `app/src/capture.js` is draw's adapter, rebuilding this input event from the fact field for field (`dev/design/components/INPUT-CAPTURE.md` section 5); the rest is as written.
+
 It turns each pointer, key and double-click event into an INPUT EVENT, plain data:
 ```
 { type: 'down' | 'move' | 'up' | 'cancel' | 'key-down' | 'key-up' | 'double', button, key, mods: { shift, ctrl, alt, meta },
@@ -352,6 +354,7 @@ Each is a real fork, with a recommendation.
 
 **Stage 1b -- L0 capture, 2026-09-30.**
 - **`app/src/capture.js` is the only code that reads a browser event.** It owns the listeners, turns each event into an input event -- plain data, keeping the DOM's names for button, key and modifiers, adding `at`, `on`, and on a press the run-mode `region` -- and afterwards claims the event and takes the pointer when the input layers asked it to. Keys typed in a field never reach them, and the context menu rule (B75) moved there whole.
+- AMENDED 2026-10-22 (H26.3, H26-8): since H26.3 the only code that reads a browser event is `@apnex/input-capture`; `app/src/capture.js` is draw's adapter over its facts, exporting `captureCanvas` in place of the class (`dev/design/components/INPUT-CAPTURE.md` section 5).
 - **Input takes input events only.** Its entry points are `press`, `move`, `release`, `double`, `hover`, `keyDown`, `keyUp` and `leave`, renamed so a stale call handing it a DOM event fails loudly. Its 95 DOM touches are gone: a claim is `evt.claimed`, the help panel and canvas layers are asked through `painter.js`, the zone-grid class through the overlay, and the label editor finds its own anchor element (`openFrame`, `openRegion`).
 - **G1 is a test:** `app/src/input.js`, comments removed, contains no DOM read or DOM API.
 - **Behaviour unchanged, by the corpus.** All 67 gesture scenarios replay byte-identical through capture, and the 43 matrix boards match in real Chrome. 196 test call sites moved from Input to capture; two run-mode tests gained the drawn element the label editor now looks up, which also keeps the locked-client test able to fail.
