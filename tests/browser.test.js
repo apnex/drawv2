@@ -25,11 +25,10 @@ the shape the design claims, and that is all this asks.
 import { heldLayouts } from './fixtures/composed.mjs';   // WD-b1: the two layouts a schema 3 document holds
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { teardown } from './fixtures/teardown.mjs';
+import { teardown, spawnGroup } from './fixtures/teardown.mjs';   // H26.4 (V2-2): the server a group of its own, stopped with the test process
 import { NO_CHROME, launchChrome } from './fixtures/chrome.mjs';   // one launch config for every harness
 import { pipeEntity } from '../plugins/network/pipe-kind.mjs';   // V-b's board lays its pipes as the network names them
 
@@ -212,7 +211,8 @@ before(async () => {
 	port = 8200 + (process.pid % 300);
 	cdp = 9600 + (process.pid % 300);
 
-	srv = spawn('node', ['server/server.js'], {
+	// H26.4 (the verifier's V2-2): a group of its own, so a test process stopped before its `after` stops it too (tests/fixtures/teardown.mjs)
+	srv = spawnGroup('node', ['server/server.js'], {
 		env: { ...process.env, DATA_DIR: dir, PORT: String(port) },
 		stdio: 'pipe', cwd: path.resolve(path.dirname(new URL(import.meta.url).pathname), '..'),
 	});

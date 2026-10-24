@@ -19,6 +19,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { makeApp } from './fixtures/app.mjs';
+import { spawnGroup, stopProcess } from './fixtures/teardown.mjs';   // H26.4 (V2-2): the lab server a group of its own
 
 let app, base, dataDir;
 before(async () => {
@@ -227,10 +228,10 @@ test('H25.2: the export carries no stylesheet -- each element the page\'s rules 
 // lab's canvas drawn at another size. Both servers now answer from the composition's list, and this asks each for each sheet.
 test('H25.2: every stylesheet the pages list is served, by the product\'s server and by the lab\'s', async () => {
 	const { PAGE_STYLESHEETS } = await import('../product/canvas.mjs');
-	const { spawn } = await import('node:child_process');
 	const net = await import('node:net');
 	const port = await new Promise((r) => { const s = net.createServer(); s.listen(0, '127.0.0.1', () => { const p = s.address().port; s.close(() => r(p)); }); });
-	const lab = spawn('node', ['lab/server.mjs'], { cwd: path.resolve(import.meta.dirname, '..'), env: { ...process.env, PORT: String(port) }, stdio: 'ignore' });
+	// H26.4 (the verifier's V2-2): a group of its own, stopped and waited for, and stopped with the test process if that is stopped first
+	const lab = spawnGroup('node', ['lab/server.mjs'], { cwd: path.resolve(import.meta.dirname, '..'), env: { ...process.env, PORT: String(port) }, stdio: 'ignore' });
 	try {
 		for (let i = 0; i < 50; i++) { try { if ((await fetch(`http://127.0.0.1:${port}/health`)).ok) break; } catch { /* not up */ } await new Promise((r) => setTimeout(r, 100)); }
 		const hrefs = PAGE_STYLESHEETS.map((f) => (f.startsWith('app/') ? `/${f.slice(4)}` : `/${f}`));
@@ -243,5 +244,5 @@ test('H25.2: every stylesheet the pages list is served, by the product\'s server
 			}
 		}
 		assert.equal((await fetch(`http://127.0.0.1:${port}/nope.css`)).status, 404, 'control: the lab serves no sheet the list does not name');
-	} finally { lab.kill(); }
+	} finally { await stopProcess(lab); }
 });
