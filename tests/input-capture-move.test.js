@@ -141,9 +141,10 @@ test('H26.3 (V4): a host that refuses the menu\'s listener leaves nothing listen
 const POINTER = { clientX: 30, clientY: 40, button: 0, buttons: 1, pointerId: 1, pointerType: 'mouse', shiftKey: true, ctrlKey: false, altKey: false, metaKey: false,
 	target: { tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: (s) => (s.includes('node') ? { id: 'node-000001' } : null) }, preventDefault() {} };
 const KEY = { key: 'Tab', code: 'Tab', repeat: false, shiftKey: false, ctrlKey: true, altKey: false, metaKey: false, target: { tagName: 'BODY', closest: () => null }, preventDefault() {} };
+// RESTATED at H26.5 (dev/design/components/RELEASES-0.2.md section 4, RD18): a pointer's input event carries its fact's `pointerId`, after `on`
 const FORM = {
-	press: ['type', 'button', 'key', 'repeat', 'shiftKey', 'ctrlKey', 'altKey', 'metaKey', 'at', 'on', 'region', 'claimed', 'capture'],
-	pointer: ['type', 'button', 'key', 'repeat', 'shiftKey', 'ctrlKey', 'altKey', 'metaKey', 'at', 'on', 'claimed', 'capture'],
+	press: ['type', 'button', 'key', 'repeat', 'shiftKey', 'ctrlKey', 'altKey', 'metaKey', 'at', 'on', 'pointerId', 'region', 'claimed', 'capture'],
+	pointer: ['type', 'button', 'key', 'repeat', 'shiftKey', 'ctrlKey', 'altKey', 'metaKey', 'at', 'on', 'pointerId', 'claimed', 'capture'],
 	keyDown: ['type', 'button', 'key', 'repeat', 'shiftKey', 'ctrlKey', 'altKey', 'metaKey', 'onControl', 'claimed', 'capture'],
 	keyUp: ['type', 'button', 'key', 'repeat', 'shiftKey', 'ctrlKey', 'altKey', 'metaKey', 'claimed', 'capture'],
 	blur: ['type', 'button', 'key', 'repeat', 'shiftKey', 'ctrlKey', 'altKey', 'metaKey', 'claimed', 'capture'],   // H26.5: a key-up's form
@@ -171,7 +172,7 @@ test('H26.3 step 3: the adapter reads no field of a pointer or key event -- the 
 		assert.deepEqual(Object.keys(keyDown[0]), FORM.keyDown);
 		assert.deepEqual(Object.keys(keyUp[0]), FORM.keyUp);
 		assert.deepEqual({ ...press[0], at: { ...press[0].at } }, { type: 'down', button: 0, key: null, repeat: false, shiftKey: true, ctrlKey: false, altKey: false, metaKey: false,
-			at: { x: 30, y: 40 }, on: { kind: 'node', id: 'node-000001' }, region: press[0].region, claimed: true, capture: true });
+			at: { x: 30, y: 40 }, on: { kind: 'node', id: 'node-000001' }, pointerId: 1, region: press[0].region, claimed: true, capture: true });
 		assert.equal(keyDown[0].onControl, false);
 		// H26.5: the blur's input event, every modifier false -- what Input's `blur` hands the arming (RELEASES-0.2.md section 4, item 3)
 		assert.deepEqual(Object.keys(blur[0]), FORM.blur);

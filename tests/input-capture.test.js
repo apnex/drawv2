@@ -55,6 +55,20 @@ test('an input event is plain data: it survives JSON unchanged, and carries the 
 	} finally { h.restore(); }
 });
 
+test('H26.5 (RD18): every pointer\'s input event carries its pointerId for input-binding -- null when the event\'s is no safe integer; a key\'s none', () => {
+	const methods = [['onDown'], ['onMove'], ['onUp'], ['onCancel'], ['onHover', true], ['onHover', false], ['onDblClick']];
+	const at = (pointerId) => methods.map(([m, entering]) => {
+		const { got, sink } = probe();
+		const c = captureDispatch({ svg: quietSvg(), host: quietHost(), sink, picks: PICKS });
+		const evt = { clientX: 0, clientY: 0, target: {}, preventDefault() {}, ...(pointerId === undefined ? {} : { pointerId }) };
+		if (m === 'onHover') c[m](evt, entering); else c[m](evt);
+		return got[0][1].pointerId;
+	});
+	assert.deepEqual(at(7), [7, 7, 7, 7, 7, 7, 7], 'the platform\'s pointer, on every pointer event');
+	for (const odd of [undefined, 1.5, '7', -0.5, 2 ** 53]) assert.deepEqual(at(odd), Array(7).fill(null), `pointerId ${String(odd)}: none`);
+	assert.equal('pointerId' in seen(quietSvg(), 'onKeyDown', key('c')), false, 'a key\'s input event has no pointerId, as it has no at');
+});
+
 test('a target that cannot be asked gives no region -- run mode places nothing then, as before', () => {
 	const e = seen(quietSvg(), 'onDown', { clientX: 0, clientY: 0, target: {}, preventDefault() {} });
 	assert.equal(e.region, null);

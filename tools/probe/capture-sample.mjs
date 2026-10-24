@@ -28,6 +28,11 @@ And a boundary event Chrome repeats on its own clock -- the pointerover it fires
 redrawn, as a committed link redraws its end device, early or late as the redraw falls -- reaches Input as a hover identical to the
 one before it, with nothing between, and changes nothing there; such a repeat is folded into the one before, in Input's events and
 in the platform's alike, and the report counts the repeats folded on each side apart from what is compared.
+AMENDED at H26.5 (dev/design/components/RELEASES-0.2.md section 4, RD18): from input-capture 0.2.0 a pointer's input event carries its
+fact's `pointerId`, which input-binding 0.1.0 reads none of; a side before it carries none. So `pointerId` alone is left out of the
+events compared -- every other field still compared in its key order -- and reported apart: on each side, how many of Input's events
+carried it and the values seen. And Input's `blur`, the host's focus loss (B413), is wrapped where Input has one; a focus loss on one
+side alone is a difference.
 
   node tools/probe/capture-sample.mjs [--baseline <commit>] [--candidate <commit>] [--out DIR]
       the baseline defaults to 87d206b, the last commit before the move; the candidate is the working tree when not named
@@ -177,8 +182,9 @@ async function drive(t, steps) {
 
 // Input's entry points wrapped: every input event it was handed, as text, `at` as x and y, after Input returned (claimed, capture, trigger)
 const HOOK = `(() => {
-	const i = window.draw.input; window.__input = []; window.__atShape = new Set();
-	for (const m of ['press', 'move', 'release', 'cancelDrag', 'hover', 'double', 'keyDown', 'keyUp', 'leave']) {
+	const i = window.draw.input; window.__input = []; window.__atShape = new Set(); window.__pointerIds = [0, new Set()];
+	for (const m of ['press', 'move', 'release', 'cancelDrag', 'hover', 'double', 'keyDown', 'keyUp', 'leave', 'blur']) {
+		if (typeof i[m] !== 'function') continue;   // H26.5: blur, which Input lacks before the move
 		const f = i[m].bind(i);
 		i[m] = (e, ...more) => {
 			// V7: a hover after a press that took the pointer, or after a capture changed, before the next pointer event of Input's own,
@@ -186,7 +192,9 @@ const HOOK = `(() => {
 			const pointer = ['press', 'move', 'release', 'cancelDrag', 'double'].includes(m);
 			if (pointer) window.__captureEdge = false;
 			const boundary = m === 'hover' && window.__captureEdge;
-			const before = e ? JSON.stringify(Object.fromEntries(Object.entries(e).map(([k, v]) => [k, k === 'at' ? [v.x, v.y] : boundary && k === 'button' ? 'capture-boundary' : v]))) : null;
+			// H26.5: pointerId reported apart, not compared
+			if (e && 'pointerId' in e) { window.__pointerIds[0]++; window.__pointerIds[1].add(String(e.pointerId)); }
+			const before = e ? JSON.stringify(Object.fromEntries(Object.entries(e).filter(([k]) => k !== 'pointerId').map(([k, v]) => [k, k === 'at' ? [v.x, v.y] : boundary && k === 'button' ? 'capture-boundary' : v]))) : null;
 			if (e && e.at) window.__atShape.add((Object.isFrozen(e.at) ? 'frozen ' : '') + (Object.getPrototypeOf(e.at)?.constructor?.name ?? 'null') + ' ' + Object.keys(e.at).join(','));
 			try { return f(e, ...more); } finally {
 				window.__input.push([m, before, more, e ? [e.claimed, e.capture, e.trigger ?? null] : null]);
@@ -237,11 +245,12 @@ try {
 			await drive(t, steps);
 			const page = await t.ev(READ);
 			const atShape = await t.ev('[...window.__atShape]');
+			const pointerIds = await t.ev('[window.__pointerIds[0], [...window.__pointerIds[1]].sort()]');
 			const stored = await (await fetch(`http://127.0.0.1:${side.port}/api/v1/diagrams/${id}`)).json();
-			got.push({ page, stored: { nodes: stored.nodes.map((x) => [x.name, x.type ?? null, x.x, x.y]).sort(), links: stored.links.length, zones: stored.zones.map((z) => [z.x, z.y, z.w, z.h]) }, thrown: t.thrown, atShape });
+			got.push({ page, stored: { nodes: stored.nodes.map((x) => [x.name, x.type ?? null, x.x, x.y]).sort(), links: stored.links.length, zones: stored.zones.map((z) => [z.x, z.y, z.w, z.h]) }, thrown: t.thrown, atShape, pointerIds });
 			await t.close();
 		}
-		const strip = (g) => ({ ...g, atShape: undefined, page: { ...g.page, repeats: undefined } });
+		const strip = (g) => ({ ...g, atShape: undefined, pointerIds: undefined, page: { ...g.page, repeats: undefined } });
 		const same = JSON.stringify(strip(got[0])) === JSON.stringify(strip(got[1]));
 		if (!same) failed = true;
 		report.scenarios[title] = { same, baseline: got[0], candidate: got[1] };
@@ -251,6 +260,9 @@ try {
 	}
 	const shapes = Object.values(report.scenarios).map((s) => [s.baseline.atShape, s.candidate.atShape]);
 	console.log(`  at, as Input received it -- baseline: ${[...new Set(shapes.flatMap((s) => s[0]))].join('; ')}; candidate: ${[...new Set(shapes.flatMap((s) => s[1]))].join('; ')}`);
+	// H26.5: pointerId, as Input received it -- left out of the comparison above
+	const ids = (k) => { const all = Object.values(report.scenarios).map((s) => s[k].pointerIds); return `${all.reduce((n, [c]) => n + c, 0)} event(s) carried it, values [${[...new Set(all.flatMap(([, v]) => v))].sort().join(' ')}]`; };
+	console.log(`  pointerId, as Input received it, not compared -- baseline: ${ids('baseline')}; candidate: ${ids('candidate')}`);
 	fs.writeFileSync(path.join(OUT, 'capture-sample.json'), `${JSON.stringify(report, null, '\t')}\n`);
 	console.log(`  baseline ${sides[0].sha} (${sides[0].deps}); candidate ${sides[1].sha} (${sides[1].deps}); report ${path.join(OUT, 'capture-sample.json')}`);
 	console.log(failed ? '  FAIL -- a scenario differs' : `  PASS -- all ${n} scenarios alike on both sides`);

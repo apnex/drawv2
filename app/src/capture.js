@@ -24,13 +24,17 @@ WHAT DRAW SUPPLIES, each draw's content or policy:
 AN INPUT EVENT is today's, field for field and in today's key order (section 5, G7): `type`; `button`, `0` for a key; `key`; `repeat`,
 `false` for a pointer; the modifiers; on a pointer `at` and `on`; on a press `region`; on a key-down `onControl`; `claimed` and `capture`
 false, which the input layers write and this acts on. `trigger` is the input layers' own field, and never read here.
+AMENDED H26.5 (dev/design/components/RELEASES-0.2.md section 4, RD18): and on a pointer, after `on`, the fact's `pointerId` -- the
+event's when a safe integer, else null -- for input-binding, which tells another pointer's move and release apart by it from 0.2.0;
+input-binding 0.1.0 reads none of it, and no code of draw's reads it (tests/input-capture.test.js G1 holds app/src/input.js to that).
 
 WHAT NEVER REACHES THE INPUT LAYERS. Keys typed into a field: canvas shortcuts do not apply there. The context menu: suppressed
 everywhere but a field, which is the browser's question, not a gesture's (B75) -- draw's own listener, on the host, after the keys,
 since the component makes no menu fact (D5, B412).
 
 KEPT, registered (section 6.3): one press for every pointer -- draw's event carries no `pointerId`, so a second pointer replaces the
-first's press (B409). RESTATED at H26.5: a key released while the page lacks focus still makes no key-up, but the focus loss before it
+first's press (B409). RESTATED at H26.5: the event carries it now, and B409 holds until draw is on input-binding 0.2.0, which reads it
+(RD18) -- and then narrowed, a second pointer's press still replacing the first's. And a key released while the page lacks focus still makes no key-up, but the focus loss before it
 is now heard and handed to Input's `blur`, which clears what Shift, Alt and Control left (B413, RELEASES-0.2.md section 4).
 */
 import { openCapture } from '@apnex/input-capture';
@@ -65,14 +69,14 @@ const typing = (target) => ['INPUT', 'TEXTAREA', 'SELECT'].includes(target && ta
 // the input layers' method for each fact; `over` and `out` are `hover`, entering or not. H26.5: `blur`, the host's focus loss (B413)
 const ROUTE = { down: 'press', move: 'move', up: 'release', cancel: 'cancelDrag', double: 'double', 'key-down': 'keyDown', 'key-up': 'keyUp', blur: 'blur' };
 
-// draw's input event from one fact -- today's form, field for field and in today's key order
+// draw's input event from one fact -- today's form, field for field and in today's key order; H26.5: a pointer's `pointerId` (RD18)
 function inputEventOf(event) {
 	const pointer = event.at !== null;
 	return {
 		type: event.type,
 		button: pointer ? event.button : 0, key: event.key, repeat: pointer ? false : event.repeat,
 		shiftKey: event.shiftKey, ctrlKey: event.ctrlKey, altKey: event.altKey, metaKey: event.metaKey,
-		...(pointer ? { at: event.at, on: event.hit.on } : {}),
+		...(pointer ? { at: event.at, on: event.hit.on, pointerId: event.pointerId } : {}),
 		...(event.type === 'down' ? { region: event.hit.region } : {}),
 		...(event.type === 'key-down' ? { onControl: event.focus.onControl } : {}),
 		claimed: false, capture: false,
