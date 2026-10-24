@@ -192,6 +192,8 @@ Actions reach the document only through `commands.js` and `history` (the effect 
 
 ### 5.6 L5 -- projections
 
+AMENDED 2026-10-24 (H26.4, H26-11): the feedback a gesture draws -- the crosshair, the snap box, the previews, the stamp ghost, the marquee's rectangle and the handles -- is described as `@apnex/vector-scene`'s shapes by draw's declared `editing` part (`app/src/editing-visuals.js`, `app/src/overlay.js`, `app/src/selection.js`), where it was written into the page by hand (`dev/design/components/VECTOR-SCENE.md` sections 5.1 and 5.3); the rest is as written.
+
 - **Help** is the binding table unfiltered, rendered: each action's label and every binding that reaches it. It replaces the 41 hand-written rows of `app/index.html:105` (RULES I4, B163), which have already drifted: they still offer `7` as the waypoint, which B146 removed.
 - **A context menu** is the binding table filtered by the situation at the point it opens: every action some binding would run here, now, with the input that reaches it shown beside it (`dev/RULES.md` section 4, the projection rule).
 

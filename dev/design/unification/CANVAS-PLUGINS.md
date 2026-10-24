@@ -8,6 +8,8 @@ AMENDED 2026-10-11: this title's status is as written; the standing is its board
 
 ## 1. Status
 
+AMENDED 2026-10-24 (H26.4, H26-11): the canvas parts' painters, appearances and grids now draw through the sovereign component `@apnex/vector-scene`: the plugins' painters unchanged, translated by draw's shadow (`app/src/shadow.js`) until H26.8 makes them describe shapes, the pipes and movers in foreign layers the scene creates and leaves to the network and the simulation, the grids scene items (`dev/design/components/VECTOR-SCENE.md` section 5); the parts and their seams are as written.
+
 - **Asked for:** the director, 2026-10-08 -- O3, "core first, canvas later" (`dev/DECISIONS.md`), and the choice of this design after the kinds-as-plugins arc closed (`dev/BOARD.md` H19.23).
 - **Is:** B308, "the canvas has no seam through which a plugin brings a kind" -- the canvas's half of B280, for the four kinds O3 named: zone, group, device and the network's link.
 - **Rests on:** O1 and O4 (every kind a plugin's; the core holds only the anchor), and the seams the core-side arc proved: rows, extensions, tenants, attachments.

@@ -616,6 +616,23 @@ Each read the diff and the code it touches -- the palette, the overlay, `painter
 
 ---
 
+## 11. Settled at build
+
+`apnex/vector-scene` was built from section 3 by an agent that had not drafted it, sealed by an independent run-verifier, and released as `v0.1.0` by its own CI; draw was moved onto it in H26.4, and a second independent verifier failed the move once and then passed it.\
+Where section 3 was silent or open, the builder chose and the verifier judged; each rule is stated in the component's `CONTRACT.md` and listed in its own decision record, D2.\
+None changes a decision of section 8.
+
+- **Errata to this design,** each settled in the component's record: VS11's types are generic in the platform's element, since a fixed element type admits a browser's `<svg>` only through `never` or `any` parameters, losing the scene's own typing; I3's and VS7's "reads nothing" allow reading the methods VS1 names, a call reading its method; a layer's `attrs` are held as VS5 writes them, `{}` when none were declared; and VS7 step 4 removes attributes in the old description's order.
+- **Checks.** The runtime check allows only the thirteen built-ins the build uses, and treats a DOM member named as a literal key of `Object.getOwnPropertyDescriptor`, `Object.hasOwn`, `Object.defineProperty` or `hasOwnProperty` as a read; an element without the element methods is a platform failure, failing the scene; the first three components take these at their next release (B424).
+- **The release.** Its first release run created its draft and failed on looking it up, the list of releases lagging the create; no release was published, the lookup was made to retry, and the tag moved -- the same lookup stands unretried in the first three components (B424).
+- **The move found one regression, now fixed.** The old renderer marked an entity's state on whatever element `getElementById` found, and the network draws each pipe's line under the pipe's id so that it would be marked; the moved renderer knew only its own elements, so a clicked hand pipe was no longer drawn selected, hovered or armed -- a visible change, which the verifier found and section 6.2's "Lookups by id" had missed, as had appendix B. The renderer now hands an id it did not draw to a hook the composition supplies, which marks the element with that id beneath the scene's foreign layers, first in layer order, as `getElementById` found it; the side-by-side composes each side with the network and selects, hovers and arms pipes, and the product page and the lab each hold a clicked hand pipe drawn selected, so a composition that drops the hook fails the gate. The verifier's own audit of every lookup by id or selector found no other.
+- **The label editor** converts by the scene's `toScreen`, as section 5.1 says, its position unchanged.
+- **Draw's side-by-side** keeps today's renderer, its painter helpers and its export as three verbatim copies pinned by their SHA-256 under L4's named exception, the export's copy its own, and runs only on the documents the repository holds -- the stored templates, the parity board and the lab's boards -- pinning nothing an engine approximates (B423's lesson); local diagrams and the probe's documents run through it by hand.
+- **Section 6.2 and 6.3, completed** so that 6.3 stays exhaustive: after a hide that follows a show in one task, the line's `style` attribute stands in another place among its attributes, the platform making it lazily on its first read, which nothing draws or reads by; and a painter, appearance or grid that names a foreign layer is refused when the canvas is composed, where the old renderer drew into the page's layer -- which draw's own composition never does. A pipe's `hover` and `armed`, rewritten by the network when it repaints the line, are lost on that repaint, old and new alike, and `selected` derived again from the selection.
+- **`FOREIGN_LAYERS`** in `product/canvas.mjs` names the network's and the simulation's layers, so `main.js` and the lab type no plugin's kind; the overlay's hover test is `nearOrigin` in `app/src/snap.js`, handed in by Input, since `input.js` may measure one distance alone (H26.2's guard).
+
+---
+
 ## Appendix A -- `vector-scene`'s vision, the draft put to the director
 
 Ratified by the director as written, with section 8 (H26-11); `vector-scene`'s `VISION.md` is made from it when its repository is.

@@ -1632,7 +1632,6 @@ Scored so the comparison is a judgement, not an omission.\
 | **B411** | S4 | Wheel and pinch facts in `input-capture` (H26-8) | the first consumer of the wheel or a pinch is designed -- the gesture tester's scope (H26.5) or pan and zoom (H26.6), whichever comes first. |
 | **B412** | S5 | A context-menu fact in `input-capture` (H26-8) | an application other than draw needs the menu suppressed over its surface, or draw's B75 rule is next changed. |
 | **B413** | S5 | A key released while the page lacks focus makes no key-up (H26-8) | a person reports a key, a Shift layer or a zone left behind by switching away, or capture next adds a listener. |
-| **B414** | S5 | The first two components' checks refuse fewer clock and global forms than `input-capture`'s (H26.3) | the next release of `snap-grid` or `input-binding`, which takes the wider checks. |
 | **B415** | S5 | Drawing a grid as a shared piece (H26-10) | a second application draws a grid -- the gesture tester's scope (H26.5) among them -- or H26.6 designs pan and zoom. |
 | **B416** | S5 | The inline text editor as a component (H26-10) | a second application needs a drawn text edited in place. |
 | **B417** | S5 | The help overlay from the bindings as a component (H26-10) | a second application shows the inputs its bindings declare -- the gesture tester (H26.5) among them. |
@@ -1641,6 +1640,7 @@ Scored so the comparison is a judgement, not an omission.\
 | **B420** | S5 | The shape under a point found by geometry in `vector-scene` (H26-11) | an application needs the shape under a point with no platform, or under a captured pointer. |
 | **B421** | S5 | Children diffed by key in `vector-scene` (H26-11) | an application's shapes reorder, or gain siblings before elements it needs kept, often enough that items of their own are measured too costly. |
 | **B422** | S4 | A revealed link keeps its trace's dash, drawn solid or with a gap (H26-11) | H26.8 rewrites the reveal's trace, or a person reports a revealed link drawn solid or with a gap. |
+| **B424** | S5 | The first three components' checks and release workflow brought to `vector-scene`'s (H26.3, H26.4) | the next release of `snap-grid`, `input-binding` or `input-capture`, which takes `vector-scene`'s checks and workflow. |
 | **B344** | S4 | OD-1: a diagram kept in mission-kit's entity-store | the director selects it, or entity-store's record rules the adjustments it needs -- an asynchronous durable storage port, and names optional per kind. |
 | **B345** | S4 | OD-2: clients reaching the server over agp | OD-1 is ruled, entity-api is certified, and its follows are unparked (zorg's D15). |
 | **B347** | S4 | The towerless-combat timing test failed once under machine load | it fails a second time, or B333's flake ledger is built. |
