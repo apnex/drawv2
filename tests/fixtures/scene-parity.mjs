@@ -46,6 +46,10 @@ import { attachRelations } from '../../engine/store.mjs';
 import { commit } from '../../planner/txn.mjs';
 import { Log } from '../../planner/log.mjs';
 import { createNetworkSession } from '../../plugins/network/session.mjs';
+import { createPageNetwork } from '../../plugins/network/page.mjs';
+import { pipeEntity, pipeId } from '../../plugins/network/pipe-kind.mjs';
+import { Selection } from '../../app/src/selection.js';
+import { el as pageEl } from '../../app/src/painter.js';
 import { Reveal } from '../../plugins/simulation/reveal-painter.mjs';
 import { Movers } from '../../plugins/simulation/mover-painter.mjs';
 import { parityBoard } from '../../tools/probe/boards.mjs';
@@ -57,9 +61,11 @@ import { CANVAS_SCENE } from '../../product/canvas.mjs';
 import { svgDocument as newExport } from '../../server/svg.mjs';
 import { svgDocument as oldExport } from './pre-export/server/svg.mjs';
 import * as newVisuals from '../../app/src/editing-visuals.js';
+import * as composition from '../../app/src/compose-canvas.js';
 
 const ROOT = path.resolve(import.meta.dirname, '..', '..');
-export const NEW = { Renderer: NewRenderer, openCanvasScene, CANVAS_SCENE, svgDocument: newExport, visuals: newVisuals };
+// H26.4 (F1): what the composition hands the renderer for an id it did not draw -- the network's pipe lines, in their foreign layer
+export const NEW = { Renderer: NewRenderer, openCanvasScene, CANVAS_SCENE, svgDocument: newExport, visuals: newVisuals, foreignStates: composition.foreignStates };
 export const OLD = { Renderer: OldRenderer, painter: oldPainter, svgDocument: oldExport };
 
 // ---- a DOM with the platform's semantics
@@ -191,20 +197,32 @@ export function pageSideBySide(name, doc, { measure = false, impl = NEW } = {}) 
 		return scene.put(layer, key, shapes, place);
 	} };
 	const prev = globalThis.document;
-	const mA = readModel(structuredClone(doc), COMPOSED_KINDS), mB = readModel(structuredClone(doc), COMPOSED_KINDS);
+	/*
+	H26.4 (F1, F5): each side composed as a page composes it -- a Model on the page's network, loaded by the first step, a Selection the
+	renderer reflects, and the network attached, drawing its pipes into the pipes layer: the markup's on the old side, the scene's foreign
+	layer on the new, each built with the page's `el` over its own document -- so what the network draws, and every class the canvas
+	marks on it, is compared with the rest of the root.
+	*/
+	const page = () => { const net = createPageNetwork(); const m = new Model({ kinds: COMPOSED_KINDS, attached: { network: net.network } }); return { net, m, sel: new Selection(m) }; };
+	const pA = page(), pB = page(), mA = pA.m, mB = pB.m;
 	let rA;
 	globalThis.document = tDoc;
 	try { rA = new OLD.Renderer(mA, tRoot, { parts: PRODUCT_CANVAS }); } finally { globalThis.document = prev; }
-	const rB = new impl.Renderer(mB, dRoot, { parts: PRODUCT_CANVAS, scene: counted, platform: measure ? { lengthOf, settle: () => {} } : {} });
-	const sides = { A: { m: mA, r: rA, root: tRoot, doc: tDoc }, B: { m: mB, r: rB, root: dRoot, doc: dDoc } };
-	for (const s of Object.values(sides)) s.reveal = new Reveal({ model: s.m, renderer: s.r, now: () => 0, onCaption() {} });
+	const rB = new impl.Renderer(mB, dRoot, { parts: PRODUCT_CANVAS, scene: counted, platform: measure ? { lengthOf, settle: () => {} } : {}, foreign: impl.foreignStates?.(scene) });
+	const sides = { A: { m: mA, r: rA, root: tRoot, doc: tDoc, sel: pA.sel }, B: { m: mB, r: rB, root: dRoot, doc: dDoc, sel: pB.sel } };
+	sides.A.host = pA.net.attach({ model: mA, renderer: rA, selection: pA.sel, edit() {}, say() {}, el: OLD.painter.el, pipeLayer: tRoot.children.find((g) => g.attrs.id === 'pipes') });
+	sides.B.host = pB.net.attach({ model: mB, renderer: rB, selection: pB.sel, edit() {}, say() {}, el: pageEl, pipeLayer: scene.layerElement('pipes') });
+	for (const s of Object.values(sides)) {
+		s.sel.subscribe(() => s.r.reflectSelection(s.sel.list()));   // the renderer owns the selected look, as composeCanvas wires it
+		s.reveal = new Reveal({ model: s.m, renderer: s.r, now: () => 0, onCaption() {} });
+	}
 	const glyphs = { A: 0, B: 0 };
 	const out = { name, measure, steps: [], glyphs, loadPuts: 0, loadKinds };
 	let before = { A: [], B: [] };
 	const both = (label, f) => {
 		const mark = { A: tDoc.serial(), B: dDoc.serial() }, threw = {};
 		for (const k of ['A', 'B']) {
-			if (k === 'A') globalThis.document = tDoc;
+			globalThis.document = sides[k].doc;   // each side's page builders build into its own document; the new renderer reads none
 			try { f(sides[k], k); } catch (e) { threw[k] = `${e.constructor.name}: ${e.message}`; } finally { globalThis.document = prev; }
 		}
 		const found = [];
@@ -228,7 +246,7 @@ export function pageSideBySide(name, doc, { measure = false, impl = NEW } = {}) 
 		out.steps.push([label, found]);
 	};
 	loading = true;
-	both('load', (s) => s.r.syncAll());
+	both('load', (s) => s.m.load(structuredClone(doc)));   // the page's load: the renderer drawing all, the network its pipes
 	loading = false; out.loadPuts = puts;
 	out.loadItems = scene.layers.filter((l) => !l.foreign).reduce((n, l) => n + scene.items(l.name).length, 0);
 	const all = (kind) => (mA.kinds.has(kind) ? structuredClone(mA.all(kind)) : []);
@@ -241,6 +259,25 @@ export function pageSideBySide(name, doc, { measure = false, impl = NEW } = {}) 
 	if (groups[0]) both('rename a group', (s) => s.m.set('group', groups[0].id, { name: 'regrouped' }));
 	if (pipes[0]) both('touch a pipe', (s) => s.m.set('pipe', pipes[0].id, { laid: (pipes[0].laid ?? 0) + 1 }));
 	if (nodes[0]) both('restack a device', (s) => s.m.set('node', nodes[0].id, { order: 1 }));
+	/*
+	H26.4 (F1, F5): A PIPE SELECTED, HOVERED AND ARMED -- the network draws each pipe's line under the pipe's own id, so the canvas's states
+	reach it as they reach what the renderer draws. A hand pipe of its own, between the document's first two anchors, so every document
+	holds one the canvas can select; and the document's own first pipe, laid with a link where it has one. Each selected, hovered, armed,
+	repainted by an edit, its states cleared, and deselected.
+	*/
+	const anchors = all('node').slice(0, 2);
+	const hand = anchors.length === 2 ? pipeId(anchors[0].id, anchors[1].id) : null;
+	if (hand) both('a hand pipe put', (s) => s.m.put('pipe', pipeEntity(anchors[0].id, anchors[1].id, 'hand')));
+	for (const id of [...new Set([hand, pipes[0]?.id].filter(Boolean))]) {
+		both('select a pipe', (s) => s.sel.set([id]));
+		both('hover the selected pipe', (s) => s.r.setState(id, 'hover', true));
+		both('arm it to clone', (s) => s.r.setState(id, 'armed-clone', true));
+		both('an edit repaints the pipes', (s) => s.m.set('node', anchors[0].id, { name: `${s.m.get('node', anchors[0].id).name ?? ''}+` }));
+		both('hover and arm it again', (s) => { s.r.setState(id, 'hover', true); s.r.setState(id, 'armed', true); });
+		both('clear its hover and arming', (s) => s.r.clearState(id, 'hover', 'armed', 'armed-clone'));
+		both('select it with a device', (s) => s.sel.set([id, ...(nodes[0] ? [nodes[0].id] : [])]));
+		both('deselect', (s) => s.sel.set([]));
+	}
 	// a head gained, turned and lost: a link's line and twin kept, its head and leg made and removed, as the painter does
 	for (const l of links.slice(0, 4)) {
 		both('direct a link forward', (s) => s.m.set('link', l.id, { direction: 'forward' }));

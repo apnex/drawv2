@@ -139,11 +139,15 @@ export class Renderer {
 	/*
 	H26.4: `svg` is the page's root, whose classes the renderer still writes -- modes and labels, draw's own -- or none, for the export;
 	`scene` is the one `openCanvasScene` opened; `platform` the page's measure and settle (`{ lengthOf, settle }`, app/src/painter.js),
-	which the export and the harness do not hand, so the reveal's trace runs where it ran, on the page alone (D12).
+	which the export and the harness do not hand, so the reveal's trace runs where it ran, on the page alone (D12). `foreign`, where the
+	composition hands it (app/src/compose-canvas.js `foreignStates`), marks the states of an id this did not draw -- a pipe's line, which the
+	network draws in its own layer under the pipe's id so the canvas's selection reaches it -- as today's renderer marked whatever element the
+	page's getElementById found (F1).
 	*/
-	constructor(model, svg, { parts = [], scene = null, platform = {} } = {}) {
+	constructor(model, svg, { parts = [], scene = null, platform = {}, foreign = null } = {}) {
 		if (!scene) throw new Error('Renderer: no scene to draw into -- the canvas opens one (openCanvasScene)');
 		this.scene = scene;
+		this.foreign = foreign;
 		// C-a: the kinds a plugin paints, and those several plugins draw by appearances (D3), from the page's canvas parts
 		({ painters: this.painters, appearances: this.appearances, orders: this.orders, sizes: this.sizes, outlines: this.outlines } = composeParts(parts, scene));
 		/*
@@ -549,11 +553,12 @@ export class Renderer {
 		return this.drawn.get(id)?.frag.children.find((n) => n.attrs.id === id) ?? null;
 	}
 
+	// a state of an entity this drew is a class on its own shadow node; of any other id, the composition's to mark where it is drawn (F1)
 	setState(id, cls, on) {
-		this.batch(() => { const dom = this.elementOf(id); if (dom) dom.classList.toggle(cls, on); });
+		this.batch(() => { const dom = this.elementOf(id); if (dom) dom.classList.toggle(cls, on); else this.foreign?.setState(id, cls, on); });
 	}
 
 	clearState(id, ...classes) {
-		this.batch(() => { const dom = this.elementOf(id); if (dom) classes.forEach((cls) => dom.classList.remove(cls)); });
+		this.batch(() => { const dom = this.elementOf(id); if (dom) classes.forEach((cls) => dom.classList.remove(cls)); else this.foreign?.clearState(id, classes); });
 	}
 }

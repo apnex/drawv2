@@ -11,6 +11,8 @@ opened on the bare root -- driven alike; for every mode the reveal has, at sampl
 stroke-dashoffset, opacity and visibility, their inline dash and transition as the CSSOM reads them, and each frame's pixels must be
 equal, and the layers' trees and kept elements after each mode. The two frames must draw alike before any trace, or the run proves
 nothing. Chrome launches through tests/fixtures/chrome.mjs on a port and a profile of this file's own.
+H26.4 (F1, F5): and a pipe the network draws in its foreign layer, selected, hovered, armed and cleared in both frames: its line's class
+and computed stroke alike, and each frame's pixels -- the selected look the canvas marks on an id it did not draw.
 */
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
@@ -24,6 +26,7 @@ import { NO_CHROME, launchChrome } from './fixtures/chrome.mjs';
 import { createTab, sleep } from './fixtures/matrix-runner.mjs';
 import { PAGE_STYLESHEETS, CANVAS_LAYERS, CANVAS_VIEWBOX } from '../product/canvas.mjs';
 import { parityBoard } from '../tools/probe/boards.mjs';
+import { pipeEntity } from '../plugins/network/pipe-kind.mjs';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 /*
@@ -171,5 +174,41 @@ test('H26.4 (acceptance step 5, D12): the reveal\'s trace through the shadow is 
 	// side's style attribute is made at that first read, after the hide's `data-unrevealed`; the shadow's when the show set it, before
 	assert.deepEqual(out.styleAt, ['solid link: shown and hidden again in one task', 'closed ring: shown and hidden again in one task'],
 		'the inline style\'s place among the attributes differs exactly where Chrome makes the attribute after another was added');
+	assert.deepEqual(tab.thrown, [], 'nothing failed');
+});
+
+/*
+H26.4 (F1, F5) -- A PIPE SELECTED, IN BOTH FRAMES. plugins/network/host.mjs draws each pipe's line in its own layer under the pipe's id, so
+the canvas's selection, hover and arming reach it: today's renderer found it by the page's getElementById. Both frames load the parity
+board with a hand pipe of its own, then select it, hover and arm it, clear those and deselect it; after each, the line's class and stroke
+as computed must be alike, and each frame's pixels.
+*/
+test('H26.4 (F1): a hand pipe selected, hovered and armed is marked alike in both frames -- its class, its stroke as computed, the pixels', { skip: NO_CHROME, timeout: 120000 }, async () => {
+	const HAND = pipeEntity('node-fa00a3', 'node-fa00a5', 'hand');
+	const doc = { ...BOARD, pipes: [...(BOARD.pipes ?? []), HAND] };
+	const both = (expr) => tab.run(`Promise.all([frames[0].side.${expr}, frames[1].side.${expr}])`);
+	const op = (name, a) => tab.run(`(() => { frames[0].side.op(${JSON.stringify(name)}, ${JSON.stringify(a)}); frames[1].side.op(${JSON.stringify(name)}, ${JSON.stringify(a)}); return true; })()`);
+	const shot = async (frame) => {
+		await tab.run(`(async () => { document.getElementById('a').style.visibility = ${frame === 0 ? "'visible'" : "'hidden'"}; document.getElementById('b').style.visibility = ${frame === 1 ? "'visible'" : "'hidden'"};
+			await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => r()))); return true; })()`);
+		return (await tab.send('Page.captureScreenshot', { format: 'png', clip: { x: 0, y: 0, width: W, height: H, scale: 1 } })).result.data;
+	};
+	await both(`load(${JSON.stringify(JSON.stringify(doc))})`); await both('frame()');
+	const read = async (step) => { await both('frame()'); const [a, b] = await both(`lineOf(${JSON.stringify(HAND.id)})`); return { step, old: a, new: b, pixels: (await shot(0)) === (await shot(1)) }; };
+	const steps = [await read('loaded')];
+	await op('select', { ids: [HAND.id] }); steps.push(await read('selected'));
+	await op('state', { id: HAND.id, cls: 'hover', on: true }); steps.push(await read('hovered'));
+	await op('state', { id: HAND.id, cls: 'armed', on: true }); steps.push(await read('armed'));
+	await op('clear', { id: HAND.id, classes: ['hover', 'armed', 'armed-clone'] }); steps.push(await read('cleared'));
+	await op('select', { ids: [] }); steps.push(await read('deselected'));
+	for (const s of steps) {
+		assert.ok(s.old, `${s.step}: the pipe's line is drawn`);
+		assert.deepEqual(s.new, s.old, `${s.step}: the line's class and stroke alike in both frames`);
+		assert.ok(s.pixels, `${s.step}: each frame's pixels alike`);
+	}
+	// the control: today's renderer marks the pipe, so the selected stroke is another than the resting one -- or this proves nothing
+	const [loaded, selected] = steps;
+	assert.match(selected.old.class, /\bselected\b/, 'today\'s renderer marks the selected pipe');
+	assert.notEqual(selected.old.stroke, loaded.old.stroke, 'and the selected pipe is drawn in another colour');
 	assert.deepEqual(tab.thrown, [], 'nothing failed');
 });

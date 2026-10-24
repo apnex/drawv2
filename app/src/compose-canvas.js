@@ -74,7 +74,7 @@ export function composeCanvas({ svg, scene: declared, defs, host, network = null
 	*/
 	const preview = kinds ? (m, ops) => plan(m, ops, { kinds }) : null;
 	const history = new Changes(model, { preview, apply: (ops) => applyAnswer(model, selection, ops) });
-	const renderer = new Renderer(model, svg, { parts, scene, platform: { lengthOf: pathLengthOf, settle: settleOf(svg) } });   // C-a: the plugins' canvas parts, their painters among them
+	const renderer = new Renderer(model, svg, { parts, scene, platform: { lengthOf: pathLengthOf, settle: settleOf(svg) }, foreign: foreignStates(scene) });   // C-a: the plugins' canvas parts, their painters among them
 	selection.subscribe(() => renderer.reflectSelection(selection.list()));   // the renderer owns the selected look
 	// C-e: where each kind's label sits -- the first part that says so
 	const labels = new LabelEditor({ svg, model, history, labelAt: (e) => parts.map((p) => p.labels?.labelAt?.(e)).find((x) => x) ?? null,
@@ -91,6 +91,28 @@ export function composeCanvas({ svg, scene: declared, defs, host, network = null
 	// the platform's events, as input events (dev/design/input/GESTURE-SYSTEM.md, L0), through input-capture (H26.3) -- once the root's own listeners are in
 	const listen = () => (capture ??= captureCanvas({ svg, scene, host, sink: input, picks: picksOf(parts), regions: regionsOf(parts) }));   // C-b: the plugins' picks; C-f: run mode's regions
 	return { scene, model, history, renderer, selection, labels, readout: shownReadout, snap, tools: heldTools, input, listen };
+}
+
+/*
+H26.4 (F1; dev/design/components/VECTOR-SCENE.md section 5.1, D5, D7) -- THE STATES OF AN ID THE RENDERER DID NOT DRAW. The network draws
+each pipe's line in its foreign layer under the pipe's own id, so the canvas's selection, hover and arming reach it (plugins/network/host.mjs
+`paint`): today's renderer found it by the page's getElementById. The renderer now holds what it drew alone, and hands any other id's state
+here, which marks the element bearing that id beneath the scene's foreign layers -- the first, in the layers' order, as the page's
+document found it -- whose content the plugins draw and the scene never writes. Nothing beneath a scene layer is written here (VS4).
+*/
+export function foreignStates(scene) {
+	const layers = scene.layers.filter((l) => l.foreign).map((l) => scene.layerElement(l.name));
+	const find = (id) => {
+		for (const layer of layers) {
+			const found = layer.querySelector(`[id="${id}"]`);
+			if (found?.getAttribute?.('id') === id) return found;   // the element bearing the id -- never a stand-in a layer offers
+		}
+		return null;
+	};
+	return {
+		setState(id, cls, on) { find(id)?.classList.toggle(cls, on); },
+		clearState(id, classes) { const found = find(id); if (found) for (const cls of classes) found.classList.remove(cls); },
+	};
 }
 
 // C-f (H19.34): the header's counts, each part's (`tally`: a rank, a word, a count) -- devices, links, zones, as the page has always said

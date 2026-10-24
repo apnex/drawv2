@@ -9,12 +9,18 @@ import { Renderer as OldRenderer } from './pre-scene/app/src/renderer.js';
 import { Renderer as NewRenderer, openCanvasScene } from '../../app/src/renderer.js';
 import { pathLengthOf, settleOf } from '../../app/src/painter.js';   // the page's measure and settle (D12)
 import { PRODUCT_CANVAS, CANVAS_LAYERS, CANVAS_SCENE } from '../../product/canvas.mjs';
-import { COMPOSED_KINDS, readModel } from '../../product/types.mjs';
+import { COMPOSED_KINDS } from '../../product/types.mjs';
 import { Reveal } from '../../plugins/simulation/reveal-painter.mjs';
+import { Model } from '../../model/model.mjs';
+import { Selection } from '../../app/src/selection.js';
+import { createPageNetwork } from '../../plugins/network/page.mjs';
+import { el as oldEl } from './pre-scene/app/src/painter.js';
+import { el as newEl } from '../../app/src/painter.js';
+import * as composition from '../../app/src/compose-canvas.js';   // H26.4 (F1): the hook it hands the renderer, where it exports one
 
 const which = new URL(import.meta.url).searchParams.get('which');
 const svg = document.getElementById('container');
-let model = null, renderer = null, reveal = null, scene = null;
+let model = null, renderer = null, reveal = null, scene = null, selection = null;
 const seen = new WeakMap();
 let serial = 0, before = [];
 const walk = (n, out = []) => { for (const c of n.children) { out.push(c); walk(c, out); } return out; };
@@ -38,14 +44,20 @@ window.side = {
 	load(json) {
 		if (scene) scene.close();
 		if (which === 'old') for (const g of layersOf()) g.replaceChildren();
-		model = readModel(JSON.parse(json), COMPOSED_KINDS);
+		// H26.4 (F1, F5): composed as the page composes it -- a Model on the page's network, a Selection the renderer reflects, and the network
+		// attached, drawing its pipes into the pipes layer -- then loaded, as the page loads a document
+		const net = createPageNetwork();
+		model = new Model({ kinds: COMPOSED_KINDS, attached: { network: net.network } });
+		selection = new Selection(model);
 		if (which === 'old') renderer = new OldRenderer(model, svg, { parts: PRODUCT_CANVAS });
 		else {
 			scene = openCanvasScene(CANVAS_SCENE, svg);
-			renderer = new NewRenderer(model, svg, { parts: PRODUCT_CANVAS, scene, platform: { lengthOf: pathLengthOf, settle: settleOf(svg) } });
+			renderer = new NewRenderer(model, svg, { parts: PRODUCT_CANVAS, scene, platform: { lengthOf: pathLengthOf, settle: settleOf(svg) }, foreign: composition.foreignStates?.(scene) });
 		}
+		selection.subscribe(() => renderer.reflectSelection(selection.list()));
+		net.attach({ model, renderer, selection, edit() {}, say() {}, el: which === 'old' ? oldEl : newEl, pipeLayer: which === 'old' ? document.getElementById('pipes') : scene.layerElement('pipes') });
 		reveal = new Reveal({ model, renderer, now: () => 0, onCaption() {} });
-		renderer.syncAll();
+		model.load(JSON.parse(json));
 		before = [];
 		return true;
 	},
@@ -57,6 +69,9 @@ window.side = {
 			case 'show': return void reveal.show(a.id);
 			case 'hide': return void reveal.hide(a.id);
 			case 'trace': reveal.trace = a.cfg; return undefined;
+			case 'select': return void selection.set(a.ids);
+			case 'state': return void renderer.setState(a.id, a.cls, a.on);
+			case 'clear': return void renderer.clearState(a.id, ...a.classes);
 			default: throw new Error(`no op ${name}`);
 		}
 	},
@@ -69,6 +84,8 @@ window.side = {
 		const tree = layersOf().map(ser);
 		return { exact: JSON.stringify({ tree, identity }), apart: JSON.stringify({ tree, identity }, withoutStyleAt) };
 	},
+	// a line's class and its stroke as computed -- a pipe's, which the network draws and the canvas marks
+	lineOf(id) { const l = document.getElementById(id); return l ? { class: l.getAttribute('class'), stroke: getComputedStyle(l).stroke } : null; },
 	length(id) { const el = document.getElementById(id); return el && typeof el.getTotalLength === 'function' ? el.getTotalLength() : null; },
 	attribute(id, name) { return document.getElementById(id)?.getAttribute(name) ?? null; },
 	finish() { for (const an of document.getAnimations()) an.finish(); return true; },

@@ -53,6 +53,9 @@ test('H26.4 (acceptance step 4): over every document, today\'s renderer and the 
 	const n = (label) => reached.get(label) ?? 0;
 	assert.ok(n('direct a link forward') >= 80 && n('reveal shows') >= 120 && glyphs > 150, `heads gained ${n('direct a link forward')}, reveals ${n('reveal shows')}, glyph lookups ${glyphs}`);
 	for (const kind of ['link', 'node', 'zone', 'group', 'pipe']) assert.ok(n(`delete a ${kind}`) > 0 && n(`put the ${kind} back`) > 0, `a ${kind} deleted and put back`);
+	// H26.4 (F1, F5): a pipe the network draws, selected, hovered, armed and cleared -- a hand pipe on every document, a link's pipe where one is
+	assert.equal(n('a hand pipe put'), BOARDS.length * 2, 'a hand pipe on every document');
+	assert.ok(n('select a pipe') > BOARDS.length * 2 && n('clear its hover and arming') === n('select a pipe'), `pipes selected ${n('select a pipe')} times`);
 });
 
 /*
