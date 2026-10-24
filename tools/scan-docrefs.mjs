@@ -106,6 +106,10 @@ const ALLOW = {
 	'*:zones/zone-grid.mjs': 'the zone grid, moved at WD-b2 (H19.46) to the layouts plugin\'s canvas part, layouts/layout-canvas.mjs; records written while it lived cite it',
 	'*:app/src/triggers.js': 'the click and drag triggers, deleted at H26.2: the press and its threshold moved to input-binding\'s gesture session (dev/design/components/INPUT-BINDING.md appendix B); records written while it lived cite it',
 	'dev/design/components/TESTER-EXPERIMENT-GAPS.md:./dist/index.js': 'the cold-agent experiment\'s gap log (B426), kept verbatim (A4): the path is inside each component\'s package, not draw\'s',
+	// H26.5 (RELEASES-0.2.md section 4) retired the capture parity mode with input-capture 0.2.0; records written while it lived cite it
+	'*:tests/input-capture-parity.test.js': 'the old capture and the adapter side by side, deleted at H26.5 when the adapter began handing a pointer\'s pointerId (RELEASES-0.2.md section 4, GR6); records written while it lived cite it',
+	'*:tests/fixtures/capture-parity-edges.json': 'the side-by-side\'s record of section 6.3\'s edges, deleted with it at H26.5; records written while it lived cite it',
+	'*:tests/fixtures/pre-capture/painter.js': 'a shim of the verbatim old capture, deleted with its copy at H26.5 when the parity mode was retired; records written while it lived cite it',
 	'dev/design/components/INPUT-BINDING.md:tests/triggers.test.js': 'the triggers\' tests, deleted with the module at H26.2 -- the press\'s to input-binding\'s own, the "decided once" test restated in tests/input-binding-move.test.js; the design names it as it stood',
 	'*:zones/zone-extent.mjs': 'the zone extent, moved at WD-b1 (H19.45) to the layouts plugin\'s table, layouts/layout-table.mjs; records written while it lived cite it',
 	'*:tools/migrate-schema.mjs': 'the format batch\'s dry run, deleted at H19.3 (B291) with the migration it proved; records written while it lived cite it',

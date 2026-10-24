@@ -21,7 +21,9 @@ a `lostpointercapture`, each reaching Input as a hover -- carries the `button` o
 with, the press's or release's or the next move's, as its timing falls; so a hover arriving after a press that took the pointer, or
 after a capture was lost, and before Input's next press, move, release, cancel or double click, has its `button` recorded as
 `capture-boundary` on both sides. Nothing in draw reads a hover's `button` (app/src/input.js `hover`, app/src/overlay.js), and the
-side-by-side holds it field for field over synthetic events (tests/input-capture-parity.test.js). The report counts them.
+gesture corpus, replayed byte-identical, holds what Input does with every hover it is handed. The report counts them.
+RESTATED at H26.5 (dev/design/components/RELEASES-0.2.md section 4): the side-by-side that held a hover's fields over synthetic events,
+tests/input-capture-parity.test.js, was retired with the parity mode, since the adapter now hands Input a pointer's `pointerId`.
 And a boundary event Chrome repeats on its own clock -- the pointerover it fires again when the drawing under a still pointer is
 redrawn, as a committed link redraws its end device, early or late as the redraw falls -- reaches Input as a hover identical to the
 one before it, with nothing between, and changes nothing there; such a repeat is folded into the one before, in Input's events and

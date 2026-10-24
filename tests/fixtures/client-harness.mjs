@@ -42,7 +42,6 @@ import { CANVAS, GAP } from '../../app/src/snap.js';
 import { Input } from '../../app/src/input.js';
 import { RUN_PRESSES } from '../../app/src/run-mode.js';
 import { captureCanvas } from '../../app/src/capture.js';
-import { parityCapture } from './capture-parity.mjs';   // H26.3: the old capture and the adapter side by side, when DRAW_CAPTURE_PARITY is set
 import { picksOf, regionsOf } from '../../app/src/pick.js';
 import { PRODUCT_CANVAS } from '../../product/canvas.mjs';
 import { networkInput } from '../../plugins/network/keys.mjs';
@@ -315,9 +314,9 @@ export function makeInput({ readOnly = false, bare = false, host: hostOverride =
 	if (readOnly) input.setReadOnly(true);
 	// L0: tests drive the page's events through capture, as a browser does -- Input itself takes only input events
 	const opened = { svg, scene, host, sink: input, picks: picksOf(parts), regions: regionsOf(parts) };   // C-b: the plugins' picks; C-f: run mode's regions, as the page composes them
-	// H26.3 (INPUT-CAPTURE.md section 5): through the listeners input-capture and the adapter add, as the page's events arrive; with
-	// DRAW_CAPTURE_PARITY naming a folder, the old capture beside it (acceptance step 4)
-	const capture = parityCapture(opened) ?? captureDispatch(opened);
+	// H26.3 (INPUT-CAPTURE.md section 5): through the listeners input-capture and the adapter add, as the page's events arrive. RESTATED at
+	// H26.5 (RELEASES-0.2.md section 4): the parity hook, which drove the old capture beside it when DRAW_CAPTURE_PARITY was set, is retired
+	const capture = captureDispatch(opened);
 
 	return {
 		input, capture, model, history, selection, svg, scene, commits, calls, restore, renderer, labels, tools, help, snap,

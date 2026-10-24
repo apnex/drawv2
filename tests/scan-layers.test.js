@@ -301,6 +301,18 @@ re-points it.
 */
 const MAN = 'tools/layers.mjs';
 const RECORDS = ['dev/BACKLOG.md', 'dev/BOARD.md', 'dev/DECISIONS.md'];   // what tools/exceptions.mjs resolves cites against
+/*
+H26.5: THE FALSIFIERS' OWN VERBATIM FIXTURE, planted in a copy with its entry: a copy importing a name through each of two shims, each shim
+re-exporting a live module's name and nothing else -- the form RULES.L4.verbatim admits (tools/scan-layers.mjs L4). V1 to V9 each break
+one part of it; the control VF plants it whole, and must pass.
+*/
+const VF = 'tests/fixtures/verbatim-falsifier';
+const VERBATIM = [
+	{ file: `${VF}/copy.js`, create: "// a module kept verbatim: its relative imports answered by the shims beside it\nimport { hitWith } from './pick.js';\nimport { el } from './painter.js';\nexport const copied = [hitWith, el];\n" },
+	{ file: `${VF}/pick.js`, create: "// a shim: the one name the copy imports from './pick.js', re-exported from the live module\nexport { hitWith } from '../../../app/src/pick.js';\n" },
+	{ file: `${VF}/painter.js`, create: "export { el } from '../../../app/src/painter.js';\n" },
+	{ file: MAN, replace: ['\tL4: { verbatim: [\n', `\tL4: { verbatim: [\n\t\t{ copy: '${VF}/copy.js', shims: ['${VF}/painter.js', '${VF}/pick.js'], cites: ['H26-14', 'H26.5'], reason: 'the falsifiers\\' own copy and shims', trigger: 'the falsifiers are restated' },\n`] },
+];
 const MUTANTS = [
 	// RESTATED at H21.8 (B341): model/invariants.mjs is core now, so M1 imports model/ (L3) and network/ (L2)
 	{ id: 'M1', rule: 'L2', also: ['L3'], edits: [{ file: 'kernel/spec.mjs', append: "\nimport { violations } from '../model/invariants.mjs';\nimport { splitAtBend } from '../plugins/network/link-rules.mjs';\n" }] },
@@ -429,28 +441,30 @@ const MUTANTS = [
 	{ id: 'P13', rule: 'L1', needle: /SCANNER_ROOTS\.deadMethods no longer reaches plugins\/simulation\/kinds\.mjs, which MOVED took out of a folder it names/,
 		edits: [{ file: MAN, replace: ["deadMethods: ['server', 'planner', 'model', 'engine', 'kernel', 'plugins/simulation'],", "deadMethods: ['server', 'planner', 'model', 'engine', 'kernel'],"] }] },
 	/*
-	H26.3's verification (V6): L4's one named exception, RULES.L4.verbatim -- the verbatim old capture and its two shims. V1 drops the
-	entry, and both shims are barrels again; V2 has another test module import a shim; V3 has a shim declare a name of its own; V4 one
-	import a module; V5 names a product module as a copy; V6 names a shim the copy does not import; V7 cites an id nothing holds, in a
-	copy holding the records the cites resolve against.
+	H26.3's verification (V6): L4's one named exception, RULES.L4.verbatim -- a verbatim copy and its shims. V1 drops the entries, and the
+	shims are barrels again; V2 has another test module import a shim; V3 has a shim declare a name of its own; V4 one import a module; V5
+	names a product module as a copy; V6 names a shim the copy does not import; V7 cites an id nothing holds, in a copy holding the records
+	the cites resolve against; V8 names a file that is no module; V9 names no shim.
+	RESTATED at H26.5 (dev/design/components/RELEASES-0.2.md section 4): against a fixture of their own -- VERBATIM, a copy and two shims
+	each run plants with its entry -- since the capture oracle they were written against left with the parity mode it served.
 	*/
-	{ id: 'V1', rule: 'L4', needle: /barrel tests\/fixtures\/pre-capture\/pick\.js: 1, recorded 0 -- RISE/, edits: [{ file: MAN, replace: ["L4: { verbatim: [", "L4: { verbatim: [] || ["] }] },
-	{ id: 'V2', rule: 'L4', needle: /tests\/__v2\.mjs -> tests\/fixtures\/pre-capture\/pick\.js: 1, recorded 0 -- RISE/,
-		edits: [{ file: 'tests/__v2.mjs', create: "import { hitWith } from './fixtures/pre-capture/pick.js';\nexport const __v2 = hitWith;\n" }] },
-	{ id: 'V3', rule: 'L4', needle: /tests\/fixtures\/pre-capture\/pick\.js is no shim/, edits: [{ file: 'tests/fixtures/pre-capture/pick.js', append: 'export const extra = 1;\n' }] },
-	{ id: 'V4', rule: 'L4', needle: /tests\/fixtures\/pre-capture\/painter\.js is no shim/, edits: [{ file: 'tests/fixtures/pre-capture/painter.js', append: "import '../../../app/src/pick.js';\n" }] },
+	{ id: 'V1', rule: 'L4', needle: /barrel tests\/fixtures\/verbatim-falsifier\/pick\.js: 1, recorded 0 -- RISE/, edits: [...VERBATIM, { file: MAN, replace: ["L4: { verbatim: [", "L4: { verbatim: [] || ["] }] },
+	{ id: 'V2', rule: 'L4', needle: /tests\/__v2\.mjs -> tests\/fixtures\/verbatim-falsifier\/pick\.js: 1, recorded 0 -- RISE/,
+		edits: [...VERBATIM, { file: 'tests/__v2.mjs', create: "import { hitWith } from './fixtures/verbatim-falsifier/pick.js';\nexport const __v2 = hitWith;\n" }] },
+	{ id: 'V3', rule: 'L4', needle: /tests\/fixtures\/verbatim-falsifier\/pick\.js is no shim/, edits: [...VERBATIM, { file: `${VF}/pick.js`, append: 'export const extra = 1;\n' }] },
+	{ id: 'V4', rule: 'L4', needle: /tests\/fixtures\/verbatim-falsifier\/painter\.js is no shim/, edits: [...VERBATIM, { file: `${VF}/painter.js`, append: "import '../../../app/src/pick.js';\n" }] },
 	{ id: 'V5', rule: 'L4', needle: /names app\/src\/capture\.js, a module of layer canvas -- a verbatim copy and its shims are tests' alone/,
-		edits: [{ file: MAN, replace: ["{ copy: 'tests/fixtures/pre-capture/capture.js',", "{ copy: 'app/src/capture.js',"] }] },
-	{ id: 'V6', rule: 'L4', needle: /tests\/fixtures\/pre-capture\/capture\.js imports no tests\/fixtures\/pre-capture\/stray\.js -- a stale shim/,
-		edits: [{ file: 'tests/fixtures/pre-capture/stray.js', create: "export { hitWith } from '../../../app/src/pick.js';\n" },
-			{ file: MAN, replace: ["'tests/fixtures/pre-capture/pick.js'], cites:", "'tests/fixtures/pre-capture/pick.js', 'tests/fixtures/pre-capture/stray.js'], cites:"] }] },
-	{ id: 'V7', rule: 'L4', needle: /RULES\.L4\.verbatim tests\/fixtures\/pre-capture\/capture\.js: cites H99-9, which is no row, no board item, and no ruling id/,
-		edits: [...RECORDS.map((f) => ({ file: f, create: fs.readFileSync(path.join(root, f), 'utf8') })), { file: MAN, replace: ["cites: ['H26-8', 'H26.3'],", "cites: ['H26-8', 'H99-9'],"] }] },
+		edits: [...VERBATIM, { file: MAN, replace: [`{ copy: '${VF}/copy.js',`, "{ copy: 'app/src/capture.js',"] }] },
+	{ id: 'V6', rule: 'L4', needle: /tests\/fixtures\/verbatim-falsifier\/copy\.js imports no tests\/fixtures\/verbatim-falsifier\/stray\.js -- a stale shim/,
+		edits: [...VERBATIM, { file: `${VF}/stray.js`, create: "export { hitWith } from '../../../app/src/pick.js';\n" },
+			{ file: MAN, replace: [`'${VF}/pick.js'], cites:`, `'${VF}/pick.js', '${VF}/stray.js'], cites:`] }] },
+	{ id: 'V7', rule: 'L4', needle: /RULES\.L4\.verbatim tests\/fixtures\/verbatim-falsifier\/copy\.js: cites H99-9, which is no row, no board item, and no ruling id/,
+		edits: [...VERBATIM, ...RECORDS.map((f) => ({ file: f, create: fs.readFileSync(path.join(root, f), 'utf8') })), { file: MAN, replace: ["cites: ['H26-14', 'H26.5'],", "cites: ['H26-14', 'H99-9'],"] }] },
 	// and an entry naming a file that is no module, or no shim at all
-	{ id: 'V8', rule: 'L4', needle: /names tests\/fixtures\/pre-capture\/gone\.js, which is not a module in the scan/,
-		edits: [{ file: MAN, replace: ["'tests/fixtures/pre-capture/pick.js'], cites:", "'tests/fixtures/pre-capture/pick.js', 'tests/fixtures/pre-capture/gone.js'], cites:"] }] },
-	{ id: 'V9', rule: 'L4', needle: /RULES\.L4\.verbatim tests\/fixtures\/pre-capture\/capture\.js names no shim/,
-		edits: [{ file: MAN, replace: ["shims: ['tests/fixtures/pre-capture/painter.js', 'tests/fixtures/pre-capture/pick.js'],", "shims: [],"] }] },
+	{ id: 'V8', rule: 'L4', needle: /names tests\/fixtures\/verbatim-falsifier\/gone\.js, which is not a module in the scan/,
+		edits: [...VERBATIM, { file: MAN, replace: [`'${VF}/pick.js'], cites:`, `'${VF}/pick.js', '${VF}/gone.js'], cites:`] }] },
+	{ id: 'V9', rule: 'L4', needle: /RULES\.L4\.verbatim tests\/fixtures\/verbatim-falsifier\/copy\.js names no shim/,
+		edits: [...VERBATIM, { file: MAN, replace: [`shims: ['${VF}/painter.js', '${VF}/pick.js'],`, 'shims: [],'] }] },
 ];
 
 /*
@@ -460,6 +474,8 @@ imports the component, the package and a subpath, and a test may too -- tools an
 const CONTROLS = [
 	// H26.3's verification (V6): the records copied, so the cites of RULES.L4.verbatim (and RATCHET_REASONS) are resolved, and pass
 	{ id: 'V0', edits: RECORDS.map((f) => ({ file: f, create: fs.readFileSync(path.join(root, f), 'utf8') })) },
+	// H26.5: the falsifiers' own fixture, planted whole -- with the records, so its cites resolve -- passes, or V1 to V9 prove nothing
+	{ id: 'VF', edits: [...VERBATIM, ...RECORDS.map((f) => ({ file: f, create: fs.readFileSync(path.join(root, f), 'utf8') }))] },
 	{ id: 'C0', edits: [{ file: 'kernel/geometry.mjs', append: "\nimport { openGrid as __og } from '@apnex/snap-grid';\n" },
 		{ file: 'kernel/spec.mjs', append: "\nimport { checkGridShape as __k } from '@apnex/snap-grid/conformance';\n" },
 		{ file: 'tests/__c0.test.js', create: "import { openGrid } from '@apnex/snap-grid';\nexport const __c0 = openGrid;\n" }] },

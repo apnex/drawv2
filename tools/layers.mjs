@@ -556,11 +556,10 @@ export const RULES = {
 	the renderer's four imports of the core answered by shims; and the capture oracle's painter shim re-exports the verbatim painter's
 	`toCanvas`, so the old capture keeps the old conversion while either oracle stands; and a third, today's server/svg.mjs, at
 	tests/fixtures/pre-export/, so the export runs both ways on every gate, its import of the renderer answered by the verbatim one.
+	AMENDED H26.5 (dev/design/components/RELEASES-0.2.md section 4): the capture oracle's entry left with its copy and its two shims, the
+	capture parity mode retired when the adapter began handing a pointer's `pointerId`; the renderer's and the export's stand.
 	*/
 	L4: { verbatim: [
-		{ copy: 'tests/fixtures/pre-capture/capture.js', shims: ['tests/fixtures/pre-capture/painter.js', 'tests/fixtures/pre-capture/pick.js'], cites: ['H26-8', 'H26.3'],
-			reason: 'app/src/capture.js as it stood before H26.3, kept byte for byte (its SHA-256 pinned by tests/input-capture-parity.test.js) so the side-by-side runs its old side on every gate; its imports of ./pick.js and ./painter.js are answered by shims re-exporting the live modules\' names',
-			trigger: 'the verbatim copy is deleted' },
 		{ copy: 'tests/fixtures/pre-scene/app/src/renderer.js', shims: ['tests/fixtures/pre-scene/kernel/renderer.mjs', 'tests/fixtures/pre-scene/kernel/spec.mjs', 'tests/fixtures/pre-scene/model/model.mjs', 'tests/fixtures/pre-scene/model/stacking.mjs'], cites: ['H26-11', 'H26.4'],
 			reason: 'app/src/renderer.js as it stood before H26.4, kept byte for byte beside its app/src/painter.js (both SHA-256 pinned by tests/vector-scene-parity.test.js), so the side-by-side and the trace test run their old side on every gate; the painter copy is a module of its own, declaring what it exports and importing nothing, and the renderer copy\'s four imports of the core are answered by shims re-exporting the live modules\' names',
 			trigger: 'the verbatim copies are deleted (H26.8)' },
