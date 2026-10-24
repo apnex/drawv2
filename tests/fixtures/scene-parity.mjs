@@ -61,11 +61,11 @@ import { CANVAS_SCENE } from '../../product/canvas.mjs';
 import { svgDocument as newExport } from '../../server/svg.mjs';
 import { svgDocument as oldExport } from './pre-export/server/svg.mjs';
 import * as newVisuals from '../../app/src/editing-visuals.js';
-import * as composition from '../../app/src/compose-canvas.js';
+import { foreignStates } from '../../app/src/compose-canvas.js';   // H26.4 (F1): the composition's hook, by name -- a missing export fails here
 
 const ROOT = path.resolve(import.meta.dirname, '..', '..');
 // H26.4 (F1): what the composition hands the renderer for an id it did not draw -- the network's pipe lines, in their foreign layer
-export const NEW = { Renderer: NewRenderer, openCanvasScene, CANVAS_SCENE, svgDocument: newExport, visuals: newVisuals, foreignStates: composition.foreignStates };
+export const NEW = { Renderer: NewRenderer, openCanvasScene, CANVAS_SCENE, svgDocument: newExport, visuals: newVisuals, foreignStates };
 export const OLD = { Renderer: OldRenderer, painter: oldPainter, svgDocument: oldExport };
 
 // ---- a DOM with the platform's semantics
@@ -208,7 +208,7 @@ export function pageSideBySide(name, doc, { measure = false, impl = NEW } = {}) 
 	let rA;
 	globalThis.document = tDoc;
 	try { rA = new OLD.Renderer(mA, tRoot, { parts: PRODUCT_CANVAS }); } finally { globalThis.document = prev; }
-	const rB = new impl.Renderer(mB, dRoot, { parts: PRODUCT_CANVAS, scene: counted, platform: measure ? { lengthOf, settle: () => {} } : {}, foreign: impl.foreignStates?.(scene) });
+	const rB = new impl.Renderer(mB, dRoot, { parts: PRODUCT_CANVAS, scene: counted, platform: measure ? { lengthOf, settle: () => {} } : {}, foreign: impl.foreignStates(scene) });
 	const sides = { A: { m: mA, r: rA, root: tRoot, doc: tDoc, sel: pA.sel }, B: { m: mB, r: rB, root: dRoot, doc: dDoc, sel: pB.sel } };
 	sides.A.host = pA.net.attach({ model: mA, renderer: rA, selection: pA.sel, edit() {}, say() {}, el: OLD.painter.el, pipeLayer: tRoot.children.find((g) => g.attrs.id === 'pipes') });
 	sides.B.host = pB.net.attach({ model: mB, renderer: rB, selection: pB.sel, edit() {}, say() {}, el: pageEl, pipeLayer: scene.layerElement('pipes') });

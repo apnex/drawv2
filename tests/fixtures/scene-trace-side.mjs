@@ -16,7 +16,7 @@ import { Selection } from '../../app/src/selection.js';
 import { createPageNetwork } from '../../plugins/network/page.mjs';
 import { el as oldEl } from './pre-scene/app/src/painter.js';
 import { el as newEl } from '../../app/src/painter.js';
-import * as composition from '../../app/src/compose-canvas.js';   // H26.4 (F1): the hook it hands the renderer, where it exports one
+import { foreignStates } from '../../app/src/compose-canvas.js';   // H26.4 (F1): the hook the composition hands the renderer, by name
 
 const which = new URL(import.meta.url).searchParams.get('which');
 const svg = document.getElementById('container');
@@ -52,7 +52,7 @@ window.side = {
 		if (which === 'old') renderer = new OldRenderer(model, svg, { parts: PRODUCT_CANVAS });
 		else {
 			scene = openCanvasScene(CANVAS_SCENE, svg);
-			renderer = new NewRenderer(model, svg, { parts: PRODUCT_CANVAS, scene, platform: { lengthOf: pathLengthOf, settle: settleOf(svg) }, foreign: composition.foreignStates?.(scene) });
+			renderer = new NewRenderer(model, svg, { parts: PRODUCT_CANVAS, scene, platform: { lengthOf: pathLengthOf, settle: settleOf(svg) }, foreign: foreignStates(scene) });
 		}
 		selection.subscribe(() => renderer.reflectSelection(selection.list()));
 		net.attach({ model, renderer, selection, edit() {}, say() {}, el: which === 'old' ? oldEl : newEl, pipeLayer: which === 'old' ? document.getElementById('pipes') : scene.layerElement('pipes') });

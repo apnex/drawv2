@@ -452,6 +452,28 @@ B268 -- A DOWN LINK IS SELECTED WHEREVER IT IS CLICKED. It is drawn dotted, and 
 not its gaps: measured live, 10 of 29 clicks along a down link selected it, the rest reaching the pipe beneath. Each link
 now has an invisible twin, the same path and width with no dash, which takes the click for it -- the visual unchanged.
 */
+/*
+H26.4 (the verifier's V2-1; F1): the lab's composition marks a pipe it did not draw, as the product page's does -- a hand pipe no link runs
+over, clicked through real input, is drawn selected: its line classed `selected`, its stroke the selected pipe's token, not its rest.
+*/
+test('H26.4 (V2-1): a hand pipe clicked in the lab is drawn selected -- the composition hands the renderer what marks it', { skip: SKIP }, async () => {
+	const p = await open('detour');
+	try {
+		const free = await p.run(`(() => { const h = [...document.querySelectorAll('#pipes .pipe-of:not(.under) .pipe-hit')][0]; if (!h) return null;
+			return { id: h.getAttribute('data-select'), at: [(Number(h.getAttribute('x1')) + Number(h.getAttribute('x2'))) / 2, (Number(h.getAttribute('y1')) + Number(h.getAttribute('y2'))) / 2] }; })()`);
+		assert.ok(free, 'precondition: the board shows a hand pipe no link runs over');
+		const line = () => p.run(`(() => { const l = document.getElementById('${free.id}'); return { class: l.getAttribute('class'), stroke: getComputedStyle(l).stroke }; })()`);
+		const token = await p.run(`(() => { const d = document.createElement('div'); d.style.color = 'var(--tok-network-pipe-selected)'; document.body.append(d); const c = getComputedStyle(d).color; d.remove(); return c; })()`);
+		const rest = await line();
+		assert.notEqual(rest.stroke, token, 'control: the resting stroke is another than the selected token');
+		await p.click(free.at[0], free.at[1]);
+		assert.deepEqual(await p.run('lab.input.selection.list()'), [free.id], 'the click selected the pipe');
+		const selected = await line();
+		assert.match(selected.class, /\bselected\b/, `its line is classed selected: ${selected.class}`);
+		assert.equal(selected.stroke, token, 'and drawn in the selected pipe\'s colour, not its resting one');
+	} finally { await p.close(); }
+});
+
 test('B268: every click along a down link selects it, and the link still looks the same', { skip: SKIP }, async () => {
 	const p = await open('cross');
 	try {

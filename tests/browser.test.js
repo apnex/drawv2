@@ -59,6 +59,17 @@ function networkBoard() {
 	};
 }
 /*
+H26.4 (the verifier's V2-1): a board of its own with a free hand pipe -- two devices and the pipe between them, no link over it -- so
+selecting it on the real page is no other test's state.
+*/
+const PIPE_DIAGRAM = '0000000000f50001';
+const FREE_PIPE = pipeEntity('node-f50001', 'node-f50002', 'hand');
+function pipeBoard() {
+	const host = (id, x, y) => ({ id, name: id.slice(-2), type: 'host', shape: 'square', x, y });
+	return { meta: { id: PIPE_DIAGRAM, name: 'pipe', version: 1, schema: 3 }, layouts: heldLayouts(),
+		nodes: [host('node-f50001', -240, 0), host('node-f50002', 240, 0)], links: [], pipes: [FREE_PIPE], zones: [], groups: [], selection: [] };
+}
+/*
 H24.8 (B361): a board of its own for the published SVG's parity with view mode -- every thing a diagram draws whose look the two
 could disagree on. RESTATED at H25.0b (B366): the board is tools/probe/boards.mjs's, shared with the parity probe, and holds a down
 link with a head and a group, which H25.0's review found it lacked (finding 3).
@@ -197,6 +208,7 @@ before(async () => {
 	fs.writeFileSync(path.join(dir, `${K8_DIAGRAM}.json`), JSON.stringify({ ...fixture(), meta: { ...fixture().meta, id: K8_DIAGRAM, name: 'k8' } }));
 	fs.writeFileSync(path.join(dir, `${NET_DIAGRAM}.json`), JSON.stringify(networkBoard()));
 	fs.writeFileSync(path.join(dir, `${PARITY_DIAGRAM}.json`), JSON.stringify(parityBoard()));
+	fs.writeFileSync(path.join(dir, `${PIPE_DIAGRAM}.json`), JSON.stringify(pipeBoard()));
 	port = 8200 + (process.pid % 300);
 	cdp = 9600 + (process.pid % 300);
 
@@ -1434,6 +1446,38 @@ test('H26.4 (F2): the name editor stands exactly where the old conversion put it
 			assert.ok(g.same, `${g.id}: the scene's toScreen answers the old conversion's point exactly`);
 			assert.deepEqual({ left: g.left, top: g.top }, { left: g.wasLeft, top: g.wasTop }, `${g.id}: its editor where the old conversion put it`);
 		}
+	} finally { await t.close(); }
+});
+
+/*
+H26.4 (the verifier's V2-1; F1) -- THE REAL COMPOSITION MARKS A PIPE IT DID NOT DRAW. The network draws each pipe's line in its own layer
+under the pipe's id, and the renderer marks the states of an id it did not draw through the hook composeCanvas hands it
+(app/src/compose-canvas.js `foreignStates`). The side-by-side hands its own sides that hook, so only the page itself can show the
+composition hands it: a free hand pipe clicked through real input is drawn selected -- its line classed `selected`, its stroke the
+selected pipe's token rather than the resting stroke -- and plain again once deselected.
+*/
+test('H26.4 (V2-1): a free hand pipe clicked on the real product page is drawn selected, and plain again once deselected', { skip: SKIP }, async () => {
+	const t = await attach(`http://127.0.0.1:${port}/${PIPE_DIAGRAM}`);
+	try {
+		await until(t, `document.querySelector('[data-select="${FREE_PIPE.id}"]') ? 1 : 0`, 8000);
+		await t.eval(`window.draw.input.setReadOnly(false), 1`);
+		const line = () => t.eval(`JSON.stringify((() => { const l = document.getElementById('${FREE_PIPE.id}'); return { class: l.getAttribute('class'), stroke: getComputedStyle(l).stroke, selection: window.draw.selection.list() }; })())`).then(JSON.parse);
+		const token = await t.eval(`(() => { const d = document.createElement('div'); d.style.color = 'var(--tok-network-pipe-selected)'; document.body.append(d); const c = getComputedStyle(d).color; d.remove(); return c; })()`);
+		const rest = await line();
+		assert.deepEqual([rest.class, rest.selection], ['pipe pipe-hand', []], 'control: the pipe rests unselected');
+		assert.notEqual(rest.stroke, token, 'control: the resting stroke is another than the selected token, or this proves nothing');
+		// a click on the pipe's hit line, at its middle, through the page's own input
+		const at = JSON.parse(await t.eval(`JSON.stringify((() => { const r = document.querySelector('[data-select="${FREE_PIPE.id}"]').getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; })())`));
+		for (const type of ['mouseMoved', 'mousePressed', 'mouseReleased']) { await t.send('Input.dispatchMouseEvent', { type, x: at[0], y: at[1], button: type === 'mouseMoved' ? 'none' : 'left', buttons: type === 'mousePressed' ? 1 : 0, clickCount: 1 }); await sleep(30); }
+		await until(t, `window.draw.selection.list().includes('${FREE_PIPE.id}') ? 1 : 0`, 3000);
+		const selected = await line();
+		assert.deepEqual(selected.selection, [FREE_PIPE.id], 'the click selected the pipe');
+		assert.match(selected.class, /\bselected\b/, `its line is classed selected: ${selected.class}`);
+		assert.equal(selected.stroke, token, 'and drawn in the selected pipe\'s colour, not its resting one');
+		await t.eval(`window.draw.selection.clear(), 1`);
+		await sleep(100);
+		const cleared = await line();
+		assert.deepEqual({ ...cleared, class: cleared.class.replace(/ hover\b/, '') }, rest, 'deselected, it rests again -- the pointer still over it may keep its hover');
 	} finally { await t.close(); }
 });
 
