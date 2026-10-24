@@ -1747,6 +1747,16 @@ test('H26.5 (B413): on the product page a focus loss hides the zone grid, drops 
 		await focusLost(); await sleep(60);
 		assert.equal((await seen('node-ab00a1')).armed, false, 'the focus loss stands in for Alt\'s release: the device disarmed');
 		await key('keyUp', 'Alt', 'AltLeft', 18, 0);
+
+		// the window's own focus loss alone: a field's -- the header's name field, focused and left -- reaches no blur of Input's, a blur
+		// event not bubbling to the window the capture listens on; the window's, after it, the control
+		const blurs = () => t.eval(`window.__inputBlurs`);
+		await t.eval(`(() => { const i = window.draw.input, f = i.blur.bind(i); window.__inputBlurs = 0; i.blur = (e) => { window.__inputBlurs++; return f(e); }; return 1; })()`);
+		await t.eval(`(() => { const n = document.getElementById('diagram-name'); n.focus(); n.blur(); return document.activeElement === n ? 0 : 1; })()`);
+		assert.equal(await blurs(), 0, 'a field losing focus is no focus loss of the page\'s');
+		await focusLost();
+		assert.equal(await blurs(), 1, 'control: the window\'s reaches Input\'s blur, once');
+		await t.eval(`(delete window.draw.input.blur, 1)`);
 	} finally {
 		if (zoneId) {
 			await t.eval(`(() => { const z = window.draw.model.get('zone', '${zoneId}'); if (z) window.draw.history.commit({ label: 'unzone', entries: [{ op: 'del', kind: 'zone', entity: { ...z } }] }); return 1; })()`).catch(() => {});
