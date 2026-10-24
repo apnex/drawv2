@@ -153,3 +153,41 @@ test('B238: a child that outlives its parent is waited on too, and nothing recre
 	assert.equal(fs.existsSync(dir), false,
 		'the directory came back: the teardown removed it while a child of the stopped process was still writing');
 });
+
+/*
+The verifier's N1 (H26.4): lab-browser and page-matrix were found leaving a Chrome and their servers running. Each spawns them as groups and
+stops them in its `after` hook -- but a test process stopped before that hook runs (the runner cancelling a file, Ctrl-C, a kill sent to
+it) never ran it, and the groups, detached, outlived it. So the fixture keeps every group it spawned, and a process that exits, or is
+stopped by SIGTERM, SIGINT or SIGHUP, kills each one still standing first; a signal is then raised again, so the process still dies of it.
+A SIGKILL can be caught by nothing, and is not claimed.
+*/
+function harness(how) {
+	const fixture = JSON.stringify(new URL('./fixtures/teardown.mjs', import.meta.url).href);
+	const script = `
+		const { spawnGroup } = await import(${fixture});
+		const group = spawnGroup('sh', ['-c', 'sleep 600 & sleep 600 & wait'], { stdio: 'ignore' });
+		process.stdout.write(group.pid + ' ready\\n');
+		${how === 'exit' ? "setTimeout(() => process.exit(0), 200);" : 'setInterval(() => {}, 1000);'}
+	`;
+	return spawn(process.execPath, ['--input-type=module', '-e', script], { stdio: ['ignore', 'pipe', 'inherit'] });
+}
+const groupGone = (pgid) => { try { process.kill(-pgid, 0); return false; } catch (e) { return e.code === 'ESRCH'; } };
+for (const how of ['SIGTERM', 'SIGINT', 'exit']) {
+	test(`N1: a harness ${how === 'exit' ? 'exiting before its teardown' : `stopped by ${how} before its teardown`} leaves none of its groups behind`, { timeout: 15000 }, async () => {
+		const child = harness(how);
+		const pgid = await new Promise((resolve, reject) => {
+			let out = '';
+			child.stdout.on('data', (d) => { out += d; const m = out.match(/^(\d+) ready/); if (m) resolve(Number(m[1])); });
+			child.once('exit', () => reject(new Error(`the harness exited before it was ready: ${out}`)));
+		});
+		try {
+			assert.equal(groupGone(pgid), false, 'control: the group stands while its harness runs');
+			const exited = new Promise((resolve) => child.once('exit', (code, signal) => resolve({ code, signal })));
+			if (how !== 'exit') child.kill(how);
+			const end = await exited;
+			assert.deepEqual(end, how === 'exit' ? { code: 0, signal: null } : { code: null, signal: how }, 'the harness ends as it would have, of the signal if signalled');
+			for (let i = 0; i < 40 && !groupGone(pgid); i++) await new Promise((r) => setTimeout(r, 50));
+			assert.equal(groupGone(pgid), true, 'and its group with it');
+		} finally { try { process.kill(-pgid, 'SIGKILL'); } catch { /* gone */ } try { child.kill('SIGKILL'); } catch { /* gone */ } }
+	});
+}

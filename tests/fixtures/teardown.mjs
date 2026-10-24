@@ -48,14 +48,35 @@ const groupAlive = (pgid) => {
 	try { process.kill(-pgid, 0); return true; } catch (e) { return e.code === 'EPERM'; }
 };
 
+/*
+The verifier's N1 (H26.4): a harness stopped before its `after` hook runs -- the runner cancelling a file, Ctrl-C, a kill sent to the
+test process -- never stopped its groups, and being detached they outlived it: a Chrome and its servers left running. So every group
+spawned here is kept until it is stopped, and a process that exits, or is stopped by SIGTERM, SIGINT or SIGHUP, first kills each one
+still standing; a signal is then raised again, with no handler left, so the process dies of it as it would have. SIGKILL can be caught
+by nothing (tests/teardown.test.js N1).
+*/
+const standing = new Set();
+let guarded = false;
+const killStanding = () => { for (const pgid of standing) { try { process.kill(-pgid, 'SIGKILL'); } catch { /* gone */ } } standing.clear(); };
+function guard() {
+	if (guarded) return;
+	guarded = true;
+	process.on('exit', killStanding);
+	for (const signal of ['SIGTERM', 'SIGINT', 'SIGHUP']) process.once(signal, () => { killStanding(); process.kill(process.pid, signal); });
+}
+
 export function spawnGroup(cmd, args, opts = {}) {
 	const child = spawn(cmd, args, { ...opts, detached: true });
 	child.drawGroup = true;
+	if (child.pid !== undefined) { guard(); standing.add(child.pid); }
 	return child;
 }
 
 async function stopGroup(proc, graceMs) {
 	const pgid = proc.pid;
+	try { await stopGroupNow(pgid, graceMs); } finally { standing.delete(pgid); }
+}
+async function stopGroupNow(pgid, graceMs) {
 	if (!groupAlive(pgid)) return;
 	try { process.kill(-pgid, 'SIGTERM'); } catch { /* already gone */ }
 	const soft = Date.now() + graceMs;
