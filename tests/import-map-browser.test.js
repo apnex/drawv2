@@ -15,6 +15,9 @@ facts, the page refusing the synthetic pointer so takePointer answers false, and
 AMENDED H26.4 (dev/design/components/VECTOR-SCENE.md acceptance step 7): and the fourth, vector-scene, resolved by its one name and
 working in Chrome -- a scene opened on an <svg> of the page, an item put and the element of one of its shapes mapped back to it, a
 screen point converted through the root's screen transform and back, and the root left as found once closed.
+AMENDED H26.5 (dev/design/components/RELEASES-0.2.md section 4, the common steps): input-capture at 0.2.0, its release read by the
+version installed; its capture lists `blur`, and a focus loss dispatched on the key source makes one `blur` fact, every modifier false
+and its `pointerId` null; every fact carries the event's own `time`.
 */
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
@@ -79,15 +82,17 @@ const THROUGH_THE_MAP = `(async () => {
 	const el = document.createElement('div');
 	document.body.append(el);
 	const facts = [], taken = [];
-	const capture = ic.openCapture({ surface: el, keys: el, toDrawing: (s) => ({ x: s.x / 2, y: s.y / 2 }), hit: (t) => t === el, focus: (t) => t === el,
+	// H26.5: input-capture 0.2.0 -- the key source's focus loss listed, as draw lists it
+	const capture = ic.openCapture({ surface: el, keys: el, listen: ['blur'], toDrawing: (s) => ({ x: s.x / 2, y: s.y / 2 }), hit: (t) => t === el, focus: (t) => t === el,
 		deliver: (fact, reply) => { facts.push(fact); if (fact.type === 'down') taken.push(reply.takePointer()); if (fact.type === 'key-down') reply.claim(); } });
 	el.dispatchEvent(new PointerEvent('pointerdown', { clientX: 10, clientY: 20, button: 0, buttons: 1, pointerId: 7, pointerType: 'mouse', shiftKey: true }));
 	const kd = new KeyboardEvent('keydown', { key: 'a', code: 'KeyA', cancelable: true });
 	el.dispatchEvent(kd);
+	el.dispatchEvent(new FocusEvent('blur'));
 	capture.capture.close();
 	el.dispatchEvent(new PointerEvent('pointermove', { clientX: 1, clientY: 1 }));
 	el.remove();
-	const cap = { exports: Object.keys(ic).sort(), facts: facts.map((f) => [f.type, f.at, f.screen, f.hit, f.focus, f.button, f.pointerId, f.pointerType, f.key, f.code, f.shiftKey, Object.isFrozen(f)]),
+	const cap = { exports: Object.keys(ic).sort(), facts: facts.map((f) => [f.type, f.at, f.screen, f.hit, f.focus, f.button, f.pointerId, f.pointerType, f.key, f.code, f.shiftKey, Object.isFrozen(f), typeof f.time]),
 		taken, prevented: kd.defaultPrevented };
 	// H26.4: the fourth, by its one name -- a scene on an <svg> of the page, 200 px showing 100 units: an item put, the element of its
 	// nested shape mapped back to it, a screen point converted and back, and the root left as found once closed
@@ -118,7 +123,8 @@ for (const [name, at, booted] of [['the product page', () => `http://127.0.0.1:$
 		const mark = Date.now() - t.clock.t0;
 		const got = await t.run(THROUGH_THE_MAP);
 		const capturing = { exports: ['openCapture'], taken: [false], prevented: true,
-			facts: [['down', { x: 5, y: 10 }, { x: 10, y: 20 }, true, null, 0, 7, 'mouse', null, null, true, true], ['key-down', null, null, null, true, null, null, null, 'a', 'KeyA', false, true]] };
+			facts: [['down', { x: 5, y: 10 }, { x: 10, y: 20 }, true, null, 0, 7, 'mouse', null, null, true, true, 'number'], ['key-down', null, null, null, true, null, null, null, 'a', 'KeyA', false, true, 'number'],
+				['blur', null, null, null, null, null, null, null, null, null, false, true, 'number']] };   // H26.5: and the focus loss, its modifiers false
 		// H26.4: the scene's item, its nested shape at path [1, 0]; a 200 px root over 100 units halves a screen point, and doubles it back
 		const showing = { exports: ['openScene'], item: { layer: 'shown', key: 'item', path: [1, 0] }, layers: ['vs-shown', null], elements: 2, drawing: { x: 10, y: 20 }, back: { x: 20, y: 40 }, left: 0 };
 		assert.deepEqual(got, { maps: 1, ok: true, point: { x: 60, y: 0 }, kit: 0, binding: ['composeBindingTable', 'openGestureSession'], exact: ['click', 'drop'], capture: capturing, scene: showing },
