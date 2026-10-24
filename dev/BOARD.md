@@ -1641,6 +1641,7 @@ Scored so the comparison is a judgement, not an omission.\
 | **B421** | S5 | Children diffed by key in `vector-scene` (H26-11) | an application's shapes reorder, or gain siblings before elements it needs kept, often enough that items of their own are measured too costly. |
 | **B422** | S4 | A revealed link keeps its trace's dash, drawn solid or with a gap (H26-11) | H26.8 rewrites the reveal's trace, or a person reports a revealed link drawn solid or with a gap. |
 | **B424** | S5 | The first three components' checks and release workflow brought to `vector-scene`'s (H26.3, H26.4) | the next release of `snap-grid`, `input-binding` or `input-capture`, which takes `vector-scene`'s checks and workflow. |
+| **B425** | S4 | Draw's pure-data configuration in data files checked by `shape-check`, its predicates as data later | an agent or a person needs to change draw's configuration without a code change, or H26.8 rewrites the plugins' declarations. |
 | **B344** | S4 | OD-1: a diagram kept in mission-kit's entity-store | the director selects it, or entity-store's record rules the adjustments it needs -- an asynchronous durable storage port, and names optional per kind. |
 | **B345** | S4 | OD-2: clients reaching the server over agp | OD-1 is ruled, entity-api is certified, and its follows are unparked (zorg's D15). |
 | **B347** | S4 | The towerless-combat timing test failed once under machine load | it fails a second time, or B333's flake ledger is built. |
