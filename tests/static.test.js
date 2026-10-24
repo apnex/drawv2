@@ -41,7 +41,9 @@ test('K9, K4: the lab serves its mounts, the planner whole, and nothing else, ho
 		req.on('error', reject); req.end();
 	});
 	try {
-		for (let i = 0; i < 50; i++) { try { await ask('/health'); break; } catch { await new Promise((r) => setTimeout(r, 100)); } }
+		// RESTATED at H26.5: up to 15 s, as tests/browser.test.js waits for the product's server. The lab answers in about 90 ms idle, but
+		// beside the whole suite on eight cores it was measured at a median of 228 ms and a worst of 6.4 s, past the 5 s this allowed
+		for (let i = 0; i < 150; i++) { try { await ask('/health'); break; } catch { await new Promise((r) => setTimeout(r, 100)); } }
 		// K4: the planner is served whole from its own folder
 		const tokens = await ask('/tokens.css');   // H15.23: the colour registry the stylesheet reads
 		assert.equal(tokens.status, 200, 'the lab serves the colour registry');
@@ -80,7 +82,7 @@ test('H26.7: the lab serves every plugin from /plugins/, and nothing else there 
 		req.on('error', reject); req.end();
 	});
 	try {
-		for (let i = 0; i < 50; i++) { try { await ask('/health'); break; } catch { await new Promise((r) => setTimeout(r, 100)); } }
+		for (let i = 0; i < 150; i++) { try { await ask('/health'); break; } catch { await new Promise((r) => setTimeout(r, 100)); } }   // H26.5: 15 s, as above
 		for (const p of ['/plugins/layouts/layout-table.mjs', '/plugins/devices/device-types.mjs', '/plugins/network/link-head.mjs',
 			'/plugins/zones/zone-painter.mjs', '/plugins/groups/group-kind.mjs', '/plugins/simulation/kinds.mjs']) {
 			const r = await ask(p);
@@ -312,7 +314,7 @@ test('H26.1: the lab serves the installed component on the vendor mount, kept a 
 		req.on('error', reject); req.end();
 	});
 	try {
-		for (let i = 0; i < 50; i++) { try { await ask('/health'); break; } catch { await new Promise((r) => setTimeout(r, 100)); } }
+		for (let i = 0; i < 150; i++) { try { await ask('/health'); break; } catch { await new Promise((r) => setTimeout(r, 100)); } }   // H26.5: 15 s, as above
 		for (const f of ['index.js', 'conformance.js']) {
 			const r = await ask(`/vendor/@apnex/snap-grid@${version}/${f}`);
 			assert.deepEqual([r.status, r.cache], [200, KEPT], f);
