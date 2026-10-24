@@ -73,6 +73,14 @@ test('H26.4 step 3 (G9): the editing part\'s modules and app/src/grids.js make n
 	assert.deepEqual([...code('app/src/selection.js').matchAll(/^import .* from '([^']+)'/gm)].map((m) => m[1]), [], 'the selection imports nothing');
 });
 
+// the verifier's F2 (appendix B app/src/labeledit.js:59-61; sections 5.1 and 5.2): the label editor goes the other way through the scene
+test('H26.4 step 3 (F2): the label editor converts a drawing point to the screen by the scene\'s toScreen, and builds no DOMPoint', () => {
+	const editor = code('app/src/labeledit.js');
+	assert.doesNotMatch(editor, /\bDOMPoint\b/, 'no platform point of its own');
+	assert.match(editor, /this\.scene\.toScreen\(/, 'the scene\'s conversion');
+	assert.match(code('app/src/compose-canvas.js'), /new LabelEditor\(\{ svg, scene,/, 'handed the scene by the composition');
+});
+
 test('H26.4 step 3 (G6): server/svg.mjs swaps no document and builds no tree of its own -- it draws through the scene with no root', () => {
 	const svg = code('server/svg.mjs');
 	assert.doesNotMatch(svg, /globalThis\.document|\bdocument\s*=|createElementNS|appendChild|insertBefore|headless/, 'no document swapped, no tree built');

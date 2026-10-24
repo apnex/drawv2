@@ -1405,6 +1405,39 @@ test('C-e: a device\'s name editor opens centred under the device', { skip: SKIP
 });
 
 /*
+H26.4 (the verifier's F2; dev/design/components/VECTOR-SCENE.md sections 5.1 and 5.2) -- the name editor is placed through the scene's
+toScreen, where it built a DOMPoint and transformed it by the canvas's screen transform. Read off the real page, whose screen transform
+letterboxes and scales the drawing: a device's editor, centred under it, and a waypoint's, beside its corner, each placed exactly where
+the old conversion places that point, to the last digit of the style the editor is given.
+*/
+test('H26.4 (F2): the name editor stands exactly where the old conversion put it -- a device\'s, centred, and a waypoint\'s', { skip: SKIP }, async () => {
+	const t = await freshTab();
+	try {
+		const got = JSON.parse(await t.eval(`(async () => {
+			const svg = document.getElementById('container'), out = [], scratch = document.createElement('div');
+			const styled = (v) => { scratch.style.left = v; return scratch.style.left; };   // a length as the CSSOM reads it back
+			const waypoint = draw.model.all('node').find((n) => !n.type);
+			for (const id of ['node-ba0004', waypoint.id]) {
+				const e = draw.model.get('node', id), at = draw.labels.labelAt(e), pos = at ? { x: at.x, y: at.y } : { x: e.x + 10, y: e.y + 6 };
+				const was = new DOMPoint(pos.x, pos.y).matrixTransform(svg.getScreenCTM()), now = draw.labels.toScreen(pos);   // the old conversion, and the editor's
+				draw.labels.open('node', id);
+				const ed = document.getElementById('label-editor');
+				out.push({ id, centred: !!at?.centred, same: Object.is(now.x, was.x) && Object.is(now.y, was.y),
+					left: ed.style.left, top: ed.style.top, wasLeft: styled((at?.centred ? was.x - 80 : was.x) + 'px'), wasTop: styled(was.y + 'px'), scale: svg.getScreenCTM().a });
+				draw.labels.close(false);
+			}
+			return JSON.stringify(out);
+		})()`));
+		assert.deepEqual(got.map((g) => g.centred), [true, false], 'a centred placement and one beside the corner');
+		assert.ok(got[0].scale !== 1, `the page's screen transform scales the drawing (${got[0].scale}), so the conversion is tried`);
+		for (const g of got) {
+			assert.ok(g.same, `${g.id}: the scene's toScreen answers the old conversion's point exactly`);
+			assert.deepEqual({ left: g.left, top: g.top }, { left: g.wasLeft, top: g.wasTop }, `${g.id}: its editor where the old conversion put it`);
+		}
+	} finally { await t.close(); }
+});
+
+/*
 H15.23 (B255) -- the colour registry reaches the page. Every colour the stylesheet uses is now a `var(--tok-...)` read
 from app/tokens.css, so a page that failed to load that file would lose every colour at once and still boot. Read off the
 real page's computed styles: a link draws the link token, a label the label token, the page the page token.

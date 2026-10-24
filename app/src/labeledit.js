@@ -13,11 +13,14 @@ export class LabelEditor {
 	// C-e: `labelAt(entity)` -- where a kind's label sits, the parts' (plugins/devices/device-labels.mjs); null for the default, by its corner
 	// C-e: and `wordOf(kind, entity)` -- the word a Tab rename run groups by, the parts' (a device or a waypoint); the kind without one
 	// and `contentOf(entity, idx)` -- what reads and edits an entity's region, the parts' (a panel's, the devices plugin's), or null
-	constructor({ svg, model, history, labelAt = () => null, wordOf = () => null, contentOf = () => null }) {
+	// H26.4 (dev/design/components/VECTOR-SCENE.md sections 5.1 and 5.2; the verifier's F2): `scene`, the canvas's, whose `toScreen` places
+	// the editor; `svg` stays for what is draw's own -- an element by id, its box, the screen's scale
+	constructor({ svg, scene, model, history, labelAt = () => null, wordOf = () => null, contentOf = () => null }) {
 		this.labelAt = labelAt;
 		this.contentOf = contentOf;
 		this.wordOf = (kind, e) => wordOf(kind, e) ?? kind;
 		this.svg = svg;
+		this.scene = scene;
 		this.model = model;
 		this.history = history;
 		this.input = null;
@@ -55,9 +58,10 @@ export class LabelEditor {
 		return !!this.input;
 	}
 
-	// canvas coords -> viewport CSS pixels
+	// canvas coords -> viewport CSS pixels: the scene's conversion, through the root's screen transform at the moment asked -- the
+	// arithmetic `new DOMPoint(x, y).matrixTransform(svg.getScreenCTM())` did (H26.4)
 	toScreen(pos) {
-		return new DOMPoint(pos.x, pos.y).matrixTransform(this.svg.getScreenCTM());
+		return this.scene.toScreen(pos);
 	}
 
 	open(kind, id) {
