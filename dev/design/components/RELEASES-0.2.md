@@ -5,7 +5,7 @@ It answers each of the nineteen gaps the cold-agent experiment logged (B426) and
 It builds on the four designs beside it (`SNAP-GRID.md`, `INPUT-BINDING.md`, `INPUT-CAPTURE.md`, `VECTOR-SCENE.md`) and on each component's published contract at `v0.1.0`; it states only what changes, citing each rule it amends by its id.\
 The tester's own architecture, which composes these releases, is `ARCHITECTURE-TARGET.md` in `apnex/input-tester`'s `docs` folder (`~/taceng/input-tester/docs/ARCHITECTURE-TARGET.md`); its decisions owed are numbered IT-D1 to IT-D11.
 
-**Standing:** a design under review, revision 2, drafted 2026-10-24, folding in reading 1 (section 7); the code read is draw's `19e5dd5` and each component's `v0.1.0`; the experiment read is `~/taceng/drawv2-eval-runs/h26-tester-experiment/` (its `GAPS.md`, kept verbatim beside this design as `TESTER-EXPERIMENT-GAPS.md`, its app and proof); browser behaviour cited as measured was measured in headless Chrome with trusted input over the DevTools protocol, the probes and their outputs kept at `~/taceng/drawv2-eval-runs/h26-tester-design/probes/` (P1 to P13 for revision 1; P14 the rule split in two, P15 the icon request, P16 the zoom control, P17 a drag's `button` and P18 a key with no code, for revision 2); not ratified.
+**Standing:** a design under review, revision 3, drafted 2026-10-24, folding in readings 1 and 2 (section 7); the code read is draw's `19e5dd5` and each component's `v0.1.0`; the experiment read is `~/taceng/drawv2-eval-runs/h26-tester-experiment/` (its `GAPS.md`, kept verbatim beside this design as `TESTER-EXPERIMENT-GAPS.md`, its app and proof); browser behaviour cited as measured was measured in headless Chrome with trusted input over the DevTools protocol, the probes and their outputs kept at `~/taceng/drawv2-eval-runs/h26-tester-design/probes/` (P1 to P13 for revision 1; P14 the rule split in two, P15 the icon request, P16 the zoom control, P17 a drag's `button` and P18 a key with no code, for revision 2; P19 composition and P20 the components loaded with no import map, for revision 3, with the member walk and the release cases run on the released code in `scratch/` beside them); not ratified.
 
 ---
 
@@ -44,11 +44,11 @@ It does not decide:
 | G8 | no shipped trusted-input driver; a held button must be named on every move | tester: its own driver; guide: the quirk stated; held: a shared driver, the trigger "a change must be made to more than one copy of the trusted-input harness" (five copies, one per repository) |
 | G9 | passing `from` to `becomeGesture` restarts the press, turning a drop into a click | guide: the drag-become sequence, without `from`; docs: the consumer reference states IB10's restart beside `becomeGesture` |
 | G10 | every consumer writes the same down-match-`pressMatched` routing | binding: `resolvePress` (IB15, RD19), compared now against draw's routing and the experiment's; the switch over fact types stays each application's wiring, since no component imports another (H26-1) |
-| G11 | no hold, no double click decided by time | held: binding's timed triggers, the trigger "an application's row decides by time"; capture's `time` (G13) is their prerequisite, now carried |
+| G11 | no hold, no double click decided by time | held: binding's timed triggers, a double click of a button other than the primary among them, the platform's `dblclick` being the primary's, the trigger "an application's row decides by time"; capture's `time` (G13) is their prerequisite, now carried |
 | G12 | naming gesture outcomes through the table's opaque facts was a guess | guide: stated as supported -- a fact is any value the application hands (IB1), so a table may name its own outcomes |
 | G13 | facts hold no time; no lock state; no `location` | capture: `time`, the event's `timeStamp` as data (IC5); lock state held (RD7); `location` needs no field, `code` naming left and right and the keypad already |
 | G14 | what the application may write on the root is unstated | scene: VS13 -- the root is the application's, its `viewBox` among it (RD11) |
-| G15 | no scale, no resize signal | guide: the scale from `toScreen` calls, stated for a uniform scale and with the smaller axis scale otherwise, a resize the application's own listener; held: a scale the scene answers, with the view (B419) |
+| G15 | no scale, no resize signal | guide: the conservative scale, the smallest stretch of the root's transform, from three `toScreen` calls (3.5); a resize the application's own listener; held: a scale the scene answers, with the view (B419) |
 | G16 | no "which of my blocks owns this point" | docs: not `snap-grid`'s question -- ownership is the application's data, and the point's item is `vector-scene`'s `itemAt` |
 | G17 | no key layout data, no locale labels | tester: its keyboard plans, labels from the Keyboard Map (IT-D2); held: a shared keyboard plan, the trigger "a second application draws a keyboard" |
 | G18 | the `README.md` does not name the file an import map maps to | docs: each Install section names it -- `index.js` in the package's `dist` folder, and `snap-grid`'s `conformance.js` beside it |
@@ -57,7 +57,7 @@ It does not decide:
 | N2 | found here: a mouse's back button released over a page navigates history unless its `pointerup` is claimed; claiming the `pointerdown` alone does not stop it (measured) | guide and tester: claim the releases of buttons 3 and 4; no component change -- capture's reply already claims an `up` fact (IC8) |
 | N3 | found here: under a browser rule with `style-src 'self'`, a `style` attribute written by script is refused, while presentation attributes and the CSS object model are not (measured) | guide: a scene shape states its look by class or presentation attribute under a strict rule, since the scene writes every attribute by `setAttribute` (VS1) |
 | N4 | found here: a browser rule cannot stop a page navigating away with data in its address (measured, P9 and P14) | tester: containment of navigation held by its source check and its request monitor (its architecture, GT1) |
-| N5 | found here: input through an input method arrives as key events with `key` `Process` and as composition events (not measured) | tester: its key events shown, and the tester says plainly that it does not show composition; held: composition facts, the trigger "a person typing through an input method reports what the tester shows" |
+| N5 | found here: an input method composes only into an editable element -- composition injected over the protocol reached no listener with focus on the body or on a focusable `svg`, while a `textarea` and a `contenteditable` element each received `compositionstart`, `compositionupdate` and `compositionend` with their `data` (measured, P19) | tester: a page with nothing editable receives an input method's typing as key events, which it shows (IT-D12); held: composition facts, the trigger "an application with an editable key source needs composition as facts, or a person typing through an input method reports what the tester shows" |
 | N6 | found here: the experiment proved focus loss with a synthetic `blur`; opening a second tab over the DevTools protocol makes a trusted `blur` and `visibilitychange` (measured) | capture's I10 and the tester's gate use the second tab |
 | N7 | found here: draw's capture adapter calls `sink[ROUTE[event.type]]` for every fact (`app/src/capture.js:62`, `:105`), so a fact of a type it has no route for throws | capture: each new family listened for only when listed (RD1), so a `0.1.0` declaration delivers no new type |
 | N8 | found by reading 1: capture delivers a key's `code` as `''` when the platform names no physical key (`key` `AudioVolumeUp`, `code` `''`, run through the released capture by reader `o`; a trusted key event dispatched over the protocol with no code arrives so in Chrome, P18), and `null` when it is no string | binding: IB14 answers such a fact untracked rather than refusing it; tester: the key shown as delivered, its identity unreported |
@@ -130,7 +130,17 @@ It still reads no target's members and names no global, so a `visibilitychange`,
 Claiming a `wheel` fact prevents its scroll and a touchpad pinch's zoom (P16: a synthesized pinch over an unclaimed surface took `visualViewport.scale` from 1 to 2, over a claimed one left it 1); Chrome's page zoom on Ctrl and a mouse wheel does not happen in headless Chrome at all (P16), so its prevention is not measured; claiming a `context-menu` fact prevents the menu (measured in headless Chrome on Linux, which delivers `contextmenu` as a `PointerEvent` with a `pointerId`, after the `pointerdown` and before the `pointerup`; on other systems the menu's event may follow the release, not measured); claiming a `blur` fact calls `preventDefault`, which changes nothing, the event not being cancelable.
 
 **IC9 -- types and exports.**\
-`PointerFact` and `KeyFact` gain the five properties -- the deltas `number | null`, `deltaMode` `0 | 1 | 2 | null`, `time` `number | null`; the package exports also `WheelFact`, `ContextMenuFact`, `BlurFact` and `ListenName`; `CaptureFact`, `openCapture` and the declaration types gain a third type parameter, `Listen extends ListenName`, defaulting to `never` and inferred from `listen`'s elements, and `CaptureFact` adds each listed family's fact type.\
+Every fact type gains `time: number | null`; the package exports also `WheelFact`, `ContextMenuFact`, `BlurFact` and `ListenName`:
+
+| Type | `type` | The deltas | `deltaMode` |
+|---|---|---|---|
+| `PointerFact<Hit>`, its eight types unchanged | `PointerFactType` | `null` | `null` |
+| `WheelFact<Hit>` | `'wheel'` | `number` | `0 \| 1 \| 2 \| null` |
+| `ContextMenuFact<Hit>` | `'context-menu'` | `null` | `null` |
+| `KeyFact<Focus>` | `KeyFactType` | `null` | `null` |
+| `BlurFact` | `'blur'` | `null` | `null` |
+
+`CaptureFact`, `openCapture` and the declaration types gain a third type parameter, `Listen extends ListenName`, defaulting to `never` and inferred from `listen`'s elements; `CaptureFact` adds `WheelFact` and `ContextMenuFact` for each listed, and `BlurFact` for `'blur'`; `hit`'s fact parameter is `PointerFact<null>` and each listed pointer-family type with its `Hit` `null`.\
 So a delivery whose declaration lists no `'wheel'` and compares `fact.type` with `'wheel'` fails to compile.\
 The module still exports `openCapture` alone; its export map adds a capability row, `focus-loss-facts` -- the key source's focus loss as one fact (IC4, IC5) -- which `openCapture` serves, the wheel and the context menu widening `pointer-facts`; the contract-coverage test holds the new row to its contract test.
 
@@ -166,12 +176,19 @@ A gesture's commit is the meaning of a release, so the release rule is binding's
 The session is "the state of one input surface's presses and gestures"; it becomes "of one input surface's presses, gestures and held keys".\
 It still holds no application's situation, draws nothing, and reads no clock.
 
-**IB1 -- binding reads two properties more.**
-- `code`, of a fact handed to `keyDown` or `keyUp`: a string or `null`.
-- `pointerId`, of a fact handed to `pointerDown`, `pointerMove`, `pointerUp` or `resolvePress`: read only when the fact's own keys hold it, then a data property whose value is `null` or a safe integer; absent, it is `null`.
+**IB1, IB2 -- binding reads two properties more, each by descriptor.**\
+`code`, of a fact handed to `keyDown` or `keyUp`, a string or `null`; and `pointerId`, of a fact handed to a pointer operation, read by `Reflect.getOwnPropertyDescriptor` alone -- no own-keys read -- so a descriptor `undefined` is absent and means `null`, and otherwise it must be a data property holding `null` or a safe integer.\
+A malformed fact throws the function's own `TypeError`; every other property of any fact is still never read.\
+IB2's table gains or changes these rows, held by its recording test:
 
-Each is read as IB2 reads a fact's property, after the properties `0.1.0` reads; a malformed fact throws the function's own `TypeError`.\
-Every other property of any fact is still never read.
+| Function | What it reads, in order |
+|---|---|
+| `pointerDown` | the fact; its `at`; that point's `x` and `y`; the fact's `button`; its `pointerId` |
+| `pointerMove` | the fact; its `at`; that point's `x` and `y`; its `pointerId` |
+| `pointerUp` | the fact; its `button`; its `pointerId` |
+| `resolvePress` | the fact, as `pointerDown`; then `handlers` as `startGesture` reads its argument -- prototype, own keys, then the descriptors of `match` and `cancelled` its own keys hold; later, `match`'s answer as `pressMatched` reads a match -- prototype, `id`, `opens` -- `undefined` among the answers refused |
+| `keyDown`, `keyUp` | the fact; its `code` |
+| `keysLost` | nothing |
 
 **IB10 -- the press records its button and its pointer.**\
 A press is `{ at, beyond, unmatched, button, pointer }`: `button` the `pointerDown` fact's, written `button + 0`, and `pointer` its `pointerId`, written likewise, or `null`; a restart from `from` keeps both.\
@@ -183,15 +200,26 @@ With `g` the live gesture's declared button and `p` the press, the `pointerMove`
 
 | Operation | When | Phase due, and what changes |
 |---|---|---|
-| `pointerMove(fact)` or `pointerUp(fact)` | `p !== null` and the fact's `pointerId` `!== p.pointer` | none: nothing changes; `crossed` `false`, `trigger` `null` |
+| `pointerMove(fact)` or `pointerUp(fact)` | `p !== null` and the fact's `pointerId` `!== p.pointer` | none: nothing changes; the outcome's `otherPointer` `true`, `crossed` `false`, `trigger` `null` |
 | `pointerUp(fact)` | otherwise, a gesture is live, and `g === null`, or `g === fact.button`, or `p !== null && g === p.button` | `commit`: the gesture ends; the press ends with its trigger |
 | `pointerUp(fact)` | otherwise | none: the press ends with its trigger, and a live gesture stays live |
 
-The `pointerMove` rows of `0.1.0` hold for a move of the press's own pointer, or with no press.\
+The `pointerMove` rows of `0.1.0` hold for a move of the press's own pointer, or with no press, `otherPointer` `false`.\
 A platform delivers a chord's presses and releases after the first as moves, so the release that ends a press names the last button released, which need not be the button that began it (measured in Chrome: `pointerdown` 0, `pointermove` 2, `pointermove` 0, `pointerup` 2).\
-A gesture opened with no press keeps today's answer: a click of another button replaces the press, so its release ends a press that button began, and commits only a gesture declaring that button or `null`.\
 A second pointer's press still replaces the first's (B409): what changes is that the first pointer's later moves and release no longer move, end or commit the press the second began.\
-Every sequence whose facts carry no `pointerId` and whose last release names the press's own button answers as `0.1.0` answered.
+The cases the table decides, with gestures `g0` and `g3` declaring buttons 0 and 3 and `gnull` declaring `null`, facts carrying no `pointerId` but in the last row (the `0.1.0` column run on the released code):
+
+| Sequence | `0.1.0` | `0.2.0` |
+|---|---|---|
+| `down` 0 opening `g0`; `up` 0 | commit | commit |
+| `down` 0 opening `g0`; the right button pressed and the left released, as moves; `up` 2 | none, `g0` left live (B427) | commit: `g0` is the press's button |
+| `down` 0 opening `g0`; the right button pressed and released, as moves; `up` 0 | commit | commit |
+| `down` 3 opening `g3`; the left button pressed and button 3 released, as moves; `up` 0 | none, `g3` left live | commit |
+| `g0` started with no press; `down` 3, not taken; `up` 0 | commit: the release names 0 | commit |
+| `g0` started with no press; `down` 3; `up` 3 | none, `g0` live | none, `g0` live |
+| `g0` started with no press; `down` 0, taken; `up` 0 | commit | commit |
+| `gnull` started; `down` 2; `up` 2 | commit | commit |
+| `down` 0 of pointer 7 opening `g0`; `up` 2 of pointer 1 | none, the press ended | none, nothing changed, `otherPointer` `true` |
 
 **IB14 -- held keys.**\
 Three operations take what the key source delivered, and `session.state` gains `keys`, a frozen array of the codes held, in the order first pressed:
@@ -208,20 +236,30 @@ IB12's identity holds: `keys` is the very same array when no code changed, and t
 `session.state` is `{ press, gesture, keys }`, in that order.
 
 **IB15 -- a press resolved in one call.**\
-`session.resolvePress(fact, handlers)`, `handlers` a plain object read by IB2 holding `match`, a function, and optionally `cancelled`, a function; any other property is malformed.
-1. It reads `fact` as `pointerDown` reads one, then `handlers`; a malformed argument throws the function's own `TypeError`, the state untouched.
+`session.resolvePress(fact, handlers)`, `handlers` holding `match`, a function, and optionally `cancelled`, a function; any other property is malformed.\
+*The press* is the one step 2 makes, until a `pointerDown`, `pointerUp`, `pointerLost` or `resolvePress` replaces or ends it; a move or a restart keeps it.
+1. It reads its arguments (IB2); a malformed one throws the function's own `TypeError`, the state untouched.
 2. It makes `pointerDown`'s transition; when the press is taken, it answers at once, `match` never called.
-3. It calls `match` with no receiver and no argument; an answer `null` ends the call, the press left unmatched, as a press that matched no row is; any other answer is read as `pressMatched` reads a match.
-4. It reads the state again, and answers with no phase unless the press is still unmatched.
-5. It makes `pressMatched`'s transition; when that answers `cancel`, it calls `cancelled`, if given, with that outcome and no receiver, reads the state again, and, the press still unmatched, makes `pressMatched`'s transition once more, whose outcome stands whatever it answers.
-6. It answers a fresh frozen `{ state, taken, match, cancelled, phase, gesture }`: `taken` as `pointerDown` answered; `match` the match read, or `null`; `cancelled` step 5's `cancel` outcome, or `null`; `phase` and `gesture` those of the last `pressMatched` transition, or `null`.
+3. It calls `match` with no receiver and no argument, and reads its answer once: `null` ends the call, the press left unmatched, as a press that matched no row is; any other answer is read as a match, a malformed one, `undefined` among them, throwing the function's own `TypeError` with the `pointerDown` transition standing; the `id` and `opens` read decide every later transition, whatever a callback later does to the match.
+4. It makes `pressMatched`'s transition when the press is still unmatched, and otherwise ends the call.
+5. When that answers `cancel`, it calls `cancelled`, if given, with that outcome and no receiver, then makes `pressMatched`'s transition once more when the press is still unmatched and no gesture is live, and otherwise ends the call.
+6. It answers a fresh frozen `{ state, taken, match, cancelled, phase, gesture }`: `taken` as `pointerDown` answered; `match` the value `match` answered, or `null`; `cancelled` step 5's `cancel` outcome, or `null`; `phase` and `gesture` the press's resolution -- `start` and the gesture started, or `null` -- never `cancel`, which `cancelled` alone reports.
 
-An error `match` or `cancelled` throws, or a malformed match, propagates, the transitions already made kept.\
+| While | A callback | Then |
+|---|---|---|
+| `match` runs | calls nothing of the session | step 4 |
+| `match` runs | ends, replaces or matches the press | no transition; `phase` `null` |
+| `match` runs | starts a gesture, the press still unmatched | step 4, whose `cancel` ends that gesture and calls `cancelled` |
+| `cancelled` runs | calls nothing of the session | the second transition: `start` or `null` |
+| `cancelled` runs | ends, replaces or matches the press, or starts a gesture | no second transition; `phase` `null` |
+| either runs | throws | the error propagates; the transitions made stand |
+
+So a call cancels at most one gesture, and only one `cancelled` saw.\
 The two traps this order holds -- `pressMatched` throws on a taken press, and a cancel without a second call loses the start -- are the session's to hold once, and a consumer's code runs where its policy sits: between the press and the match, and inside the cancel.\
 IB12's sentence "A session calls no application code but a point's getters and a `Proxy`'s traps" gains "and `resolvePress`'s `match` and `cancelled`, each after the transition before it, the state read again after each returns", the exception recorded in the decision record beside the table's predicates (IB6).
 
 **IB12, IB13 -- the session's form.**\
-A session is a frozen object of exactly `declaration`, `state`, `pointerDown`, `pressMatched`, `pointerMove`, `pointerUp`, `pointerLost`, `startGesture`, `becomeGesture`, `cancelGesture`, `resolvePress`, `keyDown`, `keyUp` and `keysLost`, in that order; `pointerUp`'s outcome's `trigger` may be `null` (IB11).\
+A session is a frozen object of exactly `declaration`, `state`, `pointerDown`, `pressMatched`, `pointerMove`, `pointerUp`, `pointerLost`, `startGesture`, `becomeGesture`, `cancelGesture`, `resolvePress`, `keyDown`, `keyUp` and `keysLost`, in that order; `pointerMove`'s and `pointerUp`'s outcomes end with `otherPointer`, and `pointerUp`'s `trigger` may be `null` (IB11).\
 The contract gains two capability rows, `held-keys` (IB14, stateful) and `press-resolution` (IB15), which `openGestureSession` serves in the export map, each held to its own contract test by the contract-coverage test; the declarations export `KeyOutcome`, `KeysLostOutcome`, `ResolvePressHandlers` and `ResolvePressOutcome`.
 
 **Fit criteria.**\
@@ -232,10 +270,10 @@ Consumed by draw (H26.2) and `input-tester`, which uses IB14 to light keys and t
 
 | # | Invariant | Held by |
 |---|---|---|
-| I15 | Over generated sequences in which a press of button b begins, other buttons' presses and releases arrive as `pointerMove`, and the closing `pointerUp` names any button: a gesture declaring b commits with the press's trigger; a gesture opened with no press and declaring b does not commit on the release of a press of another button; `press.button` holds no `-0` and survives restarts. | input-binding |
+| I15 | IB11's decided cases, and generated sequences of a gesture declaring g -- opened by a press of buttons 0 to 4 or with no press, the press taken or not, g `null` among them -- in which other buttons' presses and releases arrive as `pointerMove` in both orders and the closing `pointerUp` names any button: commit exactly when g is `null`, the release names g, or the press began with g; `press.button` holds no `-0` and survives restarts. | input-binding |
 | I16 | Over generated sequences of `keyDown`, `keyUp` and `keysLost`, codes `''` and `null` among them, `keys` equals a model written apart, in order; repeats change nothing; untracked facts change nothing; outcomes, their key order and `released`'s identity as IB14 gives; no key operation changes the press or the gesture or makes a phase due; a code of another type and an accessor `code` are refused before the state is read. | input-binding |
-| I17 | `resolvePress` against the five calls written out by hand, over generated sequences: the same states and outcomes; `match` never called on a taken press; `null` leaving the press unmatched; `cancelled` seeing no live gesture; a callback that ends the press, starts a gesture or throws, each answered as IB15 says. | input-binding |
-| I18 | Over generated sequences of two pointers: a move or release of the pointer that is not the press's changes nothing; facts with no `pointerId` answer as facts whose pointers are equal. | input-binding |
+| I17 | `resolvePress` against the five calls written out by hand, over generated sequences in which neither callback calls the session or changes the match it answered: the same states and outcomes; each row of IB15's table driven by recording callbacks, a match changed after `match` returns among them, answered as the table says; `match` never called on a taken press; `cancelled` seeing no live gesture. | input-binding |
+| I18 | Over generated sequences of two pointers: a move or release of the pointer that is not the press's changes nothing and answers `otherPointer` `true`; facts with no `pointerId` answer as facts whose pointers are equal. | input-binding |
 | I19 | Beside `0.1.0`: the I13 corpus and I10's generator, their facts carrying no `pointerId`, give `0.1.0`'s outcomes but for the chord sequences and the changes the closing paragraph lists, the press records gaining `button` and `pointer` and the state `keys`. | input-binding |
 
 **Vocabulary.**\
@@ -243,9 +281,9 @@ The new words -- keys, held, code, released, tracked, resolve -- are in neither 
 
 **What changes beside `0.1.0`.**
 - A pointer fact whose `pointerId` is an accessor, or neither `null` nor a safe integer, is refused, where `0.1.0` passed it unread.
-- The press gains `button` and `pointer`, the state `keys`, the session four functions after `cancelGesture`.
-- A chord's release commits its gesture (IB11, B427).
-- A move or release of another pointer while a press is held changes nothing: in o:F4's case `0.1.0` ended the touch's press at the mouse's release, committed nothing, then committed a `click` at the touch's release, where `0.2.0` keeps the press and commits at the touch's release with its own trigger.
+- The press gains `button` and `pointer`, the state `keys`, the session four functions after `cancelGesture`, and the move's and release's outcomes `otherPointer`.
+- A chord's release commits its gesture: the second and fourth of IB11's cases (B427).
+- A move or release of another pointer while a press is held changes nothing (IB11's last case).
 - Draw reads `state.press?.beyond` (`app/src/input.js:1033`) and the gesture, and its parity fixture (`tests/fixtures/binding-parity.mjs`) compares the old press's answers with the session's, so the chord and two-pointer sequences are listed apart there (read, not run).
 
 ### 3.3 `vector-scene` `0.2.0`
@@ -263,7 +301,7 @@ The function read is the one called, with the document as receiver and the point
 1. the point is read as VS2 rule 6 says, and refused unless its `x` and `y` are finite numbers, as a conversion reads one (VS10);
 2. the scene's state is judged before anything of the scene is read -- writing, closed and failed refused as every function refuses them; then a scene with no root, or whose document held no `elementsFromPoint`, refused with Errors' `Error`;
 3. the document's `elementsFromPoint` is called; an answer that `Array.isArray` does not accept is refused with Errors' `Error`;
-4. the answer's `length` is read once, by ordinary access, and refused unless a safe non-negative integer; then indices from 0 below it are read in order, by ordinary access, stopping at the first element the scene made; every other element -- the root, a layer's element, a foreign layer's content, anything else on the page -- is passed over;
+4. the answer's `length` is read once, by ordinary access, and refused unless a safe non-negative integer; then indices from 0 below it are read in order, by ordinary access, stopping at the first element the scene made for a shape of an item it still holds, as `itemOf` recognises one; every other element -- one made for an item since removed, the root, a layer's element, a foreign layer's content, anything else on the page -- is passed over;
 5. the state is judged again, a scene closed or failed meanwhile refused with Errors' `Error`, and the item answered.
 
 An error the platform or a getter throws propagates, and leaves the scene open.\
@@ -288,7 +326,7 @@ The sentence the experiment tripped on becomes: "The tester asks `itemOf` with `
 
 | # | Invariant | Held by |
 |---|---|---|
-| I13 | With a recording document, `elementsFromPoint` read once as the scene opens, in VS2 rule 2's order, and called once per `itemAt` with the document as receiver and the point; a throwing getter refusing `/root`; a non-function opening; the first element the scene made answering, with its path, nested shapes among them; `null` when none is; refused with no root, with no member, closed or failed, with a malformed point, with an answer not an array and with a `length` not a safe non-negative integer; `length` read once, so an answer whose index getter appends an owned element answers `null`; a getter that throws, propagated with the scene open; a getter that closes the scene, refused. | vector-scene |
+| I13 | With a recording document, `elementsFromPoint` read once as the scene opens, in VS2 rule 2's order, and called once per `itemAt` with the document as receiver and the point; a throwing getter refusing `/root`; a non-function opening; the first element the scene made for an item it still holds answering, with its path, nested shapes among them, an element of a removed item passed over; `null` when none is; refused with no root, with no member, closed or failed, with a malformed point, with an answer not an array and with a `length` not a safe non-negative integer; `length` read once, so an answer whose index getter appends an owned element answers `null`; a getter that throws, propagated with the scene open; a getter that closes the scene, refused. | vector-scene |
 | I14 | In headless Chrome: with the pointer taken on a press, `itemAt` of each move's screen point answers the item under it while the target stays the capturing element; an item under a layer declared `pointer-events` `none` is answered through it; with no pointer taken and nothing the scene did not make above the items, `itemAt(screen)` equals `itemOf(target)` for trusted presses over a grid of points; under an opaque foreign element above an item, `itemAt` answers the item and `itemOf` `null`; a `viewBox` the application sets after opening is followed by `toDrawing`, `toScreen` and `itemAt`. | gate |
 | I15 | Beside `0.1.0`: `0.1.0`'s contract tables give the same answers and calls but for the changes the closing paragraph lists. | vector-scene |
 
@@ -315,13 +353,13 @@ Each `README.md`: Install names the file each export maps to (`index.js` in the 
 
 **The guide (IT-D6).**\
 One page, `GUIDE.md` in `apnex/input-tester`'s `docs` folder, the tester's code its worked example:
-- opening the four together, and the switch over the fact families, the application's own wiring;
+- opening the four together -- by bare names through an import map, or, as the tester does under its strict browser rule, each part's release files vendored and imported by relative path -- and the switch over the fact families, the application's own wiring;
 - the `hit` function, `itemOf(target) ?? itemAt(screen)`, with what `itemAt` looks through;
 - a press through `resolvePress`, and a move, a release and a lost pointer one call each; the drag-become without `from`;
 - a chorded press or release told by a move whose `button` is 0 or more, Pointer Events giving a move with no button change `button` -1 (P17, measured under the trusted-input driver too);
 - claiming wheels, the context menu and the releases of buttons 3 and 4 (N2); a table naming its own outcomes (G12);
 - focus lost through `blur` and `keysLost`, a key whose `code` is empty answered untracked (N8);
-- the scale from `toScreen`: for a uniform scale the distance between the images of two points a unit apart, and otherwise the smaller of the two axis scales, three calls, with the example of an x scale of 2 and a y scale of 1, where an x-axis sample would pick a stride whose vertical neighbours lie closer than asked (o:F20); a resize the application's own listener (G15);
+- the conservative scale from three `toScreen` calls -- the images of the origin and of the two unit points give the linear part's columns `(a, b)` and `(c, d)`, and the scale is its smallest singular value, `sqrt((S - sqrt(S*S - 4*D*D)) / 2)` with `S` the sum of the four squares and `D = a*d - b*c` -- each recipe an executable check of the guide, with the counterexamples that defeat simpler ones: an x scale of 2 and a y scale of 1, where one axis's sample overstates, and the shear `x' = x + y`, `y' = 0.01 y`, where both axes measure at least 1 yet the scale is about 0.007 (o:F20, o:F14); a resize the application's own listener (G15);
 - looks by class under a strict browser rule (N3); fakes for tests in Node.js; and trusted input over the DevTools protocol, a held button named on every move (G8).
 
 **The gates (B424).**\
@@ -330,7 +368,7 @@ Each component takes `vector-scene`'s runtime check and its release workflow's r
 | Component | Built-ins its runtime check allows | Its platform-member pass | Clock and chance |
 |---|---|---|---|
 | `vector-scene` | its thirteen, unchanged | VS1's slice, `elementsFromPoint` added to the document's row, with a control -- a built file naming it passes -- and a falsifier -- one naming `elementFromPoint` fails -- in its `gate-checks.test.js` | held already |
-| `input-capture` | the same thirteen, its build naming no other | IC1's members, against the interfaces its values reach -- `EventTarget`, `Element`, `Window` and the pointer, mouse, wheel, keyboard and focus events -- with the declaration's own names the platform also uses, `focus` and `close` among them, allowed; a falsifier reading an event's `composedPath` fails | held already; also its source check's triple-slash fix and its Chrome teardown's removal of Chrome's temporary directory |
+| `input-capture` | the same thirteen, its build naming no other | against the members of `EventTarget`, `Element`, `Window`, `Event`, `UIEvent`, `MouseEvent`, `PointerEvent`, `WheelEvent`, `KeyboardEvent` and `FocusEvent` and what they extend, exactly these allowed: IC1's eighteen, the five `0.2.0` reads, the conversion's answer's `x` and `y`, and its own names `focus`, `name` and `length` -- the walk run on the `v0.1.0` build finding those three and nothing else (a:F2); falsifiers reading an event's `composedPath` or a target's `tagName` fail | held already; also its source check's triple-slash fix and its Chrome teardown's removal of Chrome's temporary directory |
 | `input-binding` | the thirteen and `ArrayBuffer`, `BigInt` and `DataView`, which `travel-beyond.ts` uses for IB10's exact fallback | none: it is handed no platform object, and its own names `id` and `exponent` are platform members' names | the forms `input-capture` refuses taken -- `Intl`, `Temporal`, `WeakRef`, `FinalizationRegistry`, `eval`, `Function`, a call through `constructor` (B414) |
 | `snap-grid` | the thirteen and `RangeError` | none: no platform object reaches it, and its names `open`, `points`, `r` and `scale` are platform members' names | the same forms, its first such check (B414) |
 
@@ -347,29 +385,32 @@ Draw moves onto `input-capture` `0.2.0`, `input-binding` `0.2.0` and `vector-sce
 The dependency line and the lockfile; the import map regenerated, and the tests that list the installed components restated (`tests/import-map.test.js`, `tests/probe-sides.test.js`, `tests/import-map-browser.test.js`); the gesture corpus replayed byte-identical but for the cases each move lists, each with both answers; the pixel probe against production finding nothing; an independent verifier passing the move.
 
 **`input-capture` `0.2.0`: B413 fixed.**\
-Draw lists `'blur'` alone; `ROUTE` (`app/src/capture.js:62`) gains `blur: 'blur'`, and `inputEventOf` (`:65-76`) carries the fact's `pointerId` for binding (RD18).\
-Input gains `blur(evt)`, consulting one new field, `shiftHeld`, set from the `shiftKey` of every pointer and key event Input is handed:
-1. when `shiftHeld`, `onShiftUp()` runs whole, as Shift's release would: the zone grid hidden, a live move or clone redrawn unlocked, a hovered Shift-only zone disarmed, and the Shift-only selection dropped at once or, while a press owns the pointer, when it ends (`shiftUpPending`, `afterShiftUpPress`);
-2. when not, nothing of Shift's runs, so zones Ctrl+A selected with no Shift held stay selected (H24.3, B352);
-3. `onArmingUp(evt)` runs with the blur's event, whose modifiers are all false, so an armed delete or clone affordance goes, as Alt's or Control's release would (a:F9);
-4. `shiftHeld` becomes false.
+Draw lists `'blur'` alone; `ROUTE` (`app/src/capture.js:62`) gains `blur: 'blur'`, and `inputEventOf` (`:65-76`) carries a pointer fact's `pointerId` for binding (RD18).\
+Input gains `blur(evt)` and one field, `shiftOwed`: set whenever `onShiftDown` runs -- showing the Shift layer, or locking a live move's axis -- and cleared only when `onShiftUp` runs, so no later event's `shiftKey` can forget a cleanup still owed (o:F7).
+1. When `shiftOwed`, `onShiftUp()` runs whole, as Shift's release would: the zone grid hidden, a live move or clone redrawn unlocked, a hovered Shift-only zone disarmed, and the Shift-only selection dropped at once or, while a press owns the pointer, when it ends (`shiftUpPending`, `afterShiftUpPress`).
+2. When not, nothing of Shift's runs, so zones Ctrl+A selected with no Shift press stay selected (H24.3, B352).
+3. `onArmingUp(evt)` runs with the blur's event, whose modifiers are all false, so an armed delete or clone affordance goes, as Alt's or Control's release would (a:F9).
 
-It cancels no gesture and ends no press: a drag continues across a focus change today, and the pointer's own events still reach the page.\
-Each of B413's cases is first reproduced in a test of draw's -- Shift held, focus lost, Shift released elsewhere, the zone grid still shown and a Shift-picked zone still selected; Alt held over a node, focus lost, the node still armed -- and then held fixed, with Ctrl+A's zones kept across a focus loss with no Shift held.\
-The move restates, read and not run: `tests/input.test.js:774` (B45's bound set gains `blur`); `tests/input-capture-move.test.js` (its added and removed listeners gain `host:blur`, and its sink a `blur` method); `tests/input-capture.test.js` (where it lists the sink's methods); `tests/fixtures/client-harness.mjs` (`dispatchFor` gains `onBlur`); `tests/fixtures/capture-parity.mjs` and `tests/fixtures/capture-parity-edges.json` (the `add-throws-at-contextmenu` case's new side adding and removing `host:blur`, and each event the new adapter makes holding `pointerId`).\
+It cancels no gesture and ends no press, draw's own policy: a drag continues across a focus change today.\
+B413's cases are first reproduced in tests of draw's and then held fixed: Shift held, focus lost, Shift released elsewhere -- the zone grid still shown and a Shift-picked zone still selected; the same with a pointer event whose `shiftKey` is false between the Shift press and the focus loss; Alt held over a node, focus lost -- the node still armed; and two controls, Ctrl+A's zones kept across a focus loss with no Shift press, and Shift pressed while typing in a field, whose key-down the adapter drops (`app/src/capture.js:102`) and whose key-up it delivers, leaving nothing owed.\
+The move restates, read and not run: `tests/input.test.js:774` (B45's bound set gains `blur`); `tests/input-capture-move.test.js` (its added and removed listeners gain `host:blur`, its sink a `blur` method, and its `FORM.press` and `FORM.pointer` `pointerId`); `tests/input-capture.test.js` (where it lists the sink's methods); `tests/fixtures/client-harness.mjs` (`dispatchFor` gains `onBlur`).\
+The parity mode is retired, as `INPUT-CAPTURE.md` planned "until the copy is deleted -- when B409 or B413 is ruled, or capture next changes", all three now: its comparison with the SHA-pinned copy of the old capture would differ on every pointer event by the `pointerId` the adapter now hands (a:F4), and the corpus replayed byte-identical stays the move's guard (GR6).\
+So `tests/input-capture-parity.test.js`, `tests/fixtures/capture-parity-edges.json` and the copy's folder, `tests/fixtures/pre-capture/`, are deleted; `tests/fixtures/capture-parity.mjs` keeps `sceneOver` alone, for `tests/input-capture.test.js` and `tests/input-capture-move.test.js`; `tests/fixtures/client-harness.mjs` loses its parity hook; `RULES.L4.verbatim`'s entry for the copy leaves `tools/layers.mjs`, and `tests/scan-layers.test.js`'s falsifiers V1 to V9 are restated against a fixture of their own; `tools/probe/capture-sample.mjs`'s note is restated.\
 Draw lists neither the wheel, which waits for pan and zoom (H26.6), nor the context menu, since its own listener on the host (B75, `app/src/capture.js`) covers the palette and the header beyond the surface; facts' `time` is read by nothing of draw's.
 
 **`input-binding` `0.2.0`: B427 fixed, another pointer told apart, the press resolved in one call.**\
 Draw declares its link gesture for button 0 (`app/src/input.js:225`); IB11's rule commits it when a chord's last release names another button.\
 B427 is first reproduced in a test of draw's -- a link drag, the right button pressed, the left released, the right released, the gesture left live under `0.1.0` -- and then held fixed.\
-Draw's facts carrying `pointerId`, o:F4's case -- a mouse button pressed beyond the canvas, a touch press opening a link, the mouse's button-2 release over the canvas -- keeps the link and its press and commits at the touch's own release with its own trigger, where `0.1.0` committed a click there with the press already ended; without `pointerId` revision 1's rule would have committed the link at the mouse's release.\
-Its press body becomes, with no change of behaviour:
-1. `track`; in run mode, `pointerDown` alone and `runModePress`, as today, the guard now read before the press is resolved, since `pointerDown` runs no code of draw's that could change the mode;
+Draw's facts carrying `pointerId`, a move or release of another pointer answers `otherPointer`, and draw's handlers return at once on it (o:F6): `move` calls `pointerMove` before `track`, and `release` returns before `dispatchUp` and the teardown that calls `onGestureEnd` and `afterShiftUpPress` (`app/src/input.js:1088-1095`).\
+So in o:F4's case -- a mouse button pressed beyond the canvas, a touch press opening a link, the mouse's release over the canvas -- the link, its press and the deferred queue all survive, and the touch's own release commits the link with its own trigger; an integration case holds it with remote changes queued (`bindGestureDefer`, `app/src/sync.js:72-74`), the queue released only after the touch's commit.\
+Its press body becomes, with no change of behaviour (checked against `app/src/input.js:632-641`, where `pointerDown` precedes the run-mode guard and the guard precedes the taken return, so in run mode `runModePress` runs taken or not):
+1. `track`; in run mode, `pointerDown` alone and `runModePress`, as today;
 2. otherwise `resolvePress(evt, { match, cancelled })`: `match` closes the labels, hides the hand and answers `resolveInput`'s `match` when it found a rule, else `null`; `cancelled` is `#cancelled(outcome, evt)` (`app/src/input.js:660-661`);
 3. a taken press, or one with no rule, returns; the rest of the body is unchanged.
 
-The binding parity fixture (`tests/fixtures/binding-parity.mjs`, `tests/fixtures/binding-parity-lifecycle.json`) confirms the same bodies run in the same order; where today's second `pressMatched` would throw, a cancel body having ended the press, `resolvePress` answers no phase, which no corpus case reaches (read, not run).\
-The chord and two-pointer sequences are listed apart there, each with both answers; draw calls none of IB14's operations, its rows reading the modifiers a fact carries.
+The binding parity fixture (`tests/fixtures/binding-parity.mjs`, `tests/fixtures/binding-parity-lifecycle.json`) confirms the same bodies run in the same order (GR7), the chord and two-pointer sequences listed apart, each with both answers; where today's code makes its second `pressMatched` whatever the cancel body did -- throwing if it ended the press, cancelling a gesture it started -- `resolvePress` makes none (IB15), which no corpus case reaches (read, not run).\
+The session spy (`tests/fixtures/session-spy/wrapper.mjs`) wraps `resolvePress` and the key operations beside its eight, logging the outcome `resolvePress` answers, since the calls it makes inside are not the wrapper's to see; F6 of `tests/input-binding-move.test.js:176-187`, which looks for the press's `pressMatched`, looks for its `resolvePress` (a:F1).\
+Draw calls none of IB14's operations, its rows reading the modifiers a fact carries.
 
 **`vector-scene` `0.2.0`.**\
 Nothing of draw's behaviour changes: draw calls no `itemAt` until its picks read items (H26.8), and its harness's fake document opens as before.
@@ -391,34 +432,34 @@ Each with its options and their costs, and a recommendation, to be asked of the 
 | RD1 | How capture's new event families arrive | (a) each only when the capture lists it in `listen`; (b) always -- draw's adapter would throw on every wheel turn, right click and focus loss (N7; read from the code, not run), and every page gains a wheel listener it never asked for; (c) a component of their own -- a second listener component on one surface | (a): no `0.1.0` declaration changes behaviour, and a consumer opts into exactly what it handles |
 | RD2 | The wheel listener's passivity | (a) `{ passive: false }`, so a claim works on any surface; (b) two arguments, a claim then working only on an element surface (N1), which the contract must say; (c) a declaration field choosing | (a): the claim must be decided before the platform scrolls, and a capture that lists the wheel has asked to decide it |
 | RD3 | The wheel's units | (a) deltas and `deltaMode` as delivered; (b) converted to pixels by a line and page height the declaration gives -- a number capture computes from a guess, the platform giving no line height; (c) both | (a): capture computes no number (D1), and "exactly" is the tester's whole point; the guide shows a conversion where an application wants one |
-| RD4 | A touchpad's pinch | (a) a `wheel` fact with `ctrlKey`, named nothing; (b) a `pinch` fact guessed from `ctrlKey` and fractional deltas -- a guess the platform does not support; (c) Safari's gesture events as well -- non-standard, not measured here | (a), with Safari's gesture events held, the trigger "a person on Safari reports a pinch shown as nothing", and the tester saying plainly that it does not show them |
+| RD4 | A touchpad's pinch | (a) a `wheel` fact with `ctrlKey`, named nothing; (b) a `pinch` fact guessed from `ctrlKey` and fractional deltas -- a guess the platform does not support; (c) Safari's gesture events as well -- non-standard, not measured here | (a), Safari lying outside the tester's covered browsers (IT-D12), its gesture events held with the trigger "a covered browser delivers a pinch as other than a `wheel`" |
 | RD5 | Where focus loss comes from | (a) `blur` on the key source; (b) `blur` and `visibilitychange` -- the latter fired at the document, which capture is not handed, and whose state capture cannot read without a target's member; (c) nothing, the application listening itself | (a): a key source's `blur` preceded the `visibilitychange` in the one leaving measured, a tab switch, and is the event that means no key-up will come to that source |
 | RD6 | The event's time | (a) `time` on every fact; (b) on facts of a listed family alone; (c) held | (a): it is data the platform delivered, it costs one field and one read, and the tester's hold duration and repeat rate need it, as binding's timed triggers will; the read refuses an event whose getter throws, a change listed beside `0.1.0` |
-| RD7 | Lock state (Caps Lock, Num Lock) | (a) held; (b) carried, by calling the event's `getModifierState` -- a platform method run while reading, and a state the gate cannot set over the protocol | (a), the trigger "an application's row or a person needs lock state shown": lock state is no input, so coverage holds without it, and the tester says it does not show it |
+| RD7 | Lock state (Caps Lock, Num Lock) | (a) held; (b) carried, by calling the event's `getModifierState` -- a platform method run while reading, and a state the gate cannot set over the protocol | (a), the trigger "an application's row or a person needs lock state shown": lock state is no input, so coverage holds without it |
 | RD8 | A gesture whose last release names another button (B427) | (a) commit on the release that ends a press of the gesture's button; (b) a `commitGesture` request -- each application then rebuilds the reasoning G6 says would ship as a bug; (c) commit on the move that releases the gesture's button -- binding would learn the platform's `buttons` bit order; (d) nothing, `button: null` documented -- the declared button then takes no press | (a), with RD18: binding keeps deciding when each phase is due, from one more field it already read, and no browser sequence of one pointer but the chord changes answer |
 | RD9 | Who keeps the keys held | (a) `input-binding`'s session (IB14); (b) each application, the guide showing a dozen lines; (c) `input-capture` -- stateless by design (IC7) | (a): B406 registered it as binding's limit with the trigger the tester's roll-over row meets; with IB15 the session becomes the one place an input surface's protocol lives -- the press's order, the release's rule, and which keys are down -- and a stuck key after focus loss is a trap of that protocol, as a lost start is of the press's; weighed against binding's line "holds no application's situation", the keys held being input state, as the press is |
 | RD10 | What lies under a captured pointer | (a) `vector-scene`'s `itemAt`, by the platform's `elementsFromPoint`, the first owned item in the hit stack; (b) a geometric query in the scene -- a second hit test that disagrees with the platform's at every stroke's edge (D4); (c) each application's own geometry, as the experiment did | (a): exact as the platform hit-tests, one member of the slice, optional so a root without it opens |
 | RD11 | The root's attributes | (a) stated as the application's (VS13); (b) a view in the scene now -- H26.6's question answered without its consumer; (c) left silent, as the experiment found it | (a): a sentence, and nothing H26.6 needs is decided |
 | RD12 | `snap-grid` | (a) no release, its documents and gate on its main branch -- the installed package keeps the documents G1, G2, G18 and G19 found, since it ships them (o:F17); (b) `0.1.1`, a patch carrying the documents, its built files byte-identical to `0.1.0`'s | (b): what a consumer installs is what it reads, and a patch release changes no code |
 | RD13 | B424 | (a) folded into each `0.2.0` and `snap-grid`'s `0.1.1`, each check stated for its component (section 3.5); (b) a release of its own later | (a): B424's trigger is the next release, and these are it |
-| RD14 | Draw's move | (a) in H26.5, each component after its release, lab first, four changes of behaviour ruled with this design -- B413's grid and Shift-only selection dropped on focus loss when Shift was held, an armed affordance cleared on focus loss (a:F9), a chord's release committing (B427), and another pointer's release no longer ending or committing the press (RD18) -- each reproduced before it is fixed; (b) held until H26.8 -- two releases of each component in use at once, and draw keeping the defects; (c) after the tester ships | (a): a second consumer moving at once proves each release keeps `0.1.0`'s behaviour for everything draw does not opt into, and that `resolvePress` serves an application with policy between its steps |
+| RD14 | Draw's move | (a) in H26.5, each component after its release, lab first, four changes of behaviour ruled with this design -- B413's grid and Shift-only selection dropped on focus loss when Shift was held, an armed affordance cleared on focus loss (a:F9), a chord's release committing (B427), and another pointer's move or release changing nothing, draw returning at once on it (RD18) -- each reproduced before it is fixed; (b) held until H26.8 -- two releases of each component in use at once, and draw keeping the defects; (c) after the tester ships | (a): a second consumer moving at once proves each release keeps `0.1.0`'s behaviour for everything draw does not opt into, and that `resolvePress` serves an application with policy between its steps |
 | RD15 | Draw's references in the contracts (G1) | (a) rules on their own terms, one provenance line; (b) each component's design of record moved into its own repository, draw keeping the rulings alone -- the programme's designs then split across five repositories; (c) as published | (a): a newcomer reads each contract alone, and `H26-12` keeps the programme's records in draw |
 | RD16 | The consumer reference (G2) | (a) each `README.md`'s Use section; (b) a `USE.md` beside it -- a third document to find; (c) generated from the TypeScript declarations -- shapes without the traps | (a): the first page a consumer opens |
 | RD17 | Where the guide lives | as IT-D6, decided once there | `GUIDE.md` in `apnex/input-tester`'s `docs` folder, beside its worked example, linked from each `README.md` |
-| RD18 | A move or release of another pointer (N9, o:F4) | (a) binding reads `pointerId`, and while a press is held a move or release of another pointer changes nothing; draw's facts carry it; (b) revision 1's rule, the case listed as changed -- a mouse's release commits the gesture a touch began; (c) all of several pointers held with B409, the case committing wrongly until H26.8 | (a): about ten lines and one optional field, exact for the case, a second pointer's press still held with B409; facts with no `pointerId` answer as before |
+| RD18 | A move or release of another pointer (N9, o:F4) | (a) binding reads `pointerId`, and while a press is held a move or release of another pointer changes nothing and answers `otherPointer`; draw's facts carry it, and its handlers return at once on it; (b) revision 1's rule, the case listed as changed -- a mouse's release commits the gesture a touch began; (c) all of several pointers held with B409, the case committing wrongly until H26.8 | (a): about ten lines and one optional field, exact for the case, a second pointer's press still held with B409; facts with no `pointerId` answer as before |
 | RD19 | Where the press's routing lives (G10, IT-D3) | (a) a routing operation in `input-binding` reading capture's `type` -- breaks IB1's opacity and couples two vocabularies; (b) a fifth component composing both by their shapes -- two contracts coupled, releases in lockstep, a repository and gate more, shaped by one application's policy; (c) the tester's own declared part, an exception to H26-12 recorded -- both traps left to every consumer; (d) the guide alone -- likewise; (e) `resolvePress(fact, match)` with the match computed first -- draw cannot adopt it, its labels and run mode sitting between and its cancel body reading the state; (f) a generator the application steps -- no shorter; (g) `resolvePress(fact, { match, cancelled })` (IB15) | (g): compared now, draw's routing and the experiment's share about five lines of mechanism, which hold both traps, and differ only in policy at four points -- before the press, between it and the match, inside the cancel, and after; draw adopts (g) with no change of behaviour and the tester with no policy of its own; the switch over fact types stays wiring, since no component imports another |
 
-**Registered when this is ratified,** each with its revival trigger (RU3): a shared trusted-input driver (G8); binding's timed triggers (G11); a scale the scene answers, with the view (G15, B419); a shared keyboard plan (G17); Safari's gesture events (RD4); lock state (RD7); composition facts (N5); and B417's trigger restated (section 4).
+**Registered when this is ratified,** each with its revival trigger (RU3): a shared trusted-input driver (G8); binding's timed triggers (G11); a scale the scene answers, with the view (G15, B419); a shared keyboard plan (G17); Safari's gesture events (RD4); lock state (RD7); composition facts (N5); double clicks of buttons other than the primary, with the timed triggers (G11); and B417's trigger restated (section 4).
 
 ---
 
 ## 6. Axiom alignment audit (M7)
 
 **Identity.**\
-The components' next releases at revision 2, read against draw's `19e5dd5`, each component's `v0.1.0` and mission-kit at `e33c850`, after reading 1.
+The components' next releases at revision 3, read against draw's `19e5dd5`, each component's `v0.1.0` and mission-kit at `e33c850`, after readings 1 and 2.
 
 **Verdict.**\
-Revision 2 is `pass, with guardrails`, by its author; its standing is to be confirmed by a second reading (M1).
+Revision 3 is `pass, with guardrails`, by its author; its standing is to be confirmed by a confirming reading (M1).
 
 | Layer | Axiom | Weight | How the design stands |
 |---|---|---|---|
@@ -523,6 +564,49 @@ The director gave a disposition for each finding; the behavioural claims were ch
 | x:F6 | the `meta` rule's subset and real headers unproven | **Fixed**, as a:F15; no `'unsafe-inline'` is needed, presentation attributes and the CSS object model passing (P11). |
 | x:F7 | `itemAt`'s walk, layers and nesting not verified | **Fixed** by o:F10 and o:F11: I13 and I14 hold the walk, `pointer-events` and nested shapes. |
 
+### 7.2 Reading 2 -- 2026-10-24, of revision 2 at `19e5390`, with the tester's architecture at `71b0842`
+
+Read cold through the same panel, `--tools on --verify`, by the same three, the reading kept whole at `~/taceng/drawv2-eval-runs/h26-readings/it/reading-2/`.\
+`a`'s reply was malformed JSON, so the panel recorded none of its findings; its twelve were recovered from the raw reply into `a-findings.txt` beside the reading, and carry no verdict from another family.\
+It reported 32 findings: 12 from `a` (7 blocking, 4 should-fix, 1 note), 14 from `o` (8 blocking, 6 should-fix) and 6 from `x` (2 blocking, 3 should-fix, 1 minor).\
+`a` supported all 14 of `o`'s and refuted all 6 of `x`'s; `o` refuted all of `x`'s; `x` refuted all of `o`'s.\
+The director gave a disposition for each; what revision 3 newly relies on was measured in Chrome (P19, P20) or run on the released code (`scratch/`).
+
+| Finding | What it said | Disposition, and why |
+|---|---|---|
+| o:F1 | the key rows still overlap | **Fixed** *A*: rows exclusive, Shift classed, the browser's keys refused by every claiming row; the released binding finds no overlap over 46,469 facts and four contexts, and revision 2's rows reproduce Ctrl+A's. |
+| o:F2 | `when` cannot tell a held key's release from an unseen one | **Fixed** *A*: a per-fact context, `wasHeld` and `otherHeld`, the same for the trace, the match and the overlap check. |
+| o:F3 | the double row refuses the platform's `dblclick` | **Fixed** *A*: no pointer type asked of `double`; other buttons' double clicks held (G11). |
+| o:F4 | `resolvePress` answers inconsistently after re-entry | **Fixed**: IB15's table, the match read once, `phase` never `cancel`, I17's oracle limited to where it holds. |
+| o:F5 | I15 contradicts IB11 for a pressless gesture | **Fixed**: revision 2's sentence was wrong; IB11's decided cases, the `0.1.0` column run on the released code, and I15 stating the table's condition. |
+| o:F6 | draw ends its gesture work on an ignored release | **Fixed**, confirmed in `app/src/input.js`: `otherPointer`, draw returning before dispatch and teardown, an integration case with remote changes queued. |
+| o:F7 | the blur guard can forget a Shift cleanup owed | **Fixed**: an obligation, cleared only by `onShiftUp`, the intervening event a test. |
+| o:F8 | focus loss can leave the tester's gesture live | **Fixed** *A*: revision 2's change reverted, `blur` calling `pointerLost`. |
+| o:F9 | commit meanings have no trace in the legend | **Fixed** *A*: the derived fact's shape, its trace and match in its step, input and meaning marked apart, examples per family. |
+| o:F10 | the threshold is unstated | **Fixed** *A*: the session's declaration, 4 drawing units shown on the page, the boundary tested. |
+| o:F11 | backend-bucket headers need Cloud CDN | **Partial**: not established -- Google's custom-headers documentation and `gcloud compute backend-buckets update --help` state them with no CDN requirement; the lab deploy measures the headers before production, the URL map's header action the stated alternative. |
+| o:F12 | the header leaves script loads open; no allowlist | **Fixed** *A* by the browser-rule decision: no import map, one whole rule in the header, the allowlist written out, planted leaks (P20). |
+| o:F13 | "not shown" does not meet the ratified coverage | **Decision owed** *A* (IT-D12): covered browsers named; composition reaches no page with nothing editable (P19). |
+| o:F14 | the smaller axis scale fails under shear | **Fixed**: the smallest singular value, the shear an executable check (3.5). |
+| x:F1 | the run-mode guard and `resolvePress` break parity | **Not changed in substance**: rechecked, the guard's order holds and `match` reads no mode; GR7 is checked by the parity fixture at the build. |
+| x:F2 | the pointer rule underspecified for four cases | **Fixed** with o:F5: each case a row of IB11's table. |
+| x:F3 | the split rule and the entry last unproved | **Fixed** by the browser-rule decision: one rule, no hash; atomicity tested between deploy steps (*A*). |
+| x:F4 | read Shift from binding's keys | **Fixed** otherwise, as o:F7: draw tracks no keys. |
+| x:F5 | rows not proved exclusive | **Fixed** with o:F1. |
+| x:F6 | the verdict needs examples | **Fixed** with o:F9. |
+| a:F1 | the spy misses the press's calls | **Fixed**: the spy and F6 restated; the guard's order rechecked and holding. |
+| a:F2 | capture's member check fails on its own names | **Fixed**, run on the build: `focus`, `name` and `length` found, the exact set stated (3.5). |
+| a:F3 | draw's `FORM` and edge records break | **Fixed**: `FORM` restated, the edge records retired with the parity mode; `tests/import-map-browser.test.js:90` reads named fields, unaffected. |
+| a:F4 | parity breaks on every event | **Fixed**: the parity mode retired, as `INPUT-CAPTURE.md` planned. |
+| a:F5 | `shiftHeld` fails when typing in a field | **Fixed** as o:F7, the field a control. |
+| a:F6 | step 5 unclear when `cancelled` changes the press | **Fixed** with o:F4. |
+| a:F7 | IB2's reading order incomplete | **Fixed**: IB2's rows, `pointerId` by descriptor alone, `undefined` refused. |
+| a:F8 | key rows overlap on modifiers and empty codes | **Fixed** *A* with o:F1. |
+| a:F9 | buttons beyond 4, `buttons` `null` and `double` | **Fixed** *A*: a row for each, the double as o:F3. |
+| a:F10 | the new facts' types and mouse state | **Fixed**: the types tabled (IC9); the tester's rule for context-menu, double and wheel facts (*A*). |
+| a:F11 | `itemAt` may stop at a removed item's element | **Fixed**: it stops at an item still held. |
+| a:F12 | the header carries no `default-src` | **Fixed** *A* by the browser-rule decision. |
+
 ---
 
 ## Appendix A -- each change, and the tester's need it meets
@@ -535,7 +619,7 @@ The director gave a disposition for each finding; the behavioural claims were ch
 | capture: `blur` facts | G5, N6 | keys held when focus is lost unlit, and their releases said unreported | fidelity |
 | capture: `time` | G13 | how long a key is held, and its repeat interval | fidelity |
 | binding: IB11's release rule | G6 | a chord whose last release names another button ends its gesture | fidelity |
-| binding: another pointer told apart | N9 | a mouse's release never ending a touch's press, though only the mouse is drawn | fidelity |
+| binding: another pointer told apart | N9 | none of its own, since it hands touch and pen to no session; every consumer handing several pointers to one session, draw among them | fidelity |
 | binding: IB14 held keys, untracked keys | G5, N8 | which keys are held, kept once, a roll-over row, and a key with no identity shown as delivered | fidelity, proof of reuse |
 | binding: `resolvePress` | G10 | every press through the session with no routing of its own | proof of reuse, teachability |
 | scene: `itemAt` | G7, G16 | the key under a captured drag, and its drop | fidelity, proof of reuse |
