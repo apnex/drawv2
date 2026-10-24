@@ -457,6 +457,9 @@ export class Input {
 		// H24.3: the kinds picked only under Shift -- a zone -- which leave the selection once Shift is released
 		this.shiftOnlyKinds = new Set(picksOf(parts).filter((p) => p.modifier === 'shiftKey').map((p) => p.kind));
 		this.shiftUpPending = false;   // Shift came up while a press owned the pointer: drop them when it ends
+		// H26.5 (B413): delivered input may have activated what Shift's release clears -- set by Shift's key-down and by every event
+		// Input is handed whose `shiftKey` is true, cleared only when `onShiftUp` runs -- so a focus loss runs that cleanup (`blur`)
+		this.shiftOwed = false;
 		// C-e: what each part's items cover at a point and in a box, in the parts' order; a link ends at an anchor
 		this.points = pointsOf(parts);
 		this.anchorWords = [...this.hitFacts].filter(([, f]) => f.anchor).map(([w]) => w);
@@ -627,6 +630,7 @@ export class Input {
 	surface-mode guard, a live-gesture hook, and an ordered table (app/src/recognize.js).
 	*/
 	press(evt) {
+		this.#markShiftOwed(evt);   // H26.5 (B413)
 		// L1 first: every press moves the pointer, hands the armed `w` over, and ends a chain (app/src/input-state.js); and the session
 		// holds the press (H26.2)
 		this.state = track(this.state, evt);
@@ -991,6 +995,7 @@ export class Input {
 	deep; each is now the entry that owns the rest of that gesture's lifecycle.
 	*/
 	move(evt) {
+		this.#markShiftOwed(evt);   // H26.5 (B413)
 		this.state = track(this.state, evt);
 		const outcome = this.#session.pointerMove(evt);   // H26.2: the press's travel, and an update when a gesture is live
 		const moving = this.mode === 'move' || this.mode === 'clone';
@@ -1086,6 +1091,7 @@ export class Input {
 	commit, or the two arrive out of order.
 	*/
 	release(evt) {
+		this.#markShiftOwed(evt);   // H26.5 (B413)
 		const wasGesturing = this.isGesturing();
 		const outcome = this.#session.pointerUp(evt);   // H26.2: the press ends, and the live gesture commits if it takes this button
 		evt.trigger = outcome.trigger;   // L2: a click or a drop, from the press the session tracked
@@ -1290,6 +1296,7 @@ export class Input {
 	// H26.2 (section 5 step 4; 6.3): outcome first, as a commit is -- the session ends the gesture, then the body runs on the outcome,
 	// and the teardown runs whatever the body does, in a finally, as the release runs its own
 	cancelDrag(evt) {
+		this.#markShiftOwed(evt);   // H26.5 (B413)
 		let outcome;
 		if (evt && evt.type === 'cancel') {   // the browser took the pointer: no press, and the gesture ends
 			this.state = track(this.state, evt);
@@ -1333,6 +1340,7 @@ export class Input {
 
 	// ---- label editing ----
 	double(evt) {
+		this.#markShiftOwed(evt);   // H26.5 (B413)
 		const { rule } = resolveInput(this.doubleRules, evt, this.situation(), { readOnly: this.readOnly });
 		if (rule) this[rule.run](evt);
 	}
@@ -1371,6 +1379,7 @@ export class Input {
 	them uniformly.
 	*/
 	keyDown(evt) {
+		this.#markShiftOwed(evt);   // H26.5 (B413)
 		// typing contexts (header menu, label editor) never reach here: capture keeps them (app/src/capture.js)
 		// the Rules engine finds the ONE row this key means in this situation (dev/RULES.md section 11)
 		const { rule, claimed } = resolveInput(this.keyRules, evt, this.situation(null, this.mode), {
@@ -1402,6 +1411,7 @@ export class Input {
 	// ---- key handlers. Bodies unchanged from the ladder; only their dispatch moved. ----
 
 	onShiftDown(evt) {
+		this.shiftOwed = true;   // H26.5 (B413): Shift's own key-down, whatever its event says
 		this.shiftUpPending = false;   // H24.3: held again, so nothing is owed when the press ends
 		if (this.mode === 'move' || this.mode === 'clone') {
 			// re-render the drag NOW: the commit follows the last rendered frame
@@ -1609,20 +1619,46 @@ export class Input {
 	during H6 by slices that ran to `onKeyUp` — the second time is why they sit above the key handlers.)
 	*/
 	hover(evt, on) {
+		this.#markShiftOwed(evt);   // H26.5 (B413)
 		this.overlayUi.hover(evt.on, on, evt, this.isGesturing());
 		this.overlayUi.arm(evt, { readOnly: this.readOnly, gesturing: this.isGesturing() });
 	}
 
 	// a key release: the ONE row it means (app/src/keymap.js KEY_RELEASES), through the same engine as a key press
 	keyUp(evt) {
+		this.#markShiftOwed(evt);   // H26.5 (B413)
 		const { rule } = resolveInput(this.releaseRules, evt, this.situation(null, this.mode), {
 			readOnly: this.readOnly, helpOpen: !!(this.help && isShown(this.help)), gesturing: this.isGesturing(),
 		});
 		if (rule) this[rule.run](evt);
 	}
 
+	/*
+	H26.5 (B413; dev/design/components/RELEASES-0.2.md section 4, RD14) -- THE HOST LOST FOCUS, and no release of a key held is promised
+	to reach the canvas after it (input-capture's focus loss), so this runs what those releases would have run, as far as delivered
+	input can have activated it:
+	1. when Shift is owed, `onShiftUp` whole, as Shift's release would -- the zone grid hidden, a live move or clone redrawn unlocked, a
+	   hovered Shift-only zone disarmed, and the Shift-only selection dropped at once or, while a press owns the pointer, when it ends;
+	2. when not, nothing of Shift's, so zones Ctrl+A selected with no Shift held since stay selected until Shift is next released (B352);
+	3. the arming's, with the blur's event, whose modifiers are all false: an armed delete or clone affordance goes, as Alt's or
+	   Control's release would take it.
+	It cancels no gesture and ends no press: a drag continues across a focus change, draw's own policy.
+	*/
+	blur(evt) {
+		if (this.shiftOwed) this.onShiftUp();
+		this.onArmingUp(evt);
+	}
+
+	// H26.5 (B413): an event carrying Shift may have activated what Shift's release clears -- the press showing the zone grid and picking
+	// a Shift-only kind, the move showing it and locking an axis, the release and the cancel showing it again, a hover reaching a zone
+	// only while that grid is shown -- so its cleanup is owed until `onShiftUp` runs. Called first in every handler capture routes to
+	#markShiftOwed(evt) {
+		if (evt?.shiftKey) this.shiftOwed = true;
+	}
+
 	// Shift released: the zone grid goes, a move redraws with the axis lock off, and a hovered zone drops its states
 	onShiftUp() {
+		this.shiftOwed = false;   // H26.5 (B413): the one place the obligation is met
 		this.overlayUi.showGrids({ shiftKey: false }, false);
 		if ((this.mode === 'move' || this.mode === 'clone') && this.state.pointer.at) {
 			// re-render with the lock released: the commit follows the frame

@@ -1699,6 +1699,64 @@ test('H24.3: on the product page releasing Shift deselects a zone, and a Shift+d
 });
 
 /*
+H26.5 (B413; dev/design/components/RELEASES-0.2.md section 4, RD14) -- ON THE PAGE: A FOCUS LOSS CLEARS WHAT SHIFT AND ALT LEFT.
+
+The page composes its capture listing the window's `blur` (app/src/capture.js), and Input's `blur` runs Shift's cleanup when Shift is owed
+and the arming's with the blur's modifiers, all false. So with Shift held through real input, a Shift+right click selecting a zone and the
+zone grid shown, a focus loss at the window -- the event a tab switch fires first (input-capture's IC1) -- hides the grid and drops the
+zone, Shift's release never arriving; and a device Alt armed over is disarmed. The side-by-side of the harness cannot show that the page's
+own composition listens: only the page can.
+*/
+test('H26.5 (B413): on the product page a focus loss hides the zone grid, drops a Shift-picked zone and disarms an Alt-armed device', { skip: SKIP }, async () => {
+	const t = await attach(`http://127.0.0.1:${port}/${NET_DIAGRAM}`);
+	let zoneId = null;
+	const key = (type, k, code, vk, modifiers) => t.send('Input.dispatchKeyEvent', { type, key: k, code, windowsVirtualKeyCode: vk, modifiers });
+	try {
+		await until(t, `document.getElementById('node-ab00a1') ? 1 : 0`, 8000);
+		await t.eval(`window.draw.input.setReadOnly(false), 1`);
+		zoneId = await t.eval(`(async () => { const { makeZone } = await import('/plugins/zones/make-zone.mjs');
+			const z = makeZone(window.draw.model, { x: -90, y: 270, w: 180, h: 120 });
+			window.draw.history.commit({ label: 'zone', entries: [{ op: 'put', kind: 'zone', entity: z }] });
+			return z.id; })()`);
+		await until(t, `document.getElementById('${zoneId}') && window.draw.sync.outbox.every((m) => m.answered) ? 1 : 0`, 6000);
+		await t.eval(`window.draw.selection.clear(), 1`);
+		const screen = (x, y) => t.eval(`JSON.stringify((() => { const m = document.getElementById('container').getScreenCTM(); return [m.a * ${x} + m.e, m.d * ${y} + m.f]; })())`).then(JSON.parse);
+		const seen = (id) => t.eval(`JSON.stringify({ grid: document.getElementById('container').classList.contains('zonegrid'), selected: window.draw.selection.list(),
+			armed: document.getElementById('${id}')?.classList.contains('armed') ?? null })`).then(JSON.parse);
+		const focusLost = () => t.eval(`(window.dispatchEvent(new FocusEvent('blur')), 1)`);
+
+		// Shift held, a Shift+right click on the zone
+		const [zx, zy] = await screen(0, 330);
+		await key('rawKeyDown', 'Shift', 'ShiftLeft', 16, 8);
+		await t.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: zx, y: zy, modifiers: 8 });
+		await t.send('Input.dispatchMouseEvent', { type: 'mousePressed', x: zx, y: zy, button: 'right', buttons: 2, clickCount: 1, modifiers: 8 });
+		await t.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: zx, y: zy, button: 'right', buttons: 0, clickCount: 1, modifiers: 8 });
+		await sleep(120);
+		assert.deepEqual(await seen(zoneId), { grid: true, selected: [zoneId], armed: false }, 'precondition: Shift shows the zone grid, and Shift+right click selects the zone');
+		await focusLost(); await sleep(60);
+		assert.deepEqual(await seen(zoneId), { grid: false, selected: [], armed: false }, 'the focus loss stands in for Shift\'s release: the grid hidden, the zone dropped');
+		await key('keyUp', 'Shift', 'ShiftLeft', 16, 0);   // Shift's release, here only to leave the page as it was
+
+		// Alt held over a device, then the focus loss
+		const [dx, dy] = await screen(-360, 0);
+		await t.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: dx, y: dy, modifiers: 0 });
+		await sleep(60);
+		await key('rawKeyDown', 'Alt', 'AltLeft', 18, 1);
+		await sleep(60);
+		assert.equal((await seen('node-ab00a1')).armed, true, 'precondition: Alt over the device arms it');
+		await focusLost(); await sleep(60);
+		assert.equal((await seen('node-ab00a1')).armed, false, 'the focus loss stands in for Alt\'s release: the device disarmed');
+		await key('keyUp', 'Alt', 'AltLeft', 18, 0);
+	} finally {
+		if (zoneId) {
+			await t.eval(`(() => { const z = window.draw.model.get('zone', '${zoneId}'); if (z) window.draw.history.commit({ label: 'unzone', entries: [{ op: 'del', kind: 'zone', entity: { ...z } }] }); return 1; })()`).catch(() => {});
+			await until(t, `window.draw.sync.outbox.every((m) => m.answered) ? 1 : 0`, 6000).catch(() => {});
+		}
+		await t.close();
+	}
+});
+
+/*
 H24.5 -- ON THE PAGE, WITH REAL INPUT: Shift+left drag that starts inside a zone draws a second zone over it, and Shift+right
 drag moves a zone. The right press is Chrome's own, so the page's context-menu refusal and its pointer capture are exercised
 with the button the gesture now uses.

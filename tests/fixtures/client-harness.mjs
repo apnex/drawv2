@@ -345,6 +345,8 @@ answers a function of `{ svg, host, sink, picks, regions }` that makes the fakes
 `open` runs -- the component's eight on the surface and two on the host, and the adapter's menu -- calls `open` with them, and answers
 the nine methods tests drive the canvas by, each calling the listener added for its event, as a browser calls it. An object's own
 `addEventListener` is kept and still called, so a test's host sees what it always saw; nothing else of a fake is touched.
+RESTATED at H26.5 (dev/design/components/RELEASES-0.2.md section 4): and the host's `blur`, which draw lists, so three on the host and a
+tenth method, `onBlur`, which calls nothing when no blur listener was added -- a focus loss the platform fires though nothing hears it.
 */
 export function dispatchFor(open) {
 	return ({ svg, scene, host, sink, picks = [], regions = {} }) => {   // H26.4: and the canvas's scene, whose toDrawing converts
@@ -365,6 +367,9 @@ export function dispatchFor(open) {
 			onDown: call('svg:pointerdown'), onMove: call('svg:pointermove'), onUp: call('svg:pointerup'), onCancel: call('svg:pointercancel'),
 			onHover: (evt, entering) => listeners.get(entering ? 'svg:pointerover' : 'svg:pointerout')(evt),
 			onDblClick: call('svg:dblclick'), onKeyDown: call('host:keydown'), onKeyUp: call('host:keyup'), onContextMenu: call('host:contextmenu'),
+			// H26.5 (dev/design/components/RELEASES-0.2.md section 4): the host's focus loss -- the platform fires it whether or not anything
+			// listens, so a capture that added no blur listener hears nothing of it, as draw heard nothing before input-capture 0.2.0 (B413)
+			onBlur: (evt) => listeners.get('host:blur')?.(evt),
 		};
 	};
 }

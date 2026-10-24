@@ -23,12 +23,13 @@ import { sceneOver } from './fixtures/capture-parity.mjs';
 // handed a scene over itself, which calls the surface's own getScreenCTM as toCanvas did
 const captureDispatch = (args) => dispatchWith({ ...args, scene: sceneOver(args.svg) });
 
-// a sink that records what it is handed, and optionally claims or captures
+// a sink that records what it is handed, and optionally claims or captures. RESTATED at H26.5 (dev/design/components/RELEASES-0.2.md
+// section 4): and `blur`, the host's focus loss, which draw lists (B413)
 function probe({ claim = false, capture = false } = {}) {
 	const got = [];
 	const take = (name) => (e) => { got.push([name, e]); if (claim) e.claimed = true; if (capture) e.capture = true; };
 	return { got, sink: { press: take('press'), move: take('move'), release: take('release'), cancelDrag: take('cancel'),
-		hover: take('hover'), double: take('double'), keyDown: take('keyDown'), keyUp: take('keyUp'), leave: take('leave') } };
+		hover: take('hover'), double: take('double'), keyDown: take('keyDown'), keyUp: take('keyUp'), leave: take('leave'), blur: take('blur') } };
 }
 const quietSvg = () => { const s = { calls: [], addEventListener() {}, removeEventListener() {}, setPointerCapture: (id) => s.calls.push(id), getScreenCTM: () => ({ inverse: () => ({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }) }) }; return s; };
 const quietHost = () => ({ addEventListener() {}, removeEventListener() {} });
@@ -87,6 +88,18 @@ test('a key says whether focus is on a control, which Tab must leave to the brow
 	const onButton = { tagName: 'BUTTON', closest: (s) => (s.includes('button') ? {} : null) };
 	assert.equal(seen(quietSvg(), 'onKeyDown', key('Tab', { target: onButton })).onControl, true);
 	assert.equal(seen(quietSvg(), 'onKeyDown', key('Tab')).onControl, false);
+});
+
+test('H26.5 (B413): the host\'s focus loss reaches the input layers\' blur, as plain data with every modifier false, and takes no pointer', () => {
+	const svg = quietSvg();
+	const { got, sink } = probe({ capture: true });
+	const c = captureDispatch({ svg, host: quietHost(), sink });
+	c.onBlur({ timeStamp: 3, preventDefault() {} });
+	assert.deepEqual(got.map(([n]) => n), ['blur']);
+	const [[, e]] = got;
+	assert.deepEqual(JSON.parse(JSON.stringify(e)), e, 'no functions, no elements, no event');
+	assert.deepEqual([e.shiftKey, e.ctrlKey, e.altKey, e.metaKey], [false, false, false, false], 'what Input hands the arming: nothing held');
+	assert.deepEqual(svg.calls, [], 'a capture asked of a focus loss takes nothing: its fact names no pointer');
 });
 
 test('B75: the context menu is suppressed everywhere but a field -- the browser\'s question, answered in capture', () => {

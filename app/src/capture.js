@@ -17,6 +17,9 @@ WHAT DRAW SUPPLIES, each draw's content or policy:
 	            see; otherwise whether focus is on a button, link, field or tabbable element, where Tab must keep its meaning
 	deliver     the round trip: each fact made into draw's INPUT EVENT, handed to the input layers, and in a `finally` the reply asked
 	            to claim the event (`claimed`, preventDefault) and to take the pointer (`capture`), as the input layers wrote
+	listen      `blur` alone (H26.5, dev/design/components/RELEASES-0.2.md section 4): the host's focus loss, after which no release of
+	            a key held is promised to arrive, handed to Input's `blur` (B413). Neither the wheel, which waits for pan and zoom
+	            (H26.6), nor the context menu, which draw's own listener on the host covers beyond the surface (B75)
 
 AN INPUT EVENT is today's, field for field and in today's key order (section 5, G7): `type`; `button`, `0` for a key; `key`; `repeat`,
 `false` for a pointer; the modifiers; on a pointer `at` and `on`; on a press `region`; on a key-down `onControl`; `claimed` and `capture`
@@ -26,8 +29,9 @@ WHAT NEVER REACHES THE INPUT LAYERS. Keys typed into a field: canvas shortcuts d
 everywhere but a field, which is the browser's question, not a gesture's (B75) -- draw's own listener, on the host, after the keys,
 since the component makes no menu fact (D5, B412).
 
-KEPT, each registered (section 6.3): one press for every pointer -- draw's event carries no `pointerId`, so a second pointer replaces the
-first's press (B409); and a key released while the page lacks focus makes no key-up, since nothing listens for `blur` (B413).
+KEPT, registered (section 6.3): one press for every pointer -- draw's event carries no `pointerId`, so a second pointer replaces the
+first's press (B409). RESTATED at H26.5: a key released while the page lacks focus still makes no key-up, but the focus loss before it
+is now heard and handed to Input's `blur`, which clears what Shift, Alt and Control left (B413, RELEASES-0.2.md section 4).
 */
 import { openCapture } from '@apnex/input-capture';
 import { hitWith } from './pick.js';
@@ -58,8 +62,8 @@ function regionOf(target, { drawn = '', target: aim = '' } = {}) {
 // a key typed into a field: canvas shortcuts never apply there
 const typing = (target) => ['INPUT', 'TEXTAREA', 'SELECT'].includes(target && target.tagName);
 
-// the input layers' method for each fact; `over` and `out` are `hover`, entering or not
-const ROUTE = { down: 'press', move: 'move', up: 'release', cancel: 'cancelDrag', double: 'double', 'key-down': 'keyDown', 'key-up': 'keyUp' };
+// the input layers' method for each fact; `over` and `out` are `hover`, entering or not. H26.5: `blur`, the host's focus loss (B413)
+const ROUTE = { down: 'press', move: 'move', up: 'release', cancel: 'cancelDrag', double: 'double', 'key-down': 'keyDown', 'key-up': 'keyUp', blur: 'blur' };
 
 // draw's input event from one fact -- today's form, field for field and in today's key order
 function inputEventOf(event) {
@@ -97,6 +101,9 @@ export function captureCanvas({ svg, scene, host, sink, picks = [], regions = {}
 			if (event.type !== 'key-down') return null;
 			return typing(target) ? { typing: true, onControl: false } : { typing: false, onControl: askable(target) && !!target.closest(CONTROL) };
 		},
+		// H26.5 (RELEASES-0.2.md section 4): the focus loss alone; its fact is of neither family, every field null and its modifiers
+		// false, and is asked neither `hit` nor `focus` (input-capture's IC5), so its input event has a key-up's form, `key` and `repeat` null
+		listen: ['blur'],
 		deliver: (event, reply) => {
 			if (event.type === 'leave') return sink.leave();
 			if (event.type === 'key-down' && event.focus.typing) return;

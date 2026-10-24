@@ -770,8 +770,9 @@ test('B45: keyboard listeners bind to the injected host, not a global', () => {
 	try {
 		// exhaustive on purpose: a stray binding to a global, or one moved down to the svg, both show
 		// up here as a changed set. contextmenu joined at B75 -- the browser menu has to be suppressed
-		// across the panels beside the canvas, which is host scope, not canvas scope.
-		assert.deepEqual(bound.sort(), ['contextmenu', 'keydown', 'keyup'],
+		// across the panels beside the canvas, which is host scope, not canvas scope. RESTATED at H26.5 (RELEASES-0.2.md section 4): and
+		// blur, the host's focus loss, which draw lists with input-capture 0.2.0 (B413)
+		assert.deepEqual(bound.sort(), ['blur', 'contextmenu', 'keydown', 'keyup'],
 			'every global listener went to the host it was given');
 	} finally { h.restore(); }
 });

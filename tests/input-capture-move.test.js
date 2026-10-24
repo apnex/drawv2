@@ -60,7 +60,8 @@ function recorded(fields) {
 	return { evt, reads };
 }
 
-const SINK = ['press', 'move', 'release', 'cancelDrag', 'hover', 'double', 'keyDown', 'keyUp', 'leave'];
+// RESTATED at H26.5 (dev/design/components/RELEASES-0.2.md section 4): and `blur`, the host's focus loss, which draw lists (B413)
+const SINK = ['press', 'move', 'release', 'cancelDrag', 'hover', 'double', 'keyDown', 'keyUp', 'leave', 'blur'];
 const recordingSink = (got, answer = () => {}) => Object.fromEntries(SINK.map((m) => [m, (...args) => { got.push([m, args]); answer(m, args[0]); }]));
 const open = (got = [], answer) => {
 	const f = fakes();
@@ -75,21 +76,23 @@ test('H26.3 step 3: app/src/capture.js exports captureCanvas and emitToHost, and
 	assert.doesNotMatch(fs.readFileSync(ADAPTER, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, ''), /\bclass\b/, 'and the module declares none');
 });
 
+// RESTATED at H26.5 (RELEASES-0.2.md section 4): the host's blur, which draw lists, added by the component after its ten (IC4) and before
+// the menu's, and removed first of the component's
 test('H26.3 step 3: the component adds every pointer, double-click and key listener, in today\'s order; the adapter adds the menu\'s alone, after them', () => {
 	const restore = installDom();
 	try {
 		const o = open();
 		assert.deepEqual(o.added, [
 			...['pointerleave', 'pointerdown', 'pointermove', 'pointerup', 'pointercancel', 'pointerover', 'pointerout', 'dblclick'].map((n) => [`svg:${n}`, 'component']),
-			['host:keydown', 'component'], ['host:keyup', 'component'], ['host:contextmenu', 'adapter']]);
+			['host:keydown', 'component'], ['host:keyup', 'component'], ['host:blur', 'component'], ['host:contextmenu', 'adapter']]);
 		// a frozen { close }, closing both: the component's listeners in reverse, then the menu's; once
 		assert.deepEqual(Object.keys(o.capture), ['close']);
 		assert.ok(Object.isFrozen(o.capture));
 		assert.equal(o.capture.close(), undefined);
-		assert.deepEqual(o.removed, ['host:keyup', 'host:keydown', 'svg:dblclick', 'svg:pointerout', 'svg:pointerover', 'svg:pointercancel', 'svg:pointerup',
+		assert.deepEqual(o.removed, ['host:blur', 'host:keyup', 'host:keydown', 'svg:dblclick', 'svg:pointerout', 'svg:pointerover', 'svg:pointercancel', 'svg:pointerup',
 			'svg:pointermove', 'svg:pointerdown', 'svg:pointerleave', 'host:contextmenu']);
 		o.capture.close();
-		assert.equal(o.removed.length, 11, 'a second close calls nothing');
+		assert.equal(o.removed.length, 12, 'a second close calls nothing');
 		// and a declaration the component refuses throws as the canvas opens, before any listener is added
 		const f = fakes();
 		delete f.svg.setPointerCapture;
@@ -103,7 +106,7 @@ H26.3's verification (V4): the menu's listener is the adapter's own, added after
 it -- its addEventListener throwing, before or after adding the listener, as a malformed host can and no browser does -- the adapter
 takes back what it added: the menu's listener, whose removal is harmless if it was never added, then the component's capture, closed,
 removing its ten in reverse; and then throws the host's error, unchanged. So no listener of a canvas that failed to open is left, as
-the component holds its own opening (IC3, lifecycle rule 3); one so left makes no fact.
+the component holds its own opening (IC3, lifecycle rule 3); one so left makes no fact. RESTATED at H26.5: eleven, the host's blur first.
 */
 test('H26.3 (V4): a host that refuses the menu\'s listener leaves nothing listening -- the component closed, the error the host\'s', () => {
 	for (const after of [false, true]) {
@@ -119,8 +122,8 @@ test('H26.3 (V4): a host that refuses the menu\'s listener leaves nothing listen
 		let threw = null;
 		try { adapter.captureCanvas({ svg: f.svg, host: f.host, sink: recordingSink(got) }); } catch (e) { threw = e; }
 		assert.equal(threw, refused, `${after ? 'added, then' : ''} refused: the host's error, unchanged`);
-		assert.deepEqual(f.removed, ['host:contextmenu', 'host:keyup', 'host:keydown', 'svg:dblclick', 'svg:pointerout', 'svg:pointerover', 'svg:pointercancel', 'svg:pointerup',
-			'svg:pointermove', 'svg:pointerdown', 'svg:pointerleave'], 'the menu\'s listener, then the component\'s ten in reverse');
+		assert.deepEqual(f.removed, ['host:contextmenu', 'host:blur', 'host:keyup', 'host:keydown', 'svg:dblclick', 'svg:pointerout', 'svg:pointerover', 'svg:pointercancel', 'svg:pointerup',
+			'svg:pointermove', 'svg:pointerdown', 'svg:pointerleave'], 'the menu\'s listener, then the component\'s eleven in reverse');
 		f.listeners.get('svg:pointerdown')({ ...POINTER });
 		f.listeners.get('host:keydown')({ ...KEY });
 		assert.deepEqual(got, [], 'a listener left by a platform that ignored a removal makes no fact: the capture is closed');
@@ -143,6 +146,7 @@ const FORM = {
 	pointer: ['type', 'button', 'key', 'repeat', 'shiftKey', 'ctrlKey', 'altKey', 'metaKey', 'at', 'on', 'claimed', 'capture'],
 	keyDown: ['type', 'button', 'key', 'repeat', 'shiftKey', 'ctrlKey', 'altKey', 'metaKey', 'onControl', 'claimed', 'capture'],
 	keyUp: ['type', 'button', 'key', 'repeat', 'shiftKey', 'ctrlKey', 'altKey', 'metaKey', 'claimed', 'capture'],
+	blur: ['type', 'button', 'key', 'repeat', 'shiftKey', 'ctrlKey', 'altKey', 'metaKey', 'claimed', 'capture'],   // H26.5: a key-up's form
 };
 
 test('H26.3 step 3: the adapter reads no field of a pointer or key event -- the component reads each -- and Input\'s entry points take today\'s input events', () => {
@@ -155,11 +159,12 @@ test('H26.3 step 3: the adapter reads no field of a pointer or key event -- the 
 		fire('host:keydown', { ...KEY });
 		fire('host:keyup', { ...KEY, key: 'Shift' });
 		fire('host:keydown', { ...KEY, target: { tagName: 'INPUT', closest: () => null } });   // typed into a field: dropped
-		assert.deepEqual(reads.filter(([, , who]) => who !== 'component'), [], 'every field of every pointer and key event read by the component, none by the adapter');
+		fire('host:blur', { timeStamp: 7, preventDefault() {} });   // H26.5: the host's focus loss, as a FocusEvent offers it
+		assert.deepEqual(reads.filter(([, , who]) => who !== 'component'), [], 'every field of every pointer, key and blur event read by the component, none by the adapter');
 		assert.ok(reads.length > 100, `the reads were seen: ${reads.length}`);
-		assert.deepEqual(o.got.map(([m, args]) => [m, args.length]), [['press', 1], ['move', 1], ['release', 1], ['cancelDrag', 1], ['hover', 2], ['hover', 2], ['double', 1], ['leave', 0], ['keyDown', 1], ['keyUp', 1]],
-			'each to the entry point the old capture called, over and out to hover entering and not, the leave with nothing, the typed key to none');
-		const [press, move, , , over, out, , , keyDown, keyUp] = o.got.map(([, args]) => args);
+		assert.deepEqual(o.got.map(([m, args]) => [m, args.length]), [['press', 1], ['move', 1], ['release', 1], ['cancelDrag', 1], ['hover', 2], ['hover', 2], ['double', 1], ['leave', 0], ['keyDown', 1], ['keyUp', 1], ['blur', 1]],
+			'each to the entry point the old capture called, over and out to hover entering and not, the leave with nothing, the typed key to none, the focus loss to blur');
+		const [press, move, , , over, out, , , keyDown, keyUp, blur] = o.got.map(([, args]) => args);
 		assert.deepEqual(Object.keys(press[0]), FORM.press);
 		assert.deepEqual(Object.keys(move[0]), FORM.pointer);
 		assert.deepEqual([over[1], out[1]], [true, false]);
@@ -168,6 +173,9 @@ test('H26.3 step 3: the adapter reads no field of a pointer or key event -- the 
 		assert.deepEqual({ ...press[0], at: { ...press[0].at } }, { type: 'down', button: 0, key: null, repeat: false, shiftKey: true, ctrlKey: false, altKey: false, metaKey: false,
 			at: { x: 30, y: 40 }, on: { kind: 'node', id: 'node-000001' }, region: press[0].region, claimed: true, capture: true });
 		assert.equal(keyDown[0].onControl, false);
+		// H26.5: the blur's input event, every modifier false -- what Input's `blur` hands the arming (RELEASES-0.2.md section 4, item 3)
+		assert.deepEqual(Object.keys(blur[0]), FORM.blur);
+		assert.deepEqual(blur[0], { type: 'blur', button: 0, key: null, repeat: null, shiftKey: false, ctrlKey: false, altKey: false, metaKey: false, claimed: false, capture: false });
 	} finally { restore(); }
 });
 
