@@ -1706,6 +1706,9 @@ and the arming's with the blur's modifiers, all false. So with Shift held throug
 zone grid shown, a focus loss at the window -- the event a tab switch fires first (input-capture's IC1) -- hides the grid and drops the
 zone, Shift's release never arriving; and a device Alt armed over is disarmed. The side-by-side of the harness cannot show that the page's
 own composition listens: only the page can.
+RESTATED at H26.5's verification: the focus loss is a real one, not a dispatched event -- the page brought to the front and holding the
+window's focus, then a second tab taking it, as the verifier showed (input-capture's IC1: a second tab blurs a page only once it holds
+the window's focus); the tab is then closed and the page brought back.
 */
 test('H26.5 (B413): on the product page a focus loss hides the zone grid, drops a Shift-picked zone and disarms an Alt-armed device', { skip: SKIP }, async () => {
 	const t = await attach(`http://127.0.0.1:${port}/${NET_DIAGRAM}`);
@@ -1723,7 +1726,22 @@ test('H26.5 (B413): on the product page a focus loss hides the zone grid, drops 
 		const screen = (x, y) => t.eval(`JSON.stringify((() => { const m = document.getElementById('container').getScreenCTM(); return [m.a * ${x} + m.e, m.d * ${y} + m.f]; })())`).then(JSON.parse);
 		const seen = (id) => t.eval(`JSON.stringify({ grid: document.getElementById('container').classList.contains('zonegrid'), selected: window.draw.selection.list(),
 			armed: document.getElementById('${id}')?.classList.contains('armed') ?? null })`).then(JSON.parse);
-		const focusLost = () => t.eval(`(window.dispatchEvent(new FocusEvent('blur')), 1)`);
+		const hasFocus = (want) => until(t, `document.hasFocus() === ${want} ? 1 : 0`, 4000);
+		const front = async () => { await t.send('Page.bringToFront'); assert.equal(await hasFocus(true), 1, 'the page holds the window\'s focus'); };
+		const focusLost = async () => {
+			await front();
+			const made = await t.send('Target.createTarget', { url: 'about:blank' });
+			const other = made.result?.targetId;
+			assert.ok(other, `a second tab opened: ${JSON.stringify(made.error ?? made.result)}`);
+			try {
+				assert.equal(await hasFocus(false), 1, 'the second tab took the window\'s focus from the page');
+				await sleep(60);
+			} finally {
+				await t.send('Target.closeTarget', { targetId: other });
+				for (let i = 0; i < 100 && (await (await fetch(`http://127.0.0.1:${cdp}/json/list`)).json()).some((x) => x.id === other); i++) await sleep(20);
+			}
+			await front();
+		};
 
 		// Shift held, a Shift+right click on the zone
 		const [zx, zy] = await screen(0, 330);
