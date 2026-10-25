@@ -22,6 +22,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeInput, pointer, seedNodes } from './fixtures/client-harness.mjs';
 import { bindGestureDefer } from '../app/src/sync.js';
+import { liveGesture } from './fixtures/binding-parity.mjs';   // the live gesture by name, as Input hands its key rows the situation
 
 const overNode = (id, x, y, mod = {}) => pointer(x, y, { target: { tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: (s) => (s.includes('node') ? { id } : null) }, ...mod });
 const links = (h) => h.commits.flatMap((c) => (c.ops ?? []).filter((o) => o.kind === 'link' && o.op === 'put').map((o) => [o.entity.src, o.entity.dst]));
@@ -106,5 +107,58 @@ test('o:F4 (RD18): after the mouse\'s move and release, the touch\'s own release
 		assert.deepEqual(seen, [[1, 'unwritten'], [2, 'drop']], 'with its own trigger: the touch\'s press survived the mouse\'s release, so its travel made a drop; the mouse\'s release wrote nothing back');
 		assert.deepEqual(released, [1], 'and the queue was released once, after the commit');
 		assert.equal(h.input.isGesturing(), false, 'the link drag ended with it');
+	} finally { h.restore(); }
+});
+
+/*
+H26.5's input-binding move (the verifier's V11): RD18 HOLDS WHATEVER THE PRESS IS, not only while an engaged gesture is live. A press
+not yet a gesture -- `pending`, a right press on a device, engaged false -- and a run-mode press, which opens none, are held by the
+session too, so another pointer's move or release while one is held changes nothing, and Input returns at once: nothing tracked, drawn
+or written back. The press goes on as its own pointer takes it.
+*/
+test('RD18: another pointer\'s move during a pending right press on a device -- not tracked, nothing drawn; the press then becomes the move', () => {
+	const h = makeInput();
+	try {
+		const [a] = seedNodes(h.model, [[0, 0], [360, 0]]);
+		h.capture.onDown(overNode(a.id, 0, 0, { button: 2, buttons: 2 }));
+		assert.deepEqual([liveGesture(h), h.input.isGesturing()], ['pending', false], 'precondition: a pending press, not yet a gesture in progress');
+		const at = h.input.state.pointer.at;
+		h.reset();
+		h.capture.onMove(pointer(300, 300, { pointerId: 2, pointerType: 'touch' }));
+		assert.equal(h.input.state.pointer.at, at, 'another pointer\'s move is not tracked');
+		assert.deepEqual(h.calls.map((x) => x.name), [], 'and draws nothing -- no hand, no readout, no hover');
+		h.capture.onMove(overNode(a.id, 120, 0, { button: -1, buttons: 2 }));
+		h.capture.onUp(overNode(a.id, 120, 0, { button: 2, buttons: 0 }));
+		assert.equal(h.model.get('node', a.id).x, 120, 'the press\'s own pointer made it the move, and its release committed it');
+	} finally { h.restore(); }
+});
+
+test('RD18: another pointer\'s move during a run-mode press -- not tracked, nothing drawn', () => {
+	const h = makeInput();
+	try {
+		h.renderer.mode = 'run';
+		h.capture.onDown(pointer(300, 300));
+		const at = h.input.state.pointer.at;
+		h.reset();
+		h.capture.onMove(pointer(-300, -300, { pointerId: 2, pointerType: 'touch' }));
+		assert.equal(h.input.state.pointer.at, at, 'another pointer\'s move is not tracked');
+		assert.deepEqual(h.calls.map((x) => x.name), [], 'and draws nothing');
+	} finally { h.restore(); }
+});
+
+test('RD18: another pointer\'s release during a pending right press -- nothing written back; the press survives, and its own release commits the move as a drop', () => {
+	const h = makeInput();
+	try {
+		const [a] = seedNodes(h.model, [[0, 0], [360, 0]]);
+		const seen = triggersOf(h);
+		h.capture.onDown(overNode(a.id, 0, 0, { button: 2, buttons: 2 }));
+		h.reset();
+		h.capture.onUp(pointer(300, 300, { button: 0, buttons: 0, pointerId: 2, pointerType: 'touch' }));
+		assert.deepEqual(h.calls.map((x) => x.name), [], 'another pointer\'s release runs nothing');
+		assert.equal(liveGesture(h), 'pending', 'the press is still pending');
+		h.capture.onMove(overNode(a.id, 120, 0, { button: -1, buttons: 2 }));
+		h.capture.onUp(overNode(a.id, 120, 0, { button: 2, buttons: 0 }));
+		assert.equal(h.model.get('node', a.id).x, 120, 'its own pointer made it the move, and its release committed it');
+		assert.deepEqual(seen, [[2, 'unwritten'], [1, 'drop']], 'the other pointer\'s release wrote nothing back; the press\'s own was a drop by its travel');
 	} finally { h.restore(); }
 });
