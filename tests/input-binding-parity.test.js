@@ -14,7 +14,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { READ_AT, MOVED, ORIGINALS, OLD, NEW, tenantsOf, idsOf, tablesOf, GRAMMAR, COMPOSITIONS, withInput, SWEEPS, compareMatcher, grammarAgrees,
-	STREAMS, SEED, THRESHOLD, pressStreams, pressDifferences, classOf, lifecycleOf, PRESS_RECORD, LIFECYCLE_RECORD } from './fixtures/binding-parity.mjs';
+	STREAMS, SEED, THRESHOLD, pressStreams, pressDifferences, classOf, lifecycleOf, PRESS_RECORD, LIFECYCLE_RECORD,
+	LISTED_APART, CORPUS_LISTED_APART, lifecycleOfSteps } from './fixtures/binding-parity.mjs';
 import { SCENARIOS } from './fixtures/gesture-corpus.mjs';
 import { helpSections } from '../app/src/help.js';
 
@@ -90,15 +91,21 @@ test('H26.2 (section 6.3, D7): the old press and the session\'s agree over gener
 	assert.ok(moves > 10000 && ups > 2000, `asked ${moves} moves and ${ups} releases`);
 });
 
+// RESTATED at H26.5 (dev/design/components/RELEASES-0.2.md section 4, GR7): but for the corpus's one chord, listed apart with both answers
 test('H26.2 (acceptance step 4): over every scenario of the gesture corpus, the same body runs for each input and the same gesture is live after it', () => {
 	const rec = readJson(LIFECYCLE_RECORD).scenarios;
 	assert.deepEqual(Object.keys(rec).sort(), SCENARIOS.map((s) => s.id).sort(), 'every scenario recorded, those acceptance step 4 added among them');
 	const differ = [];
 	for (const s of SCENARIOS) {
 		const now = lifecycleOf(s);
-		if (JSON.stringify(now) !== JSON.stringify(rec[s.id])) differ.push(`${s.id}: ${JSON.stringify(now)}, was ${JSON.stringify(rec[s.id])}`);
+		const expected = CORPUS_LISTED_APART[s.id]?.after ?? rec[s.id];
+		if (JSON.stringify(now) !== JSON.stringify(expected)) differ.push(`${s.id}: ${JSON.stringify(now)}, was ${JSON.stringify(expected)}`);
 	}
 	assert.deepEqual(differ, []);
+	for (const [id, { after }] of Object.entries(CORPUS_LISTED_APART)) {
+		assert.ok(rec[id], `${id}: listed apart, and in the corpus`);
+		assert.notDeepEqual(after, rec[id], `${id}: its two answers differ -- the record's, read before the move, and input-binding 0.2.0's`);
+	}
 	const bodies = new Set(Object.values(rec).flat().flatMap((step) => step.split('>')[0].split(',').filter(Boolean)));
 	for (const b of ['link.start', 'link.update', 'link.commit', 'link.cancel', 'move.update', 'move.commit', 'move.cancel', 'clone.update', 'clone.commit', 'clone.cancel',
 		'pending.start', 'pending.update', "clone-pending.start", 'clone-pending.commit', 'handle.start', 'handle.update', 'handle.commit', 'handle.cancel',
@@ -117,4 +124,26 @@ test('H26.2 (acceptance step 5; D13): the help overlay\'s sections are line for 
 	for (const [composition, opts] of COMPOSITIONS) withInput(opts, (h) => assert.deepEqual(helpSections(h.input.bindings()), rec.sections[composition], composition));
 	assert.deepEqual(rec.sections.page.map((s) => s.lines.length), [37, 12, 7, 4]);
 	assert.deepEqual(rec.sections.lab.map((s) => s.lines.length), [37, 12, 7]);
+});
+
+/*
+H26.5 (dev/design/components/RELEASES-0.2.md section 4, GR7; RD14, RD18) -- THE CHORD AND TWO-POINTER SEQUENCES, LISTED APART WITH BOTH
+ANSWERS. Outside the corpus, whose facts name one pointer and whose releases name the button that began the press: each sequence's
+lifecycle under input-binding 0.1.0, read before the move, and under 0.2.0, which the code answers now. Each pair differs only where the
+release rule (B427) or another pointer (RD18) says it does: the chord's last release commits, and another pointer's move and release run
+nothing, the press's own pointer going on to commit.
+*/
+test('H26.5 (GR7): the chord and two-pointer sequences are listed apart, each answering 0.2.0\'s lifecycle, its 0.1.0 answer kept beside it', () => {
+	assert.deepEqual(LISTED_APART.map((s) => s.kind).sort(), ['chord', 'two-pointer', 'two-pointer']);
+	for (const s of LISTED_APART) {
+		assert.deepEqual(lifecycleOfSteps(s.steps), s.after, `${s.id}: ${s.why}`);
+		assert.equal(s.before.length, s.steps.length, `${s.id}: an answer for each input, before`);
+		assert.notDeepEqual(s.before, s.after, `${s.id}: the two answers differ`);
+		const changed = s.before.map((b, i) => (b === s.after[i] ? null : i)).filter((i) => i !== null);
+		const other = s.steps.map(([, , , , f], i) => (f.pointerId !== undefined && f.pointerId !== s.steps[0][4].pointerId ? i : null)).filter((i) => i !== null);
+		if (s.kind === 'two-pointer') {
+			for (const i of other) assert.match(s.after[i], /^>/, `${s.id}: step ${i}, another pointer's, runs nothing`);
+			assert.ok(changed.every((i) => i >= other[0]), `${s.id}: nothing changes before the other pointer's first event`);
+		} else assert.deepEqual(changed, [s.steps.length - 1], `${s.id}: the last release alone answers otherwise -- it commits`);
+	}
 });

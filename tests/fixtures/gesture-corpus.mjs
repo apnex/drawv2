@@ -130,6 +130,9 @@ export const SCENARIOS = [
 	// a chained run is ended by a press that is not the drag's start: on its anchor it selects, elsewhere it ends the run -- unchanged
 	{ id: 'link-chain-ended-on-anchor', board: 'three', steps: [['down', 0, 0, 'n0'], ['move', 360, 0, 'n1'], ['up', 360, 0, 'n1', { shift: true, up: true }], ['move', 200, 200], ['move', 360, 0, 'n1'], ['down', 360, 0, 'n1'], ['up', 360, 0, 'n1', { up: true }]] },
 	{ id: 'link-chain-ended-elsewhere', board: 'three', steps: [['down', 0, 0, 'n0'], ['move', 360, 0, 'n1'], ['up', 360, 0, 'n1', { shift: true, up: true }], ['move', 600, 300], ['down', 600, 300], ['up', 600, 300, null, { up: true }]] },
+	// H26.5 (B427, IB11): the right's release here names 2 while the press the left began is held -- B427's chord without its moves --
+	// so from input-binding 0.2.0 it commits the link, a step before the left's; the same link, so the record is unchanged, and its
+	// lifecycle is listed apart with both answers (tests/fixtures/binding-parity.mjs CORPUS_LISTED_APART). Its id is the record's key
 	{ id: 'link-right-button-release-ignored', board: 'pair', steps: [['down', 0, 0, 'n0'], ['move', 360, 0, 'n1'], ['up', 360, 0, 'n1', { button: 2, up: true }], ['up', 360, 0, 'n1', { up: true }]] },
 	{ id: 'link-to-waypoint-end', board: 'bent', steps: drag([360, 0], [180, 120], 'n1', 'w0') },
 	// ---- clicks through the link gesture ----

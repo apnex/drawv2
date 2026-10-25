@@ -8,6 +8,10 @@ receives as pointer events (`touch-action: none`) -- presses, and the link, decl
 and its release, being button 0, commits the link where it lifted, the mouse button still down. The design read this from the code and
 named a browser test to show it at H26.2, which keeps it exactly (B409): this is that test, on the product page served by its real
 server, in headless Chrome launched through tests/fixtures/chrome.mjs. It passes against the code before the move as after it.
+RESTATED at H26.5 (dev/design/components/RELEASES-0.2.md section 4, RD18): the facts carry a pointer id now and input-binding 0.2.0
+tells another pointer's moves and release apart by it, but a second pointer's PRESS still replaces the first's -- B409, narrowed to
+this case, which passes as before; the mouse's own release after it finds no press and commits nothing. The o:F4 case below shows the
+narrowing: a pointer whose press the canvas never saw.
 */
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
@@ -70,5 +74,54 @@ test('H26.2 (B409 kept): during a link drawn with the mouse, a touch contact\'s 
 	assert.equal(got.live, false, 'and the link drag ended with it');
 	const stored = await (await fetch(`http://127.0.0.1:${port}/api/v1/diagrams/${DIAGRAM}`)).json();
 	assert.equal(stored.links.length, 1, 'the mouse\'s own release, after, committed nothing more');
+	assert.deepEqual(t.thrown, [], 'nothing threw');
+});
+
+/*
+H26.5 (dev/design/components/RELEASES-0.2.md section 4, o:F4; RD18) -- ANOTHER POINTER'S MOVE AND RELEASE CHANGE NOTHING, IN REAL CHROME.
+The mouse pressed on the footer, beyond the canvas, so the canvas never sees its press; a touch contact presses a and drags, opening a
+link; the mouse moves over the canvas and is released over b. Chrome names each pointer by its own `pointerId`, which capture hands
+Input (app/src/capture.js), and input-binding 0.2.0 tells the mouse's move and release apart from the press the touch holds: the link
+stays live, its press with it, and the touch's own lift over b commits it. Under input-binding 0.1.0 the mouse's release committed the
+link where the mouse lifted -- this test fails there, at the link drag still live.
+*/
+test('H26.5 (o:F4, RD18): a mouse pressed beyond the canvas and released over it while a touch draws a link commits nothing; the touch\'s lift commits the link', { skip: NO_CHROME, timeout: 60000 }, async () => {
+	const t = await theTab();
+	await t.send('Page.navigate', { url: `http://127.0.0.1:${port}/${DIAGRAM}` });
+	for (let i = 0; i < 150 && !(await t.run(`!!(window.draw && window.draw.renderer && document.querySelectorAll('#nodes > g').length === 2)`).catch(() => false)); i++) await sleep(100);
+	await t.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 2 });
+	await sleep(300);
+	await t.run(`(() => { window.__ups = []; document.addEventListener('pointerup', (e) => window.__ups.push([e.pointerType, e.pointerId, e.target?.closest?.('#container') ? 'canvas' : 'beyond']), true); return true; })()`);
+	const links = () => t.run(`JSON.stringify(window.draw.model.all('link').map((l) => [window.draw.model.get('node', l.src)?.name, window.draw.model.get('node', l.dst)?.name]))`).then(JSON.parse);
+	// the board as the file found it: the test before leaves a link a to b, which a second would not be drawn beside
+	await t.run(`(() => { const ls = window.draw.model.all('link'); if (ls.length) window.draw.history.commit({ label: 'clear', entries: ls.map((l) => ({ op: 'del', kind: 'link', entity: { ...l } })) }); return true; })()`);
+	for (let i = 0; i < 60 && !(await t.run('window.draw.sync.outbox.every((m) => m.answered)')); i++) await sleep(100);
+	const before = await links();
+	assert.deepEqual(before, [], 'precondition: no link on the board');
+	const [a, e, f] = await t.run(`(() => { const m = document.getElementById('container').getScreenCTM(); return [m.a, m.e, m.f]; })()`);
+	const at = (x, y) => ({ x: x * a + e, y: y * a + f });
+	const footer = await t.run(`(() => { const r = document.getElementById('status').getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; })()`);
+	const mouse = (type, p, buttons) => t.send('Input.dispatchMouseEvent', { type, ...p, button: 'left', buttons, clickCount: type === 'mouseMoved' ? 0 : 1 });
+	const touch = (type, p) => t.send('Input.dispatchTouchEvent', { type, touchPoints: p ? [{ ...p, id: 7 }] : [] });
+
+	await mouse('mousePressed', footer, 1); await sleep(60);                 // beyond the canvas
+	await touch('touchStart', at(-360, -120)); await sleep(80);
+	await touch('touchMove', at(-120, -60)); await sleep(80);
+	await touch('touchMove', at(0, 0)); await sleep(80);
+	assert.equal(await t.run('window.draw.input.isGesturing()'), true, 'precondition: the touch opened the link drag');
+	await mouse('mouseMoved', at(240, -120), 1); await sleep(60);             // the mouse, its button held, over the canvas
+	await mouse('mouseMoved', at(360, -120), 1); await sleep(60);
+	await mouse('mouseReleased', at(360, -120), 0); await sleep(300);        // and released over b
+	const mid = await t.run(`JSON.stringify({ live: window.draw.input.isGesturing(), ups: window.__ups })`).then(JSON.parse);
+	assert.deepEqual(mid.ups.map(([type, , where]) => [type, where]), [['mouse', 'canvas']], 'precondition: the mouse\'s release reached the canvas');
+	assert.equal(mid.live, true, 'the mouse\'s release, another pointer\'s, ended nothing: the link drag is still live');
+	assert.deepEqual(await links(), before, 'and committed nothing');
+
+	await touch('touchMove', at(360, -120)); await sleep(80);
+	await touch('touchEnd'); await sleep(400);
+	const ups = await t.run('JSON.stringify(window.__ups)').then(JSON.parse);
+	assert.notEqual(ups[0][1], ups[1][1], 'each its own pointer, as Chrome named them');
+	assert.deepEqual(await links(), [['a', 'b']], 'the touch\'s lift committed the link a to b');
+	assert.equal(await t.run('window.draw.input.isGesturing()'), false, 'and the link drag ended with it');
 	assert.deepEqual(t.thrown, [], 'nothing threw');
 });

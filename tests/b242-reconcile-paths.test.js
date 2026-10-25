@@ -546,6 +546,49 @@ test('a snapshot the tab asked for, arriving mid-drag, ends the drag first: its 
 });
 
 /*
+H26.5 (dev/design/components/RELEASES-0.2.md section 4, o:F4; RD18) -- THROUGH THE REAL INPUT, A REAL SERVER AND ANOTHER WRITER: ANOTHER
+POINTER'S RELEASE RELEASES NO QUEUE. A touch opens a link drag from a; another writer renames b, and its broadcast waits behind the live
+gesture (bindGestureDefer, D12); a mouse pressed beyond the canvas is released over b. Under input-binding 0.1.0 that release committed
+the link a to b and applied the rename. Now the link, its press and the queue survive it, the touch's own release commits the link a to
+c, and the rename lands only after that commit, as D12 orders a gesture's commit and the changes it held back.
+*/
+test('o:F4 (RD18): another writer\'s change queued behind a touch\'s link drag survives a mouse released over the canvas, and lands after the touch\'s commit', async () => {
+	const h = makeInput();
+	try {
+		const w = await world([
+			['node', { id: A, name: 'a', type: 'host', x: 0, y: 0 }],
+			['node', { id: B, name: 'b', type: 'host', x: 360, y: 0 }],
+			['node', { id: C, name: 'c', type: 'host', x: 0, y: 360 }],
+		], { tab: { model: h.model, changes: h.history, selection: h.selection } });
+		try {
+			bindGestureDefer(h.input, w.sync);
+			const on = (id, x, y, m) => pointer(x, y, { ...m, target: { tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: (s) => (s.includes('node') ? { id } : null) } });
+			const touch = { pointerId: 2, pointerType: 'touch' }, mouse = { pointerId: 1, pointerType: 'mouse' };
+			const seenAtCommit = [];
+			w.changes.onCommit(() => seenAtCommit.push(w.tab.get('node', B).name));   // what the tab showed of b when its own commit was made
+			h.capture.onDown(on(A, 0, 0, touch));
+			h.capture.onMove(on(A, 120, 120, touch));
+			assert.equal(h.input.isGesturing(), true, 'precondition: the touch\'s link drag is live');
+			w.other(set('node', B, { name: 'renamed-by-other' }));
+			w.deliverAll();
+			assert.deepEqual([w.sync.deferred.length, w.tab.get('node', B).name], [1, 'b'], 'precondition: the rename waits behind the gesture');
+
+			h.capture.onUp(on(B, 360, 0, { ...mouse, buttons: 0 }));
+			assert.equal(h.input.isGesturing(), true, 'the mouse\'s release ended nothing: the link drag is live');
+			assert.deepEqual([w.tab.all('link').length, w.sync.deferred.length, w.tab.get('node', B).name], [0, 1, 'b'], 'no link, and the rename still waits');
+
+			h.capture.onMove(on(C, 0, 360, touch));
+			h.capture.onUp(on(C, 0, 360, { ...touch, buttons: 0 }));
+			assert.deepEqual(w.tab.all('link').map((l) => [l.src, l.dst]), [[A, C]], 'the touch\'s release committed the link a to c');
+			assert.deepEqual(seenAtCommit, ['b'], 'made while the rename still waited');
+			assert.deepEqual([w.sync.deferred.length, w.tab.get('node', B).name], [0, 'renamed-by-other'], 'and the rename landed after it');
+			w.pump();
+			assert.deepEqual(w.diff(), [], CONVERGED);
+		} finally { w.close(); }
+	} finally { h.restore(); }
+});
+
+/*
 P5 V-d (H18.28; PL-6, G4) -- ONE PREVIEW, against the real server. The tab sends intent and previews it with the planner
 composed as the page composes it, so the server's cascade shows before the answer, and the answer, reconciled against what
 the tab applied, changes nothing. A snapshot after a lost connection re-plans what is still the tab's own on the new board.

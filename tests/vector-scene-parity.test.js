@@ -19,6 +19,7 @@ import assert from 'node:assert/strict';
 import { READ_AT, MOVED, ORIGINALS, fileSha, readRecord, boards, pageSideBySide, VISUAL_SEQUENCES, visualSideBySide, OLD, NEW,
 	corpusTrees, compact, treesOpen, edgeAnswers, EDGES } from './fixtures/scene-parity.mjs';
 import { SCENARIOS, record } from './fixtures/gesture-corpus.mjs';
+import { CORPUS_LISTED_APART } from './fixtures/binding-parity.mjs';   // H26.5: the corpus's scenarios input-binding 0.2.0 changes
 
 const RECORD = readRecord();
 const BOARDS = boards();
@@ -94,13 +95,24 @@ test('H26.4 (acceptance step 4, G6): the export runs both ways, byte-identical f
 	assert.ok(bytes > 100000, `the documents drew something to compare: ${bytes} bytes`);
 });
 
+/*
+RESTATED at H26.5 (dev/design/components/RELEASES-0.2.md section 4, GR6, GR7): but for the corpus's one chord, listed apart with both
+answers (tests/fixtures/binding-parity.mjs CORPUS_LISTED_APART). Its right button's release, naming 2 while the press that began with 0
+is held, now commits the link (B427): the same trees, the state the left's release reached under input-binding 0.1.0 reached a step
+earlier, at the right's -- the record's answer, and that one derived from it.
+*/
+const TREES_LISTED_APART = {
+	'link-right-button-release-ignored': (was) => ({ states: was.states, steps: [...was.steps.slice(0, 3), was.steps[4], was.steps[4]] }),
+};
 test('H26.4 (acceptance step 4): the gesture corpus\'s overlay, snap layer and grids are, after every step, the trees today\'s code wrote', { timeout: 120000 }, async () => {
 	const open = await treesOpen();
 	assert.deepEqual(Object.keys(RECORD.trees).sort(), SCENARIOS.map((s) => s.id).sort(), 'the record holds every scenario');
+	assert.deepEqual(Object.keys(TREES_LISTED_APART), Object.keys(CORPUS_LISTED_APART), 'the scenarios listed apart are the binding fixture\'s');
+	for (const [id, after] of Object.entries(TREES_LISTED_APART)) assert.notDeepEqual(after(RECORD.trees[id]), RECORD.trees[id], `${id}: its two answers differ`);
 	let drawn = 0;
 	for (const s of SCENARIOS) {
 		const live = compact(corpusTrees(s, { record, open }));
-		assert.deepEqual(live, RECORD.trees[s.id], `${s.id}: every step's trees, attributes in order`);
+		assert.deepEqual(live, TREES_LISTED_APART[s.id]?.(RECORD.trees[s.id]) ?? RECORD.trees[s.id], `${s.id}: every step's trees, attributes in order`);
 		drawn += live.states.filter((st) => st.overlay.length || st.snaplayer.length).length;
 	}
 	assert.ok(drawn > 100, `the corpus draws on the overlay and the snap layer: ${drawn} states`);

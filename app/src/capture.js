@@ -27,6 +27,8 @@ false, which the input layers write and this acts on. `trigger` is the input lay
 AMENDED H26.5 (dev/design/components/RELEASES-0.2.md section 4, RD18): and on a pointer, after `on`, the fact's `pointerId` -- the
 event's when a safe integer, else null -- for input-binding, which tells another pointer's move and release apart by it from 0.2.0;
 input-binding 0.1.0 reads none of it, and no code of draw's reads it (tests/input-capture.test.js G1 holds app/src/input.js to that).
+RESTATED at H26.5's input-binding move: draw is on input-binding 0.2.0, whose session reads it, and Input acts on what the session makes
+of it (`otherPointer`), still reading no `pointerId` of its own.
 
 WHAT NEVER REACHES THE INPUT LAYERS. Keys typed into a field: canvas shortcuts do not apply there. The context menu: suppressed
 everywhere but a field, which is the browser's question, not a gesture's (B75) -- draw's own listener, on the host, after the keys,
@@ -34,9 +36,9 @@ since the component makes no menu fact (D5, B412).
 
 KEPT, registered (section 6.3): one press for every pointer -- draw's event carries no `pointerId`, so a second pointer replaces the
 first's press (B409). RESTATED at H26.5: the event carries it now, and B409 holds until draw is on input-binding 0.2.0, which reads it
-(RD18) -- and then narrowed, a second pointer's press still replacing the first's. And a key released while the page lacks focus still
-makes no key-up, but the focus loss before it is now heard and handed to Input's `blur`, which clears what Shift, Alt and Control left
-(B413, RELEASES-0.2.md section 4).
+(RD18) -- and then narrowed, a second pointer's press still replacing the first's, as it is since H26.5's input-binding move. And a key
+released while the page lacks focus still makes no key-up, but the focus loss before it is now heard and handed to Input's `blur`,
+which clears what Shift, Alt and Control left (B413, RELEASES-0.2.md section 4).
 */
 import { openCapture } from '@apnex/input-capture';
 import { hitWith } from './pick.js';

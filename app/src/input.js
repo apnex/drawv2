@@ -222,6 +222,8 @@ export const GESTURES = {
 		// only the LEFT button drives link mode: a right-button release during a chain (chord delete,
 		// stray right-click) must never commit a segment, and a left press during a chain is the chain's
 		// own. H26.2: declared to the session, which takes that press and commits on that release alone.
+		// RESTATED at H26.5 (B427; input-binding's IB11): and on any release of a press the left began -- a chord's last release names
+		// the last button released -- so a chain, which holds no press, still commits on a left release alone
 		button: 0,
 		commit: (i, ctx, pos, evt) => {
 			ctx.path.remove();
@@ -995,9 +997,12 @@ export class Input {
 	deep; each is now the entry that owns the rest of that gesture's lifecycle.
 	*/
 	move(evt) {
-		this.#markShiftOwed(evt);   // H26.5 (B413)
-		this.state = track(this.state, evt);
+		this.#markShiftOwed(evt);   // H26.5 (B413): Shift is the keyboard's, whichever pointer's event says it is held
 		const outcome = this.#session.pointerMove(evt);   // H26.2: the press's travel, and an update when a gesture is live
+		// H26.5 (RD18; dev/design/components/RELEASES-0.2.md section 4): another pointer's move -- one the press does not hold -- changes
+		// nothing, so nothing of draw's runs: not even the pointer tracked, which is the press's pointer's
+		if (outcome.otherPointer) return;
+		this.state = track(this.state, evt);
 		const moving = this.mode === 'move' || this.mode === 'clone';
 		this.overlayUi.showGrids(evt, moving);
 		const pos = evt.at;
@@ -1091,9 +1096,14 @@ export class Input {
 	commit, or the two arrive out of order.
 	*/
 	release(evt) {
-		this.#markShiftOwed(evt);   // H26.5 (B413)
+		this.#markShiftOwed(evt);   // H26.5 (B413): Shift is the keyboard's, whichever pointer's event says it is held
 		const wasGesturing = this.isGesturing();
-		const outcome = this.#session.pointerUp(evt);   // H26.2: the press ends, and the live gesture commits if it takes this button
+		// H26.2: the press ends, and the live gesture commits if it takes this release. H26.5 (B427, IB11): a release commits the gesture
+		// the press's own button declares, whatever button the release names -- a chord's last release is another button's
+		const outcome = this.#session.pointerUp(evt);
+		// H26.5 (RD18): another pointer's release ends no press and commits nothing, so draw runs nothing: no trigger written, no
+		// dispatch, and none of the teardown -- onGestureEnd would release the remote changes queued behind a gesture still live (D12)
+		if (outcome.otherPointer) return;
 		evt.trigger = outcome.trigger;   // L2: a click or a drop, from the press the session tracked
 		try { this.dispatchUp(evt, outcome); } finally {
 			if (wasGesturing) this.onGestureEnd();

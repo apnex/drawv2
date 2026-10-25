@@ -666,20 +666,40 @@ test('H6.4: a cancelled resize restores the pre-drag geometry', () => {
 	} finally { h.restore(); }
 });
 
-test('H6.4: a right-button release during link mode does not commit a segment', () => {
+/*
+RESTATED at H26.5 (dev/design/components/RELEASES-0.2.md section 4; B427, IB11). The link declares the left button so a right release
+during a CHAIN -- a link live with no press held, its right press never reaching the canvas -- commits no segment; that holds, and is
+what this now drives. During a link DRAG this drove a release naming 2 while the left press was held, which a browser sends only once
+the left was released first, as a move: B427's chord without its moves. Under input-binding 0.1.0 it committed nothing and the left's
+release landed the link; from 0.2.0 a release commits the gesture its press's button declares, so the right's lands it -- the second
+case here, the corpus's link-right-button-release-ignored, both answers listed apart in tests/fixtures/binding-parity.mjs.
+*/
+test('H6.4: a right-button release during a link chain does not commit a segment; during a link drag it lands the link (B427)', () => {
 	const h = makeInput();
 	try {
-		const [a, b] = seedNodes(h.model, [[0, 0], [180, 0]]);
+		const [a, b, c] = seedNodes(h.model, [[0, 0], [180, 0], [180, 180]]);
 		h.capture.onDown(onEntity(a.id, 0, 0));
 		h.capture.onMove(onEntity(b.id, 180, 0));
-		h.capture.onUp(onEntity(b.id, 180, 0, { button: 2 }));
-		assert.equal(h.model.all('link').length, 0, 'a stray right-release commits no segment');
-
-		// and the gesture is still LIVE, not silently dead: the real release still lands the link
-		h.capture.onUp(onEntity(b.id, 180, 0, { button: 0 }));
-		assert.equal(h.model.all('link').length, 1, 'the left release ends the link normally');
-		assert.equal(linkBetween(h.model, a.id, b.id) ? 1 : 0, 1, 'between the two nodes dragged');
+		h.capture.onUp(onEntity(b.id, 180, 0, { shiftKey: true }));     // Shift held at the release: the link a-b, and a chain on from b
+		assert.deepEqual([h.model.all('link').length, h.input.isGesturing()], [1, true], 'precondition: a chain is live, no press held');
+		h.capture.onMove(onEntity(c.id, 180, 180));
+		h.capture.onUp(onEntity(c.id, 180, 180, { button: 2 }));         // a right release whose press never reached the canvas
+		assert.equal(h.model.all('link').length, 1, 'a stray right-release commits no segment');
+		assert.equal(h.input.isGesturing(), true, 'and the chain is still LIVE, not silently dead');
+		h.capture.onDown(onEntity(c.id, 180, 180));
+		h.capture.onUp(onEntity(c.id, 180, 180));
+		assert.equal(h.model.all('link').length, 2, 'the chain\'s own left press and release land its segment');
+		assert.equal(linkBetween(h.model, b.id, c.id) ? 1 : 0, 1, 'from b to c');
 	} finally { h.restore(); }
+	const d = makeInput();
+	try {
+		const [a, b] = seedNodes(d.model, [[0, 0], [180, 0]]);
+		d.capture.onDown(onEntity(a.id, 0, 0));
+		d.capture.onMove(onEntity(b.id, 180, 0));
+		d.capture.onUp(onEntity(b.id, 180, 0, { button: 2 }));
+		assert.equal(linkBetween(d.model, a.id, b.id) ? 1 : 0, 1, 'during a drag the right\'s release lands the link its left press began (B427)');
+		assert.equal(d.input.isGesturing(), false, 'and the link drag ended');
+	} finally { d.restore(); }
 });
 
 /*

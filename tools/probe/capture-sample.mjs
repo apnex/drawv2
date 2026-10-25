@@ -33,6 +33,9 @@ fact's `pointerId`, which input-binding 0.1.0 reads none of; a side before it ca
 events compared -- every other field still compared in its key order -- and reported apart: on each side, how many of Input's events
 carried it and the values seen. And Input's `blur`, the host's focus loss (B413), is wrapped where Input has one; a focus loss on one
 side alone is a difference.
+RESTATED at H26.5's input-binding move: from input-binding 0.2.0 the session reads `pointerId` and another pointer's move or release
+changes nothing (RD18), so a side on 0.2.0 can answer otherwise for two pointers; every scenario here has one pointer at a time, so
+its events still compare, `pointerId` still left out.
 
   node tools/probe/capture-sample.mjs [--baseline <commit>] [--candidate <commit>] [--out DIR]
       the baseline defaults to 87d206b, the last commit before the move; the candidate is the working tree when not named
