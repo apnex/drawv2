@@ -77,6 +77,10 @@ const SESSION_LAYER = 'select';   // the canvas's own layer in an order: the sel
 H26.4 (VECTOR-SCENE.md section 5.1, D9) -- DRAW'S SCENE, opened from the composition's declaration: on the page's root, whose layers it
 appends after the ground, or on none, for the export. Opened or refused loudly, naming each problem, as kernel/input-rules.mjs opens a
 gesture session.
+AMENDED H26.5 (dev/design/components/RELEASES-0.2.md sections 3.3, 4 and 8): from vector-scene 0.2.0 a scene opened on a root reads the
+root's document's `elementsFromPoint` once as it opens, for `itemAt` -- the browser's on the page and in the lab, none on the test
+harness's fake document, which opens as before; the export's, on no root, reads no document. Draw calls no `itemAt` until H26.8, its
+picks reading a target by selector (D4); tests/vector-scene-move.test.js holds both.
 */
 export function openCanvasScene(declaration, root = null) {
 	const opened = openScene(root ? { ...declaration, root } : declaration);

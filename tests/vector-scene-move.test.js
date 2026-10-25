@@ -141,3 +141,61 @@ test('H26.4 step 7 (D8): the server and the export load vector-scene by name, th
 		assert.ok(drawn.resolved.includes(COMPONENT_ENTRY) && Number(drawn.out) > 1000, 'the export resolves it, and draws through it');
 	} finally { fs.rmSync(path.dirname(log), { recursive: true, force: true }); }
 });
+
+/*
+H26.5's vector-scene move (dev/design/components/RELEASES-0.2.md sections 3.3, 4 and 8) -- DRAW'S SCENES OPEN AS BEFORE ON 0.2.0. From
+0.2.0 a scene opened on a root reads the root's document's `elementsFromPoint` once as it opens: a getter that throws refuses the root,
+and a value that is not a function is kept as none, the root opening and `itemAt` refusing. Draw's openings, each:
+- the export's, with no root, reads no document -- the first case above draws every template in a process that has none;
+- the page's and the lab's, in Chrome, read the browser's function (tests/import-map-browser.test.js asks `itemAt` there, and every
+  browser test boots a page through it);
+- the test harness's fake document (tests/fixtures/client-harness.mjs), the conversion's in tests/fixtures/capture-parity.mjs and the
+  parity fixture's (tests/fixtures/scene-parity.mjs) hold none, so each opens as before, `itemAt` refusing on it;
+- a document whose member counts its reads and its calls is read once as the scene opens, and neither read nor called while the
+  renderer draws a board, its modes and its states -- the scene calls the function it kept only for `itemAt`, and nothing of draw's calls
+  `itemAt`, not until H26.8, its picks reading a target by selector (D4).
+*/
+test('H26.5 (vector-scene 0.2.0): draw\'s scenes open as before -- each fake document holds no elementsFromPoint and opens, itemAt refusing; draw reads it no more', async () => {
+	const { installDom, fakeEl, sceneOver } = await import('./fixtures/client-harness.mjs');
+	const { sceneOver: conversionOver } = await import('./fixtures/capture-parity.mjs');
+	const { makeDocument, NEW } = await import('./fixtures/scene-parity.mjs');
+	const { Renderer } = await import('../app/src/renderer.js');
+	const { PRODUCT_CANVAS, CANVAS_SCENE } = await import('../product/canvas.mjs');
+	const { COMPOSED_KINDS, readModel } = await import('../product/types.mjs');
+	const NONE = /^Error: itemAt: the root's document held no elementsFromPoint function when the scene opened$/;
+	const restore = installDom();
+	try {
+		const harness = sceneOver(fakeEl('svg', 'canvas')).scene;
+		assert.equal('elementsFromPoint' in globalThis.document, false, 'the harness\'s fake document holds none');
+		assert.throws(() => harness.itemAt({ x: 0, y: 0 }), NONE, 'the harness\'s scene opened; itemAt refuses on it');
+		assert.throws(() => conversionOver({ getScreenCTM: () => ({ inverse: () => ({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }) }) }).itemAt({ x: 0, y: 0 }), NONE,
+			'the conversion\'s scene over a surface opened; itemAt refuses on it');
+		const d = makeDocument();
+		assert.throws(() => NEW.openCanvasScene(NEW.CANVAS_SCENE, d.attach(d.createElementNS('', 'svg'))).itemAt({ x: 0, y: 0 }), NONE, 'the parity fixture\'s opened; itemAt refuses on it');
+
+		// a document whose member counts its reads and its calls, the harness's own beneath
+		let reads = 0, calls = 0;
+		const counted = globalThis.document;
+		const elementsFromPoint = () => { calls++; return []; };
+		globalThis.document = new Proxy(counted, { get: (t, k, r) => { if (k === 'elementsFromPoint') { reads++; return elementsFromPoint; } return Reflect.get(t, k, r); } });
+		const svg = fakeEl('svg', 'canvas');
+		const scene = sceneOver(svg).scene;
+		assert.deepEqual([reads, calls], [1, 0], 'read once, as the scene opened, and not called');
+		const template = fs.readdirSync(path.join(ROOT, 'templates')).find((f) => f.endsWith('.json'));
+		const model = readModel(JSON.parse(fs.readFileSync(path.join(ROOT, 'templates', template), 'utf8')), COMPOSED_KINDS);
+		const r = new Renderer(model, svg, { parts: PRODUCT_CANVAS, scene });
+		r.syncAll(); r.setMode('edit'); r.setMode('run'); r.toggleLabels();
+		const [first] = model.all('node');
+		r.setState(first.id, 'hover', true); r.clearState(first.id, 'hover');
+		assert.ok(scene.items('nodes').length > 0, 'precondition: the renderer drew the board into the scene');
+		assert.deepEqual([reads, calls], [1, 0], 'neither read again nor called while the renderer drew it, its modes and its states');
+		assert.equal(scene.itemAt({ x: 0, y: 0 }), null, 'control: itemAt calls the function the scene kept --');
+		assert.deepEqual([reads, calls], [1, 1], '-- so a call of draw\'s would have been counted');
+	} finally { restore(); }
+	const product = FOLDERS.filter((f) => f.dir !== 'tools' && f.dir !== 'tests').flatMap((f) => {
+		const walk = (dir) => fs.readdirSync(path.join(ROOT, dir), { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(dir, e.name)) : /\.m?js$/.test(e.name) ? [path.join(dir, e.name)] : []));
+		return walk(f.dir);
+	});
+	assert.ok(product.length > 150, `the product's modules were read: ${product.length}`);
+	assert.deepEqual(product.filter((f) => /\bitemAt\s*\(/.test(code(f))), [], 'no module of draw\'s calls itemAt');
+});
