@@ -165,6 +165,19 @@ test('B413: every pointer or key event Input is handed with shiftKey true owes S
 		cancel: (h, s) => h.capture.onCancel(onGround(420, -360, { shiftKey: s })),
 		keyDown: (h, s) => h.capture.onKeyDown(key('F9', { shiftKey: s })),
 		keyUp: (h, s) => h.capture.onKeyUp(key('F9', { shiftKey: s })),
+		/*
+		H26.5's input-binding move (the verifier's V6, V7): ANOTHER POINTER's move and release, while pointer 1 holds a middle press that
+		carries no Shift. The session ignores them and Input returns at once (RD18) -- but Shift is the keyboard's, whichever pointer's
+		event says it is held, so each still owes Shift's cleanup: the marking comes before the return.
+		*/
+		'another pointer\'s move': (h, s) => {
+			h.capture.onDown(onGround(420, -360, { button: 1, buttons: 4, pointerId: 1 }));
+			h.capture.onMove(onGround(300, -300, { buttons: 1, pointerId: 2, pointerType: 'touch', shiftKey: s }));
+		},
+		'another pointer\'s release': (h, s) => {
+			h.capture.onDown(onGround(420, -360, { button: 1, buttons: 4, pointerId: 1 }));
+			h.capture.onUp(onGround(300, -300, { buttons: 0, pointerId: 2, pointerType: 'touch', shiftKey: s }));
+		},
 	};
 	for (const [name, fire] of Object.entries(events)) {
 		for (const shift of [true, false]) {
