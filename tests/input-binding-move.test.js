@@ -179,8 +179,10 @@ test('F6: a chain mid-drag becomes the live gesture, its opening row kept, and a
 	assert.equal(r.status, 0, r.stderr);
 	const log = JSON.parse(r.stdout);
 	const requests = (id) => log[id].filter((o) => ['startGesture', 'becomeGesture', 'cancelGesture'].includes(o.op));
-	assert.deepEqual(log['link-digit-chain'].find((o) => o.op === 'pressMatched'), { op: 'pressMatched', phase: 'start', gesture: { name: 'link', row: 'link' } },
+	// RESTATED at H26.5 (RELEASES-0.2.md section 4, a:F1): the press is resolved in one call, and its outcome names the start
+	assert.deepEqual(log['link-digit-chain'].find((o) => o.op === 'resolvePress'), { op: 'resolvePress', phase: 'start', gesture: { name: 'link', row: 'link' } },
 		'control: the window sees the session -- the press opened the link drag from its row');
+	assert.equal(log['link-digit-chain'].some((o) => o.op === 'pressMatched'), false, 'and draw calls pressMatched itself no more');
 	assert.deepEqual(requests('link-digit-chain'), [{ op: 'becomeGesture', phase: 'become', gesture: { name: 'link', row: 'link' } }], 'the hop: one become, the row kept, no cancel');
 	assert.deepEqual(log['link-digit-chain'].at(-1), { op: 'pointerUp', phase: 'commit', gesture: { name: 'link', row: 'link' } }, 'and the release commits the gesture the press opened');
 	assert.deepEqual(requests('link-shift-chain'), [{ op: 'startGesture', phase: 'start', gesture: { name: 'link', row: null } }], 'after the commit, nothing live: one start, of no row');

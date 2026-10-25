@@ -633,21 +633,12 @@ export class Input {
 	*/
 	press(evt) {
 		this.#markShiftOwed(evt);   // H26.5 (B413)
-		// L1 first: every press moves the pointer, hands the armed `w` over, and ends a chain (app/src/input-state.js); and the session
-		// holds the press (H26.2)
+		// L1 first: every press moves the pointer, hands the armed `w` over, and ends a chain (app/src/input-state.js)
 		this.state = track(this.state, evt);
-		const { taken } = this.#session.pointerDown(evt);
 		// W5 — RUN mode: the diagram ACTS as UI, and is not a gesture surface at all. A guard rather
 		// than a rule, because it is a mode of the whole surface (INPUT.md §4).
-		if (this.renderer.mode === 'run') return this.runModePress(evt);
-
-		// chain wiring: the live gesture CONSUMES this press -- one its declared button names (GESTURES), taken by the session. KEPT (B409):
-		// facts carry no pointer id, so the session holds one press for every pointer -- a second contact's press replaces the first's,
-		// a live link takes it, and its button-0 release commits the link where it lifted
-		if (taken) return;   // the press already ended the chain (input state)
-
-		if (this.labels.isOpen()) this.labels.close(true);
-		this.tools.hideHand();
+		// The session holds its press too (H26.2), taken or not.
+		if (this.renderer.mode === 'run') { this.#session.pointerDown(evt); return this.runModePress(evt); }
 
 		/*
 		THE w THAT PLACED THE SOURCE -- ruled 2026-09-30: it counts as the drag's first key "if that same anchor remains
@@ -657,14 +648,32 @@ export class Input {
 		*/
 		const hit = evt.on;
 		const pos = evt.at;
-		// the ONE row this press means (Rules engine): read-only is the engine's guard, and a held tool is the situation's
-		const { rule, match } = resolveInput(this.pressRules, evt, this.situation(), { readOnly: this.readOnly });
+		let rule = null;
+		/*
+		H26.5 (dev/design/components/RELEASES-0.2.md section 4, RD19; input-binding's IB15): THE PRESS RESOLVED IN ONE CALL, the session
+		holding the order every consumer wrote out by hand -- the press made; `match` asked only of a press the live gesture did not take;
+		the live gesture cancelled when the match means something; then the start the match opens -- and draw's policy where it sits:
+		- a press the live gesture takes -- one its declared button names (GESTURES) -- is consumed, `match` never asked, so the labels stay
+		  open and the hand drawn, as before. RESTATED from H26.2's KEPT (B409): the facts carry a pointer id now (app/src/capture.js),
+		  so another pointer's move or release changes nothing (RD18, `move`, `release`); a second contact's PRESS still replaces the
+		  first's, a live link takes it, and that contact's release commits the link where it lifted;
+		- `match` closes the labels, hides the hand and answers the ONE row this press means (Rules engine) -- read-only is the engine's
+		  guard, a held tool the situation's -- or null, when no row matches and the press does nothing more;
+		- `cancelled` is a commit's teardown for the gesture the match cancelled, with this press's event, as cancelDrag ends one -- its
+		  afterShiftUpPress before the start (H26.2, section 5 step 1): a second press never stacks on an active gesture.
+		*/
+		const outcome = this.#session.resolvePress(evt, {
+			match: () => {
+				if (this.labels.isOpen()) this.labels.close(true);
+				this.tools.hideHand();
+				const resolved = resolveInput(this.pressRules, evt, this.situation(), { readOnly: this.readOnly });
+				rule = resolved.rule;
+				return resolved.match;   // null when no row matches (kernel/input-rules.mjs resolveInput)
+			},
+			cancelled: (cancel) => this.#cancelled(cancel, evt),
+		});
+		// a press the live gesture took -- its match never asked, so no row -- already ended the chain (input state); and one no row means
 		if (!rule) return;
-
-		// a second press never stacks on an active gesture: one that means something ends it, with this press's event, as cancelDrag
-		// ends one -- its afterShiftUpPress before the start -- and is then asked again for the start it opens (H26.2, section 5 step 1)
-		let outcome = this.#session.pressMatched(match);
-		if (outcome.phase === 'cancel') { this.#cancelled(outcome, evt); outcome = this.#session.pressMatched(match); }
 		this.overlayUi.showGrids(evt, false);
 		evt.capture = true;   // capture takes the pointer once this returns (app/src/capture.js)
 

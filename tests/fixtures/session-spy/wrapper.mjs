@@ -2,7 +2,10 @@
 import * as real from '@apnex/input-binding';   // by name: the hook answers the adapter's import alone, so this one is the package
 
 export const composeBindingTable = real.composeBindingTable;
-const OPERATIONS = ['pointerDown', 'pressMatched', 'pointerMove', 'pointerUp', 'pointerLost', 'startGesture', 'becomeGesture', 'cancelGesture'];
+// RESTATED at H26.5 (dev/design/components/RELEASES-0.2.md section 4, a:F1): and input-binding 0.2.0's four, in the session's order --
+// resolvePress logged by the outcome it answers, the calls it makes inside being the session's own, which no wrapper sees
+const OPERATIONS = ['pointerDown', 'pressMatched', 'pointerMove', 'pointerUp', 'pointerLost', 'startGesture', 'becomeGesture', 'cancelGesture',
+	'resolvePress', 'keyDown', 'keyUp', 'keysLost'];
 export function openGestureSession(declaration) {
 	const opened = real.openGestureSession(declaration);
 	if (!opened.ok) return opened;

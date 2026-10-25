@@ -25,10 +25,10 @@ import { bindGestureDefer } from '../app/src/sync.js';
 
 const overNode = (id, x, y, mod = {}) => pointer(x, y, { target: { tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: (s) => (s.includes('node') ? { id } : null) }, ...mod });
 const links = (h) => h.commits.flatMap((c) => (c.ops ?? []).filter((o) => o.kind === 'link' && o.op === 'put').map((o) => [o.entity.src, o.entity.dst]));
-// every release Input took, with the trigger it wrote back
+// every release Input took, with the trigger it wrote back -- 'unwritten' where it wrote none
 const triggersOf = (h) => {
 	const seen = [], real = h.input.release.bind(h.input);
-	h.input.release = (e) => { try { return real(e); } finally { seen.push([e.pointerId, e.trigger ?? null]); } };
+	h.input.release = (e) => { try { return real(e); } finally { seen.push([e.pointerId, 'trigger' in e ? e.trigger : 'unwritten']); } };
 	return seen;
 };
 
@@ -103,7 +103,7 @@ test('o:F4 (RD18): after the mouse\'s move and release, the touch\'s own release
 		h.capture.onMove(touch(c.id, 0, 360));
 		h.capture.onUp(touch(c.id, 0, 360, { buttons: 0 }));
 		assert.deepEqual(links(h), [[a.id, c.id]], 'the touch\'s release committed the link, a to c, where the touch lifted');
-		assert.deepEqual(seen, [[1, null], [2, 'drop']], 'with its own trigger: the touch\'s press survived the mouse\'s release, so its travel made a drop');
+		assert.deepEqual(seen, [[1, 'unwritten'], [2, 'drop']], 'with its own trigger: the touch\'s press survived the mouse\'s release, so its travel made a drop; the mouse\'s release wrote nothing back');
 		assert.deepEqual(released, [1], 'and the queue was released once, after the commit');
 		assert.equal(h.input.isGesturing(), false, 'the link drag ended with it');
 	} finally { h.restore(); }
