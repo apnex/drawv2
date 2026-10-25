@@ -117,6 +117,24 @@ test('B413: Alt held over a node, focus lost -- the node is disarmed; and Contro
 	} finally { h.restore(); }
 });
 
+/*
+H26.5's verification: Shift AND Alt held over a device, then the focus loss -- both cleanups, item 1's and item 3's, in one focus loss.
+Shift's cleanup disarms only a hovered zone, never a device, so a blur running one cleanup or the other -- Shift's when owed, else the
+arming's -- leaves the device armed; each case above holds one key alone, and could not tell.
+*/
+test('B413: Shift and Alt held over a device, focus lost -- the zone grid is hidden AND the device disarmed', () => {
+	const h = makeInput();
+	try {
+		const { n } = board(h);
+		shiftDown(h);
+		h.capture.onHover(overNode(n.id, -300, 0, { shiftKey: true }), true);
+		h.capture.onKeyDown(key('Alt', { code: 'AltLeft', altKey: true, shiftKey: true }));
+		assert.deepEqual([gridShown(h), armedNow(h, n.id)], [true, true], 'precondition: Shift shows the zone grid, and Alt over the device arms it');
+		focusLost(h);
+		assert.deepEqual([gridShown(h), armedNow(h, n.id)], [false, false], 'both releases the canvas never saw stood in for: the grid hidden and the device disarmed');
+	} finally { h.restore(); }
+});
+
 test('B413 (section 4, item 1): Shift owed while a press owns the pointer -- the zone stays selected until the press ends, then drops', () => {
 	const h = makeInput();
 	try {
