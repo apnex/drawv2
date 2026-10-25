@@ -127,7 +127,8 @@ test('B413 (section 4, item 1): Shift owed while a press owns the pointer -- the
 		h.capture.onMove(rightOnZone(z, 320, 200, { shiftKey: true }));
 		focusLost(h);
 		assert.deepEqual(h.selection.list(), [z.id], 'mid-drag the zone stays selected: the drag owns the pointer, and the focus loss cancelled nothing');
-		assert.equal(gridShown(h), false, 'the grid hidden at once');
+		// RESTATED at H26.5's verification: no check of the grid here. The drag's own moves hid it before the focus loss -- an assertion that
+		// it was hidden passed on the old release too -- so a focus loss hiding it cannot be seen mid-drag; the tests above hold it at rest
 		h.capture.onMove(rightOnZone(z, 380, 200));
 		h.capture.onUp(rightOnZone(z, 380, 200));
 		assert.notEqual(h.model.get('zone', z.id).x, 150, 'the drag went on across the focus loss and moved the zone');
