@@ -23,13 +23,13 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { teardown, spawnGroup } from './fixtures/teardown.mjs';
+import { teardown } from './fixtures/teardown.mjs';
+import { startLab } from './fixtures/lab-server.mjs';   // H26.5 (the verifier's finding 1): started and waited for in one place
 import { NO_CHROME, launchChrome } from './fixtures/chrome.mjs';   // one launch config for every harness
 import { createTab, inputOf, MATRIX, matrixProblems, matrixTests } from './fixtures/matrix-runner.mjs';   // the matrix's runner (P7 X-b)
 
 const SKIP = NO_CHROME;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-const root = path.resolve(import.meta.dirname, '..');
 
 let dir, srv, chrome, port, cdp;
 
@@ -38,11 +38,7 @@ before(async () => {
 	dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lab-browser-'));
 	port = 8400 + (process.pid % 200);
 	cdp = 9800 + (process.pid % 200);
-	srv = spawnGroup('node', ['lab/server.mjs'], { cwd: root, env: { ...process.env, PORT: String(port) }, stdio: 'ignore' });
-	for (let i = 0; i < 60; i++) {
-		try { if ((await fetch(`http://127.0.0.1:${port}/health`)).ok) break; } catch { /* not up yet */ }
-		await sleep(200);
-	}
+	({ proc: srv } = await startLab({ port }));
 	// the shared launch config -- including --disable-extensions, and the measurement that found it: tests/fixtures/chrome.mjs
 	chrome = launchChrome({ cdpPort: cdp, profileDir: `${dir}/cdp`, url: 'about:blank' });
 	for (let i = 0; i < 80; i++) {

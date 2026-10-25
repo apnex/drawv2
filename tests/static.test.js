@@ -30,20 +30,15 @@ dangerous is to serve a file it should not: the product's store, or anything a t
 tree and asked raw, since `fetch` would normalize the `..` away before sending.
 */
 test('K9, K4: the lab serves its mounts, the planner whole, and nothing else, however the path is spelled', async () => {
-	const { spawnGroup, stopProcess } = await import('./fixtures/teardown.mjs');
+	const { stopProcess } = await import('./fixtures/teardown.mjs');
+	const { startLab } = await import('./fixtures/lab-server.mjs');   // H26.5: started and waited for in one place
 	const http = await import('node:http');
-	const net = await import('node:net');
-	const port = await new Promise((resolve) => { const s = net.createServer().listen(0, () => { const p = s.address().port; s.close(() => resolve(p)); }); });
-	const root = new URL('../', import.meta.url).pathname;
-	const srv = spawnGroup('node', ['lab/server.mjs'], { cwd: root, env: { ...process.env, PORT: String(port) }, stdio: 'ignore' });
+	const { proc: srv, port } = await startLab();
 	const ask = (p, method = 'GET') => new Promise((resolve, reject) => {
 		const req = http.request({ host: '127.0.0.1', port, path: p, method }, (res) => { res.resume(); resolve({ status: res.statusCode, type: res.headers['content-type'], cache: res.headers['cache-control'] }); });
 		req.on('error', reject); req.end();
 	});
 	try {
-		// RESTATED at H26.5: up to 15 s, as tests/browser.test.js waits for the product's server. The lab answers in about 90 ms idle, but
-		// beside the whole suite on eight cores it was measured at a median of 228 ms and a worst of 6.4 s, past the 5 s this allowed
-		for (let i = 0; i < 150; i++) { try { await ask('/health'); break; } catch { await new Promise((r) => setTimeout(r, 100)); } }
 		// K4: the planner is served whole from its own folder
 		const tokens = await ask('/tokens.css');   // H15.23: the colour registry the stylesheet reads
 		assert.equal(tokens.status, 200, 'the lab serves the colour registry');
@@ -71,18 +66,15 @@ a module of each of the six plugins is served; a plugin folder that is not there
 sent raw, are each a 404.
 */
 test('H26.7: the lab serves every plugin from /plugins/, and nothing else there -- an absent plugin, an old root, a walk out', async () => {
-	const { spawnGroup, stopProcess } = await import('./fixtures/teardown.mjs');
+	const { stopProcess } = await import('./fixtures/teardown.mjs');
+	const { startLab } = await import('./fixtures/lab-server.mjs');   // H26.5: started and waited for in one place
 	const http = await import('node:http');
-	const net = await import('node:net');
-	const port = await new Promise((resolve) => { const s = net.createServer().listen(0, () => { const p = s.address().port; s.close(() => resolve(p)); }); });
-	const root = new URL('../', import.meta.url).pathname;
-	const srv = spawnGroup('node', ['lab/server.mjs'], { cwd: root, env: { ...process.env, PORT: String(port) }, stdio: 'ignore' });
+	const { proc: srv, port } = await startLab();
 	const ask = (p) => new Promise((resolve, reject) => {
 		const req = http.request({ host: '127.0.0.1', port, path: p, method: 'GET' }, (res) => { res.resume(); resolve({ status: res.statusCode, type: res.headers['content-type'] }); });
 		req.on('error', reject); req.end();
 	});
 	try {
-		for (let i = 0; i < 150; i++) { try { await ask('/health'); break; } catch { await new Promise((r) => setTimeout(r, 100)); } }   // H26.5: 15 s, as above
 		for (const p of ['/plugins/layouts/layout-table.mjs', '/plugins/devices/device-types.mjs', '/plugins/network/link-head.mjs',
 			'/plugins/zones/zone-painter.mjs', '/plugins/groups/group-kind.mjs', '/plugins/simulation/kinds.mjs']) {
 			const r = await ask(p);
@@ -302,19 +294,17 @@ test('H26.1: the vendor mount answers 404 for any other name, version or file, h
 
 test('H26.1: the lab serves the installed component on the vendor mount, kept a year, and nothing else there; its own files stay no-store', async () => {
 	const fs = await import('node:fs');
-	const { spawnGroup, stopProcess } = await import('./fixtures/teardown.mjs');
+	const { stopProcess } = await import('./fixtures/teardown.mjs');
+	const { startLab } = await import('./fixtures/lab-server.mjs');   // H26.5: started and waited for in one place
 	const http = await import('node:http');
-	const net = await import('node:net');
-	const port = await new Promise((resolve) => { const s = net.createServer().listen(0, () => { const p = s.address().port; s.close(() => resolve(p)); }); });
 	const root = new URL('../', import.meta.url).pathname;
 	const { version } = JSON.parse(fs.readFileSync(path.join(root, 'node_modules/@apnex/snap-grid/package.json'), 'utf8'));
-	const srv = spawnGroup('node', ['lab/server.mjs'], { cwd: root, env: { ...process.env, PORT: String(port) }, stdio: 'ignore' });
+	const { proc: srv, port } = await startLab();
 	const ask = (p) => new Promise((resolve, reject) => {
 		const req = http.request({ host: '127.0.0.1', port, path: p }, (res) => { res.resume(); resolve({ status: res.statusCode, type: res.headers['content-type'], cache: res.headers['cache-control'] }); });
 		req.on('error', reject); req.end();
 	});
 	try {
-		for (let i = 0; i < 150; i++) { try { await ask('/health'); break; } catch { await new Promise((r) => setTimeout(r, 100)); } }   // H26.5: 15 s, as above
 		for (const f of ['index.js', 'conformance.js']) {
 			const r = await ask(`/vendor/@apnex/snap-grid@${version}/${f}`);
 			assert.deepEqual([r.status, r.cache], [200, KEPT], f);

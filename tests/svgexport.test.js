@@ -19,7 +19,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { makeApp } from './fixtures/app.mjs';
-import { spawnGroup, stopProcess } from './fixtures/teardown.mjs';   // H26.4 (V2-2): the lab server a group of its own
+import { stopProcess } from './fixtures/teardown.mjs';   // H26.4 (V2-2): the lab server a group of its own
+import { startLab } from './fixtures/lab-server.mjs';   // H26.5 (the verifier's finding 1): started and waited for in one place
 
 let app, base, dataDir;
 before(async () => {
@@ -228,12 +229,9 @@ test('H25.2: the export carries no stylesheet -- each element the page\'s rules 
 // lab's canvas drawn at another size. Both servers now answer from the composition's list, and this asks each for each sheet.
 test('H25.2: every stylesheet the pages list is served, by the product\'s server and by the lab\'s', async () => {
 	const { PAGE_STYLESHEETS } = await import('../product/canvas.mjs');
-	const net = await import('node:net');
-	const port = await new Promise((r) => { const s = net.createServer(); s.listen(0, '127.0.0.1', () => { const p = s.address().port; s.close(() => r(p)); }); });
 	// H26.4 (the verifier's V2-2): a group of its own, stopped and waited for, and stopped with the test process if that is stopped first
-	const lab = spawnGroup('node', ['lab/server.mjs'], { cwd: path.resolve(import.meta.dirname, '..'), env: { ...process.env, PORT: String(port) }, stdio: 'ignore' });
+	const { proc: lab, port } = await startLab();
 	try {
-		for (let i = 0; i < 50; i++) { try { if ((await fetch(`http://127.0.0.1:${port}/health`)).ok) break; } catch { /* not up */ } await new Promise((r) => setTimeout(r, 100)); }
 		const hrefs = PAGE_STYLESHEETS.map((f) => (f.startsWith('app/') ? `/${f.slice(4)}` : `/${f}`));
 		assert.ok(hrefs.includes('/canvas.css') && hrefs.includes('/plugins/zones/zones.css'), 'control: the list holds the page\'s own sheets and the plugins\'');
 		for (const h of hrefs) {

@@ -78,14 +78,17 @@ test('H26.1 (G8): before measuring, each side answers every address its pages\' 
 
 test('H26.1 (G8): this tree\'s two real servers pass the check the probe makes of a side -- the product page and the lab page', { timeout: 60000 }, async () => {
 	const { spawnGroup, stopProcess } = await import('./fixtures/teardown.mjs');
+	const { startLab } = await import('./fixtures/lab-server.mjs');   // H26.5 (the verifier's finding 1): started and waited for in one place
 	const free = () => new Promise((resolve) => { const s = net.createServer().listen(0, () => { const p = s.address().port; s.close(() => resolve(p)); }); });
-	const [port, labPort] = [await free(), await free()];
+	const port = await free();
 	const data = scratch();
 	const env = { PATH: process.env.PATH, HOME: process.env.HOME };
-	const procs = [spawnGroup('node', ['server/server.js'], { cwd: ROOT, env: { ...env, PORT: String(port), DATA_DIR: data }, stdio: 'ignore' }),
-		spawnGroup('node', ['lab/server.mjs'], { cwd: ROOT, env: { ...env, PORT: String(labPort) }, stdio: 'ignore' })];
+	const procs = [spawnGroup('node', ['server/server.js'], { cwd: ROOT, env: { ...env, PORT: String(port), DATA_DIR: data }, stdio: 'ignore' })];
 	try {
-		for (const p of [port, labPort]) for (let i = 0; i < 100; i++) { try { if ((await fetch(`http://127.0.0.1:${p}/health`)).ok) break; } catch { /* not up */ } await new Promise((r) => setTimeout(r, 100)); }
+		const lab = await startLab({ env });
+		procs.push(lab.proc);
+		const labPort = lab.port;
+		for (let i = 0; i < 100; i++) { try { if ((await fetch(`http://127.0.0.1:${port}/health`)).ok) break; } catch { /* not up */ } await new Promise((r) => setTimeout(r, 100)); }
 		const r = await sideProblems({ name: 'candidate', root: ROOT, pages: [`http://127.0.0.1:${port}/`, `http://127.0.0.1:${labPort}/`] });
 		// RESTATED at H26.2: the map names the second component, input-binding, which each server answers at its installed version
 		const binding = JSON.parse(fs.readFileSync(path.join(ROOT, 'node_modules/@apnex/input-binding/package.json'), 'utf8')).version;

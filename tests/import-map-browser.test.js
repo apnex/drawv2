@@ -26,6 +26,7 @@ import os from 'node:os';
 import net from 'node:net';
 import path from 'node:path';
 import { teardown, spawnGroup } from './fixtures/teardown.mjs';
+import { startLab } from './fixtures/lab-server.mjs';   // H26.5 (the verifier's finding 1): started and waited for in one place
 import { NO_CHROME, launchChrome } from './fixtures/chrome.mjs';   // one launch config for every harness, a profile of this file's own
 import { createTab, sleep } from './fixtures/matrix-runner.mjs';   // the one-tab client, recording every request and its answer
 
@@ -40,11 +41,12 @@ let dir, procs = [], port, labPort, cdp, theTab;
 before(async () => {
 	if (NO_CHROME) return;
 	dir = fs.mkdtempSync(path.join(os.tmpdir(), 'import-map-browser-'));
-	[port, labPort, cdp] = [await free(), await free(), await free()];
+	[port, cdp] = [await free(), await free()];
 	const env = { PATH: process.env.PATH, HOME: process.env.HOME };
 	procs.push(spawnGroup('node', ['server/server.js'], { cwd: root, env: { ...env, PORT: String(port), DATA_DIR: path.join(dir, 'data') }, stdio: 'ignore' }));
-	procs.push(spawnGroup('node', ['lab/server.mjs'], { cwd: root, env: { ...env, PORT: String(labPort) }, stdio: 'ignore' }));
-	for (const p of [port, labPort]) for (let i = 0; i < 100; i++) { try { if ((await fetch(`http://127.0.0.1:${p}/health`)).ok) break; } catch { /* not up */ } await sleep(100); }
+	const lab = await startLab({ env });
+	procs.push(lab.proc); labPort = lab.port;
+	for (let i = 0; i < 100; i++) { try { if ((await fetch(`http://127.0.0.1:${port}/health`)).ok) break; } catch { /* not up */ } await sleep(100); }
 	procs.push(launchChrome({ cdpPort: cdp, profileDir: path.join(dir, 'profile'), url: 'about:blank' }));
 	for (let i = 0; i < 80; i++) { try { await (await fetch(`http://127.0.0.1:${cdp}/json/version`)).json(); break; } catch { await sleep(200); } }
 	theTab = createTab(cdp);
