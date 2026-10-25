@@ -18,6 +18,9 @@ screen point converted through the root's screen transform and back, and the roo
 AMENDED H26.5 (dev/design/components/RELEASES-0.2.md section 4, the common steps): input-capture at 0.2.0, its release read by the
 version installed; its capture lists `blur`, and a focus loss dispatched on the key source makes one `blur` fact, every modifier false
 and its `pointerId` null; every fact carries the event's own `time`.
+AMENDED H26.5's input-binding move (RELEASES-0.2.md section 4): input-binding at 0.2.0, read by the version installed; in Chrome, through
+the map, its session has the fourteen properties IB12 lists, resolves a press in one call, answers another pointer's release with
+`otherPointer` and nothing changed, and commits a gesture on a chord's last release, the press's own button declaring it (B427).
 */
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
@@ -78,6 +81,11 @@ const THROUGH_THE_MAP = `(async () => {
 	const ib = await import('@apnex/input-binding');
 	const session = ib.openGestureSession({ threshold: 4, gestures: [] }).session;
 	const exact = [4, 4 + 2 ** -50].map((x) => { session.pointerDown({ at: { x: 0, y: 0 }, button: 0 }); session.pointerMove({ at: { x, y: 0 } }); return session.pointerUp({ button: 0 }).trigger; });
+	// H26.5: at 0.2.0 -- a press resolved in one call opening g0, the left's gesture; another pointer's release; then the chord's last, of 2
+	const s2 = ib.openGestureSession({ threshold: 4, gestures: [{ name: 'g0', engaged: true, button: 0 }] }).session;
+	const resolved = s2.resolvePress({ at: { x: 0, y: 0 }, button: 0, pointerId: 7 }, { match: () => ({ id: 'r', opens: 'g0' }) });
+	const other = s2.pointerUp({ button: 0, pointerId: 1 }), chord = s2.pointerUp({ button: 2, pointerId: 7 });
+	const released = { form: Object.keys(s2), resolved: [resolved.phase, resolved.gesture?.name], other: [other.otherPointer, other.phase, other.trigger], chord: [chord.otherPointer, chord.phase] };
 	// H26.3: the third, by its one name -- a capture on an element of the page, whose constructed events become facts, a claim prevents
 	// the default, the page refuses the synthetic pointer, and a closed capture makes nothing
 	const ic = await import('@apnex/input-capture');
@@ -112,7 +120,7 @@ const THROUGH_THE_MAP = `(async () => {
 	shown.left = svg.children.length;
 	svg.remove();
 	return { maps: maps.length, ok: opened.ok, point: opened.grid.pointOf(opened.grid.nearest({ x: 61, y: 29 })), kit: kit.checkGridShape(grid.square, []).length,
-		binding: Object.keys(ib).sort(), exact, capture: cap, scene: shown };
+		binding: Object.keys(ib).sort(), exact, released, capture: cap, scene: shown };
 })()`;
 
 for (const [name, at, booted] of [['the product page', () => `http://127.0.0.1:${port}/`, '!!(window.draw && window.draw.renderer)'], ['the lab page', () => `http://127.0.0.1:${labPort}/?seed=bend`, '!!window.lab']]) {
@@ -129,7 +137,10 @@ for (const [name, at, booted] of [['the product page', () => `http://127.0.0.1:$
 				['blur', null, null, null, null, null, null, null, null, null, false, true, 'number']] };   // H26.5: and the focus loss, its modifiers false
 		// H26.4: the scene's item, its nested shape at path [1, 0]; a 200 px root over 100 units halves a screen point, and doubles it back
 		const showing = { exports: ['openScene'], item: { layer: 'shown', key: 'item', path: [1, 0] }, layers: ['vs-shown', null], elements: 2, drawing: { x: 10, y: 20 }, back: { x: 20, y: 40 }, left: 0 };
-		assert.deepEqual(got, { maps: 1, ok: true, point: { x: 60, y: 0 }, kit: 0, binding: ['composeBindingTable', 'openGestureSession'], exact: ['click', 'drop'], capture: capturing, scene: showing },
+		// H26.5: input-binding 0.2.0's session, its press resolved in one call, another pointer's release, and a chord's last
+		const releasing = { form: ['declaration', 'state', 'pointerDown', 'pressMatched', 'pointerMove', 'pointerUp', 'pointerLost', 'startGesture', 'becomeGesture', 'cancelGesture',
+			'resolvePress', 'keyDown', 'keyUp', 'keysLost'], resolved: ['start', 'g0'], other: [true, null, null], chord: [false, 'commit'] };
+		assert.deepEqual(got, { maps: 1, ok: true, point: { x: 60, y: 0 }, kit: 0, binding: ['composeBindingTable', 'openGestureSession'], exact: ['click', 'drop'], released: releasing, capture: capturing, scene: showing },
 			'one map; each export of the four components resolved by name, and working -- the exact travel decided in Chrome, BigInt and all; a real event made a fact; a shape shown and found');
 		await sleep(200);
 		/*
