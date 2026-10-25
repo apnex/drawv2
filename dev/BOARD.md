@@ -1644,6 +1644,7 @@ Scored so the comparison is a judgement, not an omission.\
 | **B431** | S4 | Safari's trackpad gesture events not listened for (H26-14) | Safari is added to the tester's covered browsers, or a person on Safari reports a pinch shown as nothing. |
 | **B432** | S4 | No fact carries lock state (H26-14) | an application's row or a person needs lock state shown. |
 | **B433** | S4 | Composition events not facts; an input method's typing shown as key events (H26-14) | the Chromebook acceptance with a real input method finds typing the page did not get, or an application needs composition facts. |
+| **B434** | S5 | Two browser tests launch Chrome on a fixed port from a range, not port 0 | a run of either test fails to start Chrome or reaches a program other than its own Chrome, or either test's Chrome launch is next changed. |
 | **B344** | S4 | OD-1: a diagram kept in mission-kit's entity-store | the director selects it, or entity-store's record rules the adjustments it needs -- an asynchronous durable storage port, and names optional per kind. |
 | **B345** | S4 | OD-2: clients reaching the server over agp | OD-1 is ruled, entity-api is certified, and its follows are unparked (zorg's D15). |
 | **B347** | S4 | The towerless-combat timing test failed once under machine load | it fails a second time, or B333's flake ledger is built. |
