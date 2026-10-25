@@ -21,6 +21,10 @@ and its `pointerId` null; every fact carries the event's own `time`.
 AMENDED H26.5's input-binding move (RELEASES-0.2.md section 4): input-binding at 0.2.0, read by the version installed; in Chrome, through
 the map, its session has the fourteen properties IB12 lists, resolves a press in one call, answers another pointer's release with
 `otherPointer` and nothing changed, and commits a gesture on a chord's last release, the press's own button declaring it (B427).
+AMENDED H26.5's vector-scene move (RELEASES-0.2.md section 4): vector-scene at 0.2.0, read by the version installed; in Chrome, through
+the map, its scene has the ten members VS12's form lists, `itemAt` among them, and answers the item under a viewport point by the
+platform's own hit test -- the rect's path at a point inside it alone, the nested circle's at one inside it alone, and null where
+neither is, whatever of the page lies there.
 */
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
@@ -115,7 +119,10 @@ const THROUGH_THE_MAP = `(async () => {
 	sc.put('shown', 'item', [{ tag: 'rect', attrs: { x: 1, y: 2, width: 3, height: 4 } }, { tag: 'g', children: [{ tag: 'circle', attrs: { r: 5 } }] }]);
 	const drawing = sc.toDrawing({ x: 20, y: 40 });
 	const shown = { exports: Object.keys(vs).sort(), item: sc.itemOf(svg.querySelector('#vs-shown circle')), layers: [...svg.children].map((c) => c.getAttribute('id')),
-		elements: svg.querySelector('#vs-shown').children.length, drawing, back: sc.toScreen(drawing) };
+		elements: svg.querySelector('#vs-shown').children.length, drawing, back: sc.toScreen(drawing),
+		// H26.5: at 0.2.0, the scene's form, and the item under a viewport point -- (7, 11) is the drawing's (3.5, 5.5), in the rect alone;
+		// (2, 2) its (1, 1), in the circle alone; (150, 150) its (75, 75), in neither
+		form: Object.keys(sc), at: [sc.itemAt({ x: 7, y: 11 }), sc.itemAt({ x: 2, y: 2 }), sc.itemAt({ x: 150, y: 150 })] };
 	sc.close();
 	shown.left = svg.children.length;
 	svg.remove();
@@ -136,7 +143,10 @@ for (const [name, at, booted] of [['the product page', () => `http://127.0.0.1:$
 			facts: [['down', { x: 5, y: 10 }, { x: 10, y: 20 }, true, null, 0, 7, 'mouse', null, null, true, true, 'number'], ['key-down', null, null, null, true, null, null, null, 'a', 'KeyA', false, true, 'number'],
 				['blur', null, null, null, null, null, null, null, null, null, false, true, 'number']] };   // H26.5: and the focus loss, its modifiers false
 		// H26.4: the scene's item, its nested shape at path [1, 0]; a 200 px root over 100 units halves a screen point, and doubles it back
-		const showing = { exports: ['openScene'], item: { layer: 'shown', key: 'item', path: [1, 0] }, layers: ['vs-shown', null], elements: 2, drawing: { x: 10, y: 20 }, back: { x: 20, y: 40 }, left: 0 };
+		const showing = { exports: ['openScene'], item: { layer: 'shown', key: 'item', path: [1, 0] }, layers: ['vs-shown', null], elements: 2, drawing: { x: 10, y: 20 }, back: { x: 20, y: 40 },
+			// H26.5: vector-scene 0.2.0's ten members, and the shape at each point
+			form: ['layers', 'put', 'remove', 'items', 'itemOf', 'itemAt', 'layerElement', 'toDrawing', 'toScreen', 'close'],
+			at: [{ layer: 'shown', key: 'item', path: [0] }, { layer: 'shown', key: 'item', path: [1, 0] }, null], left: 0 };
 		// H26.5: input-binding 0.2.0's session, its press resolved in one call, another pointer's release, and a chord's last
 		const releasing = { form: ['declaration', 'state', 'pointerDown', 'pressMatched', 'pointerMove', 'pointerUp', 'pointerLost', 'startGesture', 'becomeGesture', 'cancelGesture',
 			'resolvePress', 'keyDown', 'keyUp', 'keysLost'], resolved: ['start', 'g0'], other: [true, null, null], chord: [false, 'commit'] };
