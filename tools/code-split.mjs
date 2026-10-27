@@ -22,13 +22,16 @@ The scanner is the tokenizer tools/scan-layers.mjs reads every module with (tool
 and regular-expression literals single tokens, so nothing inside them reads as code; statements are split at top-level semicolons, at
 the closing brace of a function, class or control statement, and at a line break where the next line begins a statement.
 
-  node tools/code-split.mjs [--root <dir>] [--rev <commit>] [--row | --header]
+  node tools/code-split.mjs [--root <dir>] [--rev <commit>] [--row | --header | --parts]
       --root    the repository to measure (default: this one)
       --rev     measure that commit, extracted with git archive into a scratch folder under TMPDIR and removed after; its
                 components are read from this checkout's node_modules when that commit pins the versions installed, and are none
                 when it depends on none -- any other version fails, naming it: nothing is downloaded
       --row     one dated Markdown table row for a ledger -- the measured commit's date, then the figures --header names
       --header  the ledger table's header and separator rows
+      --parts   one table instead of the report: each part tools/layers.mjs declares, in its order, with its kind, its modules'
+                code lines and their three-way split, and a last row for product code no part claims when there is any -- the
+                figures a change that moves code between parts, or out of draw into a component, is measured by before and after
 */
 import fs from 'node:fs';
 import os from 'node:os';
@@ -239,8 +242,11 @@ const partsOf = (tree) => JSON.parse(execFileSync(process.execPath, ['--input-ty
 
 function measure(tree, files, { installed, checkPins = false } = {}) {
 	const PARTS = partsOf(tree);
-	const claims = Object.values(PARTS).flatMap((p) => p.modules.map((m) => [m, p.kind]));
-	const kindOf = (f) => (claims.find(([m]) => m === f) ?? claims.find(([m]) => m.endsWith('/') && f.startsWith(m)))?.[1] ?? null;
+	const claims = Object.entries(PARTS).flatMap(([name, p]) => p.modules.map((m) => [m, p.kind, name]));
+	const claimOf = (f) => claims.find(([m]) => m === f) ?? claims.find(([m]) => m.endsWith('/') && f.startsWith(m));
+	const kindOf = (f) => claimOf(f)?.[1] ?? null;
+	const parts = Object.entries(PARTS).map(([name, p]) => ({ name, kind: p.kind, modules: 0, data: 0, declared: 0, logic: 0 }));
+	const looseIn = { name: UNCLAIMED, kind: '', modules: 0, data: 0, declared: 0, logic: 0 };
 	const under = (dir) => (f) => f.startsWith(`${dir}/`);
 	const js = (f) => /\.m?js$/.test(f), testCode = (f) => /\.(m?js|cjs|ts)$/.test(f);
 	const running = Object.fromEntries([...GROUP_ORDER, UNCLAIMED].map((g) => [g, 0]));
@@ -256,6 +262,9 @@ function measure(tree, files, { installed, checkPins = false } = {}) {
 		if (!kind) unclaimed.push(f);
 		const c = classify(read(tree, f));
 		for (const k in c) split[group][k] += c[k];
+		const part = kind ? parts.find((p) => p.name === claimOf(f)[2]) : looseIn;
+		part.modules += 1;
+		for (const k in c) part[k] += c[k];
 		running[group] += c.data + c.declared + c.logic;
 	}
 	// vendor: each @apnex component the tree depends on, from its release's source maps
@@ -284,7 +293,7 @@ function measure(tree, files, { installed, checkPins = false } = {}) {
 		records: sum((f) => under('dev')(f) && isText(fs.readFileSync(path.join(tree, f)))),
 		docs: sum((f) => under('docs')(f) || (!f.includes('/') && ext('.md')(f))),
 	};
-	return { running, split, unclaimed, tests, tools, vendor, data };
+	return { running, split, unclaimed, tests, tools, vendor, data, parts: looseIn.modules ? [...parts, looseIn] : parts };
 }
 
 // ---- reporting
@@ -336,6 +345,18 @@ function ledgerRow(m, { label, date }) {
 	return `| ${cells.join(' | ')} |`;
 }
 
+// one row per part, in the manifest's order, and code no part claims last when there is any
+function partsTable(m, { label, date }) {
+	const row = (cells) => `| ${cells.join(' | ')} |`;
+	const out = [`# Code split by part -- ${label} (${date})`, '', row(['Part', 'Kind', 'Modules', 'Code lines', 'Pure data', 'With predicates', 'Logic', 'Declarative share']),
+		row(['---', '---', '---:', '---:', '---:', '---:', '---:', '---:'])];
+	for (const p of m.parts) {
+		const all = p.data + p.declared + p.logic;
+		out.push(row([p.name, p.kind, fmt(p.modules), fmt(all), fmt(p.data), fmt(p.declared), fmt(p.logic), pct(p.data + p.declared, all)]));
+	}
+	return out.join('\n');
+}
+
 // ---- the command
 
 const git = (cwd, ...args) => execFileSync('git', args, { cwd, encoding: 'utf8' }).trim();
@@ -367,6 +388,7 @@ function codeSplit(argv) {
 		const files = git(root, 'ls-files', '-z', '--cached', '--others', '--exclude-standard').split('\0').filter((f) => f && fs.existsSync(path.join(root, f)) && fs.statSync(path.join(root, f)).isFile());
 		m = measure(root, files, { installed: root });
 	}
+	if (argv.includes('--parts')) return partsTable(m, { label, date });
 	return argv.includes('--row') ? ledgerRow(m, { label, date }) : report(m, { label, date });
 }
 

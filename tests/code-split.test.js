@@ -182,6 +182,23 @@ test('code-split: draw\'s own code by statement, per group and in total, with th
 	assert.deepEqual(rowOf(section, 'total').slice(0, 3), [String(s.data + 2 + 1 + 1), String(s.declared + 1), String(s.logic + 1 + 6)]);
 });
 
+test('code-split: --parts -- each part the manifest declares, in its order, with its kind, its modules\' code lines and their split, and code no part claims last', () => {
+	const r = run('--parts');
+	assert.equal(r.status, 0, r.stderr);
+	const out = r.stdout, s = SHAPES_SPLIT;
+	assert.match(out, /^# Code split by part -- [0-9a-f]{7} \+ uncommitted changes \(2026-01-02\)$/m);
+	const names = out.split('\n').filter((l) => /^\| [a-z]/.test(l) && !l.startsWith('| Part |')).map((l) => l.split('|')[1].trim());
+	assert.deepEqual(names, ['base', 'plug', 'product', 'canvas', 'page', 'door', 'no part claims'], 'the manifest\'s order, the loose module last');
+	const core = s.data + s.declared + s.logic + 3;
+	assert.deepEqual(rowOf(out, 'base'), ['core', '2', String(core), String(s.data + 2), String(s.declared), String(s.logic + 1), `${(Math.round(((s.data + 2 + s.declared) / core) * 1000) / 10).toFixed(1)}%`]);
+	assert.deepEqual(rowOf(out, 'plug'), ['plugin', '1', '1', '0', '1', '0', '100.0%']);
+	assert.deepEqual(rowOf(out, 'canvas'), ['host', '1', '3', '0', '0', '3', '0.0%']);
+	assert.deepEqual(rowOf(out, 'page'), ['composition root', '1', '2', '0', '0', '2', '0.0%']);
+	assert.deepEqual(rowOf(out, 'no part claims'), ['', '1', '1', '1', '0', '0', '100.0%']);
+	const sum = names.reduce((n, name) => n + Number(rowOf(out, name)[2]), 0);
+	assert.equal(sum, Number(rowOf(run().stdout, 'draw, running')[0]), 'the parts sum to what runs');
+});
+
 test('code-split: data, not code, in non-blank lines', () => {
 	const out = run().stdout;
 	const lines = (name) => rowOf(out, name);
