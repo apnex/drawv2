@@ -811,6 +811,46 @@ test('B45: the help element is the injected one — not a second lookup of the s
 });
 
 /*
+H26.8's binding move (the verifier's SF1): THE KEY TABLE'S GUARD STATES, THROUGH INPUT. `keyDown` hands the key table whether help is
+open -- the injected element's own state -- and whether a gesture is live; the table's guards refuse a row that declares neither
+`duringHelp` nor `duringGesture`. The tables held this alone, so Input handing either as false went unseen: Delete deleting under the
+help overlay, Ctrl+A changing the selection mid-drag.
+*/
+test('the key table\'s help guard through Input: with help open Delete deletes nothing; with it closed, Delete deletes', () => {
+	const h = makeInput();
+	try {
+		const [a] = seedNodes(h.model, [[0, 0]]);
+		h.selection.set([a.id]);
+		h.help.hidden = false;
+		h.capture.onKeyDown(key('Delete'));
+		assert.equal(h.commits.length, 0, 'help open: the guard refuses the delete row');
+		h.help.hidden = true;
+		h.capture.onKeyDown(key('Delete'));
+		assert.deepEqual(opKinds(h.soleCommit().ops), ['del/node'], 'control: help closed, Delete deletes the selection');
+	} finally { h.restore(); }
+});
+
+test('the key table\'s gesture guard through Input: with a gesture live Ctrl+A changes nothing; at rest it selects every device', () => {
+	const at = (id) => ({ tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: (sel) => (sel.includes('node') ? { id } : null) });
+	const rest = makeInput();
+	try {
+		const [a, b] = seedNodes(rest.model, [[0, 0], [360, 0]]);
+		rest.capture.onKeyDown(key('a', { ctrlKey: true }));
+		assert.deepEqual(rest.selection.list().sort(), [a.id, b.id].sort(), 'control: at rest, Ctrl+A selects both devices');
+	} finally { rest.restore(); }
+	const h = makeInput();
+	try {
+		const [a] = seedNodes(h.model, [[0, 0], [360, 0]]);
+		h.capture.onDown(pointer(0, 0, { target: at(a.id) }));
+		h.capture.onMove(pointer(120, 0, { target: at(a.id) }));
+		assert.equal(h.input.isGesturing(), true, 'precondition: a link drag is live');
+		const before = h.selection.list().slice();
+		h.capture.onKeyDown(key('a', { ctrlKey: true }));
+		assert.deepEqual(h.selection.list(), before, 'a gesture live: the guard refuses select-all, the selection unchanged');
+	} finally { h.restore(); }
+});
+
+/*
 B36 remainder — one crosshair, one corner table.
 
 The crosshair defect was never visible: Overlay and Palette each built their own on #snaplayer, and
