@@ -300,6 +300,8 @@ Q4: binding now -- the situation is model-level, serialisable and DOM-free.
 
 AMENDED 2026-10-21 (H26.2, H26-6): the matcher this section describes as `kernel/input-rules.mjs`'s now lives in the sovereign component `@apnex/input-binding` -- one match or none, guards declared per table, the trace and the overlaps -- and `kernel/input-rules.mjs` is draw's adapter, keeping `composeRules`, `resolveInput` and `overlapsIn` and adding `openGestures` (`dev/design/components/INPUT-BINDING.md` section 5); the rest is as written.
 
+AMENDED 2026-10-28 (H26.8, H26-17; `dev/design/components/NATIVE-SHAPES.md` move 1): draw composes its tables in `@apnex/input-binding`'s own form and asks them directly -- `table.matchInput(...).match?.row` the one row an input means, `table.findOverlaps` the gate's instrument -- so `kernel/input-rules.mjs` holds `TABLE_DECLARATION`, `openTable` and `openGestures` alone, `composeRules`, `resolveInput` and `overlapsIn` retired, and a refused declaration throws the component's own problems (NS11); the rest is as written.
+
 The director's intent (`dev/DECISIONS.md`, 2026-09-30): the Rules system is foundational to the plugin and capability system, and a plugin's rules are the plugin's.\
 The shape is P4, a neutral core with tenants: the core owns the mechanism, and each tenant owns its semantics.
 

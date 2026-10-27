@@ -12,7 +12,7 @@ The deterministic, self-contained core shared by the canvas, the SVG export, the
 | `palette.mjs` | the core Material colour palette: `colour`, `resolveRole`, `resolveRoles`. |
 | `theme.mjs` | style tokens and roles: `TOKENS`, `CANVAS_ROLES`, `CHROME_ROLES` and `CHROME`, the chrome's roles resolved. |
 | `renderer.mjs` | shared frame and label primitives (`sharedDefs`, `selBox`, `nameLabel`, `showsSockets`, `hexColor`, `evenDash`). |
-| `input-rules.mjs` | draw's adapter over `@apnex/input-binding` (H26.2), its guards, claim and gesture field declared once: `composeRules`, a table or a refusal at load naming each owner and row; `resolveInput`, the one row an input means, its claim and the component's match; `overlapsIn`, the gate's instrument; and `openGestures`, an input surface's gesture session. |
+| `input-rules.mjs` | draw's declaration for `@apnex/input-binding` (H26.2; its tables in the component's own form since H26.8): `TABLE_DECLARATION`, its guards, claim and gesture field declared once; `openTable`, the component's table composed with them from tenants `{ owner, rows }`, or a refusal at load naming the component's own problems; and `openGestures`, an input surface's gesture session. Every caller asks the table itself -- `matchInput` for the one row an input means and its claim, `findOverlaps` at the gate. |
 | `primitives.css` | the core primitives' stylesheet (`.frame`, `.label`, `.label-pill`, `.select-box`). |
 
 ## Where each name lives
