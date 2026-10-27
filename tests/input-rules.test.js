@@ -42,6 +42,18 @@ test('openTable joins tenants and names each row\'s owner', () => {
 });
 
 // RESTATED at H26.8 (NS11): the component's own problem, `duplicate-id` at the later row's id, where the adapter said the matcher's sentence
+// H26.8's binding move (the verifier's advisory): the declaration every table is opened with is frozen to its depth -- an importer that
+// changed it would change the guards of every table opened after
+test('TABLE_DECLARATION is frozen to its depth: no importer can change the guards, claim or gesture field later tables are opened with', () => {
+	const all = [TABLE_DECLARATION, TABLE_DECLARATION.guards, ...TABLE_DECLARATION.guards, TABLE_DECLARATION.claim, TABLE_DECLARATION.opens];
+	assert.deepEqual(all.map((v) => Object.isFrozen(v)), all.map(() => true), 'the declaration, its guards and each guard, the claim and the gesture field');
+	assert.throws(() => { TABLE_DECLARATION.guards[0].default = false; }, TypeError, 'a guard cannot be changed');
+	assert.throws(() => { TABLE_DECLARATION.guards.push({}); }, TypeError, 'nor a guard added');
+	assert.throws(() => { TABLE_DECLARATION.claim.default = false; }, TypeError, 'nor the claim changed');
+	const table = openTable({ owner: 'a', rows: [row('m', 'm')] });
+	assert.equal(rowOf(table, ev('m'), {}, { ...free, readOnly: true }), null, 'and a table opened after still refuses a mutating row read-only');
+});
+
 test('openTable refuses a duplicate id, within a tenant or across two -- the component\'s problem at the later row', () => {
 	assert.throws(() => openTable({ owner: 'a', rows: [row('x', 'x'), row('x', 'y')] }), { message: 'input rules refused: /tenants/0/rows/1/id duplicate-id' });
 	assert.throws(() => openTable({ owner: 'a', rows: [row('x', 'x')] }, { owner: 'b', rows: [row('x', 'z')] }), { message: 'input rules refused: /tenants/1/rows/0/id duplicate-id' });
@@ -59,7 +71,7 @@ RESTATED at H26.2's verification (F5): named as draw names it -- the owner and t
 every problem listed, never the component's pointer alone.
 RESTATED at H26.8 (NS11): named as the component names it, its pointer and its problem, every problem listed.
 */
-test('H26.2: a malformed row is refused at load, naming its owner and its id, and so is a malformed session', () => {
+test('H26.2: a malformed row is refused at load, naming where it lies -- the component\'s pointer and problem -- and so is a malformed session', () => {
 	assert.throws(() => openTable({ owner: 'a', rows: [{ id: 'x', on: 'k' }] }), { message: 'input rules refused: /tenants/0/rows/0/on invalid-value' });
 	assert.throws(() => openTable({ owner: 'a', rows: [row('x', 'x', { mutates: 1 })] }), { message: 'input rules refused: /tenants/0/rows/0/mutates invalid-value' });
 	assert.throws(() => openTable({ owner: 'a', rows: [row('x', 'x', { gesture: '' })] }), { message: 'input rules refused: /tenants/0/rows/0/gesture invalid-value' });

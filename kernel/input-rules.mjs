@@ -49,6 +49,9 @@ What each answers:
 */
 import { composeBindingTable, openGestureSession } from '@apnex/input-binding';
 
+// a value frozen to its depth, so an importer of the declaration cannot change the guards of every table opened after it
+const frozen = (value) => { if (value !== null && typeof value === 'object') { Object.values(value).forEach(frozen); Object.freeze(value); } };
+
 // draw's guards, claim and the field a press row names its gesture in: the four guards the matcher always applied, the claim a
 // row's `prevent !== false` made, and `gesture`, where press rows name what they open (INPUT-BINDING.md section 5)
 export const TABLE_DECLARATION = {
@@ -61,6 +64,7 @@ export const TABLE_DECLARATION = {
 	claim: { flag: 'prevent', default: true },
 	opens: { field: 'gesture' },
 };
+frozen(TABLE_DECLARATION);   // to its depth, a statement apart, so the table stays a table (tools/code-split.mjs counts it declared)
 
 // join tenants' rows into one table, in order; a refused declaration throws when the composition loads
 export function openTable(...tenants) {
