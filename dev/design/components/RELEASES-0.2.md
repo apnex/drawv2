@@ -648,6 +648,7 @@ Each component's decision record, D3, lists what its builder chose and its errat
   - GitHub's newer Chrome refuses a forbidden worker by an error event, not an exception; the test judges either, the page refused both ways.
   - What the components' documents left its builder to guess is the tester's backlog D1 to D6 -- among them that no component's document states the held-button trap on a drag's moves -- inputs to the guide and to the components' next documents.
   - Its hosting: two public buckets, `gs://input-lab-apnex-io` and `gs://input-apnex-io`, each behind a backend bucket with the edge cache off and the IT-D5 rule as a custom response header, on the existing load balancer at `input-lab.apnex.io` and `input.apnex.io`; measured by the deploy, every file served byte-identical to the release, the entry `no-store`, the folder `immutable`.
+  - Accepted on the director's Chromebook, 2026-10-26 -- "Look fine, buttons, touchpad and keys all seem to respond correctly without lag" -- and deployed to production at `input.apnex.io` the same day, every file read back through both hosts byte-identical to the release; no input method was tried, so typing through one stays outside the covered inputs (the tester's `0003`, B433).
 
 ---
 
