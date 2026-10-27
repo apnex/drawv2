@@ -36,7 +36,7 @@ Input — pointer/keyboard state machine. Two-button gestures (`dev/DECISIONS.md
 import { Overlay } from './overlay.js';
 import { pressRows, hitFactsOf, DOUBLE_CLICKS } from './recognize.js';
 import { KEYMAP, KEY_RELEASES } from './keymap.js';
-import { composeRules, resolveInput, openGestures } from '../../kernel/input-rules.mjs';   // H26.2: the rules part, draw's adapter over input-binding
+import { openTable, openGestures } from '../../kernel/input-rules.mjs';   // H26.2: the rules part; H26.8: its tables in input-binding's own form
 import { occupiedAnyAt, picksOf, pointsOf, grabbedAt, takenIn } from './pick.js';
 import { GAP, orthoDelta, snappedDelta, clampDelta, snapNode, snapIn, placesOf, gridsOf, resolveBox, dist, nearOrigin } from './snap.js';
 import { isShown, setShown } from './painter.js';
@@ -399,8 +399,10 @@ export class Input {
 		// C-e: a product row may phrase its help from the composition (`doc(parts)`, absent when it answers null); a canvas part
 		// may bring key rows, as a plugin does -- the zones plugin's `z`
 		const productKeys = KEYMAP.flatMap((r) => (typeof r.doc !== 'function' ? [r] : r.doc(parts) === null ? [] : [{ ...r, doc: r.doc(parts) }]));
-		this.keyRules = composeRules({ owner: 'product', rules: productKeys }, ...plugins.map((p) => ({ owner: p.owner, rules: p.keys ?? [] })),
-			...parts.filter((p) => p.keys).map((p) => ({ owner: p.owner, rules: p.keys })));
+		// H26.8 (NATIVE-SHAPES.md section 3.2): each table composed in input-binding's own form, a tenant `{ owner, rows }`, and asked
+		// directly -- `matchInput(fact, context, guards).match?.row`, the one row an input means
+		this.keyRules = openTable({ owner: 'product', rows: productKeys }, ...plugins.map((p) => ({ owner: p.owner, rows: p.keys ?? [] })),
+			...parts.filter((p) => p.keys).map((p) => ({ owner: p.owner, rows: p.keys })));
 		// C-e: each kind's rank in a delete, its part's
 		this.deleteRanks = commands.deleteRanksOf(parts);
 		// C-e: what follows a clone, each part's, in rank order
@@ -469,7 +471,7 @@ export class Input {
 		const hands = parts.filter((p) => p.hand);
 		if (hands.length > 1) throw new Error(`Input: a hand is brought by ${hands.map((p) => p.owner).join(' and by ')} -- one may`);
 		this.handSpec = hands[0]?.hand ?? null;
-		this.pressRules = composeRules({ owner: 'product', rules: pressRows(picksOf(parts), this.places) }, ...parts.map((p) => ({ owner: p.owner, rules: p.presses ?? [] })));
+		this.pressRules = openTable({ owner: 'product', rows: pressRows(picksOf(parts), this.places) }, ...parts.map((p) => ({ owner: p.owner, rows: p.presses ?? [] })));
 		/*
 		F2 (H26.2's verification): a press row runs an action or opens a gesture this table declares -- one, never both, and never a
 		gesture it does not declare -- or Input refuses it as it loads, as the adapter refuses a malformed row: the session starts what a
@@ -480,19 +482,19 @@ export class Input {
 			if (opens !== null && !Object.hasOwn(GESTURES, opens)) throw new Error(`Input: ${owner}'s press row '${id}' opens ${opens}, which is no gesture the canvas declares`);
 			if (opens !== null && row.run) throw new Error(`Input: ${owner}'s press row '${id}' both runs ${typeof row.run === 'function' ? 'a function' : row.run} and opens ${opens} -- a press row does one`);
 		}
-		this.doubleRules = composeRules({ owner: 'product', rules: DOUBLE_CLICKS });
-		this.releaseRules = composeRules({ owner: 'product', rules: KEY_RELEASES });
+		this.doubleRules = openTable({ owner: 'product', rows: DOUBLE_CLICKS });
+		this.releaseRules = openTable({ owner: 'product', rows: KEY_RELEASES });
 		// K5: run mode's rows come from the composition root (app/src/run-mode.js via main.js); a composition without the
 		// simulation passes none, and a run-mode press then means nothing
-		this.runRules = composeRules({ owner: 'product', rules: runRules });
+		this.runRules = openTable({ owner: 'product', rows: runRules });
 		// what each gesture MEANS when it ends, or when a press becomes a drag (stage 5, app/src/releases.js)
 		this.meaningRules = Object.fromEntries(Object.entries({ link: LINK_RELEASES, marquee: MARQUEE_RELEASES, ctrlClick: CTRL_CLICKS,
 			pressDrag: PRESS_DRAGS, cloneDrag: CLONE_DRAGS })
-			.map(([name, rules]) => [name, composeRules({ owner: 'product', rules })]));
+			.map(([name, rows]) => [name, openTable({ owner: 'product', rows })]));
 		// C-d: a plugin row opening a shared gesture brings what its release means, resolved under the row's own id
 		for (const p of parts) for (const row of p.presses ?? []) {
 			const releases = row.box?.releases;
-			if (releases) this.meaningRules[row.id] = composeRules({ owner: p.owner, rules: releases });
+			if (releases) this.meaningRules[row.id] = openTable({ owner: p.owner, rows: releases });
 		}
 		// C-d: the handles a lone selected entity shows, by kind, from the canvas parts
 		this.handles = new Map();
@@ -504,7 +506,7 @@ export class Input {
 			this.handles.set(h.kind, spec);
 			this.handleWords.set(h.word, spec);
 			// what a handle's release means: the declaring plugin's rows, resolved under the kind's handle table
-			this.meaningRules[`handle:${h.kind}`] = composeRules({ owner: p.owner, rules: h.releases ?? [] });
+			this.meaningRules[`handle:${h.kind}`] = openTable({ owner: p.owner, rows: h.releases ?? [] });
 		}
 		this.model = model;
 		this.history = history;
@@ -666,9 +668,9 @@ export class Input {
 			match: () => {
 				if (this.labels.isOpen()) this.labels.close(true);
 				this.tools.hideHand();
-				const resolved = resolveInput(this.pressRules, evt, this.situation(), { readOnly: this.readOnly });
-				rule = resolved.rule;
-				return resolved.match;   // null when no row matches (kernel/input-rules.mjs resolveInput)
+				const { match } = this.pressRules.matchInput(evt, this.situation(), { readOnly: this.readOnly });
+				rule = match?.row;
+				return match;   // null when no row matches (input-binding IB7)
 			},
 			cancelled: (cancel) => this.#cancelled(cancel, evt),
 		});
@@ -723,7 +725,7 @@ export class Input {
 	that acts. The rows are app/src/run-mode.js, handed in by the composition root (K5); the handlers are here.
 	*/
 	runModePress(evt) {
-		const { rule } = resolveInput(this.runRules, evt, this.situation(evt.region?.target ?? null), { readOnly: this.readOnly });   // C-f: what the press aims at
+		const rule = this.runRules.matchInput(evt, this.situation(evt.region?.target ?? null), { readOnly: this.readOnly }).match?.row;   // C-f: what the press aims at
 		if (!rule) return;
 		// a plugin's row -- the simulation's spawner and tower (C-e) -- acts through the host; what it changed may move occupancy
 		if (typeof rule.run === 'function') { rule.run(this.pluginHost, evt); this.afterHistory(); return; }
@@ -1154,7 +1156,7 @@ export class Input {
 	}
 
 	decide(table, evt, facts) {
-		return resolveInput(this.meaningRules[table], evt, facts, { readOnly: this.readOnly }).rule;
+		return this.meaningRules[table].matchInput(evt, facts, { readOnly: this.readOnly }).match?.row;
 	}
 
 	act(rule, data) {
@@ -1360,7 +1362,7 @@ export class Input {
 	// ---- label editing ----
 	double(evt) {
 		this.#markShiftOwed(evt);   // H26.5 (B413)
-		const { rule } = resolveInput(this.doubleRules, evt, this.situation(), { readOnly: this.readOnly });
+		const rule = this.doubleRules.matchInput(evt, this.situation(), { readOnly: this.readOnly }).match?.row;
 		if (rule) this[rule.run](evt);
 	}
 
@@ -1401,11 +1403,12 @@ export class Input {
 		this.#markShiftOwed(evt);   // H26.5 (B413)
 		// typing contexts (header menu, label editor) never reach here: capture keeps them (app/src/capture.js)
 		// the Rules engine finds the ONE row this key means in this situation (dev/RULES.md section 11)
-		const { rule, claimed } = resolveInput(this.keyRules, evt, this.situation(null, this.mode), {
+		const { match, claimed } = this.keyRules.matchInput(evt, this.situation(null, this.mode), {
 			readOnly: this.readOnly,
 			helpOpen: !!(this.help && isShown(this.help)),
 			gesturing: this.isGesturing(),
 		});
+		const rule = match?.row;
 		if (claimed) evt.claimed = true;   // B47 — bind a key and you own it
 		if (!rule) return;
 		if (typeof rule.run === 'function') rule.run(this.pluginHost, evt);   // a plugin's row acts through the host
@@ -1646,9 +1649,9 @@ export class Input {
 	// a key release: the ONE row it means (app/src/keymap.js KEY_RELEASES), through the same engine as a key press
 	keyUp(evt) {
 		this.#markShiftOwed(evt);   // H26.5 (B413)
-		const { rule } = resolveInput(this.releaseRules, evt, this.situation(null, this.mode), {
+		const rule = this.releaseRules.matchInput(evt, this.situation(null, this.mode), {
 			readOnly: this.readOnly, helpOpen: !!(this.help && isShown(this.help)), gesturing: this.isGesturing(),
-		});
+		}).match?.row;
 		if (rule) this[rule.run](evt);
 	}
 

@@ -9,7 +9,9 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createNetworkSession } from '../plugins/network/session.mjs';
 import { networkInput } from '../plugins/network/keys.mjs';
-import { composeRules, resolveInput } from '../kernel/input-rules.mjs';
+import { openTable } from '../kernel/input-rules.mjs';
+// RESTATED at H26.8: a table in input-binding's own form, asked as every call site asks it -- the row `matchInput(...).match?.row`
+const rowOf = (t, input, situation, guards) => t.matchInput(input, situation, guards).match?.row ?? null;
 import { applyOps } from '../model/ops.mjs';
 
 const wp = { id: 'node-000001', kind: 'node', type: null, name: 'w1' };
@@ -84,14 +86,14 @@ test('only anchors are flipped; a selection with none changes nothing and tells 
 });
 
 test('x means transit only with an anchor or node selected, and never mid-drag', () => {
-	const t = composeRules({ owner: 'network', rules: networkInput(() => ({})).keys });
+	const t = openTable({ owner: 'network', rows: networkInput(() => ({})).keys });
 	const sel = (kinds) => ({ selection: { size: kinds.length, ids: [], kinds, bends: null }, gesture: null, step: null });
 	const x = { key: 'x', shiftKey: false, ctrlKey: false, altKey: false, metaKey: false };
-	assert.equal(resolveInput(t, x, sel(['waypoint']), {}).rule?.id, 'transit');
-	assert.equal(resolveInput(t, x, sel(['link', 'node']), {}).rule?.id, 'transit');
-	assert.equal(resolveInput(t, x, sel(['link']), {}).rule, null);
-	assert.equal(resolveInput(t, x, sel(['waypoint']), { gesturing: true }).rule, null, 'a declaration, not a drag step');
-	assert.equal(resolveInput(t, { ...x, ctrlKey: true }, sel(['waypoint']), {}).rule, null);
+	assert.equal(rowOf(t, x, sel(['waypoint']), {})?.id, 'transit');
+	assert.equal(rowOf(t, x, sel(['link', 'node']), {})?.id, 'transit');
+	assert.equal(rowOf(t, x, sel(['link']), {}), null);
+	assert.equal(rowOf(t, x, sel(['waypoint']), { gesturing: true }), null, 'a declaration, not a drag step');
+	assert.equal(rowOf(t, { ...x, ctrlKey: true }, sel(['waypoint']), {}), null);
 });
 
 /*

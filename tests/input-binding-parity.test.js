@@ -1,94 +1,31 @@
 /*
-H26.2 (dev/design/components/INPUT-BINDING.md section 4, acceptance step 4; section 6; guardrail G5) -- DRAW'S MATCHER, PRESS AND
-GESTURE LIFECYCLE, OLD AND NEW, SIDE BY SIDE: BEFORE ANYTHING IS DELETED, AND ON EVERY GATE AFTER.
+H26.2 (dev/design/components/INPUT-BINDING.md section 4, acceptance step 4; section 6; guardrail G5) -- DRAW'S GESTURE LIFECYCLE AND ITS
+HELP, AS THE CODE BEFORE THE MOVE ONTO INPUT-BINDING RAN AND WROTE THEM, ON EVERY GATE.
 
-Draw moves its matcher and its gesture lifecycle onto input-binding and changes no behaviour but the two section 6.3 names: a travel
-within about 10^-15 of the threshold decided exactly, and a throwing cancel body ending its gesture (tests/input-binding-move.test.js
-holds the second). So every table draw composes answers through the old matcher and the adapter alike, on the product page's
-composition and the lab's; the old press and the session's agree over generated streams but for the recorded differences of the
-first kind, each held with both answers and classed again here; and over every scenario of the gesture corpus, the same body runs for
-each input and the same gesture is live after it as the record read from the code before the move says. The fixture,
-tests/fixtures/binding-parity.mjs, says what each side is and where the old code is kept.
+Draw moved its matcher and its gesture lifecycle onto input-binding and changed no behaviour but the two section 6.3 names. Over every
+scenario of the gesture corpus, the same body runs for each input and the same gesture is live after it as the record read from the
+code before the move says; and the help overlay is line for line what the old code generated. The fixture,
+tests/fixtures/binding-parity.mjs, says what each record is.
+RESTATED at H26.8's binding move (dev/design/components/NATIVE-SHAPES.md sections 4.1 to 4.3, NS10): the lifecycle and the help alone,
+the move's guard -- each record pinned byte for byte below. The matcher's and the press's comparisons with the old code, kept at
+tests/fixtures/pre-binding/, went with it: draw composes its tables in input-binding's own form, and the adapter they compared is gone.
 */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
 import fs from 'node:fs';
-import { READ_AT, MOVED, ORIGINALS, OLD, NEW, tenantsOf, idsOf, tablesOf, GRAMMAR, COMPOSITIONS, withInput, SWEEPS, compareMatcher, grammarAgrees,
-	STREAMS, SEED, THRESHOLD, pressStreams, pressDifferences, classOf, lifecycleOf, PRESS_RECORD, LIFECYCLE_RECORD,
-	LISTED_APART, CORPUS_LISTED_APART, lifecycleOfSteps } from './fixtures/binding-parity.mjs';
+import { READ_AT, COMPOSITIONS, withInput, lifecycleOf, LIFECYCLE_RECORD, HELP_RECORD, LISTED_APART, CORPUS_LISTED_APART, lifecycleOfSteps } from './fixtures/binding-parity.mjs';
 import { SCENARIOS } from './fixtures/gesture-corpus.mjs';
 import { helpSections } from '../app/src/help.js';
 
 const readJson = (url) => JSON.parse(fs.readFileSync(url, 'utf8'));
 
-test('H26.2: the old matcher, press and triggers are kept whole -- each copy is the original at READ_AT, byte for byte', () => {
-	for (const o of ORIGINALS) {
-		assert.equal(o.copySha(), o.sha256, `tests/fixtures/${o.copy} is ${o.file} as it stood at ${READ_AT}`);
-		if (!MOVED) assert.equal(o.liveSha(), o.sha256, `before the move, ${o.file} is still the original`);
-	}
-	assert.equal(readJson(PRESS_RECORD).readAt, READ_AT, 'the press record was read at READ_AT');
-	assert.equal(readJson(LIFECYCLE_RECORD).readAt, READ_AT, 'and so was the lifecycle record');
-});
-
-const TABLE_NAMES = ['keys', 'presses', 'double', 'key-releases', 'run', 'link', 'marquee', 'ctrlClick', 'pressDrag', 'cloneDrag', 'zone-draw', 'tool', 'handle:zone', 'handle:link'];
-for (const [composition, opts] of COMPOSITIONS) {
-	test(`H26.2: on the ${composition}'s composition, every table answers through the old matcher and the adapter alike -- row id and claim`, () => withInput(opts, (h) => {
-		const tables = tablesOf(h.input);
-		assert.deepEqual(Object.keys(tables).sort(), [...TABLE_NAMES].sort(), 'the fourteen tables an Input composes, section 2.2');
-		for (const name of TABLE_NAMES) {
-			const tenants = tenantsOf(tables[name]);
-			assert.deepEqual(idsOf(OLD.composeRules(...tenants)), idsOf(tables[name]), `${name}: the tenants are the ones the Input composed, in its order`);
-			assert.deepEqual(idsOf(NEW.composeRules(...tenants)), idsOf(tables[name]), `${name}: and the adapter composes them alike`);
-			const r = compareMatcher(tenants, SWEEPS[name]);
-			assert.deepEqual(r.differ, [], `${name}: every answer equal`);
-			assert.deepEqual(r.foreign, [], `${name}: the adapter hands back the row it was given`);
-			assert.deepEqual(r.overlaps.now, r.overlaps.old, `${name}: the same overlaps, as the gate reads them`);
-			assert.ok(r.asked > 0, `${name}: asked something`);
-		}
-		assert.equal(idsOf(tables.run).length, composition === 'lab' ? 0 : 4, 'the lab composes no run mode, the page its four rows');
-	}));
-}
-
-test('H26.2: the network\'s drag grammar answers through both, and its own composition answers as the adapter does', () => {
-	for (const name of Object.keys(GRAMMAR)) {
-		const r = compareMatcher(GRAMMAR[name], SWEEPS[name]);
-		assert.deepEqual([r.differ, r.foreign], [[], []], `${name}: every answer equal`);
-		assert.deepEqual(r.overlaps.now, r.overlaps.old);
-		assert.ok(r.asked > 0);
-	}
-	assert.deepEqual(grammarAgrees(), [], 'plugins/network/grammar.mjs kindOf and pipeFor answer the one row the sweep finds');
-});
-
-test('H26.2: a table built to overlap, to claim and to refuse answers alike -- the control that the comparison can see a difference', () => {
-	const on = (k) => (e) => e.key === k;
-	const tenants = [{ owner: 'a', rules: [{ id: 'first', on: on('k'), run: 'x' }, { id: 'quiet', on: on('q'), prevent: false, run: 'x' },
-		{ id: 'help', on: on('h'), mutates: false, duringHelp: true, run: 'x' }, { id: 'locked', on: on('l'), mutates: false, whileReadOnly: true, run: 'x' }] },
-	{ owner: 'b', rules: [{ id: 'second', on: on('k'), run: 'x' }, { id: 'cond', on: on('c'), when: (s) => s.ok, run: 'x' }] }];
-	const facts = ['k', 'q', 'h', 'l', 'c', 'z'].map((key) => ({ key }));
-	const sweeps = [{ facts, contexts: [{ ok: true }, { ok: false }], guards: [{}, { readOnly: true }, { helpOpen: true }, { gesturing: true }] }];
-	const r = compareMatcher(tenants, sweeps);
-	assert.deepEqual([r.differ, r.foreign], [[], []]);
-	assert.equal(r.overlaps.old.length, 2, 'k hits two rows in each context when no guard refuses them');
-	assert.deepEqual(r.overlaps.now, r.overlaps.old);
-	const lying = { ...NEW, resolveInput: (t, f, c, g) => { const a = NEW.resolveInput(t, f, c, g); return f.key === 'q' ? { ...a, claimed: !a.claimed } : a; } };
-	const o = OLD.composeRules(...tenants), n = lying.composeRules(...tenants);
-	assert.notEqual(OLD.resolveInput(o, { key: 'q' }, {}, {}).claimed, lying.resolveInput(n, { key: 'q' }, {}, {}).claimed, 'a claim told otherwise is a difference');
-});
-
-test('H26.2 (section 6.3, D7): the old press and the session\'s agree over generated streams but for the recorded differences, each the exact threshold\'s', () => {
-	const rec = readJson(PRESS_RECORD);
-	assert.deepEqual([rec.streams, rec.seed, rec.threshold], [STREAMS, SEED, THRESHOLD], 'the streams the record answers');
-	const streams = pressStreams();
-	const found = pressDifferences(streams);
-	assert.deepEqual(found, rec.differences.map(({ stream, output, old, new: now }) => ({ stream, output, old, new: now })), 'every difference recorded with both answers, and no recorded one gone');
-	assert.ok(found.length > 0, 'the streams cross the band where the arithmetic rounds, so the comparison is not vacuous');
-	for (const d of found) {
-		const c = classOf(streams[d.stream], d.output);
-		assert.equal(c.class, 'exact-threshold', `stream ${d.stream} output ${d.output}: a move within 10^-14 of the threshold judged two ways`);
-		assert.equal(d.new, c.exactAnswer, `stream ${d.stream} output ${d.output}: the session answers the exact distance`);
-	}
-	const moves = streams.flat().filter(([op]) => op === 'move').length, ups = streams.flat().filter(([op]) => op === 'up').length;
-	assert.ok(moves > 10000 && ups > 2000, `asked ${moves} moves and ${ups} releases`);
+// H26.8 (section 4.1): the records the binding move answers to, byte for byte as they were committed -- never regenerated
+test('H26.8 (section 4.1): the lifecycle and help records are byte-identical to the ones the code before the move wrote', () => {
+	const sha256 = (url) => crypto.createHash('sha256').update(fs.readFileSync(url)).digest('hex');
+	assert.equal(sha256(LIFECYCLE_RECORD), '04cf5c8ed9ea0f3d26f26b8967e7a3c00671330fb5d49f4718e9e2da713e29c7', 'tests/fixtures/binding-parity-lifecycle.json');
+	assert.equal(sha256(HELP_RECORD), '53de8f6823d1baaa4d4aabada7540d8a84a44ba8d435c89665b86fa4f4e48732', 'tests/fixtures/binding-parity-help.json');
+	assert.equal(readJson(LIFECYCLE_RECORD).readAt, READ_AT, 'the lifecycle record was read at READ_AT');
 });
 
 // RESTATED at H26.5 (dev/design/components/RELEASES-0.2.md section 4, GR7): but for the corpus's one chord, listed apart with both answers
@@ -120,7 +57,7 @@ line of it: its sections, on the page's composition and the lab's, as the old co
 code is 8793699's -- 37 key lines, 12 pointer lines, 7 release lines and the page's 4 run-mode lines (acceptance step 5).
 */
 test('H26.2 (acceptance step 5; D13): the help overlay\'s sections are line for line those the old code generated, on the page and in the lab', () => {
-	const rec = readJson(new URL('./fixtures/binding-parity-help.json', import.meta.url));
+	const rec = readJson(HELP_RECORD);
 	for (const [composition, opts] of COMPOSITIONS) withInput(opts, (h) => assert.deepEqual(helpSections(h.input.bindings()), rec.sections[composition], composition));
 	assert.deepEqual(rec.sections.page.map((s) => s.lines.length), [37, 12, 7, 4]);
 	assert.deepEqual(rec.sections.lab.map((s) => s.lines.length), [37, 12, 7]);

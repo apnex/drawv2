@@ -19,13 +19,16 @@ const REPLUG_RELEASES = LINK_HANDLE_SPECS[0].releases;
 import { ZONE_PRESSES } from '../plugins/zones/zone-gestures.mjs';
 // RESTATED at C-d step one (H19.32): the zone's draw is the zones plugin's row over the shared box gesture, its release the row's own
 const ZONE_RELEASES = ZONE_PRESSES.find((r) => r.id === 'zone-draw').box.releases;
-import { composeRules, resolveInput, overlapsIn } from '../kernel/input-rules.mjs';
+import { openTable } from '../kernel/input-rules.mjs';
+// RESTATED at H26.8's binding move (dev/design/components/NATIVE-SHAPES.md section 3.2): each table in input-binding's own form, asked as
+// every call site asks it -- the row `matchInput(...).match?.row`, null when none -- and `findOverlaps` at the gate
+const rowOf = (t, input, facts, guards) => t.matchInput(input, facts, guards).match?.row ?? null;
 import { makeInput, key, pointer, seedNodes } from './fixtures/client-harness.mjs';
 import { makeWaypoint } from '../plugins/devices/make-node.mjs';   // O-e1: the devices plugin's factories
 
-const table = (rules) => composeRules({ owner: 'product', rules });
+const table = (rows) => openTable({ owner: 'product', rows });
 const UP = { type: 'up' };
-const choose = (t, facts, readOnly = false) => resolveInput(t, UP, facts, { readOnly }).rule?.run ?? 'nothing';
+const choose = (t, facts, readOnly = false) => rowOf(t, UP, facts, { readOnly })?.run ?? 'nothing';
 
 // every combination of the named boolean facts, with extra fields fixed
 function combos(names, extra = {}) {
@@ -72,7 +75,7 @@ test('the link release chooses what the old handler did, for every combination o
 test('the link release is complete and disjoint: every case is exactly one row, since the old handler always did something', () => {
 	const t = table(LINK_RELEASES);
 	const cases = combos(LINK_FACTS, { hand: 'router' });
-	assert.deepEqual(overlapsIn(t, [UP], cases, [{}]), []);
+	assert.deepEqual(t.findOverlaps([UP], cases, [{}]), []);
 	assert.equal(cases.filter((r) => choose(t, r) === 'nothing').length, 0);
 });
 
@@ -90,7 +93,7 @@ test('the marquee release chooses what the old handler did, for every combinatio
 	const t = table(MARQUEE_RELEASES);
 	const cases = combos(['click', 'hand', 'shift', 'ctrl', 'alt']);
 	assert.deepEqual(cases.filter((r) => choose(t, r) !== oldMarquee(r)).map((r) => JSON.stringify(r)), []);
-	assert.deepEqual(overlapsIn(t, [UP], cases, [{}]), []);
+	assert.deepEqual(t.findOverlaps([UP], cases, [{}]), []);
 });
 
 // ---- the smaller ones ----
@@ -98,8 +101,8 @@ test('the marquee release chooses what the old handler did, for every combinatio
 test('a Ctrl+click toggles what it pressed while that still exists; a replug retargets only where the pair has room; a zone needs area', () => {
 	assert.equal(choose(table(CTRL_CLICKS), { exists: true }), 'toggleCtrlClicked');
 	assert.equal(choose(table(CTRL_CLICKS), { exists: false }), 'nothing');
-	for (const r of combos(['retargets', 'admitted'])) assert.equal(resolveInput(table(REPLUG_RELEASES), UP, r, { readOnly: false }).rule?.id ?? 'nothing', r.retargets && r.admitted ? 'replug' : 'nothing');
-	assert.equal(resolveInput(table(ZONE_RELEASES), UP, { area: true }, { readOnly: false }).rule?.id, 'create-zone', 'a box with an area makes a zone (the plugin row, by id)');
+	for (const r of combos(['retargets', 'admitted'])) assert.equal(rowOf(table(REPLUG_RELEASES), UP, r, { readOnly: false })?.id ?? 'nothing', r.retargets && r.admitted ? 'replug' : 'nothing');
+	assert.equal(rowOf(table(ZONE_RELEASES), UP, { area: true }, { readOnly: false })?.id, 'create-zone', 'a box with an area makes a zone (the plugin row, by id)');
 	assert.equal(choose(table(ZONE_RELEASES), { area: false }), 'nothing');
 });
 
@@ -109,10 +112,10 @@ test('a press becomes a move except on a link, on a left press on a waypoint (B2
 	// RESTATED at C-d step four (D4): a link is what is not placed; a waypoint, an anchor whose left press draws a link
 	for (const r of combos(['unplaced', 'linksOnLeft', 'leftPress'])) {
 		const want = !r.unplaced && !(r.linksOnLeft && r.leftPress) ? 'startMove' : 'nothing';
-		assert.equal(resolveInput(t, MOVE, r, { readOnly: false }).rule?.run ?? 'nothing', want, JSON.stringify(r));
-		assert.equal(resolveInput(t, MOVE, r, { readOnly: true }).rule, null, 'a locked press never becomes a drag');
+		assert.equal(rowOf(t, MOVE, r, { readOnly: false })?.run ?? 'nothing', want, JSON.stringify(r));
+		assert.equal(rowOf(t, MOVE, r, { readOnly: true }), null, 'a locked press never becomes a drag');
 	}
-	assert.equal(resolveInput(table(CLONE_DRAGS), MOVE, {}, { readOnly: false }).rule.run, 'startClone');
+	assert.equal(rowOf(table(CLONE_DRAGS), MOVE, {}, { readOnly: false }).run, 'startClone');
 });
 
 // ---- acceptance test 3: the release slots hand over facts, and the actions decide nothing ----

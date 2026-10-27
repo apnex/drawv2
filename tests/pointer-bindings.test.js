@@ -22,8 +22,11 @@ const RECOGNIZE = pressRows(picksOf(CANVAS_FOR_ROWS), placesOf(CANVAS_FOR_ROWS))
 import { PRODUCT_CANVAS } from '../product/canvas.mjs';
 import { KEY_RELEASES } from '../app/src/keymap.js';
 import { RUN_PRESSES } from '../app/src/run-mode.js';
-import { composeRules, resolveInput, overlapsIn } from '../kernel/input-rules.mjs';
-import { makeInput, key } from './fixtures/client-harness.mjs';
+import { openTable } from '../kernel/input-rules.mjs';
+// RESTATED at H26.8's binding move (dev/design/components/NATIVE-SHAPES.md section 3.2): each table in input-binding's own form, asked as
+// every call site asks it -- the row `matchInput(...).match?.row`, null when none -- and `findOverlaps`, its records naming fact and context
+const rowOf = (table, input, situation, guards) => table.matchInput(input, situation, guards).match?.row ?? null;
+import { makeInput, key, pointer, seedNodes } from './fixtures/client-harness.mjs';
 
 // ---- the oracle: app/src/recognize.js at 1900fef, rows and resolver as they were ----
 const L = (e) => e.button === 0;
@@ -68,7 +71,7 @@ const PRESSES = HITS.flatMap((on) => [0, 1, 2].flatMap((button) => MODSETS.map((
 const SITUATIONS = [{ tool: false }, { tool: true }];
 const GUARDS = [{ readOnly: false }, { readOnly: true }];
 // the press rows as the page composes them: the product's and each canvas part's (C-d)
-const PRESS_TABLE = composeRules({ owner: 'product', rules: RECOGNIZE }, ...PRODUCT_CANVAS.map((p) => ({ owner: p.owner, rules: p.presses ?? [] })));
+const PRESS_TABLE = openTable({ owner: 'product', rows: RECOGNIZE }, ...PRODUCT_CANVAS.map((p) => ({ owner: p.owner, rows: p.presses ?? [] })));
 
 /*
 ONE STATE IS UNREACHABLE, and is left out rather than given rows: a tool held on a locked client. Locking releases a held
@@ -104,7 +107,7 @@ test('H24.5: a left press on a zone draws a zone under Shift for a writer, place
 		if (!reachable(g, s)) continue;
 		// a held text tool places a text box wherever a left press lands, a zone included -- unchanged since the old table's `tool` row
 		const want = s.tool ? 'gesture:textbox' : !g.readOnly && e.shiftKey ? 'gesture:zone' : 'nothing';
-		const now = outcome(resolveInput(PRESS_TABLE, e, s, g).rule);
+		const now = outcome(rowOf(PRESS_TABLE, e, s, g));
 		if (now !== want) differ.push(`${JSON.stringify(g)} tool=${s.tool} ${JSON.stringify({ s: e.shiftKey, c: e.ctrlKey, a: e.altKey })}: ${now}, want ${want}`);
 	}
 	assert.deepEqual(differ, []);
@@ -118,7 +121,7 @@ test('the pointer table starts exactly the gesture the old ordered table did, fo
 		// CORRECTED at B316: the old table saw a link end's hit with no id ({ kind: 'lhandle', end }) -- C-d step two gave the old side
 		// the new shape, and so hid that the delete chord came to match a link end's handle
 		const was = outcome(oldResolve(oldHit(e.on), e, { readOnly: g.readOnly, tool: s.tool }));
-		const now = outcome(resolveInput(PRESS_TABLE, e, s, g).rule);
+		const now = outcome(rowOf(PRESS_TABLE, e, s, g));
 		if (was !== now) differ.push(`${JSON.stringify(g)} tool=${s.tool} ${e.on.kind} b${e.button} ${JSON.stringify({ s: e.shiftKey, c: e.ctrlKey, a: e.altKey })}: ${now}, was ${was}`);
 	}
 	assert.equal(PRESSES.length, 168, '7 hits x 3 buttons x 8 modifier sets, in each of 3 reachable tool and lock states');
@@ -126,7 +129,7 @@ test('the pointer table starts exactly the gesture the old ordered table did, fo
 });
 
 test('Q3: no press matches two pointer rows, in any tool or lock state -- the 14 overlapping pairs are gone', () => {
-	const found = overlapsIn(PRESS_TABLE, PRESSES, SITUATIONS, GUARDS).map((o) => `${JSON.stringify(o.guards)} ${o.input.on.kind} b${o.input.button} -> ${o.ids.join('/')}`);
+	const found = PRESS_TABLE.findOverlaps(PRESSES, SITUATIONS, GUARDS).map((o) => `${JSON.stringify(o.guards)} ${o.fact.on.kind} b${o.fact.button} -> ${o.ids.join('/')}`);
 	assert.deepEqual(found, []);
 	let pairs = 0;
 	for (let i = 0; i < OLD.length; i++) for (let j = i + 1; j < OLD.length; j++) {
@@ -143,14 +146,26 @@ test('the locked fallbacks are admitted only while writes are refused: a guard, 
 });
 
 test('a double click is a binding: it edits a label, and a locked client does not', () => {
-	const t = composeRules({ owner: 'product', rules: DOUBLE_CLICKS });
-	assert.equal(resolveInput(t, { type: 'double' }, {}, { readOnly: false }).rule.id, 'edit-label');
-	assert.equal(resolveInput(t, { type: 'double' }, {}, { readOnly: true }).rule, null, 'refused by the guard, not by the handler');
+	const t = openTable({ owner: 'product', rows: DOUBLE_CLICKS });
+	assert.equal(rowOf(t, { type: 'double' }, {}, { readOnly: false }).id, 'edit-label');
+	assert.equal(rowOf(t, { type: 'double' }, {}, { readOnly: true }), null, 'refused by the guard, not by the handler');
+});
+
+// H26.8's binding move: the same, through Input -- the double click asked of its table as Input asks it, the lock its guard state
+test('a double click on a device opens its name editor through Input, and on a locked client opens nothing', () => {
+	for (const locked of [false, true]) {
+		const h = makeInput({ readOnly: locked });
+		try {
+			const [n] = seedNodes(h.model, [[0, 0]]);
+			h.capture.onDblClick(pointer(0, 0, { target: { tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: (sel) => (sel.includes('node') ? { id: n.id } : null) } }));
+			assert.deepEqual(h.stateCalls('labels.open'), locked ? [] : [['node', n.id]], locked ? 'locked: the guard refuses the row, nothing opens' : 'the device\'s name editor opens');
+		} finally { h.restore(); }
+	}
 });
 
 test('key releases are bindings, and each key release matches one row', () => {
-	const t = composeRules({ owner: 'product', rules: KEY_RELEASES });
-	const ids = (k) => resolveInput(t, { type: 'key-up', key: k }, {}, {}).rule?.id ?? null;
+	const t = openTable({ owner: 'product', rows: KEY_RELEASES });
+	const ids = (k) => rowOf(t, { type: 'key-up', key: k }, {}, {})?.id ?? null;
 	assert.equal(ids('Shift'), 'shift-up');
 	assert.equal(ids('Alt'), 'arming-up');
 	assert.equal(ids('Control'), 'arming-up');
@@ -158,7 +173,7 @@ test('key releases are bindings, and each key release matches one row', () => {
 });
 
 test('run mode\'s presses are rows too, and no run-mode press matches two of them, locked or not', () => {
-	const t = composeRules({ owner: 'product', rules: RUN_PRESSES });
+	const t = openTable({ owner: 'product', rows: RUN_PRESSES });
 	const region = (o) => ({ waypoint: null, overWaypoint: false, action: null, input: null, node: null, control: false, entity: false, ...o });
 	const presses = [region({}), region({ waypoint: 'node-e00001', overWaypoint: true }), region({ action: 'help', control: true }),
 		region({ input: 0, node: 'node-000001', control: true, entity: true }), region({ entity: true }), null]
@@ -166,8 +181,8 @@ test('run mode\'s presses are rows too, and no run-mode press matches two of the
 	const endpoint = { mode: 'run', target: { kind: 'waypoint', id: 'node-e00001', roles: ['endpoint'] } };
 	const bend = { mode: 'run', target: { kind: 'waypoint', id: 'node-e00001', roles: [] } };
 	const ground = { mode: 'run', target: null };
-	assert.deepEqual(overlapsIn(t, presses, [endpoint, bend, ground], GUARDS), []);
-	const id = (r, s, g) => resolveInput(t, { type: 'down', button: 0, region: r }, s, g).rule?.id ?? null;
+	assert.deepEqual(t.findOverlaps(presses, [endpoint, bend, ground], GUARDS), []);
+	const id = (r, s, g) => rowOf(t, { type: 'down', button: 0, region: r }, s, g)?.id ?? null;
 	assert.equal(id(region({ action: 'help', control: true }), ground, { readOnly: true }), 'fire-action', 'an action fires on a locked client: it commits nothing');
 	assert.equal(id(region({ waypoint: 'node-e00001', overWaypoint: true }), endpoint, { readOnly: true }), null, 'arming is refused by the guard');
 	assert.equal(id(region({}), ground, { readOnly: true }), null, 'so is placing a tower');

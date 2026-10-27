@@ -127,7 +127,11 @@ test('Input refuses a plugin with anything but owner, keys and judgeDrag, and a 
 	assert.throws(() => makeInput({ plugins: [{ keys: [] }] }), /owner/);
 	assert.throws(() => makeInput({ plugins: [{ owner: 'a', judgeDrag: () => ({}) }, { owner: 'b', judgeDrag: () => ({}) }] }), /a, b/);
 	// RESTATED at C-e step seven: `close` became the network's; `undo` is still the product's
-	assert.throws(() => makeInput({ plugins: [{ owner: 'a', keys: [{ id: 'undo', on: () => false, run: 'x' }] }] }), /undo/, 'and an id the product already uses');
+	// RESTATED at H26.8's binding move (NATIVE-SHAPES.md NS11): refused in input-binding's own words, `duplicate-id` at the plugin's row --
+	// the key table's second tenant, after the product's -- where the adapter's re-wording named the id
+	assert.throws(() => makeInput({ plugins: [{ owner: 'a', keys: [{ id: 'undo', on: () => false, run: 'x' }] }] }), { message: 'input rules refused: /tenants/1/rows/0/id duplicate-id' },
+		'and an id the product already uses');
+	assert.doesNotThrow(() => makeInput({ plugins: [{ owner: 'a', keys: [{ id: 'a-undo', on: () => false, run: 'x' }] }] }).restore(), 'control: an id of its own composes');
 });
 
 test('a plugin\'s row is handed the host\'s declared verbs, not Input -- and the selection as plain data', () => {

@@ -15,7 +15,7 @@ import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { DRAG_KINDS, LEGS, dragFacts, kindOf, pipeFor } from '../plugins/network/grammar.mjs';
 import { networkInput } from '../plugins/network/keys.mjs';
-import { composeRules, overlapsIn } from '../kernel/input-rules.mjs';
+import { openTable } from '../kernel/input-rules.mjs';   // RESTATED at H26.8: a table in input-binding's own form, its overlaps its own
 
 // ---- the facts, from Input's record ----
 
@@ -59,8 +59,8 @@ test('the network plugin hands its judge the facts, never Input\'s record', () =
 const PRESSED = [{ w: false, g: false }, { w: true, g: false }, { w: false, g: true }, { w: true, g: true }];
 
 test('DRAG_KINDS: every combination of keys is exactly one kind (G5)', () => {
-	const table = composeRules({ owner: 'network', rules: DRAG_KINDS });
-	assert.deepEqual(overlapsIn(table, PRESSED.map((pressed) => ({ pressed })), [null], [{}]), []);
+	const table = openTable({ owner: 'network', rows: DRAG_KINDS });
+	assert.deepEqual(table.findOverlaps(PRESSED.map((pressed) => ({ pressed })), [null], [{}]), []);
 	assert.deepEqual(PRESSED.map((pressed) => kindOf({ pressed }).makes), ['link', 'link', 'pipes', 'link'],
 		'any w a link; g without w pipes only; neither a link over what is there');
 });
@@ -73,8 +73,8 @@ for (const [a, b] of [['S', 'D'], ['S', 'x'], ['x', 'D'], ['x', 'y'], ['D', 'D']
 			HOPS.push({ a, b, dst: 'D', endPressed, count, srcW, pipesOnly, guidedA, guidedB });
 
 test('LEGS: every hop is exactly one row -- no overlap (Q3) and no gap, since a gap would drop a pipe in silence', () => {
-	const table = composeRules({ owner: 'network', rules: LEGS });
-	assert.deepEqual(overlapsIn(table, HOPS, [null], [{}]), []);
+	const table = openTable({ owner: 'network', rows: LEGS });
+	assert.deepEqual(table.findOverlaps(HOPS, [null], [{}]), []);
 	for (const hop of HOPS) assert.doesNotThrow(() => pipeFor(hop), JSON.stringify(hop));
 });
 

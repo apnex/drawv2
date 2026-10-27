@@ -91,7 +91,9 @@ export const PARTS = {
 		modules: ['kernel/palette.mjs', 'kernel/theme.mjs'], consumes: [] },
 	primitives: { duty: 'Draw the shapes painters compose', kind: 'core', by: ['N1', 'D3'],
 		modules: ['kernel/renderer.mjs'], consumes: ['lattice', 'colours'] },
-	rules: { duty: 'Decide what an input means', kind: 'core', by: ['D2'],   // H26.2 (INPUT-BINDING.md D10): the duty input-binding answers
+	// H26.2 (INPUT-BINDING.md D10): the duty input-binding answers. AMENDED H26.8's binding move (NATIVE-SHAPES.md section 3.1): it declares
+	// what an input means -- draw's declaration, `openTable` and `openGestures` -- and the component decides it
+	rules: { duty: 'Declare what an input means', kind: 'core', by: ['D2'],
 		modules: ['kernel/input-rules.mjs'], consumes: [] },
 	planner: { duty: 'Make the one write every door applies', kind: 'core', by: ['SD2', 'O1'],
 		modules: ['planner/', 'model/invariants.mjs'], consumes: ['kind-contract', 'document', 'relations', 'lattice'] },
@@ -169,7 +171,7 @@ export const COMPONENTS = {
 	// the lattice alone; every other part asks the grids the lattice and the layouts plugin open (SNAP-GRID.md section 5)
 	'@apnex/snap-grid': { parts: ['lattice'], by: ['H26-1', 'H26-2', 'H26-4'] },
 	// H26.2: the rules part alone, draw's adapter (kernel/input-rules.mjs); the canvas and the network ask it through that part
-	// (dev/design/components/INPUT-BINDING.md section 5, D10)
+	// (dev/design/components/INPUT-BINDING.md section 5, D10). H26.8: they ask the tables it opens, in the component's own form
 	'@apnex/input-binding': { parts: ['rules'], by: ['H26-1', 'H26-2', 'H26-6'] },
 	// H26.3: the canvas part alone, draw's adapter (app/src/capture.js); the platform's events reach every other part through it
 	// (dev/design/components/INPUT-CAPTURE.md section 5, D9)
@@ -308,7 +310,7 @@ export const LAYER = {
 	core: [
 		'kernel/spec.mjs', 'kernel/theme.mjs',
 		'kernel/router.mjs',     // path geometry on the grid (rounded turns, pathGeometry, pathLength, pointAtDistance)
-		'kernel/input-rules.mjs', // the Rules engine: draw's adapter over input-binding -- its guards, claim and gesture field, one match or none, the session (H26.2); names no tenant
+		'kernel/input-rules.mjs', // the Rules engine: draw's declaration for input-binding -- its guards, claim and gesture field -- and the tables and session it opens (H26.2, H26.8); names no tenant
 		'kernel/geometry.mjs',   // the grid and cell arithmetic; its link roles and appearance left for the network layer at K13a
 		'kernel/renderer.mjs',   // frame and selection primitives the canvas draws with; the SVG scene half left at K11
 		'model/model.mjs',       // the document store; its link methods moved to the network at K13d (H19.25, Q-a)

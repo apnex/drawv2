@@ -15,7 +15,10 @@ that draws a zone; a marquee; a zone's corner handle dragged; Escape in the midd
 which the chain takes; and presses released after a travel of 3, exactly 4 and 5 canvas units -- the threshold the director ruled is
 4, a travel of exactly 4 a click. The viewport is set so a canvas unit is a CSS pixel, so a travel of exactly 4 is dispatched exactly,
 and the page's own pointer coordinates are recorded to show it was. The band section 6.3 changes, a travel within about 10^-15 of
-4, lies below what a browser's pointer can be asked for, and is held by tests/input-binding-parity.test.js instead.
+4, lies below what a browser's pointer can be asked for, and is held by input-binding's own tests instead (its IB10, a travel decided
+exactly), and in Chrome by tests/import-map-browser.test.js, a travel of exactly 4 a click and one step past it a drop. RESTATED at
+H26.8's binding move (dev/design/components/NATIVE-SHAPES.md section 4.3): tests/input-binding-parity.test.js compared the old press with
+the session's over that band until its copy, tests/fixtures/pre-binding/, was deleted.
 
   node tools/probe/gesture-sample.mjs [--baseline <commit>] [--candidate <commit>] [--out DIR]
       the baseline defaults to 7c8215b, the last commit before the move; the candidate is the working tree when not named

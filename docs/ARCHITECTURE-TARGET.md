@@ -88,6 +88,7 @@ Noted for PC1: AR1 asks for the system's north star and this one is the programm
 - **The palette** (2026-10-01): one core palette, roles per owner.
 - **WD1, WD6, WD7, WD10:** a wide device is one anchor (WD1); a diagram stores its grids as layout records (WD6) holding today's values (WD7); a device owns its size (WD10).
 - **H26-1, H26-2, H26-4, H26-6, H26-8, H26-10, H26-11:** a grid's arithmetic is `snap-grid`'s, what an input means, and when each phase of a gesture is due, is `input-binding`'s, the platform's input events reach the canvas as facts through `input-capture`, and what the canvas draws is shown through `vector-scene`, each a component of one duty that knows nothing of drawv2 (H26-1); each component is its own public repository, released by its own CI, drawv2 pinning the release file by its hash, its server importing it by name and its pages through a generated import map (H26-2); `snap-grid`'s design is ratified, the `lattice` part alone composing it (H26-4); `input-binding`'s design is ratified, the `rules` part alone composing it (H26-6); `input-capture`'s design is ratified, the `canvas` part alone composing it (H26-8); each further boundary of the canvas layer is drawn first inside drawv2 as a declared part, held by the scanners and extracted when its second consumer is in sight, the editing duty the first (H26-10); `vector-scene`'s design is ratified, the `renderer` part alone composing it (H26-11).
+- **H26-9, H26-16:** the interfaces are held to their best target state, draw taking each component's own shapes directly and its adapters keeping only draw's policy and wiring, with no universal adapter (H26-9); H26.8 builds that, aimed at clean modular unification and sovereign boundaries and measured before and after by part (H26-16).
 
 **Model.**\
 The **anchor** is the core: identity and position on one cell (SD11b, O4); connection is the network plugin's.\
@@ -144,7 +145,7 @@ Generated from `tools/layers.mjs` `PARTS`, and each part's components from its `
 | `relations` | Index which entities relate | core | O1 | `document`, `kind-contract`, `lattice` | -- |
 | `colours` | Hold the colours every role draws from | core | N1 | -- | -- |
 | `primitives` | Draw the shapes painters compose | core | N1, D3 | `lattice`, `colours` | -- |
-| `rules` | Decide what an input means | core | D2 | -- | `@apnex/input-binding` |
+| `rules` | Declare what an input means | core | D2 | -- | `@apnex/input-binding` |
 | `planner` | Make the one write every door applies | core | SD2, O1 | `kind-contract`, `document`, `relations`, `lattice` | -- |
 | `layouts` | Declare a diagram's grids | plugin | WD6, WD7 | `lattice`, `kind-contract`, `document` | -- |
 | `devices` | Compose a device onto an anchor | plugin | O4, WD10 | `lattice`, `kind-contract`, `document`, `relations`, `colours`, `primitives`, `rules` | -- |

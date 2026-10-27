@@ -33,13 +33,17 @@ import { validateEntity } from './fixtures/composed.mjs';   // the network's kin
 import { bindGestureDefer } from '../app/src/sync.js';
 import * as commands from '../app/src/commands.js';
 import { KEYMAP } from '../app/src/keymap.js';
-import { composeRules, resolveInput, overlapsIn } from '../kernel/input-rules.mjs';
+import { openTable } from '../kernel/input-rules.mjs';
+// RESTATED at H26.8's binding move (dev/design/components/NATIVE-SHAPES.md section 3.2): each table in input-binding's own form, a tenant
+// `{ owner, rows }`, asked as every call site asks it -- the row `matchInput(...).match?.row`, null when none -- and `findOverlaps` at
+// the gate, its records naming the fact and the context
+const rowOf = (table, input, situation, guards) => table.matchInput(input, situation, guards).match?.row ?? null;
 import { networkInput } from '../plugins/network/keys.mjs';
 
 // the product's key table through the Rules engine (dev/RULES.md section 11), and the row a key resolves to
-const PRODUCT_KEYS = composeRules({ owner: 'product', rules: KEYMAP });
+const PRODUCT_KEYS = openTable({ owner: 'product', rows: KEYMAP });
 const sit = (selection = { size: 0, ids: [], kinds: [], bends: null }, gesture = null, step = null) => ({ selection, gesture, step });
-const resolveKey = (e, guards, s = sit()) => resolveInput(PRODUCT_KEYS, e, s, guards).rule;
+const resolveKey = (e, guards, s = sit()) => rowOf(PRODUCT_KEYS, e, s, guards);
 import { GAP, NODE_EXT } from '../app/src/snap.js';
 import { Tools } from '../app/src/tools.js';
 import { fakeEl } from './fixtures/client-harness.mjs';
@@ -944,9 +948,9 @@ test('B48: the matched rule NAMES the verb — the table is readable as the key 
 	const ctx = { readOnly: false, helpOpen: false, gesturing: false };
 	// RESTATED at C-e step five (H19.33): Ctrl+G and Ctrl+Shift+G are the groups plugin's rows, composed with the product's
 	// and l, Shift+L the network's (C-e step seven)
-	const withGroups = composeRules({ owner: 'product', rules: KEYMAP }, { owner: 'groups', rules: GROUP_KEYS }, { owner: 'network', rules: networkInput(() => ({})).keys });
+	const withGroups = openTable({ owner: 'product', rows: KEYMAP }, { owner: 'groups', rows: GROUP_KEYS }, { owner: 'network', rows: networkInput(() => ({})).keys });
 	for (const [k, mod, id] of cases) {
-		const rule = resolveInput(withGroups, key(k, mod), sit(), ctx).rule;
+		const rule = rowOf(withGroups, key(k, mod), sit(), ctx);
 		assert.ok(rule, `${id}: nothing matched`);
 		assert.equal(rule.id, id, `${JSON.stringify(mod)}+${k} must resolve to '${id}', got '${rule.id}'`);
 	}
@@ -975,8 +979,8 @@ const SITUATIONS = [
 const GUARD_STATES = [{}, { readOnly: true }, { helpOpen: true }, { gesturing: true }];
 
 test('Q3: no keystroke matches two rows of the product table, in any situation or guard state', () => {
-	const found = overlapsIn(PRODUCT_KEYS, KEY_INPUTS, SITUATIONS, GUARD_STATES)
-		.map((o) => `${JSON.stringify(o.guards)} ${o.situation.gesture ?? ''}/${o.situation.step ?? ''} ${JSON.stringify(o.input.key)} -> ${o.ids.join('/')}`);
+	const found = PRODUCT_KEYS.findOverlaps(KEY_INPUTS, SITUATIONS, GUARD_STATES)
+		.map((o) => `${JSON.stringify(o.guards)} ${o.context.gesture ?? ''}/${o.context.step ?? ''} ${JSON.stringify(o.fact.key)} -> ${o.ids.join('/')}`);
 	assert.deepEqual(found, []);
 });
 
@@ -985,21 +989,21 @@ A PLUGIN'S ROWS ARE THE PLUGIN'S (the director, 2026-09-30). The network brings 
 the product's rows -- as the lab composes them -- no keystroke matches two rows in any situation either, which is what
 Q3 asks of every composition, not only of the product alone.
 */
-const LAB_KEYS = composeRules({ owner: 'product', rules: KEYMAP }, { owner: 'network', rules: networkInput(() => ({})).keys });
+const LAB_KEYS = openTable({ owner: 'product', rows: KEYMAP }, { owner: 'network', rows: networkInput(() => ({})).keys });
 // AMENDED at C-e step five (H19.33): the canvas parts bring key rows too -- the zones plugin's `z`, the groups plugin's Ctrl+G and
 // Ctrl+Shift+G -- so the page's composition is held as well, every part's rows beside the product's and the network's
-const PAGE_KEYS = composeRules({ owner: 'product', rules: KEYMAP }, { owner: 'network', rules: networkInput(() => ({})).keys },
-	...PRODUCT_CANVAS_FOR_KEYS.filter((p) => p.keys).map((p) => ({ owner: p.owner, rules: p.keys })));
+const PAGE_KEYS = openTable({ owner: 'product', rows: KEYMAP }, { owner: 'network', rows: networkInput(() => ({})).keys },
+	...PRODUCT_CANVAS_FOR_KEYS.filter((p) => p.keys).map((p) => ({ owner: p.owner, rows: p.keys })));
 
 test('Q3: composed with the network plugin, still no keystroke matches two rows', () => {
-	const found = overlapsIn(LAB_KEYS, KEY_INPUTS, SITUATIONS, GUARD_STATES).map((o) => `${o.situation.gesture}/${o.situation.step} ${o.input.key} -> ${o.ids.join('/')}`);
+	const found = LAB_KEYS.findOverlaps(KEY_INPUTS, SITUATIONS, GUARD_STATES).map((o) => `${o.context.gesture}/${o.context.step} ${o.fact.key} -> ${o.ids.join('/')}`);
 	assert.deepEqual(found, []);
 });
 
 test('Q3: composed with every canvas part\'s key rows, still no keystroke matches two rows', () => {
 	// RESTATED at H26.2 (INPUT-BINDING.md appendix B): a composed table is input-binding's, its entries in `table.rows`
 	assert.deepEqual(PAGE_KEYS.rows.filter((r) => r.owner === 'zones' || r.owner === 'groups').map((r) => r.id), ['wrap', 'group', 'ungroup'], 'the parts\' rows are in it');
-	const found = overlapsIn(PAGE_KEYS, KEY_INPUTS, SITUATIONS, GUARD_STATES).map((o) => `${o.situation.gesture}/${o.situation.step} ${o.input.key} -> ${o.ids.join('/')}`);
+	const found = PAGE_KEYS.findOverlaps(KEY_INPUTS, SITUATIONS, GUARD_STATES).map((o) => `${o.context.gesture}/${o.context.step} ${o.fact.key} -> ${o.ids.join('/')}`);
 	assert.deepEqual(found, []);
 });
 
@@ -1008,7 +1012,7 @@ test('the product names no routing key: g means nothing in production, and the n
 	// RESTATED at C-e step seven (H19.33; D5): the link keys are the network's rows, first in its list
 	assert.deepEqual(LAB_KEYS.rows.filter((r) => r.owner === 'network').map((r) => r.id), ['close', 'close-refused', 'direction', 'plane', 'chain', 'star', 'guide', 'stop-on-node', 'transit']);   // RESTATED at H26.2: `table.rows`
 	const drawing = (step) => sit(undefined, 'link', step);
-	const lab = (k, s) => resolveInput(LAB_KEYS, key(k), s, { gesturing: !!s.gesture }).rule?.id ?? null;
+	const lab = (k, s) => rowOf(LAB_KEYS, key(k), s, { gesturing: !!s.gesture })?.id ?? null;
 	assert.equal(lab('g', drawing('ground')), 'guide', 'g during a link drag is the network\'s guide');
 	assert.equal(lab('g', sit()), null, 'and means nothing outside one');
 	assert.equal(lab('w', drawing('node')), 'stop-on-node', 'w over a node mid-drag is the network\'s stop');

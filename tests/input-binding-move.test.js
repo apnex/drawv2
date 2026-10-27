@@ -3,7 +3,7 @@ H26.2 (dev/design/components/INPUT-BINDING.md section 4, acceptance steps 3 and 
 
 WHAT MOVED, AND WHAT IS LEFT (acceptance step 3), as H26.1's tests/grid-arithmetic-gone.test.js held its own. app/src/triggers.js is
 gone; the input state holds no press; kernel/input-rules.mjs is draw's adapter -- its declarations and calls through to the component,
-no matching, guard or overlap code of its own; and app/src/input.js assigns no `mode`, holds no `ignoreUp`, decides neither which press
+no matching, guard or overlap code of its own (RESTATED at H26.8: its declaration and two openings, the tables asked directly); and app/src/input.js assigns no `mode`, holds no `ignoreUp`, decides neither which press
 a live gesture takes, nor which release commits it, nor that a press or a lost pointer cancels it, and runs a gesture's body, and a
 chain's start, only on an outcome naming that phase, the session private to it. It measures no distance but the link release's
 `atStart`, and names the click threshold once -- the "decided once" test of tests/triggers.test.js, restated here as that file went
@@ -28,6 +28,7 @@ import { makeInput, key, pointer } from './fixtures/client-harness.mjs';
 import { makeZone } from '../plugins/zones/make-zone.mjs';
 import { liveGesture } from './fixtures/binding-parity.mjs';
 import { PRODUCT_CANVAS } from '../product/canvas.mjs';
+import { FOLDERS } from '../tools/layers.mjs';   // H26.8: the product's folders, read for the retired translation
 
 // the two answers; the code answers the one NOW names
 const ANSWERS = {
@@ -93,15 +94,30 @@ test('H26.2 (acceptance step 3): the triggers are gone, and the input state hold
 	assert.doesNotMatch(code(read('app/src/input-state.js')), /\bpress\b|travel/, 'the input state holds no press');
 });
 
-test('H26.2 (acceptance step 3): kernel/input-rules.mjs holds draw\'s declarations and the calls through, and no matching, guard or overlap code of its own', () => {
+/*
+RESTATED at H26.8's binding move (dev/design/components/NATIVE-SHAPES.md sections 3.1, 3.2 and 4.3; GR6; NS11): the module translates
+nothing -- it exports draw's declaration, `openTable` and `openGestures` alone; `openTable` hands the component draw's declaration and the
+tenants exactly as given, `{ owner, rows }`, renaming nothing, and throws the component's problems unchanged; and no call site reads a
+translated answer, each asking the component's table itself.
+*/
+test('H26.2 (acceptance step 3; H26.8 GR6): kernel/input-rules.mjs exports the declaration, openTable and openGestures alone, and translates nothing', () => {
 	const src = code(read('kernel/input-rules.mjs'));
-	assert.deepEqual(Object.keys(adapter).sort(), ['composeRules', 'openGestures', 'overlapsIn', 'resolveInput'], 'its four functions');
+	assert.deepEqual(Object.keys(adapter).sort(), ['TABLE_DECLARATION', 'openGestures', 'openTable'], 'the declaration and the two openings');
 	assert.deepEqual([...src.matchAll(/^import [^;]*? from '([^']+)';/gm)].map((m) => m[1]), ['@apnex/input-binding']);
 	const body = (name) => src.slice(src.indexOf(`export function ${name}(`), src.indexOf('\n}', src.indexOf(`export function ${name}(`)));
-	assert.match(body('composeRules'), /composeBindingTable\(/, 'composed by the component');
-	assert.match(body('resolveInput'), /\{\s*const \{ match, claimed \} = table\.matchInput\(input, situation, guards\);\s*return \{ rule: match \? match\.row : null, claimed, match \};\s*$/, 'resolved by the component, the row handed back');
-	assert.match(body('overlapsIn'), /return table\.findOverlaps\(inputs, situations, guardStates\)\.map\(/, 'its overlaps the component\'s');
+	assert.match(body('openTable'), /^export function openTable\(\.\.\.tenants\) \{\s*const opened = composeBindingTable\(\{ \.\.\.TABLE_DECLARATION, tenants \}\);\s*if \(opened\.ok\) return opened\.table;\s*throw new Error\(`input rules refused: \$\{opened\.problems\.map\(\(p\) => `\$\{p\.pointer \|\| '\/'\} \$\{p\.problem\}`\)\.join\(', '\)\}`\);\s*$/,
+		'composed by the component from draw\'s declaration and the tenants as given; a refusal its problems, unchanged');
 	assert.match(body('openGestures'), /openGestureSession\(declaration\)/, 'its sessions the component\'s');
+	assert.deepEqual(Object.keys(adapter.TABLE_DECLARATION), ['guards', 'claim', 'opens'], 'the declaration: draw\'s guards, claim and gesture field, no tenant');
+	// no product module asks a translated answer: the tables are asked as the component answers
+	const product = FOLDERS.filter((f) => f.dir !== 'tools' && f.dir !== 'tests').flatMap((f) => {
+		const walk = (dir) => fs.readdirSync(new URL(`../${dir}`, import.meta.url), { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(`${dir}/${e.name}`) : /\.m?js$/.test(e.name) ? [`${dir}/${e.name}`] : []));
+		return walk(f.dir);
+	});
+	assert.ok(product.length > 150, `the product's modules were read: ${product.length}`);
+	assert.deepEqual(product.filter((f) => /\b(composeRules|resolveInput|overlapsIn)\b/.test(code(read(f)))), [], 'no module names the retired translation');
+	assert.deepEqual(product.filter((f) => /\bopenTable\(/.test(code(read(f))) && !f.endsWith('kernel/input-rules.mjs')).sort(), ['app/src/input.js', 'plugins/network/grammar.mjs'],
+		'Input\'s tables and the network\'s grammar composed through openTable');
 	assert.doesNotMatch(src, /\.on\(|\.when\(|\bfor \(|\bwhile \(|prevent\s*!==|(readOnly|helpOpen|gesturing)\s*(&&|\|\|)|&&\s*!?\w+\.(mutates|duringHelp|duringGesture|whileReadOnly)/,
 		'it calls no predicate, loops over no row, and combines no guard state with a flag');
 });

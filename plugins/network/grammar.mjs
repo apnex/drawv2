@@ -15,7 +15,7 @@ it made, and how the drag was released (app/src/input.js `linkDrag`, `addStop`);
 the grammar asks: which stops are guides, which keys were pressed, how the end was reached. Before T3 the product's
 Input worked these out itself, which put routing notions in a product module.
 */
-import { composeRules, resolveInput } from '../../kernel/input-rules.mjs';
+import { openTable } from '../../kernel/input-rules.mjs';   // H26.8: a table in input-binding's own form, asked directly
 
 /*
 The facts of a finished drag, from Input's record. `pins` and `route` arrive as the drag left them, the destination
@@ -72,11 +72,11 @@ export const LEGS = [
 
 // ---- the interpreter: the Rules engine, asked for the ONE row a case is ----
 
-const KINDS = composeRules({ owner: 'network', rules: DRAG_KINDS });
-const HOPS = composeRules({ owner: 'network', rules: LEGS });
+const KINDS = openTable({ owner: 'network', rows: DRAG_KINDS });
+const HOPS = openTable({ owner: 'network', rows: LEGS });
 
 const theRow = (table, what, input) => {
-	const { rule } = resolveInput(table, input, null, {});
+	const rule = table.matchInput(input, null, {}).match?.row;
 	if (!rule) throw new Error(`the drag grammar has no single row for this ${what}: ${JSON.stringify(input)}`);
 	return rule.run;
 };
