@@ -4,7 +4,7 @@ The design of record for H26.8, which H26-16 aims at clean modular unification a
 Draw stops translating between its own forms and the components': the editor reads `input-capture`'s facts, the tables are composed in `input-binding`'s own form, the canvas describes `vector-scene`'s shapes, the places carry `snap-grid`'s grids, and each adapter keeps only draw's policy and its wiring (H26-9).\
 It builds on the four designs beside it (`SNAP-GRID.md`, `INPUT-BINDING.md`, `INPUT-CAPTURE.md`, `VECTOR-SCENE.md`) and on `RELEASES-0.2.md` sections 4 and 8, which left draw on `input-capture`, `input-binding` and `vector-scene` `0.2.0` and `snap-grid` `0.1.0`.
 
-**Standing:** a design under review, revision 3, drafted 2026-10-27; reading 2's 39 findings tiered as H26-15 as amended rules -- each design-level finding settled here, each build-level one carried into appendix A's build checklist (section 9); the code read is `ec1f7ed`, whose product tree is production's `ca492da`; code lines measured by `tools/code-split.mjs`, browser behaviour in headless Chrome, the export's bytes and the drawing's attribute orders in Node.js on copies of the tree, the scripts and their outputs at `~/taceng/drawv2-eval-runs/h26-native-shapes/`; every figure after H26.8 an estimate with its basis; not ratified.
+**Standing:** a design under review, revision 4, drafted 2026-10-27; reading 2's 39 findings tiered as H26-15 as amended rules -- each design-level finding settled here, each build-level one carried into appendix A's build checklist -- and the confirming reading's five folded (section 9); the code read is `bd6ca83`, whose product tree is production's `ca492da`; code lines measured by `tools/code-split.mjs`, browser behaviour in headless Chrome, the export's bytes and the drawing's attribute orders in Node.js on copies of the tree, the scripts and their outputs at `~/taceng/drawv2-eval-runs/h26-native-shapes/`; every figure after H26.8 an estimate with its basis; not ratified.
 
 ---
 
@@ -28,7 +28,7 @@ It does not decide:
 
 ## 2. What draw holds today
 
-Read at `ec1f7ed`.
+Read at `bd6ca83`.
 
 ### 2.1 Translations
 
@@ -120,7 +120,8 @@ The contract is the record (4.2) -- whose documents reach every conditional bran
 
 **States** (NS13, a:F2): `editing-states.js` holds them -- `setState(id, cls, on)`, `clearState(id, ...classes)`, `reflect(selected)` (the selection and the parts' `reflects`), `classesOf(id)` in the order set, `onChange(fn)`.
 - The composition makes it and hands it to the renderer, Input, the overlay and the network's settle.
-- The own shape's class is the painter's class, or the winner's `root.class` then each composer's `addClass` in the composition's order (`app/src/renderer.js:521`), then `classesOf(id)`.
+- **The state target** (reading 3, o:F1) is the shape bearing the entity's id within its own item, at any depth: the item's root for a zone, group, link, waypoint and device, and a pipe's line, path `[0]` beneath its group, where today's network writes `selected` (`plugins/network/host.mjs:87`) and `.pipe.selected` matches; a companion bears no id and carries no state, its look following the sibling rules as today (measured over the 18 documents, `pipe-state-target.mjs`).
+- The target's class is its class in the description -- the painter's, or the winner's `root.class` then each composer's `addClass` in the composition's order (`app/src/renderer.js:521`) -- then `classesOf(id)`; a state-only put writes only there, Appendix B's group structure kept.
 - On a load: Input drops hover and arming as today (`app/src/input.js:568-574`); `selected` and the reflections follow NS13's ruling.
 
 Each state and mark is held by the part that sets it; where today's lifetime differs, NS13 rules:
@@ -132,17 +133,18 @@ Each state and mark is held by the part that sets it; where today's lifetime dif
 | `hover`, the idle ring | the overlay; Input on deletion, load, Shift's release | lost on a fresh element -- a mode change, a structural change, a remote edit -- the overlay still holding it | kept while held (NS13) |
 | `armed`, `armed-clone`; a link end's drag state | the overlay; the handle gesture | lost on a fresh element | kept while held (NS13) |
 | class token order | -- | as set, but a fresh element re-sets `selected` and kept reflections first | as set (NS13); no rule reads it |
-| `unrevealed` | the reveal, each pass | lost on a fresh element until its next pass | kept (NS13); dropped with the entity and on a load, re-marked by the next pass |
+| `unrevealed` | the reveal, each pass | lost on a fresh element -- **every mode change, each way**, and a structural change -- until its next pass re-marks it (measured, `mark-lifetimes.mjs`) | kept through both (NS13); dropped with the entity and on a load and re-marked by the next pass, as today |
 | `trace` | the reveal | lost on a fresh element | kept, its animation running on (section 5) |
-| `aim` | the movers | lost on a fresh element until a target is in range | kept; cleared by the movers on leaving run mode |
+| `aim` | the movers, each frame | lost on a fresh element; on a restore by undo and on a load, the movers' next frame aims it again (measured); cleared by leaving run mode | dropped with the entity and on a load and re-set by the movers' next frame, and cleared on leaving run mode, as today; kept through a node redrawn in run mode (NS13) |
 
-**Marks** (NS5): a canvas part declares `marks: { [name]: (parts, value) -> parts }`; `renderer.mark(id, name, value | null)` puts the entity only when the value changed.\
-The simulation declares three in `SIMULATION_CANVAS` (`plugins/simulation/spawn-appearance.mjs`): `unrevealed` -- `data-unrevealed=""` on the own shape; `trace` `{ run, len, ms }` -- `data-trace` and `style` on a link's line (section 5); `aim` (degrees) -- `data-aim` then `transform` on the shape holding `data-layer="glyph"`.\
+**Marks** (NS5): a canvas part declares `marks: { [name]: (parts, value) -> parts }`; `renderer.mark(id, name, value | null)` puts the entity only when the value differs from the one it holds, so an owner sets its mark on every pass -- the reveal hides each withheld id each pass, the movers aim each tower each frame -- and a mark dropped with its entity or by a load is set again on the owner's next pass, as today.\
+The simulation declares three in `SIMULATION_CANVAS` (`plugins/simulation/spawn-appearance.mjs`): `unrevealed` -- `data-unrevealed=""` on the state target; `trace` `{ run, len, ms }` -- `data-trace` and `style` on the state target, a link's line (section 5); `aim` (degrees) -- `data-aim` then `transform` on the shape holding `data-layer="glyph"` beneath it.\
 No painter or appearance reads a mark; the export holds none.
 
 **Picks** (NS6): `{ word, modifier?, button?, idle?, clones?, mark?, parts?, on? }` on a painter or appearance.
-- `parts` names the entity's items that answer, all when absent; `on` names an attribute the shape at the path must carry -- a pipe is one item, its group holding line and hit line, and only `on: 'data-select'`, which a hand pipe's hit line alone carries, answers (o:F2).
-- `picksOf(parts)` validates, refusing `closest` and `self`, and answers one pick per drawer, no order (GR4).
+- `parts` names the entity's items that answer, all when absent; `on` names an attribute the shape at the path must carry -- a pipe is one item, its group holding line and hit line, and only `on: 'data-select'`, which a hand pipe's hit line alone carries, answers.
+- **A mark pick keeps today's mark** (reading 3, o:F2): `{ mark: true, on, parts? }` names no word; its hit is `{ kind: kindOf(id), id, mark: true }`, as `data-select` answers today; and `hitFactsOf` (`app/src/recognize.js:64-71`) takes no mark pick, as it takes no handle, so the press rows, the overlay's facts and the generated help see a mark only through `hit.mark`, the locked fallback included -- measured on a copy of the tree, every one of 64 presses on a hand pipe's mark (each button and modifier, locked or not, a tool held or not) and every help line as today, where the pipe taken as a drawn word changes 8 locked presses and adds two help lines (`pipe-mark-recognition.mjs`).
+- `picksOf(parts)` validates, refusing `closest` and `self` and a word on a mark pick, and answers one pick per drawer, no order (GR4).
 - `hitWith(picks, { scene, drawerOf })` answers `(evt) -> { kind, id, handle?, mark? }`: `scene.itemOf(evt.target)`; an editing handle answers by the `data-` key its declaration names; a key `<id>` or `<id>/<part>` answers its drawer's pick when `parts` and `on` admit the shape, with its modifier held or none declared, else the canvas (U1); anything else is the canvas.
 - `button` stays, read by `app/src/recognize.js:71`: Shift+left and Ctrl+Shift+left over a zone still draw one (o:F4).
 - **Precedence** (a:F11): an element is one item, so which drawer answers is which item the platform's hit test finds -- the layers' order, `CANVAS_LAYERS` putting zones beneath every other drawn layer; a device over a zone answers the device, as today's backdrop ordering did, and a zone answers only where nothing above it is hit; proved by the picks move's point grid.
@@ -176,7 +178,10 @@ Rows test `type` before `hit` or `focus`, as they test it before `on` today; `ap
 - `commit(host, ctx, pos, evt, outcome)`, `outcome` the session's, holding `trigger`;
 - `cancel(host, ctx)`.
 
-Input owns `ctx`: `press` answers the `ctx` it opens; `escalate` may replace Input's `ctx` and mode (`startMove`, `startClone`), after which the calling body uses its `ctx` no more; `drag`, `retarget` and `endRetarget` act on Input's current `ctx`, as Input itself calls `drag` from its Shift handlers.\
+Input owns `ctx`, and which context a verb acts on follows the phase that calls it (reading 3, o:F3):
+- the verbs of `start` and `update` act on Input's current `ctx`: `press` answers the `ctx` it opens; `escalate` may replace Input's `ctx` and mode (`startMove`, `startClone`), after which the calling body uses its `ctx` no more; `drag` and `retarget` read and write the current one, as Input itself calls `drag` from its Shift handlers;
+- the verbs of `commit` and `cancel` take the phase's context as their argument -- `endRetarget(ctx)`, `act(rule, ctx)`, `commitMove(ctx, ...)`, `commitClone(ctx, ...)` -- since Input saves the gesture's `ctx` and replaces its own with `{}` before a commit (`app/src/input.js:1134-1135`) and after a cancel (`:1328-1330`); none reads Input's current one.
+
 `link` and `box` stay in `app/src/input.js`, dispatched with the same phases, Input their subject in place of the host.\
 The host, a frozen object Input makes, holds exactly:
 
@@ -188,11 +193,11 @@ The host, a frozen object Input makes, holds exactly:
 | `setState(id, cls, on)` | `i.renderer.setState` | `editing-states.js` |
 | `factsOf(word)`, `handleOf(word)`, `holding()` | `i.hitFacts.get`, `i.handleWords.get`, `i.tools.hand` | Input's tables and tools |
 | `anchorAt(pos, targets)`, `decide(table, evt, facts)`, `act(rule, ctx)` | the same | Input |
-| `press(hit, pos, shift)`, `escalate(pos, evt, table, facts, become)`, `drag(pos, shiftHeld)`, `retarget(target, excludeId)`, `endRetarget(ctx)` | `i.beginPress`, `i.escalate`, `i.updateMove`, `i.retarget`, `i.endRetarget` | Input, over its `ctx`, session and places |
-| `commitMove(ctx, pos, ortho)`, `commitClone(ctx, pos, ortho)` | the same | Input |
+| `press(hit, pos, shift)`, `escalate(pos, evt, table, facts, become)`, `drag(pos, shiftHeld)`, `retarget(target, excludeId)` | `i.beginPress`, `i.escalate`, `i.updateMove`, `i.retarget` | Input, over its current `ctx`, session and places |
+| `endRetarget(ctx)`, `commitMove(ctx, pos, ortho)`, `commitClone(ctx, pos, ortho)` | `i.endRetarget`, `i.commitMove`, `i.commitClone` | Input, over the context it is handed |
 | `cellName(pos)`, `boxOf(p1, p2)` | `snapNode`, `resolveBox` from `app/src/snap.js` | Input, injecting draw's geometry |
 
-GR13 runs every phase of every body with a host alone and checks that `editing-gestures.js` reads nothing but its parameters and its part's imports; the corpus drives every body through Input.
+GR13 runs every phase of every body with a host alone, each verb's context as its phase holds it -- a commit's and a cancel's host holding a current `ctx` of `{}`, so a verb reading it fails -- and checks that `editing-gestures.js` reads nothing but its parameters and its part's imports; the corpus drives every body through Input.
 
 **The help panel:** Input is handed `{ shown(), show(on) }` by the page; `isShown` and `setShown` leave `app/src/painter.js` for `app/src/main.js`.
 
@@ -260,7 +265,8 @@ It runs the page's composition in Node as `tests/fixtures/scene-parity.mjs`'s pa
 | Pipe triggers, alone | a hand pipe made, laid again by a link, deleted; its endpoint moved, no link changed; an up link made over it, and deleted; a link rerouted onto it; another pipe opening a route, and swept; a transit off and on; a load; an answer accepted with links listed before pipes; refused; a board seeded; a drag judged with no commit; run mode and back; the pipe selected, hovered, armed | the trees; each pipe's descriptions per step, compared from the pipes move |
 | Pipe triggers, combined | one commit moving an endpoint, making a link and sweeping a pipe; a mode change with a pipe hovered and selected; a load with a pipe selected | the same |
 | States (NS13) | each of `hover`, the idle ring, `armed`, `armed-clone`, a link end's drag state, `selected`, `on-selected-path`, `blocking`, held across a structural change of its entity, a mode change each way, deletion and undo, and a load | the entity's class |
-| Marks (NS13) | `unrevealed` and `trace` across a structural change, deletion and undo, and a load; `aim` across a node redrawn in run mode, and leaving run mode | the entity's attributes |
+| Marks (NS13) | `unrevealed` and `trace` across a structural change, a mode change each way, deletion and undo, and a load; `aim` across a node redrawn in run mode, deletion and undo, a load, and leaving run mode | the entity's attributes before each boundary, at it, and after the owner's next pass or frame |
+| A healed link (NS16) | a down link without a head gaining a route by a pipe made, then losing it | the link's line and its twin |
 | Transient targets | a selected zone's corners, a selected link's ends, a held hand's stamp ghost, the crosshair and the datum | the editing items, by layer, for the picks comparison |
 
 **Its coverage:** while it records, every line of `ca492da`'s painters, appearances, `nameLabel`, renderer, pipe drawer, reveal and movers that makes a shape or writes an attribute is reached, measured by Node's coverage; the comparator fails any scenario it did not reach.
@@ -270,7 +276,7 @@ It runs the page's composition in Node as `tests/fixtures/scene-parity.mjs`'s pa
 | Move | Allowed | Compared |
 |---|---|---|
 | trace | a traced line's `style` and `data-trace`: today's inline dash at a step is, after, the trace's attributes during `[show, show + ms)` and none after, by rule from the recorded length and duration | the reveal steps |
-| painters | attribute order on an element kept across a patch; class token order and the lifetimes NS13 rules, each asserted by its own test; element identity, unrecorded | the steps as maps, token sets for classes; a load and the export in order |
+| painters | attribute order on an element kept across a patch; class token order and the lifetimes NS13 rules, each asserted by its own test; a healed link's twin without the `stroke-linecap` today's update leaves on it (NS16); element identity, unrecorded | the steps as maps, token sets for classes; a load and the export in order |
 | pipes | a pipe's states through a repaint (NS13); each pipe described only as rule P names | the pipes layer and the describe counts |
 | picks, capture, grid | nothing in the record | their own guards (4.1) |
 
@@ -441,9 +447,10 @@ Marked *the director's* where the director's judgement is needed; the rest the a
 | NS10 | The copies | (a) each deleted when nothing rests on it (4.2); (b) kept to the close; (c) deleted first | (a) |
 | NS11 | A refused declaration's words | (a) the component's problems; (b) the old words, 27 lines kept | (a) |
 | NS12 | B418 and B425 | (a) restated with their triggers; (b) delivered with no consumer | (a) |
-| NS13 (the director's) | The states' lifetimes | (a) each shown while held: hover, the idle ring, arming and a drag state through a mode or structural change; `unrevealed` through a structural change; aim through a redraw in run mode; a pipe's hover through a repaint; a surviving selection shown after a load, which today loses its look (measured); token order as set; (b) today's exactly -- keeping the signatures and `structure` H26.8 retires, and the load's lost selection | (a): what is shown is what is held; each change its own test |
+| NS13 (the director's) | The states' lifetimes | (a) each shown while held: hover, the idle ring, arming and a drag state through a mode or structural change; `unrevealed` through a structural change and through every mode change, where today a withheld device or waypoint shows for up to one pass after each (measured); aim through a redraw in run mode; a pipe's hover through a repaint; a surviving selection shown after a load, which today loses its look (measured); token order as set; (b) today's exactly -- keeping the signatures and `structure` H26.8 retires, and the load's lost selection | (a): what is shown is what is held; each change its own test |
 | NS14 | The paint loop | (a) the simulation's, registered; (b) a part now, its consumers one plugin's | (a) |
 | NS15 | The corpus's `run-mode-action` | (a) restated over a panel, its record's host event and final document changed (4.7); (b) kept by a stub that reads a selector | (a): the scenario described a page that never exists |
+| NS16 | A healed link's hit twin (reading 3, o:F5) | (a) drawn as a fresh draw draws it: once a down link without a head gains a route, its twin holds no `stroke-linecap`, one named difference from the record, where today's update sets the twin's attributes and removes none (`plugins/network/link-painter.mjs:117`), leaving `round` until a reload; (b) today's leftover kept -- a description that depends on the link's history, which a painter answering from the entity cannot give | (a): the twin is transparent, so the difference is its click area's ends squared at once rather than at the next reload; the record's healed-link step asserts it and nothing else |
 
 **Registered when ratified** (RU3): the export's bounds from the parts' footprints (X7), "the export's frame is found wrong, or H26.6 designs pan and zoom"; the paint loop as a part (NS14), "a part beyond the simulation draws from the clock"; the label editor's boxes from the description (NS8 b'), "the label editor is extracted (B416)"; B422 closed by the trace move; B418 and B425 restated.
 
@@ -451,9 +458,9 @@ Marked *the director's* where the director's judgement is needed; the rest the a
 
 ## 8. Axiom alignment audit (M7)
 
-**Identity:** Revision 3, read against `ec1f7ed` (production's `ca492da`), the components' released contracts, H26-9 to H26-16 with H26-15 as amended, and mission-kit at `a3f0cae`.
+**Identity:** Revision 4, read against `bd6ca83` (production's `ca492da`), the components' released contracts, H26-9 to H26-16 with H26-15 as amended, and mission-kit at `a3f0cae`.
 
-**Verdict:** `pass, with guardrails`, by its author, to be confirmed by one reading scoped to section 9.2's design-level points (H26-15 as amended).
+**Verdict:** `pass, with guardrails`, confirmed by reading 3, scoped to section 9.2's design-level points as H26-15 as amended rules, its five findings folded (9.3).
 
 | Axiom | Weight | How the design stands |
 |---|---|---|
@@ -479,7 +486,7 @@ Tensions: the share flat against density as an aim (section 6); the record's all
 - GR10: section 5's test, the reveal and loop unpaused, in Chrome.
 - GR11: `--parts` measured at each move and at the close.
 - GR12: every record document and mode: each item's parts and each shape's attributes as the record holds them on a load; an element kept across an update keeps its key (`native-shapes.test.js`, new in `tests/`).
-- GR13: every phase of every body run with a host alone; `editing-gestures.js` reading nothing but its parameters and its part's imports (`editing-host.test.js`, new in `tests/`).
+- GR13: every phase of every body run with a host alone, each verb acting on the context its phase holds -- a commit's and a cancel's on the one handed to it; `editing-gestures.js` reading nothing but its parameters and its part's imports (`editing-host.test.js`, new in `tests/`).
 - GR14: rule P: each pipe described at most once per change, exactly as it names, counted against the record's pipe triggers.
 
 **Closeout:** H26.8 closes when `dev/CODE-SPLIT.md` holds the closing table, section 2's inventory is re-measured at 12 lines, B422 is closed, every L4 copy is gone and appendix A's every row is checked.
@@ -560,6 +567,20 @@ The director tiered them under H26-15 as amended; each design-level claim revisi
 | x:F5 | design | **Fixed**, as a:F23: about 250 smaller |
 | x:F6 | reject | **Not changed**: each move edits the manifest |
 
+### 9.3 Reading 3 -- 2026-10-27, of revision 3 at `bd6ca83`, confirming
+
+Read cold through the same panel, `--tools on --verify`, by `gemini-4-argon` (`a`) and `gpt-6-astra` (`o`), scoped to section 9.2's design-level points, kept at `~/taceng/drawv2-eval-runs/h26-readings/ns/reading-3/`.\
+`a` raised nothing; `o` raised five -- two blocking, two should-fix and one minor -- each supported by `a`.\
+Each was reproduced and its fold measured, the scripts at `~/taceng/drawv2-eval-runs/h26-native-shapes/probes/`.
+
+| Finding | Tier | Disposition |
+|---|---|---|
+| o:F1 | design | **Fixed**: the state target is the shape bearing the entity's id, a pipe's line; one selected hand pipe's line is `pipe pipe-hand selected`, stroked `#aed581`, as production, where the root rule gave `#78909c` (`pipe-state-target.mjs`) |
+| o:F2 | design | **Fixed, no change in behaviour**: a mark pick names no word and `hitFactsOf` takes none; 64 of 64 presses and every help line as today, where the pick as a drawn word changed 8 presses and added two lines (`pipe-mark-recognition.mjs`) |
+| o:F3 | design | **Fixed**: the verbs of `commit` and `cancel` take the phase's context, those of `start` and `update` Input's current one; GR13 holds it |
+| o:F4 | design | **Fixed**: the mark matrix covers each boundary; `unrevealed` lost on every mode change today, measured, named in NS13; `aim` kept as today by its owner setting it each frame (`mark-lifetimes.mjs`) |
+| o:F5 | build | appendix A, painters; the cleanup difference named (NS16) |
+
 ---
 
 ## Appendix A -- the build checklist
@@ -579,16 +600,20 @@ The one place a builder reads: each row the builder satisfies and the move's ind
 | painters | the harness's state observations: `makeInput` records `editing-states.js`'s calls by forwarding spies; restate `tests/affordance.test.js`, `tests/canvas-gestures.test.js`, `tests/canvas-chrome.test.js`, `tests/input-focus-loss.test.js` (a:F12) | each test asserts the same observations |
 | painters | the scene-read rule in `tools/scan-writers.mjs`, walking the modules of 3.3's parts read from `PARTS`, resolved through its `--root` for fixtures, with negative fixtures for a lookup, a traversal then a read, and a listener (a:F20, o:F10) | the counts of 3.3; each negative fixture fails |
 | painters | restate `tests/renderer.test.js`, `tests/appearance.test.js`, `tests/appearance-pipeline.test.js`, `tests/drawing-order.test.js`, `tests/anchor-redraws.test.js`, `tests/canvas-painters.test.js`, `tests/canvas-reflects.test.js`, `tests/link-heads.test.js`, `tests/run-picture.test.js`, `tests/consumer-parity.test.js`, `tests/span.test.js`, `tests/vector-scene-move.test.js`, `tests/movers.test.js` | each runs |
+| painters | the healed link (reading 3, o:F5): the record's healed-link step drawn natively -- the twin as a fresh draw gives it, no `stroke-linecap` once the link gains a route | that step differs from the record by the twin's `stroke-linecap` alone (NS16), and the line, its head and the step back to down equal the record |
 | painters | delete the copies and their L4 entries once each assertion of `tests/vector-scene-parity.test.js` has a named replacement | the replacement list |
 | pipes | `pipe-painter.mjs` per 4.6, its layer its folder's, never `LAYER.canvas`; `ENTRIES.page` and `ENTRIES.lab` gain it, as the painters move adds `editing-states.js` and drops `app/src/shadow.js` and the capture move adds `editing-gestures.js` (a:F18) | `tools/scan-layers.mjs` L1 and L6 pass at each move |
 | pipes | `occupiedOf` empty with no network; `tests/run-picture.test.js` and `tests/pipe-select.test.js` attach a network or assert empty occupancy, `net.paint()` restated to the renderer (a:F4) | each runs |
 | pipes | `product/canvas.mjs`'s kind record stays 4; `lab/src/root.js` drops `FOREIGN_LAYERS`; `RATCHETS.L7k`, `tests/core-names-no-plugin.test.js` and `tests/bare-anchor.test.js` re-measured for the new module (a:F19) | the ratchets do not rise |
 | pipes | delete `foreignStates` and its `tools/scan-dead.mjs` allowance; `plugins/network/host.mjs` keeps `judge`, `answered`, `settled`, `refused`, `redraw` and `seed` | GR14; `tests/network-pipes.test.js` |
+| pipes | the state target per 3.2: a pipe's states on its line, the shape bearing its id, never its group (reading 3, o:F1) | one selected hand pipe, drawn and styled by the export's resolver: line class `pipe pipe-hand selected`, stroke `#aed581`, group class `pipe-of` (`pipe-state-target.mjs` as a test); the record's pipe-state steps |
 | picks | `makeInput` builds the real renderer; `targetOf`; the 67 fabricated `closest` answers in 28 files restated where they stand for something drawn -- `tests/fixtures/gesture-corpus.mjs`, `tests/input.test.js`, `tests/affordance.test.js`, `tests/b242-reconcile-paths.test.js`, `tests/canvas-chrome.test.js`, `tests/canvas-gestures.test.js`, `tests/canvas-grids.test.js`, `tests/canvas-hand.test.js`, `tests/canvas-panels.test.js`, `tests/canvas-points.test.js`, `tests/canvas-runs.test.js`, `tests/duplicate-waypoints.test.js`, `tests/guide-gesture.test.js`, `tests/input-chord-other-pointer.test.js`, `tests/input-focus-loss.test.js`, `tests/input-press-resolution.test.js`, `tests/pair-capacity.test.js`, `tests/releases.test.js`, `tests/wide-devices.test.js`, `tests/network-transit.test.js` | the corpus byte-identical but NS15's scenario; no stub reads a selector |
 | picks | restate `tests/canvas-picks.test.js` (precedence), `tests/pipe-select.test.js` (the four pipe cases), and the nine callers of `picksOf`, `hitWith` and `regionsOf`, `tests/scan-layers.test.js` among them; pin complete region objects for a device's frame, label, action and input, a link's line, twin and head, a waypoint, a pipe, the ground and an editing item | the drafting comparison's evidence |
+| picks | the pipe painter's pick `{ mark: true, on: 'data-select' }`; `hitFactsOf` takes no mark pick, as it takes no handle (reading 3, o:F2) | every press on a hand pipe's mark -- each button and modifier, locked or not, a tool held or not -- matching the row it matches today, and the generated help line for line as today (`pipe-mark-recognition.mjs` as a test) |
 | capture | facts whole; restate `tests/input-capture-move.test.js`, `tests/input-capture.test.js`, `tests/help.test.js`, `tests/pointer-bindings.test.js`, `tests/input-focus-loss.test.js`, the twelve event literals, `tests/fixtures/binding-parity.mjs`'s `keyEvent` and `press`, `tests/canvas-gestures.test.js:203` | GR5 |
 | capture | `tests/input-chord-other-pointer.test.js` and `tests/input-press-resolution.test.js` observe the trigger from the outcome handed to `commit` (a:F16) | both assert `drop` then `click` |
 | capture | `EDITING_GESTURES` and `MARQUEE` moved; the pins of `GESTURES` (`tests/fixtures/binding-parity.mjs:34`, `tests/input-binding-move.test.js:120`, `tests/releases.test.js:140`) and `tests/fixtures/session-spy/wrapper.mjs` restated; `tools/scan-dead.mjs`'s `GESTURES` text restated | GR13 |
+| capture | `endRetarget`, `act`, `commitMove` and `commitClone` take the phase's context; `press`, `escalate`, `drag` and `retarget` Input's current one (reading 3, o:F3) | GR13 with a commit's and a cancel's current `ctx` of `{}`; a handle's retarget committed and cancelled through Input, its preview removed and its drag state cleared |
 | capture | `LabelEditor` handed `edits`; its four sites in `tests/canvas-labels.test.js`, two in `tests/canvas-panels.test.js` and the harness's borrowed methods restated (a:F22); the label editor's placement test in Chrome | each runs |
 | capture | `help` and `label-editor` in `PARTS`; `app/src/actions.js` stays in `LAYER.canvas`, parts and layers being distinct; `RULES.L11`'s ratchet for the label editor unchanged (a:F18) | `tools/generate-architecture.mjs` and `tools/scan-layers.mjs` pass |
 | grid | places per 3.2; `Grids` handed its grids; restate `tests/canvas-places.test.js`, `tests/layouts-canvas.test.js` (its four `Grids` calls, `p.ext`), `tests/fixtures/scene-parity.mjs:559`, `tests/canvas-grids.test.js` | the grid parity record |
