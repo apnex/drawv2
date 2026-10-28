@@ -31,9 +31,9 @@ export function setAttrs(node, attrs) {
 }
 
 /*
-H26.4 (VECTOR-SCENE.md D12, section 5.1) -- THE PLATFORM'S MEASURE AND SETTLE, which the page hands the renderer's shadow so the reveal's
-trace runs as written: a path's length measured by a probe of draw's own holding the same `d`, never put on the page; and the page's
-style computed by asking the root its box -- what the trace's forced layout asked of the line itself.
+H26.4 (VECTOR-SCENE.md D12, section 5.1) -- DRAW'S PROBE: a path's length measured by a probe of draw's own holding the same `d`, never put
+on the page. RESTATED at H26.8's trace move (NATIVE-SHAPES.md section 5): the page hands it to the reveal, which measures the line it
+traces by its `d`; the settle beside it, which forced the old trace's layout, is gone with that trace.
 */
 let probe = null;
 export function pathLengthOf(d) {
@@ -41,7 +41,6 @@ export function pathLengthOf(d) {
 	probe.setAttribute('d', d);
 	return probe.getTotalLength();
 }
-export const settleOf = (root) => () => { void root.getBoundingClientRect(); };
 
 // a preview a hand declares -- elements as data, `{ tag, attrs, children }` -- built under a parent (C-e): the palette's tiles, outside
 // the canvas; the stamp ghost describes the same preview to the scene (app/src/editing-visuals.js), one source for the numbers (B205, B318)

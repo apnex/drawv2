@@ -178,7 +178,8 @@ export function boards() {
 
 const FOREIGN = new Set(['pipes', 'movers']);
 /*
-`measure`: hand both sides the platform's measure and settle -- the page's case -- or neither, the harness's and the export's. Answers
+`measure`: hand both sides the platform's measure and settle -- the page's case -- or neither, the harness's and the export's. RESTATED at
+H26.8's trace move: the measure, handed to each side's reveal, as the page hands it; the settle went with the old trace. Answers
 `{ steps, glyphs, loadPuts }`: each step's label and what differed, if anything.
 */
 export function pageSideBySide(name, doc, { measure = false, impl = NEW } = {}) {
@@ -208,13 +209,14 @@ export function pageSideBySide(name, doc, { measure = false, impl = NEW } = {}) 
 	let rA;
 	globalThis.document = tDoc;
 	try { rA = new OLD.Renderer(mA, tRoot, { parts: PRODUCT_CANVAS }); } finally { globalThis.document = prev; }
-	const rB = new impl.Renderer(mB, dRoot, { parts: PRODUCT_CANVAS, scene: counted, platform: measure ? { lengthOf, settle: () => {} } : {}, foreign: impl.foreignStates(scene) });
+	// RESTATED at H26.8's trace move: the page hands its measure to the reveal, no longer the renderer (NATIVE-SHAPES.md section 5)
+	const rB = new impl.Renderer(mB, dRoot, { parts: PRODUCT_CANVAS, scene: counted, foreign: impl.foreignStates(scene) });
 	const sides = { A: { m: mA, r: rA, root: tRoot, doc: tDoc, sel: pA.sel }, B: { m: mB, r: rB, root: dRoot, doc: dDoc, sel: pB.sel } };
 	sides.A.host = pA.net.attach({ model: mA, renderer: rA, selection: pA.sel, edit() {}, say() {}, el: OLD.painter.el, pipeLayer: tRoot.children.find((g) => g.attrs.id === 'pipes') });
 	sides.B.host = pB.net.attach({ model: mB, renderer: rB, selection: pB.sel, edit() {}, say() {}, el: pageEl, pipeLayer: scene.layerElement('pipes') });
 	for (const s of Object.values(sides)) {
 		s.sel.subscribe(() => s.r.reflectSelection(s.sel.list()));   // the renderer owns the selected look, as composeCanvas wires it
-		s.reveal = new Reveal({ model: s.m, renderer: s.r, now: () => 0, onCaption() {} });
+		s.reveal = new Reveal({ model: s.m, renderer: s.r, now: () => 0, onCaption() {}, lengthOf: measure ? lengthOf : null });
 	}
 	const glyphs = { A: 0, B: 0 };
 	const out = { name, measure, steps: [], glyphs, loadPuts: 0, loadKinds };

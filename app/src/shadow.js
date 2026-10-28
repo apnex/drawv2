@@ -9,14 +9,15 @@ headless node (server/svg.mjs before H26.4), moved here and given the platform's
   tagName          SVG's case, the tag as written
   classList        a DOMTokenList over the `class` attribute: a token removed that is absent writes nothing, an add rewrites the set
   dataset          the `data-` attributes, read and written
-  style            each declaration written into the `style` attribute, in the order first written -- the reveal's trace
+  style            each declaration written into the `style` attribute, in the order first written -- the old trace's; since H26.8
+                   the reveal writes the attribute whole, and no painter writes this, which goes with the shadow
   textContent      the text, or the children's; written, it replaces the children
   isConnected      while the node stands in the fragment of an entity the renderer draws -- the towers' cached glyph
-  getTotalLength   a path's, where the composition hands the platform's measure: the length of its `d`, measured by draw's probe
-  getBoundingClientRect   where the composition hands the platform's settle: the entity put at once, then the page's style settled
-A write that changes nothing marks nothing, so the reveal's hide, on every tick, puts nothing. The measure and the settle are handed in
-by the page alone (app/src/painter.js `pathLengthOf`, `settleOf`); the export and the harness hand none, so their nodes have neither
-member, as draw's harness elements had none. It reaches no global and names no plugin's kind.
+A write that changes nothing marks nothing, so the reveal's hide, on every tick, puts nothing. It reaches no global and names no plugin's
+kind.
+RESTATED at H26.8's trace move (NATIVE-SHAPES.md section 5): the platform's measure and settle -- `getTotalLength` and
+`getBoundingClientRect`, which the page handed in so the old trace could measure its line and force a layout -- are gone: the reveal
+measures a line's `d` with draw's probe itself, and its trace is declared, needing no layout forced.
 */
 
 const tokensOf = (value) => [...new Set(String(value ?? '').split(/[\t\n\f\r ]+/).filter(Boolean))];
@@ -44,11 +45,10 @@ const walk = (n, hit, one, out = []) => {
 };
 
 /*
-`onDirty(owner)`: a node of `owner`'s fragment changed. `onSettle(node)`: the trace asked for its box. `platform`: `{ lengthOf(d), settle() }`,
-each where the composition hands it. Answers `make(tag, attrs, parent)`, a shadow node, and `fragment(owner)`, the parent an entity's
-painter draws into, holding the entity's top-level nodes.
+`onDirty(owner)`: a node of `owner`'s fragment changed. Answers `make(tag, attrs, parent)`, a shadow node, and `fragment(owner)`, the
+parent an entity's painter draws into, holding the entity's top-level nodes.
 */
-export function shadowKit({ onDirty, onSettle = () => {}, platform = {} }) {
+export function shadowKit({ onDirty }) {
 	const enter = (n, frag) => { n.frag = frag; for (const c of n.children) enter(c, frag); };
 	const touch = (n) => { const owner = n?.frag?.owner; if (owner) onDirty(owner); };
 	const make = (tag, attrs = {}, parent = null) => {
@@ -125,9 +125,6 @@ export function shadowKit({ onDirty, onSettle = () => {}, platform = {} }) {
 			querySelectorAll(sel) { return walk(node, matcherOf(sel), false); },
 		};
 		const writeClass = (list) => { if (!Object.hasOwn(node.attrs, 'class') && !list.length) return; node.setAttribute('class', list.join(' ')); };
-		// D12: the platform's measure and settle, where the composition hands them -- the page alone
-		if (tag === 'path' && typeof platform.lengthOf === 'function') node.getTotalLength = () => platform.lengthOf(node.attrs.d ?? '');
-		if (typeof platform.settle === 'function') node.getBoundingClientRect = () => { onSettle(node); platform.settle(); };
 		for (const [k, v] of Object.entries(attrs)) node.attrs[k] = String(v);
 		if (parent) parent.appendChild(node);
 		return node;

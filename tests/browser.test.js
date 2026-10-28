@@ -518,26 +518,34 @@ test('H14.12: a link traces rather than fading, and a node does not', { skip: SK
 	});
 	assert.ok(res.ok, `precondition: the commit was accepted (HTTP ${res.status})`);
 
+	/*
+	RESTATED at H26.8's trace move (B422; dev/design/components/NATIVE-SHAPES.md section 5): the trace is declared -- the line carries
+	`data-trace` and its length and duration as custom properties, and the simulation's stylesheet runs the animation -- where the reveal
+	wrote an inline dash and a transition. So these read the attribute, the animation running and its keyframes, and the dash as computed.
+	*/
 	// the link is the third entity, so it is revealed last -- wait until it has been
 	const armed = await until(tab, `(() => {
 		const el = document.getElementById('link-fa0001');
 		if (!el) return 0;
-		return el.style.strokeDasharray ? 1 : 0;
+		return el.hasAttribute('data-trace') ? 1 : 0;
 	})()`, 12000);
-	assert.ok(armed, 'the link carries a stroke-dasharray, so it is being drawn rather than faded');
+	assert.ok(armed, 'the link carries data-trace, so it is being drawn rather than faded');
 
 	const dashed = await tab.eval(`(() => {
 		const el = document.getElementById('link-fa0001');
-		return JSON.stringify({ arr: parseFloat(el.style.strokeDasharray), trans: el.style.transition });
+		const a = el.getAnimations()[0];
+		return JSON.stringify({ arr: parseFloat(getComputedStyle(el).strokeDasharray), len: el.getTotalLength(), name: a?.animationName ?? null,
+			animates: a ? a.effect.getKeyframes().map((k) => Object.keys(k).filter((p) => p.startsWith('stroke'))) : null });
 	})()`);
 	const got = JSON.parse(dashed);
-	assert.ok(got.arr > 0, `the dash is the path length, got ${got.arr}`);
-	assert.match(got.trans, /stroke-dashoffset/, 'and the transition animates the offset');
+	assert.ok(got.arr > 0 && Math.abs(got.arr - got.len) < 0.5, `the dash is the path length, got ${got.arr} for ${got.len}`);
+	assert.match(String(got.name), /^trace-[ab]$/, 'and the trace is the animation running');
+	assert.ok(got.animates?.every((k) => k.includes('strokeDashoffset')), `which animates the offset: ${JSON.stringify(got.animates)}`);
 
-	// a node has no dasharray -- it fades
-	const nodeArr = await tab.eval(
-		`document.getElementById('node-fa0001')?.style.strokeDasharray || ''`);
-	assert.equal(nodeArr, '', 'a node is faded, not traced');
+	// a node has no trace -- it fades
+	const nodeTrace = await tab.eval(
+		`JSON.stringify({ trace: document.getElementById('node-fa0001')?.hasAttribute('data-trace') ?? null, animations: document.getElementById('node-fa0001')?.getAnimations().filter((a) => /^trace/.test(a.animationName ?? '')).length ?? null })`);
+	assert.deepEqual(JSON.parse(nodeTrace), { trace: false, animations: 0 }, 'a node is faded, not traced');
 
 	/*
 	And the fade is the ruled 500ms, read from the STYLESHEET rather than from the constant beside
@@ -1593,6 +1601,77 @@ test('V-d: on the product page a deleted pin takes its link before the server an
 		await until(t, `window.draw.sync.outbox.every((m) => m.answered) ? 1 : 0`, 6000);
 		assert.equal(await t.eval(`!!window.draw.model.get('link', '${pinned}')`), false, 'and the answer leaves it gone');
 	} finally { await t.close(); }
+});
+
+/*
+B422 (H26.8's trace move; dev/design/components/NATIVE-SHAPES.md section 5, NS4) -- ON THE PRODUCT PAGE, A REVEALED LINE KEEPS ITS OWN DASH.
+The network board's down link is drawn dotted. A beat withholds it and then reveals it, the page's own reveal and loop running on the
+page's clock; its trace draws it from source to destination. Before the move the trace's inline dash was never taken away: the dotted
+line was drawn solid ever after, and a route lengthened mid-trace kept the old length's dash, a gap at its end. Each case reads the
+line's computed stroke-dasharray, as the browser draws it.
+*/
+// a line of its own on the network board: two devices on a free row and a link between them, down -- no pipe joins them -- so dotted
+async function b422Page() {
+	const t = await attach(`http://127.0.0.1:${port}/${NET_DIAGRAM}`);
+	await until(t, `document.getElementById('node-ab00a1') ? 1 : 0`, 8000);
+	await t.eval(`window.draw.input.setReadOnly(false), 1`);
+	const ids = JSON.parse(await t.eval(`(async () => { const { makeNode } = await import('/plugins/devices/make-node.mjs'); const { makeLink } = await import('/plugins/network/link-queries.mjs');
+		const m = window.draw.model; const a = makeNode(m, 'host', { x: -360, y: 480 }); const b = makeNode(m, 'host', { x: 360, y: 480 });
+		window.draw.history.commit({ label: 'b422', entries: [{ op: 'put', kind: 'node', entity: a }, { op: 'put', kind: 'node', entity: b }] });
+		const l = makeLink(m, a.id, b.id); window.draw.history.commit({ label: 'b422 link', entries: [{ op: 'put', kind: 'link', entity: l }] });
+		return JSON.stringify({ a: a.id, b: b.id, link: l.id }); })()`));
+	await until(t, `document.getElementById('${ids.link}') && window.draw.sync.outbox.every((m) => m.answered) ? 1 : 0`, 6000);
+	return { t, ...ids };
+}
+async function b422Done({ t, a, b }) {
+	await t.eval(`(() => { const r = window.draw.reveal; window.draw.model.state.reveal = null; r.trace = null; r.sync();
+		const m = window.draw.model; const gone = ['${a}', '${b}'].map((id) => m.get('node', id)).filter(Boolean);
+		if (gone.length) window.draw.history.commit({ label: 'b422 done', entries: gone.map((e) => ({ op: 'del', kind: 'node', entity: { ...e } })) }); return 1; })()`).catch(() => {});
+	await until(t, `window.draw.sync.outbox.every((m) => m.answered) ? 1 : 0`, 6000).catch(() => {});
+	await t.close();
+}
+const dashOf = (t, link) => t.eval(`getComputedStyle(document.getElementById('${link}')).strokeDasharray`);
+// a beat over the line alone: withheld now, revealed `after` ms from now by the page's reveal clock, traced in `ms`
+const beatOver = (t, link, after, ms) => t.eval(`(() => { const r = window.draw.reveal; r.trace = { mode: 'duration', ms: ${ms} };
+	window.draw.model.state.reveal = { origin: r.now() + ${after}, beats: [{ interval: 0, ids: ['${link}'] }] }; r.sync(); return 1; })()`);
+const revealed = async (t, link) => {
+	await until(t, `document.getElementById('${link}').hasAttribute('data-unrevealed') ? 1 : 0`, 2000);
+	await until(t, `document.getElementById('${link}').hasAttribute('data-unrevealed') ? 0 : 1`, 3000);   // revealed, its trace begun
+};
+
+test('B422: on the product page a revealed dotted link is drawn dotted again once its trace ends', { skip: SKIP }, async () => {
+	const p = await b422Page();
+	try {
+		const own = await dashOf(p.t, p.link);
+		assert.notEqual(own, 'none', `precondition: the down link is drawn dotted: ${own}`);
+		await beatOver(p.t, p.link, 200, 500);
+		await revealed(p.t, p.link);
+		await sleep(900);   // past its 500 ms
+		assert.equal(await dashOf(p.t, p.link), own, 'the trace over, the line\'s own dotted dash -- not one dash the whole line long');
+	} finally { await b422Done(p); }
+});
+
+test('B422: on the product page a route lengthened mid-trace is traced whole, and dotted again after', { skip: SKIP }, async () => {
+	const p = await b422Page();
+	const length = () => p.t.eval(`document.getElementById('${p.link}').getTotalLength()`);
+	try {
+		const own = await dashOf(p.t, p.link);
+		assert.notEqual(own, 'none', `precondition: the down link is drawn dotted: ${own}`);
+		await beatOver(p.t, p.link, 200, 4000);
+		await revealed(p.t, p.link);
+		await sleep(600);   // mid-trace
+		const before = await length();
+		await p.t.eval(`(async () => { const { moveEntities } = await import('/src/commands.js');
+			window.draw.history.commit(moveEntities([{ kind: 'node', id: '${p.b}', after: { x: 600, y: 480 } }])); return 1; })()`);
+		await until(p.t, `window.draw.sync.outbox.every((m) => m.answered) ? 1 : 0`, 6000);
+		await sleep(150);
+		const after = await length();
+		assert.ok(after > before + 200, `precondition: the route is longer: ${before} -> ${after}`);
+		const mid = parseFloat(await dashOf(p.t, p.link));
+		assert.ok(Math.abs(mid - after) < 0.5, `mid-trace, the dash is the new route's length (${after}), so no gap is left at its end: ${mid}`);
+		await sleep(4000);   // past its 4000 ms
+		assert.equal(await dashOf(p.t, p.link), own, 'and the trace over, the line\'s own dotted dash');
+	} finally { await b422Done(p); }
 });
 
 /*

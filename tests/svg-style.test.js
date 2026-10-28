@@ -61,6 +61,36 @@ test('H25.2: what acts only on a pointer or over time is left out; what draws an
 	assert.throws(() => sheet('.a { fill: var(--tok-missing); }'), /names --tok-missing, which no colour registry/);
 });
 
+/*
+H26.8's trace move (B422; dev/design/components/NATIVE-SHAPES.md section 5, a:F8) -- ONE AT-RULE READ AND LEFT OUT. The reveal's trace
+is declared in plugins/simulation/simulation.css as an animation and its keyframes, which a still picture leaves out as it does a
+transition. Only `@keyframes <name> {` is taken, read to its closing brace with braces counted outside strings and a string's escapes
+honoured; what it cannot read is refused, naming the sheet, and every other at-rule stays refused.
+*/
+test('H26.8 (section 5): @keyframes <name> is read to its end and left out, the animation properties beside transition; what cannot be read is refused', () => {
+	const after = (block) => style('<rect class="a"/>', `${block} .a { fill: red; }`);
+	const kept = '<rect class="a" fill="red"/>';
+	assert.equal(after('@keyframes k { from { stroke-dashoffset: 10; } to { stroke-dashoffset: 0; } }'), kept, 'a block of two steps, and the rule after it');
+	assert.equal(after('@keyframes k { 0% { content: "}"; } }'), kept, 'a quoted brace counts for nothing');
+	assert.equal(after('@keyframes k { 0% { content: "\\"}"; } }'), kept, 'an escaped quote does not end its string, so the brace after it is still quoted');
+	assert.equal(after('@keyframes k { 0% { content: \'}\'; } }'), kept, 'a single-quoted brace counts for nothing');
+	assert.deepEqual(sheet('@keyframes k { 0% { content: \\}; } to { stroke-dashoffset: 0; } } .a { fill: red; }').map((r) => r.text), ['.a'],
+		'a brace escaped outside a string counts for nothing: the block runs on through its second step, which is read as no rule');
+	const two = style('<rect class="a"/><rect class="b"/><rect class="c"/>',
+		'.a { fill: red; } @keyframes trace-a { to { stroke-dashoffset: 0; } } .b { fill: blue; } @keyframes trace-b { to { stroke-dashoffset: 0; } } .c { fill: green; }');
+	assert.equal(two, '<rect class="a" fill="red"/><rect class="b" fill="blue"/><rect class="c" fill="green"/>', 'two blocks around rules: all three rules kept');
+	const open = (css) => () => rulesOfSheets([{ name: 'open.css', css }]);
+	assert.throws(open('@keyframes k { 0% { stroke-dashoffset: 1; }'), /^Error: open\.css: a block in @keyframes k is not closed/, 'a block left open');
+	assert.throws(open('@keyframes k { 0% { content: "}; } }'), /^Error: open\.css: a string in @keyframes k is not closed/, 'a string left open to the sheet\'s end');
+	assert.throws(open('@keyframes k { 0% { content: "a\n"; } } .a { fill: red; }'), /^Error: open\.css: a string in @keyframes k is not closed/, 'a string broken by its line\'s end, though a quote closes it on the next: CSS ends a string there, so it is open');
+	assert.throws(open('@-webkit-keyframes k { 0% { opacity: 0; } }'), /cannot match the selector "@-webkit-keyframes k"/, 'a vendor variant stays refused as before: `@-` is no at-rule to that test, so the selector parse refuses it');
+	assert.throws(open('@keyframes { 0% { opacity: 0; } }'), /open\.css holds an at-rule/, 'a block with no name stays refused');
+	assert.throws(open('@keyframes k { 0% { opacity: 0; } } @media print { .a { fill: red; } }'), /open\.css holds an at-rule/, 'and any other at-rule beside one taken');
+	const props = ['animation: trace-a 1s', 'animation-name: trace-a', 'animation-duration: var(--trace-ms)', 'animation-timing-function: ease-out',
+		'animation-fill-mode: both', 'animation-delay: 0s', 'animation-iteration-count: 1', 'animation-direction: normal', 'animation-play-state: running'];
+	assert.equal(style('<path class="k"/>', `.k { ${props.join('; ')}; stroke: red; }`), '<path class="k" stroke="red"/>', 'the nine animation properties left out, as acting over time');
+});
+
 test('H25.2: on the page\'s own sheets -- a down link\'s head and leg take the down colour, a name the label colour, a frame and the glyph art a device\'s colours, the ground the canvas\'s', async () => {
 	const rules = drawingRules();
 	const { NETWORK_TOKENS, downStroke } = await import('../plugins/network/appearance.mjs');

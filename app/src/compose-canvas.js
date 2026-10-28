@@ -24,7 +24,6 @@ the held tools, Input and capture's adapter -- and returned, for what the root d
 */
 import { sharedDefs } from '../../kernel/renderer.mjs';
 import { NODE_GRID } from '../../kernel/geometry.mjs';
-import { pathLengthOf, settleOf } from './painter.js';   // H26.4 (D12): the page's measure and settle, handed the renderer's shadow
 import { crosshair } from './editing-visuals.js';   // H26.4: the editing part's, an item of the scene
 import { CANVAS } from './snap.js';
 import { Model } from '../../model/model.mjs';
@@ -74,7 +73,7 @@ export function composeCanvas({ svg, scene: declared, defs, host, network = null
 	*/
 	const preview = kinds ? (m, ops) => plan(m, ops, { kinds }) : null;
 	const history = new Changes(model, { preview, apply: (ops) => applyAnswer(model, selection, ops) });
-	const renderer = new Renderer(model, svg, { parts, scene, platform: { lengthOf: pathLengthOf, settle: settleOf(svg) }, foreign: foreignStates(scene) });   // C-a: the plugins' canvas parts, their painters among them
+	const renderer = new Renderer(model, svg, { parts, scene, foreign: foreignStates(scene) });   // C-a: the plugins' canvas parts, their painters among them
 	selection.subscribe(() => renderer.reflectSelection(selection.list()));   // the renderer owns the selected look
 	// C-e: where each kind's label sits -- the first part that says so
 	const labels = new LabelEditor({ svg, scene, model, history, labelAt: (e) => parts.map((p) => p.labels?.labelAt?.(e)).find((x) => x) ?? null,

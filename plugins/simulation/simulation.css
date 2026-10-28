@@ -31,3 +31,17 @@ arrangement stored a hex per spawner and three repaints only ever reached newly 
 	opacity: 1;
 	filter: drop-shadow(0 0 2px var(--tok-beam-glow)) drop-shadow(0 0 6px var(--tok-beam-core));
 }
+
+/*
+H26.8 (B422; dev/design/components/NATIVE-SHAPES.md section 5, NS4) -- THE REVEAL'S TRACE, DECLARED. A link the reveal shows carries
+`data-trace`, the name alternated per line, and its measured length and duration as custom properties
+(plugins/simulation/reveal-painter.mjs `show`): the whole length laid down as one dash and drawn from source to destination, eased out.
+Two keyframes alike under two names, so a hide and a show in one task begin it again. The reveal takes the attribute and the
+properties away at its end, and the line is drawn with its own dash: a control or down link dashed or dotted again, a lengthened route
+whole. The export draws no trace and leaves the animation out (server/svg-style.mjs).
+*/
+[data-trace] { animation-duration: var(--trace-ms); animation-timing-function: ease-out; animation-fill-mode: both; }
+[data-trace="a"] { animation-name: trace-a; }
+[data-trace="b"] { animation-name: trace-b; }
+@keyframes trace-a { from { stroke-dasharray: var(--trace-len); stroke-dashoffset: var(--trace-len); } to { stroke-dasharray: var(--trace-len); stroke-dashoffset: 0; } }
+@keyframes trace-b { from { stroke-dasharray: var(--trace-len); stroke-dashoffset: var(--trace-len); } to { stroke-dasharray: var(--trace-len); stroke-dashoffset: 0; } }

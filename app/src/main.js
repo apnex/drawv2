@@ -21,7 +21,7 @@ import { PRODUCT_CANVAS, CANVAS_SCENE, FOREIGN_LAYERS } from '../../product/canv
 import '../../product/types.mjs';   // the plugins' canvas parts (C-a)
 import { NETWORK_ROWS } from '../../plugins/network/kinds.mjs';   // the network's kind and the field it contributes (S-a)
 import { createPageNetwork } from '../../plugins/network/page.mjs';   // the network, composed into this page as into the lab's (V-b)
-import { el } from './painter.js';
+import { el, pathLengthOf } from './painter.js';   // H26.8: draw's probe, the reveal's measure
 
 const svg = document.getElementById('container');
 
@@ -123,6 +123,7 @@ const reveal = new Reveal({
 	renderer,
 	now: () => clock.now(),
 	onCaption: (text) => { if (captionEl) captionEl.textContent = text || ''; },
+	lengthOf: pathLengthOf,   // H26.8 (NATIVE-SHAPES.md section 5): the line traced is measured by its `d`, with draw's probe
 });
 model.onChange(() => reveal.sync());
 reveal.sync();

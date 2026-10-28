@@ -58,8 +58,10 @@ test('H26.4 step 3: app/src/renderer.js writes no platform element -- it names n
 
 test('H26.4 step 3: app/src/painter.js holds no toCanvas and no widget of the canvas -- buildPreview alone stays, for the palette\'s tiles', async () => {
 	const painter = await import('../app/src/painter.js');
-	assert.deepEqual(Object.keys(painter).sort(), ['buildPreview', 'el', 'isShown', 'pathLengthOf', 'setAttrs', 'setShown', 'settleOf'],
-		'el and setAttrs for the foreign layers\' drawers; the trace\'s probe and settle (D12); the palette\'s builder; the help panel\'s two questions');
+	// RESTATED H26.8's trace move (dev/design/components/NATIVE-SHAPES.md section 5): the settle went with the declared trace; the probe
+	// stays, handed the reveal by the page's composition
+	assert.deepEqual(Object.keys(painter).sort(), ['buildPreview', 'el', 'isShown', 'pathLengthOf', 'setAttrs', 'setShown'],
+		'el and setAttrs for the foreign layers\' drawers; the trace\'s probe (D12); the palette\'s builder; the help panel\'s two questions');
 	const palette = code('app/src/palette.js');
 	assert.match(palette, /import \{ buildPreview \} from '\.\/painter\.js';/, 'the palette builds its tiles with buildPreview, outside the canvas');
 	assert.match(palette, /import \{ ghostNode \} from '\.\/editing-visuals\.js';/, 'and its dragged ghost is an editing visual');

@@ -131,6 +131,8 @@ test('a zero interval reveals a whole beat at once rather than never', () => {
 /*
 The consumer. `plugins/simulation/reveal-painter.mjs` turns the derivation into marks on the canvas, and these drive it
 with a fake renderer and a fake clock -- no DOM at all, which is the property B45 exists to keep.
+RESTATED at H26.8's trace move: each fake answers `getAttribute` too, as a page's element and the renderer's node do -- a hide reads
+whether its mark already stands, and writes nothing if it does.
 */
 test('the painter hides what the beat has not reached, and shows it when it does', async () => {
 	const { Reveal } = await import('../plugins/simulation/reveal-painter.mjs');
@@ -138,7 +140,7 @@ test('the painter hides what the beat has not reached, and shows it when it does
 	const renderer = { byId: (id) => marks.get(id) };
 	for (const id of ['node-aa0001', 'node-aa0002', 'node-aa0003']) {
 		marks.set(id, { attrs: new Set(),
-			setAttribute(k) { this.attrs.add(k); }, removeAttribute(k) { this.attrs.delete(k); } });
+			getAttribute(k) { return this.attrs.has(k) ? '' : null; }, setAttribute(k) { this.attrs.add(k); }, removeAttribute(k) { this.attrs.delete(k); } });
 	}
 	let t = 999;
 	const r = new Reveal({ model: { state: { reveal: BEAT } }, renderer, now: () => t });
@@ -173,7 +175,7 @@ test('the painter reports the caption, and only when it changes', async () => {
 
 test('a document with no reveal leaves every entity alone', async () => {
 	const { Reveal } = await import('../plugins/simulation/reveal-painter.mjs');
-	const mark = { attrs: new Set(), setAttribute(k) { this.attrs.add(k); }, removeAttribute(k) { this.attrs.delete(k); } };
+	const mark = { attrs: new Set(), getAttribute(k) { return this.attrs.has(k) ? '' : null; }, setAttribute(k) { this.attrs.add(k); }, removeAttribute(k) { this.attrs.delete(k); } };
 	const r = new Reveal({ model: { state: { reveal: null } }, renderer: { byId: () => mark }, now: () => 5000 });
 	r.paint();
 	assert.equal(mark.attrs.size, 0, 'nothing is withheld when nothing says to withhold it');
@@ -189,7 +191,7 @@ test('undoing a beat restores everything it was hiding', async () => {
 	const marks = new Map();
 	for (const id of ['node-aa0001', 'node-aa0002', 'node-aa0003']) {
 		marks.set(id, { attrs: new Set(),
-			setAttribute(k) { this.attrs.add(k); }, removeAttribute(k) { this.attrs.delete(k); } });
+			getAttribute(k) { return this.attrs.has(k) ? '' : null; }, setAttribute(k) { this.attrs.add(k); }, removeAttribute(k) { this.attrs.delete(k); } });
 	}
 	const model = { state: { reveal: BEAT } };
 	const r = new Reveal({ model, renderer: { byId: (id) => marks.get(id) }, now: () => 1000 });
@@ -463,6 +465,175 @@ test('B193: a beat committed after the queue drained gets a fresh origin', async
 
 
 /*
+H26.8's trace move (B422; dev/design/components/NATIVE-SHAPES.md section 5, NS4) -- THE TRACE DECLARED, AND THE REVEAL ITS ONE OWNER.
+A link the reveal shows carries `data-trace`, a name alternated per line, and `style` holding its length -- its `d` measured by the probe
+the page hands (`lengthOf`) -- and its duration, `traceOf`'s; a pass at `show + ms` by the reveal's clock takes both away. Each event of
+section 5's lifecycle table, driven with fake lines that log every write, a fake clock and the probe a stand-in; the loop with its frame
+callback stubbed and its timer mocked. tests/vector-scene-trace.test.js holds the same in Chrome, unpaused. A fake line logs every call
+that writes, a value set again unchanged and an absent attribute removed among them: a page queues a mutation for the one, and "writes
+nothing" is the reveal's to keep, not the DOM's to forgive.
+*/
+const lengthOf = (d) => String(d).length * 3 + 0.5;
+function lineOf(id, d, tagName = 'path') {
+	const attrs = new Map([['id', id], ['d', d]]), writes = [];
+	return { tagName, attrs, writes,
+		getAttribute(k) { return attrs.has(k) ? attrs.get(k) : null; },
+		setAttribute(k, v) { attrs.set(k, String(v)); writes.push(['set', k, String(v)]); },
+		removeAttribute(k) { attrs.delete(k); writes.push(['remove', k]); } };
+}
+const traceAttrs = (el) => ({ 'data-trace': el.getAttribute('data-trace'), style: el.getAttribute('style') });
+const LINE_BEAT = (origin, ids) => ({ origin, beats: [{ interval: 0, ids }] });
+async function traced({ ids = ['link-aa0001'], d = 'M 0 0 L 120 0', origin = 1000, trace = null } = {}) {
+	const { Reveal } = await import('../plugins/simulation/reveal-painter.mjs');
+	const lines = new Map(ids.map((id) => [id, lineOf(id, d)]));
+	const clock = { t: origin - 100 };
+	const model = { state: { reveal: LINE_BEAT(origin, ids) } };
+	const r = new Reveal({ model, renderer: { byId: (id) => lines.get(id) ?? null }, now: () => clock.t, lengthOf });
+	r.trace = trace;
+	r.paint();   // before the origin: each line withheld, so the pass at the origin shows it
+	return { r, lines, clock, model, line: lines.get(ids[0]) };
+}
+
+test('H26.8 (B422): a link shown carries the declared trace -- its name, length and duration -- and a pass at its instant takes both away', async () => {
+	const { r, clock, line } = await traced();
+	r.paint();
+	assert.equal(line.getAttribute('data-unrevealed'), '', 'precondition: withheld before the origin');
+	clock.t = 1000; r.paint();
+	assert.deepEqual(traceAttrs(line), { 'data-trace': 'a', style: `--trace-len: ${lengthOf('M 0 0 L 120 0')}; --trace-ms: 500ms` }, 'shown: the trace, the string exactly');
+	assert.equal(line.getAttribute('data-unrevealed'), null);
+	assert.deepEqual(line.writes.slice(-3).map(([op, k]) => `${op} ${k}`), ['set data-trace', 'set style', 'remove data-unrevealed'], 'written with setAttribute, data-trace then style');
+	clock.t = 1499; r.paint();
+	assert.equal(line.getAttribute('data-trace'), 'a', 'held to its last instant');
+	clock.t = 1500; r.paint();
+	assert.deepEqual(traceAttrs(line), { 'data-trace': null, style: null }, 'at show + ms both are gone: the line its own dash again');
+	assert.deepEqual(line.writes.slice(-2), [['remove', 'data-trace'], ['remove', 'style']], 'removed with removeAttribute');
+	const after = line.writes.length;
+	clock.t = 3000; r.paint(); r.paint();
+	assert.equal(line.writes.length, after, 'and later passes write nothing');
+	assert.equal(r.traces.size, 0);
+});
+
+test('H26.8: velocity mode -- the duration is the measured length over the speed', async () => {
+	const { r, clock, line } = await traced({ trace: { mode: 'velocity', pxPerMs: 0.5 } });
+	clock.t = 1000; r.paint();
+	const len = lengthOf('M 0 0 L 120 0');
+	assert.equal(line.getAttribute('style'), `--trace-len: ${len}; --trace-ms: ${len / 0.5}ms`);
+	clock.t = 1000 + len / 0.5; r.paint();
+	assert.equal(line.getAttribute('data-trace'), null, 'ended at its own instant');
+});
+
+test('H26.8: a hide ends the trace; the next show takes the other name; a hide and a show at once begin it again', async () => {
+	const { r, clock, line, model } = await traced();
+	clock.t = 1000; r.paint();
+	assert.equal(line.getAttribute('data-trace'), 'a');
+	clock.t = 1100; model.state.reveal = LINE_BEAT(2000, ['link-aa0001']); r.paint();   // a later beat withholds it again
+	assert.deepEqual([line.getAttribute('data-trace'), line.getAttribute('style'), line.getAttribute('data-unrevealed')], [null, null, ''], 'the hide ended the trace and withheld the line');
+	clock.t = 2000; r.paint();
+	assert.equal(line.getAttribute('data-trace'), 'b', 'shown again: the other name, so the animation begins again');
+	clock.t = 2100; r.hide('link-aa0001'); r.show('link-aa0001');
+	assert.equal(line.getAttribute('data-trace'), 'a', 'a hide and a show in one task: the name changes, so it begins again');
+	assert.equal(r.traces.get('link-aa0001').until, 2600, 'its instant measured from the show');
+});
+
+test('H26.8: the 100 ms tick writes nothing while the hide\'s mark stands', async () => {
+	const { r, clock, line } = await traced();
+	r.paint();
+	const after = line.writes.length;
+	for (let t = 901; t < 1000; t += 10) { clock.t = t; r.paint(); }
+	assert.equal(line.writes.length, after, 'ten passes, the line withheld throughout: not one write');
+});
+
+test('H26.8: a route changed mid-trace -- its length written again, its duration kept; redescribed with its route unchanged, nothing written', async () => {
+	const { r, clock, line } = await traced();
+	clock.t = 1000; r.paint();
+	clock.t = 1100; r.paint();
+	let after = line.writes.length;
+	line.attrs.set('class', 'link selected');   // the line described again, its route unchanged
+	clock.t = 1150; r.paint();
+	assert.equal(line.writes.length, after, 'the route unchanged: nothing written, the animation runs on');
+	line.attrs.set('d', 'M 0 0 L 120 0 L 120 240');   // the route longer: the network's settle redrew it, or a model change did
+	clock.t = 1200; r.paint();
+	assert.deepEqual(traceAttrs(line), { 'data-trace': 'a', style: `--trace-len: ${lengthOf('M 0 0 L 120 0 L 120 240')}; --trace-ms: 500ms` },
+		'its length the new route\'s, its name and duration kept -- the animation keeps its time');
+	after = line.writes.length;
+	clock.t = 1300; r.paint();
+	assert.equal(line.writes.length, after, 'and read again unchanged, nothing written');
+	clock.t = 1500; r.paint();
+	assert.equal(line.getAttribute('data-trace'), null, 'ended at the instant its show set');
+	// velocity mode, where the new route's length would give another duration: the duration is kept all the same
+	const v = await traced({ trace: { mode: 'velocity', pxPerMs: 0.05 } });
+	v.clock.t = 1000; v.r.paint();
+	const ms = lengthOf('M 0 0 L 120 0') / 0.05;
+	assert.ok(ms > 100, `precondition: still tracing at the reroute (${ms} ms)`);
+	v.line.attrs.set('d', 'M 0 0 L 120 0 L 120 240');
+	v.clock.t = 1100; v.r.paint();
+	assert.equal(v.line.getAttribute('style'), `--trace-len: ${lengthOf('M 0 0 L 120 0 L 120 240')}; --trace-ms: ${ms}ms`, 'velocity mode: the length the new route\'s, the duration the show\'s');
+	v.clock.t = 1000 + ms; v.r.paint();
+	assert.equal(v.line.getAttribute('data-trace'), null, 'and it ends at the show\'s instant');
+});
+
+test('H26.8: an entity removed, or drawn afresh by a load or an undo, mid-trace -- its trace ends on its instant, writing nothing', async () => {
+	const { r, clock, lines, line } = await traced();
+	clock.t = 1000; r.paint();
+	lines.delete('link-aa0001');   // removed: the renderer draws it no more
+	clock.t = 1200; r.paint();
+	assert.equal(r.traces.size, 1, 'the entry runs to its instant');
+	const fresh = lineOf('link-aa0001', 'M 0 0 L 120 0 L 240 0');   // an undo draws it afresh, its marks gone with the old line
+	lines.set('link-aa0001', fresh);
+	clock.t = 1300; r.paint();
+	clock.t = 1500; r.paint();
+	assert.deepEqual(fresh.writes, [], 'nothing written to the line drawn afresh -- neither a length nor an end');
+	assert.equal(r.traces.size, 0, 'the entry ended on its instant');
+	assert.equal(line.getAttribute('data-trace'), 'a', 'and the old line, no longer drawn, was not written either');
+});
+
+test('H26.8: a composition that hands no measure traces nothing, a link shown at once', async () => {
+	const { Reveal } = await import('../plugins/simulation/reveal-painter.mjs');
+	const line = lineOf('link-aa0001', 'M 0 0 L 120 0');
+	const r = new Reveal({ model: { state: { reveal: LINE_BEAT(1000, ['link-aa0001']) } }, renderer: { byId: () => line }, now: () => 1000 });
+	line.setAttribute('data-unrevealed', '');
+	r.hidden.add('link-aa0001');
+	r.paint();
+	assert.deepEqual([line.getAttribute('data-trace'), line.getAttribute('style'), line.getAttribute('data-unrevealed')], [null, null, null]);
+	assert.equal(r.traces.size, 0);
+	const node = lineOf('node-aa0001', '', 'g');
+	const fade = new Reveal({ model: { state: { reveal: LINE_BEAT(1000, ['node-aa0001']) } }, renderer: { byId: () => node }, now: () => 1000, lengthOf });
+	node.setAttribute('data-unrevealed', ''); fade.hidden.add('node-aa0001'); fade.paint();
+	assert.deepEqual([node.getAttribute('data-trace'), node.getAttribute('data-unrevealed')], [null, null], 'and a node fades: no trace, measure or not');
+	// a line the probe measures as nothing -- a zero length, or none it can read -- is shown at once, as today's `len > 0` showed it
+	for (const len of [0, NaN]) {
+		const flat = lineOf('link-aa0002', 'M 0 0');
+		const z = new Reveal({ model: { state: { reveal: LINE_BEAT(1000, ['link-aa0002']) } }, renderer: { byId: () => flat }, now: () => 1000, lengthOf: () => len });
+		flat.setAttribute('data-unrevealed', ''); z.hidden.add('link-aa0002'); z.paint();
+		assert.deepEqual([flat.getAttribute('data-trace'), flat.getAttribute('style'), flat.getAttribute('data-unrevealed'), z.traces.size], [null, null, null, 0], `a line measured ${len}: no trace`);
+	}
+});
+
+test('H26.8: the loop runs while there is a record or a trace running; the record gone shows what it withheld, traced, until those end', async (t) => {
+	t.mock.timers.enable({ apis: ['setInterval'] });
+	const frames = [];
+	const raf = globalThis.requestAnimationFrame, caf = globalThis.cancelAnimationFrame;
+	globalThis.requestAnimationFrame = (f) => { frames.push(f); return frames.length; };
+	globalThis.cancelAnimationFrame = () => {};
+	try {
+		const { r, clock, model, line } = await traced();
+		r.sync();
+		assert.ok(r.loop, 'a record: the loop runs');
+		assert.equal(line.getAttribute('data-unrevealed'), '', 'the line withheld');
+		clock.t = 1100; model.state.reveal = null; r.sync();
+		assert.equal(line.getAttribute('data-trace'), 'a', 'the record gone: what it withheld shown, the link traced');
+		assert.ok(r.loop, 'and the loop runs on, a trace running though no record is held');
+		clock.t = 1400; t.mock.timers.tick(100);
+		assert.equal(line.getAttribute('data-trace'), 'a', 'a pass of the loop before its instant leaves it');
+		clock.t = 1600; t.mock.timers.tick(100);
+		assert.equal(line.getAttribute('data-trace'), null, 'a pass of the loop at its instant ends it');
+		assert.equal(r.loop, null, 'and with no record and no trace running, the loop stops');
+		r.sync();
+		assert.equal(r.loop, null, 'a sync with nothing to reveal and nothing tracing starts none');
+	} finally { globalThis.requestAnimationFrame = raf; globalThis.cancelAnimationFrame = caf; }
+});
+
+/*
 H14.12 -- a link TRACES from source to destination; a node fades.
 
 Ruled by the director. A fade throws away the one thing a link has that a node does not: a
@@ -475,7 +646,8 @@ reads distance honestly and a long link simply takes longer. The first keeps a b
 second keeps the drawing truthful, and which matters depends on what is being narrated.
 
 `traceOf` is the arithmetic alone -- no DOM, no clock -- so the mode can be tested without a browser
-and the renderer is left with only the dash-offset to write.
+and the renderer is left with only the dash-offset to write. RESTATED at H26.8's trace move: the reveal writes the length and the
+duration onto the line as custom properties, and the simulation's stylesheet runs the trace (the lifecycle tests above).
 */
 test('H14.12: fixed duration gives every link the same time regardless of length', async () => {
 	const { traceOf } = await import('../plugins/simulation/reveal.mjs');

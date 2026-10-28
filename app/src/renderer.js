@@ -142,13 +142,13 @@ function composePainters(parts, scene) {
 export class Renderer {
 	/*
 	H26.4: `svg` is the page's root, whose classes the renderer still writes -- modes and labels, draw's own -- or none, for the export;
-	`scene` is the one `openCanvasScene` opened; `platform` the page's measure and settle (`{ lengthOf, settle }`, app/src/painter.js),
-	which the export and the harness do not hand, so the reveal's trace runs where it ran, on the page alone (D12). `foreign`, where the
+	`scene` is the one `openCanvasScene` opened. RESTATED at H26.8's trace move: the page's measure and settle, which it handed the shadow for
+	the old trace (D12), are the reveal's measure alone now (plugins/simulation/reveal-painter.mjs). `foreign`, where the
 	composition hands it (app/src/compose-canvas.js `foreignStates`), marks the states of an id this did not draw -- a pipe's line, which the
 	network draws in its own layer under the pipe's id so the canvas's selection reaches it -- as today's renderer marked whatever element the
 	page's getElementById found (F1).
 	*/
-	constructor(model, svg, { parts = [], scene = null, platform = {}, foreign = null } = {}) {
+	constructor(model, svg, { parts = [], scene = null, foreign = null } = {}) {
 		if (!scene) throw new Error('Renderer: no scene to draw into -- the canvas opens one (openCanvasScene)');
 		this.scene = scene;
 		this.foreign = foreign;
@@ -164,9 +164,7 @@ export class Renderer {
 		this.dirty = new Set();
 		this.depth = 0;
 		this.serial = 0;
-		this.shadow = shadowKit({ platform,
-			onDirty: (rec) => { this.dirty.add(rec); if (this.depth === 0) this.flush(); },
-			onSettle: () => this.flush() });   // D12: the trace's forced layout -- its entity put at once, then the page's style settled
+		this.shadow = shadowKit({ onDirty: (rec) => { this.dirty.add(rec); if (this.depth === 0) this.flush(); } });
 		this.el = (tag, attrs = {}, parent = null) => this.shadow.make(tag, attrs, parent);
 		this.setAttrs = (node, attrs) => { for (const k in attrs) node.setAttribute(k, attrs[k]); return node; };
 		this.drawnSig = new Map();     // id -> the composition it was drawn by (D3), so an update knows when to render afresh

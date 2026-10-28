@@ -20,6 +20,10 @@ it beats any rule, and its custom properties beat theirs; custom properties inhe
 them. A pseudo-class of the pointer or focus never matches a still picture. What this cannot carry faithfully is refused rather than
 shipped wrong: any other pseudo-class, a `>` or `~` step, `!important`, an at-rule, a `:root` property that is not a colour token, a
 transform with CSS units, a drawing property it does not know, a `var()` with no value, and markup its reader cannot read.
+AMENDED H26.8's trace move (B422; dev/design/components/NATIVE-SHAPES.md section 5): one at-rule is read, `@keyframes <name> { ... }`, and
+left out, with the animation properties beside `transition` -- what runs over time, which a still picture leaves out. Its braces are
+counted outside strings, a string's escapes honoured, and a block or string left open is refused, naming the sheet; a vendor variant, a
+block with no name and every other at-rule stay refused.
 */
 import fs from 'node:fs';
 import { PAGE_STYLESHEETS, CHROME_STYLESHEETS } from '../product/canvas.mjs';
@@ -28,7 +32,9 @@ import { PAGE_STYLESHEETS, CHROME_STYLESHEETS } from '../product/canvas.mjs';
 const DRAWN = new Set(['fill', 'fill-opacity', 'stroke', 'stroke-width', 'stroke-opacity', 'stroke-dasharray', 'stroke-dashoffset', 'stroke-linecap',
 	'stroke-linejoin', 'stroke-miterlimit', 'opacity', 'display', 'visibility', 'font-family', 'font-size', 'font-weight', 'font-style', 'text-anchor',
 	'dominant-baseline', 'letter-spacing', 'transform', 'rx', 'ry']);
-const INTERACTIVE = new Set(['cursor', 'pointer-events', 'user-select', '-webkit-user-select', 'transition', 'touch-action']);
+const INTERACTIVE = new Set(['cursor', 'pointer-events', 'user-select', '-webkit-user-select', 'transition', 'touch-action',
+	'animation', 'animation-name', 'animation-duration', 'animation-timing-function', 'animation-fill-mode', 'animation-delay',
+	'animation-iteration-count', 'animation-direction', 'animation-play-state']);   // H26.8: the reveal's trace, declared
 // the pseudo-classes a still picture is never in; any other (`:first-child`, `:not()`) could match one, and is refused
 const POINTER = new Set(['hover', 'active', 'focus', 'focus-visible', 'focus-within', 'visited']);
 
@@ -59,14 +65,49 @@ function selectorOf(text) {
 	return { text, steps, spec };
 }
 
+/*
+H26.8 -- a sheet without its `@keyframes <name> { ... }` blocks, each read to its closing brace: braces counted outside strings, a
+string's escapes honoured, a backslash outside one escaping the character after it. A block or a string left open is refused, naming the
+sheet. Only that spelling is taken: any other at-rule -- a vendor variant, `@keyframes` with no name, `@media` -- is left in, for the
+refusal that follows.
+*/
+const KEYFRAMES = /@keyframes\s+(-?[A-Za-z_][\w-]*)\s*\{/y;
+function withoutKeyframes(css, name) {
+	let out = '', i = 0;
+	for (let at; (at = css.indexOf('@', i)) >= 0;) {
+		KEYFRAMES.lastIndex = at;
+		const head = KEYFRAMES.exec(css);
+		if (!head) { out += css.slice(i, at + 1); i = at + 1; continue; }
+		const open = (what) => new Error(`${name}: ${what} in @keyframes ${head[1]} is not closed -- the export refuses what it cannot read`);
+		let depth = 1, j = KEYFRAMES.lastIndex;
+		while (j < css.length && depth) {
+			const c = css[j];
+			if (c === '"' || c === "'") {
+				for (j++; j < css.length && css[j] !== c; j++) {
+					if (css[j] === '\\') j++;
+					else if (css[j] === '\n') throw open('a string');
+				}
+				if (j >= css.length) throw open('a string');
+			} else if (c === '\\') j++;
+			else if (c === '{') depth++;
+			else if (c === '}') depth--;
+			j++;
+		}
+		if (depth) throw open('a block');
+		out += css.slice(i, at);
+		i = j;
+	}
+	return out + css.slice(i);
+}
+
 /**
 Rules from stylesheets handed in as `[{ name, css }]`: each `:root` colour token read and written into every rule that names it, each
-selector list split, each selector parsed. An at-rule, or a token no sheet declares, is refused.
+selector list split, each selector parsed. An at-rule, or a token no sheet declares, is refused -- but `@keyframes <name>`, left out (H26.8).
 */
 export function rulesOfSheets(sheets) {
 	const tokens = new Map(), raw = [];
 	for (const { name, css: text } of sheets) {
-		const css = text.replace(/\/\*[\s\S]*?\*\//g, '');
+		const css = withoutKeyframes(text.replace(/\/\*[\s\S]*?\*\//g, ''), name);   // comments first, as ever; then the animations' blocks
 		if (/@[a-z]/i.test(css)) throw new Error(`${name} holds an at-rule, which the export does not apply -- teach server/svg-style.mjs, or move it`);
 		for (const m of css.matchAll(/([^{}]+)\{([^}]*)\}/g)) {
 			const selector = m[1].trim().replace(/\s+/g, ' ');
