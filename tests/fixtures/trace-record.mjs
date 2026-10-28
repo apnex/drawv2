@@ -7,10 +7,16 @@ under the trace rule and its export bytes. That record was not written when move
 the way 4.2 says: run once against an archive of `ca492da` outside the repository, node modules linked, a deterministic path length
 injected, committed alone before the move, and never regenerated -- the move's expectations are this record and the trace rule, never
 its own output. The record 4.2 names, when it is written, holds these steps among its own.
+REGENERATED once, at the verifier's SF1 on move 2, from a fresh archive of `ca492da` and committed alone again: five scenarios began no
+trace and two held none across their event, each line shown at a scenario's first pass and so never withheld; the route changed in a way
+the stand-in measure could not see; and the network was not attached. Each scenario now withholds its lines at its first step, names the
+event a running trace must hold (`event`), and changes a route the measure sees; the network is attached as the page attaches it.
 
 What it runs is the page's composition in Node, as the page composes it: a Model on the page's network with the maintained relations, a
-Selection, the renderer drawing into the canvas's scene with no root, and the real reveal at fixed clock instants, its every step closed
-by one pass of the reveal, as the loop runs it. What it reads is the scene's items alone, layer by layer.
+Selection, the renderer drawing into the canvas's scene with no root, the network attached -- its pipes drawn into a layer of this file's
+own, which the record does not read -- and the real reveal at fixed clock instants, its every step closed by one pass of the reveal, as
+the loop runs it and as the page's model change asks it, last of the model's listeners. What it reads is the scene's items alone, layer
+by layer.
 
   record.exports      every template and seed the side-by-side draws -- templates/, the parity board, the lab's boards -- each exported,
                       its bytes' SHA-256
@@ -84,6 +90,15 @@ export function board() {
 	return b;
 }
 
+// the pipe layer's nodes: the page's foreign layer, which the scene answers only with a root -- the network's pipes, which the record does not read
+function pipeNode(tag, attrs = {}, parent = null) {
+	const node = { tag, attrs: { ...attrs }, children: [], parent,
+		setAttribute(k, v) { node.attrs[k] = String(v); },
+		remove() { if (node.parent) node.parent.children = node.parent.children.filter((c) => c !== node); node.parent = null; } };
+	if (parent) parent.children.push(node);
+	return node;
+}
+
 // the page's composition, in Node, at a clock the steps set
 function world() {
 	const net = createPageNetwork();
@@ -94,9 +109,11 @@ function world() {
 	// the page hands the renderer its measure and settle before the move, and the reveal its measure after it: each takes what it reads
 	const renderer = new Renderer(model, null, { parts: PRODUCT_CANVAS, scene, platform: { lengthOf, settle: () => {} } });
 	selection.subscribe(() => renderer.reflectSelection(selection.list()));
+	// the network attached after the canvas, as the page attaches it (app/src/main.js): its paint on every change and mode, its settle
+	const host = net.attach({ model, renderer, selection, edit() {}, say() {}, el: pipeNode, pipeLayer: pipeNode('g', { id: 'pipes' }) });
 	const clock = { t: 0 }, said = { caption: null };
 	const reveal = new Reveal({ model, renderer, now: () => clock.t, onCaption: (c) => { said.caption = c; }, lengthOf });
-	const w = { model, selection, scene, renderer, reveal, clock, said, traces: [], hides: [] };
+	const w = { model, selection, scene, renderer, host, reveal, clock, said, traces: [], hides: [] };
 	// the traces each show began and the hides, logged as the reveal is asked: a show traces a line whose measured length is not zero
 	const show = reveal.show.bind(reveal), hide = reveal.hide.bind(reveal);
 	reveal.show = (id) => {
@@ -132,60 +149,90 @@ const REVEALED = [IDS.device, IDS.solid, IDS.control, 'link-fa0006', IDS.waypoin
 const at = (t, label, action = () => {}) => [label, t, action];
 const mover = (w, id) => w.model.get('node', w.model.get('link', id).src);
 /*
+The device raised: the source of the solid link and the control link, each route, and each `d`, longer -- the solid link's `M-360 0 L0 240`
+to `M-360 -240 L0 240`, which the stand-in sees, where a move along the line's own axis would leave the string as long.
+*/
+const RAISE = 240;
+const raised = (w) => { const n = w.model.get('node', IDS.device); w.model.set('node', n.id, { y: n.y - RAISE }); };
+/*
 Each scenario a beat or the reveal asked directly, through the events section 5's lifecycle names -- the trace's end, a hide, a hide and
 a show in one task, a route changed, a structural change of the line, a mode change each way, deletion and undo, a load, the record gone,
-velocity mode, a closed ring -- each step an action at its instant, then one pass.
+velocity mode, a closed ring -- each step an action at its instant, then one pass. Each first step falls before its lines' instant, so
+they are withheld and a later pass shows them, traced. `event` names the step whose instant a trace of `id` must be running at, begun
+before it and neither ended nor hidden since -- the event the scenario is for -- and `rerouted`, where that step leaves the line on a route
+whose measured length is not the trace's.
 */
 export const SCENARIOS = {
 	'a beat reveals a device, three links and a waypoint, each traced or faded, to its end': {
 		setup: (w) => { w.model.state.reveal = BEAT(1000, REVEALED); },
 		steps: [at(900, 'before the origin'), at(1000, 'the device'), at(1200, 'the solid link'), at(1300, 'the solid link mid-trace'), at(1400, 'the control link'),
 			at(1600, 'the down link'), at(1699, 'the solid link at its last instant'), at(1700, 'the solid link at its end'), at(1800, 'the waypoint'), at(2000, 'all but the down link ended'), at(2200, 'all ended'), at(3000, 'long after')],
+		event: { step: 'the solid link at its last instant', id: IDS.solid },
 	},
 	'a hide mid-trace ends it, and the next show begins it again': {
 		setup: (w) => { w.model.state.reveal = BEAT(1000, REVEALED); },
-		steps: [at(1300, 'the solid link mid-trace'), at(1350, 'withheld again by a later beat', (w) => { w.model.state.reveal = BEAT(5000, REVEALED); }), at(1400, 'a tick while withheld'), at(1500, 'another tick'),
-			at(5200, 'shown again by the later beat'), at(5300, 'traced again'), at(5800, 'ended')],
+		steps: [at(1100, 'the solid link withheld'), at(1300, 'the solid link shown, traced'), at(1350, 'withheld again by a later beat', (w) => { w.model.state.reveal = BEAT(5000, REVEALED); }),
+			at(1400, 'a tick while withheld'), at(1500, 'another tick'), at(5200, 'shown again by the later beat'), at(5300, 'traced again'), at(5699, 'its last instant'), at(5700, 'its end'), at(5800, 'after')],
+		event: { step: 'withheld again by a later beat', id: IDS.solid },
 	},
 	'a hide and a show in one task, directly': {
 		setup: () => {},
 		steps: [at(100, 'hidden', (w) => w.reveal.hide(IDS.solid)), at(200, 'shown: traced', (w) => w.reveal.show(IDS.solid)), at(400, 'hidden and shown in one task', (w) => { w.reveal.hide(IDS.solid); w.reveal.show(IDS.solid); }),
 			at(600, 'mid the second trace'), at(899, 'its last instant'), at(900, 'its end'), at(1000, 'after')],
+		event: { step: 'hidden and shown in one task', id: IDS.solid },
 	},
-	'a route changed mid-trace': {
+	'a route changed mid-trace, and the network settling with nothing changed': {
 		setup: (w) => { w.model.state.reveal = BEAT(1000, [IDS.solid], 0); },
-		steps: [at(1100, 'mid-trace'), at(1200, 'its source moved left', (w) => { const n = mover(w, IDS.solid); w.model.set('node', n.id, { x: n.x - 240 }); }), at(1300, 'still tracing'), at(1600, 'its end'), at(1700, 'after')],
+		steps: [at(900, 'withheld'), at(1000, 'traced'), at(1100, 'mid-trace'), at(1200, 'its source raised, its route longer', raised), at(1300, 'still tracing'),
+			at(1350, 'the network settles, every link redrawn, its route unchanged', (w) => w.host.redraw()), at(1499, 'its last instant'), at(1500, 'its end'), at(1600, 'after')],
+		event: { step: 'its source raised, its route longer', id: IDS.solid, rerouted: true },
 	},
 	'a structural change mid-trace: the line gains a head': {
 		setup: (w) => { w.model.state.reveal = BEAT(1000, [IDS.solid], 0); },
-		steps: [at(1100, 'mid-trace'), at(1200, 'directed forward', (w) => w.model.set('link', IDS.solid, { direction: 'forward' })), at(1300, 'still tracing'), at(1500, 'its end'), at(1600, 'after')],
+		steps: [at(900, 'withheld'), at(1000, 'traced'), at(1100, 'mid-trace'), at(1200, 'directed forward', (w) => w.model.set('link', IDS.solid, { direction: 'forward' })), at(1300, 'still tracing'),
+			at(1499, 'its last instant'), at(1500, 'its end'), at(1600, 'after')],
+		event: { step: 'directed forward', id: IDS.solid },
 	},
 	'a mode change each way mid-trace': {
 		setup: (w) => { w.model.state.reveal = BEAT(1000, [IDS.solid, IDS.device], 0); w.model.state.reveal.beats.push({ interval: 0, ids: [IDS.waypoint] }); },
-		steps: [at(1100, 'mid-trace, the waypoint withheld'), at(1150, 'to edit mode', (w) => w.renderer.setMode('edit')), at(1200, 'to run mode', (w) => w.renderer.setMode('run')),
-			at(1250, 'back to view', (w) => w.renderer.setMode('view')), at(1500, 'its end'), at(1600, 'after')],
+		steps: [at(900, 'withheld'), at(1000, 'traced'), at(1100, 'mid-trace'), at(1150, 'to edit mode', (w) => w.renderer.setMode('edit')), at(1200, 'to run mode', (w) => w.renderer.setMode('run')),
+			at(1250, 'back to view', (w) => w.renderer.setMode('view')), at(1499, 'its last instant'), at(1500, 'its end'), at(1600, 'after')],
+		event: { step: 'to edit mode', id: IDS.solid },
 	},
-	'deletion and undo mid-trace': {
+	'deletion and undo mid-trace, its route changed while it was gone': {
 		setup: (w) => { w.model.state.reveal = BEAT(1000, [IDS.solid], 0); },
-		steps: [at(1100, 'mid-trace'), at(1150, 'deleted', (w) => { w.held = structuredClone(w.model.get('link', IDS.solid)); w.model.del('link', IDS.solid); }),
-			at(1200, 'restored', (w) => w.model.put('link', w.held)), at(1500, 'its instant'), at(1600, 'after')],
+		steps: [at(900, 'withheld'), at(1000, 'traced'), at(1100, 'mid-trace'),
+			at(1150, 'deleted, then its source raised', (w) => { w.held = structuredClone(w.model.get('link', IDS.solid)); w.model.del('link', IDS.solid); raised(w); }),
+			at(1200, 'restored, drawn afresh on the longer route', (w) => w.model.put('link', w.held)), at(1300, 'mid'), at(1499, 'its last instant'), at(1500, 'its instant'), at(1600, 'after')],
+		event: { step: 'restored, drawn afresh on the longer route', id: IDS.solid, rerouted: true },
 	},
-	'a load mid-trace': {
+	'a load mid-trace, the document loaded on another route': {
 		setup: (w) => { w.model.state.reveal = BEAT(1000, [IDS.solid, IDS.control], 300); },
-		steps: [at(1100, 'mid-trace, the control link withheld'), at(1150, 'the document loaded again, the record with it', (w) => { const doc = board(); doc.reveal = BEAT(1000, [IDS.solid, IDS.control], 300); w.model.load(doc); }),
-			at(1350, 'the control link revealed'), at(1500, 'the solid link\'s instant'), at(1900, 'after')],
+		steps: [at(900, 'both withheld'), at(1000, 'the solid link traced'), at(1100, 'mid-trace, the control link withheld'),
+			at(1150, 'the document loaded again, the record with it, the device raised', (w) => {
+				const doc = board(); doc.reveal = BEAT(1000, [IDS.solid, IDS.control], 300);
+				doc.nodes = doc.nodes.map((n) => (n.id === IDS.device ? { ...n, y: n.y - RAISE } : n));
+				w.model.load(doc);
+			}),
+			at(1300, 'the control link revealed'), at(1499, 'the solid link\'s last instant'), at(1500, 'the solid link\'s instant'), at(1799, 'the control link\'s last instant'), at(1800, 'its end'), at(1900, 'after')],
+		event: { step: 'the document loaded again, the record with it, the device raised', id: IDS.solid, rerouted: true },
 	},
 	'the record gone mid-beat: what was withheld is shown, links traced': {
 		setup: (w) => { w.model.state.reveal = BEAT(1000, REVEALED); },
-		steps: [at(1300, 'mid-beat'), at(1350, 'the record gone', (w) => { w.model.state.reveal = null; }), at(1600, 'the last traces running'), at(1849, 'their last instant'), at(1850, 'their end'), at(2000, 'after')],
+		steps: [at(1100, 'early: the solid link withheld'), at(1300, 'the solid link traced'), at(1350, 'the record gone', (w) => { w.model.state.reveal = null; }), at(1600, 'the last traces running'),
+			at(1799, 'the solid link\'s last instant'), at(1800, 'its end'), at(1849, 'the others\' last instant'), at(1850, 'their end'), at(2000, 'after')],
+		event: { step: 'the record gone', id: IDS.solid },
 	},
-	'velocity mode: the duration is the length over the speed': {
-		setup: (w) => { w.reveal.trace = { mode: 'velocity', pxPerMs: 2 }; w.model.state.reveal = BEAT(1000, [IDS.solid, IDS.control], 0); },
-		steps: [at(1000, 'both traced'), at(1100, 'mid'), at(1200, 'its source moved', (w) => { const n = mover(w, IDS.solid); w.model.set('node', n.id, { x: n.x - 120 }); }), at(1400, 'later'), at(3000, 'after')],
+	'velocity mode: the duration is the length over the speed, kept when the route changes': {
+		setup: (w) => { w.reveal.trace = { mode: 'velocity', pxPerMs: 0.05 }; w.model.state.reveal = BEAT(1000, [IDS.solid, IDS.control], 0); },
+		steps: [at(900, 'both withheld'), at(1000, 'both traced'), at(1100, 'mid'), at(1200, 'its source raised, its route longer', raised), at(1400, 'later'),
+			at(1849, 'their last instant'), at(1850, 'their end'), at(3000, 'after')],
+		event: { step: 'its source raised, its route longer', id: IDS.solid, rerouted: true },
 	},
 	'a closed directed ring, its line offset': {
 		setup: (w) => { w.model.state.reveal = BEAT(1000, [IDS.ring], 0); },
-		steps: [at(900, 'withheld'), at(1000, 'traced'), at(1250, 'mid'), at(1500, 'its end'), at(1600, 'after')],
+		steps: [at(900, 'withheld'), at(1000, 'traced'), at(1250, 'mid'), at(1499, 'its last instant'), at(1500, 'its end'), at(1600, 'after')],
+		event: { step: 'mid', id: IDS.ring },
 	},
 };
 // every id a scenario's reveal names, so its items are read whole
