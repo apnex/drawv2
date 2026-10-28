@@ -14,7 +14,8 @@ as the page attaches it with its host hooks, and the movers and the reveal wired
 platform's semantics where draw's drawing code could tell (`makeDocument`), at fixed clock instants, a path's length the deterministic
 stand-in `lengthOf`. No timer and no frame runs by itself: a step's own calls, and the owners' passes and frames the step asks for.
 What it reads after each step is the scene's items, layer by layer, and for a foreign layer -- the network's pipes, the movers -- the
-content beneath the element the scene answers for it; never the composition's elements.
+content beneath the element the scene answers for it; and, beside 4.2's reading (the verifier's survivors on the record), the classes
+the renderer writes on the page's root, its modes and labels -- never an element the renderer drew.
 
 WHAT IT DRIVES: only calls `ca492da` answers -- a load, the commit boundary's edits and an answer's ops, the network's hooks, the
 selection, the overlay's hover and arming, Input's idle affordance, the held tools, the reveal's passes and the movers' frames. A call
@@ -37,9 +38,10 @@ THE RECORD, native-record.json:
                   (`UNREACHABLE`, each with why), its code lines and how many ran
   exports         each stored document's and coverage board's export, by its bytes' SHA-256
   scenarios       by name: its group; each trace a show began and each hide, with the step it fell in; and each step -- its label,
-                  instant, mode and boundary, the model's events, a load's puts by kind, its layers as a delta of the step before
-                  (`layersAt` rebuilds each in full: every item `[key, shapes]` in order, keys as `keyOf` reads them), the states
-                  and marks the owners hold (`held`, `marks`), the caption, and what the step answered (`note`)
+                  instant, mode and boundary, the model's events and after each the network's derivation (`net`: the model's pipes,
+                  and those an up link runs over -- rule P's `shared`), a load's puts by kind, its layers as a delta of the step
+                  before (`layersAt` rebuilds each in full: every item `[key, shapes]` in order, keys as `keyOf` reads them), the
+                  root's classes, the states and marks the owners hold (`held`, `marks`), the caption, and what the step answered
 
   node tests/fixtures/native-record.mjs --write    in the archive: records, measures Node's coverage of the drawing modules while it
                                                    does, refuses an unreached site or an unproved scenario, and writes the record
@@ -185,8 +187,51 @@ function installPlatform() {
 
 // ---- the page's composition, in Node
 
+/*
+The two layers the record reads as foreign at `ca492da`, by the names it holds them under: the network's pipes, which the pipes move
+makes a layer of the scene's own, and the movers'. The record keys and reads them by these names whatever the composition then declares.
+*/
+export const PIPES = 'pipes', MOVERS = 'movers';
 export const T0 = 1790000010000;   // the clock's instant at a world's start: the parity board's spawner, armed at 1790000000000, has packets in flight
 const NS = 'http://www.w3.org/2000/svg';
+/*
+Each load's puts by kind -- an item made, one put again in place, one moved -- counted as tests/fixtures/scene-parity.mjs counts them, on
+the renderer's scene: the scene is frozen, so the renderer is handed one that counts and answers as it does. A renderer holding the scene
+under any other name is refused, loudly: a count that silently stays zero would pass rule P's "no patch, no move" unasked.
+*/
+export function countPuts(renderer, scene, onPut) {
+	if (renderer?.scene !== scene) throw new Error('native record: the renderer holds the canvas\'s scene under no name the record can count (renderer.scene) -- a load\'s puts cannot be counted');
+	renderer.scene = { ...scene, put: (layer, key, shapes, place) => {
+		onPut(!scene.items(layer).some((x) => x.key === key) ? 'new' : place && 'before' in place ? 'move' : 'patch');
+		return scene.put(layer, key, shapes, place);
+	} };
+}
+/*
+The canvas parts as the page composes them, a pipe painter's descriptions counted (rule P, the pipes move): each time the renderer asks
+a painter of kind `pipe` to describe a pipe -- `shapes(entity, kit)` -- is one description of it, whether the painter answers parts or
+`null`, as it does in run mode or with an end gone. `ca492da` has no pipe painter, so nothing is counted there and the record holds no
+counts. Every other part is handed as it is.
+*/
+function describing(parts, counts) {
+	return parts.map((part) => {
+		if (!(part.painters ?? []).some((p) => p.kind === 'pipe' && typeof p.shapes === 'function')) return part;
+		counts.wired = true;
+		return { ...part, painters: part.painters.map((p) => (p.kind !== 'pipe' || typeof p.shapes !== 'function' ? p : { ...p,
+			shapes(entity, kit) { if (counts.described) counts.described[entity.id] = (counts.described[entity.id] ?? 0) + 1; return p.shapes.call(this, entity, kit); } })) };
+	});
+}
+// the network's derivation as rule P reads it: the model's pipes, and those an up link runs over, by id -- or null, where it cannot be asked
+function networkOf(w) {
+	const pipes = w.model.kinds.has('pipe') ? w.model.all('pipe').map((x) => x.id).sort() : [];
+	let shared = null;
+	try {
+		const view = w.session.network.view.of(w.model), on = new Set();
+		for (const l of w.model.all('link')) { const r = view.route(l.id); if (r) for (let i = 0; i < r.length - 1; i++) on.add(pipeId(r[i], r[i + 1])); }
+		shared = [...on].sort();
+	} catch { shared = null; }
+	return { pipes, shared };
+}
+
 /*
 One world: app/src/main.js's composition, its parts in its order. The commit boundary's preview plans with the page's kinds, its apply
 the page's; the network's edits reach it as the page's do; Input owns the overlay, the handles and what a load or a deletion drops.
@@ -203,11 +248,13 @@ export function world() {
 		const clock = { t: T0 };
 		const host = { addEventListener() {}, removeEventListener() {}, dispatchEvent() { return true; } };
 		const pageNetwork = createPageNetwork();
-		const c = composition.composeCanvas({ svg: root, scene: CANVAS_SCENE, kinds: PAGE_KINDS, parts: PRODUCT_CANVAS, network: pageNetwork.network, plugins: pageNetwork.plugins,
+		const counts = { described: null, wired: false };
+		const c = composition.composeCanvas({ svg: root, scene: CANVAS_SCENE, kinds: PAGE_KINDS, parts: describing(PRODUCT_CANVAS, counts), network: pageNetwork.network, plugins: pageNetwork.plugins,
 			defs, host, readoutEl: null, tools: true, help: null, now: () => clock.t, runRules: RUN_PRESSES });
-		const w = { platform, root, clock, ...c, session: pageNetwork.session, step: -1, events: [], traces: [], hides: [], aims: new Map(), puts: null };
+		const w = { platform, root, clock, ...c, counts, session: pageNetwork.session, step: -1, events: [], net: [], traces: [], hides: [], aims: new Map(), puts: null };
+		// the network attached as the page attaches it; its pipe layer handed while the composition declares one foreign (until the pipes move)
 		w.host = pageNetwork.attach({ model: c.model, renderer: c.renderer, selection: c.selection, edit: (label, entries) => c.history.commit(editOf(label, entries)),
-			pipeLayer: c.scene.layerElement(FOREIGN_LAYERS.network), el: painter.el, pending: () => false, say: () => {} });
+			...(FOREIGN_LAYERS.network ? { pipeLayer: c.scene.layerElement(FOREIGN_LAYERS.network) } : {}), el: painter.el, pending: () => false, say: () => {} });
 		/*
 		The aim the movers hold for each tower, by what their frames write, dropped as NS13's table drops it -- with the tower, on a load,
 		on leaving run mode -- before the movers' own listeners, which aim again within the same change.
@@ -215,15 +262,29 @@ export function world() {
 		c.model.onChange((action, kind, entity) => { if (action === 'load') w.aims.clear(); if (action === 'del') w.aims.delete(entity?.id); });
 		c.renderer.watchMode((m) => { if (m !== 'run') w.aims.clear(); });
 		w.movers = new Movers({ model: c.model, renderer: c.renderer, layer: c.scene.layerElement(FOREIGN_LAYERS.simulation), now: () => clock.t, el: painter.el });
-		const aimed = w.movers.aimTurrets.bind(w.movers);
-		w.movers.aimTurrets = (wd, alive) => { const r = aimed(wd, alive); for (const t of wd.towers) { const g = w.movers.glyphOf(t.id); if (g?.dataset?.aim !== undefined) w.aims.set(t.id, g.dataset.aim); } return r; };
+		/*
+		Each aim the movers write: through the renderer's mark where it has one (NS5, the painters move), or -- `ca492da` -- read back off
+		the glyph the movers wrote it on, after each frame's aiming; guarded, so the painters move, which deletes the movers' glyph cache,
+		changes nothing here.
+		*/
+		if (typeof c.renderer.mark === 'function') {
+			const mark = c.renderer.mark.bind(c.renderer);
+			c.renderer.mark = (id, name, value) => { if (name === 'aim') { if (value == null) w.aims.delete(id); else w.aims.set(id, String(value)); } return mark(id, name, value); };
+		} else if (typeof w.movers.aimTurrets === 'function') {
+			const aimed = w.movers.aimTurrets.bind(w.movers);
+			w.movers.aimTurrets = (wd, alive) => { const r = aimed(wd, alive); for (const t of wd.towers) { const g = w.movers.glyphOf?.(t.id); if (g?.dataset?.aim !== undefined) w.aims.set(t.id, g.dataset.aim); } return r; };
+		}
 		c.renderer.watchMode(() => w.movers.sync());
 		c.model.onChange(() => w.movers.sync());
 		w.reveal = new Reveal({ model: c.model, renderer: c.renderer, now: () => clock.t, onCaption: (text) => { w.caption = text ?? null; }, lengthOf: painter.pathLengthOf });
 		c.model.onChange(() => w.reveal.sync());
-		// what the record reads beside the scene, none of it drawing: the model's events, each trace a show began and each hide
-		c.model.onChange((action, kind, entity) => w.events.push([action, kind, action === 'load' ? null : entity?.id ?? null]));
-		const show = w.reveal.show.bind(w.reveal), hide = w.reveal.hide.bind(w.reveal);
+		/*
+		What the record reads beside the scene, none of it drawing: the model's events, and after each the network's derivation as rule P
+		reads it (4.6) -- the pipes the model holds, and those an up link runs over (`shared`, today's `occupied` in plugins/network/host.mjs)
+		-- each trace a show began, and each hide.
+		*/
+		c.model.onChange((action, kind, entity) => { w.events.push([action, kind, action === 'load' ? null : entity?.id ?? null]); w.net.push(networkOf(w)); });
+		const show = w.reveal.show.bind(w.reveal), hide = w.reveal.hide.bind(w.reveal);   // `byId`, which the painters move deletes, read guarded
 		w.reveal.show = (id) => {
 			const dom = w.renderer.byId?.(id);
 			if (dom && dom.tagName === 'path') { const len = lengthOf(dom.getAttribute('d')); if (len > 0) w.traces.push({ id, t: clock.t, step: w.step, len, ms: traceOf(w.reveal.trace, len).ms }); }
@@ -242,16 +303,7 @@ export function world() {
 			w.renderer.setState = (id, cls, on) => { if (on) holds(id).add(cls); else holds(id).delete(cls); return setState(id, cls, on); };
 			w.renderer.clearState = (id, ...classes) => { for (const cls of classes) holds(id).delete(cls); return clearState(id, ...classes); };
 		}
-		/*
-		Each load's puts by kind -- an item made, one put again in place, one moved -- counted as tests/fixtures/scene-parity.mjs counts
-		them, on the renderer's scene: the scene is frozen, so the renderer is handed one that counts and answers as it does.
-		*/
-		const scene = c.scene;
-		const counted = { ...scene, put: (layer, key, shapes, place) => {
-			if (w.puts) w.puts[!scene.items(layer).some((x) => x.key === key) ? 'new' : place && 'before' in place ? 'move' : 'patch']++;
-			return scene.put(layer, key, shapes, place);
-		} };
-		if (c.renderer.scene === scene) c.renderer.scene = counted;
+		countPuts(c.renderer, c.scene, (kind) => { if (w.puts) w.puts[kind]++; });
 		w.reveal.sync();
 		return w;
 	} catch (e) { platform.restore(); throw e; }
@@ -275,7 +327,7 @@ part; an editing visual its kind, where both key it by a serial too; a pipe's gr
 */
 export function keyOf(layer, key, shapes) {
 	const first = shapes[0];
-	if (layer === FOREIGN_LAYERS.network && first?.attrs?.['data-pipe']) return first.attrs['data-pipe'];
+	if (layer === PIPES && first?.attrs?.['data-pipe']) return first.attrs['data-pipe'];
 	const m = /^(.*)\/[^/]+$/.exec(key);
 	if (!m) return key;
 	if (ENTITY.test(m[1])) return `${m[1]}/${tokensOf(first?.attrs?.class)[0] ?? first?.tag}`;
@@ -404,6 +456,8 @@ export const arm = (w, mods) => w.input.overlayUi.arm({ altKey: !!mods.alt, ctrl
 export const replug = (w, id, on = true) => STATES.set(w, id, 'replugging', on);
 export const load = (w, doc) => w.model.load(structuredClone(doc));
 
+// whether the composition holds a pipe painter whose descriptions are counted (`describing`)
+const counting = (w) => w.counts.wired;
 function heldStates(w) {
 	const held = new Map();
 	const add = (id, cls) => { if (!held.has(id)) held.set(id, new Set()); held.get(id).add(cls); };
@@ -459,7 +513,8 @@ export function runScenario(sc) {
 		for (const s of sc.steps) {
 			if (s.t !== undefined) w.clock.t = s.t;
 			w.step = steps.length;
-			w.events = [];
+			w.events = []; w.net = [];
+			w.counts.described = {};
 			const loading = s.loads === true;
 			w.puts = loading ? { new: 0, patch: 0, move: 0 } : null;
 			const note = s.action(w, ctx);
@@ -467,9 +522,10 @@ export function runScenario(sc) {
 			const layers = layersOf(w);
 			for (const l of Object.keys(layers)) layers[l] = keyed(layers[l]);
 			steps.push({ label: s.label, t: w.clock.t, mode: w.renderer.mode, ...(s.boundary ? { boundary: s.boundary } : {}), events: w.events,
-				...(puts ? { puts } : {}), layers: deltaOf(prev, layers), held: heldStates(w),
-				marks: { unrevealed: [...w.reveal.hidden].sort(), aims: Object.fromEntries([...w.aims].sort(([a], [b]) => (a < b ? -1 : 1))) }, caption: w.caption ?? null,
-				...(note !== undefined ? { note } : {}), ...(w.describes ? { describes: w.describes() } : {}) });
+				net: { events: w.net, pipes: networkOf(w).pipes },
+				...(puts ? { puts } : {}), layers: deltaOf(prev, layers), root: w.root.getAttribute('class') ?? '', held: heldStates(w),
+				marks: { unrevealed: [...(w.reveal.hidden ?? [])].sort(), aims: Object.fromEntries([...w.aims].sort(([a], [b]) => (a < b ? -1 : 1))) }, caption: w.caption ?? null,
+				...(note !== undefined ? { note } : {}), ...(counting(w) ? { describes: w.counts.described } : {}) });
 			prev = layers;
 		}
 		return JSON.parse(JSON.stringify({ steps, traces: w.traces, hides: w.hides }));
@@ -481,7 +537,7 @@ export function runScenario(sc) {
 const itemIn = (layers, key) => { for (const items of Object.values(layers)) { const f = items.find(([k]) => k === key); if (f) return f[1]; } return null; };
 export const ownOf = (layers, id) => itemIn(layers, id)?.[0] ?? null;
 export const classOf = (shape) => tokensOf(shape?.attrs?.class);
-const pipeGroupOf = (layers, id) => (layers[FOREIGN_LAYERS.network] ?? []).find(([k]) => k === id)?.[1][0] ?? null;
+const pipeGroupOf = (layers, id) => (layers[PIPES] ?? []).find(([k]) => k === id)?.[1][0] ?? null;
 export const pipeLineOf = (layers, id) => pipeGroupOf(layers, id)?.children?.find((c) => c.attrs?.id === id) ?? null;
 const under = (layers, id) => classOf(pipeGroupOf(layers, id)).includes('under');
 function* shapesIn(layers) {
@@ -494,6 +550,18 @@ const at = (rec, label) => { const k = rec.steps.findIndex((s) => s.label === la
 const itemCount = (layers) => Object.entries(layers).reduce((n, [, items]) => n + items.length, 0);
 // a scenario's proof: each claim and whether it holds, its failures named
 const claims = (...list) => list.filter(([ok]) => !ok).map(([, what]) => what);
+/*
+A boundary seen to happen at step `k` of a record: its event on the entity `id`; or its change of mode, and the drawing changed by it --
+the record's board holds a panel, whose sockets edit mode draws, and run mode draws its run picture, so every mode change redraws.
+*/
+export function boundaryHappened(rec, k, id) {
+	const s = rec.steps[k], prev = rec.steps[k - 1], on = (action) => s.events.some(([a, , e]) => a === action && e === id);
+	const redrawn = Object.keys(s.layers).length > 0;
+	return { structural: on('set'), mode: !!prev && prev.mode !== s.mode && redrawn, 'leave-run': !!prev && prev.mode === 'run' && s.mode !== 'run' && redrawn, delete: on('del'), undo: on('put'),
+		load: s.events.some(([a]) => a === 'load') }[s.boundary] ?? false;
+}
+// every boundary of a record seen to happen, each a claim
+const boundariesSeen = (rec, id) => rec.steps.flatMap((s, k) => (s.boundary ? [[boundaryHappened(rec, k, id), `step ${k} (${s.label}): its ${s.boundary} boundary seen on ${id}`]] : []));
 
 // ---- the scenarios, by group (section 4.2's table)
 
@@ -530,12 +598,37 @@ function loadScenario(name, doc) {
 		...(FEATURES[name]?.(L[0]) ?? [])) };
 }
 
+/*
+A DOCUMENT SWAPPED for one lacking what was drawn -- a zone, a device, a waypoint, the links at them and two pipes -- in each mode: each
+load must take away every item of an entity the new document lacks, as the next fresh load draws it.
+*/
+const SWAPPED_OUT = { zone: [IDS.zone], node: [IDS.echo, IDS.endpoint], link: [IDS.down, IDS.HEALS, 'link-fa0008'], pipe: [H, pipeId(IDS.delta, IDS.endpoint)] };
+const GONE = Object.values(SWAPPED_OUT).flat();
+function swappedBoard() {
+	const b = recordBoard();
+	b.zones = b.zones.filter((z) => !SWAPPED_OUT.zone.includes(z.id));
+	b.nodes = b.nodes.filter((n) => !SWAPPED_OUT.node.includes(n.id));
+	b.links = b.links.filter((l) => !SWAPPED_OUT.link.includes(l.id));
+	b.pipes = b.pipes.filter((x) => !SWAPPED_OUT.pipe.includes(x.id));
+	return b;
+}
+const drawnOf = (layers, id) => Object.values(layers).some((items) => items.some(([k]) => k === id || k.startsWith(`${id}/`)));
+const SWAP = { group: 'loads', name: 'loads: the record\'s board swapped for one lacking a zone, a device, a waypoint, their links and two pipes, in view, edit and run', doc: () => recordBoard(), focus: GONE,
+	steps: ['view', 'edit', 'run'].flatMap((m, i) => [...(i ? [step(`to ${m} mode`, mode(m), { boundary: 'mode' })] : []), loadStep(`the whole board loaded in ${m}`),
+		step(`swapped in ${m}: what it lacks taken away`, (w) => load(w, swappedBoard()), { loads: true, boundary: 'load' })]),
+	proves: (rec, L) => claims(...['view', 'edit', 'run'].flatMap((m) => { const whole = at(rec, `the whole board loaded in ${m}`), swapped = at(rec, `swapped in ${m}: what it lacks taken away`);
+		const shown = GONE.filter((id) => m !== 'run' || !id.startsWith('pipe-'));   // run mode draws no pipe
+		return [[rec.steps[swapped].mode === m && rec.steps[swapped].events.some(([a]) => a === 'load') && rec.steps[swapped].puts?.new > 0, `${m}: the swap loaded`],
+			...shown.map((id) => [drawnOf(L[whole], id) && !drawnOf(L[swapped], id), `${m}: ${id} drawn by the whole board, gone after the swap`])]; })) };
+
 // a trigger authored in the tab, then its answer settling the network -- the two calls the page makes for an edit of its own
 const authored = (label, entries) => [
 	step(label, (w) => { edit(w, label, entries(w)); }),
 	step(`${label}: its answer settles the board`, (w) => w.host.settled({ label }, { ok: true, version: 2, ops: [] })),
 ];
 const settledLabel = (label) => `${label}: its answer settles the board`;
+// the answer to an edit made before, settling the board as its own step: the network told, every link redrawn and the selection reflected
+const settleStep = (label, request = { label }) => step(settledLabel(label), (w) => w.host.settled(request, { ok: true, version: 2, ops: [] }));
 const recordDoc = () => recordBoard();
 const withReveal = (reveal) => () => ({ ...recordBoard(), reveal });
 
@@ -574,12 +667,14 @@ const PIPE_TRIGGERS = {
 			return claims([under(L[at(rec, settledLabel('another pipe opens a route over it'))], H), 'under once the other pipe opens the over link\'s way'],
 				[swept.events.some(([a, kind, id]) => a === 'del' && kind === 'pipe' && id === pipeId(IDS.W, IDS.foxtrot)), 'the other pipe swept'], [!under(L[at(rec, settledLabel('the route\'s link deleted, the pipe swept'))], H), 'not under after']); } },
 	'a transit off and on': { steps: [...authored('a pipe opens the over link\'s way through W', () => [E.put('pipe', pipeEntity(IDS.W, IDS.foxtrot, 'hand'))]),
-		step('transit off at W', (w) => { w.session.toggleTransit([{ kind: 'node', ...w.model.get('node', IDS.W) }]); w.host.settled({ label: 'transit' }, { ok: true, version: 3, ops: [] }); }),
-		step('transit on at W', (w) => { w.session.toggleTransit([{ kind: 'node', ...w.model.get('node', IDS.W) }]); w.host.settled({ label: 'transit' }, { ok: true, version: 4, ops: [] }); })],
+		// the toggle, its edit applied in the tab, then the answer settling the board: apart, so what the edit alone redraws is read before the settle redraws every link
+		step('transit off at W', (w) => w.session.toggleTransit([{ kind: 'node', ...w.model.get('node', IDS.W) }])), settleStep('transit off at W', { label: 'transit' }),
+		step('transit on at W', (w) => w.session.toggleTransit([{ kind: 'node', ...w.model.get('node', IDS.W) }])), settleStep('transit on at W', { label: 'transit' })],
 		proves: (rec, L) => claims([rec.steps[at(rec, 'transit off at W')].events.some(([a, kind, id]) => a === 'set' && id === IDS.W), 'W\'s transit set off'],
-			[under(L[at(rec, 'transit off at W') - 1], H) && !under(L[at(rec, 'transit off at W')], H), 'the route over H cut at W'], [under(L[at(rec, 'transit on at W')], H), 'and run over it again once W passes']) },
+			[under(L[at(rec, 'transit off at W') - 1], H) && !under(L[at(rec, 'transit off at W')], H), 'the route over H cut at W, by the edit itself'],
+			[rec.steps[at(rec, 'transit on at W')].events.some(([, , id]) => id === IDS.W) && under(L[at(rec, 'transit on at W')], H), 'and run over it again once W passes, by the edit itself']) },
 	'a load': { steps: [loadStep('loaded again')],
-		proves: (rec, L) => claims([rec.steps[1].events.some(([a]) => a === 'load'), 'the model loaded'], [JSON.stringify(L[1][FOREIGN_LAYERS.network]) === JSON.stringify(L[0][FOREIGN_LAYERS.network]) && L[1][FOREIGN_LAYERS.network].length > 0, 'the pipes drawn again as before']) },
+		proves: (rec, L) => claims([rec.steps[1].events.some(([a]) => a === 'load'), 'the model loaded'], [JSON.stringify(L[1][PIPES]) === JSON.stringify(L[0][PIPES]) && L[1][PIPES].length > 0, 'the pipes drawn again as before']) },
 	'an answer accepted with links listed before pipes': { steps: [step('an answer: a link, then the pipe its way needs', (w) => answer(w, [
 		{ op: 'put', kind: 'link', entity: { id: 'link-fb0005', name: 'answered', src: IDS.charlie, dst: IDS.endpoint, direction: 'forward', order: 20 } },
 		{ op: 'put', kind: 'pipe', entity: pipeEntity(IDS.charlie, IDS.endpoint, 'hand') }]))],
@@ -597,7 +692,7 @@ const PIPE_TRIGGERS = {
 		return { ok: verdict.ok, entries: verdict.entries.length };
 	})], proves: (rec) => claims([rec.steps[1].events.length === 0, 'no model event: nothing committed'], [rec.steps[1].note?.ok === false && rec.steps[1].note?.entries === 0, 'the judge made no link and laid no pipe']) },
 	'run mode and back': { steps: [step('to run mode', mode('run'), { boundary: 'mode' }), step('back to view', mode('view'), { boundary: 'mode' })],
-		proves: (rec, L) => claims([L[0][FOREIGN_LAYERS.network].length > 0 && L[1][FOREIGN_LAYERS.network].length === 0, 'no pipe in run mode'], [JSON.stringify(L[2][FOREIGN_LAYERS.network]) === JSON.stringify(L[0][FOREIGN_LAYERS.network]), 'every pipe back after']) },
+		proves: (rec, L) => claims([L[0][PIPES].length > 0 && L[1][PIPES].length === 0, 'no pipe in run mode'], [JSON.stringify(L[2][PIPES]) === JSON.stringify(L[0][PIPES]), 'every pipe back after']) },
 	'the pipe selected, hovered and armed': { steps: [step('selected', (w) => w.selection.set([H])), step('hovered', (w) => hover(w, 'pipe', H)), step('armed', (w) => arm(w, { alt: true })),
 		step('disarmed and unhovered', (w) => { w.input.overlayUi.disarm(); hover(w, 'pipe', H, false); }), step('deselected', (w) => w.selection.set([]))],
 		proves: (rec, L) => claims([has(pipeLineOf(L[at(rec, 'selected')], H), 'selected'), 'its line selected'], [has(pipeLineOf(L[at(rec, 'hovered')], H), 'hover'), 'hovered'], [has(pipeLineOf(L[at(rec, 'armed')], H), 'armed'), 'armed'],
@@ -610,9 +705,11 @@ const PIPE_COMBINED = {
 			return claims([ev.includes('set node') && ev.includes('put link') && ev.includes('del pipe'), 'a node set, a link put and a pipe deleted in one step'], [under(L[at(rec, settledLabel(label))], H), 'H run over after']); } },
 	'a mode change with a pipe hovered and selected': { steps: [step('selected and hovered', (w) => { w.selection.set([H]); hover(w, 'pipe', H); }), step('to edit mode', mode('edit'), { boundary: 'mode' }),
 		step('to run mode', mode('run'), { boundary: 'mode' }), step('back to view', mode('view'), { boundary: 'mode' })],
-		proves: (rec, L) => claims([has(pipeLineOf(L[1], H), 'hover') && has(pipeLineOf(L[1], H), 'selected'), 'hovered and selected before the change']) },
-	'a load with a pipe selected': { steps: [step('selected', (w) => w.selection.set([H])), step('the tab\'s document loaded again', (w) => load(w, w.model.toJSON()), { loads: true })],
-		proves: (rec, L) => claims([has(pipeLineOf(L[1], H), 'selected'), 'selected before the load'], [rec.steps[2].held[H]?.includes('selected'), 'still selected after it']) },
+		proves: (rec, L) => claims([has(pipeLineOf(L[1], H), 'hover') && has(pipeLineOf(L[1], H), 'selected'), 'hovered and selected before the change'], ...boundariesSeen(rec, H),
+			...rec.steps.slice(2).map((s, i) => [['hover', 'selected'].every((c) => s.held[H]?.includes(c)), `step ${i + 2} (${s.label}): hovered and selected still held`])) },
+	'a load with a pipe selected': { steps: [step('selected', (w) => w.selection.set([H])), step('the tab\'s document loaded again', (w) => load(w, w.model.toJSON()), { loads: true, boundary: 'load' })],
+		proves: (rec, L) => claims([has(pipeLineOf(L[1], H), 'selected'), 'selected before the load'], [rec.steps[2].events.some(([a]) => a === 'load'), 'the model loaded'],
+			[rec.steps[2].held[H]?.includes('selected'), 'still selected after it']) },
 };
 
 /*
@@ -630,7 +727,6 @@ function deleteWithUndoStep(label, kind, id) {
 }
 // the undo's answer, applied and settled as the page applies an answer (`answer`)
 const undoStep = (label) => step(label, (w, ctx) => answer(w, ctx.undo, { label: 'undo' }), { boundary: 'undo' });
-const settleStep = (label) => step(settledLabel(label), (w) => w.host.settled({ label }, { ok: true, version: 2, ops: [] }));
 
 /*
 STATES (NS13): each state, set as its owner sets it on the page, held across each boundary -- a structural change of its entity, a mode
@@ -645,15 +741,21 @@ const STRUCTURAL = {
 	[IDS.undirected]: (w) => edit(w, 'direct', [E.set('link', IDS.undirected, { direction: 'forward' })]),
 	[IDS.tower]: (w) => edit(w, 'reshape', [E.set('node', IDS.tower, { span: { cols: 2, rows: 1 } })]),
 };
+/*
+Each state, its entity, how its owner sets it, and the boundaries it is still held after (`keeps`), as NS13's table has them: hover, the
+idle ring and arming through a structural and a mode change, Input dropping them with their entity and on a load; a link end's drag
+state through all but a load, which cancels the gesture; the selection's and the reflections' through a load, which the selection
+survives, the selection pruned with a deleted entity -- the blockers marked again once the deleted blocker is put back.
+*/
 const STATE_CASES = {
-	hover: { id: IDS.device, cls: 'hover', set: (w) => hover(w, 'node', IDS.device) },
-	'the idle ring': { id: IDS.device, cls: 'linkband', set: (w) => { hover(w, 'node', IDS.device); idle(w, 'node', IDS.device); } },
-	armed: { id: IDS.device, cls: 'armed', set: (w) => { hover(w, 'node', IDS.device); arm(w, { alt: true }); } },
-	'armed-clone': { id: IDS.device, cls: 'armed-clone', set: (w) => { hover(w, 'node', IDS.device); arm(w, { ctrl: true }); } },
-	'a link end\'s drag state': { id: IDS.link, cls: 'replugging', set: (w) => replug(w, IDS.link), onLoad: (w) => replug(w, IDS.link, false) },
-	selected: { id: IDS.device, cls: 'selected', set: (w) => w.selection.set([IDS.device]) },
-	'on-selected-path': { id: IDS.waypoint, cls: 'on-selected-path', set: (w) => w.selection.set(['link-fa0002']) },
-	blocking: { id: IDS.blocker, cls: 'blocking', set: (w) => w.selection.set([IDS.BLOCKED]) },
+	hover: { id: IDS.device, cls: 'hover', set: (w) => hover(w, 'node', IDS.device), keeps: ['structural', 'mode'] },
+	'the idle ring': { id: IDS.device, cls: 'linkband', set: (w) => { hover(w, 'node', IDS.device); idle(w, 'node', IDS.device); }, keeps: ['structural', 'mode'] },
+	armed: { id: IDS.device, cls: 'armed', set: (w) => { hover(w, 'node', IDS.device); arm(w, { alt: true }); }, keeps: ['structural', 'mode'] },
+	'armed-clone': { id: IDS.device, cls: 'armed-clone', set: (w) => { hover(w, 'node', IDS.device); arm(w, { ctrl: true }); }, keeps: ['structural', 'mode'] },
+	'a link end\'s drag state': { id: IDS.link, cls: 'replugging', set: (w) => replug(w, IDS.link), onLoad: (w) => replug(w, IDS.link, false), keeps: ['structural', 'mode', 'delete', 'undo'] },
+	selected: { id: IDS.device, cls: 'selected', set: (w) => w.selection.set([IDS.device]), keeps: ['structural', 'mode', 'load'] },
+	'on-selected-path': { id: IDS.waypoint, cls: 'on-selected-path', set: (w) => w.selection.set(['link-fa0002']), keeps: ['structural', 'mode', 'load'] },
+	blocking: { id: IDS.blocker, cls: 'blocking', set: (w) => w.selection.set([IDS.BLOCKED]), keeps: ['structural', 'mode', 'load', 'undo'] },
 };
 const BOUNDARIES = {
 	'a structural change': (c) => [step('its entity changed in structure', (w) => STRUCTURAL[c.id](w), { boundary: 'structural' }), settleStep('its entity changed in structure')],
@@ -665,9 +767,31 @@ const BOUNDARIES = {
 };
 function stateScenario(name, c, boundary) {
 	return { group: 'states', name: `states: ${name}, held across ${boundary}`, doc: recordDoc, focus: [c.id], steps: [loadStep('loaded'), step(`${c.cls} set`, c.set), ...BOUNDARIES[boundary](c)],
-		proves: (rec, L) => { const k = at(rec, `${c.cls} set`); return claims([classOf(ownOf(L[k], c.id)).includes(c.cls), `${c.cls} shown on ${c.id} once set`], [rec.steps[k].held[c.id]?.includes(c.cls), `${c.cls} held by its owner`],
-			[rec.steps.slice(k + 1).some((s) => s.boundary), 'a boundary after it']); } };
+		proves: (rec, L) => { const k = at(rec, `${c.cls} set`);
+			return claims([classOf(ownOf(L[k], c.id)).includes(c.cls), `${c.cls} shown on ${c.id} once set`], [rec.steps[k].held[c.id]?.includes(c.cls), `${c.cls} held by its owner`],
+				[rec.steps.slice(k + 1).some((s) => s.boundary), 'a boundary after it'], ...boundariesSeen(rec, c.id),
+				...rec.steps.flatMap((s, i) => (s.boundary ? [[!!rec.steps[i].held[c.id]?.includes(c.cls) === c.keeps.includes(s.boundary),
+					`step ${i} (${s.label}): ${c.cls} ${c.keeps.includes(s.boundary) ? 'still held' : 'let go'} after the ${s.boundary} boundary, as NS13 has it`]] : []))); } };
 }
+/*
+A state let go: a selection carrying a reflection changed, so its marks are taken away, then given again, then cleared; and the pointer
+leaving a device showing its idle ring -- each state shown, then not, its owner holding it, then not.
+*/
+const shownHeld = (rec, L, k, id, cls, on) => [[classOf(ownOf(L[k], id)).includes(cls) === on && !!rec.steps[k].held[id]?.includes(cls) === on, `step ${k} (${rec.steps[k].label}): ${cls} ${on ? 'shown and held' : 'neither shown nor held'} on ${id}`]];
+const LET_GO = {
+	'on-selected-path, let go as the selection changes, then clears': { id: IDS.waypoint, cls: 'on-selected-path', steps: [
+		['a link through it selected: lit', (w) => w.selection.set(['link-fa0002']), true], ['a link elsewhere selected: let go', (w) => w.selection.set([IDS.down]), false],
+		['another link through it selected: lit again', (w) => w.selection.set(['link-fa0003']), true], ['the selection cleared: let go', (w) => w.selection.set([]), false]] },
+	'blocking, let go as the selection changes, then clears': { id: IDS.blocker, cls: 'blocking', steps: [
+		['the link it blocks selected: blocking', (w) => w.selection.set([IDS.BLOCKED]), true], ['a down link nothing blocks selected: let go', (w) => w.selection.set([IDS.down]), false],
+		['the link it blocks selected again', (w) => w.selection.set([IDS.BLOCKED]), true], ['the selection cleared: let go', (w) => w.selection.set([]), false]] },
+	'the idle ring, let go as the pointer leaves': { id: IDS.device, cls: 'linkband', steps: [
+		['hovered: its idle ring', (w) => { hover(w, 'node', IDS.device); idle(w, 'node', IDS.device); }, true], ['the pointer leaves it: its ring let go', (w) => hover(w, 'node', IDS.device, false), false],
+		['hovered again', (w) => { hover(w, 'node', IDS.device); idle(w, 'node', IDS.device); }, true], ['the pointer leaves again', (w) => hover(w, 'node', IDS.device, false), false]] },
+};
+const letGoScenario = (name, c) => ({ group: 'states', name: `states: ${name}`, doc: recordDoc, focus: [c.id], steps: [loadStep('loaded'), ...c.steps.map(([label, action]) => step(label, action))],
+	proves: (rec, L) => claims(...c.steps.flatMap(([label, , on]) => shownHeld(rec, L, at(rec, label), c.id, c.cls, on)),
+		...(c.cls === 'linkband' ? c.steps.filter(([, , on]) => !on).flatMap(([label]) => shownHeld(rec, L, at(rec, label), c.id, 'hover', false)) : [])) });
 
 /*
 MARKS (NS13): the reveal's `unrevealed` on a device and on a waypoint, and its `trace` on a link, across a structural change, a mode
@@ -680,7 +804,12 @@ function unrevealedScenario(id, boundary) {
 	const c = { id };
 	return { group: 'marks', name: `marks: unrevealed on ${id === IDS.device ? 'a device' : 'a waypoint'}, across ${boundary}`, doc: withReveal(BEAT(T0 + 600000, [id])), focus: [id],
 		steps: [loadStep('loaded, withheld'), step('a pass', pass), ...markThen(BOUNDARIES[boundary](c), (s) => step(`${s.label}: the reveal's next pass`, pass))],
-		proves: (rec, L) => claims([ownOf(L[at(rec, 'a pass')], id)?.attrs['data-unrevealed'] !== undefined, `${id} marked unrevealed before the boundary`], [rec.steps[at(rec, 'a pass')].marks.unrevealed.includes(id), 'held by the reveal']) };
+		proves: (rec, L) => claims([ownOf(L[at(rec, 'a pass')], id)?.attrs['data-unrevealed'] !== undefined, `${id} marked unrevealed before the boundary`], [rec.steps[at(rec, 'a pass')].marks.unrevealed.includes(id), 'held by the reveal'],
+			...boundariesSeen(rec, id),
+			// the reveal holds it withheld throughout, and each next pass marks it wherever it is drawn
+			...rec.steps.slice(at(rec, 'a pass')).map((s, i) => [s.marks.unrevealed.includes(id), `step ${i + at(rec, 'a pass')} (${s.label}): still withheld by the reveal`]),
+			...rec.steps.flatMap((s, i) => (s.label.endsWith(': the reveal\'s next pass') ? [[!ownOf(L[i], id) ? rec.steps.slice(0, i).filter((x) => x.boundary).at(-1)?.boundary === 'delete' : ownOf(L[i], id).attrs['data-unrevealed'] !== undefined,
+				`step ${i} (${s.label}): marked again where it is drawn`]] : []))) };
 }
 function traceScenario(boundary) {
 	const id = IDS.undirected, c = { id };
@@ -690,7 +819,10 @@ function traceScenario(boundary) {
 			step('past its end: a pass', pass, { t: T0 + 1600 })],
 		proves: (rec, L) => { const k = at(rec, 'shown: its trace begun'); return claims([rec.traces.some((x) => x.id === id && x.t === T0 + 1000), 'its trace begun by a show'],
 			[ownOf(L[k], id)?.attrs.style !== undefined || ownOf(L[k], id)?.attrs['data-trace'] !== undefined, 'the line traced before the boundary'],
-			[rec.steps.some((s, i) => s.boundary && s.t < rec.traces[0].t + rec.traces[0].ms && i > k), 'a boundary inside the trace']); } };
+			[rec.steps.some((s, i) => s.boundary && s.t < rec.traces[0].t + rec.traces[0].ms && i > k), 'a boundary inside the trace'], ...boundariesSeen(rec, id),
+			// today's trace kept on the element a structural or mode change keeps; gone with the line a deletion takes, and from one an undo or a load draws afresh
+			...rec.steps.flatMap((s, i) => (s.boundary ? [[(ownOf(L[i], id)?.attrs.style !== undefined) === ['structural', 'mode'].includes(s.boundary),
+				`step ${i} (${s.label}): the trace ${['structural', 'mode'].includes(s.boundary) ? 'kept' : 'gone'} after the ${s.boundary} boundary`]] : []))); } };
 }
 function aimScenario(boundary) {
 	const id = IDS.tower;
@@ -704,7 +836,10 @@ function aimScenario(boundary) {
 		steps: [loadStep('loaded'), step('to run mode', mode('run'), { boundary: 'mode' }), step('a frame', frame, { t: T0 + 200 }),
 			...AIM.flatMap((s) => (s.boundary === 'leave-run' ? [s] : [s, step(`${s.label}: the movers' next frame`, frame, { t: s.t + 100 })]))],
 		proves: (rec, L) => { const k = at(rec, 'a frame'); return claims([glyphOf(ownOf(L[k], id))?.attrs['data-aim'] !== undefined, 'the tower aimed before the boundary'], [rec.steps[k].marks.aims[id] !== undefined, 'the aim held by the movers'],
-			[(L[k][FOREIGN_LAYERS.simulation] ?? []).length > 0, 'the movers drawing']); } };
+			[(L[k][MOVERS] ?? []).length > 0, 'the movers drawing'], ...boundariesSeen(rec, id),
+			// aimed again within the change that redraws, restores or reloads the tower; dropped with it, and on leaving run mode
+			...rec.steps.slice(k + 1).flatMap((s, i) => (s.boundary ? [[(s.marks.aims[id] !== undefined) === ['structural', 'undo', 'load'].includes(s.boundary),
+				`step ${k + 1 + i} (${s.label}): the aim ${['structural', 'undo', 'load'].includes(s.boundary) ? 'held' : 'dropped'} after the ${s.boundary} boundary`]] : []))); } };
 }
 
 /*
@@ -739,10 +874,11 @@ const TRANSIENT = { group: 'transient targets', name: 'transient targets: a zone
 /*
 CHANGES IN PLACE, beyond section 4.2's table: what its coverage needs that no group of the table changes -- a zone and a group updated
 in place, a hull following its member, a link's head and leg taken away by an update, a closed ring's offset written again by one, and
-the labels toggled (a class of the page's root, which the record does not read). Its own group, named for what it is.
+a ring's head and offset taken away by an update and written again, and the labels toggled (a class of the page's root, which the
+record reads beside the scene). Its own group, named for what it is.
 */
 const RING = 'link-fc0001';
-const CHANGES = { group: 'changes in place', name: 'changes in place: a zone, a group and its hull, a link left no room for its head, a ring turned, the labels', focus: [IDS.zone, IDS.group, IDS.link, RING],
+const CHANGES = { group: 'changes in place', name: 'changes in place: a zone, a group and its hull, a link and a ring left no room for their heads, a ring turned, the labels', focus: [IDS.zone, IDS.group, IDS.link, RING],
 	doc: () => { const b = recordBoard(); const ids = [0, 1, 2, 3].map((i) => `node-fc00${i}1`);
 		[[-840, -420], [-600, -420], [-600, -180], [-840, -180]].forEach(([x, y], i) => b.nodes.push({ id: ids[i], name: `r${i}`, x, y, order: 20 + i }));
 		b.links.push({ id: RING, name: 'ring', src: ids[0], dst: ids[3], via: [ids[1], ids[2]], closed: true, control: true, direction: 'forward', order: 20 });
@@ -754,6 +890,8 @@ const CHANGES = { group: 'changes in place', name: 'changes in place: a zone, a 
 		// a live drag: Input's move gesture sets the model at the pointer's exact place, off the grid, until the drop commits (app/src/input.js `updateMove`)
 		step('bravo dragged live beside alpha: its link left no room for a head and leg', (w) => w.model.set('node', IDS.bravo, { x: -330, y: 0 })),
 		step('bravo dragged back: its head and leg made again', (w) => w.model.set('node', IDS.bravo, { x: 360, y: 0 })),
+		step('a ring\'s last anchor dragged live by its first: its head left no room, its offset taken away', (w) => w.model.set('node', 'node-fc0031', { x: -840, y: -390 })),
+		step('dragged back: its head and offset again', (w) => w.model.set('node', 'node-fc0031', { x: -840, y: -180 })),
 		step('the ring turned: its offset written again', (w) => edit(w, 'turn', [E.set('link', RING, { direction: 'reverse' })])),
 		step('labels off', (w) => w.renderer.toggleLabels()), step('labels on', (w) => w.renderer.toggleLabels())],
 	proves: (rec, L) => { const k = (label) => at(rec, label), attrs = (i, id) => JSON.stringify(ownOf(L[i], id)?.attrs);
@@ -762,19 +900,38 @@ const CHANGES = { group: 'changes in place', name: 'changes in place: a zone, a 
 			[rec.steps[k('the group renamed')].events.some(([a, kind]) => a === 'set' && kind === 'group'), 'the group set'], [hull(k('a member moved: its hull follows')) !== hull(k('the group renamed')), 'its hull following its member'],
 			[itemIn(L[0], `${IDS.link}/link-head`) && !itemIn(L[k('bravo dragged live beside alpha: its link left no room for a head and leg')], `${IDS.link}/link-head`), 'the link\'s head taken away'],
 			[itemIn(L[0], `${IDS.link}/link-leg`) && !itemIn(L[k('bravo dragged live beside alpha: its link left no room for a head and leg')], `${IDS.link}/link-leg`), 'and its leg'],
-			[attrs(k('the ring turned: its offset written again'), RING) !== attrs(0, RING) && ownOf(L[k('the ring turned: its offset written again')], RING)?.attrs['stroke-dashoffset'] !== undefined, 'the ring\'s offset written again']); } };
+			[ownOf(L[0], RING)?.attrs['stroke-dashoffset'] !== undefined && ownOf(L[k('a ring\'s last anchor dragged live by its first: its head left no room, its offset taken away')], RING)?.attrs['stroke-dashoffset'] === undefined
+				&& !itemIn(L[k('a ring\'s last anchor dragged live by its first: its head left no room, its offset taken away')], `${RING}/link-head`), 'a ring\'s head and offset taken away by an update'],
+			[ownOf(L[k('dragged back: its head and offset again')], RING)?.attrs['stroke-dashoffset'] !== undefined, 'and written again'],
+			[attrs(k('the ring turned: its offset written again'), RING) !== attrs(k('dragged back: its head and offset again'), RING) && ownOf(L[k('the ring turned: its offset written again')], RING)?.attrs['stroke-dashoffset'] !== undefined, 'the ring\'s offset written again'],
+			[rec.steps[k('labels off')].root.split(' ').includes('labels-off') && !rec.steps[k('labels on')].root.split(' ').includes('labels-off'), 'the labels toggled on the page\'s root']); } };
+
+/*
+A ROUTE CHANGED WHILE PACKETS FLY: the spawner's link's far end moved in run mode, so each packet in flight is drawn again on the new
+route, seeded where it is (plugins/simulation/mover-painter.mjs `paint`, B171).
+*/
+const packetsOf = (layers) => ((layers[MOVERS] ?? []).find(([k]) => k === 'packets')?.[1][0].children ?? []).map((c) => c.attrs.style);
+const PACKETS = { group: 'changes in place', name: 'changes in place: a route changed while packets fly', doc: recordDoc,
+	steps: [loadStep('loaded'), step('to run mode', mode('run'), { boundary: 'mode' }), step('a frame', frame, { t: T0 + 200 }),
+		step('the spawner\'s far end moved: its packets on the new route', (w) => edit(w, 'move', [E.set('node', IDS.bravo, { x: 480 })]), { t: T0 + 300 }),
+		step('a frame after', frame, { t: T0 + 400 })],
+	proves: (rec, L) => { const before = packetsOf(L[at(rec, 'a frame')]), after = packetsOf(L[at(rec, 'the spawner\'s far end moved: its packets on the new route')]);
+		return claims([before.length > 0 && after.length > 0, 'packets in flight before and after'], [rec.steps[at(rec, 'the spawner\'s far end moved: its packets on the new route')].events.some(([a, , id]) => a === 'set' && id === IDS.bravo), 'the far end moved'],
+			[after.every((st) => !before.includes(st)), 'every packet drawn on the new route']); } };
 
 // every scenario, by name, in order
 export function scenarios() {
 	const out = [];
 	for (const [name, doc] of [...storedDocuments(), ...coverageDocuments()]) out.push(loadScenario(name, doc));
+	out.push(SWAP);
 	for (const [name, t] of Object.entries(PIPE_TRIGGERS)) out.push({ group: 'pipe triggers, alone', name: `pipe triggers, alone: ${name}`, doc: recordDoc, steps: [loadStep('loaded'), ...t.steps], proves: t.proves });
 	for (const [name, t] of Object.entries(PIPE_COMBINED)) out.push({ group: 'pipe triggers, combined', name: `pipe triggers, combined: ${name}`, doc: recordDoc, steps: [loadStep('loaded'), ...t.steps], proves: t.proves });
 	for (const [name, c] of Object.entries(STATE_CASES)) for (const b of Object.keys(BOUNDARIES)) out.push(stateScenario(name, c, b));
+	for (const [name, c] of Object.entries(LET_GO)) out.push(letGoScenario(name, c));
 	for (const id of [IDS.device, IDS.endpoint]) for (const b of Object.keys(BOUNDARIES)) out.push(unrevealedScenario(id, b));
 	for (const b of Object.keys(BOUNDARIES)) out.push(traceScenario(b));
 	for (const b of ['its node redrawn in run mode', 'deletion and undo', 'a load', 'leaving run mode']) out.push(aimScenario(b));
-	out.push(HEALED, TRANSIENT, CHANGES);
+	out.push(HEALED, TRANSIENT, CHANGES, PACKETS);
 	return Object.fromEntries(out.map((s) => [s.name, s]));
 }
 export const GROUPS = ['loads', 'pipe triggers, alone', 'pipe triggers, combined', 'states', 'marks', 'the healed link', 'transient targets', 'changes in place'];
@@ -828,6 +985,8 @@ function traceAt(rec, id, k, { kept = false } = {}) {
 	return { run: (shows.length - 1) % 2 === 0 ? 'a' : 'b', ms: last.ms };
 }
 const tokensSorted = (cls) => tokensOf(cls).sort().join(' ');
+// a class on a load, after the painters move (4.2: a load compared in order): its own tokens in their order, then its states as a set
+const classOnLoad = (cls) => { const t = tokensOf(cls); return [...t.filter((c) => !STATE_CLASSES.includes(c)), '|', ...t.filter((c) => STATE_CLASSES.includes(c)).sort()].join(' '); };
 const findShape = (shapes, test) => { for (const sh of shapes) { if (test(sh)) return sh; const c = findShape(sh.children ?? [], test); if (c) return c; } return null; };
 /*
 What the record's item `[key, shapes]` at step `k` must be, live, under `move` -- the record's shapes with the move's allowances applied:
@@ -853,12 +1012,12 @@ function expectedItem(rec, k, layer, key, shapes, full, move) {
 			for (const n of Object.keys(a)) delete a[n];
 			for (const [n, v] of next) a[n] = v;
 		}
-		const statesHere = layer !== FOREIGN_LAYERS.network ? kept : at >= MOVES.indexOf('pipes');
+		const statesHere = layer !== PIPES ? kept : at >= MOVES.indexOf('pipes');
 		if (statesHere) {
 			const base = tokensOf(a.class).filter((c) => !STATE_CLASSES.includes(c));
 			a.class = [...base, ...(step.held[id] ?? [])].join(' ');
 		}
-		if (kept && layer !== FOREIGN_LAYERS.network) {
+		if (kept && layer !== PIPES) {
 			delete a['data-unrevealed'];
 			if (step.marks.unrevealed.includes(id)) a['data-unrevealed'] = '';
 			const glyph = findShape(out, (sh) => sh.attrs?.['data-layer'] === 'glyph');
@@ -879,30 +1038,44 @@ function expectedItem(rec, k, layer, key, shapes, full, move) {
 function canonical(shapes, { ordered, classSet }) {
 	const one = (sh) => {
 		let attrs = Object.entries(sh.attrs ?? {});
-		if (classSet) attrs = attrs.map(([k2, v]) => [k2, k2 === 'class' ? tokensSorted(v) : v]);
+		if (classSet) attrs = attrs.map(([k2, v]) => [k2, k2 !== 'class' ? v : ordered ? classOnLoad(v) : tokensSorted(v)]);
 		if (!ordered) attrs.sort(([x], [y]) => (x < y ? -1 : x > y ? 1 : 0));
 		return { tag: sh.tag, attrs, text: sh.text ?? null, children: (sh.children ?? []).map(one) };
 	};
 	return JSON.stringify(shapes.map(one));
 }
 /*
-Rule P (4.6), what the pipes move must describe at a step, read from the record: every pipe on a load and on a mode change; on a change
-of a pipe, a link or a node, every pipe when the set of pipes a link runs over (`under`, read from the record's drawing) changed, and
-otherwise the changed pipes and those naming a changed node; none on anything else -- a selection, a hover, an arming are state-only.
+Rule P (4.6), what the pipes move must describe at step `k`, each pipe by how many times -- read from the record's derivation after
+each model event (`net`), never from what was drawn, so a mode with no pipe drawn still names them:
+  1. a load describes every pipe the model holds once
+  3. a mode change describes every pipe the model holds once
+  2. each change of a pipe, a link or a node asks the set of pipes an up link runs over (`shared`): where it differs from the last
+     asked -- at the last such change or load -- every pipe the model then holds is described once; where not, the changed pipe, if
+     the model still holds it, and each pipe naming a changed node
+  4, 5. nothing else describes one: a selection, a hover, an arming, a reflection, the network's settle redrawing links
+A description is one `shapes(pipe, kit)` the renderer asks of the pipe painter, counted whether it answers parts or null -- in run mode,
+or with an end gone, the painter answers null and the pipe is described all the same. A deleted pipe is not described, only removed.
 */
-export function rulePAt(rec, k, layers) {
-	const step = rec.steps[k], prev = rec.steps[k - 1];
-	const pipesOf = (L) => (L[FOREIGN_LAYERS.network] ?? []).map(([key]) => key);
-	const all = pipesOf(layers[k]);
-	if (step.events.some(([a]) => a === 'load') || (prev && prev.mode !== step.mode)) return new Set(all);
-	const changes = step.events.filter(([, kind]) => ['pipe', 'link', 'node'].includes(kind));
-	if (!changes.length) return new Set();
-	const underOf = (L) => JSON.stringify((L[FOREIGN_LAYERS.network] ?? []).filter(([, [g]]) => classOf(g).includes('under')).map(([key]) => key));
-	if (k > 0 && underOf(layers[k]) !== underOf(layers[k - 1])) return new Set(all);
-	const nodes = new Set(changes.filter(([, kind]) => kind === 'node').map(([, , id]) => id));
-	const out = new Set(changes.filter(([, kind]) => kind === 'pipe').map(([, , id]) => id).filter((id) => all.includes(id)));
-	for (const key of all) { const [, a, b] = /^pipe-(.+)-(.+)$/.exec(key) ?? []; if (a && (nodes.has(`node-${a}`) || nodes.has(`node-${b}`))) out.add(key); }
-	return out;
+const SHARED_BY = ['pipe', 'link', 'node'];
+function lastShared(rec, k) {
+	for (let i = k - 1; i >= 0; i--) { const ev = rec.steps[i].net.events; for (let j = ev.length - 1; j >= 0; j--) if (rec.steps[i].events[j][0] === 'load' || SHARED_BY.includes(rec.steps[i].events[j][1])) return ev[j].shared; }
+	return [];
+}
+export function rulePAt(rec, k) {
+	const step = rec.steps[k], prev = rec.steps[k - 1], out = new Map();
+	const once = (ids) => { for (const id of ids) out.set(id, (out.get(id) ?? 0) + 1); };
+	if (prev && prev.mode !== step.mode) once(step.net.pipes);
+	let last = lastShared(rec, k);
+	step.events.forEach(([action, kind, id], j) => {
+		const { pipes, shared } = step.net.events[j];
+		if (action === 'load') { once(pipes); last = shared; return; }
+		if (!SHARED_BY.includes(kind)) return;
+		if (JSON.stringify(shared) !== JSON.stringify(last)) once(pipes);
+		else if (kind === 'pipe') { if (pipes.includes(id)) once([id]); }
+		else if (kind === 'node') once(pipes.filter((p) => { const [, a, b] = /^pipe-(.+)-(.+)$/.exec(p) ?? []; return `node-${a}` === id || `node-${b}` === id; }));
+		last = shared;
+	});
+	return Object.fromEntries([...out].sort(([a], [b]) => (a < b ? -1 : 1)));
 }
 /*
 A live run of scenario `name` against its record, under `move`: the problems, none when the run holds. It fails a scenario the record
@@ -922,15 +1095,22 @@ export function compareScenario(sc, rec, live, { move = 'trace' } = {}) {
 		same('the model\'s events', was.events, now.events);
 		same('the caption', was.caption, now.caption);
 		if (at < MOVES.indexOf('painters')) { same('the load\'s puts by kind', was.puts ?? null, now.puts ?? null); same('the states held', was.held, now.held); same('the marks held', was.marks, now.marks); }
-		if (at >= MOVES.indexOf('pipes') && now.puts && (now.puts.patch || now.puts.move)) problems.push(`${where}: a load put ${now.puts.patch} patch(es) and ${now.puts.move} move(s) (rule P: none)`);
+		// the classes the renderer writes on the page's root -- its modes and labels -- as set, and from the painters move as a set
+		same('the root\'s classes', at < MOVES.indexOf('painters') ? was.root : tokensSorted(was.root), at < MOVES.indexOf('painters') ? now.root : tokensSorted(now.root ?? ''));
+		if (at >= MOVES.indexOf('pipes') && was.puts) {
+			if (!now.puts) problems.push(`${where}: a load whose puts were not counted`);
+			else {
+				if (!(now.puts.new > 0)) problems.push(`${where}: a load put no new item -- its puts were not counted, or nothing was drawn`);
+				if (now.puts.patch || now.puts.move) problems.push(`${where}: a load put ${now.puts.patch} patch(es) and ${now.puts.move} move(s) (rule P: none)`);
+			}
+		}
 		if (at >= MOVES.indexOf('pipes')) {
-			const want = [...rulePAt(rec, k, R)].sort(), got = Object.keys(now.describes ?? {}).filter((x) => now.describes[x] > 0).sort();
-			if (!now.describes) problems.push(`${where}: the live run counts no pipe descriptions`);
+			const want = rulePAt(rec, k), got = Object.fromEntries(Object.entries(now.describes ?? {}).filter(([, n]) => n > 0).sort(([a], [b]) => (a < b ? -1 : 1)));
+			if (!now.describes) problems.push(`${where}: the live run counts no pipe descriptions -- no pipe painter is composed`);
 			else if (JSON.stringify(want) !== JSON.stringify(got)) problems.push(`${where}: pipes described ${JSON.stringify(got)}, rule P names ${JSON.stringify(want)}`);
-			else if (was.events.some(([a]) => a === 'load') && got.some((x) => now.describes[x] !== 1)) problems.push(`${where}: a load describes each pipe once (rule P)`);
 		}
 		const ordered = at < MOVES.indexOf('painters') || !!was.puts;
-		const opts = { ordered, classSet: at >= MOVES.indexOf('painters') };
+		const opts = { ordered, classSet: at >= MOVES.indexOf('painters') };   // a load: attributes in order, a class's own tokens in order and its states a set
 		for (const layer of Object.keys(R[k])) {
 			const rItems = R[k][layer], lItems = Lv[k][layer] ?? [];
 			same(`${layer}: the items in order`, rItems.map(([key]) => key), lItems.map(([key]) => key));
@@ -1024,7 +1204,7 @@ The writing sites no page reaches, each with why -- the only ones the coverage m
 archive holds (`record.archive`).
 */
 export const UNREACHABLE = [
-	{ file: 'plugins/simulation/mover-painter.mjs', lines: [35, 36, 37], why: 'the movers\' default element builder, for a composition handing no `el`: the page and the lab both hand app/src/painter.js\'s `el`, so nothing a page draws goes through it' },
+	{ file: 'plugins/simulation/mover-painter.mjs', lines: [35, 36, 37], why: 'the movers\' default element builder, for a composition handing no `el`: the one composition that makes the movers, app/src/main.js:108, hands app/src/painter.js\'s `el` -- the lab makes none -- so nothing a page draws goes through it' },
 	{ file: 'app/src/shadow.js', lines: [101], why: 'the shadow node\'s `setAttributeNS`, offered for the platform\'s semantics: no drawing code calls it on a shadow node -- its one caller, the movers\' default builder, draws on the platform' },
 ];
 const allowed = (u) => UNREACHABLE.some((a) => a.file === u.file && a.lines.includes(u.line));
