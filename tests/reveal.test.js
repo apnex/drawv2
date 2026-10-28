@@ -633,6 +633,26 @@ test('H26.8: the loop runs while there is a record or a trace running; the recor
 	} finally { globalThis.requestAnimationFrame = raf; globalThis.cancelAnimationFrame = caf; }
 });
 
+// the verifier's A1 on move 2: with no record held, a model change asks `sync` as ever, and it tends the traces as a pass does
+test('H26.8: with no record held, a model change re-reads a running trace\'s length in the same task, and ends one past its instant', async (t) => {
+	t.mock.timers.enable({ apis: ['setInterval'] });
+	const raf = globalThis.requestAnimationFrame, caf = globalThis.cancelAnimationFrame;
+	globalThis.requestAnimationFrame = () => 1;
+	globalThis.cancelAnimationFrame = () => {};
+	try {
+		const { r, clock, model, line } = await traced();
+		r.sync();
+		clock.t = 1100; model.state.reveal = null; r.sync();
+		assert.equal(line.getAttribute('data-trace'), 'a', 'precondition: the record gone, the link shown, traced');
+		line.attrs.set('d', 'M 0 0 L 120 0 L 120 240');   // the route longer, by the change the model reports
+		clock.t = 1200; r.sync();
+		assert.equal(line.getAttribute('style'), `--trace-len: ${lengthOf('M 0 0 L 120 0 L 120 240')}; --trace-ms: 500ms`, 'its length written in the same task, no pass of the loop between');
+		clock.t = 1600; r.sync();
+		assert.deepEqual(traceAttrs(line), { 'data-trace': null, style: null }, 'a change after its instant ends it at once');
+		assert.equal(r.loop, null, 'and with no record and no trace running, the loop stops');
+	} finally { globalThis.requestAnimationFrame = raf; globalThis.cancelAnimationFrame = caf; }
+});
+
 /*
 H14.12 -- a link TRACES from source to destination; a node fades.
 

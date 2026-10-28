@@ -68,10 +68,11 @@ export class Reveal {
 	*/
 	/*
 	RESTATED at H26.8 (B422; NATIVE-SHAPES.md section 5): the loop runs while there is a record OR a trace running -- a record gone shows
-	what it withheld, links tracing as ever, and the loop runs on until each of those traces is ended.
+	what it withheld, links tracing as ever, and the loop runs on until each of those traces is ended. With no record, a sync tends the
+	traces first as a pass does (the verifier's A1 on move 2), so a model change rewrites a running trace's length in its own task.
 	*/
 	sync() {
-		if (!this.record()) { this.showAll(); this.keepWhileTracing(); return; }
+		if (!this.record()) { this.tend(); this.showAll(); this.keepWhileTracing(); return; }
 		this.start();
 		this.paint();
 	}
