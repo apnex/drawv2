@@ -21,9 +21,9 @@ them. A pseudo-class of the pointer or focus never matches a still picture. What
 shipped wrong: any other pseudo-class, a `>` or `~` step, `!important`, an at-rule, a `:root` property that is not a colour token, a
 transform with CSS units, a drawing property it does not know, a `var()` with no value, and markup its reader cannot read.
 AMENDED H26.8's trace move (B422; dev/design/components/NATIVE-SHAPES.md section 5): one at-rule is read, `@keyframes <name> { ... }`, and
-left out, with the animation properties beside `transition` -- what runs over time, which a still picture leaves out. Its braces are
-counted outside strings, a string's escapes honoured, and a block or string left open is refused, naming the sheet; a vendor variant, a
-block with no name and every other at-rule stay refused.
+left out, with the animation properties beside `transition` -- what runs over time, which a still picture leaves out. Its head is taken
+at the sheet's top level alone, outside strings and blocks; its braces are counted outside strings, a string's escapes honoured, and a
+block or string left open is refused, naming the sheet; a vendor variant, a block with no name and every other at-rule stay refused.
 */
 import fs from 'node:fs';
 import { PAGE_STYLESHEETS, CHROME_STYLESHEETS } from '../product/canvas.mjs';
@@ -66,38 +66,54 @@ function selectorOf(text) {
 }
 
 /*
-H26.8 -- a sheet without its `@keyframes <name> { ... }` blocks, each read to its closing brace: braces counted outside strings, a
-string's escapes honoured, a backslash outside one escaping the character after it. A block or a string left open is refused, naming the
-sheet. Only that spelling is taken: any other at-rule -- a vendor variant, `@keyframes` with no name, `@media` -- is left in, for the
-refusal that follows.
+H26.8 -- a sheet without its `@keyframes <name> { ... }` blocks. A head is taken at the sheet's top level alone, outside any string and
+any block -- the verifier's SF2 on move 2: one inside a selector's string, a value's string or a rule was taken as a block, and the sheet
+around it silently lost or rewritten, where `ca492da` refused it. Each block is read to its closing brace: braces counted outside
+strings, a string's escapes honoured, a backslash outside one escaping the character after it; a block or a string in it left open is
+refused, naming the sheet. Only that spelling is taken: any other at-rule -- a vendor variant, `@keyframes` with no name, `@media` -- and
+any head not at the top level is left in, for the refusal that follows; a sheet with no head taken comes back as it was.
 */
 const KEYFRAMES = /@keyframes\s+(-?[A-Za-z_][\w-]*)\s*\{/y;
-function withoutKeyframes(css, name) {
-	let out = '', i = 0;
-	for (let at; (at = css.indexOf('@', i)) >= 0;) {
-		KEYFRAMES.lastIndex = at;
-		const head = KEYFRAMES.exec(css);
-		if (!head) { out += css.slice(i, at + 1); i = at + 1; continue; }
-		const open = (what) => new Error(`${name}: ${what} in @keyframes ${head[1]} is not closed -- the export refuses what it cannot read`);
-		let depth = 1, j = KEYFRAMES.lastIndex;
-		while (j < css.length && depth) {
-			const c = css[j];
-			if (c === '"' || c === "'") {
-				for (j++; j < css.length && css[j] !== c; j++) {
-					if (css[j] === '\\') j++;
-					else if (css[j] === '\n') throw open('a string');
-				}
-				if (j >= css.length) throw open('a string');
-			} else if (c === '\\') j++;
-			else if (c === '{') depth++;
-			else if (c === '}') depth--;
-			j++;
-		}
-		if (depth) throw open('a block');
-		out += css.slice(i, at);
-		i = j;
+// the end of a string opened at `i`, its escapes honoured; `open` where a line's end or the sheet's comes first, as CSS ends it there
+function stringAt(css, i) {
+	for (let j = i + 1; j < css.length; j++) {
+		if (css[j] === '\\') j++;
+		else if (css[j] === css[i]) return { end: j + 1, open: false };
+		else if (css[j] === '\n') return { end: j, open: true };
 	}
-	return out + css.slice(i);
+	return { end: css.length, open: true };
+}
+// the end of a `@keyframes` block whose head ends at `j`
+function keyframesEnd(css, j, sheet, ident) {
+	const open = (what) => new Error(`${sheet}: ${what} in @keyframes ${ident} is not closed -- the export refuses what it cannot read`);
+	let depth = 1;
+	while (j < css.length && depth) {
+		const c = css[j];
+		if (c === '"' || c === "'") { const str = stringAt(css, j); if (str.open) throw open('a string'); j = str.end; continue; }
+		if (c === '\\') j++;
+		else if (c === '{') depth++;
+		else if (c === '}') depth--;
+		j++;
+	}
+	if (depth) throw open('a block');
+	return j;
+}
+function withoutKeyframes(css, name) {
+	let out = '', from = 0, depth = 0;
+	for (let i = 0; i < css.length;) {
+		const c = css[i];
+		if (c === '"' || c === "'") { i = stringAt(css, i).end; continue; }
+		if (c === '\\') { i += 2; continue; }
+		if (c === '{') depth++;
+		else if (c === '}') depth = Math.max(0, depth - 1);
+		else if (c === '@' && depth === 0) {
+			KEYFRAMES.lastIndex = i;
+			const head = KEYFRAMES.exec(css);
+			if (head) { const end = keyframesEnd(css, KEYFRAMES.lastIndex, name, head[1]); out += css.slice(from, i); from = i = end; continue; }
+		}
+		i++;
+	}
+	return out + css.slice(from);
 }
 
 /**

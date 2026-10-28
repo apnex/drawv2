@@ -86,6 +86,13 @@ test('H26.8 (section 5): @keyframes <name> is read to its end and left out, the 
 	assert.throws(open('@-webkit-keyframes k { 0% { opacity: 0; } }'), /cannot match the selector "@-webkit-keyframes k"/, 'a vendor variant stays refused as before: `@-` is no at-rule to that test, so the selector parse refuses it');
 	assert.throws(open('@keyframes { 0% { opacity: 0; } }'), /open\.css holds an at-rule/, 'a block with no name stays refused');
 	assert.throws(open('@keyframes k { 0% { opacity: 0; } } @media print { .a { fill: red; } }'), /open\.css holds an at-rule/, 'and any other at-rule beside one taken');
+	// a head is taken at the sheet's top level alone: inside a string or a block it is no head, and the sheet keeps ca492da's refusal
+	assert.throws(open('[data-x=\'@keyframes y {\'] { stroke: blue } .c { font-family: \'}\' } .d { fill: green }'), /open\.css holds an at-rule/,
+		'a head inside a selector\'s string is no head: nothing taken, every rule kept, and the sheet refused as before');
+	assert.throws(open('a { font-family: "@keyframes x {}" }'), /open\.css holds an at-rule/, 'nor inside a block\'s string: the value kept whole, and the sheet refused as before');
+	assert.throws(open('.a { @keyframes k { to { opacity: 0; } } fill: red; }'), /open\.css holds an at-rule/, 'nor inside a block: a head nested in a rule is left with it, and refused');
+	assert.throws(open('} .a { @keyframes k { to { opacity: 0; } } fill: red; }'), /open\.css holds an at-rule/, 'and a stray closing brace before a rule leaves the head inside the rule, and refused');
+	assert.throws(open('\\@keyframes k { to { opacity: 0; } } .a { fill: red; }'), /open\.css holds an at-rule/, 'an escaped @ is no head: the sheet meets the at-rule refusal, not a selector\'s');
 	const props = ['animation: trace-a 1s', 'animation-name: trace-a', 'animation-duration: var(--trace-ms)', 'animation-timing-function: ease-out',
 		'animation-fill-mode: both', 'animation-delay: 0s', 'animation-iteration-count: 1', 'animation-direction: normal', 'animation-play-state: running'];
 	assert.equal(style('<path class="k"/>', `.k { ${props.join('; ')}; stroke: red; }`), '<path class="k" stroke="red"/>', 'the nine animation properties left out, as acting over time');
