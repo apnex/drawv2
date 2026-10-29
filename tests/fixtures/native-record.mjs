@@ -13,8 +13,8 @@ selection, the commit boundary, the renderer, Input and its overlay, the held to
 as the page attaches it with its host hooks, and the movers and the reveal wired as the page wires them -- over a document with the
 platform's semantics where draw's drawing code could tell (`makeDocument`), at fixed clock instants, a path's length the deterministic
 stand-in `lengthOf`. No timer and no frame runs by itself: a step's own calls, and the owners' passes and frames the step asks for.
-What it reads after each step is the scene's items, layer by layer, and for a foreign layer -- the network's pipes, the movers -- the
-content beneath the element the scene answers for it; and, beside 4.2's reading (the verifier's survivors on the record), the classes
+What it reads after each step is the scene's items, layer by layer, and for a foreign layer -- the network's pipes at `ca492da`, the
+movers -- the content beneath the element the scene answers for it; and, beside 4.2's reading (the verifier's survivors on the record), the classes
 the renderer writes on the page's root, its modes and labels -- never an element the renderer drew.
 
 WHAT IT DRIVES: only calls `ca492da` answers -- a load, the commit boundary's edits and an answer's ops, the network's hooks, the
@@ -25,7 +25,8 @@ on `editing-states.js` after.
   scenarios       each scenario of 4.2's table, by group -- loads, pipe triggers alone and combined, states, marks, the healed link,
                   the transient targets -- and one group beyond it, changes in place, which the coverage needs: each a document loaded
                   and steps, and what it must be seen to exercise (`proves`)
-  runScenario     one scenario, live: each step's reading
+  runScenario     one scenario, live: each step's reading -- and, asked for its tags (the pipes move, NS17), every put the renderer
+                  makes in a load step, tagged by the call it falls under (`world`)
   recordAll       every scenario and every document's export, as written to native-record.json
   compareScenario a live run against the record under a move's allowances (`MOVES`): the problems, none when it holds -- and
                   first the record's own proof, so a scenario that exercises nothing fails before anything is compared
@@ -195,14 +196,15 @@ export const PIPES = 'pipes', MOVERS = 'movers';
 export const T0 = 1790000010000;   // the clock's instant at a world's start: the parity board's spawner, armed at 1790000000000, has packets in flight
 const NS = 'http://www.w3.org/2000/svg';
 /*
-Each load's puts by kind -- an item made, one put again in place, one moved -- counted as tests/fixtures/scene-parity.mjs counts them, on
-the renderer's scene: the scene is frozen, so the renderer is handed one that counts and answers as it does. A renderer holding the scene
-under any other name is refused, loudly: a count that silently stays zero would pass rule P's "no patch, no move" unasked.
+Each load's puts by kind -- an item made, one put again in place, one moved -- counted as tests/fixtures/scene-parity.mjs counted them, on
+the renderer's scene: the scene is frozen, so the renderer is handed one that counts and answers as it does, each put handed on with its
+layer, key and shapes (the pipes move's tags, `world`). A renderer holding the scene under any other name is refused, loudly: a count
+that silently stays zero would pass the load rule unasked.
 */
 export function countPuts(renderer, scene, onPut) {
 	if (renderer?.scene !== scene) throw new Error('native record: the renderer holds the canvas\'s scene under no name the record can count (renderer.scene) -- a load\'s puts cannot be counted');
 	renderer.scene = { ...scene, put: (layer, key, shapes, place) => {
-		onPut(!scene.items(layer).some((x) => x.key === key) ? 'new' : place && 'before' in place ? 'move' : 'patch');
+		onPut(!scene.items(layer).some((x) => x.key === key) ? 'new' : place && 'before' in place ? 'move' : 'patch', layer, key, shapes);
 		return scene.put(layer, key, shapes, place);
 	} };
 }
@@ -237,8 +239,10 @@ One world: app/src/main.js's composition, its parts in its order. The commit bou
 the page's; the network's edits reach it as the page's do; Input owns the overlay, the handles and what a load or a deletion drops.
 The reveal is handed draw's probe, as the page hands it since move 2 (`ca492da`'s reveal measures through the renderer's platform,
 which composeCanvas hands the same probe); here the probe answers the stand-in.
+Asked for its tags (`tags`, the live run alone -- `recordAll` never asks, so the record is written as it always was), it keeps the calls
+open as each put is made (`tagging`).
 */
-export function world() {
+export function world({ tags = false } = {}) {
 	const platform = installPlatform();
 	try {
 		const doc = platform.doc;
@@ -303,10 +307,40 @@ export function world() {
 			w.renderer.setState = (id, cls, on) => { if (on) holds(id).add(cls); else holds(id).delete(cls); return setState(id, cls, on); };
 			w.renderer.clearState = (id, ...classes) => { for (const cls of classes) holds(id).delete(cls); return clearState(id, ...classes); };
 		}
-		countPuts(c.renderer, c.scene, (kind) => { if (w.puts) w.puts[kind]++; });
+		const tagged = tags ? tagging(w) : null;
+		countPuts(c.renderer, c.scene, (kind, layer, key, shapes) => { if (w.puts) w.puts[kind]++; tagged?.(kind, layer, key, shapes); });
 		w.reveal.sync();
 		return w;
 	} catch (e) { platform.restore(); throw e; }
+}
+/*
+H26.8's pipes move (section 4.2's load rule, NS17; appendix A) -- EVERY PUT OF A LOAD STEP, TAGGED by the calls open as the renderer makes
+it: whether `syncAll` is on the stack -- the load's own describing; the innermost owner's call open -- `renderer.mark`, or the editing
+states' `setState`, `clearState` or `reflect`, with its arguments; and the innermost describing call open outside `syncAll` --
+`renderer.render` or `renderer.update`, a describing the step asked after the load. Each put carries the key's previous put, its layer
+beside its shapes, kept across the whole run. The live run alone is tagged: it wraps each call where the composition holds it, and
+answers the function `countPuts` hands every put.
+*/
+function tagging(w) {
+	const open = [], last = new Map();
+	const wrap = (obj, name, frame) => {
+		const f = obj?.[name];
+		if (typeof f !== 'function') return;
+		obj[name] = function (...args) { open.push(frame(args)); try { return f.apply(this, args); } finally { open.pop(); } };
+	};
+	const r = w.renderer;
+	wrap(r, 'syncAll', () => ({ sync: true }));
+	for (const call of ['render', 'update']) wrap(r, call, () => ({ describe: call }));
+	wrap(r, 'mark', ([id, name, value]) => ({ owner: { call: 'mark', args: [id, name, value ?? null] } }));
+	for (const call of ['setState', 'clearState', 'reflect']) wrap(r.states, call, (args) => ({ owner: { call, args: call === 'reflect' ? [] : args } }));
+	return (kind, layer, key, shapes) => {
+		if (w.tagged) {
+			const owner = open.findLast((f) => f.owner)?.owner ?? null;
+			const describe = open.filter((f) => f.describe && !open.some((g) => g.sync)).at(-1)?.describe ?? null;
+			w.tagged.push({ key, layer, kind, sync: open.some((f) => f.sync), owner, describe, prev: last.get(key) ?? null, shapes: JSON.parse(JSON.stringify(shapes)) });
+		}
+		last.set(key, { layer, shapes: JSON.parse(JSON.stringify(shapes)) });
+	};
 }
 function teardown(w) {
 	try { w.reveal.stop(); w.movers.stop(); } finally { w.platform.restore(); }
@@ -503,8 +537,8 @@ One scenario, live: its document loaded at the first step, each step asked at it
 model's events, a load's puts by kind, every layer's items (as a delta), the states the owners hold (`held`), the marks the reveal and
 the movers hold (`marks`), and the caption; and over the scenario, each trace a show began and each hide.
 */
-export function runScenario(sc) {
-	const w = world();
+export function runScenario(sc, { tags = false } = {}) {
+	const w = world({ tags });
 	try {
 		const doc = sc.doc();
 		const ctx = { doc };
@@ -517,15 +551,17 @@ export function runScenario(sc) {
 			w.counts.described = {};
 			const loading = s.loads === true;
 			w.puts = loading ? { new: 0, patch: 0, move: 0 } : null;
+			w.tagged = loading && tags ? [] : null;
 			const note = s.action(w, ctx);
-			const puts = w.puts; w.puts = null;
+			const puts = w.puts, tagged = w.tagged; w.puts = null; w.tagged = null;
 			const layers = layersOf(w);
 			for (const l of Object.keys(layers)) layers[l] = keyed(layers[l]);
 			steps.push({ label: s.label, t: w.clock.t, mode: w.renderer.mode, ...(s.boundary ? { boundary: s.boundary } : {}), events: w.events,
 				net: { events: w.net, pipes: networkOf(w).pipes },
 				...(puts ? { puts } : {}), layers: deltaOf(prev, layers), root: w.root.getAttribute('class') ?? '', held: heldStates(w),
 				marks: { unrevealed: [...(w.reveal.hidden ?? [])].sort(), aims: Object.fromEntries([...w.aims].sort(([a], [b]) => (a < b ? -1 : 1))) }, caption: w.caption ?? null,
-				...(note !== undefined ? { note } : {}), ...(counting(w) ? { describes: w.counts.described } : {}) });
+				...(note !== undefined ? { note } : {}), ...(counting(w) ? { describes: w.counts.described } : {}),
+				...(tags ? { pipeOrder: w.model.kinds.has('pipe') ? w.model.all('pipe').map((x) => x.id) : [] } : {}), ...(tagged ? { tagged } : {}) });
 			prev = layers;
 		}
 		return JSON.parse(JSON.stringify({ steps, traces: w.traces, hides: w.hides }));
@@ -962,8 +998,10 @@ The moves the record answers to, in order; each allows what section 4.2's table 
   painters  attribute order on an element kept across a patch, compared as a map but on a load; class tokens as a set; the lifetimes
             NS13 rules, the states and marks shown while their owners hold them (`held`, `marks`); a healed link's twin without the
             `stroke-linecap` its line no longer has (NS16); element identity, which the record does not hold, so a load's puts by kind
-  pipes     a pipe's states held through a repaint (NS13); each pipe described as rule P names (4.6), read from the live run's counts,
-            and no put on a load patching or moving an item
+  pipes     a pipe's states held through a repaint (NS13); each pipe described as rule P names (4.6), read from the live run's counts;
+            and each put of a load step only as section 4.2's load rule allows (NS17, `judgeLoad`), from the live run's tags -- in place
+            of "no patch, no move", which `ca492da`'s own owners' puts within a load could not meet. And, an erratum of the build (the
+            pipes layer's order, `pipesInOrder`): the pipes layer's items in the order rule P puts them
 */
 export const MOVES = ['record', 'trace', 'painters', 'pipes'];
 // the states NS13 rules -- each held by its owner and shown on the state target while held, after the painters move
@@ -1078,6 +1116,124 @@ export function rulePAt(rec, k) {
 	return Object.fromEntries([...out].sort(([a], [b]) => (a < b ? -1 : 1)));
 }
 /*
+SECTION 4.2'S LOAD RULE (NS17), from the pipes move: each put of a load step judged by the calls open as the renderer made it (`tagging`),
+against the record's items after the step (`layersAt`, keyed by `keyOf`) and its held states and marks across it.
+  1. the load's describing -- `syncAll` on the stack, no owner's call open: each put new; an item the record holds after the step, in a
+     layer the renderer draws, and every such item put; a key put again only as the describing last put it, layer and shapes; each
+     pipe's item put exactly once; and the step's new puts -- these and rule 2's -- the record's new count plus one per pipe item left
+  2. a describing the step asks after the load -- no `syncAll`, no owner, inside `render` or `update`: the same description removed and
+     put again -- new, a key the load put in the step, never a pipe, its layer and shapes those of the key's last put
+  3. an owner's put -- a mark or state call open: one transition the record shows (`judgeOwner`)
+  4. a put under none, or failing its rule, fails the step
+*/
+// the layers the renderer draws: each painter's, and each competing appearance's root
+const RENDERER_LAYERS = new Set(PRODUCT_CANVAS.flatMap((p) => [...(p.painters ?? []).map((x) => x.layer), ...(p.appearances ?? []).filter((a) => a.root?.layer).map((a) => a.root.layer)]));
+const isPipeKey = (key) => /^pipe-/.test(String(key).split('/')[0]);
+const json = (x) => JSON.stringify(x);
+function judgeLoad(rec, k, now, items) {
+	const out = [];
+	if (!now.tagged) return ['a load whose puts were not tagged -- the live run was not asked for them, or no renderer put was seen'];
+	const expected = new Set(Object.entries(items).filter(([layer]) => RENDERER_LAYERS.has(layer)).flatMap(([layer, its]) => its.map(([key]) => `${layer} ${key}`)));
+	const describing = now.tagged.filter((p) => !p.owner && p.sync), after = now.tagged.filter((p) => !p.owner && !p.sync && p.describe);
+	const owners = now.tagged.filter((p) => p.owner), stray = now.tagged.filter((p) => !p.owner && !p.sync && !p.describe);
+	for (const p of stray) out.push(`rule 4: ${p.layer} ${p.key} put under no frame -- not the load's describing, no describing after it, no owner's call`);
+	const put = new Set(), lastPut = new Map(), pipes = new Map();
+	for (const p of describing) {
+		const rk = `${p.layer} ${keyOf(p.layer, p.key, p.shapes)}`;
+		if (p.kind !== 'new') out.push(`rule 1: the load's describing puts ${p.layer} ${p.key} as a ${p.kind}`);
+		if (!expected.has(rk)) out.push(`rule 1: the load's describing puts ${rk}, an item the record does not hold after the step`);
+		put.add(rk);
+		const was = lastPut.get(p.key), is = `${p.layer} ${json(p.shapes)}`;
+		if (was !== undefined && was !== is) out.push(`rule 1: ${p.layer} ${p.key} put again unlike the describing last put it`);
+		lastPut.set(p.key, is);
+		if (isPipeKey(p.key)) pipes.set(p.key, (pipes.get(p.key) ?? 0) + 1);
+	}
+	for (const rk of expected) if (!put.has(rk)) out.push(`rule 1: ${rk}, an item the record holds after the step, never put by the load's describing`);
+	for (const [key, n] of pipes) if (n !== 1) out.push(`rule 1: pipe ${key} put ${n} times by the load's describing (rule P: once)`);
+	const loaded = new Set(describing.map((p) => p.key));
+	for (const p of after) {
+		const why = p.kind !== 'new' ? `a ${p.kind}` : isPipeKey(p.key) ? 'a pipe' : !loaded.has(p.key) ? 'a key the load did not put'
+			: !p.prev || p.prev.layer !== p.layer ? `into ${p.layer}, its last put in ${p.prev?.layer ?? 'none'}` : json(p.prev.shapes) !== json(p.shapes) ? 'its description changed' : null;
+		if (why) out.push(`rule 2: ${p.describe} after the load puts ${p.layer} ${p.key}: ${why} -- only the same description put again`);
+	}
+	const fresh = [...describing, ...after].filter((p) => p.kind === 'new').length, drawnPipes = (items[PIPES] ?? []).length;
+	if (fresh !== rec.steps[k].puts.new + drawnPipes) out.push(`rule 1: ${fresh} new put(s) by the load's describing and after it, where the record's ${rec.steps[k].puts.new} and one per pipe item left drawn, ${drawnPipes}, make ${rec.steps[k].puts.new + drawnPipes}`);
+	for (const p of owners) { const why = judgeOwner(rec, k, p); if (why) out.push(`rule 3: ${p.owner.call}${p.owner.call === 'mark' ? ` ${p.owner.args[1]}` : ''} puts ${p.layer} ${p.key}: ${why}`); }
+	return out;
+}
+// each attribute that differs between two shape lists, as [path, name, before, after] -- or a structural difference, as [path, null]
+function attrDiffs(a, b, at = []) {
+	if (!a || !b || a.tag !== b.tag || (a.text ?? null) !== (b.text ?? null) || (a.children ?? []).length !== (b.children ?? []).length) return [[at, null]];
+	const out = [];
+	for (const n of new Set([...Object.keys(a.attrs ?? {}), ...Object.keys(b.attrs ?? {})])) if ((a.attrs ?? {})[n] !== (b.attrs ?? {})[n]) out.push([at, n, (a.attrs ?? {})[n], (b.attrs ?? {})[n]]);
+	(a.children ?? []).forEach((c, i) => out.push(...attrDiffs(c, b.children[i], [...at, i])));
+	return out;
+}
+const pathTo = (shapes, test) => { const walk = (sh, at) => { if (test(sh)) return at; for (const [i, c] of (sh.children ?? []).entries()) { const f = walk(c, [...at, i]); if (f) return f; } return null; }; for (const [i, sh] of shapes.entries()) { const f = walk(sh, [i]); if (f) return f; } return null; };
+const MARK_ATTRS = { unrevealed: ['data-unrevealed'], trace: ['data-trace', 'style'], aim: ['data-aim', 'transform'] };
+/*
+Rule 3, an owner's put: a patch of a key already put, in the layer of its previous put, differing from it by exactly the transition its
+call names on the state target -- the shape bearing the entity's id, or for an aim the glyph beneath it -- in the direction and to the
+value the record holds across the step: a state class added or taken away as the record's held states for the id go from the step
+before to this one; a mark's own attributes alone, as the record holds them after the step. A put equal to its previous one fails.
+*/
+function judgeOwner(rec, k, p) {
+	if (p.kind !== 'patch') return `a ${p.kind}, where an owner's put is a patch`;
+	if (!p.prev) return 'a key never put before';
+	if (p.prev.layer !== p.layer) return `into ${p.layer}, its previous put in ${p.prev.layer}`;
+	const d = p.prev.shapes.length === p.shapes.length ? p.prev.shapes.flatMap((sh, i) => attrDiffs(sh, p.shapes[i], [i])) : [[[], null]];
+	if (!d.length) return 'redundant: equal to its previous put';
+	if (d.some(([, n]) => n === null)) return 'a change of structure, not of an attribute';
+	const id = p.key.split('/')[0], { call, args } = p.owner;
+	const on = (path) => d.every(([at]) => json(at) === json(path));
+	if (call === 'mark') {
+		const [mid, name] = args;
+		if (mid !== id || !MARK_ATTRS[name]) return `a mark ${name} for ${mid}`;
+		const target = pathTo(p.prev.shapes, name === 'aim' ? (sh) => sh.attrs?.['data-layer'] === 'glyph' : (sh) => sh.attrs?.id === id);
+		if (!target || !on(target)) return `a change beside its state target: ${d.map(([at, n]) => `${at.join('/')}@${n}`).join(', ')}`;
+		if (d.some(([, n]) => !MARK_ATTRS[name].includes(n))) return `${name} changing ${d.map(([, n]) => n).join(', ')}`;
+		const marks = rec.steps[k].marks, begun = rec.traces.find((t) => t.id === id && t.step === k), run = begun && traceAt(rec, id, k, { kept: true })?.run;
+		const want = name === 'unrevealed' ? (marks.unrevealed.includes(id) ? { 'data-unrevealed': '' } : {})
+			: name === 'aim' ? (marks.aims[id] !== undefined ? { 'data-aim': String(marks.aims[id]), transform: `rotate(${marks.aims[id]})` } : {})
+			: (run ? { 'data-trace': run, style: traceStyle(begun.len, begun.ms) } : {});
+		const shape = target.slice(1).reduce((sh, i) => sh.children[i], p.shapes[target[0]]);
+		for (const n of MARK_ATTRS[name]) if ((shape.attrs[n] ?? null) !== (want[n] ?? null)) return `${n} ${shape.attrs[n] === undefined ? 'absent' : `"${shape.attrs[n]}"`}, the record holding ${want[n] === undefined ? 'none' : `"${want[n]}"`} after the step`;
+		return null;
+	}
+	if (!['setState', 'clearState', 'reflect'].includes(call)) return `under ${call}, no owner the rule knows`;
+	const target = pathTo(p.prev.shapes, (sh) => sh.attrs?.id === id);
+	if (!target || d.length !== 1 || d[0][1] !== 'class' || !on(target)) return `a state put changing ${d.map(([at, n]) => `${at.join('/')}@${n}`).join(', ')}`;
+	const was = tokensOf(d[0][2]), is = tokensOf(d[0][3]), added = is.filter((c) => !was.includes(c)), gone = was.filter((c) => !is.includes(c));
+	if (added.length + gone.length !== 1) return `a state put changing ${added.length + gone.length} classes`;
+	const cls = added[0] ?? gone[0], set = added.length === 1;
+	if (call === 'setState' && (args[0] !== id || args[1] !== cls || !!args[2] !== set)) return `${cls} ${set ? 'set' : 'let go'} on ${id}, where its call asks ${args[1]} ${args[2] ? 'set' : 'let go'} on ${args[0]}`;
+	if (call === 'clearState' && (args[0] !== id || set || !args.slice(1).includes(cls))) return `${cls} ${set ? 'set' : 'let go'} on ${id}, where its call clears ${args.slice(1).join(', ')} on ${args[0]}`;
+	if (!STATE_CLASSES.includes(cls)) return `${cls}, no state class`;
+	const before = (k > 0 ? rec.steps[k - 1].held[id] : []) ?? [], after2 = rec.steps[k].held[id] ?? [];
+	if (before.includes(cls) === after2.includes(cls)) return `${cls} ${set ? 'set' : 'let go'} on ${id}, the record holding no change of it across the step`;
+	if (after2.includes(cls) !== set) return `${cls} ${set ? 'set' : 'let go'} on ${id}, where the record ${set ? 'lets it go' : 'sets it'}`;
+	return null;
+}
+/*
+AN ERRATUM OF THE PIPES MOVE'S BUILD -- THE PIPES LAYER'S ORDER. `ca492da`'s network drew each pipe as an element it kept: across a load
+it kept a surviving pipe's group where it stood and appended the others, and it made a pipe laid again by hand afresh, last. Rule P puts
+a pipe's item as the renderer puts any unstacked item: a load's describing puts each new, in the order the model holds the pipes (rule
+P, 1); a pipe made is put last; a pipe described again stays where it stands. Two of the record's steps hold an order rule P cannot put
+-- a board loaded again after a swap, and a link pipe laid again by hand, with the settle after it -- and nothing else differs there.
+So, from the pipes move, the pipes layer holds the record's items, keyed as it keys them, in the order rule P puts them: on a load, the
+model's order (the live run's `pipeOrder`); at any other step, the record's order where the live run draws it, and otherwise each item
+the step before drew where it stood, then the rest in the model's order. Asked of a live run without its tags, the record's order.
+*/
+function pipesInOrder(rec, live, Lv, k, keys) {
+	const now = (Lv[k][PIPES] ?? []).map(([key]) => key), order = live.steps[k].pipeOrder;
+	if (!order || json([...keys].sort()) !== json([...now].sort())) return keys;
+	const inModel = order.filter((id) => keys.includes(id));
+	if (rec.steps[k].puts) return inModel;
+	if (json(keys) === json(now)) return keys;
+	const before = k > 0 ? (Lv[k - 1][PIPES] ?? []).map(([key]) => key).filter((id) => keys.includes(id)) : [];
+	return [...before, ...inModel.filter((id) => !before.includes(id))];
+}
+/*
 A live run of scenario `name` against its record, under `move`: the problems, none when the run holds. It fails a scenario the record
 does not prove it exercises (`proves`) before it compares anything, so an empty scenario can never pass.
 */
@@ -1097,13 +1253,7 @@ export function compareScenario(sc, rec, live, { move = 'trace' } = {}) {
 		if (at < MOVES.indexOf('painters')) { same('the load\'s puts by kind', was.puts ?? null, now.puts ?? null); same('the states held', was.held, now.held); same('the marks held', was.marks, now.marks); }
 		// the classes the renderer writes on the page's root -- its modes and labels -- as set, and from the painters move as a set
 		same('the root\'s classes', at < MOVES.indexOf('painters') ? was.root : tokensSorted(was.root), at < MOVES.indexOf('painters') ? now.root : tokensSorted(now.root ?? ''));
-		if (at >= MOVES.indexOf('pipes') && was.puts) {
-			if (!now.puts) problems.push(`${where}: a load whose puts were not counted`);
-			else {
-				if (!(now.puts.new > 0)) problems.push(`${where}: a load put no new item -- its puts were not counted, or nothing was drawn`);
-				if (now.puts.patch || now.puts.move) problems.push(`${where}: a load put ${now.puts.patch} patch(es) and ${now.puts.move} move(s) (rule P: none)`);
-			}
-		}
+		if (at >= MOVES.indexOf('pipes') && was.puts) problems.push(...judgeLoad(rec, k, now, R[k]).map((p) => `${where}: ${p}`));
 		if (at >= MOVES.indexOf('pipes')) {
 			const want = rulePAt(rec, k), got = Object.fromEntries(Object.entries(now.describes ?? {}).filter(([, n]) => n > 0).sort(([a], [b]) => (a < b ? -1 : 1)));
 			if (!now.describes) problems.push(`${where}: the live run counts no pipe descriptions -- no pipe painter is composed`);
@@ -1113,7 +1263,8 @@ export function compareScenario(sc, rec, live, { move = 'trace' } = {}) {
 		const opts = { ordered, classSet: at >= MOVES.indexOf('painters') };   // a load: attributes in order, a class's own tokens in order and its states a set
 		for (const layer of Object.keys(R[k])) {
 			const rItems = R[k][layer], lItems = Lv[k][layer] ?? [];
-			same(`${layer}: the items in order`, rItems.map(([key]) => key), lItems.map(([key]) => key));
+			if (layer === PIPES && at >= MOVES.indexOf('pipes')) same(`${layer}: the record's items, in the order rule P puts them`, pipesInOrder(rec, live, Lv, k, rItems.map(([key]) => key)), lItems.map(([key]) => key));
+			else same(`${layer}: the items in order`, rItems.map(([key]) => key), lItems.map(([key]) => key));
 			const live2 = new Map(lItems);
 			for (const [key, shapes] of rItems) {
 				if (!live2.has(key)) continue;

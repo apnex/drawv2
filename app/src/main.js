@@ -82,7 +82,7 @@ warnings drawn after it.
 let networkSaid = null;   // { text, run }: the network's last word, and the undo log's foreign run when it was said
 const foreignKey = () => { const r = history.foreignRun && history.foreignRun(); return r ? `${r.actor}|${r.run}|${r.label}` : ''; };
 // C-e (D5): the network's edits reach history through the canvas's generic builder
-const networkHost = pageNetwork.attach({ model, renderer, selection, states, edit: (label, entries) => history.commit(editOf(label, entries)), pipeLayer: scene.layerElement(FOREIGN_LAYERS.network), el,
+const networkHost = pageNetwork.attach({ model, renderer, selection, states, edit: (label, entries) => history.commit(editOf(label, entries)),
 	pending: () => sync.outbox.some((m) => !m.answered),
 	say: (text) => {
 		if (!text) return;

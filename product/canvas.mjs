@@ -57,20 +57,21 @@ it into each page's `#container` between generated markers (the gate checks), th
 its layers in another order than the page. A part's painter names the layer it draws into; one this does not hold is refused.
 */
 export const CANVAS_VIEWBOX = '-960 -540 1920 1080';
-// H26.4: the two layers the plugins draw themselves, each by the part that draws it -- foreign in the scene below, and asked of it by
-// a page without the page typing a plugin's kind (app/src/main.js, lab/src/root.js)
-export const FOREIGN_LAYERS = { network: 'pipes', simulation: 'movers' };
+// H26.4: the layer a plugin draws itself, by the part that draws it -- foreign in the scene below, and asked of it by a page without the
+// page typing a plugin's kind (app/src/main.js). H26.8's pipes move (NATIVE-SHAPES.md section 4.6): the movers' alone, the network's
+// pipes a painted kind, drawn by the renderer into a layer of the scene's own
+export const FOREIGN_LAYERS = { simulation: 'movers' };
 export const CANVAS_LAYERS = [
 	'grid-nodes', 'grid-zones', 'snaplayer', 'zones',
-	FOREIGN_LAYERS.network,      // V-b (H18.26): the network's pipes, beneath the links that run over them
+	'pipes',                     // V-b (H18.26): the network's pipes, beneath the links that run over them
 	'groups', 'links', 'waypoints', 'nodes',
 	FOREIGN_LAYERS.simulation,   // H12.8: over the graph, so a packet is never hidden by the line it travels; in a layer of their own, so the renderer's reconcile never sees them -- derived presentation, not document entities
 	'overlay',
 ];
 /*
 H26.4 (dev/design/components/VECTOR-SCENE.md section 5.1, D5, D9): THE CANVAS'S SCENE, declared once -- the layers above in order, each
-written with its id, and the two the plugins draw themselves foreign: the network's pipes and the simulation's movers, whose drawers write
-beneath the element the scene answers for each (`layerElement`). Declared here, where the product composes the plugins, since the canvas
+written with its id, and the one a plugin draws itself foreign: the simulation's movers, whose drawer writes beneath the element the scene
+answers for it (`layerElement`) -- the network's pipes were the second until H26.8's pipes move. Declared here, where the product composes the plugins, since the canvas
 and the renderer may name no plugin's layer (tests/canvas-names-no-plugin.test.js) and consume no composition. The product page and the
 lab hand it to composeCanvas, which opens it on their root through the renderer's `openCanvasScene`, the scene appending the layers after
 the ground; the export opens it with no root (server/svg.mjs).

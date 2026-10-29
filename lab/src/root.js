@@ -24,7 +24,6 @@ network: the tab model proposes, the authority model rules, exactly as productio
 
 import { editOf } from '../../app/src/commands.js';   // C-e (D5): the network's edit, built by the canvas's generic builder
 import { NODE_GRID } from '../../kernel/geometry.mjs';
-import { el } from '../../app/src/painter.js';
 import { Model } from '../../model/model.mjs';
 import { attachRelations } from '../../engine/store.mjs';
 import { applyOps } from '../../model/ops.mjs';
@@ -33,7 +32,7 @@ import { composeCanvas } from '../../app/src/compose-canvas.js';   // K8: the ca
 import { commit, undo, redo } from '../../planner/txn.mjs';
 import { Log } from '../../planner/log.mjs';
 import { productKinds } from '../../product/kinds.mjs';
-import { PRODUCT_CANVAS, CANVAS_LAYERS, CANVAS_SCENE, FOREIGN_LAYERS } from '../../product/canvas.mjs';   // the plugins' canvas parts (C-a), the canvas's layers (H25.4) and its scene (H26.4)
+import { PRODUCT_CANVAS, CANVAS_LAYERS, CANVAS_SCENE } from '../../product/canvas.mjs';   // the plugins' canvas parts (C-a), the canvas's layers (H25.4) and its scene (H26.4)
 // the network plugin -- incubated here from 2026-09-28, composed into a page by its one function since V-b (H18.26), as the
 // product page composes it
 import { routeLink } from '../../plugins/network/pipes.mjs';
@@ -73,7 +72,7 @@ K8 -- the canvas, composed by the one function the product page composes it with
 this network. The lab holds no tools and no run mode; its drag judge is the attached network's, below, reached lazily
 because the network attaches to the parts composed here.
 */
-const { scene, model, history, renderer, states, selection, input, listen } = composeCanvas({
+const { model, history, renderer, states, selection, input, listen } = composeCanvas({
 	svg, scene: CANVAS_SCENE, defs: document.getElementById('kdefs'), host: window, network, kinds, parts: PRODUCT_CANVAS,   // C-a: the plugins' canvas parts
 	readoutEl: document.getElementById('readout-bottom'),
 	help: null, now: () => Date.now(),
@@ -103,12 +102,12 @@ const say = (text) => { notice.textContent = text; };
 
 
 /*
-THE NETWORK, ATTACHED (plugins/network/host.mjs): its pipe painter, its drag judge, its transit edits, its answer step and the
+THE NETWORK, ATTACHED (plugins/network/host.mjs): its drag judge, its transit edits, its answer step and the
 settle that follows every change -- the plugin's choreography, which promotion attaches to the product page the same way.
 What stays here is the lab's own: the in-page planner below (the authority model and its log), the refusal that takes the
 planner's document back, the notice, and which fixed board to load.
 */
-const net = page.attach({ model, renderer, selection, states, edit: (label, entries) => history.commit(editOf(label, entries)), pipeLayer: scene.layerElement(FOREIGN_LAYERS.network), el, say });   // C-e (D5)
+const net = page.attach({ model, renderer, selection, states, edit: (label, entries) => history.commit(editOf(label, entries)), say });   // C-e (D5)
 const capture = listen();   // the DOM's events, as input events (L0)
 /*
 THE DOOR (G11): a planner refusal is VISIBLE.

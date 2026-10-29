@@ -130,7 +130,7 @@ The anchored core's parts, declared once in `tools/layers.mjs` `PARTS` and rende
 | `renderer` | Draw a document through the parts' painters | host | `app/src/renderer.js`, `app/src/painter.js` | `document`, `lattice`, `primitives` | `@apnex/vector-scene` |
 | `sync` | Keep a tab converged with the server | host | `app/src/sync.js`, `app/src/net.js`, `app/src/watchdog.js`, `app/src/clock.js` | `canvas`, `document`, `kind-contract` | -- |
 | `product-page` | Compose the product page | composition root | `app/src/main.js`, `app/src/palette.js`, `app/src/run-mode.js`, `app/src/spectate.js` | `canvas`, `devices`, `editing`, `network`, `product`, `renderer`, `simulation`, `sync` | -- |
-| `lab` | Compose the canvas over the real modules, without storage | composition root | `lab/` | `canvas`, `document`, `lattice`, `network`, `planner`, `product`, `relations`, `renderer`, `server` | -- |
+| `lab` | Compose the canvas over the real modules, without storage | composition root | `lab/` | `canvas`, `document`, `lattice`, `network`, `planner`, `product`, `relations`, `server` | -- |
 | `server` | Compose the server | composition root | `server/server.js`, `server/app.js`, `server/static.mjs` | `access`, `devices`, `export`, `hub`, `planner`, `rest`, `store` | -- |
 | `access` | Establish who a request comes from | door | `server/identity.mjs`, `server/codes.mjs`, `server/origin.mjs` | -- | -- |
 | `placement` | Choose the free anchor a relationship names | door | `server/anchor.mjs` | `devices`, `document`, `lattice` | -- |

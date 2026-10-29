@@ -426,6 +426,7 @@ export const ENTRIES = {
 			'plugins/groups/group-painter.mjs',   // C-a (H19.29): the groups plugin's painter
 			'plugins/devices/device-appearance.mjs', 'plugins/network/anchor-appearance.mjs', 'plugins/simulation/spawn-appearance.mjs',   // C-a (D3): the anchor's appearances
 			'plugins/network/link-painter.mjs', 'plugins/network/canvas.mjs',   // C-a (H19.29): the network's link painter and its canvas part
+			'plugins/network/pipe-painter.mjs',   // H26.8's pipes move (NATIVE-SHAPES.md section 4.6): its pipe painter, the pipes a painted kind
 			'plugins/network/link-head.mjs',   // H24.6 (B356): a directed link's head, the painter's geometry
 			'plugins/network/link-handles.mjs',   // C-d (H19.32): the network's link end handles and re-plug
 			'plugins/groups/group-kind.mjs', 'plugins/groups/group-rules.mjs', 'plugins/groups/make-group.mjs', 'plugins/groups/group-of.mjs',   // O-c (H19.20): the groups plugin
@@ -492,6 +493,7 @@ export const ENTRIES = {
 			'plugins/groups/group-painter.mjs',   // C-a (H19.29): the groups plugin's painter
 			'plugins/devices/device-appearance.mjs', 'plugins/network/anchor-appearance.mjs', 'plugins/simulation/spawn-appearance.mjs',   // C-a (D3): the anchor's appearances
 			'plugins/network/link-painter.mjs', 'plugins/network/canvas.mjs',   // C-a (H19.29): the network's link painter and its canvas part
+			'plugins/network/pipe-painter.mjs',   // H26.8's pipes move (NATIVE-SHAPES.md section 4.6): its pipe painter, the pipes a painted kind
 			'plugins/network/link-head.mjs',   // H24.6 (B356): a directed link's head, the painter's geometry
 			'plugins/network/link-handles.mjs',   // C-d (H19.32): the network's link end handles and re-plug
 			'plugins/groups/group-kind.mjs', 'plugins/groups/group-rules.mjs', 'plugins/groups/make-group.mjs', 'plugins/groups/group-of.mjs',   // O-c (H19.20): the groups plugin

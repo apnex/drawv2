@@ -10,11 +10,14 @@ Held here, beside the record the drawing moves answer to (tests/native-record.te
         an element, by file, each negative fixture failing
   GR12  every record document in every mode drawn as the record holds it on a load -- each item's parts, each shape's attributes in
         order; an element kept across an update keeps its key
-  NS13  each lifetime the move changes, by its own test, the record's step beside it where today differs; every ask of a state for an
-        id the renderer does not draw handed to the composition's hook, as before the move (the verifier's B1)
+  NS13  each lifetime the move changes, by its own test, the record's step beside it where today differs; from the pipes move a pipe's
+        states on its line through a repaint, the pipes the renderer's to draw, where the network's hook handed a state on (the
+        painters move's B1)
   NS5   an id the renderer does not draw holds no mark; a description answering nothing drops the entity's marks (3.2, rule 3); a mark
         read back is a frozen copy
   NS16  the healed link's step differs from the record by its twin's `stroke-linecap` alone
+  NS3   from the pipes move, a pipe's states on its line, the shape bearing its id, never its group, as the export's resolver styles it
+        (section 3.2; reading 3, o:F1); what the pipes share empty with no network (a:F4)
 */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -25,7 +28,7 @@ import { execFileSync } from 'node:child_process';
 import { Model } from './fixtures/composed.mjs';
 import { makeRenderer } from './fixtures/client-harness.mjs';
 import { NATIVE_RECORD, IDS, scenarios, runScenario, layersAt, layersOf, ownOf, classOf, world, recordBoard, storedDocuments, coverageDocuments,
-	load, edit, E, hover, frame } from './fixtures/native-record.mjs';
+	load, edit, E, hover, arm, frame, H, PIPES } from './fixtures/native-record.mjs';
 import { Renderer } from '../app/src/renderer.js';
 import { EditingStates } from '../app/src/editing-states.js';
 import { PRODUCT_CANVAS } from '../product/canvas.mjs';
@@ -36,7 +39,7 @@ const RECORD = JSON.parse(fs.readFileSync(NATIVE_RECORD, 'utf8'));
 const ALL = scenarios();
 // a scenario run live, its layers at each step beside the record's
 const lived = (name) => {
-	const live = runScenario(ALL[name]), rec = RECORD.scenarios[name];
+	const live = runScenario(ALL[name], { tags: true }), rec = RECORD.scenarios[name];
 	return { live, rec, L: layersAt(live.steps), R: layersAt(rec.steps) };
 };
 const at = (rec, label) => { const k = rec.steps.findIndex((s) => s.label === label); assert.ok(k >= 0, `a step "${label}"`); return k; };
@@ -93,7 +96,10 @@ test('GR3: every kit a painter or appearance is handed holds exactly the model, 
 		m.set('node', IDS.charlie, { x: 60 });   // a link's redraws asked
 	} finally { restore(); }
 	assert.ok(kits.length > 1000, `kits handed over every document and mode (${kits.length})`);
-	for (const [who, kit] of kits) assert.deepEqual(Object.keys(kit), KIT, who);
+	// the pipes move: the pipe painter declares `shared` (rule P), and its kit holds it beside the six
+	const sharing = new Set(PRODUCT_CANVAS.flatMap((part) => (part.painters ?? []).filter((p) => p.shared).map((p) => `${p.kind} shapes`)));
+	assert.deepEqual([...sharing], ['pipe shapes'], 'the one painter that shares');
+	for (const [who, kit] of kits) assert.deepEqual(Object.keys(kit), sharing.has(who) ? [...KIT, 'shared'] : KIT, who);
 	const asked = new Set(kits.map(([who]) => who));
 	for (const part of PRODUCT_CANVAS) {
 		for (const p of part.painters ?? []) assert.ok(asked.has(`${p.kind} shapes`), `${p.kind}'s painter asked`);
@@ -135,9 +141,9 @@ function holdsElement(v, seen = new WeakSet()) {
 Every member of the renderer, and how it is called over a drawn board -- for each of a zone, a group, a link, a device, a waypoint and a
 tower. A member this table does not name fails the test, so a new one is classed before it lands; the deleted members stay deleted.
 */
-const RENDERER_MEMBERS = ['constructor', 'toggleLabels', 'renderOpts', 'setMode', 'watchMode', 'handle', 'syncAll', 'render', 'stackOf', 'refFor', 'place',
-	'draws', 'update', 'kit', 'compose', 'describe', 'applied', 'putPart', 'putFresh', 'patch', 'reput', 'restate', 'mark', 'markOf', 'ownShapeOf',
-	'drawerOf', 'redrawAfter', 'refreshGatherer', 'unput', 'remove'];
+const RENDERER_MEMBERS = ['constructor', 'toggleLabels', 'renderOpts', 'setMode', 'watchMode', 'handle', 'invalidatedBy', 'syncAll', 'render', 'stackOf',
+	'refFor', 'place', 'draws', 'update', 'kit', 'sharedOf', 'compose', 'describe', 'applied', 'putPart', 'putFresh', 'patch', 'reput', 'restate', 'mark',
+	'markOf', 'ownShapeOf', 'drawerOf', 'redrawAfter', 'refreshGatherer', 'unput', 'remove'];
 const RETIRED_MEMBERS = ['byId', 'glyphOf', 'setState', 'clearState', 'reflectSelection', 'elementOf', 'layerOf'];
 
 test('GR8: the renderer answers data alone -- every member called over a drawn board, its states and marks held, answers no element', () => {
@@ -169,6 +175,12 @@ test('GR8: the renderer answers data alone -- every member called over a drawn b
 			ask('redrawAfter', kind, e); ask('refreshGatherer', id);
 		}
 		ask('mark', IDS.tower, 'aim', 30); ask('markOf', IDS.tower, 'aim');
+		// the pipes move: a pipe, drawn by the renderer outside run mode, and rule P's schedule
+		ask('setMode', 'view');
+		const pipe = w.model.get('pipe', H);
+		assert.ok(r.drawn.get(H), `${H} drawn`);
+		ask('ownShapeOf', H); ask('drawerOf', H); ask('describe', 'pipe', pipe); ask('kit', r.painters.get('pipe')); ask('sharedOf', r.painters.get('pipe'));
+		ask('invalidatedBy', 'node'); ask('invalidatedBy', 'pipe'); ask('restate', H); ask('handle', 'set', 'pipe', pipe);
 		ask('syncAll');
 		ask('unput', IDS.zone); ask('remove', IDS.group);
 		const called = new Set(answers.map(([name]) => name));
@@ -230,10 +242,15 @@ test('GR12: every record document, in view, edit and run, drawn on its load exac
 			loads++;
 			const now = live.steps[k];
 			assert.equal(now.mode, s.mode, `${name}, step ${k}: its mode`);
-			assert.equal(JSON.stringify(L[k]), JSON.stringify(R[k]), `${name}, step ${k} (${s.label}): every layer, item, part and attribute, in order`);
+			// RESTATED at the pipes move: the pipes layer's items in the model's order, as a load's describing puts them (rule P, 1) -- the
+			// record's, but where `ca492da`'s drawer kept a pipe's element across the load (the build's erratum, tests/fixtures/native-record.mjs `pipesInOrder`)
+			const inModel = (items) => now.pipeOrder.filter((id) => items.some(([key]) => key === id)).map((id) => items.find(([key]) => key === id));
+			assert.equal(JSON.stringify({ ...L[k], [PIPES]: inModel(L[k][PIPES]) }), JSON.stringify({ ...R[k], [PIPES]: inModel(R[k][PIPES]) }), `${name}, step ${k} (${s.label}): every layer, item, part and attribute, in order`);
+			assert.deepEqual(L[k][PIPES].map(([key]) => key), inModel(L[k][PIPES]).map(([key]) => key), `${name}, step ${k}: the pipes in the model's order`);
 			const towers = now.mode === 'run' ? Object.keys(now.marks.aims).length : 0;
 			aimed += towers;
-			assert.deepEqual(now.puts, { new: s.puts.new, patch: towers, move: 0 }, `${name}, step ${k}: each put makes an item, as many as today's; none moved; none patched but an aimed tower's mark`);
+			// RESTATED at the pipes move: one more new item per pipe the load leaves drawn, the renderer's to put now
+			assert.deepEqual(now.puts, { new: s.puts.new + R[k][PIPES].length, patch: towers, move: 0 }, `${name}, step ${k}: each put makes an item, as many as today's and the pipes; none moved; none patched but an aimed tower's mark`);
 		});
 	}
 	assert.equal(loads, 81, 'each load of each document in each mode');
@@ -389,32 +406,71 @@ test('NS13: a mark is the renderer\'s to keep -- through a redraw, a structural 
 });
 
 /*
-The verifier's B1: until the pipes move the network draws each pipe's line itself, and only the element it last drew shows a state, so
-the page's renderer before the move handed every ask of a state for an id it did not draw to the composition's hook -- the overlay
-asking a hover again over a line drawn afresh reached it. Every such ask is handed on still, a repeated one and a clear of what is not
-held among them; an entity the renderer draws is put again only where its states changed.
+NS13 at the pipes move (section 4.2's pipes row, the one change of behaviour it names): a pipe's states kept through a repaint. The
+network's drawer wrote a pipe line's class whole at every repaint -- any change of the model, a mode change, a settle -- so a hover or an
+arming the overlay still held was lost until the pointer moved again; and a line run mode drew afresh showed none until the overlay asked
+again (the painters move's B1, met then by the editing states handing every ask to the network's hook). The renderer draws each pipe now,
+describing what is held onto its line each time it puts it; a state changed is a state-only put, an ask that changes nothing puts nothing.
 */
-test('NS13 (B1): every ask of a state for an id the renderer does not draw reaches the foreign hook, as before the move; a drawn entity is put again only when its states change', () => {
-	const { svg, scene, restore } = makeRenderer();
+test('NS13 (pipes): a pipe\'s hover and arming kept through a repaint -- an end moved, run mode and back, a settle -- where the network\'s repaint lost them', () => {
+	const w = world();
 	try {
-		const m = new Model(), asked = [], puts = [];
-		const states = new EditingStates({ model: m, parts: PRODUCT_CANVAS });
-		const r = new Renderer(m, svg, { parts: PRODUCT_CANVAS, scene, states, foreign: { setState: (...a) => asked.push(a) } });
-		m.put('zone', { id: 'zone-0d0c01', name: 'z', x: 0, y: 0, w: 120, h: 60 });
-		r.scene = { ...scene, put: (...a) => { puts.push(a[1]); return scene.put(...a); } };
-		const PIPE = 'pipe-0d0c02-0d0c03';   // an id no painter draws
-		states.setState(PIPE, 'hover', true); states.setState(PIPE, 'hover', true);
-		states.setState(PIPE, 'armed', true); states.setState(PIPE, 'armed', true);
-		states.clearState(PIPE, 'hover', 'armed'); states.clearState(PIPE, 'hover');
-		assert.deepEqual(asked, [[PIPE, 'hover', true], [PIPE, 'hover', true], [PIPE, 'armed', true], [PIPE, 'armed', true], [PIPE, 'hover', false], [PIPE, 'armed', false], [PIPE, 'hover', false]],
-			'each ask handed on, in order -- a repeated set and a clear of what is not held among them');
-		assert.deepEqual(states.classesOf(PIPE), [], 'and held as asked');
-		states.setState('zone-0d0c01', 'hover', true);
-		assert.deepEqual(puts, ['zone-0d0c01'], 'a drawn entity\'s state changed: put again');
-		states.setState('zone-0d0c01', 'hover', true);
-		assert.deepEqual(puts, ['zone-0d0c01'], 'asked again, unchanged: nothing put');
-		assert.equal(asked.length, 7, 'and a drawn entity\'s state never reaches the hook');
-	} finally { restore(); }
+		load(w, recordBoard());
+		const line = () => layersOf(w)[PIPES].find(([key]) => key === H)?.[1][0].children.find((c) => c.attrs.id === H) ?? null;
+		hover(w, 'pipe', H); arm(w, { alt: true });
+		assert.deepEqual(classOf(line()), ['pipe', 'pipe-hand', 'hover', 'armed'], 'hovered and armed, on its line');
+		edit(w, 'move', [E.set('node', IDS.W, { x: 300 })]);
+		assert.deepEqual(classOf(line()), ['pipe', 'pipe-hand', 'hover', 'armed'], 'kept as its end moves, the pipe described again');
+		w.host.settled({ label: 'move' }, { ok: true, version: 2, ops: [] });
+		assert.deepEqual(classOf(line()), ['pipe', 'pipe-hand', 'hover', 'armed'], 'and through the settle');
+		w.renderer.setMode('run');
+		assert.equal(line(), null, 'run mode draws no pipe');
+		w.renderer.setMode('view');
+		assert.deepEqual(classOf(line()), ['pipe', 'pipe-hand', 'hover', 'armed'], 'drawn afresh after run mode, with what is held');
+		const puts = [], inner = w.renderer.scene;
+		w.renderer.scene = { ...inner, put: (...a) => { puts.push(a[1]); return inner.put(...a); } };
+		w.renderer.states.setState(H, 'hover', true);
+		assert.deepEqual(puts, [], 'an ask that changes nothing puts nothing');
+		w.renderer.states.setState(H, 'hover', false);
+		assert.deepEqual([puts, classOf(line())], [[H], ['pipe', 'pipe-hand', 'armed']], 'a state let go: one state-only put');
+		w.renderer.states.setState('pipe-0d0c02-0d0c03', 'hover', true);
+		assert.deepEqual(puts, [H], 'an id the renderer does not draw: nothing put, nothing marked');
+	} finally { w.platform.restore(); }
+});
+
+/*
+The state target (section 3.2; reading 3, o:F1; appendix A, pipe-state-target.mjs as a test): a pipe's states land on its line, the shape
+bearing its id beneath its group, never the group -- so one selected hand pipe, its description styled by the export's resolver (the
+page's own sheets), draws its line `pipe pipe-hand selected` in the selected pipe's colour, its group `pipe-of`, as the network drew it.
+*/
+test('NS3: a selected hand pipe\'s state on its line, never its group -- styled by the export\'s resolver, as the network drew it', async () => {
+	const { drawingRules, styleMarkup } = await import('../server/svg-style.mjs');
+	const w = world();
+	try {
+		load(w, recordBoard());
+		w.selection.set([H]);
+		const [group] = layersOf(w)[PIPES].find(([key]) => key === H)[1];
+		const esc = (v) => String(v).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+		const markup = (n) => `<${n.tag}${Object.entries(n.attrs).map(([k, v]) => ` ${k}="${esc(v)}"`).join('')}>${(n.children ?? []).map(markup).join('')}</${n.tag}>`;
+		const text = styleMarkup(markup(group), drawingRules());
+		const attr = (tagText, k) => new RegExp(`(?:^| )${k}="([^"]*)"`).exec(tagText)?.[1] ?? null;
+		const g = /<g ([^>]*)>/.exec(text)[1], line = /<line ([^>]*?)\/?>/.exec(text)[1];
+		assert.deepEqual({ group: attr(g, 'class'), line: attr(line, 'class'), stroke: attr(line, 'stroke') }, { group: 'pipe-of', line: 'pipe pipe-hand selected', stroke: '#aed581' });
+		assert.equal(group.attrs.id, undefined, 'the group bears no id: the line is the state target');
+	} finally { w.platform.restore(); }
+});
+
+test('NS3: what the pipes share -- the pipes an up link runs over -- empty with no network, frozen, and the same while the derivation is cached (a:F4)', async () => {
+	const { occupiedOf } = await import('../plugins/network/network-queries.mjs');
+	const { Model: CoreModel } = await import('../model/model.mjs');
+	assert.deepEqual(occupiedOf(new CoreModel()), [], 'a Model with no network attached: none');
+	const w = world();
+	try {
+		load(w, recordBoard());
+		const a = occupiedOf(w.model), b = occupiedOf(w.model);
+		assert.ok(Object.isFrozen(a) && a === b, 'frozen, and the same while the derivation is the cached one');
+		assert.deepEqual([...a], RECORD.scenarios['pipe triggers, alone: a load'].steps[0].net.events.at(-1).shared, 'the record\'s `shared` after the load');
+	} finally { w.platform.restore(); }
 });
 
 test('NS5 and section 3.2, rule 3: an id the renderer does not draw holds no mark, a description answering nothing drops the entity\'s marks, and a mark read back is a frozen copy', () => {

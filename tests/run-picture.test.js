@@ -10,10 +10,8 @@ import fs from 'node:fs';
 import { Model } from './fixtures/composed.mjs';
 import { Renderer } from '../app/src/renderer.js';
 import { makeRenderer } from './fixtures/client-harness.mjs';
-import { fakeLayer } from './fixtures/fake-svg.mjs';
 import { svgDocument } from '../server/svg.mjs';
 import { readModel } from '../plugins/network/read-model.mjs';
-import { attachNetwork } from '../plugins/network/host.mjs';
 import { pipeEntity } from '../plugins/network/pipe-kind.mjs';
 import { RUN_PICTURE, waypointLayers, downStroke, NETWORK_TOKENS } from '../plugins/network/appearance.mjs';
 import { TOKENS } from '../kernel/theme.mjs';
@@ -96,25 +94,27 @@ test('R-c: what is left out is decided in one place -- no stylesheet hides autho
 	}
 });
 
+/*
+RESTATED at H26.8's pipes move (dev/design/components/NATIVE-SHAPES.md section 4.6; appendix A, a:F4): the pipes are the network's pipe
+painter's, drawn by the renderer, which answers no pipe in run mode -- the run picture holds none -- and describes each again on leaving
+it (`modal`). The Model here attaches a network (the composed fixture's), as the page's does.
+*/
 test('R-c: run mode draws no pipe, and leaving it draws them again', () => {
 	const m = new Model();
 	m.put('node', { id: 'node-00000a', name: 'A', type: 'router', x: -240, y: 0, shape: 'circle' });
 	m.put('node', { id: 'node-00000c', name: 'w', x: 0, y: -120 });
 	m.put('pipe', pipeEntity('node-00000a', 'node-00000c', 'hand'));
-	const f = fakeLayer(), watchers = [];
-	const renderer = { mode: 'view', update: () => {}, reflectSelection: () => {}, render: () => {}, watchMode: (fn) => watchers.push(fn) };
-	attachNetwork({
-		session: { network: { view: { of: () => ({ route: () => null }) } }, takeNotice: () => null, onTransitChange: () => {} },
-		model: m, renderer, selection: { subscribe: () => {}, list: () => [] }, history: { commit: () => {} },
-		pipeLayer: f.root, el: f.el, say: () => {},
-	});
-	const lines = () => f.all().filter((n) => n.tag === 'line' && n.parent).length;
-	for (const fn of watchers) fn('view');
-	assert.equal(lines() > 0, true, 'authoring draws the hand pipe');
-	renderer.mode = 'run'; for (const fn of watchers) fn('run');
-	assert.equal(lines(), 0, 'run mode draws none -- so none can be clicked');
-	renderer.mode = 'view'; for (const fn of watchers) fn('view');
-	assert.equal(lines() > 0, true, 'and leaving run mode draws it again');
+	const { svg, scene, restore } = makeRenderer();
+	try {
+		const renderer = new Renderer(m, svg, { parts: PRODUCT_CANVAS, scene });
+		renderer.syncAll();
+		const lines = () => scene.items('pipes').flatMap((it) => it.shapes[0].children).filter((c) => c.tag === 'line').length;
+		assert.equal(lines() > 0, true, 'authoring draws the hand pipe');
+		renderer.setMode('run');
+		assert.equal(lines(), 0, 'run mode draws none -- so none can be clicked');
+		renderer.setMode('view');
+		assert.equal(lines() > 0, true, 'and leaving run mode draws it again');
+	} finally { restore(); }
 });
 
 // ---- the download's links (H1) ----

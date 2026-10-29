@@ -10,8 +10,9 @@ each seen to exercise what it names; its coverage of the drawing modules -- and 
 The comparison is checked here against the record itself, with nothing drawn, so its allowances are seen to be the table's and no more:
 the record against itself under `record`; today's trace refused after the trace move; attribute order and class token order allowed
 from the painters move on, but not on a load, where a class's own tokens keep their order; NS13's lifetimes and NS16's twin required
-from the painters move on; rule P's descriptions exact per step from the pipes move on, every pipe taken from the model, and a load's
-puts counted; the root's classes held under every move. An empty scenario fails before anything is compared, and a state, mark or
+from the painters move on; rule P's descriptions exact per step from the pipes move on, every pipe taken from the model; the root's
+classes held under every move. And from the pipes move each put of a load step judged by section 4.2's load rule (NS17), on the live
+run's tags (GR14): 170 load steps, every put tagged, and every fault appendix A plants for the rule failing it. An empty scenario fails before anything is compared, and a state, mark or
 combined-pipe scenario emptied from its boundary on fails its own proof. tests/native-record-mutants.test.js plants faults in the
 drawing code and sees the record fail.
 */
@@ -19,12 +20,15 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { NATIVE_RECORD, WRITTEN_FROM, GROUPS, MEASURED, UNREACHABLE, STATE_CLASSES, scenarios, runScenario, compareScenario, proofOf, layersAt, storedDocuments, coverageDocuments,
-	sha256, IDS, H, rulePAt, countPuts } from './fixtures/native-record.mjs';
+	sha256, IDS, H, rulePAt, countPuts, PIPES, keyOf } from './fixtures/native-record.mjs';
 import { svgDocument } from '../server/svg.mjs';
 
 const RECORD = JSON.parse(fs.readFileSync(NATIVE_RECORD, 'utf8'));
 const ALL = scenarios();
-const MOVE = 'painters';   // the drawing moves built on this tree: moves 2 and 3, the trace and the painters. The pipes move sets 'pipes' as it lands
+const MOVE = 'pipes';   // the drawing moves built on this tree: moves 2, 3 and 4, the trace, the painters and the pipes
+// each scenario run live once, tagged (the pipes move's load rule), for the comparison and the faults planted in its tags below
+const LIVE = new Map();
+const liveOf = (name) => { if (!LIVE.has(name)) LIVE.set(name, runScenario(ALL[name], { tags: true })); return LIVE.get(name); };
 
 /*
 Section 4.2's table, as the scenarios name its rows: each group's scenarios, and the number of each. A row 4.2 names that the record
@@ -85,7 +89,7 @@ test('every stored document and coverage board exports the bytes the record hold
 
 for (const [name, sc] of Object.entries(ALL)) {
 	test(`the tree draws the record under the ${MOVE} move: ${name}`, () => {
-		assert.deepEqual(compareScenario(sc, RECORD.scenarios[name], runScenario(sc), { move: MOVE }), []);
+		assert.deepEqual(compareScenario(sc, RECORD.scenarios[name], liveOf(name), { move: MOVE }), []);
 	});
 }
 
@@ -157,12 +161,13 @@ test('the comparison allows the painters move attribute order and class token or
 /*
 The pipes move (the verifier's SF2, SF3 and SF4): each step's descriptions exactly as rule P names them -- a pipe described twice where
 rule P names it once refused, and three times; every pipe the model holds named on a mode change, run mode included, where no pipe is
-drawn and the painter answers null; and a load's puts counted, a load putting nothing new refused, as one patching or moving.
+drawn and the painter answers null. RESTATED at the pipes move (NS17): a load's puts are judged by the load rule, below, from the live
+run's tags -- a load whose puts were not tagged refused -- in place of "no patch, no move".
 */
 const asRuleP = (name, times = (n) => n) => { const rec = RECORD.scenarios[name], live = copy(rec); live.steps.forEach((s, k) => { s.describes = Object.fromEntries(Object.entries(rulePAt(rec, k)).map(([p, n]) => [p, times(n, k)])); }); return live; };
 const underPipes = (name, live) => compareScenario(ALL[name], RECORD.scenarios[name], live, { move: 'pipes' });
 const describing = (problems) => problems.filter((p) => /described|counts no pipe/.test(p));
-test('the comparison requires of the pipes move each step\'s descriptions exactly as rule P names them, every pipe from the model, and a load\'s puts counted', () => {
+test('GR14: the comparison requires of the pipes move each step\'s descriptions exactly as rule P names them, every pipe from the model, and a load\'s puts tagged', () => {
 	const moved = 'pipe triggers, alone: its endpoint moved, no link changed', rec = RECORD.scenarios[moved];
 	const k = rec.steps.findIndex((s) => s.label === 'its endpoint moved');
 	assert.deepEqual(rulePAt(rec, k), { 'pipe-fa00a2-fb00d1': 1, [H]: 1 }, 'its endpoint moved: the two pipes naming it, once each');
@@ -178,12 +183,9 @@ test('the comparison requires of the pipes move each step\'s descriptions exactl
 	assert.equal(rr.steps[toRun].net.pipes.length, 9);
 	const none = asRuleP(run, (n, i) => (i === toRun ? 0 : n));
 	assert.ok(describing(underPipes(run, none)).some((p) => p.startsWith(`step ${toRun} `)), 'none described on entering run mode: refused');
-	const puts = (f) => { const l = asRuleP(moved); f(l.steps[0]); return underPipes(moved, l).filter((p) => p.startsWith('step 0 ') && /load/.test(p)); };
-	assert.deepEqual(puts(() => {}), [], 'a load putting only new items: held');
-	assert.ok(puts((s) => { s.puts = { new: 0, patch: 0, move: 0 }; }).length, 'a load putting nothing new -- its puts not counted: refused');
-	assert.ok(puts((s) => { delete s.puts; }).length, 'a load whose puts were not counted at all: refused');
-	assert.ok(puts((s) => { s.puts = { ...s.puts, patch: 1 }; }).length, 'a load patching an item: refused');
-	assert.ok(puts((s) => { s.puts = { ...s.puts, move: 1 }; }).length, 'a load moving one: refused');
+	const tags = (f) => { const l = copy(liveOf(moved)); f(l.steps[0]); return underPipes(moved, l).filter((p) => p.startsWith('step 0 ')); };
+	assert.deepEqual(tags(() => {}), [], 'the live run, its load\'s puts tagged: held');
+	assert.ok(tags((s) => { delete s.tagged; }).some((p) => /not tagged/.test(p)), 'a load whose puts were not tagged: refused');
 	assert.throws(() => countPuts({ painters: new Map() }, {}, () => {}), /no name the record can count/, 'a renderer holding its scene where the record cannot count it: refused, loudly');
 });
 
@@ -236,4 +238,143 @@ test('the comparison requires of the painters move NS13\'s lifetimes and NS16\'s
 		return rec;
 	};
 	assert.deepEqual(ns.filter((n) => !n.startsWith('marks: trace on a link')).filter((n) => compareScenario(ALL[n], RECORD.scenarios[n], held(copy(RECORD.scenarios[n])), { move: 'painters' }).length), [], 'each passes once drawn as its owners hold it');
+});
+
+/*
+THE LOAD RULE (section 4.2, NS17; appendix A, the pipes move) -- every put the renderer makes in a load step, tagged by the calls open as
+it was made: the load's describing (`syncAll` on the stack, no owner's call), a describing after the load (`render` or `update`, neither),
+or an owner's put (`renderer.mark`, the editing states' `setState`, `clearState`, `reflect`). Over the record's 170 load steps: every put
+tagged and none under no frame; the describing 9,127 puts as `ca492da`'s and one more per pipe item, 1,140; 22 after the refused answer,
+the network's settle re-describing its links; 25 owners' puts in 22 steps -- the mark puts in exactly the record's 17 steps that patch,
+the state puts in exactly NS13's five let-gos across a load.
+*/
+const LOAD_STEPS = () => Object.entries(RECORD.scenarios).flatMap(([name, rec]) => rec.steps.map((s, k) => (s.puts ? [name, k] : null)).filter(Boolean));
+test('GR14, NS17: every put of the record\'s 170 load steps tagged and judged by the load rule -- the describing, a describing after the load, an owner\'s', () => {
+	const steps = LOAD_STEPS();
+	assert.equal(steps.length, 170);
+	const n = { all: 0, describing: 0, pipes: 0, after: 0, owners: 0, stray: 0 }, markSteps = [], stateSteps = [], afterSteps = [];
+	for (const [name, k] of steps) {
+		const live = liveOf(name).steps[k], t = live.tagged;
+		assert.ok(Array.isArray(t), `${name}, step ${k}: tagged`);
+		assert.equal(t.length, live.puts.new + live.puts.patch + live.puts.move, `${name}, step ${k}: every put the renderer made, tagged`);
+		n.all += t.length;
+		n.describing += t.filter((p) => p.sync && !p.owner).length;
+		n.pipes += t.filter((p) => p.sync && !p.owner && p.layer === PIPES).length;
+		n.after += t.filter((p) => !p.sync && !p.owner && p.describe).length;
+		n.owners += t.filter((p) => p.owner).length;
+		n.stray += t.filter((p) => !p.sync && !p.owner && !p.describe).length;
+		if (t.some((p) => p.owner?.call === 'mark')) markSteps.push(`${name} | ${k}`);
+		if (t.some((p) => p.owner && p.owner.call !== 'mark')) stateSteps.push(`${name} | ${k}`);
+		if (t.some((p) => !p.sync && !p.owner && p.describe)) afterSteps.push(`${name} | ${k}`);
+	}
+	assert.deepEqual(n, { all: 10314, describing: 10267, pipes: 1140, after: 22, owners: 25, stray: 0 }, 'each put, by the call it fell under');
+	assert.equal(n.describing - n.pipes, 9127, 'the describing, but the pipes: ca492da\'s, put for put');
+	const patching = Object.entries(RECORD.scenarios).flatMap(([name, rec]) => rec.steps.map((s, k) => (s.puts?.patch ? `${name} | ${k}` : null)).filter(Boolean));
+	assert.equal(patching.length, 17);
+	assert.deepEqual(markSteps.sort(), patching.sort(), 'the steps holding mark puts: exactly the record\'s 17 that patch');
+	assert.deepEqual(stateSteps, ['hover', 'the idle ring', 'armed', 'armed-clone', 'a link end\'s drag state'].map((st) => `states: ${st}, held across a load | 2`), 'those holding state puts: NS13\'s five let-gos across a load');
+	assert.deepEqual(afterSteps, ['pipe triggers, alone: an answer refused | 2'], 'a describing after the load: the network\'s settle after the refused answer alone');
+});
+
+/*
+THE FAULTS APPENDIX A PLANTS FOR THE LOAD RULE, each in a live run's tags and each failing it: a describing patch or move; a pipe put
+twice on a load; an extra describing put, the new count above the record's plus the pipes; an item the record does not hold put and
+removed in place of a repeated legitimate put, the total unchanged; a describing put drawn wrong and put right by a later repeat; a
+re-describing after the load that changes its item, or puts a pipe; a re-put sent to another layer and removed before the final
+drawing is restored, the total unchanged; a duplicate put under a valid owner; a wrong value later restored; a state set where the
+record lets it go; an owner's put on an id the record holds no change for; a put under no frame. tests/native-record-mutants.test.js
+plants the rule's faults in the drawing code too.
+*/
+const LOADED = 'pipe triggers, alone: a load', REFUSED = 'pipe triggers, alone: an answer refused', AIMED = 'marks: aim on a tower, across a load';
+const WITHHELD = 'marks: unrevealed on a device, across a load', HOVERED = 'states: hover, held across a load';
+// the load rule's problems at step `k` of a scenario's live run, its tags edited by `plant`
+const planted = (name, k, plant) => {
+	const live = copy(liveOf(name));
+	plant(live.steps[k].tagged, live.steps[k]);
+	return underPipes(name, live).filter((p) => p.startsWith(`step ${k} `) && /rule \d/.test(p));
+};
+const describingOf = (t) => t.filter((p) => p.sync && !p.owner);
+const repeated = (t) => { const seen = new Map(); for (const [i, p] of t.entries()) { if (!p.sync || p.owner) continue; if (seen.has(p.key)) return [seen.get(p.key), i]; seen.set(p.key, i); } return null; };
+const own = (p) => p.shapes[0];
+test('NS17: every fault appendix A plants for the load rule fails it, in a live run\'s tags', () => {
+	for (const [name, k] of [[LOADED, 0], [REFUSED, 2], [AIMED, 3], [WITHHELD, 0], [HOVERED, 2]]) assert.deepEqual(planted(name, k, () => {}), [], `control: ${name}, step ${k}, as run`);
+	const fails = (what, problems, re) => assert.ok(problems.some((p) => re.test(p)), `${what}: ${problems.join(' / ') || 'held'}`);
+	// the load's describing (rule 1)
+	for (const kind of ['patch', 'move']) fails(`a describing ${kind}`, planted(LOADED, 0, (t) => { describingOf(t).find((p) => !p.key.startsWith('pipe-')).kind = kind; }), new RegExp(`rule 1: .* as a ${kind}`));
+	fails('a pipe put twice on a load', planted(LOADED, 0, (t) => { const i = t.findIndex((p) => p.sync && p.layer === PIPES); t.splice(i + 1, 0, copy(t[i])); }), /rule 1: pipe pipe-\S+ put 2 times/);
+	const extra = planted(LOADED, 0, (t) => { const [, j] = repeated(t); t.splice(j + 1, 0, copy(t[j])); });
+	fails('an extra describing put, the new count above the record\'s plus pipes', extra, /rule 1: 86 new put\(s\) .* make 85/);
+	assert.equal(extra.length, 1, 'and nothing else: a legitimate repeat, one too many');
+	fails('an item the record does not hold put and removed in place of a repeated legitimate put', planted(LOADED, 0, (t) => { const [, j] = repeated(t); t[j].key = 'node-fa0bad'; }), /rule 1: the load's describing puts nodes node-fa0bad, an item the record does not hold after the step/);
+	fails('a describing put drawn wrong and put right by a later repeat', planted(LOADED, 0, (t) => { const [i] = repeated(t); own(t[i]).attrs = { ...own(t[i]).attrs, transform: 'translate(999,999)' }; }), /rule 1: \S+ \S+ put again unlike the describing last put it/);
+	// a describing after the load (rule 2)
+	const afterOf = (t) => t.find((p) => !p.sync && !p.owner && p.describe);
+	fails('a re-describing after the load that changes its item', planted(REFUSED, 2, (t) => { const p = afterOf(t); own(p).attrs = { ...own(p).attrs, class: `${own(p).attrs.class} stray` }; }), /rule 2: .* its description changed/);
+	fails('a re-describing after the load that puts a pipe', planted(REFUSED, 2, (t) => { const pipe = t.find((p) => p.sync && p.layer === PIPES); t.push({ ...copy(pipe), sync: false, describe: 'update', prev: { layer: pipe.layer, shapes: copy(pipe.shapes) } }); }), /rule 2: update after the load puts pipes pipe-\S+: a pipe/);
+	fails('a re-put sent to another layer and removed, the total unchanged', planted(REFUSED, 2, (t) => { afterOf(t).layer = 'zones'; }), /rule 2: .* into zones, its last put in /);
+	// an owner's put (rule 3)
+	const ownerOf = (t, call) => t.findIndex((p) => p.owner?.call === call);
+	fails('a duplicate put under a valid owner', planted(WITHHELD, 0, (t) => { const i = ownerOf(t, 'mark'); t.splice(i + 1, 0, { ...copy(t[i]), prev: { layer: t[i].layer, shapes: copy(t[i].shapes) } }); }), /rule 3: mark unrevealed .* redundant/);
+	fails('a wrong value later restored', planted(AIMED, 3, (t) => {
+		const i = ownerOf(t, 'mark'), right = t[i], wrong = copy(right);
+		const glyph = (shapes) => { const find = (sh) => (sh.attrs?.['data-layer'] === 'glyph' ? sh : (sh.children ?? []).map(find).find(Boolean)); return find(shapes[0]); };
+		Object.assign(glyph(wrong.shapes).attrs, { 'data-aim': '7', transform: 'rotate(7)' });
+		right.prev = { layer: right.layer, shapes: copy(wrong.shapes) };
+		t.splice(i, 0, wrong);
+	}), /rule 3: mark aim .* data-aim "7", the record holding "-143"/);
+	fails('a state set where the record lets it go', planted(HOVERED, 2, (t) => {
+		const p = t[ownerOf(t, 'setState')], was = p.prev.shapes;
+		p.prev.shapes = p.shapes; p.shapes = was; p.owner.args = [p.owner.args[0], 'hover', true];
+	}), /rule 3: setState puts nodes node-fa00a1: hover set on node-fa00a1, where the record lets it go/);
+	fails('an owner\'s put on an id the record holds no change for', planted(HOVERED, 2, (t) => {
+		const bravo = t.findLast((p) => p.sync && p.key === IDS.bravo), shapes = copy(bravo.shapes);
+		own({ shapes }).attrs.class = `${own({ shapes }).attrs.class} hover`;
+		t.push({ key: IDS.bravo, layer: bravo.layer, kind: 'patch', sync: false, owner: { call: 'setState', args: [IDS.bravo, 'hover', true] }, describe: null, prev: { layer: bravo.layer, shapes: copy(bravo.shapes) }, shapes });
+	}), /rule 3: setState puts nodes node-fa00a2: hover set on node-fa00a2, the record holding no change of it across the step/);
+	// a put under no frame (rule 4)
+	fails('a put under no frame', planted(LOADED, 0, (t) => { const p = describingOf(t)[0]; t.push({ ...copy(p), sync: false, describe: null, owner: null }); }), /rule 4: .* under no frame/);
+});
+
+/*
+THE PIPES LAYER'S ORDER, an erratum of the pipes move's build (tests/fixtures/native-record.mjs `pipesInOrder`): from the pipes move the
+pipes layer holds the record's items in the order rule P puts them -- a load's describing in the model's order, a pipe made last, a pipe
+described again where it stands. The record's own order is refused at the two steps where `ca492da`'s drawer put another, and an order
+rule P would not put is refused at every step.
+*/
+test('the pipes layer under the pipes move: the record\'s items, in the order rule P puts them -- the model\'s on a load, each kept item where it stood otherwise', () => {
+	const swap = 'loads: the record\'s board swapped for one lacking a zone, a device, a waypoint, their links and two pipes, in view, edit and run';
+	const laid = 'pipe triggers, alone: a link pipe laid again by hand';
+	const order = (name, k) => layersAt(liveOf(name).steps)[k][PIPES].map(([key]) => key);
+	const recorded = (name, k) => layersAt(RECORD.scenarios[name].steps)[k][PIPES].map(([key]) => key);
+	for (const [name, k] of [[swap, 3], [laid, 1], [laid, 2]]) {
+		assert.notDeepEqual(order(name, k), recorded(name, k), `${name}, step ${k}: the record's order is not the one rule P puts`);
+		assert.deepEqual([...order(name, k)].sort(), [...recorded(name, k)].sort(), 'its items the record\'s');
+	}
+	assert.deepEqual(order(swap, 3), liveOf(swap).steps[3].pipeOrder.filter((id) => order(swap, 3).includes(id)), 'a load: the model\'s order');
+	assert.deepEqual(order(laid, 1), order(laid, 0), 'a pipe laid again by hand: where it stood');
+	// a live run putting its pipes in an order rule P does not: refused, at a load and at a step that is not one
+	const reversed = (name, k) => { const l = copy(liveOf(name)); const s = l.steps[k]; const items = layersAt(l.steps)[k][PIPES]; s.layers[PIPES] = { keys: items.map(([key]) => key).reverse(), changed: Object.fromEntries(items) }; return underPipes(name, l).filter((p) => p.startsWith(`step ${k} `) && p.includes('rule P puts them')); };
+	assert.ok(reversed(swap, 0).length, 'reversed at a load: refused');
+	assert.ok(reversed(laid, 1).length, 'reversed at a pipe laid again: refused');
+});
+
+/*
+Rule P's cost (4.6): never more work than today. `ca492da`'s drawer reconciled every pipe the model held at each model change and each
+mode change, and again at each settle; rule P describes at most that, at every step of every scenario -- and a node moved, only the
+pipes ending at it.
+*/
+test('GR14: rule P describes no more pipes at any step than ca492da\'s drawer reconciled -- every pipe at each model change and mode change', () => {
+	let steps = 0, today = 0, now = 0;
+	for (const [name, rec] of Object.entries(RECORD.scenarios)) {
+		liveOf(name).steps.forEach((s, k) => {
+			const was = rec.steps[k], changes = was.events.length + (k > 0 && rec.steps[k - 1].mode !== was.mode ? 1 : 0);
+			const described = Object.values(s.describes ?? {}).reduce((a, b) => a + b, 0);
+			const reconciled = changes * was.net.pipes.length;
+			assert.ok(described <= Math.max(reconciled, was.puts ? was.net.pipes.length : 0), `${name}, step ${k}: ${described} described, today ${reconciled}`);
+			steps++; today += reconciled; now += described;
+		});
+	}
+	assert.ok(steps === 527 && now < today, `${now} pipe descriptions over the record's 527 steps, where today's drawer reconciled ${today}`);
+	const moved = 'pipe triggers, alone: its endpoint moved, no link changed', k = RECORD.scenarios[moved].steps.findIndex((s) => s.label === 'its endpoint moved');
+	assert.deepEqual(Object.keys(liveOf(moved).steps[k].describes).sort(), ['pipe-fa00a2-fb00d1', H].sort(), 'a node moved: only the pipes ending at it');
 });

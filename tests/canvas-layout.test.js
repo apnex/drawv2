@@ -46,9 +46,10 @@ test('H25.4: each page lays out the canvas the composition declares -- its viewB
 		assert.match(html.slice(0, from), /<main id="stage">\s*$/, `${page}: the canvas is the first thing in its stage`);
 		assert.equal(containerOf(html.slice(0, from) + html.slice(to)), null, `${page} lays out no other canvas outside the region`);
 	}
-	// H26.4: the layers in order are the scene's, each the declaration's layer by name, the pipes and the movers foreign
+	// H26.4: the layers in order are the scene's, each the declaration's layer by name, the pipes and the movers foreign. RESTATED at
+	// H26.8's pipes move (NATIVE-SHAPES.md section 4.6): the movers alone, the pipes a painted kind the renderer draws into the scene's own
 	assert.deepEqual(CANVAS_SCENE.layers.map((l) => l.name), CANVAS_LAYERS, 'the scene declares the canvas\'s layers, in order');
-	assert.deepEqual(CANVAS_SCENE.layers.filter((l) => l.foreign).map((l) => l.name), ['pipes', 'movers'], 'the two the plugins draw themselves, foreign');
+	assert.deepEqual(CANVAS_SCENE.layers.filter((l) => l.foreign).map((l) => l.name), ['movers'], 'the one a plugin draws itself, foreign');
 	assert.ok(CANVAS_SCENE.layers.every((l) => l.attrs.id === l.name), 'each written with its id, as the page\'s markup held it');
 });
 

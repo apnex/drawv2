@@ -1,8 +1,8 @@
 /*
 H26.8's trace move (dev/design/components/NATIVE-SHAPES.md section 5; NS4, B422) -- ONE FRAME OF THE TRACE TEST, in real Chrome: the
 page's canvas composed as the page composes it -- a Model on the page's network with the maintained relations, a Selection the renderer
-reflects, the renderer drawing into the canvas's scene on the bare root, the network attached and drawing its pipes in its own layer --
-and the real reveal, measuring a line by draw's probe, wired to the model as app/src/main.js wires it. tests/vector-scene-trace.test.js
+reflects, the renderer drawing into the canvas's scene on the bare root, the network attached (RESTATED at the pipes move: its pipes
+drawn by the renderer, a painted kind, where the network drew them in its own layer) -- and the real reveal, measuring a line by draw's probe, wired to the model as app/src/main.js wires it. tests/vector-scene-trace.test.js
 drives two frames of it.
 
 The reveal's clock is the frame's own time (`Date.now`), or frozen at an instant (`freeze`), for sampling. `today(id)` traces a line as
@@ -10,8 +10,7 @@ production did before the move -- an inline dash and offset, a layout forced, a 
 compared with, written here from `ca492da`'s plugins/simulation/reveal-painter.mjs `show` onto the line's element.
 */
 import { Renderer, openCanvasScene } from '../../app/src/renderer.js';
-import { pathLengthOf, el } from '../../app/src/painter.js';
-import { foreignStates } from '../../app/src/compose-canvas.js';
+import { pathLengthOf } from '../../app/src/painter.js';
 import { PRODUCT_CANVAS, CANVAS_SCENE } from '../../product/canvas.mjs';
 import { COMPOSED_KINDS } from '../../product/types.mjs';
 import { Reveal } from '../../plugins/simulation/reveal-painter.mjs';
@@ -32,9 +31,9 @@ attachRelations(model, { nearest: NODE_GRID.nearest });
 const selection = new Selection(model);
 // RESTATED H26.8's painters move (NATIVE-SHAPES.md section 3.2, NS13): the editing states, as app/src/compose-canvas.js composes them
 const states = new EditingStates({ model, parts: PRODUCT_CANVAS });
-const renderer = new Renderer(model, svg, { parts: PRODUCT_CANVAS, scene, states, foreign: foreignStates(scene) });
+const renderer = new Renderer(model, svg, { parts: PRODUCT_CANVAS, scene, states });
 selection.subscribe(() => states.reflect(selection.list()));
-const host = net.attach({ model, renderer, selection, states, edit() {}, say() {}, el, pipeLayer: scene.layerElement('pipes') });
+const host = net.attach({ model, renderer, selection, states, edit() {}, say() {} });
 const reveal = new Reveal({ model, renderer, now: () => clock.frozen ?? Date.now(), onCaption() {}, lengthOf: pathLengthOf });
 model.onChange(() => reveal.sync());   // as app/src/main.js wires it: every change wakes the reveal
 const line = (id) => document.getElementById(id);

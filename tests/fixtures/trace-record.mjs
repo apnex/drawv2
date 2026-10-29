@@ -112,7 +112,9 @@ function world() {
 	// is handed, as app/src/compose-canvas.js composes them, where the renderer held them when the record was written
 	const states = new EditingStates({ model, parts: PRODUCT_CANVAS });
 	const renderer = new Renderer(model, null, { parts: PRODUCT_CANVAS, scene, states });
-	// the network attached after the canvas, as the page attaches it (app/src/main.js): its paint on every change and mode, its settle
+	// the network attached after the canvas, as the page attaches it (app/src/main.js): its paint on every change and mode, its settle.
+	// RESTATED at H26.8's pipes move: the pipes are the renderer's to draw, a painted kind, and the network takes no layer; one is handed
+	// still, harmless, so the record regenerates from its archive of `ca492da`, whose network draws into it
 	const host = net.attach({ model, renderer, selection, edit() {}, say() {}, el: pipeNode, pipeLayer: pipeNode('g', { id: 'pipes' }) });
 	const clock = { t: 0 }, said = { caption: null };
 	const reveal = new Reveal({ model, renderer, now: () => clock.t, onCaption: (c) => { said.caption = c; }, lengthOf });
@@ -140,7 +142,8 @@ const named = (key, ids) => ids.some((id) => key === id || key.startsWith(`${id}
 function read(w, ids) {
 	const layers = {};
 	for (const l of w.scene.layers) {
-		if (l.foreign) continue;
+		// the foreign layers the record never read -- the network's pipes, which the renderer draws since H26.8's pipes move, among them
+		if (l.foreign || l.name === 'pipes') continue;
 		const items = w.scene.items(l.name);
 		const whole = items.filter((x) => named(x.key, ids)).map((x) => [x.key, x.shapes]);
 		const rest = items.filter((x) => !named(x.key, ids)).map((x) => [x.key, x.shapes]);

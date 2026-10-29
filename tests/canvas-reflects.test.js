@@ -7,7 +7,9 @@ network's -- a selected link's own waypoints lit, and the links blocking a selec
 marks and unmarks them; it held both itself. RESTATED H26.8 (NATIVE-SHAPES.md section 3.2, NS13): the editing states mark them
 (app/src/editing-states.js `reflect`), and the renderer describes what they hold onto each entity it draws. And a kind the renderer draws neither by a painter nor by appearances -- the
 network's pipe, which the network paints itself -- is not the renderer's to remove on a put: it did, so a pipe put again lost its
-line (B322).
+line (B322). RESTATED at H26.8's pipes move (NATIVE-SHAPES.md section 4.6): the pipe is the network's pipe painter's, drawn by the
+renderer, so B322 is held for a composition whose parts paint no pipe; the stand-in network answers the derivation the pipe painter
+shares (`view`), as a network does.
 */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -22,7 +24,7 @@ import { PRODUCT_CANVAS } from '../product/canvas.mjs';
 const code = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
 const DOWN = 'link-0c0e01', BLOCKER = 'link-0c0e02', BENT = 'link-0c0e03';
 const net = { pathOf: (l, m, straight) => straight(l), linksRoutedThrough: () => [], isLinkDown: (l) => l.id === DOWN,
-	blockersOf: (l) => (l.id === DOWN ? [BLOCKER] : []), declaresNoTransit: () => false, stopsAt: () => false };
+	blockersOf: (l) => (l.id === DOWN ? [BLOCKER] : []), declaresNoTransit: () => false, stopsAt: () => false, view: { of: () => ({ route: () => null }) } };
 const board = (parts = PRODUCT_CANVAS) => {
 	const { svg, scene, restore } = makeRenderer();
 	const m = new RealModel({ kinds: KINDS, attached: { network: net } });
@@ -74,9 +76,9 @@ test('C-e: a lit waypoint drawn afresh stays lit; a part\'s own reflection is ho
 });
 
 // B322 -- the renderer's `draw` removed whatever element held the entity's id before drawing it, for every kind -- so a pipe, which
-// the network paints itself and the renderer draws not at all, lost its line when it was put again (measured on the lab page)
-test('B322: a pipe put again keeps the line the network drew for it', () => {
-	const { m, svg, restore } = board();
+// the network painted itself and the renderer drew not at all, lost its line when it was put again (measured on the lab page)
+test('B322: a pipe put again keeps the line another part drew for it, in a composition whose parts paint no pipe', () => {
+	const { m, svg, restore } = board(PRODUCT_CANVAS.map((p) => (p.owner === 'network' ? { ...p, painters: p.painters.filter((x) => x.kind !== 'pipe') } : p)));
 	try {
 		const pipes = fakeEl('g', 'pipes'); svg.appendChild(pipes);
 		const pipe = { id: 'pipe-0c0e0a-0c0e0b', a: 'node-0c0e0a', b: 'node-0c0e0b', laid: 'hand' };
@@ -85,6 +87,18 @@ test('B322: a pipe put again keeps the line the network drew for it', () => {
 		m.put('pipe', { ...pipe });
 		assert.equal(line.parentNode, pipes, 'still where the network put it');
 		assert.equal(svg.ownerDocument.getElementById(pipe.id), line);
+	} finally { restore(); }
+});
+
+test('H26.8\'s pipes move: with the product\'s parts a pipe is the renderer\'s -- put again, its one item described afresh, its line its own', () => {
+	const { m, svg, restore } = board();
+	try {
+		const pipe = { id: 'pipe-0c0e0a-0c0e0b', a: 'node-0c0e0a', b: 'node-0c0e0b', laid: 'hand' };
+		m.put('pipe', pipe);
+		const line = svg.ownerDocument.getElementById(pipe.id);
+		assert.equal(String(line?.tagName).toLowerCase(), 'line', 'drawn by the renderer, its line under the pipe\'s id');
+		m.put('pipe', { ...pipe });
+		assert.equal(svg.querySelector('#pipes').children.length, 1, 'put again: one item, drawn afresh');
 	} finally { restore(); }
 });
 

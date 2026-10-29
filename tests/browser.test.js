@@ -1462,7 +1462,9 @@ H26.4 (the verifier's V2-1; F1) -- THE REAL COMPOSITION MARKS A PIPE IT DID NOT 
 under the pipe's id, and the renderer marks the states of an id it did not draw through the hook composeCanvas hands it
 (app/src/compose-canvas.js `foreignStates`). The side-by-side hands its own sides that hook, so only the page itself can show the
 composition hands it: a free hand pipe clicked through real input is drawn selected -- its line classed `selected`, its stroke the
-selected pipe's token rather than the resting stroke -- and plain again once deselected.
+selected pipe's token rather than the resting stroke -- and plain again once deselected. RESTATED at H26.8's pipes move
+(dev/design/components/NATIVE-SHAPES.md section 4.6): the pipe is a painted kind, drawn by the renderer, its selection described onto its
+line, the shape bearing its id (section 3.2); the hook went with the network's drawer, and the page holds the same.
 */
 test('H26.4 (V2-1): a free hand pipe clicked on the real product page is drawn selected, and plain again once deselected', { skip: SKIP }, async () => {
 	const t = await attach(`http://127.0.0.1:${port}/${PIPE_DIAGRAM}`);
@@ -1495,6 +1497,8 @@ pipe's line itself and the renderer hands every state of an id it did not draw t
 `foreignStates`), until the pipes move makes the pipe a painted kind. Run mode draws no pipe, so a round trip through it draws the line
 afresh, without the class; the pointer still over it, the overlay asks the hover again, and the page's renderer before the move handed
 every such ask on, so the new line showed it. The editing states, which hold the hover already, must hand that repeated ask on too.
+RESTATED at H26.8's pipes move: the renderer draws the pipe now and describes what is held onto its line each time it puts it, so the line
+drawn afresh carries the hover the overlay holds -- a pipe's states kept through a repaint (NS13), the page the same.
 */
 test('H26.8 (B1): a hand pipe hovered through run mode and back, the pointer still over it, shows its hover on the line drawn afresh', { skip: SKIP }, async () => {
 	const t = await attach(`http://127.0.0.1:${port}/${PIPE_DIAGRAM}`);

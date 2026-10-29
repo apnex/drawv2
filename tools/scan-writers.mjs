@@ -243,10 +243,11 @@ const SCENE_READ = new RegExp([
 	String.raw`\.closest\s*\(`,
 	String.raw`\.(?:parentNode|parentElement|childNodes|children|firstChild|firstElementChild|lastChild|lastElementChild|nextSibling|previousSibling|nextElementSibling|previousElementSibling)\b`,
 ].join('|'), 'g');
-// file -> the exact count of its reads (3.3's table, the painters move's column); every other walked file holds none
+// file -> the exact count of its reads (3.3's table, the pipes move's column); every other walked file holds none
 const SCENE_READS = {
 	'app/src/capture.js': 7,          // the platform's hit and focus: six finds from an event's target up, and the menu's listener on the host
-	'app/src/compose-canvas.js': 2,   // the foreign layers' element and its lookup by id, for a pipe's states (foreignStates) until the pipes move
+	// app/src/compose-canvas.js held 2 -- the foreign layers' element and its lookup by id, for a pipe's states (foreignStates) -- until
+	// H26.8's pipes move made the pipes a painted kind (3.3's table: 0 from the pipes move)
 	'app/src/pick.js': 1,             // a pick's find from the target up, until the picks move
 	'app/src/labeledit.js': 10,       // the label editor's one exception (NS8): its four lookups, six listeners on its own input
 	'app/src/readout.js': 1,          // a listener on its own element

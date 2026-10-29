@@ -8,11 +8,12 @@ parts when it attaches:
 
   const page = createPageNetwork();
   const parts = composeCanvas({ ..., network: page.network, plugins: page.plugins });
-  const net = page.attach({ model, renderer, selection, history, pipeLayer, el, say });
+  const net = page.attach({ model, renderer, selection, history, say });
 
 `network` is handed to the page's Model (where links run, which are down, what blocks them); `plugins` are its own keys and
 its drag judge for Input (`g`, `x`, the network's drag grammar); `attach` returns the attached network (plugins/network/host.mjs):
-`judge`, `answered`, `settled`, `refused`, `redraw`, `seed` and `paint`. The kinds stay the root's, since a page composes the
+`judge`, `answered`, `settled`, `refused`, `redraw` and `seed` -- its pipes drawn by the renderer since H26.8's pipes move, through
+its canvas part's pipe painter (plugins/network/pipe-painter.mjs). The kinds stay the root's, since a page composes the
 product's with the network's (`productKinds(...NETWORK_ROWS)`) and the product's are the planner's.
 */
 

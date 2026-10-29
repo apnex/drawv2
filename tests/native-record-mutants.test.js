@@ -6,6 +6,10 @@ a mark left on a stale element across a load, a mover drawn as another kind, an 
 outside the repository, and the record, compared under the tree's move (tests/native-record.test.js `MOVE`), must fail -- among its
 failures the group each fault belongs to, which is all it runs for each fault, the control having run every group unmutated -- and,
 where one is named, the scenario written for it. Among them the seven faults the verifier found the first record did not fail.
+RESTATED at the pipes move (NATIVE-SHAPES.md section 4.6, NS17): the pipe faults are planted in the pipe painter and in rule P's schedule,
+where the network's drawer was, and the load rule's faults in the drawing code -- a pipe put twice on a load, a settle re-describing the
+pipes, every pipe described at every change, a put that changes nothing made all the same, a wrong aim put right later in the load --
+the record compared with the live run's tags.
 */
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
@@ -16,7 +20,7 @@ import { spawnSync } from 'node:child_process';
 import { NATIVE_RECORD } from './fixtures/native-record.mjs';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
-const MOVE = 'painters';   // as tests/native-record.test.js
+const MOVE = 'pipes';   // as tests/native-record.test.js
 // what the record's fixture imports, run from the copy: the product's code, the documents it loads, and the fixture itself
 const TREE = ['package.json', 'app', 'plugins', 'kernel', 'model', 'engine', 'planner', 'product', 'server', 'templates', 'lab/seeds.json', 'tools/probe', 'tests/fixtures/native-record.mjs'];
 const MUTANTS = [
@@ -26,9 +30,10 @@ const MUTANTS = [
 	{ id: 'hover', what: "a state not set: the overlay's hover", file: 'app/src/overlay.js', needle: "this.states.setState(hit.id, 'hover', on);", repl: '', groups: ['states'] },
 	{ id: 'reflect', what: "a reflection not marked: a selected link's path, a down link's blockers", file: 'app/src/editing-states.js', needle: 'for (const id of now) this.setState(id, r.cls, true);', repl: '', groups: ['states'] },
 	{ id: 'reapply', what: "the editing states not described onto an entity drawn afresh (NS13)", file: 'app/src/renderer.js', needle: 'putFresh(rec, before) {\n\t\tfor (const [part, shape] of this.applied(rec))', repl: 'putFresh(rec, before) {\n\t\tfor (const [part, shape] of rec.parts)', groups: ['states'] },
-	{ id: 'pipe-ends', what: 'a pipe not repainted when its end moves', file: 'plugins/network/host.mjs', needle: '\t\t\tsetEnds(d.line, p, q);', repl: "\t\t\tif (!d.line.getAttribute('x1')) setEnds(d.line, p, q);", groups: ['pipe triggers, alone', 'pipe triggers, combined'] },
-	{ id: 'pipe-selected', what: 'a pipe\'s selected look not drawn', file: 'plugins/network/host.mjs', needle: "${selected.has(id) ? ' selected' : ''}", repl: '', groups: ['pipe triggers, alone', 'pipe triggers, combined'] },
-	{ id: 'pipe-under', what: 'a pipe a link runs over not hidden', file: 'plugins/network/host.mjs', needle: "${under.has(id) ? ' under' : ''}", repl: '', groups: ['loads', 'pipe triggers, alone', 'pipe triggers, combined'] },
+	// RESTATED at the pipes move: in the pipe painter, which draws what the network's drawer drew
+	{ id: 'pipe-ends', what: 'a pipe not described again when its end moves', file: 'plugins/network/pipe-painter.mjs', needle: 'touches: (pipe, changed) => pipe.a === changed.id || pipe.b === changed.id,', repl: 'touches: () => false,', groups: ['pipe triggers, alone', 'pipe triggers, combined'], scenarios: ['pipe triggers, alone: its endpoint moved, no link changed'] },
+	{ id: 'pipe-selected', what: 'a pipe\'s states landing on no line: its line drawn without the pipe\'s id', file: 'plugins/network/pipe-painter.mjs', needle: "{ tag: 'line', attrs: { id: pipe.id, ", repl: "{ tag: 'line', attrs: { ", groups: ['pipe triggers, alone', 'pipe triggers, combined'], scenarios: ['pipe triggers, alone: the pipe selected, hovered and armed'] },
+	{ id: 'pipe-under', what: 'a pipe a link runs over not hidden', file: 'plugins/network/pipe-painter.mjs', needle: "shared.includes(pipe.id) ? ' under' : ''", repl: "''", groups: ['loads', 'pipe triggers, alone', 'pipe triggers, combined'] },
 	{ id: 'aim-stale', what: "a mark kept across a load, which drops every mark (NS13)", file: 'app/src/renderer.js', needle: 'for (const id of [...this.drawn.keys()]) this.remove(id);   // every item', repl: 'for (const id of [...this.drawn.keys()]) this.unput(id);   // every item', groups: ['marks'] },
 	{ id: 'unrevealed', what: "the reveal's mark not asked: a withheld entity drawn", file: 'plugins/simulation/reveal-painter.mjs', needle: "this.renderer.mark?.(id, 'unrevealed', true);", repl: '', groups: ['marks'] },
 	{ id: 'trace-style', what: "the trace's length and duration not written by its mark", file: 'plugins/simulation/spawn-appearance.mjs', needle: ' a.style = traceStyle(trace);', repl: '', groups: ['marks'] },
@@ -46,7 +51,13 @@ const MUTANTS = [
 	{ id: 'mover-reseed', what: 'packets left on a route that changed under them', file: 'plugins/simulation/mover-painter.mjs', needle: 'if (rec.d === paths.get(m.spawnerId)) continue;', repl: 'continue;', groups: ['changes in place'], scenarios: ['changes in place: a route changed while packets fly'] },
 	{ id: 'root-run-mode', what: 'run mode not marked on the page\'s root', file: 'app/src/renderer.js', needle: "this.svg?.classList.toggle('run-mode', mode === 'run');", repl: '', groups: ['loads', 'pipe triggers, alone'] },
 	{ id: 'labels-off', what: 'the labels never toggled off on the page\'s root', file: 'app/src/renderer.js', needle: "this.svg?.classList.toggle('labels-off', !this.labels);", repl: '', groups: ['changes in place'] },
-	{ id: 'pipe-skip-node', what: 'the pipes not repainted on a node\'s change -- a transit toggled off', file: 'plugins/network/host.mjs', needle: '\tmodel.onChange(paint);\n', repl: "\tmodel.onChange((a, k) => { if (k !== 'node') paint(); });\n", groups: ['pipe triggers, alone'], scenarios: ['pipe triggers, alone: a transit off and on'] },
+	{ id: 'pipe-skip-node', what: 'the pipes not described again on a node\'s change -- a transit toggled off', file: 'plugins/network/pipe-painter.mjs', needle: "dependsOn: ['node', 'link'],", repl: "dependsOn: ['link'],", groups: ['pipe triggers, alone'], scenarios: ['pipe triggers, alone: a transit off and on'] },
+	// the pipes move's own: rule P's schedule and the load rule (NS17), each fault in the drawing code
+	{ id: 'load-pipe-twice', what: 'a pipe put twice on a load', file: 'app/src/renderer.js', needle: '(p.stacked ? inOrder(all) : all).forEach((e) => this.render(p.kind, e));', repl: '(p.stacked ? inOrder(all) : all).forEach((e) => { this.render(p.kind, e); if (p.dependsOn) this.render(p.kind, e); });', groups: ['loads'] },
+	{ id: 'settle-repaints-pipes', what: 'the network\'s settle describing every pipe again', file: 'plugins/network/host.mjs', needle: "\t\tfor (const l of model.all('link')) renderer.update('link', l);\n", repl: "\t\tfor (const l of model.all('link')) renderer.update('link', l);\n\t\tfor (const x of model.all('pipe')) renderer.update('pipe', x);\n", groups: ['pipe triggers, alone'], scenarios: ['pipe triggers, alone: an answer refused', 'pipe triggers, alone: its endpoint moved, no link changed'] },
+	{ id: 'shared-always-differs', what: 'every pipe described at every change of a pipe, a link or a node', file: 'app/src/renderer.js', needle: "all: typeof painter.shared === 'function' && !sameValue(was ?? null, now ?? null)", repl: 'all: true', groups: ['pipe triggers, alone'], scenarios: ['pipe triggers, alone: its endpoint moved, no link changed'] },
+	{ id: 'put-unchanged', what: 'a put that changes nothing made all the same -- a withheld link\'s click twin put again as its mark is', file: 'app/src/renderer.js', needle: 'if (kept && place === undefined && rec.put.get(part) === json) return;', repl: '', groups: ['marks'], scenarios: ['marks: trace on a link, across a load'] },
+	{ id: 'aim-wrong-first', what: 'a tower aimed wrong, then right, within one change', file: 'plugins/simulation/mover-painter.mjs', needle: "\t\t\tthis.renderer.mark?.(id, 'aim', Math.round(", repl: "\t\t\tthis.renderer.mark?.(id, 'aim', 7);\n\t\t\tthis.renderer.mark?.(id, 'aim', Math.round(", groups: ['marks'], scenarios: ['marks: aim on a tower, across a load'] },
 ];
 // in the copy: every scenario of the groups named -- all, when none is -- run and compared with the record; prints each failing one's group and name
 const RUNNER = `
@@ -58,7 +69,7 @@ const out = [];
 for (const [name, sc] of Object.entries(m.scenarios())) {
 	if (groups.length && !groups.includes(sc.group)) continue;
 	let p;
-	try { p = m.compareScenario(sc, rec.scenarios[name], m.runScenario(sc), { move }); } catch (e) { p = ['threw: ' + e.message]; }
+	try { p = m.compareScenario(sc, rec.scenarios[name], m.runScenario(sc, { tags: move === 'pipes' }), { move }); } catch (e) { p = ['threw: ' + e.message]; }
 	if (p.length) out.push([sc.group, name]);
 }
 console.log(JSON.stringify(out));

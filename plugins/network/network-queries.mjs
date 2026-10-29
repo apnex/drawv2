@@ -11,6 +11,8 @@ with no network gave: no path, nothing routed through, never down, no blockers, 
 asks with an optional call -- at H19.25 three such calls answered "no links" once a method left the Model, instead of failing.
 */
 
+import { pipeId } from './pipe-kind.mjs';
+
 const QUESTIONS = ['pathOf', 'linksRoutedThrough', 'isLinkDown', 'blockersOf', 'declaresNoTransit', 'stopsAt'];
 const whole = new WeakSet();
 
@@ -85,4 +87,27 @@ export function declaresNoTransit(model, id) {
 export function stopsAt(model, id) {
 	const network = networkOf(model);
 	return !!(network && network.stopsAt(id, model));
+}
+
+/*
+H26.8's pipes move (dev/design/components/NATIVE-SHAPES.md section 4.6, NS3) -- THE PIPES AN UP LINK RUNS OVER, which the pipe painter
+shares across its pipes: each pipe's id on an up link's route, sorted, frozen. Read off the network's one derivation for the board
+(plugins/network/view.mjs), and the same array while that derivation is the cached one, so asking it again costs a lookup; empty
+without a network. A down link is drawn along its intent, not its legs, so its pipes are not run over (plugins/network/host.mjs).
+*/
+const NONE = Object.freeze([]);
+const occupied = new WeakMap();   // a derivation -> the pipes its up links run over
+export function occupiedOf(model) {
+	const network = networkOf(model);
+	if (!network) return NONE;
+	const view = network.view.of(model);
+	if (!occupied.has(view)) {
+		const on = new Set();
+		for (const link of model.all('link')) {
+			const route = view.route(link.id);
+			if (route) for (let i = 0; i < route.length - 1; i++) on.add(pipeId(route[i], route[i + 1]));
+		}
+		occupied.set(view, Object.freeze([...on].sort()));
+	}
+	return occupied.get(view);
 }

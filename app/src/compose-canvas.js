@@ -83,7 +83,7 @@ export function composeCanvas({ svg, scene: declared, defs, host, network = null
 	its overlay, and to the network's settle (through the renderer it is attached to)
 	*/
 	const states = new EditingStates({ model, parts });
-	const renderer = new Renderer(model, svg, { parts, scene, states, foreign: foreignStates(scene) });   // C-a: the plugins' canvas parts, their painters among them
+	const renderer = new Renderer(model, svg, { parts, scene, states });   // C-a: the plugins' canvas parts, their painters among them
 	selection.subscribe(() => states.reflect(selection.list()));   // the selected look and what it lights, held for what is selected
 	// C-e: where each kind's label sits -- the first part that says so
 	const labels = new LabelEditor({ svg, scene, model, history, labelAt: (e) => parts.map((p) => p.labels?.labelAt?.(e)).find((x) => x) ?? null,
@@ -103,26 +103,10 @@ export function composeCanvas({ svg, scene: declared, defs, host, network = null
 }
 
 /*
-H26.4 (F1; dev/design/components/VECTOR-SCENE.md section 5.1, D5, D7) -- THE STATES OF AN ID THE RENDERER DID NOT DRAW. The network draws
-each pipe's line in its foreign layer under the pipe's own id, so the canvas's selection, hover and arming reach it (plugins/network/host.mjs
-`paint`): today's renderer found it by the page's getElementById. The renderer now holds what it drew alone, and hands any other id's state
-here, which marks the element bearing that id beneath the scene's foreign layers -- the first, in the layers' order, as the page's
-document found it -- whose content the plugins draw and the scene never writes. Nothing beneath a scene layer is written here (VS4).
+H26.4 (F1) -- THE STATES OF AN ID THE RENDERER DID NOT DRAW were marked here, on the element bearing that id beneath the scene's foreign
+layers: a pipe's line, which the network drew itself. H26.8's pipes move (dev/design/components/NATIVE-SHAPES.md section 4.6) made the
+pipes a painted kind, every state reaching its line through the renderer, and `foreignStates` went with the network's drawer.
 */
-export function foreignStates(scene) {
-	const layers = scene.layers.filter((l) => l.foreign).map((l) => scene.layerElement(l.name));
-	const find = (id) => {
-		for (const layer of layers) {
-			const found = layer.querySelector(`[id="${id}"]`);
-			if (found?.getAttribute?.('id') === id) return found;   // the element bearing the id -- never a stand-in a layer offers
-		}
-		return null;
-	};
-	// each ask, a set or a clear, as the renderer hands it (since H26.8's painters move a clear arrives as a set to off, one per class)
-	return {
-		setState(id, cls, on) { find(id)?.classList.toggle(cls, on); },
-	};
-}
 
 // C-f (H19.34): the header's counts, each part's (`tally`: a rank, a word, a count) -- devices, links, zones, as the page has always said
 export function tallyOf(parts, model) {

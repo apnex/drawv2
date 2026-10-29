@@ -191,7 +191,8 @@ test('C-a: a canvas composed without the network\'s painter draws no link', asyn
 test('C-a: the network brings the link\'s painter, and the renderer draws no link of its own', async () => {
 	const { NETWORK_CANVAS } = await import('../plugins/network/canvas.mjs');
 	assert.equal(NETWORK_CANVAS.owner, 'network');
-	assert.deepEqual(NETWORK_CANVAS.painters.map((p) => [p.kind, p.layer, p.stacked]), [['link', 'links', true]]);
+	// RESTATED at H26.8's pipes move (NATIVE-SHAPES.md section 4.6): and its pipe painter, the pipes a painted kind, unstacked in their layer
+	assert.deepEqual(NETWORK_CANVAS.painters.map((p) => [p.kind, p.layer, p.stacked]), [['link', 'links', true], ['pipe', 'pipes', false]]);
 	assert.ok((await parts()).includes(NETWORK_CANVAS));
 	// its selection reflections -- a selected path lit, the links blocking a down link -- are session decorations, C-e's
 	assert.doesNotMatch(code('app/src/renderer.js'), /linkPath|linkAppearance|APPEARANCE_KEYS|hitOf|hitTwin|refreshWaypointsOf|roundedPath|'link-hit'/, 'the renderer draws no link of its own');

@@ -11,17 +11,19 @@ of the ordering, the drift K8 removed for the canvas. So a page ATTACHES the net
   answered(request, answer, apply)   the page's commit door hands it the planner's answer; true when accepted
   refused(answer)             after the page has taken the planner's document back on a refusal
   seed(pipes, run)                   a fixed board: its pipes handed to the page's `run` as ops for the board's own commit,
-                                     then the pipes drawn; its links are aged by the drawing order the planner stamps (F-d)
-  paint()                            draw the pipes now
+                                     then the board settled; its links are aged by the drawing order the planner stamps (F-d)
+  redraw()                           another writer's change, or a snapshot, has changed the board: its links drawn again
 
 The page keeps what is its own: where the planner runs (the lab's authority model, production's server), how a refusal
-is resynchronised, and the notice it writes to (`say`). The canvas parts come in -- the network layer imports no canvas
-code -- with the painter's `el`.
+is resynchronised, and the notice it writes to (`say`). The network layer imports no canvas code.
+
+H26.8's pipes move (dev/design/components/NATIVE-SHAPES.md section 4.6, NS3): the pipes are a painted kind
+(plugins/network/pipe-painter.mjs), drawn by the renderer under its one schedule, rule P. The network's own drawer went -- its map of
+pipe elements and `paint`, its subscriptions to the model's changes and the mode's, and the pipe repaint in its settle, which keeps
+the links' redraw and the reflection -- and with it the page's foreign pipe layer and the hook for a pipe's states.
 */
 import { whyDown, downSummary } from './resolve.mjs';
 import { transitSummary } from './transit.mjs';
-import { pipeAttributes, pipeHitAttributes, RUN_PICTURE } from './appearance.mjs';   // the pipes' look, and what run mode draws (R-c)
-import { pipeId } from './pipe-kind.mjs';
 import { kindOf } from '../../model/model.mjs';
 
 /*
@@ -31,66 +33,9 @@ promotion's P5, since the product page holds no such model. The sweep is the pla
 holds what the planner holds once an answer is applied, and the ages are noted on the tab `apply` has just brought to it.
 */
 // `edit(label, entries)`: commit an edit the network made as entries -- the canvas's generic builder (D5, C-e step eight)
-export function attachNetwork({ session, model, renderer, selection, states = renderer.states, edit, pipeLayer, el, say, pending = () => false }) {
+export function attachNetwork({ session, model, renderer, selection, states = renderer.states, edit, say, pending = () => false }) {
 	const { network } = session;
 
-	/*
-	PIPES ARE DRAWN, beneath the links routed over them.
-
-	ONE ELEMENT PER PIPE, made when the pipe first appears and kept until the pipe is deleted (the director, 2026-10-02: "the
-	DOM doesnt change, but just marks pipes not visible / hidden"). Each paint reads every pipe from the model and reconciles
-	the elements against it -- creates the new, removes the gone, and updates every kept one's ends, class and visibility --
-	so the model stays the one authority and nothing tracks which pipes changed. What is kept is only the elements, by id,
-	as the canvas renderer keeps its own. It was redrawn whole on every change until then. Elements leaving the DOM only with
-	their pipe is also what an infinite canvas needs, to unload what is out of view (B289).
-
-	Each pipe is a group, `.pipe-of`: its visible line, under the pipe's own id so the canvas's selection reaches it (the
-	renderer marks an id it can find); and for a HAND pipe an invisible hit line naming it (`data-select`), how the canvas
-	picks a plugin's mark (app/src/pick.js) -- so a hand pipe can be selected and deleted (N6, B281). A pipe laid with a link
-	gets none: it follows its links, and is never offered.
-
-	A PIPE A LINK RUNS OVER IS HIDDEN, not removed (the director, 2026-10-02): the link is drawn along it. Its group is marked
-	`under`, which plugins/network/network.css hides, line and hit line alike. What counts is read off the network's one derivation
-	for this board (cached, plugins/network/view.mjs): an UP link's route. A down link is drawn along its intent, not its legs, so
-	its own pipes stay shown -- the way it would heal onto. How a pipe LOOKS is the plugin's own (plugins/network/appearance.mjs),
-	applied as attributes: the first painter left colour to `currentColor`, which inherited black and made pipes invisible.
-	*/
-	const occupied = () => {
-		const view = network.view.of(model), on = new Set();
-		for (const l of model.all('link')) {
-			const r = view.route(l.id);
-			if (r) for (let i = 0; i < r.length - 1; i++) on.add(pipeId(r[i], r[i + 1]));
-		}
-		return on;
-	};
-	const drawn = new Map();   // pipe id -> { group, line, hit, laid }: the elements, never a second record of the pipes
-	const setEnds = (node, p, q) => { for (const [k, v] of [['x1', p.x], ['y1', p.y], ['x2', q.x], ['y2', q.y]]) node.setAttribute(k, v); };
-	const make = (id, laid) => {
-		const group = el('g', { class: 'pipe-of', 'data-pipe': id }, pipeLayer);
-		const line = el('line', { id, ...pipeAttributes(laid) }, group);
-		const hit = laid === 'hand' ? el('line', { class: 'pipe-hit', 'data-select': id, ...pipeHitAttributes() }, group) : null;
-		return { group, line, hit, laid };
-	};
-	const paint = () => {
-		const selected = new Set(selection.list()), under = occupied(), live = new Set();
-		// R-c (H18.21): run mode draws the run picture, which holds no pipe -- none is drawn, so none can be clicked either
-		const pipes = renderer.mode === 'run' && !RUN_PICTURE.pipes ? [] : model.all('pipe');
-		for (const { id, a, b, laid } of pipes) {   // the tab's pipes, as it holds them (N-c)
-			const p = model.endpointOf(a), q = model.endpointOf(b);
-			if (!p || !q) continue;   // an anchor the pipe names has gone; the planner removes the pipe in the same edit
-			live.add(id);
-			let d = drawn.get(id);
-			if (d && d.laid !== laid) { d.group.remove(); d = null; }   // a link pipe laid again by hand: its look and its hit line change
-			if (!d) { d = make(id, laid); drawn.set(id, d); }
-			setEnds(d.line, p, q);
-			if (d.hit) setEnds(d.hit, p, q);
-			d.line.setAttribute('class', `pipe pipe-${laid}${selected.has(id) ? ' selected' : ''}`);
-			d.group.setAttribute('class', `pipe-of${under.has(id) ? ' under' : ''}`);
-		}
-		for (const [id, d] of drawn) if (!live.has(id)) { d.group.remove(); drawn.delete(id); }   // the pipe is gone
-	};
-	model.onChange(paint);
-	renderer.watchMode(paint);   // entering or leaving run mode changes which pipes are drawn (R-c)
 	// a selected down link says WHY it is down -- held by a named link, or no way at all (2026-09-30). The selected LOOK is
 	// composeCanvas's subscriber, so a page attaches the network AFTER composing the canvas, and that one runs first
 	/*
@@ -117,7 +62,8 @@ export function attachNetwork({ session, model, renderer, selection, states = re
 	drawn down until the next edit. It sweeps nothing: since N-c the planner sweeps and prunes pipes in the edit itself.
 	*/
 	const redraw = () => {
-		paint();
+		// H26.8's pipes move: no pipe repainted here -- the renderer describes each pipe as its model changes (rule P), so a settle
+		// redraws the links alone, whose routes read the pipe set, and reflects the selection
 		for (const l of model.all('link')) renderer.update('link', l);
 		states?.reflect(selection.list());   // an edit can change who blocks whom -- H26.8: the editing states, the renderer's (NS13)
 	};
@@ -180,11 +126,11 @@ export function attachNetwork({ session, model, renderer, selection, states = re
 
 	/*
 	A fixed board: its pipes go to the page's `run` as ops for the board's own commit (N-c), and its links are aged by the
-	drawing order the planner stamps on them, in the order the board lists them (F-d); and once it lands the board is drawn again whole -- the commit lists its links before its pipes, so
-	each link was drawn before the pipes it runs over existed in the tab. Answers the page's answer.
+	drawing order the planner stamps on them, in the order the board lists them (F-d); and once it lands its links are drawn again -- the commit lists its links before its
+	pipes, so each link was drawn before the pipes it runs over existed in the tab. Answers the page's answer.
 	*/
 	const seed = (boardPipes, run) => { const answer = run(session.seed(boardPipes)); redraw(); return answer; };
 
 	// another writer's change, or a snapshot, has changed the board: redraw it, saying nothing (V-b)
-	return { judge, answered, settled, refused, redraw, seed, paint };
+	return { judge, answered, settled, refused, redraw, seed };
 }

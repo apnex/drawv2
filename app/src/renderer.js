@@ -21,6 +21,15 @@ It answers no element: `ownShapeOf(id)` the own shape as last described, `drawer
 `markOf(id, name)` the value a mark holds, a frozen copy -- data (GR8). The live shadow, the look applier, the fragments, the dirty
 marks and the batching, the puts by serial, the finders, the states re-applied to fresh elements, the signatures and the element
 lookups went with it (T3, T4); a state or a mark is shown while held, through a mode or a structural change (NS13).
+
+H26.8's pipes move (NATIVE-SHAPES.md section 4.6, NS3) -- RULE P, ONE SCHEDULE. A painter may say what invalidates its kind beyond its
+own entity's change: `dependsOn`, the kinds whose change may change its drawing; `shared(model)`, what it reads across its entities,
+asked once per such change and handed in the kit; `touches(entity, changed)`, which of its entities a change reaches while what it shares
+is unchanged. A change of its kind or of one it depends on asks `shared` once, before anything is described: where it differs from the
+last asked, every entity of the kind is described once, the changed one among them; where not, the changed one and those `touches`
+names. A load asks it and describes each once (`syncAll`); a mode change describes each of a `modal` painter's once; a state or a mark is
+a state- or mark-only put. Nothing else describes one -- a renderer call another part makes (`update`, `render`) describes only the
+entity it names, so the network's settle redrawing its links describes no pipe.
 */
 
 import { openScene } from '@apnex/vector-scene';
@@ -152,15 +161,13 @@ export class Renderer {
 	/*
 	H26.4: `svg` is the page's root, whose classes the renderer still writes -- modes and labels, draw's own -- or none, for the export;
 	`scene` is the one `openCanvasScene` opened. H26.8: `states`, the editing states the composition holds (app/src/editing-states.js),
-	described onto each entity it draws while held -- none for the export, which draws no session. `foreign`, where the composition hands
-	it (app/src/compose-canvas.js `foreignStates`), marks a state of an id this did not draw -- a pipe's line, which the network draws in
-	its own layer under the pipe's id so the canvas's selection reaches it, until the pipes move makes the pipes a painted kind (F1).
+	described onto each entity it draws while held -- none for the export, which draws no session. Its `foreign` hook, through which the
+	composition marked a state of an id this did not draw -- a pipe's line -- went at H26.8's pipes move, the pipes a painted kind (F1).
 	*/
-	constructor(model, svg, { parts = [], scene = null, states = null, foreign = null } = {}) {
+	constructor(model, svg, { parts = [], scene = null, states = null } = {}) {
 		if (!scene) throw new Error('Renderer: no scene to draw into -- the canvas opens one (openCanvasScene)');
 		this.scene = scene;
 		this.states = states;
-		this.foreign = foreign;
 		// C-a: the kinds a plugin paints, and those several plugins draw by appearances (D3), from the page's canvas parts
 		({ painters: this.painters, appearances: this.appearances, orders: this.orders, sizes: this.sizes, outlines: this.outlines, marks: this.markDecls } = composeParts(parts, scene));
 		/*
@@ -169,6 +176,7 @@ export class Renderer {
 		*/
 		this.drawn = new Map();
 		this.marks = new Map();
+		this.sharedNow = new Map();   // H26.8 (rule P): painted kind -> what its painter shares, as last asked
 		this.stackedAt = new Map();   // id -> the drawing order it was stacked by (F-d)
 		this.model = model;
 		this.svg = svg;
@@ -176,7 +184,7 @@ export class Renderer {
 		this.modeWatchers = [];         // who hears a mode change (watchMode)
 		this.mode = 'view';             // W4/W5 -- view | edit | run (client/session, ephemeral). edit shows the
 		model.onChange((action, kind, entity) => this.handle(action, kind, entity));   // socket grid; run makes clickable regions act
-		states?.onChange((id, cls, on, changed) => this.restate(id, cls, on, changed));
+		states?.onChange((id) => this.restate(id));
 	}
 
 	/*
@@ -211,20 +219,21 @@ export class Renderer {
 		// switching mode never re-renders it -- the change would appear on the next unrelated edit.
 		// R-c (H18.21): and every waypoint, since run mode draws the run picture's layers rather than hiding the rest by stylesheet
 		// -- every entity of a kind drawn by appearances, whose parts may read the mode (D3); H26.8: and each painted kind that says
-		// its drawing reads the mode (`modal`)
+		// its drawing reads the mode (`modal`), described once each and put again where it stands (rule P, 3)
 		for (const kind of this.appearances.keys()) if (this.model.kinds.has(kind)) this.model.all(kind).forEach((e) => this.render(kind, e));
-		for (const p of this.painters.values()) if (p.modal && this.model.kinds.has(p.kind)) this.model.all(p.kind).forEach((e) => this.render(p.kind, e));
-		// H12.8 -- the composition root starts or stops the movers, and the network's painter draws the run picture's pipes,
-		// without the renderer knowing either exists. The renderer draws the document; movers and pipes are not its own.
+		for (const p of this.painters.values()) if (p.modal && this.model.kinds.has(p.kind)) this.model.all(p.kind).forEach((e) => this.update(p.kind, e));
+		// H12.8 -- the composition root starts or stops the movers without the renderer knowing they exist: derived presentation, not
+		// the document. H26.8's pipes move: the pipes are the document's, drawn above as a modal painted kind, where the network repainted them here
 		for (const fn of this.modeWatchers) fn(this.mode);
 		return this.mode;
 	}
 
-	// hear every mode change -- `fn(mode)` (R-c: the movers and the network's painter both do)
+	// hear every mode change -- `fn(mode)` (R-c: the movers do; the network's painter did until H26.8's pipes move)
 	watchMode(fn) { this.modeWatchers.push(fn); }
 
 	handle(action, kind, entity) {
 		if (action === 'load') return this.syncAll();
+		const invalidated = this.invalidatedBy(kind);   // rule P: what each painter shares, asked once, before anything is described
 		if (action === 'put') this.render(kind, entity);
 		if (action === 'set') this.update(kind, entity);
 		/*
@@ -243,7 +252,30 @@ export class Renderer {
 			if (this.draws(kind)) this.remove(entity.id);   // B322: only what it drew
 			this.redrawAfter(kind, entity);   // from the DELETED entity -- the model no longer knows what it touched (B218)
 		}
+		for (const { painter, all } of invalidated) {
+			for (const e of this.model.all(painter.kind)) {
+				if (kind === painter.kind && e.id === entity.id) continue;   // the changed one, described above
+				if (all || (kind !== painter.kind && painter.touches?.(e, entity))) this.update(painter.kind, e);
+			}
+		}
 		return undefined;
+	}
+
+	/*
+	RULE P (4.6, 2) -- the painters a change of `kind` invalidates beyond its own entity: each whose `dependsOn` names the kind, or which
+	paints it and shares, asks what it shares once, and is to describe every entity of its kind (`all`) where that differs from the last
+	asked; where not, those its `touches` names (`handle`).
+	*/
+	invalidatedBy(kind) {
+		const out = [];
+		for (const painter of this.painters.values()) {
+			if (!((painter.kind === kind && typeof painter.shared === 'function') || painter.dependsOn?.includes(kind)) || !this.model.kinds.has(painter.kind)) continue;
+			const was = this.sharedNow.has(painter.kind) ? this.sharedNow.get(painter.kind) : undefined;
+			const now = typeof painter.shared === 'function' ? painter.shared(this.model) : undefined;
+			this.sharedNow.set(painter.kind, now);
+			out.push({ painter, all: typeof painter.shared === 'function' && !sameValue(was ?? null, now ?? null) });
+		}
+		return out;
 	}
 
 	/*
@@ -253,6 +285,8 @@ export class Renderer {
 	*/
 	syncAll() {
 		for (const id of [...this.drawn.keys()]) this.remove(id);   // every item, and every mark with its entity
+		// rule P (4.6, 1): what each painter shares, asked once for the document loaded
+		for (const p of this.painters.values()) if (typeof p.shared === 'function') this.sharedNow.set(p.kind, p.shared(this.model));
 		// each stacked kind in its drawing order, so every item lands on top of the ones before it (F-d)
 		const inOrder = (list) => [...list].sort(byDrawingOrder);
 		// C-a: the painted kinds first, in the order the canvas parts were composed -- the back of the page (the zones plugin's)
@@ -358,7 +392,13 @@ export class Renderer {
 		return { model: this.model, mode: this.mode, renderOpts: () => this.renderOpts(), sizeOf: (kind, entity) => this.sizes.get(kind)?.(entity) ?? { w: 0, h: 0 },
 			// H24.6: an item's outline as the part drawing it declares it, or undefined -- the painter then takes its own default
 			outlineOf: (kind, entity) => (entity ? this.outlines.get(kind)?.(entity) : undefined), pillWidth,
-			...(typeof painter?.shared === 'function' ? { shared: painter.shared(this.model) } : {}) };
+			...(typeof painter?.shared === 'function' ? { shared: this.sharedOf(painter) } : {}) };
+	}
+
+	// what a painter shares across its kind, as last asked (rule P) -- asked now when it never was
+	sharedOf(painter) {
+		if (!this.sharedNow.has(painter.kind)) this.sharedNow.set(painter.kind, painter.shared(this.model));
+		return this.sharedNow.get(painter.kind);
 	}
 
 	/*
@@ -456,13 +496,13 @@ export class Renderer {
 	}
 
 	/*
-	A state asked: on an entity this draws, put again where its states changed; on any other id, every ask the composition's to mark
-	where it is drawn (F1) -- a pipe's line, drawn afresh by the network, shows a state its owner asks again, as before the move (B1)
+	A state held or let go: an entity this draws put again, a state-only put; an id it does not draw shows none, and is described with
+	what is held once it is drawn. H26.8's pipes move: a pipe is drawn here now, so every state reaches its line here -- the hook that
+	marked one the network drew, and the editing states telling every ask for it (the painters move's B1), went with that drawer.
 	*/
-	restate(id, cls, on, changed) {
+	restate(id) {
 		const rec = this.drawn.get(id);
-		if (rec) { if (changed) this.reput(rec); }
-		else this.foreign?.setState(id, cls, on);
+		if (rec) this.reput(rec);
 	}
 
 	/*

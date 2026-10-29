@@ -5,6 +5,9 @@ The lab's behaviour matrix proves what the board looks like after each gesture; 
 run in, which that outcome depends on and which moved out of the lab root with them: the page's own reconciliation, then
 the board settles; a drag that commits nothing settles at once; a refusal settles and says so. Since H17.22 N-c the host
 sweeps nothing -- the planner does, in the edit -- and paints the tab's own pipes. Each part is a recording stand-in.
+RESTATED at H26.8's pipes move (dev/design/components/NATIVE-SHAPES.md section 4.6): the host draws no pipe -- the pipes are a painted kind,
+the renderer's to describe under rule P -- so a settle redraws the links and reflects the selection, no pipe repaint before them, and the
+host subscribes to no model change and no mode change.
 */
 // RESTATED at C-e step eight (H19.33; D5): the network commits its transit edit through `edit`, which the composition backs
 // with the canvas's generic builder -- so each test's commit sees the command `editOf` builds, as the page's history does
@@ -13,7 +16,6 @@ import { isLinkDown } from '../plugins/network/network-queries.mjs';   // Q-a: t
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { attachNetwork } from '../plugins/network/host.mjs';
-import { fakeLayer } from './fixtures/fake-svg.mjs';
 import { createNetworkSession } from '../plugins/network/session.mjs';
 import { pipeEntity } from '../plugins/network/pipe-kind.mjs';
 import { NETWORK_ROWS } from '../plugins/network/kinds.mjs';   // the network's kind and the field it contributes (S-a)
@@ -30,7 +32,7 @@ function rig({ commits = true, accepts = true } = {}) {
 	const rec = (name, ret) => (...a) => { calls.push([name, ...a]); return ret; };
 	let onChange = null, onTransit = null;
 	const session = {
-		// each paint reads the board's derivation once -- the rig's sign that a paint happened (the layer is kept, not cleared)
+		// a paint read the board's derivation once -- the rig's sign that one happened, which since the pipes move none does
 		network: { declaresNoTransit: () => false, stopsAt: () => false, view: { of: () => { calls.push(['paint']); return { route: () => null }; } } },
 		takeNotice: () => null,
 		judge: rec('judge', { verdict: 'v', commits }),
@@ -42,10 +44,9 @@ function rig({ commits = true, accepts = true } = {}) {
 	const net = attachNetwork({
 		session, model, authority: { all: () => [] },
 		// RESTATED H26.8 (NATIVE-SHAPES.md section 3.2, NS13): the settle reflects the selection through the editing states it is handed
-		renderer: { update: rec('update'), render: rec('render'), watchMode: () => {} }, states: { reflect: rec('reflect') },
+		renderer: { update: rec('update'), render: rec('render'), watchMode: rec('watchMode') }, states: { reflect: rec('reflect') },
 		selection: { subscribe: () => {}, list: () => [] },
-		edit: (label, entries) => (rec('commit'))(editOf(label, entries)),
-		pipeLayer: fakeLayer().root, el: fakeLayer().el, say: rec('say'),
+		edit: (label, entries) => (rec('commit'))(editOf(label, entries)), say: rec('say'),
 	});
 	return { net, calls, names: () => calls.map((c) => c[0]), onChange: () => onChange, onTransit: () => onTransit };
 }
@@ -53,50 +54,50 @@ function rig({ commits = true, accepts = true } = {}) {
 test('the answer: the page reconciles, then the board settles and says so -- sweeping nothing, which the planner did', () => {
 	const r = rig();
 	assert.equal(r.net.answered({ label: 'link' }, { version: 3 }, () => r.calls.push(['apply'])), true);
-	assert.deepEqual(r.names(), ['answered', 'apply', 'paint', 'update', 'reflect', 'say']);
+	assert.deepEqual(r.names(), ['answered', 'apply', 'update', 'reflect', 'say']);
 	assert.match(r.calls.at(-1)[1], /^v3 link/);
 });
 
 test('undo and redo settle the same way, saying the verb', () => {
 	const r = rig();
 	r.net.answered({ verb: 'undo' }, { version: 4 }, () => {});
-	assert.deepEqual(r.names(), ['answered', 'paint', 'update', 'reflect', 'say']);
+	assert.deepEqual(r.names(), ['answered', 'update', 'reflect', 'say']);
 	assert.match(r.calls.at(-1)[1], /^v4 undo/);
 });
 
 test('a refused answer does not settle in `answered`; the page takes the document back, then `refused` settles and says why', () => {
 	const r = rig({ accepts: false });
 	assert.equal(r.net.answered({ label: 'link' }, { error: 'no' }, () => {}), false);
-	assert.ok(!r.names().includes('paint'), 'nothing settles before the page has reloaded');
+	assert.ok(!r.names().includes('update'), 'nothing settles before the page has reloaded');
 	r.net.refused({ error: 'no route' });
-	assert.deepEqual(r.names().slice(1), ['paint', 'update', 'reflect', 'say', 'say'], 'settle speaks, then the refusal speaks last');
+	assert.deepEqual(r.names().slice(1), ['update', 'reflect', 'say', 'say'], 'settle speaks, then the refusal speaks last');
 	assert.equal(r.calls.at(-1)[1], 'refused: no route');
 });
 
 test('a drag that commits nothing settles at once, to say why; one that commits waits for the planner', () => {
 	const now = rig({ commits: false });
 	assert.equal(now.net.judge({ steps: [] }), 'v');
-	assert.deepEqual(now.names(), ['judge', 'paint', 'update', 'reflect', 'say']);
+	assert.deepEqual(now.names(), ['judge', 'update', 'reflect', 'say']);
 	const later = rig({ commits: true });
 	later.net.judge({ steps: [] });
 	assert.deepEqual(later.names(), ['judge'], 'the answer settles it, when it comes');
 });
 
-test('a fixed board: its links aged and its pipes made ops first, then the page commits them with the board, then it is drawn again whole', () => {
+test('a fixed board: its links aged and its pipes made ops first, then the page commits them with the board, then its links are drawn again', () => {
 	const r = rig();
 	const answer = r.net.seed([['node-000001', 'node-000002', 'hand']], (pipeOps) => { r.calls.push(['run', pipeOps]); return { ok: true }; });
-	assert.deepEqual(r.names(), ['seed', 'run', 'paint', 'update', 'reflect'], 'and the board is drawn again whole: its links over the pipes it laid');
+	assert.deepEqual(r.names(), ['seed', 'run', 'update', 'reflect'], 'and its links drawn again over the pipes it laid -- the pipes the renderer drew as they came');
 	assert.deepEqual(r.calls[0], ['seed', [['node-000001', 'node-000002', 'hand']]]);
 	assert.deepEqual(r.calls[1][1], [{ op: 'put', kind: 'pipe', entity: { id: 'pipe-00000a-00000b' } }], 'the page commits the session\'s pipe ops');
 	assert.deepEqual(answer, { ok: true }, 'and the page\'s answer comes back');
 });
 
-test('the pipes repaint on every model change, and a transit change settles', () => {
+test('the host hears no model change and no mode change -- the renderer draws the pipes -- and a transit change settles', () => {
 	const r = rig();
-	r.onChange()();
-	assert.deepEqual(r.names(), ['paint']);
+	assert.equal(r.onChange(), null, 'no subscription to the model\'s changes');
+	assert.ok(!r.names().includes('watchMode'), 'nor to the mode\'s');
 	r.onTransit()([]);
-	assert.ok(r.names().includes('reflect') && r.names().at(-1) === 'say');
+	assert.ok(r.names().includes('reflect') && r.names().at(-1) === 'say' && !r.names().includes('paint'), 'a transit change settles, painting nothing');
 });
 
 /*
@@ -113,7 +114,7 @@ test('F-e: a transit change commits the session\'s edit as given, and no edit of
 		session: { network: { stopsAt: () => false, declaresNoTransit: () => false, view: { of: () => ({ route: () => null }) } }, takeNotice: () => 'transit off at P', onTransitChange: (fn) => { onTransit = fn; } },
 		model, renderer: { update: () => {}, render: () => {}, watchMode: () => {} }, states: { reflect: () => {} },
 		selection: { subscribe: () => {}, list: () => [] },
-		edit: (label, entries) => ((c) => commits.push(c))(editOf(label, entries)), ...(() => { const f = fakeLayer(); return { pipeLayer: f.root, el: f.el }; })(), say: () => {},
+		edit: (label, entries) => ((c) => commits.push(c))(editOf(label, entries)), say: () => {},
 	});
 	const edit = [{ op: 'set', kind: 'node', id: 'node-000003', after: { transit: false } }];
 	onTransit(['node-000003'], edit);
@@ -162,7 +163,7 @@ test('B283: turning transit off at two pins of one link at once makes three stra
 			const r = plan(model, c.entries.map(toOp), { links: session.network.links, kinds: productKinds(...NETWORK_ROWS) });
 			net.answered(c, { ok: r.ok, error: r.error, version: commits.length, ops: r.ops }, () => applyOps(model, r.ops));
 		})(editOf(label, entries)),
-		...(() => { const f = fakeLayer(); return { pipeLayer: f.root, el: f.el }; })(), say: (t) => said.push(t),
+		say: (t) => said.push(t),
 	});
 	const anchors = [A, B].map((id) => ({ ...model.get('node', id), kind: 'node' }));
 	const shape = () => model.all('link').map((l) => `${l.src}>${l.dst}[${(l.via ?? []).join(',')}]${isLinkDown(model, l) ? ' down' : ''}`).sort();
@@ -189,7 +190,6 @@ test('B348: two transit toggles sent before the first answer arrives keep each t
 	model.put('node', { id: P, name: 'P', x: 0, y: 0 });
 	const toOp = (e) => (e.op === 'set' ? { op: 'set', kind: e.kind, id: e.id, patch: e.after } : e);
 	const inFlight = [], said = [];
-	const f = fakeLayer();
 	const net = attachNetwork({
 		session, model, renderer: { update: () => {}, render: () => {}, watchMode: () => {} }, states: { reflect: () => {} },
 		selection: { subscribe: () => {}, list: () => [] },
@@ -199,7 +199,7 @@ test('B348: two transit toggles sent before the first answer arrives keep each t
 			applyOps(model, r.ops);   // previewed locally before the server's ack returns
 			inFlight.push({ req: c, ans: { ok: true, version: inFlight.length + 2, ops: r.ops } });
 		},
-		pipeLayer: f.root, el: f.el, say: (t) => said.push(t),
+		say: (t) => said.push(t),
 	});
 	session.toggleTransit([{ ...model.get('node', P), kind: 'node' }]);
 	session.toggleTransit([{ ...model.get('node', P), kind: 'node' }]);
