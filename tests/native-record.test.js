@@ -283,10 +283,13 @@ removed in place of a repeated legitimate put, the total unchanged; a describing
 re-describing after the load that changes its item, or puts a pipe; a re-put sent to another layer and removed before the final
 drawing is restored, the total unchanged; a duplicate put under a valid owner; a wrong value later restored; a state set where the
 record lets it go; an owner's put on an id the record holds no change for; a put under no frame. tests/native-record-mutants.test.js
-plants the rule's faults in the drawing code too.
+plants the rule's faults in the drawing code too. And the two the pipes move's verifier found unplanted, each the only check that
+catches its fault: an owner's put into another layer where its key also stands (rule 3's layer, C5); a re-describing after the load of a
+key the load did not put, as last put, in place of a repeated describing put, the total unchanged (rule 2's "a key the load put", C4).
 */
 const LOADED = 'pipe triggers, alone: a load', REFUSED = 'pipe triggers, alone: an answer refused', AIMED = 'marks: aim on a tower, across a load';
 const WITHHELD = 'marks: unrevealed on a device, across a load', HOVERED = 'states: hover, held across a load';
+const SWAPPED = 'loads: the record\'s board swapped for one lacking a zone, a device, a waypoint, their links and two pipes, in view, edit and run';
 // the load rule's problems at step `k` of a scenario's live run, its tags edited by `plant`
 const planted = (name, k, plant) => {
 	const live = copy(liveOf(name));
@@ -331,6 +334,17 @@ test('NS17: every fault appendix A plants for the load rule fails it, in a live 
 		own({ shapes }).attrs.class = `${own({ shapes }).attrs.class} hover`;
 		t.push({ key: IDS.bravo, layer: bravo.layer, kind: 'patch', sync: false, owner: { call: 'setState', args: [IDS.bravo, 'hover', true] }, describe: null, prev: { layer: bravo.layer, shapes: copy(bravo.shapes) }, shapes });
 	}), /rule 3: setState puts nodes node-fa00a2: hover set on node-fa00a2, the record holding no change of it across the step/);
+	// the verifier's two (rule 3's layer, C5; rule 2's "a key the load put", C4): each the one problem, so nothing else catches it
+	const alone = (what, problems, re) => assert.ok(problems.length === 1 && re.test(problems[0]), `${what}: ${problems.join(' / ') || 'held'}`);
+	alone('a mark put into another layer where its key also stands', planted(AIMED, 3, (t) => { t[ownerOf(t, 'mark')].layer = 'links'; }), /rule 3: mark aim puts links node-fb00c1: into links, its previous put in nodes$/);
+	alone('a state put into another layer where its key also stands', planted(HOVERED, 2, (t) => { t[ownerOf(t, 'setState')].layer = 'zones'; }), /rule 3: setState puts zones node-fa00a1: into zones, its previous put in nodes$/);
+	alone('a re-describing after the load of a key the load did not put, in place of a repeated describing put', planted(SWAPPED, 1, (t) => {
+		const gone = liveOf(SWAPPED).steps[0].tagged.findLast((p) => p.key === IDS.echo);   // echo, which the swapped board lacks, as last put
+		assert.ok(gone && !t.some((p) => p.key === IDS.echo), 'precondition: drawn before the swap, and not put by it');
+		const [, j] = repeated(t);
+		t.splice(j, 1);
+		t.push({ key: IDS.echo, layer: gone.layer, kind: 'new', sync: false, owner: null, describe: 'render', prev: { layer: gone.layer, shapes: copy(gone.shapes) }, shapes: copy(gone.shapes) });
+	}), /rule 2: render after the load puts nodes node-fa00a5: a key the load did not put/);
 	// a put under no frame (rule 4)
 	fails('a put under no frame', planted(LOADED, 0, (t) => { const p = describingOf(t)[0]; t.push({ ...copy(p), sync: false, describe: null, owner: null }); }), /rule 4: .* under no frame/);
 });

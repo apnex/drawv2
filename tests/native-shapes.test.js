@@ -473,6 +473,58 @@ test('NS3: what the pipes share -- the pipes an up link runs over -- empty with 
 	} finally { w.platform.restore(); }
 });
 
+/*
+Rule P, 1 (4.6): a load asks what the pipes share once, for the document loaded -- the verifier's M5 on the pipes move. Without that ask
+the renderer kept the last value asked, so a document loaded after one with an up link over a pipe drew the pipe hidden under a link the
+new document does not hold, until the next change asked again; no record scenario loads a board whose `shared` differs from the one
+drawn before it. A resync snapshot from another writer who deleted that link is the page's case.
+*/
+test('rule P, 1: a load asks what the pipes share for the document loaded -- a pipe hidden under an up link is shown once a document without that link loads', () => {
+	const w = world(), fresh = world();
+	try {
+		const over = recordBoard();
+		over.links.push({ id: 'link-fb0004', name: 'onto', src: IDS.charlie, dst: IDS.W, direction: 'forward', order: 20 });
+		const groupOf = (x) => layersOf(x)[PIPES].find(([key]) => key === H)?.[1][0] ?? null;
+		load(w, over);
+		assert.deepEqual(classOf(groupOf(w)), ['pipe-of', 'under'], 'control: an up link runs over it, so it is hidden');
+		load(w, recordBoard());   // the same board, the link over it gone -- a snapshot after another writer deleted it
+		assert.deepEqual(classOf(groupOf(w)), ['pipe-of'], 'no longer hidden: the load asked what the pipes share for its own document');
+		load(fresh, recordBoard());
+		assert.deepEqual(groupOf(w), groupOf(fresh), 'drawn as a fresh load of that document draws it');
+	} finally { fresh.platform.restore(); w.platform.restore(); }
+});
+
+/*
+Rule P, 2 (4.6): what the pipes share is asked ONCE per change of a pipe, a link or a node -- before anything is described, every pipe
+then described against that one answer -- and once per load; a mode change and a state-only put ask nothing, the derivation they read
+unchanged. The verifier's M15: the kit asking it again at every description passed every other test, its cost one derivation lookup per
+pipe described where 4.6 prices one per change.
+*/
+test('rule P, 2: what the pipes share asked once per change of a pipe, a link or a node, once per load, and never by a mode change or a state', () => {
+	let asks = 0, described = 0;
+	const parts = PRODUCT_CANVAS.map((part) => (part.owner !== 'network' ? part : { ...part, painters: part.painters.map((p) => (p.kind !== 'pipe' ? p
+		: { ...p, shared: (model) => { asks++; return p.shared(model); }, shapes: (e, kit) => { described++; return p.shapes(e, kit); } })) }));
+	const { svg, scene, restore } = makeRenderer();
+	try {
+		const m = new Model(), states = new EditingStates({ model: m, parts });
+		const r = new Renderer(m, svg, { parts, scene, states });
+		const change = (what, fn) => { asks = 0; described = 0; fn(); return { what, asks, described }; };
+		const runs = [
+			change('a load', () => m.load(structuredClone(recordBoard()))),
+			change('a node moved', () => m.set('node', IDS.W, { x: 300 })),
+			change('a link turned', () => m.set('link', IDS.link, { direction: 'reverse' })),
+			change('a pipe made', () => m.put('pipe', { id: 'pipe-fa00a3-fa00b3', a: IDS.charlie, b: IDS.endpoint, laid: 'hand' })),
+			change('a pipe deleted', () => m.del('pipe', 'pipe-fa00a3-fa00b3')),
+		];
+		for (const run of runs) assert.equal(run.asks, 1, `${run.what}: asked once (${run.described} pipe(s) described against it)`);
+		assert.equal(runs[0].described, recordBoard().pipes.length, 'the load describes every pipe against its one ask');
+		assert.ok(runs[1].described >= 2, 'the node moved describes the pipes ending at it against its one ask');
+		const modeChange = change('a mode change', () => r.setMode('edit')), selected = change('a pipe selected', () => states.reflect([H]));
+		assert.ok(modeChange.described > 0, 'control: the mode change describes each pipe (modal)');
+		for (const q of [modeChange, selected]) assert.equal(q.asks, 0, `${q.what}: nothing asked`);
+	} finally { restore(); }
+});
+
 test('NS5 and section 3.2, rule 3: an id the renderer does not draw holds no mark, a description answering nothing drops the entity\'s marks, and a mark read back is a frozen copy', () => {
 	const { svg, scene, restore } = makeRenderer();
 	try {
