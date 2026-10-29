@@ -6,6 +6,8 @@ links. It is not stacked by drawing order: a group carries none. It was the rend
 `update`, `groupBox`, `groupLook`); it is the groups plugin's now, handed to the page in its canvas part. The renderer redraws
 a group when a member moves by asking the core which entity gathers the member (`Model#gathererOf`), so it names no group.
 The elements and every attribute are what the renderer built: the K8 DOM corpus holds that.
+RESTATED H26.8 (dev/design/components/NATIVE-SHAPES.md section 3.2, NS2): it answers the hull's shapes, or null when no member
+resolves, where it built the elements and updated them through a look (T5).
 */
 
 import { GROUP_KEYS } from './group-keys.mjs';
@@ -25,27 +27,17 @@ function groupBox(entity, model, sizeOf) {
 		.map((m) => { const { w, h } = sizeOf ? sizeOf('node', m) : { w: 0, h: 0 }; return { x: m.x, y: m.y, w, h }; });
 	return groupHull(members, L_STD.group.ext);
 }
-const groupLook = (box) => ({ hull: { x: box.x, y: box.y, width: box.w, height: box.h } });
-const GROUP_PARTS = { hull: (g) => g.querySelector('.group-hull') };
 
 const GROUP_PAINTER = {
 	kind: 'group',
 	layer: 'groups',
 	stacked: false,
-	create(entity, { el, applyLook, layer, model, sizeOf }) {
+	shapes(entity, { model, sizeOf }) {
 		const box = groupBox(entity, model, sizeOf);
-		if (!box) return null;   // no resolvable members, no hull
-		const g = el('g', { id: entity.id, class: 'group' }, layer);
-		el('rect', { class: 'group-hull', rx: L_STD.group.r, fill: 'none', stroke: GROUP_TOKENS.group, 'stroke-width': 1.1 }, g);
-		applyLook(g, groupLook(box), GROUP_PARTS);
-		return g;
-	},
-	update(entity, dom, { applyLook, model, sizeOf }) {
-		const box = groupBox(entity, model, sizeOf);
-		if (!box) return 'remove';   // shrank below a member: drop the hull
-		if (!dom.querySelector('.group-hull')) return 'rerender';
-		applyLook(dom, groupLook(box), GROUP_PARTS);
-		return undefined;
+		if (!box) return null;   // no resolvable member, no hull -- and one that shrank below a member drops it
+		return [['', { tag: 'g', attrs: { id: entity.id, class: 'group' }, children: [
+			{ tag: 'rect', attrs: { class: 'group-hull', rx: L_STD.group.r, fill: 'none', stroke: GROUP_TOKENS.group, 'stroke-width': 1.1, x: box.x, y: box.y, width: box.w, height: box.h } },
+		] }]];
 	},
 };
 

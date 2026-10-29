@@ -31,7 +31,7 @@ promotion's P5, since the product page holds no such model. The sweep is the pla
 holds what the planner holds once an answer is applied, and the ages are noted on the tab `apply` has just brought to it.
 */
 // `edit(label, entries)`: commit an edit the network made as entries -- the canvas's generic builder (D5, C-e step eight)
-export function attachNetwork({ session, model, renderer, selection, edit, pipeLayer, el, say, pending = () => false }) {
+export function attachNetwork({ session, model, renderer, selection, states = renderer.states, edit, pipeLayer, el, say, pending = () => false }) {
 	const { network } = session;
 
 	/*
@@ -119,7 +119,7 @@ export function attachNetwork({ session, model, renderer, selection, edit, pipeL
 	const redraw = () => {
 		paint();
 		for (const l of model.all('link')) renderer.update('link', l);
-		renderer.reflectSelection(selection.list());   // an edit can change who blocks whom
+		states?.reflect(selection.list());   // an edit can change who blocks whom -- H26.8: the editing states, the renderer's (NS13)
 	};
 	const settle = (fallback) => {
 		redraw();

@@ -8,6 +8,8 @@ NAMES OUT OF THE CANVAS: run mode's regions, the header's counts, the hover ring
   idle      the state an item shows idle under the pointer is its pick's (`idle`) -- a device's crosshair ring; the canvas named
             the class and the kind
 Nothing a user sees changes.
+RESTATED H26.8 (NATIVE-SHAPES.md appendix A, a:F12): a state is observed as `states.setState` and `states.clearState` -- the editing
+states' calls (app/src/editing-states.js), recorded by the harness's forwarding spies with the same arguments, the renderer's until the move.
 */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -63,7 +65,7 @@ test('C-f: idle over a device it shows the crosshair ring, which Ctrl drops; ove
 	try {
 		const [d] = seedNodes(h.model, [[0, 0]]);
 		const w = makeWaypoint(h.model, { x: 240, y: 0 }); h.model.put('node', w);
-		const ring = (id) => h.stateCalls('renderer.setState').filter(([x, cls]) => x === id && cls === 'linkband').map(([, , on]) => on);
+		const ring = (id) => h.stateCalls('states.setState').filter(([x, cls]) => x === id && cls === 'linkband').map(([, , on]) => on);
 		const over = (word, id, mod = {}) => pointer(0, 0, { buttons: 0, target: { tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: (s) => (s.includes(word) ? { id } : null) }, ...mod });
 		h.capture.onMove(over('node', d.id));
 		h.capture.onMove(over('node', d.id, { ctrlKey: true }));

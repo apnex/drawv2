@@ -53,7 +53,7 @@ export class Movers {
 		this.beamLayer = null;
 		this.moverLayer = null;
 		this.deaths = new Map();    // mover id -> tick it died, from the last fold
-		this.glyphs = new Map();    // node id -> its glyph element, so a turret is not re-queried per frame
+		this.aimed = new Set();     // H26.8: the towers it has told the renderer to aim, so leaving run mode lets each go
 		this.loop = null;
 	}
 
@@ -308,46 +308,32 @@ export class Movers {
 	nothing is sent and nothing drifts. Holding the last angle would have been per-peer state and two
 	viewers would slowly disagree about where a tower is looking.
 
-	Presentation only, and written straight onto the glyph rather than into the document -- a stored
-	angle would be a second copy of something already derivable, and the first thing to go stale.
+	Presentation only, and never written into the document -- a stored angle would be a second copy of something already derivable,
+	and the first thing to go stale.
+
+	RESTATED H26.8 (dev/design/components/NATIVE-SHAPES.md section 3.2, NS5, NS13): the towers write on no element of the renderer's,
+	and keep none cached (T6). Each frame they tell the renderer each tower's bearing -- the simulation's `aim` mark, which writes it on
+	the glyph beneath the tower -- and the renderer puts the tower only when the bearing differs from the one it holds. A tower redrawn
+	in run mode keeps its aim; one deleted or reloaded has it dropped by the renderer, and this frame or the next sets it again.
 	*/
 	aimTurrets(world, alive) {
 		if (!world.towers.length) return;
-		const aim = aimAt(world, alive);
-		for (const t of world.towers) {
-			const glyph = this.glyphOf(t.id);
-			if (!glyph) continue;
-			const target = aim.get(t.id);
-			if (!target) continue;                  // nothing in range: hold the last bearing
-			const deg = Math.round(Math.atan2(target.at[1] - t.y, target.at[0] - t.x) * 180 / Math.PI);
-			if (glyph.dataset.aim === String(deg)) continue;   // the DOM write is the expensive part
-			glyph.dataset.aim = String(deg);
-			glyph.setAttribute('transform', `rotate(${deg})`);
+		// each tower with a target in range, in the towers' order (`aimAt`); one with nothing in range holds its last bearing
+		const towers = new Map(world.towers.map((t) => [t.id, t]));
+		for (const [id, target] of aimAt(world, alive)) {
+			const t = towers.get(id);
+			this.renderer.mark?.(id, 'aim', Math.round(Math.atan2(target.at[1] - t.y, target.at[0] - t.x) * 180 / Math.PI));
+			this.aimed.add(id);
 		}
 	}
 
-	/*
-	The glyph element of a node, cached because a `querySelector` per tower per frame is work for
-	nothing once the element is known.
-
-	Asked of the RENDERER rather than found in the document. The first version reached for
-	`document.getElementById` and `scan-writers` refused it under B45 -- correctly: a DOM global
-	welds this module to the one page it runs in, and how a node is assembled is the renderer's
-	business, not presentation's.
-	*/
-	glyphOf(id) {
-		let g = this.glyphs.get(id);
-		if (g && g.isConnected) return g;
-		g = this.renderer.glyphOf ? this.renderer.glyphOf(id) : null;
-		if (g) this.glyphs.set(id, g); else this.glyphs.delete(id);
-		return g;
-	}
-
+	// leaving run mode: every packet and beam gone, and every tower's aim let go, as a fresh element lost it before (NS13)
 	clear() {
 		for (const [, rec] of this.anims) { rec.anim?.cancel(); rec.el.remove(); }
 		this.anims.clear();
 		for (const [, rec] of this.beams) rec.line.remove();
 		this.beams.clear();
-		this.glyphs.clear();
+		for (const id of this.aimed) this.renderer.mark?.(id, 'aim', null);
+		this.aimed.clear();
 	}
 }

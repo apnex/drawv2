@@ -11,8 +11,10 @@ ends every gesture in a commit.
 green while hover, arming, handles and the datum silently stopped working.
 
 These assert BEHAVIOUR, not structure, so they survive the move:
-  · hover and arming go through `renderer.setState`/`clearState` — a collaborator contract that
-    overlay.js will still honour, not an internal of Input
+  - hover and arming go through `setState`/`clearState` -- a collaborator contract that
+    overlay.js will still honour, not an internal of Input. RESTATED H26.8 (NATIVE-SHAPES.md appendix A, a:F12): the
+    collaborator is the editing states (app/src/editing-states.js), recorded by the harness's forwarding spies as
+    `states.setState`/`states.clearState` -- the same calls, the same arguments, the renderer's until the move
   · handles and the datum marker are asserted by what is DRAWN in a layer, via `h.drawn(...)`,
     not by which function drew it
 
@@ -33,11 +35,11 @@ test('hovering an entity tells the renderer, and leaving clears it', () => {
 	try {
 		const [a] = seedNodes(h.model, [[0, 0]]);
 		h.capture.onHover(over(a.id, 0, 0), true);
-		assert.ok(h.stateCalls('renderer.setState').some(([id, cls]) => id === a.id && cls === 'hover'),
+		assert.ok(h.stateCalls('states.setState').some(([id, cls]) => id === a.id && cls === 'hover'),
 			'the hovered entity is marked, so the crosshair ring appears');
 
 		h.capture.onHover(over(a.id, 0, 0), false);
-		assert.ok(h.stateCalls('renderer.setState').some(([id, cls, on]) => id === a.id && cls === 'hover' && on === false),
+		assert.ok(h.stateCalls('states.setState').some(([id, cls, on]) => id === a.id && cls === 'hover' && on === false),
 			'and unmarked on leave — the renderer is told, whichever unit is doing the telling');
 	} finally { h.restore(); }
 });
@@ -47,11 +49,11 @@ test('Alt arms the hovered entity red; Ctrl arms it clone-blue', () => {
 	try {
 		const [a] = seedNodes(h.model, [[0, 0]]);
 		h.capture.onHover(over(a.id, 0, 0, { altKey: true }), true);
-		assert.ok(h.stateCalls('renderer.setState').some(([id, cls]) => id === a.id && cls === 'armed'),
+		assert.ok(h.stateCalls('states.setState').some(([id, cls]) => id === a.id && cls === 'armed'),
 			'Alt is the delete chord — threat may shout (DESIGN U2)');
 
 		h.capture.onHover(over(a.id, 0, 0, { ctrlKey: true }), true);
-		assert.ok(h.stateCalls('renderer.setState').some(([id, cls]) => id === a.id && cls === 'armed-clone'),
+		assert.ok(h.stateCalls('states.setState').some(([id, cls]) => id === a.id && cls === 'armed-clone'),
 			'Ctrl is the clone chord');
 	} finally { h.restore(); }
 });
@@ -61,7 +63,7 @@ test('arming is suppressed while Server-Locked — a locked client must not prom
 	try {
 		const [a] = seedNodes(h.model, [[0, 0]]);
 		h.capture.onHover(over(a.id, 0, 0, { altKey: true }), true);
-		assert.equal(h.stateCalls('renderer.setState').some(([, cls]) => cls === 'armed'), false,
+		assert.equal(h.stateCalls('states.setState').some(([, cls]) => cls === 'armed'), false,
 			'arming red says "this click deletes" — while locked it does not');
 	} finally { h.restore(); }
 });
@@ -139,7 +141,7 @@ selection, so the "deselected" case looked broken when it was the probe that had
 is plain logic over the model, and this tests the logic.
 */
 test('a selected link lights its waypoints, and releases them when selection moves', async () => {
-	const { Renderer } = await import('../app/src/renderer.js');
+	const { EditingStates } = await import('../app/src/editing-states.js');
 	const { Model } = await import('./fixtures/composed.mjs');   // the network's kinds, the link among them (S-e)
 	const model = new Model();
 	model.put('node', { id: 'node-aa0001', type: 'host', x: -240, y: 0, name: 'a' });
@@ -148,20 +150,19 @@ test('a selected link lights its waypoints, and releases them when selection mov
 	model.put('node', { id: 'node-aa0003', name: 'node-aa0003', x: 300, y: 300 });   // on no link at all
 	model.put('link', { id: 'link-aa0001', name: 'link-aa0001', src: 'node-aa0001', dst: 'node-ea0001', via: ['node-aa0002'] });
 
-	// RESTATED at C-e step fourteen (H19.33): the path's light is the network's reflection, marked by the renderer's one step
+	// RESTATED at C-e step fourteen (H19.33): the path's light is the network's reflection, marked by the renderer's one step.
+	// RESTATED H26.8 (NATIVE-SHAPES.md section 3.2, NS13): that step is the editing states' `reflect`, which holds what each reflection names
 	const { NETWORK_REFLECTS } = await import('../plugins/network/selection-reflects.mjs');
-	const state = new Map();
-	const host = { model, selectedSet: new Set(['link-aa0001']), reflects: NETWORK_REFLECTS.filter((r) => r.cls === 'on-selected-path'), marked: new Map(),
-		setState: (id, cls, on) => state.set(`${id}:${cls}`, on) };
+	const states = new EditingStates({ model, parts: [{ owner: 'network', reflects: NETWORK_REFLECTS.filter((r) => r.cls === 'on-selected-path') }] });
+	const lit = (id) => states.classesOf(id).includes('on-selected-path');
 
-	Renderer.prototype.reflectParts.call(host);
-	assert.equal(state.get('node-ea0001:on-selected-path'), true, 'the endpoint lights');
-	assert.equal(state.get('node-aa0002:on-selected-path'), true, 'and so does the bend — it sits ON the line');
-	assert.equal(state.has('node-aa0003:on-selected-path'), false, 'a waypoint elsewhere is untouched');
+	states.reflect(['link-aa0001']);
+	assert.equal(lit('node-ea0001'), true, 'the endpoint lights');
+	assert.equal(lit('node-aa0002'), true, 'and so does the bend -- it sits ON the line');
+	assert.equal(lit('node-aa0003'), false, 'a waypoint elsewhere is untouched');
 
 	// the selection moves to the node: the path's anchors must let go
-	host.selectedSet = new Set(['node-aa0001']);
-	Renderer.prototype.reflectParts.call(host);
-	assert.equal(state.get('node-ea0001:on-selected-path'), false, 'the endpoint releases');
-	assert.equal(state.get('node-aa0002:on-selected-path'), false, 'and the bend releases');
+	states.reflect(['node-aa0001']);
+	assert.equal(lit('node-ea0001'), false, 'the endpoint releases');
+	assert.equal(lit('node-aa0002'), false, 'and the bend releases');
 });

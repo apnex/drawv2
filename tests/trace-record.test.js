@@ -16,6 +16,9 @@ RESTATED at the verifier's SF1 on move 2, the record regenerated from a fresh ar
 at some step, with no exemption for one that began none; each scenario's event (tests/fixtures/trace-record.mjs `event`) falls inside a
 trace of its line, begun before it and neither ended nor hidden since; and where the event changes the line's route, the length the
 stand-in measures there is not the trace's, so the rule asks for the length written again.
+RESTATED at H26.8's painters move (NATIVE-SHAPES.md section 4.2): the reveal entities' items are compared with each companion read by its
+entity and the class it draws, attributes as a map and a class as a set; every other item of each layer, which the record holds by a
+hash, is the native record's to hold (tests/native-record.test.js), so the hash is no longer compared (see `keyOf` below).
 */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -67,6 +70,18 @@ function runningAt(id, t, traces, hides) {
 // the line's own attributes at a step of the record, wherever its layer
 const lineAt = (step, id) => Object.values(step.layers).flatMap((l) => l.whole).find(([key]) => key === id)?.[1][0].attrs ?? null;
 const split = (attrs) => ({ order: Object.entries(attrs).filter(([k]) => !TRACE_ATTRS.includes(k)), trace: Object.fromEntries(TRACE_ATTRS.filter((k) => k in attrs).map((k) => [k, attrs[k]])) });
+/*
+RESTATED at H26.8's painters move (NATIVE-SHAPES.md sections 3.2 and 4.2): a companion is keyed by its part since the move (NS2), where
+the record holds `ca492da`'s serial -- each is read here by its entity's id and the class it draws, as the native record reads keys
+(tests/fixtures/native-record.mjs `keyOf`); and an element's attributes are compared as a map, its class as a set, the order kept across
+a patch being the painters move's to differ in (4.2). Every other item of each layer, which the record holds by a hash of the serial
+keys, is the native record's to hold now, every item read whole (tests/native-record.test.js) -- so that hash is no longer compared.
+*/
+const ENTITY = /^(node|link|zone|group|pipe)-/;
+const keyOf = (key, shapes) => { const m = /^(.*)\/[^/]+$/.exec(key); return m && ENTITY.test(m[1]) ? `${m[1]}/${String(shapes[0]?.attrs?.class ?? shapes[0]?.tag).split(/\s+/)[0]}` : key; };
+const asMap = (shape) => ({ tag: shape.tag, attrs: Object.entries(shape.attrs ?? {}).map(([k, v]) => [k, k === 'class' ? String(v).split(/\s+/).filter(Boolean).sort().join(' ') : v]).sort(([a], [b]) => (a < b ? -1 : 1)),
+	text: shape.text ?? null, children: (shape.children ?? []).map(asMap) });
+const sorted = (entries) => [...entries].sort(([a], [b]) => (a < b ? -1 : 1));
 
 for (const [id, scenario] of Object.entries(SCENARIOS)) {
 	test(`the reveal's steps as the record holds them, under the trace rule: ${id}`, () => {
@@ -81,16 +96,15 @@ for (const [id, scenario] of Object.entries(SCENARIOS)) {
 			assert.deepEqual(Object.keys(now.layers), Object.keys(was.layers), `${at}: the layers`);
 			for (const [layer, w] of Object.entries(was.layers)) {
 				const n = now.layers[layer];
-				assert.equal(n.rest, w.rest, `${at}: every other item of ${layer}, by its hash`);
-				assert.deepEqual(n.whole.map(([key]) => key), w.whole.map(([key]) => key), `${at}: the reveal entities' items in ${layer}`);
-				w.whole.forEach(([key, shapes], i) => {
-					const [, nowShapes] = n.whole[i];
+				assert.deepEqual(n.whole.map(([key, sh]) => keyOf(key, sh)), w.whole.map(([key, sh]) => keyOf(key, sh)), `${at}: the reveal entities' items in ${layer}`);
+				w.whole.forEach(([rawKey, shapes], i) => {
+					const [, nowShapes] = n.whole[i], key = keyOf(rawKey, shapes);
 					const [own, ...rest] = shapes, [nowOwn, ...nowRest] = nowShapes;
-					assert.deepEqual(nowRest, rest, `${at}: ${key}'s other shapes`);
-					assert.deepEqual({ ...nowOwn, attrs: undefined }, { ...own, attrs: undefined }, `${at}: ${key}'s own shape but its attributes`);
-					if (own.attrs.id !== key) { assert.deepEqual(nowOwn.attrs, own.attrs, `${at}: ${key}'s attributes`); return; }
+					assert.deepEqual(nowRest.map(asMap), rest.map(asMap), `${at}: ${key}'s other shapes`);
+					assert.deepEqual(asMap({ ...nowOwn, attrs: {} }), asMap({ ...own, attrs: {} }), `${at}: ${key}'s own shape but its attributes`);
+					if (own.attrs.id !== key) { assert.deepEqual(asMap(nowOwn), asMap(own), `${at}: ${key}'s attributes`); return; }
 					const want = expectedAttrs(key, own.attrs, was.t, rec.traces, rec.hides), got = split(nowOwn.attrs);
-					assert.deepEqual(got.order, want.order, `${at}: ${key}'s every other attribute, in its order`);
+					assert.deepEqual(sorted(got.order.map(([k, v]) => [k, k === 'class' ? v.split(/\s+/).sort().join(' ') : v])), sorted(want.order.map(([k, v]) => [k, k === 'class' ? v.split(/\s+/).sort().join(' ') : v])), `${at}: ${key}'s every other attribute`);
 					assert.deepEqual(got.trace, want.trace, `${at}: ${key}'s trace, by the rule`);
 					if ('style' in own.attrs) { if ('data-trace' in want.trace) traced++; else ended++; }
 				});

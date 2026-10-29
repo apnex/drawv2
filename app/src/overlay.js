@@ -31,7 +31,7 @@ import { kindOf } from '../../model/model.mjs';
 const HANDLE = 12;
 
 export class Overlay {
-	constructor({ svg, scene, near, model, selection, renderer, snap, handles = () => new Map(), hitFacts = () => new Map(), points = () => [], grids = () => [] }) {
+	constructor({ svg, scene, near, model, selection, states, snap, handles = () => new Map(), hitFacts = () => new Map(), points = () => [], grids = () => [] }) {
 		this.grids = grids;   // C-e: the grids shown by a modifier -- the zones plugin's, by Shift (by Input)
 		this.points = points;       // C-e: what each part's items cover (by Input)
 		this.hitFacts = hitFacts;   // D4: what each hit word is, from the canvas parts (by Input)
@@ -40,7 +40,7 @@ export class Overlay {
 		this.svg = svg;
 		this.model = model;
 		this.selection = selection;
-		this.renderer = renderer;
+		this.states = states;   // H26.8 (NS13): the editing states, where the hover and the arming are held
 		this.scene = scene;   // H26.4: the handles and the datum are items of its overlay and snap layers
 		this.near = near;     // H26.4 (section 5.3): Input's -- whether a point is near enough an entity's origin to keep its hover
 
@@ -60,9 +60,9 @@ export class Overlay {
 	hover(hit, on, evt, gesturing) {
 		if (gesturing) return;
 		if (!hit.id || hit.handle) return;   // a handle -- a corner, a link end -- is no entity to hover (B317: a link end carries an id)
-		this.renderer.setState(hit.id, 'hover', on);
+		this.states.setState(hit.id, 'hover', on);
 		const idle = this.hitFacts().get(hit.kind)?.idle;   // C-f: the idle state its pick shows -- a device's ring
-		if (!on && idle) this.renderer.setState(hit.id, idle, false);
+		if (!on && idle) this.states.setState(hit.id, idle, false);
 		this.hovered = on ? hit.id : (this.hovered === hit.id ? null : this.hovered);
 		this.hoveredWord = this.hovered ? (on ? hit.kind : this.hoveredWord) : null;
 		// deliberately does NOT arm. Arming needs to know whether the client is read-only, and this
@@ -81,7 +81,7 @@ export class Overlay {
 		const cover = this.points().find((a) => a.word === this.hoveredWord && a.under);
 		const still = pos && ent && ent.x !== undefined && (cover ? cover.under(ent, pos) : this.near(ent, pos));
 		if (!still) {
-			this.renderer.clearState(id, 'hover', ...this.idleStates());
+			this.states.clearState(id, 'hover', ...this.idleStates());
 			this.hovered = null;
 			this.hoveredWord = null;
 		}
@@ -92,7 +92,7 @@ export class Overlay {
 	clearHover(id = null) {
 		if (!this.hovered) return;
 		if (id === null || this.hovered === id) {
-			this.renderer.clearState(this.hovered, 'hover', ...this.idleStates());
+			this.states.clearState(this.hovered, 'hover', ...this.idleStates());
 			this.hovered = null;
 			this.hoveredWord = null;
 		}
@@ -112,12 +112,12 @@ export class Overlay {
 		const facts = this.hitFacts().get(this.hoveredWord);
 		if (evt.altKey) this.armed = { id: this.hovered, cls: 'armed' };
 		else if (evt.ctrlKey && facts?.placed && facts?.clones) this.armed = { id: this.hovered, cls: 'armed-clone' };
-		if (this.armed) this.renderer.setState(this.armed.id, this.armed.cls, true);
+		if (this.armed) this.states.setState(this.armed.id, this.armed.cls, true);
 	}
 
 	disarm() {
 		if (!this.armed) return;
-		this.renderer.clearState(this.armed.id, 'armed', 'armed-clone');
+		this.states.clearState(this.armed.id, 'armed', 'armed-clone');
 		this.armed = null;
 	}
 

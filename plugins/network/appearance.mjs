@@ -308,11 +308,11 @@ possible. One answer, assembled once, removes the second place to forget.
 
 ABSENT IS ABSENT. A key that does not apply is missing from the object rather than present and
 undefined, because a caller that sets attributes blindly would otherwise write "undefined" into the
-DOM. `APPEARANCE_KEYS` names every key this can produce, so an UPDATE can remove what a previous
-state set -- which is the half B228 got wrong and could not have got right without it.
+DOM. RESTATED H26.8 (dev/design/components/NATIVE-SHAPES.md section 3.2): the list of every key this could produce, which let an
+UPDATE remove what a previous state set -- the half B228 got wrong -- went with the update: the link is described whole each time,
+and a key it no longer carries is simply absent from the description the scene diffs.
+H24.6: the head is a shape of its own now (plugins/network/link-head.mjs), so no marker key; a headed line's caps are square.
 */
-// H24.6: the head is a shape of its own now (plugins/network/link-head.mjs), so no marker key; a headed line's caps are square
-export const APPEARANCE_KEYS = ['stroke-width', 'stroke-dasharray', 'stroke-linecap', 'data-down'];
 
 /*
 A DOWN link -- one with no route right now, which heals when a route returns (ruled 2026-09-25) -- is

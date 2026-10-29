@@ -13,6 +13,8 @@ Each case is driven through the harness's capture, the focus loss the host's `bl
 each B413 case reproduces the defect against input-capture 0.1.0 -- which adds no blur listener, so the focus loss reaches nothing --
 and holds it fixed after. The two controls hold what must not change: zones Ctrl+A selected with no Shift held stay selected across a
 focus loss (B352), and Shift pressed and released while typing leaves nothing owed.
+RESTATED H26.8 (NATIVE-SHAPES.md appendix A, a:F12): a state is observed as `states.setState` and `states.clearState` -- the editing
+states' calls (app/src/editing-states.js), recorded by the harness's forwarding spies with the same arguments, the renderer's until the move.
 */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -31,8 +33,8 @@ const onGround = (x, y, mod = {}) => pointer(x, y, mod);
 const gridShown = (h) => h.svg.classList.contains('zonegrid');
 // whether the renderer was last told to mark `id` armed -- replayed from what Input told the renderer, the boundary these assert at
 const armedNow = (h, id) => h.calls.reduce((on, c) => {
-	if (c.name === 'renderer.setState' && c.args[0] === id && c.args[1] === 'armed') return !!c.args[2];
-	if (c.name === 'renderer.clearState' && c.args[0] === id && c.args.slice(1).includes('armed')) return false;
+	if (c.name === 'states.setState' && c.args[0] === id && c.args[1] === 'armed') return !!c.args[2];
+	if (c.name === 'states.clearState' && c.args[0] === id && c.args.slice(1).includes('armed')) return false;
 	return on;
 }, false);
 const board = (h) => {
@@ -110,10 +112,10 @@ test('B413: Alt held over a node, focus lost -- the node is disarmed; and Contro
 		focusLost(h);
 		assert.equal(armedNow(h, n.id), false, 'the focus loss stands in for Alt\'s release: the node disarmed');
 		h.capture.onKeyDown(key('Control', { code: 'ControlLeft', ctrlKey: true }));
-		assert.ok(h.stateCalls('renderer.setState').some(([id, cls, on]) => id === n.id && cls === 'armed-clone' && on), 'precondition: Control over the node arms it to clone');
+		assert.ok(h.stateCalls('states.setState').some(([id, cls, on]) => id === n.id && cls === 'armed-clone' && on), 'precondition: Control over the node arms it to clone');
 		h.reset();
 		focusLost(h);
-		assert.ok(h.stateCalls('renderer.clearState').some(([id, ...classes]) => id === n.id && classes.includes('armed-clone')), 'and the clone affordance goes, as Control\'s release would take it');
+		assert.ok(h.stateCalls('states.clearState').some(([id, ...classes]) => id === n.id && classes.includes('armed-clone')), 'and the clone affordance goes, as Control\'s release would take it');
 	} finally { h.restore(); }
 });
 

@@ -25,7 +25,8 @@ const wordsOf = (s) => s.replace(/\$\{(?:[^{}]|\{[^{}]*\})*\}/g, ' ').split(/\s+
 /*
 WHERE A CLASS IS PUT ON AN ELEMENT: markup written as text (`class="solid"`), the value given to a class key -- an element's `class`, a layer's `cls`, `className =`, an
 appearance's `addClass`, a pick's `idle` state, a gesture's `preview`, a handle's `dragState` -- and the writes `classList.add` and
-`.toggle`, a state set or cleared through the renderer (`setState`, `clearState`), and `setAttribute('class', ...)`. A class is
+`.toggle`, a state set or cleared through the editing states (`setState`, `clearState`; app/src/editing-states.js since H26.8, the
+renderer's before), and `setAttribute('class', ...)`. A class is
 credited to the part whose module writes it there. A class only READ (`classList.contains`, `.includes('label')`), or a word
 quoted under another key (a layer's `layer: 'zones'`, a layout's name), is not a class put on an element, and crediting it would
 hide a copy (H25.0's adversarial review, finding 5).

@@ -39,6 +39,7 @@ import { createNetworkSession } from '../../plugins/network/session.mjs';
 import { commit } from '../../planner/txn.mjs';
 import { Log } from '../../planner/log.mjs';
 import { Selection } from '../../app/src/selection.js';
+import { EditingStates } from '../../app/src/editing-states.js';
 import { Renderer, openCanvasScene } from '../../app/src/renderer.js';
 import { Reveal } from '../../plugins/simulation/reveal-painter.mjs';
 import { traceOf } from '../../plugins/simulation/reveal.mjs';
@@ -106,9 +107,11 @@ function world() {
 	attachRelations(model, { nearest: NODE_GRID.nearest });
 	const selection = new Selection(model);
 	const scene = openCanvasScene(CANVAS_SCENE);
-	// the page hands the renderer its measure and settle before the move, and the reveal its measure after it: each takes what it reads
-	const renderer = new Renderer(model, null, { parts: PRODUCT_CANVAS, scene, platform: { lengthOf, settle: () => {} } });
-	selection.subscribe(() => renderer.reflectSelection(selection.list()));
+	// the page hands the renderer its measure and settle before the move, and the reveal its measure after it: each takes what it reads.
+	// RESTATED at H26.8's painters move (NATIVE-SHAPES.md section 3.2): the selection reflected through the editing states the renderer
+	// is handed, as app/src/compose-canvas.js composes them, where the renderer held them when the record was written
+	const states = new EditingStates({ model, parts: PRODUCT_CANVAS });
+	const renderer = new Renderer(model, null, { parts: PRODUCT_CANVAS, scene, states });
 	// the network attached after the canvas, as the page attaches it (app/src/main.js): its paint on every change and mode, its settle
 	const host = net.attach({ model, renderer, selection, edit() {}, say() {}, el: pipeNode, pipeLayer: pipeNode('g', { id: 'pipes' }) });
 	const clock = { t: 0 }, said = { caption: null };
@@ -116,15 +119,17 @@ function world() {
 	const w = { model, selection, scene, renderer, host, reveal, clock, said, traces: [], hides: [] };
 	// the traces each show began and the hides, logged as the reveal is asked: a show traces a line whose measured length is not zero
 	const show = reveal.show.bind(reveal), hide = reveal.hide.bind(reveal);
+	// the line's `d` read from what the renderer drew: its element when the record was written, its description since the painters move
+	const lineOf = (id) => { const own = renderer.ownShapeOf(id); return own ? { tag: own.tag, d: own.attrs.d } : null; };
 	reveal.show = (id) => {
-		const dom = renderer.byId(id);
-		if (dom && dom.tagName === 'path') {
-			const len = lengthOf(dom.getAttribute('d'));
+		const dom = lineOf(id);
+		if (dom && dom.tag === 'path') {
+			const len = lengthOf(dom.d);
 			if (len > 0) w.traces.push({ id, t: clock.t, len, ms: traceOf(reveal.trace, len).ms });
 		}
 		return show(id);
 	};
-	reveal.hide = (id) => { if (renderer.byId(id)) w.hides.push({ id, t: clock.t }); return hide(id); };
+	reveal.hide = (id) => { if (lineOf(id)) w.hides.push({ id, t: clock.t }); return hide(id); };
 	model.load(board());
 	renderer.syncAll?.();
 	return w;

@@ -8,11 +8,15 @@ whether it is down), and an invisible twin just after it taking its clicks (B268
 put, set or delete re-derives the waypoints at its ends and bends, since their roles are read from the links meeting them
 (B218). It was the renderer's own branch (app/src/renderer.js `draw`, `update`, `linkPath`, `linkAppearanceOf`, `hitTwinOf`,
 `refreshWaypointsOf`); the elements and every attribute are what the renderer built -- the K8 DOM corpus holds that.
+RESTATED H26.8 (dev/design/components/NATIVE-SHAPES.md section 3.2, NS2; appendix B): it answers the link's shapes as ordered named
+parts -- `''` its line, the link's own item keyed by its id, then `head`, `leg` and `hit`, each a companion keyed `<id>/<part>` -- where
+it built elements, then updated each again by finding it (T5). A head or leg the link no longer has is a part no longer answered, which
+the renderer removes; one it gains, a part answered, put where the order says, before the twin.
 */
 
 import { STD, BEND_R } from '../../kernel/spec.mjs';
 import { roundedPath } from '../../kernel/router.mjs';
-import { linkAppearance, APPEARANCE_KEYS, downStroke, NETWORK_TOKENS } from './appearance.mjs';
+import { linkAppearance, downStroke, NETWORK_TOKENS } from './appearance.mjs';
 import { pathOf, isLinkDown } from './network-queries.mjs';
 import { linkHeadOf, HEAD_OUTLINE } from './link-head.mjs';
 
@@ -59,11 +63,6 @@ const legAttrs = (head, look) => ({ class: 'link-leg', 'data-leg-of': head.of, d
 	'stroke-width': look['stroke-width'], 'stroke-linecap': look['stroke-linecap'] ?? 'butt',
 	...(look['stroke-dasharray'] ? { 'stroke-dasharray': look['stroke-dasharray'], 'stroke-dashoffset': head.legOffset } : {}),
 	...('data-down' in look ? { 'data-down': '' } : {}) });
-const LEG_OPTIONAL = ['stroke-dasharray', 'stroke-dashoffset', 'data-down'];   // what a leg may stop carrying, removed on update
-// its click twin, found by the link it stands for (B268); its head and its leg, likewise
-const twinOf = (id, layer) => [...layer.querySelectorAll('.link-hit')].find((t) => t.getAttribute('data-link') === id) ?? null;
-const headElOf = (id, layer) => [...layer.querySelectorAll('.link-head')].find((t) => t.getAttribute('data-head-of') === id) ?? null;
-const legElOf = (id, layer) => [...layer.querySelectorAll('.link-leg')].find((t) => t.getAttribute('data-leg-of') === id) ?? null;
 // a ring's one piece starts inside its head's tip, so its dash pattern is started there (no other line states an offset)
 const lineOffsetOf = (head) => (head && head.lineOffset ? { 'stroke-dashoffset': head.lineOffset } : {});
 
@@ -73,70 +72,21 @@ const LINK_PAINTER = {
 	stacked: true,
 	// C-b: the path itself, and its click twin wherever a dotted or dashed stroke has a gap (B268)
 	picks: [{ self: 'link', word: 'link', clones: true }, { self: 'link-hit', word: 'link', id: (t) => t.dataset.link, clones: true }],   // D4: Ctrl+left clones it
-	// the link, then its head straight after it -- the stylesheet colours a head by the element before it -- then its click twin
-	create(link, { el, layer, model, outlineOf }) {
+	/*
+	The link, then its head straight after it -- the stylesheet colours a head by the element before it -- then its leg, then its click
+	twin, the whole line. B228 and H15.9 held an update to the same derivation create used, a set-or-remove over the declared keys; one
+	description is that derivation, and what the link no longer carries is simply not answered.
+	*/
+	shapes(link, { model, outlineOf }) {
 		const points = pathOf(model, link), d = linkPath(points, link);
 		if (!d) return null;
 		const head = headOf(model, link, points, outlineOf), look = lookOf(model, link, head);
-		const path = el('path', { id: link.id, class: 'link', fill: 'none', d: head ? head.lineD : d, ...look, ...lineOffsetOf(head) }, layer);
-		if (head) el('path', headAttrs({ ...head, of: link.id }, 'data-down' in look), layer);
-		if (head?.legD) el('path', legAttrs({ ...head, of: link.id }, look), layer);   // straight after its head
-		el('path', { class: 'link-hit', 'data-link': link.id, ...hitOf(d, look) }, layer);   // its click area (B268), the whole line
-		return path;
+		const parts = [['', { tag: 'path', attrs: { id: link.id, class: 'link', fill: 'none', d: head ? head.lineD : d, ...look, ...lineOffsetOf(head) } }]];
+		if (head) parts.push(['head', { tag: 'path', attrs: headAttrs({ ...head, of: link.id }, 'data-down' in look) }]);
+		if (head?.legD) parts.push(['leg', { tag: 'path', attrs: legAttrs({ ...head, of: link.id }, look) }]);   // straight after its head
+		parts.push(['hit', { tag: 'path', attrs: { class: 'link-hit', 'data-link': link.id, ...hitOf(d, look) } }]);   // its click area (B268), the whole line
+		return parts;
 	},
-	update(link, dom, { el, setAttrs, layer, model, outlineOf }) {
-		const points = pathOf(model, link), d = linkPath(points, link);
-		const head = d ? headOf(model, link, points, outlineOf) : null;
-		if (d) setAttrs(dom, { d: head ? head.lineD : d });
-		/*
-		B228 -- THE MARKER IS PART OF THE LINK, so an update must re-derive it.
-
-		`render` set it and `update` set only `d`, so the first press of `f` drew an arrow and
-		every press afterwards changed the document and nothing else: the element already
-		existed, so it never went back through `render`.
-
-		Set-or-remove rather than set-if-present. Clearing a declaration has to REMOVE the
-		attribute, and an update that only ever adds would strand the last head on a link the
-		author has since made symmetric.
-
-		B218 was this shape one branch over -- create and update refreshed a waypoint's role and
-		delete did not. A rule wired into one branch of `handle` is wired into none of the others.
-		*/
-		/*
-		H15.9 -- the SAME derivation create uses, applied as set-or-remove over the declared
-		key set. B228 was an update that set some of these and forgot others; there is now no
-		list to forget, because `APPEARANCE_KEYS` is what the derivation itself declares.
-		*/
-		const want = lookOf(model, link, head);
-		for (const attr of APPEARANCE_KEYS) {
-			if (attr in want) dom.setAttribute(attr, want[attr]);
-			else dom.removeAttribute(attr);
-		}
-		if (head?.lineOffset) dom.setAttribute('stroke-dashoffset', head.lineOffset); else dom.removeAttribute('stroke-dashoffset');
-		const twin = twinOf(link.id, layer);
-		if (twin && d) setAttrs(twin, hitOf(d, want));
-		/*
-		H24.6 -- THE HEAD IS PART OF THE LINK, as the marker was (B228): an update makes it, moves it or takes it away, by the same
-		derivation create uses. A new one goes straight after the link, before its twin, where create puts it.
-		*/
-		const had = headElOf(link.id, layer);
-		if (head) {
-			const attrs = headAttrs({ ...head, of: link.id }, 'data-down' in want);
-			if (had) { setAttrs(had, attrs); if (!('data-down' in attrs)) had.removeAttribute('data-down'); }
-			else layer.insertBefore(el('path', attrs, layer), twin);
-		} else if (had) had.remove();
-		// and its leg, likewise: made, changed or taken away, and a new one put between the head and the twin, where create puts it
-		const leg = legElOf(link.id, layer);
-		if (head?.legD) {
-			const attrs = legAttrs({ ...head, of: link.id }, want);
-			if (leg) { setAttrs(leg, attrs); for (const k of LEG_OPTIONAL) if (!(k in attrs)) leg.removeAttribute(k); }
-			else layer.insertBefore(el('path', attrs, layer), twin);
-		} else if (leg) leg.remove();
-		return undefined;
-	},
-	// the elements drawn with it, moved and removed with it -- its head, its leg, then its click twin -- and the link an element stands for
-	companions: (id, layer) => [headElOf(id, layer), legElOf(id, layer), twinOf(id, layer)].filter(Boolean),
-	ownerOf: (element) => element.getAttribute('data-link') ?? element.getAttribute('data-head-of') ?? element.getAttribute('data-leg-of'),
 	/*
 	A link change can change what its WAYPOINTS are.
 

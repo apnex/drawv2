@@ -35,6 +35,7 @@ import { plan } from '../../planner/txn.mjs';
 import { LabelEditor } from '../../app/src/labeledit.js';
 import { Tools } from '../../app/src/tools.js';
 import { Selection } from '../../app/src/selection.js';
+import { EditingStates } from '../../app/src/editing-states.js';   // H26.8: the editing states, Input's and its overlay's (a:F12)
 import { crosshair } from '../../app/src/editing-visuals.js';   // H26.4: the editing part's, an item of the scene
 import { openCanvasScene } from '../../app/src/renderer.js';
 import { CANVAS_SCENE } from '../../product/canvas.mjs';
@@ -224,8 +225,19 @@ export function makeInput({ readOnly = false, bare = false, host: hostOverride =
 
 	const calls = [];
 	const rec = (name) => (...args) => { calls.push({ name, args }); };
-	const renderer = { mode: 'view', setMode: rec('renderer.setMode'), setState: rec('renderer.setState'), clearState: rec('renderer.clearState'),
+	const renderer = { mode: 'view', setMode: rec('renderer.setMode'),
 		toggleLabels: rec('renderer.toggleLabels') };   // Tab calls it; a stub must be total (the gesture corpus found the gap)
+	/*
+	H26.8 (dev/design/components/NATIVE-SHAPES.md section 3.2, appendix A, a:F12) -- THE EDITING STATES, real, their calls recorded by
+	forwarding spies: Input and its overlay hold the hover, the arming, the idle ring and a link end's drag state in
+	app/src/editing-states.js, which the renderer stub recorded as `renderer.setState` and `renderer.clearState` until the move; each call
+	is recorded as `states.setState` and `states.clearState` with the same arguments, and reaches the real states, so a test may ask
+	both what was called and what is held.
+	*/
+	const held = new EditingStates({ model, parts });
+	const states = { setState: (...args) => { calls.push({ name: 'states.setState', args }); held.setState(...args); },
+		clearState: (...args) => { calls.push({ name: 'states.clearState', args }); held.clearState(...args); },
+		reflect: (ids) => held.reflect(ids), classesOf: (id) => held.classesOf(id), onChange: (fn) => held.onChange(fn) };
 	// A stub must be TOTAL or it is a trap — the same lesson Input's own readout null-object records.
 	// `focusId` moved here at H6.12, so the stub tracks it for real rather than swallowing the call:
 	// a test can then assert F2 picked the directly-touched entity, which was unassertable before.
@@ -298,9 +310,9 @@ export function makeInput({ readOnly = false, bare = false, host: hostOverride =
 	let input;
 	try {
 		input = bare
-			? new Input({ svg, scene, model, history, selection, renderer, labels, host, help, snap, parts })   // places are composition, not a collaborator (C-c)
+			? new Input({ svg, scene, model, history, selection, renderer, states, labels, host, help, snap, parts })   // places are composition, not a collaborator (C-c)
 			// run mode's rows as the production root hands them in (K5); `bare` omits them as it omits every collaborator
-			: new Input({ svg, scene, model, history, selection, renderer, labels, readout, tools, dataview, host, help, snap, runRules,
+			: new Input({ svg, scene, model, history, selection, renderer, states, labels, readout, tools, dataview, host, help, snap, runRules,
 				/*
 				P7 X-a (H18.37) -- THE PRODUCT PAGE'S INPUT, as app/src/main.js composes it since V-b: the network's keys and its REAL
 				drag judge (plugins/network/session.mjs `judge`, what plugins/network/page.mjs attaches), judging on the board the tab holds. Before
@@ -319,7 +331,7 @@ export function makeInput({ readOnly = false, bare = false, host: hostOverride =
 	const capture = captureDispatch(opened);
 
 	return {
-		input, capture, model, history, selection, svg, scene, commits, calls, restore, renderer, labels, tools, help, snap,
+		input, capture, model, history, selection, svg, scene, commits, calls, restore, renderer, states, labels, tools, help, snap,
 		// events Input handed to the host (W5 `draw:action`) — an outbound boundary, so a fair assertion
 		dispatched,
 		// the transient-feedback layers, so a test can ask "what is drawn right now" without

@@ -29,10 +29,11 @@ H25.1 (B366): A NAME'S LABEL, drawn one way -- a pill behind the name's text. Na
 zones and devices plugins each drew the label themselves, the same two elements in two places; so its look had no owner but the
 page's stylesheet, styling both plugins' classes. The label is the core's now, and its look is the core's stylesheet's
 (kernel/primitives.css). A caller passes the attributes it places them by, in its own order, and a class of its own for the text.
+RESTATED H26.8 (dev/design/components/NATIVE-SHAPES.md section 3.2): it answers the two as shapes -- `vector-scene`'s
+`{ tag, attrs, text? }` -- where it built them with the element builder it was handed; the name, when there is one, the text's own.
 */
-export function nameLabel(el, g, { pill = {}, text = {}, cls = null } = {}) {
-	el('rect', { class: 'label-pill', ...pill }, g);
-	el('text', { class: cls ? `label ${cls}` : 'label', ...text }, g);
+export function nameLabel({ pill = {}, text = {}, cls = null, name = '' } = {}) {
+	return [{ tag: 'rect', attrs: { class: 'label-pill', ...pill } }, { tag: 'text', attrs: { class: cls ? `label ${cls}` : 'label', ...text }, ...(name ? { text: String(name) } : {}) }];
 }
 
 // sockets are an EDITING AID: absent from a clean export, present when the caller asks. The client

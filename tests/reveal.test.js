@@ -133,18 +133,42 @@ The consumer. `plugins/simulation/reveal-painter.mjs` turns the derivation into 
 with a fake renderer and a fake clock -- no DOM at all, which is the property B45 exists to keep.
 RESTATED at H26.8's trace move: each fake answers `getAttribute` too, as a page's element and the renderer's node do -- a hide reads
 whether its mark already stands, and writes nothing if it does.
+RESTATED at H26.8's painters move (NATIVE-SHAPES.md section 3.2, NS5): the reveal writes on no element; it reads an entity's own shape
+from the renderer (`ownShapeOf`) and tells it what to mark (`mark`, `markOf`). The fake renderer holds each entity's description and
+its marks as the renderer does -- a mark put only when its value differs, so `writes` logs each put -- and draws them by the
+simulation's own declarations (SIMULATION_CANVAS.marks), so an attribute read here is the one the page shows.
 */
+const { SIMULATION_CANVAS } = await import('../plugins/simulation/spawn-appearance.mjs');
+// an entity the fake renderer draws: its description (`attrs`, the line's `d` among them), its marks, and each put a mark change made
+function lineOf(id, d, tagName = 'path') {
+	const attrs = new Map([['id', id], ['d', d]]), marks = new Map(), writes = [];
+	const drawn = () => {
+		let parts = [['', { tag: tagName, attrs: Object.fromEntries(attrs) }]];
+		for (const [name, fn] of Object.entries(SIMULATION_CANVAS.marks)) if (marks.has(name)) parts = fn(parts, marks.get(name));
+		return parts[0][1].attrs;
+	};
+	return { tagName, attrs, marks, writes, getAttribute(k) { const a = drawn(); return k in a ? a[k] : null; } };
+}
+// the renderer's side of the reveal: an entity's own shape, and its marks -- none held for an id it does not draw
+function rendererOf(lines) {
+	const get = (id) => (typeof lines === 'function' ? lines(id) : lines.get(id)) ?? null;
+	return {
+		ownShapeOf: (id) => { const l = get(id); return l ? { tag: l.tagName, attrs: Object.fromEntries(l.attrs) } : null; },
+		mark: (id, name, value) => {
+			const l = get(id), next = value ?? null;
+			if (!l || JSON.stringify(l.marks.get(name) ?? null) === JSON.stringify(next)) return;
+			if (next === null) l.marks.delete(name); else l.marks.set(name, next);
+			l.writes.push(['mark', name, next]);
+		},
+		markOf: (id, name) => get(id)?.marks.get(name) ?? null,
+	};
+}
 test('the painter hides what the beat has not reached, and shows it when it does', async () => {
 	const { Reveal } = await import('../plugins/simulation/reveal-painter.mjs');
-	const marks = new Map();
-	const renderer = { byId: (id) => marks.get(id) };
-	for (const id of ['node-aa0001', 'node-aa0002', 'node-aa0003']) {
-		marks.set(id, { attrs: new Set(),
-			getAttribute(k) { return this.attrs.has(k) ? '' : null; }, setAttribute(k) { this.attrs.add(k); }, removeAttribute(k) { this.attrs.delete(k); } });
-	}
+	const marks = new Map(['node-aa0001', 'node-aa0002', 'node-aa0003'].map((id) => [id, lineOf(id, '', 'g')]));
 	let t = 999;
-	const r = new Reveal({ model: { state: { reveal: BEAT } }, renderer, now: () => t });
-	const unrevealed = (id) => marks.get(id).attrs.has('data-unrevealed');
+	const r = new Reveal({ model: { state: { reveal: BEAT } }, renderer: rendererOf(marks), now: () => t });
+	const unrevealed = (id) => marks.get(id).getAttribute('data-unrevealed') !== null;
 
 	r.paint();
 	assert.equal(unrevealed('node-aa0001'), true, 'nothing shown before the origin');
@@ -163,7 +187,7 @@ test('the painter reports the caption, and only when it changes', async () => {
 	let t = 900;
 	const r = new Reveal({
 		model: { state: { reveal: BEAT } },
-		renderer: { byId: () => null },
+		renderer: rendererOf(() => null),
 		now: () => t,
 		onCaption: (c) => said.push(c),
 	});
@@ -175,10 +199,10 @@ test('the painter reports the caption, and only when it changes', async () => {
 
 test('a document with no reveal leaves every entity alone', async () => {
 	const { Reveal } = await import('../plugins/simulation/reveal-painter.mjs');
-	const mark = { attrs: new Set(), getAttribute(k) { return this.attrs.has(k) ? '' : null; }, setAttribute(k) { this.attrs.add(k); }, removeAttribute(k) { this.attrs.delete(k); } };
-	const r = new Reveal({ model: { state: { reveal: null } }, renderer: { byId: () => mark }, now: () => 5000 });
+	const mark = lineOf('node-aa0001', '', 'g');
+	const r = new Reveal({ model: { state: { reveal: null } }, renderer: rendererOf(() => mark), now: () => 5000 });
 	r.paint();
-	assert.equal(mark.attrs.size, 0, 'nothing is withheld when nothing says to withhold it');
+	assert.equal(mark.marks.size, 0, 'nothing is withheld when nothing says to withhold it');
 });
 
 test('undoing a beat restores everything it was hiding', async () => {
@@ -188,19 +212,15 @@ test('undoing a beat restores everything it was hiding', async () => {
 	canvas, with nothing left to explain why.
 	*/
 	const { Reveal } = await import('../plugins/simulation/reveal-painter.mjs');
-	const marks = new Map();
-	for (const id of ['node-aa0001', 'node-aa0002', 'node-aa0003']) {
-		marks.set(id, { attrs: new Set(),
-			getAttribute(k) { return this.attrs.has(k) ? '' : null; }, setAttribute(k) { this.attrs.add(k); }, removeAttribute(k) { this.attrs.delete(k); } });
-	}
+	const marks = new Map(['node-aa0001', 'node-aa0002', 'node-aa0003'].map((id) => [id, lineOf(id, '', 'g')]));
 	const model = { state: { reveal: BEAT } };
-	const r = new Reveal({ model, renderer: { byId: (id) => marks.get(id) }, now: () => 1000 });
+	const r = new Reveal({ model, renderer: rendererOf(marks), now: () => 1000 });
 	r.paint();
-	assert.equal(marks.get('node-aa0003').attrs.has('data-unrevealed'), true, 'hidden mid-beat');
+	assert.equal(marks.get('node-aa0003').getAttribute('data-unrevealed'), '', 'hidden mid-beat');
 
 	model.state.reveal = null;       // undo removed the beat
 	r.sync();
-	for (const [id, m] of marks) assert.equal(m.attrs.size, 0, `${id} was left hidden`);
+	for (const [id, m] of marks) assert.equal(m.marks.size, 0, `${id} was left hidden`);
 });
 
 /*
@@ -468,19 +488,12 @@ test('B193: a beat committed after the queue drained gets a fresh origin', async
 H26.8's trace move (B422; dev/design/components/NATIVE-SHAPES.md section 5, NS4) -- THE TRACE DECLARED, AND THE REVEAL ITS ONE OWNER.
 A link the reveal shows carries `data-trace`, a name alternated per line, and `style` holding its length -- its `d` measured by the probe
 the page hands (`lengthOf`) -- and its duration, `traceOf`'s; a pass at `show + ms` by the reveal's clock takes both away. Each event of
-section 5's lifecycle table, driven with fake lines that log every write, a fake clock and the probe a stand-in; the loop with its frame
-callback stubbed and its timer mocked. tests/vector-scene-trace.test.js holds the same in Chrome, unpaused. A fake line logs every call
-that writes, a value set again unchanged and an absent attribute removed among them: a page queues a mutation for the one, and "writes
-nothing" is the reveal's to keep, not the DOM's to forgive.
+section 5's lifecycle table, driven with the fake renderer above, a fake clock and the probe a stand-in; the loop with its frame
+callback stubbed and its timer mocked. tests/vector-scene-trace.test.js holds the same in Chrome, unpaused. RESTATED at H26.8's
+painters move: the reveal tells the renderer each mark, and the renderer puts an entity only when a mark's value differs -- each put
+logged on the line's `writes` -- so "writes nothing" is the renderer's to keep on the reveal's word (tests/native-shapes.test.js).
 */
 const lengthOf = (d) => String(d).length * 3 + 0.5;
-function lineOf(id, d, tagName = 'path') {
-	const attrs = new Map([['id', id], ['d', d]]), writes = [];
-	return { tagName, attrs, writes,
-		getAttribute(k) { return attrs.has(k) ? attrs.get(k) : null; },
-		setAttribute(k, v) { attrs.set(k, String(v)); writes.push(['set', k, String(v)]); },
-		removeAttribute(k) { attrs.delete(k); writes.push(['remove', k]); } };
-}
 const traceAttrs = (el) => ({ 'data-trace': el.getAttribute('data-trace'), style: el.getAttribute('style') });
 const LINE_BEAT = (origin, ids) => ({ origin, beats: [{ interval: 0, ids }] });
 async function traced({ ids = ['link-aa0001'], d = 'M 0 0 L 120 0', origin = 1000, trace = null } = {}) {
@@ -488,7 +501,7 @@ async function traced({ ids = ['link-aa0001'], d = 'M 0 0 L 120 0', origin = 100
 	const lines = new Map(ids.map((id) => [id, lineOf(id, d)]));
 	const clock = { t: origin - 100 };
 	const model = { state: { reveal: LINE_BEAT(origin, ids) } };
-	const r = new Reveal({ model, renderer: { byId: (id) => lines.get(id) ?? null }, now: () => clock.t, lengthOf });
+	const r = new Reveal({ model, renderer: rendererOf(lines), now: () => clock.t, lengthOf });
 	r.trace = trace;
 	r.paint();   // before the origin: each line withheld, so the pass at the origin shows it
 	return { r, lines, clock, model, line: lines.get(ids[0]) };
@@ -501,12 +514,12 @@ test('H26.8 (B422): a link shown carries the declared trace -- its name, length 
 	clock.t = 1000; r.paint();
 	assert.deepEqual(traceAttrs(line), { 'data-trace': 'a', style: `--trace-len: ${lengthOf('M 0 0 L 120 0')}; --trace-ms: 500ms` }, 'shown: the trace, the string exactly');
 	assert.equal(line.getAttribute('data-unrevealed'), null);
-	assert.deepEqual(line.writes.slice(-3).map(([op, k]) => `${op} ${k}`), ['set data-trace', 'set style', 'remove data-unrevealed'], 'written with setAttribute, data-trace then style');
+	assert.deepEqual(line.writes.slice(-2), [['mark', 'trace', { run: 'a', len: lengthOf('M 0 0 L 120 0'), ms: 500 }], ['mark', 'unrevealed', null]], 'the renderer told the trace, then to let the withheld mark go');
 	clock.t = 1499; r.paint();
 	assert.equal(line.getAttribute('data-trace'), 'a', 'held to its last instant');
 	clock.t = 1500; r.paint();
 	assert.deepEqual(traceAttrs(line), { 'data-trace': null, style: null }, 'at show + ms both are gone: the line its own dash again');
-	assert.deepEqual(line.writes.slice(-2), [['remove', 'data-trace'], ['remove', 'style']], 'removed with removeAttribute');
+	assert.deepEqual(line.writes.slice(-1), [['mark', 'trace', null]], 'its mark let go');
 	const after = line.writes.length;
 	clock.t = 3000; r.paint(); r.paint();
 	assert.equal(line.writes.length, after, 'and later passes write nothing');
@@ -578,7 +591,7 @@ test('H26.8: an entity removed, or drawn afresh by a load or an undo, mid-trace 
 	lines.delete('link-aa0001');   // removed: the renderer draws it no more
 	clock.t = 1200; r.paint();
 	assert.equal(r.traces.size, 1, 'the entry runs to its instant');
-	const fresh = lineOf('link-aa0001', 'M 0 0 L 120 0 L 240 0');   // an undo draws it afresh, its marks gone with the old line
+	const fresh = lineOf('link-aa0001', 'M 0 0 L 120 0 L 240 0');   // an undo draws it afresh, its marks dropped with the entity's removal
 	lines.set('link-aa0001', fresh);
 	clock.t = 1300; r.paint();
 	clock.t = 1500; r.paint();
@@ -590,21 +603,21 @@ test('H26.8: an entity removed, or drawn afresh by a load or an undo, mid-trace 
 test('H26.8: a composition that hands no measure traces nothing, a link shown at once', async () => {
 	const { Reveal } = await import('../plugins/simulation/reveal-painter.mjs');
 	const line = lineOf('link-aa0001', 'M 0 0 L 120 0');
-	const r = new Reveal({ model: { state: { reveal: LINE_BEAT(1000, ['link-aa0001']) } }, renderer: { byId: () => line }, now: () => 1000 });
-	line.setAttribute('data-unrevealed', '');
+	const r = new Reveal({ model: { state: { reveal: LINE_BEAT(1000, ['link-aa0001']) } }, renderer: rendererOf(() => line), now: () => 1000 });
+	line.marks.set('unrevealed', true);
 	r.hidden.add('link-aa0001');
 	r.paint();
 	assert.deepEqual([line.getAttribute('data-trace'), line.getAttribute('style'), line.getAttribute('data-unrevealed')], [null, null, null]);
 	assert.equal(r.traces.size, 0);
 	const node = lineOf('node-aa0001', '', 'g');
-	const fade = new Reveal({ model: { state: { reveal: LINE_BEAT(1000, ['node-aa0001']) } }, renderer: { byId: () => node }, now: () => 1000, lengthOf });
-	node.setAttribute('data-unrevealed', ''); fade.hidden.add('node-aa0001'); fade.paint();
+	const fade = new Reveal({ model: { state: { reveal: LINE_BEAT(1000, ['node-aa0001']) } }, renderer: rendererOf(() => node), now: () => 1000, lengthOf });
+	node.marks.set('unrevealed', true); fade.hidden.add('node-aa0001'); fade.paint();
 	assert.deepEqual([node.getAttribute('data-trace'), node.getAttribute('data-unrevealed')], [null, null], 'and a node fades: no trace, measure or not');
 	// a line the probe measures as nothing -- a zero length, or none it can read -- is shown at once, as today's `len > 0` showed it
 	for (const len of [0, NaN]) {
 		const flat = lineOf('link-aa0002', 'M 0 0');
-		const z = new Reveal({ model: { state: { reveal: LINE_BEAT(1000, ['link-aa0002']) } }, renderer: { byId: () => flat }, now: () => 1000, lengthOf: () => len });
-		flat.setAttribute('data-unrevealed', ''); z.hidden.add('link-aa0002'); z.paint();
+		const z = new Reveal({ model: { state: { reveal: LINE_BEAT(1000, ['link-aa0002']) } }, renderer: rendererOf(() => flat), now: () => 1000, lengthOf: () => len });
+		flat.marks.set('unrevealed', true); z.hidden.add('link-aa0002'); z.paint();
 		assert.deepEqual([flat.getAttribute('data-trace'), flat.getAttribute('style'), flat.getAttribute('data-unrevealed'), z.traces.size], [null, null, null, 0], `a line measured ${len}: no trace`);
 	}
 });

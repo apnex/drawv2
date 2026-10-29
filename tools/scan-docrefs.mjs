@@ -108,6 +108,8 @@ const ALLOW = {
 	'dev/design/components/TESTER-EXPERIMENT-GAPS.md:./dist/index.js': 'the cold-agent experiment\'s gap log (B426), kept verbatim (A4): the path is inside each component\'s package, not draw\'s',
 	// H26.8's binding move (NATIVE-SHAPES.md section 4.3) retired the press comparison with the old code it ran; the design names what it deletes
 	'*:tests/fixtures/binding-parity-press.json': 'the old press against the session\'s, its differences recorded with both answers, deleted at H26.8\'s binding move with tests/fixtures/pre-binding/, whose code it compared (NATIVE-SHAPES.md section 4.3, NS10); the design names it as it deletes it',
+	// H26.8's painters move (NATIVE-SHAPES.md sections 3.3 and 4.5) retired the live shadow, each painter describing its item; the design names what it deletes
+	'*:app/src/shadow.js': 'the live shadow, draw\'s translation onto vector-scene from H26.4 (T3), deleted at H26.8\'s painters move when each painter came to answer its shapes and the renderer to describe them (NATIVE-SHAPES.md sections 3.3 and 4.5); the design names it as it deletes it, and records written while it lived cite it',
 	// H26.8's trace move (NATIVE-SHAPES.md section 5) retired the trace's old side with the settle it ran; the design names what it deletes
 	'*:tests/fixtures/scene-trace-side.mjs': 'a frame tracing as today\'s renderer traced, kept verbatim beside the adapter\'s, deleted at H26.8\'s trace move when the trace was declared and tests/vector-scene-trace.test.js rewritten onto tests/fixtures/trace-page.mjs (NATIVE-SHAPES.md section 5, appendix A); the design names it as it deletes it',
 	// H26.5 (RELEASES-0.2.md section 4) retired the capture parity mode with input-capture 0.2.0; records written while it lived cite it

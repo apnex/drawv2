@@ -126,12 +126,15 @@ export const PARTS = {
 	the visuals that show what an edit will do, written natively as items of the scene they are handed; the five generic gestures' bodies
 	join at H26.8. It names no plugin, and its modules import the document alone (kindOf), the scene, the renderer's states and the
 	parts' declarations arriving as values; the canvas and the product page consume it, so the edge runs one way (B389).
+	AMENDED H26.8's painters move (dev/design/components/NATIVE-SHAPES.md sections 3.1, 3.3): it gains app/src/editing-states.js, the
+	editing states held in one place (NS13), which imports nothing; the gestures' bodies join it at the capture move.
 	*/
 	editing: { duty: 'Let a person select, move and resize what the canvas draws', kind: 'host', by: ['D1', 'H26-10'],
-		modules: ['app/src/selection.js', 'app/src/overlay.js', 'app/src/editing-visuals.js'], consumes: ['document'] },
-	// H26.4: the live shadow joins it, draw's translation onto vector-scene, retired by H26.8 (VECTOR-SCENE.md section 5.1)
+		modules: ['app/src/selection.js', 'app/src/overlay.js', 'app/src/editing-visuals.js', 'app/src/editing-states.js'], consumes: ['document'] },
+	// H26.4: the live shadow joined it, draw's translation onto vector-scene; H26.8's painters move retired it, each painter describing
+	// its item directly (NATIVE-SHAPES.md section 3.3)
 	renderer: { duty: 'Draw a document through the parts\' painters', kind: 'host', by: ['D1', 'D3'],
-		modules: ['app/src/renderer.js', 'app/src/shadow.js', 'app/src/painter.js'], consumes: ['lattice', 'document', 'primitives', 'colours'] },
+		modules: ['app/src/renderer.js', 'app/src/painter.js'], consumes: ['lattice', 'document', 'primitives', 'colours'] },
 	sync: { duty: 'Keep a tab converged with the server', kind: 'host', by: ['SD2'],
 		modules: ['app/src/sync.js', 'app/src/net.js', 'app/src/watchdog.js', 'app/src/clock.js'], consumes: ['document', 'kind-contract', 'canvas'] },
 	'product-page': { duty: 'Compose the product page', kind: 'composition root', by: ['D1'],
@@ -335,7 +338,7 @@ export const LAYER = {
 		'app/src/capture.js', 'app/src/changes.js', 'app/src/commands.js', 'app/src/input-state.js', 'app/src/input.js', 'app/src/keymap.js',
 		'app/src/labeledit.js',  // the label editor Input drives for t, F2 and double-click; the lab loads it, and its window reads are L11's canvas ratchet
 		'app/src/overlay.js', 'app/src/painter.js', 'app/src/pick.js', 'app/src/recognize.js', 'app/src/releases.js', 'app/src/renderer.js',
-		'app/src/shadow.js', 'app/src/editing-visuals.js',   // H26.4: the renderer's live shadow, and the editing part's native visuals
+		'app/src/editing-visuals.js', 'app/src/editing-states.js',   // H26.4: the editing part's native visuals; H26.8: and its states
 		'app/src/selection.js', 'app/src/snap.js', 'app/src/grids.js',   // WD-b2 (H19.46): the grids, drawn from the open diagram
 		'app/src/actions.js',    // every action a binding names, with its label (gesture system stage 6)
 		'app/src/tools.js',      // K7: the held tools -- stamp hand, text tool, the hand's ghost; the palette is a view of them
@@ -390,7 +393,7 @@ export const ENTRIES = {
 			'plugins/devices/device-panels.mjs',   // C-e (H19.33): the devices plugin's panel rows, likewise
 			'app/src/actions.js', 'app/src/help.js', 'app/src/run-mode.js', 'app/src/labeledit.js', 'app/src/main.js', 'plugins/simulation/mover-painter.mjs', 'app/src/net.js', 'app/src/overlay.js',
 			'app/src/editing-visuals.js', 'app/src/painter.js', 'plugins/simulation/paintloop.mjs', 'app/src/palette.js', 'app/src/pick.js', 'app/src/readout.js',
-			'app/src/recognize.js', 'app/src/releases.js', 'app/src/renderer.js', 'plugins/simulation/reveal-painter.mjs', 'app/src/selection.js', 'app/src/shadow.js', 'app/src/snap.js', 'app/src/tools.js', 'app/src/compose-canvas.js',
+			'app/src/recognize.js', 'app/src/releases.js', 'app/src/renderer.js', 'plugins/simulation/reveal-painter.mjs', 'app/src/selection.js', 'app/src/editing-states.js', 'app/src/snap.js', 'app/src/tools.js', 'app/src/compose-canvas.js',
 			'app/src/spectate.js', 'app/src/sync.js', 'app/src/watchdog.js', 'engine/ivm.mjs',
 			'plugins/simulation/kinds.mjs', 'plugins/simulation/movers.mjs', 'engine/relations.mjs', 'plugins/simulation/rules.mjs',
 			'engine/situation.mjs', 'plugins/simulation/spawners.mjs', 'engine/store.mjs', 
@@ -461,7 +464,7 @@ export const ENTRIES = {
 			'plugins/network/host.mjs',    // the network attached to a page: its choreography around an edit (item 3, 2026-10-01)
 			'app/src/capture.js', 'app/src/changes.js', 'app/src/commands.js', 'app/src/input-state.js', 'app/src/input.js', 'app/src/keymap.js', 'app/src/labeledit.js',
 			'app/src/overlay.js', 'app/src/editing-visuals.js', 'app/src/painter.js', 'app/src/pick.js', 'app/src/readout.js',
-			'app/src/recognize.js', 'app/src/releases.js', 'app/src/renderer.js', 'app/src/selection.js', 'app/src/shadow.js', 'app/src/snap.js', 'app/src/tools.js', 'app/src/compose-canvas.js', 
+			'app/src/recognize.js', 'app/src/releases.js', 'app/src/renderer.js', 'app/src/selection.js', 'app/src/editing-states.js', 'app/src/snap.js', 'app/src/tools.js', 'app/src/compose-canvas.js', 
 			'engine/ivm.mjs', 'engine/relations.mjs',
 			'engine/situation.mjs', 'engine/store.mjs', 
 			'kernel/geometry.mjs', 'plugins/network/roles.mjs', 'plugins/network/appearance.mjs', 'kernel/input-rules.mjs', 'kernel/renderer.mjs',
@@ -560,14 +563,12 @@ export const RULES = {
 	tests/fixtures/pre-export/, so the export runs both ways on every gate, its import of the renderer answered by the verbatim one.
 	AMENDED H26.5 (dev/design/components/RELEASES-0.2.md section 4): the capture oracle's entry left with its copy and its two shims, the
 	capture parity mode retired when the adapter began handing a pointer's `pointerId`; the renderer's and the export's stand.
+	AMENDED H26.8's painters move (dev/design/components/NATIVE-SHAPES.md sections 3.3 and 4.2, NS10): the renderer's and the export's
+	entries left with their copies, once the record the drawing moves answer to passed under the move's allowances -- the copies ran the
+	live plugins' painters, which answer shapes since the move. The exception stands empty, its form still held, for a copy a later move
+	keeps.
 	*/
 	L4: { verbatim: [
-		{ copy: 'tests/fixtures/pre-scene/app/src/renderer.js', shims: ['tests/fixtures/pre-scene/kernel/renderer.mjs', 'tests/fixtures/pre-scene/kernel/spec.mjs', 'tests/fixtures/pre-scene/model/model.mjs', 'tests/fixtures/pre-scene/model/stacking.mjs'], cites: ['H26-11', 'H26.4'],
-			reason: 'app/src/renderer.js as it stood before H26.4, kept byte for byte beside its app/src/painter.js (both SHA-256 pinned by tests/vector-scene-parity.test.js), so the side-by-side runs its old side on every gate -- the trace test ran it too until H26.8 declared the trace; the painter copy is a module of its own, declaring what it exports and importing nothing, and the renderer copy\'s four imports of the core are answered by shims re-exporting the live modules\' names',
-			trigger: 'the verbatim copies are deleted (H26.8)' },
-		{ copy: 'tests/fixtures/pre-export/server/svg.mjs', shims: ['tests/fixtures/pre-export/app/src/renderer.js', 'tests/fixtures/pre-export/kernel/geometry.mjs', 'tests/fixtures/pre-export/kernel/renderer.mjs', 'tests/fixtures/pre-export/kernel/spec.mjs', 'tests/fixtures/pre-export/product/canvas.mjs', 'tests/fixtures/pre-export/product/types.mjs', 'tests/fixtures/pre-export/server/svg-style.mjs'], cites: ['H26-11', 'H26.4'],
-			reason: 'server/svg.mjs as it stood before H26.4, kept byte for byte (its SHA-256 pinned by tests/vector-scene-parity.test.js), so the side-by-side runs the export both ways on every gate, today\'s bytes against the scene\'s, on whatever engine runs it; its import of the renderer is answered by a shim re-exporting the verbatim renderer beside it, and its six imports of the core by shims re-exporting the live modules\' names -- in a folder of their own, since a shim answers one copy',
-			trigger: 'the verbatim copies are deleted (H26.8)' },
 	] },
 	// C9, as the H17 plan states it: kernel/ and model/ import nothing from each other
 	// H26.7: model/'s side keeps model/'s reveal module where it is now (plugins/simulation/reveal.mjs), which C9 held while it lived there

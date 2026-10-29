@@ -88,7 +88,7 @@ THE ADAPTER (section 4.2): a state the record sets directly on its owner -- a li
 on the renderer at `ca492da` and on `editing-states.js` after the painters move. Every other state the record sets through the owner
 that sets it on the page: the overlay's hover and arming, Input's idle affordance, the selection.
 */
-const STATES = { set: (w, id, cls, on) => w.renderer.setState(id, cls, on) };
+const STATES = { set: (w, id, cls, on) => w.renderer.states.setState(id, cls, on) };
 
 // ---- the platform: a document with its semantics where draw's drawing code could tell, and no timer or frame running by itself
 

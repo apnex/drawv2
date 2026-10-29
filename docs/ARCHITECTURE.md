@@ -126,8 +126,8 @@ The anchored core's parts, declared once in `tools/layers.mjs` `PARTS` and rende
 | `simulation` | Derive what the clock drives | plugin | `plugins/simulation/` | `devices`, `document`, `kind-contract`, `lattice`, `network` | -- |
 | `product` | Compose the plugins into the product | composition | `product/` | `devices`, `groups`, `kind-contract`, `lattice`, `layouts`, `network`, `simulation`, `zones` | -- |
 | `canvas` | Turn input into edits through the parts' declarations | host | `app/src/actions.js`, `app/src/capture.js`, `app/src/changes.js`, `app/src/commands.js`, `app/src/compose-canvas.js`, `app/src/help.js`, `app/src/input.js`, `app/src/input-state.js`, `app/src/keymap.js`, `app/src/labeledit.js`, `app/src/pick.js`, `app/src/readout.js`, `app/src/recognize.js`, `app/src/releases.js`, `app/src/snap.js`, `app/src/tools.js`, `app/src/grids.js`, `engine/situation.mjs` | `document`, `editing`, `kind-contract`, `lattice`, `planner`, `primitives`, `relations`, `renderer`, `rules` | `@apnex/input-capture` |
-| `editing` | Let a person select, move and resize what the canvas draws | host | `app/src/selection.js`, `app/src/overlay.js`, `app/src/editing-visuals.js` | `document` | -- |
-| `renderer` | Draw a document through the parts' painters | host | `app/src/renderer.js`, `app/src/shadow.js`, `app/src/painter.js` | `document`, `lattice`, `primitives` | `@apnex/vector-scene` |
+| `editing` | Let a person select, move and resize what the canvas draws | host | `app/src/selection.js`, `app/src/overlay.js`, `app/src/editing-visuals.js`, `app/src/editing-states.js` | `document` | -- |
+| `renderer` | Draw a document through the parts' painters | host | `app/src/renderer.js`, `app/src/painter.js` | `document`, `lattice`, `primitives` | `@apnex/vector-scene` |
 | `sync` | Keep a tab converged with the server | host | `app/src/sync.js`, `app/src/net.js`, `app/src/watchdog.js`, `app/src/clock.js` | `canvas`, `document`, `kind-contract` | -- |
 | `product-page` | Compose the product page | composition root | `app/src/main.js`, `app/src/palette.js`, `app/src/run-mode.js`, `app/src/spectate.js` | `canvas`, `devices`, `editing`, `network`, `product`, `renderer`, `simulation`, `sync` | -- |
 | `lab` | Compose the canvas over the real modules, without storage | composition root | `lab/` | `canvas`, `document`, `lattice`, `network`, `planner`, `product`, `relations`, `renderer`, `server` | -- |
@@ -212,7 +212,7 @@ What each plugin brings to the page (`product/canvas.mjs`).
 | groups | `stylesheets`, `painters`, `keys`, `deleteRanks`, `follows`, `drawn` |
 | devices | `stylesheets`, `defs`, `bare`, `appearances`, `presses`, `hand`, `at`, `sizeStep`, `sizes`, `outlines`, `keys`, `describe`, `selectAll`, `labels`, `drawn`, `tally` |
 | network | `stylesheets`, `painters`, `appearances`, `presses`, `handles`, `at`, `deleteRanks`, `follows`, `describe`, `selectAll`, `reflects`, `drawn`, `runTargets`, `helpWords`, `linkDrag`, `tally` |
-| the simulation | `stylesheets`, `appearances`, `isSpawning` |
+| the simulation | `stylesheets`, `appearances`, `marks`, `isSpawning` |
 <!-- END GENERATED: architecture-canvas -->
 
 ---

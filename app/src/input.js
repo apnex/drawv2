@@ -207,7 +207,7 @@ export const GESTURES = {
 			if (spec.preview === 'retarget') {
 				ctx.fixed = i.model.endpointOf(ctx.fixedId);   // an anchor is a node OR a waypoint (B29)
 				if (!ctx.fixed) return null;
-				i.renderer.setState(id, spec.dragState, true);   // de-emphasize the real one while its end is dragged
+				i.states.setState(id, spec.dragState, true);   // de-emphasize the real one while its end is dragged
 				ctx.line = previewLine(i.scene);
 				ctx.target = null;
 				ctx.line.update(ctx.fixed, pos);
@@ -227,7 +227,7 @@ export const GESTURES = {
 		button: 0,
 		commit: (i, ctx, pos, evt) => {
 			ctx.path.remove();
-			if (ctx.target) i.renderer.setState(ctx.target, 'hover', false);
+			if (ctx.target) i.states.setState(ctx.target, 'hover', false);
 			const target = i.anchorAt(pos);
 			const srcAlive = i.model.endpointOf(ctx.src.id);
 			const hasVia = !!((ctx.route ?? ctx.via)?.length);   // a guided link is no more a plain link than a pinned one
@@ -286,7 +286,7 @@ export const GESTURES = {
 		},
 		cancel: (i, ctx) => {
 			if (ctx.path) ctx.path.remove();
-			if (ctx.target) i.renderer.setState(ctx.target, 'hover', false);
+			if (ctx.target) i.states.setState(ctx.target, 'hover', false);
 			i.cleanupRoute(ctx);
 		},
 		update: (i, pos) => {
@@ -297,7 +297,7 @@ export const GESTURES = {
 		},
 		start: (i, hit, pos, evt) => {
 			const src = i.model.get(kindOf(hit.id), hit.id);   // a hit names what is drawn; the id names how it is stored (F-c)
-			i.renderer.setState(src.id, 'hover', false);   // capture swallows the boundary pointerout
+			i.states.setState(src.id, 'hover', false);   // capture swallows the boundary pointerout
 			i.overlayUi.clearHover();
 			const sole = i.selection.list();
 			const srcKey = i.state.armed.source === src.id && sole.length === 1 && sole[0] === src.id ? 'w' : false;
@@ -365,7 +365,7 @@ export class Input {
 	`help` arrives the same way; main.js already had that element, and resolving it twice meant two
 	owners of one node.
 	*/
-	constructor({ svg, scene, model, history, selection, renderer, labels, readout, tools, host, help, snap, now, plugins = [], runRules = [], parts = [] }) {
+	constructor({ svg, scene, model, history, selection, renderer, states, labels, readout, tools, host, help, snap, now, plugins = [], runRules = [], parts = [] }) {
 		// C-c: the kinds placed on the grid, and how -- the canvas parts' (snap.js placesOf); C-d: their press rows and handles, below
 		this.parts = parts;
 		this.places = placesOf(parts);
@@ -512,6 +512,7 @@ export class Input {
 		this.history = history;
 		this.selection = selection;
 		this.renderer = renderer;
+		this.states = states;   // H26.8 (NS13): the editing states -- a drag's target hovered, a link end's drag state, the idle ring
 		this.labels = labels;
 		// A null object must be TOTAL or it is a trap: this one advertised that `readout` is optional
 		// and then threw on `signed`/`dims`/`flash`, so Ctrl+D and the zone/box gestures were reachable
@@ -542,7 +543,7 @@ export class Input {
 		// H6.3 — transient feedback is overlay.js's: hovered, armed, the datum marker and the
 		// crosshair moved with it. Input keeps only what a GESTURE needs (mode, ctx, and the input state).
 		// H26.4 (section 5.3): handed the scene, and draw's policy for keeping a hover -- near an entity's origin, within NODE_R (snap.js)
-		this.overlayUi = new Overlay({ svg, scene, near: nearOrigin, model, selection, renderer, snap, handles: () => this.handles, hitFacts: () => this.hitFacts, points: () => this.points,
+		this.overlayUi = new Overlay({ svg, scene, near: nearOrigin, model, selection, states, snap, handles: () => this.handles, hitFacts: () => this.hitFacts, points: () => this.points,
 			grids: () => this.shownGrids });   // C-e: the grids a modifier shows   // C-d: the kinds' handles; D4: what each hit is
 		this.ctx = {};   // the live gesture's working data: its bodies' (B389)
 
@@ -570,7 +571,7 @@ export class Input {
 			// hovered/armed state must die with its entity (chord delete, undo, load)
 			if (action === 'del' || action === 'load') {
 				if (this.overlayUi.hovered && (action === 'load' || entity.id === this.overlayUi.hovered)) {
-					this.renderer.clearState(this.overlayUi.hovered, 'hover', ...this.overlayUi.idleStates());
+					this.states.clearState(this.overlayUi.hovered, 'hover', ...this.overlayUi.idleStates());
 			
 					this.overlayUi.disarm();
 				}
@@ -1035,18 +1036,18 @@ export class Input {
 	// the end of a retarget's preview: its line dropped, the hovered target and the dragged entity unmarked (C-d)
 	endRetarget(ctx) {
 		ctx.line.remove();
-		if (ctx.target) this.renderer.setState(ctx.target, 'hover', false);
-		this.renderer.setState(ctx.id, ctx.spec.dragState, false);
+		if (ctx.target) this.states.setState(ctx.target, 'hover', false);
+		this.states.setState(ctx.id, ctx.spec.dragState, false);
 	}
 
 	retarget(target, excludeId) {
 		if (this.ctx.target && (!target || target.id !== this.ctx.target)) {
-			this.renderer.setState(this.ctx.target, 'hover', false);
+			this.states.setState(this.ctx.target, 'hover', false);
 			this.ctx.target = null;
 		}
 		if (target && target.id !== excludeId) {
 			this.ctx.target = target.id;
-			this.renderer.setState(target.id, 'hover', true);
+			this.states.setState(target.id, 'hover', true);
 		}
 	}
 
@@ -1092,7 +1093,7 @@ export class Input {
 		// C-f: the state the item under the pointer shows when idle, its pick's -- a device's crosshair ring: a left drag draws a link
 		const idle = this.hitFacts.get(evt.on.kind)?.idle;
 		if (!idle) return;
-		this.renderer.setState(evt.on.id, idle, !evt.ctrlKey && !evt.altKey);
+		this.states.setState(evt.on.id, idle, !evt.ctrlKey && !evt.altKey);
 	}
 
 
@@ -1689,7 +1690,7 @@ export class Input {
 		// the zone layer just went inert: a hovered zone must drop its states
 		// what was picked only under Shift -- a zone -- is no longer under the pointer once Shift is up (D4)
 		if (this.overlayUi.hovered && this.hitFacts.get(this.overlayUi.hoveredWord)?.modifier === 'shiftKey') {
-			this.renderer.clearState(this.overlayUi.hovered, 'hover');
+			this.states.clearState(this.overlayUi.hovered, 'hover');
 			this.overlayUi.disarm();
 		}
 		// H24.3: and a selected one leaves the selection -- at once, or when a press that owns the pointer ends
@@ -1720,8 +1721,8 @@ export class Input {
 	}
 
 	afterHistory() {
-		// selection auto-prunes on del emits (selection.js); render() re-applies 'selected' from the
-		// renderer's selectedSet whenever undo/redo re-renders an entity — so no manual re-reflect here.
+		// selection auto-prunes on del emits (selection.js); the renderer describes 'selected' from the editing states
+		// whenever undo/redo re-renders an entity (H26.8) -- so no manual re-reflect here.
 		this.refreshHand(); // undo/redo can change occupancy under a stationary cursor
 	}
 }

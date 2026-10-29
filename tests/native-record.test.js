@@ -24,7 +24,7 @@ import { svgDocument } from '../server/svg.mjs';
 
 const RECORD = JSON.parse(fs.readFileSync(NATIVE_RECORD, 'utf8'));
 const ALL = scenarios();
-const MOVE = 'trace';   // the drawing moves built on this tree: move 2, the trace. The painters move sets 'painters' as it lands, the pipes move 'pipes'
+const MOVE = 'painters';   // the drawing moves built on this tree: moves 2 and 3, the trace and the painters. The pipes move sets 'pipes' as it lands
 
 /*
 Section 4.2's table, as the scenarios name its rows: each group's scenarios, and the number of each. A row 4.2 names that the record

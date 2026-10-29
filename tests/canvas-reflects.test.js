@@ -4,7 +4,8 @@ SAY; AND WHAT THE RENDERER DOES NOT DRAW, IT DOES NOT REMOVE.
 
 A part declares its selection reflections (`reflects`: a class, and the ids it marks given the Model and the selection): the
 network's -- a selected link's own waypoints lit, and the links blocking a selected down link (ruled 2026-09-30). The renderer
-marks and unmarks them; it held both itself. And a kind the renderer draws neither by a painter nor by appearances -- the
+marks and unmarks them; it held both itself. RESTATED H26.8 (NATIVE-SHAPES.md section 3.2, NS13): the editing states mark them
+(app/src/editing-states.js `reflect`), and the renderer describes what they hold onto each entity it draws. And a kind the renderer draws neither by a painter nor by appearances -- the
 network's pipe, which the network paints itself -- is not the renderer's to remove on a put: it did, so a pipe put again lost its
 line (B322).
 */
@@ -14,6 +15,7 @@ import fs from 'node:fs';
 import { Model as RealModel } from '../model/model.mjs';
 import { KINDS } from './fixtures/composed.mjs';
 import { Renderer } from '../app/src/renderer.js';
+import { EditingStates } from '../app/src/editing-states.js';
 import { makeRenderer, fakeEl } from './fixtures/client-harness.mjs';
 import { PRODUCT_CANVAS } from '../product/canvas.mjs';
 
@@ -24,7 +26,8 @@ const net = { pathOf: (l, m, straight) => straight(l), linksRoutedThrough: () =>
 const board = (parts = PRODUCT_CANVAS) => {
 	const { svg, scene, restore } = makeRenderer();
 	const m = new RealModel({ kinds: KINDS, attached: { network: net } });
-	const r = new Renderer(m, svg, { parts, scene });
+	const states = new EditingStates({ model: m, parts });
+	const r = new Renderer(m, svg, { parts, scene, states });
 	const node = (id, x, y, extra = {}) => m.put('node', { id, name: id.slice(-2), x, y, ...extra });
 	node('node-0c0e0a', 0, 0, { type: 'host', shape: 'circle' }); node('node-0c0e0b', 240, 0, { type: 'host', shape: 'circle' });
 	node('node-0c0e0c', 0, 240, { type: 'host', shape: 'circle' }); node('node-0c0e0d', 240, 240, { type: 'host', shape: 'circle' });
@@ -33,39 +36,39 @@ const board = (parts = PRODUCT_CANVAS) => {
 	m.put('link', { id: BLOCKER, name: 'b', src: 'node-0c0e0c', dst: 'node-0c0e0d', order: 2 });
 	m.put('link', { id: BENT, name: 'p', src: 'node-0c0e0e', dst: 'node-0c0e0f', via: ['node-0c0e10'], order: 3 });
 	const has = (id, cls) => !!svg.ownerDocument.getElementById(id)?.classList.contains(cls);
-	return { m, r, svg, has, restore };
+	return { m, r, states, svg, has, restore };
 };
 
 test('C-e: selecting a down link lights the links blocking it, and selecting elsewhere lets go -- the state under test', () => {
-	const { r, has, restore } = board();
+	const { states, has, restore } = board();
 	try {
-		r.reflectSelection([DOWN]);
+		states.reflect([DOWN]);
 		assert.deepEqual([has(BLOCKER, 'blocking'), has(DOWN, 'blocking')], [true, false]);
-		r.reflectSelection([BENT]);
+		states.reflect([BENT]);
 		assert.equal(has(BLOCKER, 'blocking'), false);
 	} finally { restore(); }
 });
 
 test('C-e: selecting a bent link lights its own waypoints, ends and bend, and releases them -- the state under test', () => {
-	const { r, has, restore } = board();
+	const { states, has, restore } = board();
 	try {
-		r.reflectSelection([BENT]);
+		states.reflect([BENT]);
 		assert.deepEqual(['node-0c0e0e', 'node-0c0e0f', 'node-0c0e10'].map((id) => has(id, 'on-selected-path')), [true, true, true]);
 		assert.equal(has('node-0c0e0a', 'on-selected-path'), false, 'a device on another link: not a waypoint of this one');
-		r.reflectSelection([]);
+		states.reflect([]);
 		assert.deepEqual(['node-0c0e0e', 'node-0c0e0f', 'node-0c0e10'].map((id) => has(id, 'on-selected-path')), [false, false, false]);
 	} finally { restore(); }
 });
 
 test('C-e: a lit waypoint drawn afresh stays lit; a part\'s own reflection is honoured', () => {
 	const probe = { owner: 'probe', reflects: [{ cls: 'probe-lit', of: (model, selected) => new Set([...selected].filter((id) => id.startsWith('node-'))) }] };
-	const { m, r, has, restore } = board([...PRODUCT_CANVAS, probe]);
+	const { m, states, has, restore } = board([...PRODUCT_CANVAS, probe]);
 	try {
-		r.reflectSelection([BENT, 'node-0c0e0a']);
+		states.reflect([BENT, 'node-0c0e0a']);
 		m.put('node', { ...m.get('node', 'node-0c0e10') });   // drawn afresh
 		assert.equal(has('node-0c0e10', 'on-selected-path'), true, 'kept across a redraw');
 		assert.equal(has('node-0c0e0a', 'probe-lit'), true);
-		r.reflectSelection([]);
+		states.reflect([]);
 		assert.equal(has('node-0c0e0a', 'probe-lit'), false);
 	} finally { restore(); }
 });

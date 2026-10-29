@@ -20,8 +20,8 @@ export class Selection {
 		});
 	}
 
-	// observe selection changes. Selection holds no renderer: the renderer subscribes its
-	// reflectSelection, input subscribes its handle/readout refresh (both at the composition root).
+	// observe selection changes. Selection holds no renderer: the editing states subscribe their
+	// reflect (H26.8: the renderer's reflectSelection before), input its handle/readout refresh (both at the composition root).
 	subscribe(fn) { this.subscribers.push(fn); }
 
 	changed() {

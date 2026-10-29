@@ -73,7 +73,7 @@ K8 -- the canvas, composed by the one function the product page composes it with
 this network. The lab holds no tools and no run mode; its drag judge is the attached network's, below, reached lazily
 because the network attaches to the parts composed here.
 */
-const { scene, model, history, renderer, selection, input, listen } = composeCanvas({
+const { scene, model, history, renderer, states, selection, input, listen } = composeCanvas({
 	svg, scene: CANVAS_SCENE, defs: document.getElementById('kdefs'), host: window, network, kinds, parts: PRODUCT_CANVAS,   // C-a: the plugins' canvas parts
 	readoutEl: document.getElementById('readout-bottom'),
 	help: null, now: () => Date.now(),
@@ -108,7 +108,7 @@ settle that follows every change -- the plugin's choreography, which promotion a
 What stays here is the lab's own: the in-page planner below (the authority model and its log), the refusal that takes the
 planner's document back, the notice, and which fixed board to load.
 */
-const net = page.attach({ model, renderer, selection, edit: (label, entries) => history.commit(editOf(label, entries)), pipeLayer: scene.layerElement(FOREIGN_LAYERS.network), el, say });   // C-e (D5)
+const net = page.attach({ model, renderer, selection, states, edit: (label, entries) => history.commit(editOf(label, entries)), pipeLayer: scene.layerElement(FOREIGN_LAYERS.network), el, say });   // C-e (D5)
 const capture = listen();   // the DOM's events, as input events (L0)
 /*
 THE DOOR (G11): a planner refusal is VISIBLE.

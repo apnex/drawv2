@@ -53,7 +53,7 @@ AMENDED 2026-10-04 (V-b, H18.26): removed. The page composes the network as the 
 with it -- routes over pipes, down links -- and Input takes its keys and drag judge, so `g` and `x` work here.
 */
 const pageNetwork = createPageNetwork();
-const { scene, model, history, renderer, selection, labels, readout, snap, tools, input, listen } = composeCanvas({
+const { scene, model, history, renderer, states, selection, labels, readout, snap, tools, input, listen } = composeCanvas({
 	svg,
 	scene: CANVAS_SCENE,   // H26.4: its layers, the pipes and the movers foreign, opened on the root
 	kinds: productKinds(...NETWORK_ROWS),
@@ -82,7 +82,7 @@ warnings drawn after it.
 let networkSaid = null;   // { text, run }: the network's last word, and the undo log's foreign run when it was said
 const foreignKey = () => { const r = history.foreignRun && history.foreignRun(); return r ? `${r.actor}|${r.run}|${r.label}` : ''; };
 // C-e (D5): the network's edits reach history through the canvas's generic builder
-const networkHost = pageNetwork.attach({ model, renderer, selection, edit: (label, entries) => history.commit(editOf(label, entries)), pipeLayer: scene.layerElement(FOREIGN_LAYERS.network), el,
+const networkHost = pageNetwork.attach({ model, renderer, selection, states, edit: (label, entries) => history.commit(editOf(label, entries)), pipeLayer: scene.layerElement(FOREIGN_LAYERS.network), el,
 	pending: () => sync.outbox.some((m) => !m.answered),
 	say: (text) => {
 		if (!text) return;
@@ -855,4 +855,4 @@ menu.del.addEventListener('click', () => {
 
 net.init();
 
-window.draw = { model, history, renderer, selection, input, palette, tools, labels, readout, net, sync, reveal, movers, network: pageNetwork.network, networkHost };
+window.draw = { model, history, renderer, states, selection, input, palette, tools, labels, readout, net, sync, reveal, movers, network: pageNetwork.network, networkHost };

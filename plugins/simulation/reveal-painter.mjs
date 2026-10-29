@@ -28,8 +28,9 @@ import { loop, clockOf } from './paintloop.mjs';
 // below is what makes it smooth when the tab is visible.
 const TICK_MS = 100;
 
-// the declared trace's custom properties, the string the line's `style` holds while it traces (NATIVE-SHAPES.md section 5, a:F7)
-const traceStyle = ({ len, ms }) => `--trace-len: ${len}; --trace-ms: ${ms}ms`;
+// the trace's mark, what the renderer is told a line traces with: its name, length and duration -- the simulation's `trace` mark
+// writes them as `data-trace` and the string section 5 states (plugins/simulation/spawn-appearance.mjs, a:F7)
+const markOf = ({ run, len, ms }) => ({ run, len, ms });
 
 export class Reveal {
 	/*
@@ -114,43 +115,44 @@ export class Reveal {
 	properties, which the simulation's stylesheet runs as one animation (plugins/simulation/simulation.css); at `show + ms` by the
 	reveal's clock both go, and the line is drawn with its own dash again. The name alternates so a hide and a show in one task begin
 	the trace again -- the same name, removed and written back before the page draws, would not.
+	RESTATED at H26.8's painters move (NATIVE-SHAPES.md section 3.2, NS5): the reveal writes on no element of the renderer's (T6). It reads
+	the line's `d` from the renderer's description of it (`ownShapeOf`) and tells the renderer what to mark -- `unrevealed` while a beat
+	withholds an entity, `trace` `{ run, len, ms }` while a line traces -- which the simulation's part declares and the renderer applies.
 	*/
 	show(id) {
-		const dom = this.renderer.byId?.(id);
-		if (!dom) return;
-		if (dom.tagName === 'path' && this.lengthOf) {
-			const d = dom.getAttribute('d'), len = this.lengthOf(d);
+		const own = this.renderer.ownShapeOf?.(id);
+		if (!own) return;
+		if (own.tag === 'path' && this.lengthOf) {
+			const d = own.attrs.d, len = this.lengthOf(d);
 			if (len > 0) {
 				const { ms } = traceOf(this.trace, len);
 				const run = this.runs.get(id) === 'a' ? 'b' : 'a';
 				const trace = { run, d, len, ms, until: this.now() + ms };
 				this.runs.set(id, run);
 				this.traces.set(id, trace);
-				dom.setAttribute('data-trace', run);
-				dom.setAttribute('style', traceStyle(trace));
+				this.renderer.mark?.(id, 'trace', markOf(trace));
 			}
 		}
-		dom.removeAttribute('data-unrevealed');
+		this.renderer.mark?.(id, 'unrevealed', null);
 	}
 
-	// H26.8: a hide ends the line's trace and withholds it; on every tick it finds nothing to end and the mark standing, and writes nothing
+	// H26.8: a hide ends the line's trace and withholds it; on every tick it finds nothing to end and the mark standing, and the renderer,
+	// holding the mark already, puts nothing
 	hide(id) {
-		const dom = this.renderer.byId?.(id);
-		this.endTrace(id, dom);
-		if (dom && dom.getAttribute('data-unrevealed') === null) dom.setAttribute('data-unrevealed', '');
+		this.endTrace(id);
+		this.renderer.mark?.(id, 'unrevealed', true);
 	}
 
 	/*
-	H26.8 -- a trace ended: its entry dropped, and its attributes taken away where they still stand on the line. A line the renderer has
-	drawn afresh since -- a load, an undo restoring it -- or one no longer drawn carries none of them, and nothing is written.
+	H26.8 -- a trace ended: its entry dropped, and its mark taken away where the renderer still holds it. A line the renderer has drawn
+	afresh since -- a load, an undo restoring it -- or one no longer drawn holds none, and nothing is put.
 	*/
-	endTrace(id, dom = this.renderer.byId?.(id)) {
+	endTrace(id) {
 		const trace = this.traces.get(id);
 		if (!trace) return;
 		this.traces.delete(id);
-		if (!dom || dom.getAttribute('data-trace') !== trace.run) return;
-		dom.removeAttribute('data-trace');
-		dom.removeAttribute('style');
+		if (this.renderer.markOf?.(id, 'trace')?.run !== trace.run) return;
+		this.renderer.mark?.(id, 'trace', null);
 	}
 
 	/*
@@ -162,16 +164,16 @@ export class Reveal {
 	tend() {
 		const t = this.now();
 		for (const [id, trace] of [...this.traces]) {
-			const dom = this.renderer.byId?.(id);
-			if (t >= trace.until) { this.endTrace(id, dom); continue; }
-			if (!dom || dom.getAttribute('data-trace') !== trace.run) continue;
-			const d = dom.getAttribute('d');
+			if (t >= trace.until) { this.endTrace(id); continue; }
+			const own = this.renderer.ownShapeOf?.(id);
+			if (!own || this.renderer.markOf?.(id, 'trace')?.run !== trace.run) continue;
+			const d = own.attrs.d;
 			if (d === trace.d) continue;
 			trace.d = d;
 			const len = this.lengthOf(d);
 			if (len === trace.len) continue;
 			trace.len = len;
-			dom.setAttribute('style', traceStyle(trace));
+			this.renderer.mark?.(id, 'trace', markOf(trace));
 		}
 	}
 

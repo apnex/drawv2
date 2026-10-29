@@ -9,6 +9,8 @@ Two, as the 2026-09-22 ruling resolves them:
 The marks also carry the network's redraws: an anchor's change redraws the links naming it and those routed through it.
 Both were the renderer's own branches (app/src/renderer.js `draw`, `update`, `layerCircle`); the elements are what it built --
 the K8 DOM corpus holds that. The layer list itself is the network's, shared with the SVG export (plugins/network/appearance.mjs).
+RESTATED H26.8 (dev/design/components/NATIVE-SHAPES.md section 3.2): each part answers its circles as shapes, and the marks' root its
+place among its `rootAttrs`, where a `look` wrote the place again on every update (T5).
 */
 
 import { L_STD } from '../../kernel/spec.mjs';
@@ -22,10 +24,10 @@ const FE = L_STD.frame.ext;   // the frame's half-extent (20), which the rings a
 
 // one layer of the kernel's waypoint rings, as a circle -- a layer may carry its own stroke and dash, as the transit ring
 // does, and is drawn as it says; the canvas and the export draw the same list the same way
-function layerCircle(l, g, el) {
-	el('circle', l.fill === 'solid'
+function layerCircle(l) {
+	return { tag: 'circle', attrs: l.fill === 'solid'
 		? { class: l.cls, r: l.radius, fill: NETWORK_TOKENS.waypoint }
-		: { class: l.cls, r: l.radius, fill: l.fill, stroke: l.stroke ?? NETWORK_TOKENS.waypoint, 'stroke-width': l.width, 'stroke-opacity': l.opacity, ...(l.dash ? { 'stroke-dasharray': l.dash } : {}), ...(l.pathLength ? { pathLength: l.pathLength } : {}) }, g);   // a fitted dash (evenDash)
+		: { class: l.cls, r: l.radius, fill: l.fill, stroke: l.stroke ?? NETWORK_TOKENS.waypoint, 'stroke-width': l.width, 'stroke-opacity': l.opacity, ...(l.dash ? { 'stroke-dasharray': l.dash } : {}), ...(l.pathLength ? { pathLength: l.pathLength } : {}) } };   // a fitted dash (evenDash)
 }
 
 const MARKS = {
@@ -41,17 +43,17 @@ const MARKS = {
 	*/
 	composes: false,
 	root: { layer: 'waypoints', class: (entity, kit, state) => `waypoint ${state}` },
+	rootAttrs: (entity) => [['transform', `translate(${entity.x},${entity.y})`]],
 	picks: [{ closest: 'g.waypoint', word: 'waypoint' }],   // C-b: hit by the word people use (F4)
 	parts: {
-		marks(entity, g, { el, model, mode }, state) {
+		marks(entity, { model, mode }, state) {
 			const roles = state === 'bend' ? [] : state.split(' ');
 			// whether it declares transit off, from the network, since the lab holds that choice in its session (TRANSIT.md, TR-7)
 			const anchor = { transit: declaresNoTransit(model, entity.id) ? false : undefined };
 			// in run mode, the run picture -- what the download draws too, decided in one place (RUN_PICTURE, R-c)
-			for (const l of waypointLayers(roles, FE, linksAt(model, entity.id), anchor, { run: mode === 'run' })) layerCircle(l, g, el);
+			return waypointLayers(roles, FE, linksAt(model, entity.id), anchor, { run: mode === 'run' }).map(layerCircle);
 		},
 	},
-	look: (entity) => [{ root: { transform: `translate(${entity.x},${entity.y})` } }, {}],
 	// an anchor's change: every link naming it, end or bend (B312), and the links drawn through it
 	redraws: (entity, { model }) => [...linksAt(model, entity.id), ...linksRoutedThrough(model, entity.id)].map((l) => ['link', l]),
 };
@@ -63,8 +65,8 @@ const TRANSIT = {
 	state: (entity, { model }) => (!nodePermitsBend(entity) && declaresNoTransit(model, entity.id) ? 'off' : null),
 	composes: true,
 	parts: {
-		transit(entity, g, { el }) {
-			layerCircle(waypointLayers([], FE, null, { transit: false }).find((l) => l.cls === 'wp-transit'), g, el);
+		transit() {
+			return [layerCircle(waypointLayers([], FE, null, { transit: false }).find((l) => l.cls === 'wp-transit'))];
 		},
 	},
 };

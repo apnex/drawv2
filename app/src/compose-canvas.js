@@ -19,8 +19,11 @@ this does not start capturing: it returns `listen()`, and a root calls it once i
 
 H26.4 (dev/design/components/VECTOR-SCENE.md section 5.1, D9) -- THE SCENE IS OPENED HERE, from the declaration the root hands in
 (product/canvas.mjs CANVAS_SCENE), on the page's root through the renderer's `openCanvasScene`: the scene appends the layers after the
-root's ground, and is handed on as a value -- to the grids, the renderer with the page's measure and settle (D12), the one crosshair,
-the held tools, Input and capture's adapter -- and returned, for what the root draws itself into the foreign layers and its palette.
+root's ground, and is handed on as a value -- to the grids, the renderer, the one crosshair, the held tools, Input and capture's
+adapter -- and returned, for what the root draws itself into the foreign layers and its palette. H26.8's painters move
+(dev/design/components/NATIVE-SHAPES.md sections 3.2 and 3.3): the renderer describes each entity and puts it by part, so the page's
+measure and settle it was handed for the live shadow (D12) went with it; the editing states are made here (app/src/editing-states.js)
+and handed to the renderer, Input, the overlay and the network's settle, the selection reflected into them.
 */
 import { sharedDefs } from '../../kernel/renderer.mjs';
 import { NODE_GRID } from '../../kernel/geometry.mjs';
@@ -32,6 +35,7 @@ import { Changes, applyAnswer } from './changes.js';
 import { plan } from '../../planner/txn.mjs';   // the preview: the page plans its own view with the server's planner (V-d, PL-6)
 import { Renderer, openCanvasScene } from './renderer.js';
 import { Selection } from './selection.js';
+import { EditingStates } from './editing-states.js';   // H26.8: the editing part's states (NS13)
 import { LabelEditor } from './labeledit.js';
 import { Tools } from './tools.js';
 import { Input } from './input.js';
@@ -73,8 +77,14 @@ export function composeCanvas({ svg, scene: declared, defs, host, network = null
 	*/
 	const preview = kinds ? (m, ops) => plan(m, ops, { kinds }) : null;
 	const history = new Changes(model, { preview, apply: (ops) => applyAnswer(model, selection, ops) });
-	const renderer = new Renderer(model, svg, { parts, scene, foreign: foreignStates(scene) });   // C-a: the plugins' canvas parts, their painters among them
-	selection.subscribe(() => renderer.reflectSelection(selection.list()));   // the renderer owns the selected look
+	/*
+	H26.8 (NATIVE-SHAPES.md section 3.2, NS13): the editing states, held in one place -- the selection's look and its reflections, the
+	overlay's hover and arming, a link end's drag state -- and handed to the renderer, which shows each while it is held, to Input and
+	its overlay, and to the network's settle (through the renderer it is attached to)
+	*/
+	const states = new EditingStates({ model, parts });
+	const renderer = new Renderer(model, svg, { parts, scene, states, foreign: foreignStates(scene) });   // C-a: the plugins' canvas parts, their painters among them
+	selection.subscribe(() => states.reflect(selection.list()));   // the selected look and what it lights, held for what is selected
 	// C-e: where each kind's label sits -- the first part that says so
 	const labels = new LabelEditor({ svg, scene, model, history, labelAt: (e) => parts.map((p) => p.labels?.labelAt?.(e)).find((x) => x) ?? null,
 		wordOf: (kind, e) => parts.map((p) => p.labels?.wordOf?.(kind, e)).find((x) => x) ?? null,   // C-e: and what a Tab run groups by
@@ -84,12 +94,12 @@ export function composeCanvas({ svg, scene: declared, defs, host, network = null
 	// held tools' ghost. Two owners of one layer drew two crosshairs. H26.4: one item of the scene's snap layer
 	const snap = crosshair(scene, CANVAS, NODE_GRID.declaration.pitch);   // H26.1: a box a pitch wide, the node grid's
 	const heldTools = tools ? new Tools({ svg, scene, snap, preview: parts.find((p) => p.hand)?.hand.preview ?? null }) : null;   // C-e: the ghost draws the hand's preview
-	const input = new Input({ svg, scene, model, history, selection, renderer, labels, readout: shownReadout, tools: heldTools,
+	const input = new Input({ svg, scene, model, history, selection, renderer, states, labels, readout: shownReadout, tools: heldTools,
 		host, help, now, snap, plugins, runRules, parts });   // C-c, C-d: the canvas parts -- places, press rows, handles
 	let capture = null;
 	// the platform's events, as input events (dev/design/input/GESTURE-SYSTEM.md, L0), through input-capture (H26.3) -- once the root's own listeners are in
 	const listen = () => (capture ??= captureCanvas({ svg, scene, host, sink: input, picks: picksOf(parts), regions: regionsOf(parts) }));   // C-b: the plugins' picks; C-f: run mode's regions
-	return { scene, model, history, renderer, selection, labels, readout: shownReadout, snap, tools: heldTools, input, listen };
+	return { scene, model, history, renderer, states, selection, labels, readout: shownReadout, snap, tools: heldTools, input, listen };
 }
 
 /*

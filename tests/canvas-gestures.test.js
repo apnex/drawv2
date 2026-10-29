@@ -7,6 +7,8 @@ selected zone, the corner arithmetic, the overlay's corner handles). The zones p
 BOX gesture -- placed on its grid, previewed by its class, its release making a zone through the host's `create` -- and
 handles for the shared HANDLE gesture: where they are, what a drag makes of the zone, the command's label. Nothing a user sees
 changes: the gesture corpus holds that.
+RESTATED H26.8 (NATIVE-SHAPES.md appendix A, a:F12): a state is observed as `states.setState` and `states.clearState` -- the editing
+states' calls (app/src/editing-states.js), recorded by the harness's forwarding spies with the same arguments, the renderer's until the move.
 */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -130,7 +132,7 @@ test('C-d: a re-plug marks its link while the end is dragged, and a cancel unmar
 	const h = makeInput();
 	try {
 		const { l } = await threeHosts(h);
-		const marks = () => h.stateCalls('renderer.setState').filter(([id, cls]) => id === l.id && cls === 'replugging').map(([, , on]) => on);
+		const marks = () => h.stateCalls('states.setState').filter(([id, cls]) => id === l.id && cls === 'replugging').map(([, , on]) => on);
 		h.capture.onDown(endHandle('src', 360, 330));
 		h.capture.onMove(pointer(200, 0));
 		assert.deepEqual(marks(), [true], 'marked while dragged');
@@ -258,7 +260,7 @@ test('C-d: Ctrl over a hovered device or zone lights the clone; over a waypoint 
 		const [n] = seedNodes(h.model, [[0, 0]]);
 		const w = makeWaypoint(h.model, { x: 120, y: 120 }); h.model.put('node', w);
 		const over = (word, id) => pointer(0, 0, { target: { tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: (s) => (s.includes(word) ? { id } : null) } });
-		const clone = (id) => h.stateCalls('renderer.setState').some(([x, cls, on]) => x === id && cls === 'armed-clone' && on);
+		const clone = (id) => h.stateCalls('states.setState').some(([x, cls, on]) => x === id && cls === 'armed-clone' && on);
 		h.capture.onHover(over('node', n.id), true);
 		h.capture.onKeyDown(key('Control', { ctrlKey: true }));
 		assert.ok(clone(n.id), 'a device');

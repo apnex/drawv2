@@ -594,7 +594,8 @@ test('B162/B218: create, update AND delete refresh a link\'s waypoints', () => {
 	const painter = fs.readFileSync(new URL('../plugins/network/link-painter.mjs', import.meta.url), 'utf8');
 	const renderer = fs.readFileSync(new URL('../app/src/renderer.js', import.meta.url), 'utf8');
 	assert.equal((renderer.match(/this\.redrawAfter\(kind, entity\)/g) || []).length, 3, 'render(), update() and the del branch must ALL refresh');
-	assert.match(renderer, /this\.remove\(entity\.id\);\n\t\t\tthis\.redrawAfter\(kind, entity\);/, 'the delete branch refreshes from the DELETED entity -- the model no longer knows what it touched');
+	// RESTATED H26.8's painters move: the del branch's removal and refresh, as they read in the renderer that describes
+	assert.match(renderer, /this\.remove\(entity\.id\);   \/\/ B322: only what it drew\n\t\t\tthis\.redrawAfter\(kind, entity\);/, 'the delete branch refreshes from the DELETED entity -- the model no longer knows what it touched');
 	// it must cover every role a waypoint can hold on a link, or one of them stays stale
 	const body = painter.slice(painter.indexOf('	redraws: (link'));
 	assert.match(body.slice(0, 400), /link\.src/, 'a src terminal');
@@ -1151,18 +1152,15 @@ test('H15.15: a control link exports dashed, round-trips, and survives an update
 	stranded. That is B228's property, now enforced by the key set instead of by remembering.
 	*/
 	// RESTATED at C-a step four (H19.29) and H25.5 (B378, D4): both the canvas and the export draw links through plugins/network/link-painter.mjs
+	// RESTATED H26.8's painters move (NATIVE-SHAPES.md section 3.2): there is one branch now -- the link's shapes, described whole each time
+	// the renderer asks, an update the same description as a creation -- so nothing an update could forget remains to remember (B228)
 	const clientRenderer = fs.readFileSync(new URL('../plugins/network/link-painter.mjs', import.meta.url), 'utf8');
-	const updateBranch = clientRenderer.slice(clientRenderer.indexOf('\tupdate(link, dom'));
-	// RESTATED 2026-10-16 (H24.6): the assembly is fed whether the link carries a head, and both branches derive the head the same way
-	assert.match(updateBranch, /lookOf\(model, link, head\)/, 'the UPDATE path must re-derive through the same assembly create uses, not patch by hand');
-	assert.match(updateBranch, /headOf\(model, link, points, outlineOf\)/, 'and the head by the same derivation');
-	const createBranch = clientRenderer.slice(clientRenderer.indexOf('\tcreate(link'), clientRenderer.indexOf('\tupdate(link, dom'));
-	assert.match(createBranch, /const head = headOf\(model, link, points, outlineOf\), look = lookOf\(model, link, head\)/, 'and CREATE must use both too, or the two can disagree');
-	assert.match(createBranch, /class: 'link'[^\n]*\.\.\.look/, 'and emit it');
+	const shapesBranch = clientRenderer.slice(clientRenderer.indexOf('\tshapes(link'));
+	assert.doesNotMatch(clientRenderer, /\tcreate\(link|\tupdate\(link/, 'no second branch: create and update went with the shadow');
+	assert.match(shapesBranch, /const head = headOf\(model, link, points, outlineOf\), look = lookOf\(model, link, head\)/, 'the head and the look derived once, as the one branch');
+	assert.match(shapesBranch, /class: 'link'[^\n]*\.\.\.look/, 'and emit it');
 	assert.match(clientRenderer, /const lookOf = \(model, link, head\) => linkAppearance\(link, LINK_W, \{ down: isLinkDown\(model, link\), headed: !!head \}\)/,
 		'the assembly is the one derivation, fed the down state and whether it carries a head');
-	assert.match(updateBranch, /APPEARANCE_KEYS/,
-		'and iterate the DECLARED keys, so a key it no longer sets is removed rather than stranded');
 });
 
 /*
@@ -1314,7 +1312,7 @@ what makes the canvas and the export unable to disagree.
 The defence is structural rather than a new guard: there is no longer a second place to forget.
 */
 test('H15.9: linkAppearance is the whole answer, and it is attributes rather than advice', async () => {
-	const { APPEARANCE_KEYS, linkAppearance } = await import('../plugins/network/appearance.mjs');
+	const { linkAppearance } = await import('../plugins/network/appearance.mjs');
 	const { STD } = await import('../kernel/spec.mjs');
 
 	const plain = linkAppearance({ id: 'l', src: 'a', dst: 'b' });
@@ -1340,12 +1338,10 @@ test('H15.9: linkAppearance is the whole answer, and it is attributes rather tha
 	THE KEY SET IS THE WHOLE ANSWER. An update must be able to remove what a previous state set,
 	and it can only do that if it knows every key this function could ever produce. Returning
 	`undefined` for an absent value would make that impossible to distinguish from "unchanged".
+	RESTATED H26.8's painters move (NATIVE-SHAPES.md section 3.2): the update went -- the link is described whole each time, and the
+	scene diffs the description -- so the declared key list went with it; what holds is that an absent key is absent, never undefined.
 	*/
-	assert.ok(Array.isArray(APPEARANCE_KEYS) && APPEARANCE_KEYS.length > 0,
-		'the caller must be able to ask which keys to clear');
-	for (const key of Object.keys(ctrl)) {
-		assert.ok(APPEARANCE_KEYS.includes(key), `${key} is emitted but not declared -- an update could not remove it`);
-	}
+	for (const [key, v] of Object.entries(ctrl)) assert.notEqual(v, undefined, `${key} is emitted undefined -- an absent key is absent`);
 
 	// RESTATED at C-a step four (H19.29) and H25.5 (B378, D4): both the canvas and the export draw links through plugins/network/link-painter.mjs
 	const clientRenderer = fs.readFileSync(new URL('../plugins/network/link-painter.mjs', import.meta.url), 'utf8');
@@ -1367,7 +1363,7 @@ not the control dash -- which a down link must not be mistaken for. A down contr
 thinner weight, so its plane stays legible while it is down.
 */
 test('a DOWN link is dotted: round dots spaced in stroke widths, never the control dash', async () => {
-	const { APPEARANCE_KEYS, linkAppearance } = await import('../plugins/network/appearance.mjs');   // the module itself, not the barrel (L4 ratchets barrel imports)
+	const { linkAppearance } = await import('../plugins/network/appearance.mjs');   // the module itself, not the barrel (L4 ratchets barrel imports)
 	const dots = (link, w, extra) => linkAppearance(link, w, { down: true, ...extra });
 	const plain = { id: 'l', src: 'a', dst: 'b' };
 
@@ -1391,9 +1387,8 @@ test('a DOWN link is dotted: round dots spaced in stroke widths, never the contr
 	const up = linkAppearance(plain, 6);
 	assert.ok(!('stroke-linecap' in up) && !('stroke-dasharray' in up) && !('data-down' in up), 'a live link carries none of the down keys -- absent, not null');
 	assert.deepEqual(linkAppearance(plain, 6, { down: false }), up, 'and "not down" is exactly the live look');
-	for (const key of Object.keys(ctrlDown)) {
-		assert.ok(APPEARANCE_KEYS.includes(key), `${key} is emitted when down but not declared -- healing could not remove it`);
-	}
+	// RESTATED H26.8's painters move: healing removes the down keys because the healed link is described without them (the key list went)
+	assert.ok(!('data-down' in linkAppearance({ ...plain, control: true }, 6)), 'healed, the down mark is absent from the description');
 });
 
 /*

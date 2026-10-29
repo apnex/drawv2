@@ -4,7 +4,8 @@ C-a (H19.29; dev/design/unification/CANVAS-PLUGINS.md, D1) -- A PLUGIN BRINGS TH
 The renderer drew every kind with branches of its own -- a zone's group, rect, label pill and label built in `draw`, its look
 applied in `update`, its layer chosen in `stackOf`, its turn taken in `syncAll`. A plugin hands the page a canvas part now,
 `{ owner, painters }`, and a painter names its kind, the layer it draws into and whether it is stacked by drawing order, and
-creates and updates its kind's elements through a kit the renderer hands it -- a plugin imports no canvas code. The renderer
+creates and updates its kind's elements through a kit the renderer hands it -- a plugin imports no canvas code (RESTATED H26.8: and
+answers its entity's shapes, NATIVE-SHAPES.md section 3.2). The renderer
 dispatches to the composed painters and keeps what spans kinds. Zones first; groups, devices and links follow. The elements a
 zone draws are what they were: the corpora hold that.
 */
@@ -13,6 +14,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { Model } from './fixtures/composed.mjs';
 import { Renderer } from '../app/src/renderer.js';
+import { EditingStates } from '../app/src/editing-states.js';
 import { makeRenderer, classesIn } from './fixtures/client-harness.mjs';
 
 const code = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
@@ -52,9 +54,12 @@ test('C-a: a malformed canvas part is refused when the canvas is built, naming i
 	const { svg, scene, restore } = makeRenderer();
 	try {
 		const m = new Model();
-		assert.throws(() => new Renderer(m, svg, { parts: [{ owner: 'p', painters: [{ kind: 'zone', layer: 'zones' }] }], scene }), /Renderer: p's painter for zone has no create/);
+		// RESTATED H26.8 (NATIVE-SHAPES.md section 3.2, GR2): a painter answers its shapes; one with none, or one still bringing `create`
+		// or `update`, is refused
+		assert.throws(() => new Renderer(m, svg, { parts: [{ owner: 'p', painters: [{ kind: 'zone', layer: 'zones' }] }], scene }), /Renderer: p's painter for zone has no shapes/);
+		assert.throws(() => new Renderer(m, svg, { parts: [{ owner: 'p', painters: [{ kind: 'zone', layer: 'zones', create() {}, update() {}, shapes() {} }] }], scene }), /Renderer: p's painter for zone brings create and update -- a painter answers its shapes/);
 		// a page with no such layer -- RESTATED at H26.4: a layer the canvas's scene does not hold, which the renderer checks against it
-		assert.throws(() => new Renderer(m, svg, { parts: [{ owner: 'p', painters: [{ kind: 'zone', layer: 'nowhere', create() {}, update() {} }] }], scene }), /Renderer: p's painter for zone draws into #nowhere, which the page does not have/);
+		assert.throws(() => new Renderer(m, svg, { parts: [{ owner: 'p', painters: [{ kind: 'zone', layer: 'nowhere', shapes() { return null; } }] }], scene }), /Renderer: p's painter for zone draws into #nowhere, which the page does not have/);
 		const z = (await parts()).find((p) => p.owner === 'zones');   // RESTATED at D3: the product's order part comes first now
 		assert.throws(() => new Renderer(m, svg, { parts: [z, { ...z, owner: 'again' }], scene }), /Renderer: zone is painted by zones and by again/);
 	} finally { restore(); }
@@ -111,14 +116,15 @@ test('C-a: a group none of whose members resolves loses its hull on its next upd
 });
 
 // B314 -- C-a step one returned from `draw` for a painted kind before re-applying the session states, so a selected zone put
-// again (undo, redo, an answer) lost its selected look until the selection next changed
+// again (undo, redo, an answer) lost its selected look until the selection next changed. RESTATED H26.8 (NS13): the selection's look
+// is held by the editing states, which the renderer describes onto every entity it puts
 test('B314: a selected zone drawn again keeps its selected look', async () => {
 	const { svg, scene, restore } = makeRenderer();
 	try {
-		const m = new Model();
-		const r = new Renderer(m, svg, { parts: await parts(), scene });
+		const m = new Model(), states = new EditingStates({ model: m, parts: await parts() });
+		new Renderer(m, svg, { parts: await parts(), scene, states });
 		m.put('zone', ZONE);
-		r.reflectSelection([ZONE.id]);
+		states.reflect([ZONE.id]);
 		const selected = () => svg.ownerDocument.getElementById(ZONE.id).classList.contains('selected');
 		assert.equal(selected(), true, 'selected');
 		m.put('zone', { ...ZONE, name: 'dmz-2' });
@@ -127,8 +133,10 @@ test('B314: a selected zone drawn again keeps its selected look', async () => {
 });
 
 // B315 -- the reveal marks an entity through `renderer.byId`, which searched the renderer's own layers; each painter took its
-// kind's layer off that list, so a zone (from C-a step one) and a group (step two) could no longer be withheld by a beat
-test('B315: the renderer finds the element of every drawn kind, a painted one or an appearance\'s included', async () => {
+// kind's layer off that list, so a zone (from C-a step one) and a group (step two) could no longer be withheld by a beat.
+// RESTATED H26.8 (NATIVE-SHAPES.md section 3.2, GR8): the renderer answers no element; the reveal reads an entity's own shape as last
+// described, and marks it through the renderer -- so every drawn kind, painted or an appearance's, answers its own shape
+test('B315: the renderer finds the own shape of every drawn kind, a painted one or an appearance\'s included', async () => {
 	const { svg, scene, restore } = makeRenderer();
 	try {
 		const m = new Model();
@@ -138,7 +146,7 @@ test('B315: the renderer finds the element of every drawn kind, a painted one or
 		m.put('group', GROUP);
 		m.put('node', { id: 'node-0c0b09', name: 'w', x: 240, y: 240 });
 		// by its id: the harness answers an unmatched selector with a stand-in element, so finding something proves nothing
-		for (const id of [ZONE.id, GROUP.id, NODES[0].id, 'node-0c0b09']) assert.equal(r.byId(id)?.getAttribute('id'), id, `${id} found`);
+		for (const id of [ZONE.id, GROUP.id, NODES[0].id, 'node-0c0b09']) assert.equal(r.ownShapeOf(id)?.attrs.id, id, `${id} found`);
 	} finally { restore(); }
 });
 

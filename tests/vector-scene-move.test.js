@@ -24,7 +24,7 @@ const ROOT = real(path.resolve(import.meta.dirname, '..'));
 const COMPONENT_ENTRY = pathToFileURL(real(path.join(ROOT, 'node_modules/@apnex/vector-scene/dist/index.js'))).href;
 // a module's code, its comments taken out, so a word a comment names is not a call
 const code = (file) => fs.readFileSync(path.join(ROOT, file), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
-const EDITING = ['app/src/selection.js', 'app/src/overlay.js', 'app/src/editing-visuals.js'];
+const EDITING = ['app/src/selection.js', 'app/src/overlay.js', 'app/src/editing-visuals.js', 'app/src/editing-states.js'];   // H26.8: and its states
 // what makes or reaches a platform element: the painter's builder (not the renderer's own `this.el`, which builds shadow nodes), the
 // document, a lookup on the page, or a write through an element's own method
 const MAKES = /(?<![.\w])el\(|\bcreateElementNS\b|\bcreateElement\b|\bdocument\b|\bownerDocument\b|\.appendChild\(|\.insertBefore\(|\.replaceChildren\(|\.innerHTML\b|\bgetElementById\b|\b(svg|layer|overlay|snapLayer)\.querySelector(All)?\(/g;
@@ -60,8 +60,9 @@ test('H26.4 step 3: app/src/painter.js holds no toCanvas and no widget of the ca
 	const painter = await import('../app/src/painter.js');
 	// RESTATED H26.8's trace move (dev/design/components/NATIVE-SHAPES.md section 5): the settle went with the declared trace; the probe
 	// stays, handed the reveal by the page's composition
-	assert.deepEqual(Object.keys(painter).sort(), ['buildPreview', 'el', 'isShown', 'pathLengthOf', 'setAttrs', 'setShown'],
-		'el and setAttrs for the foreign layers\' drawers; the trace\'s probe (D12); the palette\'s builder; the help panel\'s two questions');
+	// RESTATED H26.8's painters move: `setAttrs` the module's own, a painter setting no attribute
+	assert.deepEqual(Object.keys(painter).sort(), ['buildPreview', 'el', 'isShown', 'pathLengthOf', 'setShown'],
+		'el for the foreign layers\' drawers; the trace\'s probe (D12); the palette\'s builder; the help panel\'s two questions');
 	const palette = code('app/src/palette.js');
 	assert.match(palette, /import \{ buildPreview \} from '\.\/painter\.js';/, 'the palette builds its tiles with buildPreview, outside the canvas');
 	assert.match(palette, /import \{ ghostNode \} from '\.\/editing-visuals\.js';/, 'and its dragged ghost is an editing visual');
@@ -110,7 +111,9 @@ test('H26.4 step 3 (D13, section 5.3): PARTS.editing holds the selection, the ov
 	for (const f of EDITING) assert.ok(!PARTS.canvas.modules.includes(f), `${f} is no longer the canvas's`);
 	const page = PARTS['product-page'].consumes;
 	assert.ok(page === '*' || page.includes('editing'), 'the palette, the product page\'s, consumes it for its ghost -- a composition root consumes every part');
-	assert.ok(PARTS.renderer.modules.includes('app/src/shadow.js'), 'the shadow joins the renderer part');
+	// RESTATED H26.8's painters move (NATIVE-SHAPES.md section 3.3): the shadow joined the renderer at H26.4 and went with the move, the
+	// editing states joining the editing part
+	assert.ok(!PARTS.renderer.modules.includes('app/src/shadow.js'), 'the shadow is gone from the renderer part');
 });
 
 test('H26.4 step 3 (G5, D9): of the product\'s modules, app/src/renderer.js alone names @apnex/vector-scene, and it is a renderer module', () => {
@@ -152,7 +155,7 @@ and a value that is not a function is kept as none, the root opening and `itemAt
 - the page's and the lab's, in Chrome, read the browser's function (tests/import-map-browser.test.js asks `itemAt` there, and every
   browser test boots a page through it);
 - the test harness's fake document (tests/fixtures/client-harness.mjs), the conversion's in tests/fixtures/capture-parity.mjs and the
-  parity fixture's (tests/fixtures/scene-parity.mjs) hold none, so each opens as before, `itemAt` refusing on it;
+  parity fixture's (tests/fixtures/scene-parity.mjs; the native record's since H26.8) hold none, so each opens as before, `itemAt` refusing on it;
 - a document whose member counts its reads and its calls is read once as the scene opens, and neither read nor called while the
   renderer draws a board, its modes and its states -- the scene calls the function it kept only for `itemAt`, and nothing of draw's calls
   `itemAt`, not until H26.8, its picks reading a target by selector (D4).
@@ -160,8 +163,10 @@ and a value that is not a function is kept as none, the root opening and `itemAt
 test('H26.5 (vector-scene 0.2.0): draw\'s scenes open as before -- each fake document holds no elementsFromPoint and opens, itemAt refusing; draw reads it no more', async () => {
 	const { installDom, fakeEl, sceneOver } = await import('./fixtures/client-harness.mjs');
 	const { sceneOver: conversionOver } = await import('./fixtures/capture-parity.mjs');
-	const { makeDocument, NEW } = await import('./fixtures/scene-parity.mjs');
-	const { Renderer } = await import('../app/src/renderer.js');
+	// RESTATED H26.8's painters move: the parity fixture's fake document went with the side-by-side; the native record's is its like
+	const { makeDocument } = await import('./fixtures/native-record.mjs');
+	const { Renderer, openCanvasScene } = await import('../app/src/renderer.js');
+	const { EditingStates } = await import('../app/src/editing-states.js');
 	const { PRODUCT_CANVAS, CANVAS_SCENE } = await import('../product/canvas.mjs');
 	const { COMPOSED_KINDS, readModel } = await import('../product/types.mjs');
 	const NONE = /^Error: itemAt: the root's document held no elementsFromPoint function when the scene opened$/;
@@ -173,7 +178,7 @@ test('H26.5 (vector-scene 0.2.0): draw\'s scenes open as before -- each fake doc
 		assert.throws(() => conversionOver({ getScreenCTM: () => ({ inverse: () => ({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }) }) }).itemAt({ x: 0, y: 0 }), NONE,
 			'the conversion\'s scene over a surface opened; itemAt refuses on it');
 		const d = makeDocument();
-		assert.throws(() => NEW.openCanvasScene(NEW.CANVAS_SCENE, d.attach(d.createElementNS('', 'svg'))).itemAt({ x: 0, y: 0 }), NONE, 'the parity fixture\'s opened; itemAt refuses on it');
+		assert.throws(() => openCanvasScene(CANVAS_SCENE, d.attach(d.createElementNS('', 'svg'))).itemAt({ x: 0, y: 0 }), NONE, 'the native record\'s opened; itemAt refuses on it');
 
 		// a document whose member counts its reads and its calls, the harness's own beneath
 		let reads = 0, calls = 0;
@@ -185,10 +190,12 @@ test('H26.5 (vector-scene 0.2.0): draw\'s scenes open as before -- each fake doc
 		assert.deepEqual([reads, calls], [1, 0], 'read once, as the scene opened, and not called');
 		const template = fs.readdirSync(path.join(ROOT, 'templates')).find((f) => f.endsWith('.json'));
 		const model = readModel(JSON.parse(fs.readFileSync(path.join(ROOT, 'templates', template), 'utf8')), COMPOSED_KINDS);
-		const r = new Renderer(model, svg, { parts: PRODUCT_CANVAS, scene });
+		// RESTATED H26.8's painters move: the states held in the editing states the renderer is handed, which it describes onto the entity
+		const states = new EditingStates({ model, parts: PRODUCT_CANVAS });
+		const r = new Renderer(model, svg, { parts: PRODUCT_CANVAS, scene, states });
 		r.syncAll(); r.setMode('edit'); r.setMode('run'); r.toggleLabels();
 		const [first] = model.all('node');
-		r.setState(first.id, 'hover', true); r.clearState(first.id, 'hover');
+		states.setState(first.id, 'hover', true); states.clearState(first.id, 'hover');
 		assert.ok(scene.items('nodes').length > 0, 'precondition: the renderer drew the board into the scene');
 		assert.deepEqual([reads, calls], [1, 0], 'neither read again nor called while the renderer drew it, its modes and its states');
 		assert.equal(scene.itemAt({ x: 0, y: 0 }), null, 'control: itemAt calls the function the scene kept --');

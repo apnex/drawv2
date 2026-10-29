@@ -20,6 +20,7 @@ import { Model } from '../../model/model.mjs';
 import { attachRelations } from '../../engine/store.mjs';
 import { NODE_GRID } from '../../kernel/geometry.mjs';
 import { Selection } from '../../app/src/selection.js';
+import { EditingStates } from '../../app/src/editing-states.js';
 import { createPageNetwork } from '../../plugins/network/page.mjs';
 
 const svg = document.getElementById('container');
@@ -29,9 +30,11 @@ const net = createPageNetwork();
 const model = new Model({ kinds: COMPOSED_KINDS, attached: { network: net.network } });
 attachRelations(model, { nearest: NODE_GRID.nearest });
 const selection = new Selection(model);
-const renderer = new Renderer(model, svg, { parts: PRODUCT_CANVAS, scene, foreign: foreignStates(scene) });
-selection.subscribe(() => renderer.reflectSelection(selection.list()));
-const host = net.attach({ model, renderer, selection, edit() {}, say() {}, el, pipeLayer: scene.layerElement('pipes') });
+// RESTATED H26.8's painters move (NATIVE-SHAPES.md section 3.2, NS13): the editing states, as app/src/compose-canvas.js composes them
+const states = new EditingStates({ model, parts: PRODUCT_CANVAS });
+const renderer = new Renderer(model, svg, { parts: PRODUCT_CANVAS, scene, states, foreign: foreignStates(scene) });
+selection.subscribe(() => states.reflect(selection.list()));
+const host = net.attach({ model, renderer, selection, states, edit() {}, say() {}, el, pipeLayer: scene.layerElement('pipes') });
 const reveal = new Reveal({ model, renderer, now: () => clock.frozen ?? Date.now(), onCaption() {}, lengthOf: pathLengthOf });
 model.onChange(() => reveal.sync());   // as app/src/main.js wires it: every change wakes the reveal
 const line = (id) => document.getElementById(id);
@@ -54,8 +57,8 @@ window.side = {
 			case 'record': model.state.reveal = a.record; return void reveal.sync();
 			case 'mode': return void renderer.setMode(a.mode);
 			case 'select': return void selection.set(a.ids);
-			case 'state': return void renderer.setState(a.id, a.cls, a.on);
-			case 'clear': return void renderer.clearState(a.id, ...a.classes);
+			case 'state': return void states.setState(a.id, a.cls, a.on);
+			case 'clear': return void states.clearState(a.id, ...a.classes);
 			// the network's settle: every link redrawn, with no model change -- here after a node moved in the model's state unannounced
 			case 'settle': { const n = model.get('node', a.id); Object.assign(n, a.patch); return void host.redraw(); }
 			default: throw new Error(`no op ${name}`);
