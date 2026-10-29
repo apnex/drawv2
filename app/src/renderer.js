@@ -141,6 +141,9 @@ function targetIn(shape, id) {
 	for (const c of shape.children ?? []) { const t = targetIn(c, id); if (t) return t; }
 	return null;
 }
+// the entity an item's key names -- its own item keyed by its id, a companion by `<id>/<part>`; every item of a layer the renderer
+// draws into is its own
+const ownerOfKey = (key) => key.split('/')[0];
 // a mark's value as held: a copy, frozen, so neither its owner's later writes nor a reader's reach it
 const heldValue = (v) => (v !== null && typeof v === 'object' ? Object.freeze(structuredClone(v)) : v);
 const sameValue = (a, b) => (a === b) || (a !== null && b !== null && typeof a === 'object' && typeof b === 'object' && JSON.stringify(a) === JSON.stringify(b));
@@ -162,10 +165,9 @@ export class Renderer {
 		({ painters: this.painters, appearances: this.appearances, orders: this.orders, sizes: this.sizes, outlines: this.outlines, marks: this.markDecls } = composeParts(parts, scene));
 		/*
 		H26.8: what the renderer has drawn, by entity -- its kind, its layer, what drew it, its description as ordered parts, the scene's key
-		for each part and what each was last put as -- the entity each key belongs to, and the marks each entity's owners hold.
+		for each part and what each was last put as -- and the marks each entity's owners hold. A key names its entity (`ownerOfKey`).
 		*/
 		this.drawn = new Map();
-		this.keyOwners = new Map();
 		this.marks = new Map();
 		this.stackedAt = new Map();   // id -> the drawing order it was stacked by (F-d)
 		this.model = model;
@@ -301,7 +303,7 @@ export class Renderer {
 		const items = this.scene.items(layer);
 		let ref = null;
 		for (let i = items.length - 1; i >= 0; i--) {
-			const id = this.keyOwners.get(items[i].key);
+			const id = ownerOfKey(items[i].key);
 			if (id === entity.id) continue;
 			const other = id && this.model.get(kind, id);
 			if (!other) continue;
@@ -423,7 +425,7 @@ export class Renderer {
 		const kept = rec.keys.has(part);
 		if (kept && place === undefined && rec.put.get(part) === json) return;   // a put that changes nothing puts nothing
 		this.scene.put(rec.layer, key, [shape], place);
-		rec.keys.set(part, key); rec.put.set(part, json); this.keyOwners.set(key, rec.id);
+		rec.keys.set(part, key); rec.put.set(part, json);
 	}
 
 	// a record put for the first time: each part, in order, before `before` (or last in the layer)
@@ -439,7 +441,7 @@ export class Renderer {
 		for (const [part, key] of [...rec.keys]) {
 			if (answered.has(part)) continue;
 			this.scene.remove(rec.layer, key);
-			rec.keys.delete(part); rec.put.delete(part); this.keyOwners.delete(key);
+			rec.keys.delete(part); rec.put.delete(part);
 		}
 		now.forEach(([part, shape], i) => {
 			if (rec.keys.has(part)) return this.putPart(rec, part, shape);
@@ -510,7 +512,7 @@ export class Renderer {
 		const rec = this.drawn.get(id);
 		if (!rec) return;
 		this.drawn.delete(id);
-		for (const key of rec.keys.values()) { this.scene.remove(rec.layer, key); this.keyOwners.delete(key); }
+		for (const key of rec.keys.values()) this.scene.remove(rec.layer, key);
 	}
 
 	// an entity no longer drawn: every item removed, and its marks dropped (section 3.2, rule 3)
