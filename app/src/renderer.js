@@ -18,9 +18,9 @@ an item -- `''` the entity's own item, keyed by its id, any other a companion ke
   3. a part no longer answered is removed; an entity no longer drawn has every key removed and its marks dropped;
   4. a state or mark changed applies them again to the kept description and puts it, no painter called.
 It answers no element: `ownShapeOf(id)` the own shape as last described, `drawerOf(id)` the painter or winning appearance, and
-`markOf(id, name)` the value a mark holds -- data (GR8). The live shadow, the look applier, the fragments, the dirty marks and the
-batching, the puts by serial, the finders, the states re-applied to fresh elements, the signatures and the element lookups went with
-it (T3, T4); a state or a mark is shown while held, through a mode or a structural change (NS13).
+`markOf(id, name)` the value a mark holds, a frozen copy -- data (GR8). The live shadow, the look applier, the fragments, the dirty
+marks and the batching, the puts by serial, the finders, the states re-applied to fresh elements, the signatures and the element
+lookups went with it (T3, T4); a state or a mark is shown while held, through a mode or a structural change (NS13).
 */
 
 import { openScene } from '@apnex/vector-scene';
@@ -141,6 +141,8 @@ function targetIn(shape, id) {
 	for (const c of shape.children ?? []) { const t = targetIn(c, id); if (t) return t; }
 	return null;
 }
+// a mark's value as held: a copy, frozen, so neither its owner's later writes nor a reader's reach it
+const heldValue = (v) => (v !== null && typeof v === 'object' ? Object.freeze(structuredClone(v)) : v);
 const sameValue = (a, b) => (a === b) || (a !== null && b !== null && typeof a === 'object' && typeof b === 'object' && JSON.stringify(a) === JSON.stringify(b));
 
 export class Renderer {
@@ -472,12 +474,12 @@ export class Renderer {
 		if (!rec) return;
 		const held = this.marks.get(id) ?? new Map(), next = value ?? null;
 		if (sameValue(held.get(name) ?? null, next)) return;
-		if (next === null) held.delete(name); else held.set(name, next);
+		if (next === null) held.delete(name); else held.set(name, heldValue(next));
 		if (held.size) this.marks.set(id, held); else this.marks.delete(id);
 		this.reput(rec);
 	}
 
-	// the value a mark holds for an entity, or null -- dropped with the entity and on a load
+	// the value a mark holds for an entity, or null -- dropped with the entity and on a load; frozen, a copy of what its owner set
 	markOf(id, name) { return this.marks.get(id)?.get(name) ?? null; }
 
 	// the entity's own shape as last described, data -- never an element (GR8); null for an id this does not draw

@@ -12,6 +12,8 @@ Held here, beside the record the drawing moves answer to (tests/native-record.te
         order; an element kept across an update keeps its key
   NS13  each lifetime the move changes, by its own test, the record's step beside it where today differs; every ask of a state for an
         id the renderer does not draw handed to the composition's hook, as before the move (the verifier's B1)
+  NS5   an id the renderer does not draw holds no mark; a description answering nothing drops the entity's marks (3.2, rule 3); a mark
+        read back is a frozen copy
   NS16  the healed link's step differs from the record by its twin's `stroke-linecap` alone
 */
 import { test } from 'node:test';
@@ -412,6 +414,44 @@ test('NS13 (B1): every ask of a state for an id the renderer does not draw reach
 		states.setState('zone-0d0c01', 'hover', true);
 		assert.deepEqual(puts, ['zone-0d0c01'], 'asked again, unchanged: nothing put');
 		assert.equal(asked.length, 7, 'and a drawn entity\'s state never reaches the hook');
+	} finally { restore(); }
+});
+
+test('NS5 and section 3.2, rule 3: an id the renderer does not draw holds no mark, a description answering nothing drops the entity\'s marks, and a mark read back is a frozen copy', () => {
+	const { svg, scene, restore } = makeRenderer();
+	try {
+		const m = new Model();
+		const flag = (parts, v) => parts.map(([part, s]) => [part, part === '' ? { ...s, attrs: { ...s.attrs, 'data-flag': JSON.stringify(v) } } : s]);
+		const zone = { kind: 'zone', layer: 'zones', stacked: true, picks: [], shapes: (e) => (e.name === 'hidden' ? null : [['', { tag: 'g', attrs: { id: e.id, class: 'zone' } }]]) };
+		const r = new Renderer(m, svg, { parts: [{ owner: 'probe', painters: [zone], marks: { flag } }], scene });
+		const Z = { id: 'zone-0d0d01', name: 'z', x: 0, y: 0, w: 120, h: 60 };
+		const shown = () => scene.items('zones').find((it) => it.key === Z.id)?.shapes[0].attrs['data-flag'] ?? null;
+		// NS5: an id not drawn holds none -- not while undrawn, nor once it is drawn
+		r.mark(Z.id, 'flag', 1);
+		assert.equal(r.markOf(Z.id, 'flag'), null, 'an undrawn id holds no mark');
+		m.put('zone', Z);
+		assert.deepEqual([r.markOf(Z.id, 'flag'), shown()], [null, null], 'nor shows one once drawn');
+		// rule 3: a redraw describing nothing removes every key and drops the marks; drawn again, it holds none
+		r.mark(Z.id, 'flag', 2);
+		assert.deepEqual([r.markOf(Z.id, 'flag'), shown()], [2, '2']);
+		r.render('zone', { ...Z, name: 'hidden' });
+		assert.equal(r.markOf(Z.id, 'flag'), null, 'a redraw answering nothing drops the mark');
+		assert.equal(scene.items('zones').some((it) => it.key === Z.id), false, 'and removes its item');
+		r.render('zone', Z);
+		assert.deepEqual([r.markOf(Z.id, 'flag'), shown()], [null, null], 'drawn again, it holds none');
+		// and a change describing nothing, the same
+		r.mark(Z.id, 'flag', 3);
+		m.set('zone', Z.id, { name: 'hidden' });
+		assert.equal(r.markOf(Z.id, 'flag'), null, 'a change answering nothing drops the mark');
+		m.set('zone', Z.id, { name: 'z' });
+		assert.deepEqual([r.markOf(Z.id, 'flag'), shown()], [null, null]);
+		// a mark read back is a copy its owner's later writes do not reach, frozen against a reader's
+		const value = { run: 'a', len: 42.5, ms: 500 };
+		r.mark(Z.id, 'flag', value);
+		value.len = 99;
+		assert.deepEqual(r.markOf(Z.id, 'flag'), { run: 'a', len: 42.5, ms: 500 }, 'the owner\'s later write does not reach it');
+		assert.throws(() => { r.markOf(Z.id, 'flag').len = 1; }, TypeError, 'frozen');
+		assert.equal(shown(), JSON.stringify({ run: 'a', len: 42.5, ms: 500 }), 'and the page shows what was set');
 	} finally { restore(); }
 });
 
