@@ -184,8 +184,15 @@ async function capture(side) {
 	await sleep(600);
 	styles.plain = await t.ev(LOOKS);
 	const roots = `[...document.querySelectorAll('#zones > [id], #groups > [id], #links > [id], #waypoints > [id], #nodes > [id]')].map((e) => e.id)`;
+	/*
+	H26.8's painters move: the editing states hold a state (window.draw.states, app/src/editing-states.js), the renderer before it. Each
+	class is set on the roots not already drawn with it, and let go from those alone: a class an entity's description holds -- the
+	spawner's `spawning` -- is its own, and letting it go through the renderer of a revision before the move stripped it from the
+	element for every reading after, a difference of the probe's making where the move keeps a description's class apart from the states.
+	*/
+	const holder = `(window.draw.states || window.draw.renderer)`;
 	for (const st of STATES) {
-		styles[`state ${st}`] = await t.ev(`(() => { const ids = ${roots}; ids.forEach((id) => window.draw.renderer.setState(id, '${st}', true)); const r = ${LOOKS}; ids.forEach((id) => window.draw.renderer.setState(id, '${st}', false)); return r; })()`);
+		styles[`state ${st}`] = await t.ev(`(() => { const ids = ${roots}.filter((id) => !document.getElementById(id).classList.contains('${st}')); const s = ${holder}; ids.forEach((id) => s.setState(id, '${st}', true)); const r = ${LOOKS}; ids.forEach((id) => s.setState(id, '${st}', false)); return r; })()`);
 	}
 	for (const m of CONTAINER_MODES) styles[`container ${m}`] = await t.ev(`(() => { const c = document.getElementById('container'); const had = c.classList.contains('${m}'); c.classList.add('${m}'); const r = ${LOOKS}; if (!had) c.classList.remove('${m}'); return r; })()`);
 	styles.overlay = await t.ev(`(() => { const o = document.getElementById('overlay'); const NS = 'http://www.w3.org/2000/svg'; for (const c of ['marquee', 'textbox-preview']) { const r = document.createElementNS(NS, 'rect'); r.setAttribute('class', c); r.setAttribute('data-probe', ''); o.appendChild(r); } const r = ${LOOKS}; o.querySelectorAll('[data-probe]').forEach((e) => e.remove()); return r; })()`);
