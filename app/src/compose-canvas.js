@@ -118,9 +118,9 @@ export function foreignStates(scene) {
 		}
 		return null;
 	};
+	// each ask, a set or a clear, as the renderer hands it (since H26.8's painters move a clear arrives as a set to off, one per class)
 	return {
 		setState(id, cls, on) { find(id)?.classList.toggle(cls, on); },
-		clearState(id, classes) { const found = find(id); if (found) for (const cls of classes) found.classList.remove(cls); },
 	};
 }
 

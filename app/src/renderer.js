@@ -172,7 +172,7 @@ export class Renderer {
 		this.modeWatchers = [];         // who hears a mode change (watchMode)
 		this.mode = 'view';             // W4/W5 -- view | edit | run (client/session, ephemeral). edit shows the
 		model.onChange((action, kind, entity) => this.handle(action, kind, entity));   // socket grid; run makes clickable regions act
-		states?.onChange((id, cls, on) => this.restate(id, cls, on));
+		states?.onChange((id, cls, on, changed) => this.restate(id, cls, on, changed));
 	}
 
 	/*
@@ -451,10 +451,13 @@ export class Renderer {
 		for (const [part, shape] of this.applied(rec)) if (rec.keys.has(part)) this.putPart(rec, part, shape);
 	}
 
-	// a state held or let go: on an entity this draws, put again; on any other id, the composition's to mark where it is drawn (F1)
-	restate(id, cls, on) {
+	/*
+	A state asked: on an entity this draws, put again where its states changed; on any other id, every ask the composition's to mark
+	where it is drawn (F1) -- a pipe's line, drawn afresh by the network, shows a state its owner asks again, as before the move (B1)
+	*/
+	restate(id, cls, on, changed) {
 		const rec = this.drawn.get(id);
-		if (rec) this.reput(rec);
+		if (rec) { if (changed) this.reput(rec); }
 		else this.foreign?.setState(id, cls, on);
 	}
 

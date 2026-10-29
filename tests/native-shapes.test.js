@@ -10,7 +10,8 @@ Held here, beside the record the drawing moves answer to (tests/native-record.te
         an element, by file, each negative fixture failing
   GR12  every record document in every mode drawn as the record holds it on a load -- each item's parts, each shape's attributes in
         order; an element kept across an update keeps its key
-  NS13  each lifetime the move changes, by its own test, the record's step beside it where today differs
+  NS13  each lifetime the move changes, by its own test, the record's step beside it where today differs; every ask of a state for an
+        id the renderer does not draw handed to the composition's hook, as before the move (the verifier's B1)
   NS16  the healed link's step differs from the record by its twin's `stroke-linecap` alone
 */
 import { test } from 'node:test';
@@ -24,6 +25,7 @@ import { makeRenderer } from './fixtures/client-harness.mjs';
 import { NATIVE_RECORD, IDS, scenarios, runScenario, layersAt, layersOf, ownOf, classOf, world, recordBoard, storedDocuments, coverageDocuments,
 	load, edit, E, hover, frame } from './fixtures/native-record.mjs';
 import { Renderer } from '../app/src/renderer.js';
+import { EditingStates } from '../app/src/editing-states.js';
 import { PRODUCT_CANVAS } from '../product/canvas.mjs';
 import { SIMULATION_CANVAS } from '../plugins/simulation/spawn-appearance.mjs';
 
@@ -381,6 +383,35 @@ test('NS13: a mark is the renderer\'s to keep -- through a redraw, a structural 
 		m.load(structuredClone(recordBoard()));
 		assert.deepEqual(held(), [null, null, null], 'every mark dropped on a load');
 		assert.deepEqual(shown(), [null, null, null]);
+	} finally { restore(); }
+});
+
+/*
+The verifier's B1: until the pipes move the network draws each pipe's line itself, and only the element it last drew shows a state, so
+the page's renderer before the move handed every ask of a state for an id it did not draw to the composition's hook -- the overlay
+asking a hover again over a line drawn afresh reached it. Every such ask is handed on still, a repeated one and a clear of what is not
+held among them; an entity the renderer draws is put again only where its states changed.
+*/
+test('NS13 (B1): every ask of a state for an id the renderer does not draw reaches the foreign hook, as before the move; a drawn entity is put again only when its states change', () => {
+	const { svg, scene, restore } = makeRenderer();
+	try {
+		const m = new Model(), asked = [], puts = [];
+		const states = new EditingStates({ model: m, parts: PRODUCT_CANVAS });
+		const r = new Renderer(m, svg, { parts: PRODUCT_CANVAS, scene, states, foreign: { setState: (...a) => asked.push(a) } });
+		m.put('zone', { id: 'zone-0d0c01', name: 'z', x: 0, y: 0, w: 120, h: 60 });
+		r.scene = { ...scene, put: (...a) => { puts.push(a[1]); return scene.put(...a); } };
+		const PIPE = 'pipe-0d0c02-0d0c03';   // an id no painter draws
+		states.setState(PIPE, 'hover', true); states.setState(PIPE, 'hover', true);
+		states.setState(PIPE, 'armed', true); states.setState(PIPE, 'armed', true);
+		states.clearState(PIPE, 'hover', 'armed'); states.clearState(PIPE, 'hover');
+		assert.deepEqual(asked, [[PIPE, 'hover', true], [PIPE, 'hover', true], [PIPE, 'armed', true], [PIPE, 'armed', true], [PIPE, 'hover', false], [PIPE, 'armed', false], [PIPE, 'hover', false]],
+			'each ask handed on, in order -- a repeated set and a clear of what is not held among them');
+		assert.deepEqual(states.classesOf(PIPE), [], 'and held as asked');
+		states.setState('zone-0d0c01', 'hover', true);
+		assert.deepEqual(puts, ['zone-0d0c01'], 'a drawn entity\'s state changed: put again');
+		states.setState('zone-0d0c01', 'hover', true);
+		assert.deepEqual(puts, ['zone-0d0c01'], 'asked again, unchanged: nothing put');
+		assert.equal(asked.length, 7, 'and a drawn entity\'s state never reaches the hook');
 	} finally { restore(); }
 });
 

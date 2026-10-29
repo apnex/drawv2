@@ -14,10 +14,17 @@ the entity, and again whenever a state changes: shown while held.
   reflect(selected)          the selection's `selected`, and each part's reflection of it, held for exactly the ids they name now --
                              what it marked before and marks no longer, let go
   classesOf(id)              the classes `id` shows, in the order set
-  onChange(fn)               `fn(id, cls, on)` for each class held or let go
+  onChange(fn)               `fn(id, cls, on, changed)` for each class asked held or let go -- `changed` false where it was held, or
+                             not held, already
 
 The names `setState` and `clearState` are the renderer's that they were, so tools/copies.mjs credits a state class to the module that
-sets it as before (a:F13). The composition makes it and hands it to the renderer, Input and its overlay, and the network's settle; it
+sets it as before (a:F13).
+
+EVERY ASK IS TOLD, not only a change (the verifier's B1 on the painters move). An id the renderer does not draw -- a pipe's line, which
+the network draws in its own layer until the pipes move -- shows a state only on the element the network last drew, and the page's
+renderer before the move handed every set and clear of such an id to the composition's hook, so an owner asking again -- the overlay,
+its pointer over a line drawn afresh; a reflection, marked again on each settle -- reached the new element. The renderer hands each ask
+for such an id on as it did, and puts again only an entity it draws whose states changed. The composition makes it and hands it to the renderer, Input and its overlay, and the network's settle; it
 imports nothing, and a part's reflections arrive with its canvas part.
 */
 
@@ -42,12 +49,11 @@ export class EditingStates {
 
 	setState(id, cls, on) {
 		const list = this.held.get(id) ?? [];
-		const has = list.includes(cls);
-		if (on ? has : !has) return;
-		if (on) this.held.set(id, [...list, cls]);
-		else if (list.length === 1) this.held.delete(id);
-		else this.held.set(id, list.filter((c) => c !== cls));
-		for (const fn of this.listeners) fn(id, cls, !!on);
+		const changed = on ? !list.includes(cls) : list.includes(cls);
+		if (changed && on) this.held.set(id, [...list, cls]);
+		else if (changed && list.length === 1) this.held.delete(id);
+		else if (changed) this.held.set(id, list.filter((c) => c !== cls));
+		for (const fn of this.listeners) fn(id, cls, !!on, changed);
 	}
 
 	clearState(id, ...classes) {

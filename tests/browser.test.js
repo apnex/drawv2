@@ -1490,6 +1490,38 @@ test('H26.4 (V2-1): a free hand pipe clicked on the real product page is drawn s
 });
 
 /*
+H26.8's painters move, the verifier's B1 -- A HOVERED HAND PIPE SHOWS ITS HOVER AGAIN ON A LINE DRAWN AFRESH. The network draws each
+pipe's line itself and the renderer hands every state of an id it did not draw to the composition's hook (app/src/compose-canvas.js
+`foreignStates`), until the pipes move makes the pipe a painted kind. Run mode draws no pipe, so a round trip through it draws the line
+afresh, without the class; the pointer still over it, the overlay asks the hover again, and the page's renderer before the move handed
+every such ask on, so the new line showed it. The editing states, which hold the hover already, must hand that repeated ask on too.
+*/
+test('H26.8 (B1): a hand pipe hovered through run mode and back, the pointer still over it, shows its hover on the line drawn afresh', { skip: SKIP }, async () => {
+	const t = await attach(`http://127.0.0.1:${port}/${PIPE_DIAGRAM}`);
+	try {
+		await until(t, `document.querySelector('[data-select="${FREE_PIPE.id}"]') ? 1 : 0`, 8000);
+		await t.eval(`window.draw.input.setReadOnly(false), 1`);
+		const cls = () => t.eval(`document.getElementById('${FREE_PIPE.id}')?.getAttribute('class') ?? null`);
+		const at = JSON.parse(await t.eval(`JSON.stringify((() => { const r = document.querySelector('[data-select="${FREE_PIPE.id}"]').getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; })())`));
+		const move = (x, y) => t.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x, y, button: 'none', buttons: 0 });
+		await move(at[0] - 60, at[1] - 60); await sleep(100);
+		await move(at[0], at[1]);
+		await until(t, `(document.getElementById('${FREE_PIPE.id}')?.getAttribute('class') ?? '').split(' ').includes('hover') ? 1 : 0`, 3000);
+		assert.equal(await cls(), 'pipe pipe-hand hover', 'control: the pointer over the pipe hovers its line');
+		await t.key('r');
+		await until(t, `window.draw.renderer.mode === 'run' && !document.getElementById('${FREE_PIPE.id}') ? 1 : 0`, 3000);
+		await t.key('r');
+		await until(t, `window.draw.renderer.mode === 'view' && document.getElementById('${FREE_PIPE.id}') ? 1 : 0`, 3000);
+		await sleep(300);
+		await move(at[0] + 1, at[1] + 1); await sleep(300);   // the pointer still over the pipe
+		assert.equal(await t.eval(`window.draw.input.overlayUi.hovered`), FREE_PIPE.id, 'control: the overlay holds the pipe hovered, the pointer over it');
+		assert.equal(await cls(), 'pipe pipe-hand hover', 'the line drawn afresh shows the hover its overlay holds');
+		await move(at[0] - 60, at[1] - 60); await sleep(300);
+		assert.equal(await cls(), 'pipe pipe-hand', 'and lets it go as the pointer leaves');
+	} finally { await t.close(); }
+});
+
+/*
 H15.23 (B255) -- the colour registry reaches the page. Every colour the stylesheet uses is now a `var(--tok-...)` read
 from app/tokens.css, so a page that failed to load that file would lose every colour at once and still boot. Read off the
 real page's computed styles: a link draws the link token, a label the label token, the page the page token.
