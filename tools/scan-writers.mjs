@@ -33,6 +33,7 @@ Usage: node tools/scan-writers.mjs
 import fs from 'node:fs';
 import path from 'node:path';
 import { SCANNER_ROOTS } from './layers.mjs';
+import { PARTS } from './layers.mjs';   // H26.8: GR8 walks the modules of section 3.3's parts
 
 /*
 `--root <dir>` so the rules can be driven over FIXTURES.
@@ -220,6 +221,47 @@ const DOM_ALLOW = new Set([
 	'app/src/labeledit.js',  // builds and owns the inline editor
 ]);
 
+/*
+H26.8's painters move (dev/design/components/NATIVE-SHAPES.md section 3.3, GR8; a:F20, o:F10) -- THE SCENE-READ BOUNDARY. No module of
+the canvas, the editing duty, the renderer, the grids, the label editor, the help panel or a plugin holds an element the scene made, but
+app/src/capture.js and the label editor. Held three ways: none is HANDED one (the renderer answers data alone, a test calls its members
+over a drawn board -- tests/native-shapes.test.js), none FINDS one (this rule), and an event's target reaches only capture's `hit`,
+`focus` and menu.
+
+This rule counts, by file, every spelling that reaches an element from another, so a new path fails until it is reviewed and its count
+recorded here. The parts are read from the layer manifest's PARTS, each part's modules walked through `--root` like every rule above;
+a part the design names that PARTS does not yet hold (`grids`, `label-editor` and `help` join at a later move) has its modules walked
+under the part that holds them today, the canvas.
+
+ITS LIMIT, stated by the design: a counted spelling's reads are review's -- the count says a path exists, not where it goes -- and
+`.children` is also a word of the descriptions, so it is counted where a module reads a description's shapes: the renderer, putting
+them, and the simulation's marks, writing on one beneath the entity's own.
+*/
+const SCENE_READ_PARTS = ['canvas', 'editing', 'renderer', 'grids', 'label-editor', 'help'];
+const SCENE_READ = new RegExp([
+	String.raw`\b(?:getElementById|querySelector|querySelectorAll|elementFromPoint|elementsFromPoint|layerElement|addEventListener)\s*\(`,
+	String.raw`\.closest\s*\(`,
+	String.raw`\.(?:parentNode|parentElement|childNodes|children|firstChild|firstElementChild|lastChild|lastElementChild|nextSibling|previousSibling|nextElementSibling|previousElementSibling)\b`,
+].join('|'), 'g');
+// file -> the exact count of its reads (3.3's table, the painters move's column); every other walked file holds none
+const SCENE_READS = {
+	'app/src/capture.js': 7,          // the platform's hit and focus: six finds from an event's target up, and the menu's listener on the host
+	'app/src/compose-canvas.js': 2,   // the foreign layers' element and its lookup by id, for a pipe's states (foreignStates) until the pipes move
+	'app/src/pick.js': 1,             // a pick's find from the target up, until the picks move
+	'app/src/labeledit.js': 10,       // the label editor's one exception (NS8): its four lookups, six listeners on its own input
+	'app/src/readout.js': 1,          // a listener on its own element
+	'app/src/painter.js': 2,          // a preview's `children`, a description's word (buildPreview)
+	'app/src/renderer.js': 3,         // its description reads, counted at the move: the copy put (two) and the state target's find (one)
+	// H26.8's painters move: 3.3's table names no plugin, and the simulation's marks, declared `(parts, value) -> parts` (3.2, NS5), find
+	// the tower's glyph beneath the entity's own shape -- the word of the descriptions, counted as the renderer's are (an erratum)
+	'plugins/simulation/spawn-appearance.mjs': 2,
+};
+// the modules of 3.3's parts, from PARTS: the named, then every plugin
+const sceneReadModules = () => [...new Set([
+	...SCENE_READ_PARTS.filter((name) => PARTS[name]),
+	...Object.keys(PARTS).filter((name) => PARTS[name].kind === 'plugin'),
+].flatMap((name) => PARTS[name].modules))];
+
 // file -> { mutate: <exact count or null for "any">, load: <exact count> }
 const ALLOW = {
 	'model/ops.mjs': { mutate: null, load: 0, reach: 0 },
@@ -349,6 +391,33 @@ if (builders === 0) {
 	bad++;
 }
 
+// GR8 -- the scene-read boundary, counted by file over the modules of 3.3's parts
+let sceneReads = 0;
+let sceneFiles = 0;
+const sceneWalked = new Set();
+for (const file of [...new Set(sceneReadModules().map(at).flatMap((m) => walk(m)))]) {
+	const rel = (DIR ? path.relative(DIR, file) : file).replace(/\\/g, '/');
+	sceneWalked.add(rel);
+	sceneFiles++;
+	const h = hits(decomment(fs.readFileSync(file, 'utf8')), SCENE_READ);
+	sceneReads += h.length;
+	const allowed = SCENE_READS[rel] ?? 0;
+	if (h.length !== allowed) {
+		bad++;
+		console.log(`  \u2717 ${rel}: ${h.length} scene read(s), allowed ${allowed} -- a module of the canvas, editing, the renderer or a plugin holds no element the scene made (GR8); review the path and record its count`);
+		h.forEach((x) => console.log(`      :${x.line}  ${x.text.trim()}`));
+	}
+}
+for (const rel of Object.keys(SCENE_READS)) {
+	if (sceneWalked.has(rel)) continue;
+	bad++;
+	console.log(`  \u2717 ${rel}: a scene-read allowance for a module no part of GR8 holds -- delete it, or the walk has lost the module`);
+}
+if (sceneReads === 0) {
+	console.log(`  \u2717 NO scene reads matched in ${sceneFiles} module(s) -- the scan is broken, not the tree clean`);
+	bad++;
+}
+
 for (const file of ROOTS.map(at).flatMap((r) => walk(r))) {
 	const text = fs.readFileSync(file, 'utf8');
 	const allow = ALLOW[file] ?? { mutate: 0, load: 0, reach: 0 };
@@ -393,13 +462,14 @@ if (reaches === 0) {
 	bad++;
 }
 
-console.log(`  scan-writers: ${mutations} mutation(s), ${loads} load(s), ${reaches} store-internal reach(es) across ${ROOTS.join('/')}; ${internals} client-internal read(s) in ${TEST_ROOT}/; ${handbuilt} hand-built command(s) against ${builders} builders; ${domFree} DOM-free client module(s), ${domReaches} reach(es) in the ${DOM_ALLOW.size} that own the page`);
+console.log(`  scan-writers: ${mutations} mutation(s), ${loads} load(s), ${reaches} store-internal reach(es) across ${ROOTS.join('/')}; ${internals} client-internal read(s) in ${TEST_ROOT}/; ${handbuilt} hand-built command(s) against ${builders} builders; ${domFree} DOM-free client module(s), ${domReaches} reach(es) in the ${DOM_ALLOW.size} that own the page; ${sceneReads} scene read(s) across ${sceneFiles} module(s) of GR8's parts`);
 if (bad) {
-	console.log(`\n  FAIL — ${bad} violation(s) above. This scanner holds four boundaries, and each fails silently at
+	console.log(`\n  FAIL -- ${bad} violation(s) above. This scanner holds five boundaries, and each fails silently at
   runtime rather than loudly: an out-of-band model write corrupts every stored inverse below it; a
   hand-built command omits what the builder would have supplied; a DOM global welds a module to the
-  page it happens to run in; and a peer reading Input's gesture state rebuilds the God Object by
-  reference. None of these throw. That is why they are caught here.\n`);
+  page it happens to run in; a peer reading Input's gesture state rebuilds the God Object by
+  reference; and a module finding an element the scene made writes beneath the scene's ownership.
+  None of these throw. That is why they are caught here.\n`);
 	process.exit(1);
 }
-console.log('  PASS — one writer (model/ops.mjs#applyOps); load confined to Store.install + projection(); store internals unreached\n');
+console.log('  PASS -- one writer (model/ops.mjs#applyOps); load confined to Store.install + projection(); store internals unreached; scene reads as counted (GR8)\n');

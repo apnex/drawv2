@@ -6,7 +6,8 @@ by part, the editing states (app/src/editing-states.js) and the simulation's mar
 Held here, beside the record the drawing moves answer to (tests/native-record.test.js):
   GR2   the live shadow gone; the renderer refuses a painter bringing `create` or `update`, or answering no `shapes`
   GR3   the kit every painter and appearance is handed holds exactly 3.2's members, `shared` only for a painter declaring it
-  GR8   the renderer answers data alone, each member called over a drawn board
+  GR8   the renderer answers data alone, each member called over a drawn board; tools/scan-writers.mjs counts every spelling that finds
+        an element, by file, each negative fixture failing
   GR12  every record document in every mode drawn as the record holds it on a load -- each item's parts, each shape's attributes in
         order; an element kept across an update keeps its key
   NS13  each lifetime the move changes, by its own test, the record's step beside it where today differs
@@ -15,7 +16,9 @@ Held here, beside the record the drawing moves answer to (tests/native-record.te
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
+import { execFileSync } from 'node:child_process';
 import { Model } from './fixtures/composed.mjs';
 import { makeRenderer } from './fixtures/client-harness.mjs';
 import { NATIVE_RECORD, IDS, scenarios, runScenario, layersAt, layersOf, ownOf, classOf, world, recordBoard, storedDocuments, coverageDocuments,
@@ -172,6 +175,36 @@ test('GR8: the renderer answers data alone -- every member called over a drawn b
 		own.attrs.class = 'written';
 		assert.notEqual(r.ownShapeOf(IDS.link).attrs.class, 'written');
 	} finally { w.platform.restore(); }
+});
+
+// tools/scan-writers.mjs over a fixture; its scene-read lines alone (the other rules' broken-scan floors fire on any partial fixture)
+function sceneReadLines(files) {
+	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gr8-'));
+	try {
+		for (const [file, body] of Object.entries(files)) {
+			fs.mkdirSync(path.dirname(path.join(dir, file)), { recursive: true });
+			fs.writeFileSync(path.join(dir, file), body);
+		}
+		let out;
+		try { out = execFileSync('node', [path.join(ROOT, 'tools/scan-writers.mjs'), '--root', dir], { encoding: 'utf8' }); } catch (e) { out = e.stdout || ''; }
+		return out.split('\n').filter((l) => /scene read\(s\), allowed/.test(l)).join('\n');
+	} finally { fs.rmSync(dir, { recursive: true, force: true }); }
+}
+
+test('GR8: scan-writers counts by file every spelling that finds an element -- a lookup, a traversal then a read, and a listener each fail', () => {
+	// healthy: a counted file at its count, a spelling in a comment, a description's `children` written as a key
+	assert.equal(sceneReadLines({
+		'app/src/readout.js': '// getElementById( named in a comment\nexport const listen = (el, fn) => el.addEventListener(\'click\', fn);\n',
+		'plugins/zones/zone-painter.mjs': 'export const shapes = () => [[\'\', { tag: \'g\', attrs: {}, children: [] }]];\n',
+	}), '', 'nothing past its count');
+	assert.match(sceneReadLines({ 'plugins/zones/zone-painter.mjs': 'export const find = (svg, id) => svg.getElementById(id);\n' }),
+		/plugins\/zones\/zone-painter\.mjs: 1 scene read\(s\), allowed 0/, 'a plugin looking an element up');
+	assert.match(sceneReadLines({ 'app/src/overlay.js': 'export const ownerOf = (el) => el.parentNode.getAttribute(\'id\');\n' }),
+		/app\/src\/overlay\.js: 1 scene read\(s\), allowed 0/, 'the editing duty walking from an element to another, then reading it');
+	assert.match(sceneReadLines({ 'app/src/selection.js': 'export const listen = (el, fn) => el.addEventListener(\'pointerdown\', fn);\n' }),
+		/app\/src\/selection\.js: 1 scene read\(s\), allowed 0/, 'a listener on an element');
+	assert.match(sceneReadLines({ 'app/src/readout.js': 'export const listen = (a, b, fn) => { a.addEventListener(\'click\', fn); b.addEventListener(\'click\', fn); };\n' }),
+		/app\/src\/readout\.js: 2 scene read\(s\), allowed 1/, 'a counted file one past its count');
 });
 
 // ---- GR12
