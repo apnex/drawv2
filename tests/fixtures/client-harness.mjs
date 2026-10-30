@@ -204,9 +204,11 @@ export function installDom() {
 // ---- the assembly under test ----
 
 /*
-A real Model, a real Changes, a real Selection, a real Input. The collaborators that only DRAW are
-stubbed, because nothing here asserts on drawing — `renderer` and `labels` are recorded so a test
-can show a gesture did not, say, open the label editor, without asserting on pixels.
+A real Model, a real Changes, a real Selection, a real Input. The label editor is stubbed and
+recorded, so a test can show a gesture did not, say, open the label editor, without asserting on
+pixels. RESTATED at H26.8's picks move (dev/design/components/NATIVE-SHAPES.md section 4.7): the
+renderer is real, drawing what a test seeds so a press lands on an element the scene made
+(`targetOf`); its mode and labels calls are recorded, beside what it draws.
 */
 // runRules: run mode's rows, the product page's by default; the lab composes none (lab/src/root.js), which H26.2's side-by-side asks for
 export function makeInput({ readOnly = false, bare = false, host: hostOverride = null, routeHook = null, plugins = null, parts = PRODUCT_CANVAS, runRules = RUN_PRESSES } = {}) {   // parts: the canvas parts, the page's by default (C-d)
