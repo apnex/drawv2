@@ -25,7 +25,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { teardown } from './fixtures/teardown.mjs';
 import { startLab } from './fixtures/lab-server.mjs';   // H26.5 (the verifier's finding 1): started and waited for in one place
-import { NO_CHROME, launchChrome } from './fixtures/chrome.mjs';   // one launch config for every harness
+import { NO_CHROME, launchChrome, chromeDebugPort } from './fixtures/chrome.mjs';   // one launch config for every harness
 import { createTab, inputOf, MATRIX, matrixProblems, matrixTests } from './fixtures/matrix-runner.mjs';   // the matrix's runner (P7 X-b)
 
 const SKIP = NO_CHROME;
@@ -37,10 +37,10 @@ before(async () => {
 	if (SKIP) return;
 	dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lab-browser-'));
 	port = 8400 + (process.pid % 200);
-	cdp = 9800 + (process.pid % 200);
 	({ proc: srv } = await startLab({ port }));
 	// the shared launch config -- including --disable-extensions, and the measurement that found it: tests/fixtures/chrome.mjs
-	chrome = launchChrome({ cdpPort: cdp, profileDir: `${dir}/cdp`, url: 'about:blank' });
+	chrome = launchChrome({ profileDir: `${dir}/cdp`, url: 'about:blank' });
+	cdp = await chromeDebugPort(chrome);   // B434: the port the system gave Chrome, never one from a range another program may hold
 	for (let i = 0; i < 80; i++) {
 		try { await (await fetch(`http://127.0.0.1:${cdp}/json/version`)).json(); break; } catch { await sleep(200); }
 	}

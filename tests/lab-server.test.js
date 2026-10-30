@@ -118,6 +118,6 @@ test('H26.5: no test names lab/server.mjs to run it but startLab -- a copy with 
 	const naming = Object.fromEntries(files.filter((f) => f !== 'fixtures/lab-server.mjs').map((f) => [f, labNamedIn(read(f))]).filter(([, found]) => found.length));
 	assert.deepEqual(naming, {}, 'no other test names the lab\'s server but to read it');
 	const callers = files.filter((f) => /\bstartLab\(/.test(read(f))).sort();
-	assert.deepEqual(callers, ['fixtures/lab-server.mjs', 'import-map-browser.test.js', 'lab-browser.test.js', 'lab-server.test.js', 'probe-sides.test.js', 'static.test.js', 'svgexport.test.js'],
-		'the six sites that started it, each through the helper');
+	assert.deepEqual(callers, ['fixtures/lab-server.mjs', 'import-map-browser.test.js', 'lab-browser.test.js', 'lab-server.test.js', 'probe-sides.test.js', 'process-tether.test.js', 'static.test.js', 'svgexport.test.js'],
+		'the seven sites that start it -- H26-19\'s kill test the seventh -- each through the helper');
 });

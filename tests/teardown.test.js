@@ -159,7 +159,8 @@ The verifier's N1 (H26.4): lab-browser and page-matrix were found leaving a Chro
 stops them in its `after` hook -- but a test process stopped before that hook runs (the runner cancelling a file, Ctrl-C, a kill sent to
 it) never ran it, and the groups, detached, outlived it. So the fixture keeps every group it spawned, and a process that exits, or is
 stopped by SIGTERM, SIGINT or SIGHUP, kills each one still standing first; a signal is then raised again, so the process still dies of it.
-A SIGKILL can be caught by nothing, and is not claimed.
+A SIGKILL can be caught by nothing, and is not claimed -- H26-19: the groups are now tethered (tools/process-tether.mjs), so this holds
+with nothing run at exit at all, and tests/process-tether.test.js holds the SIGKILL case.
 */
 function harness(how) {
 	const fixture = JSON.stringify(new URL('./fixtures/teardown.mjs', import.meta.url).href);
@@ -169,7 +170,8 @@ function harness(how) {
 		process.stdout.write(group.pid + ' ready\\n');
 		${how === 'exit' ? "setTimeout(() => process.exit(0), 200);" : 'setInterval(() => {}, 1000);'}
 	`;
-	return spawn(process.execPath, ['--input-type=module', '-e', script], { stdio: ['ignore', 'pipe', 'inherit'] });
+	// its groups are left for the tether to stop, as this test intends: not reported into the run as a leak (tools/run-tests.mjs)
+	return spawn(process.execPath, ['--input-type=module', '-e', script], { stdio: ['ignore', 'pipe', 'inherit'], env: { ...process.env, DRAW_TEST_RUN: '' } });
 }
 const groupGone = (pgid) => { try { process.kill(-pgid, 0); return false; } catch (e) { return e.code === 'ESRCH'; } };
 for (const how of ['SIGTERM', 'SIGINT', 'exit']) {

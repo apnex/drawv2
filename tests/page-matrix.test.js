@@ -14,7 +14,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { teardown, spawnGroup } from './fixtures/teardown.mjs';
-import { NO_CHROME, launchChrome } from './fixtures/chrome.mjs';
+import { NO_CHROME, launchChrome, chromeDebugPort } from './fixtures/chrome.mjs';
 import { createTab, inputOf, matrixTests, sleep } from './fixtures/matrix-runner.mjs';
 import { pipeEntity } from '../plugins/network/pipe-kind.mjs';
 
@@ -29,10 +29,10 @@ before(async () => {
 	if (SKIP) return;
 	dir = fs.mkdtempSync(path.join(os.tmpdir(), 'page-matrix-'));
 	port = 8600 + (process.pid % 200);
-	cdp = 9200 + (process.pid % 200);
 	srv = spawnGroup('node', ['server/server.js'], { cwd: root, env: { ...process.env, DATA_DIR: dir, PORT: String(port) }, stdio: 'ignore' });
 	for (let i = 0; i < 60; i++) { try { if ((await fetch(`http://127.0.0.1:${port}/health`)).ok) break; } catch { /* not up yet */ } await sleep(200); }
-	chrome = launchChrome({ cdpPort: cdp, profileDir: `${dir}/cdp`, url: 'about:blank' });
+	chrome = launchChrome({ profileDir: `${dir}/cdp`, url: 'about:blank' });
+	cdp = await chromeDebugPort(chrome);   // B434: the port the system gave Chrome, never one from a range another program may hold
 	for (let i = 0; i < 80; i++) { try { await (await fetch(`http://127.0.0.1:${cdp}/json/version`)).json(); break; } catch { await sleep(200); } }
 });
 after(() => teardown([chrome, srv], dir));

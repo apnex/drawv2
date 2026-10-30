@@ -29,7 +29,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { teardown, spawnGroup } from './fixtures/teardown.mjs';   // H26.4 (V2-2): the server a group of its own, stopped with the test process
-import { NO_CHROME, launchChrome } from './fixtures/chrome.mjs';   // one launch config for every harness
+import { NO_CHROME, launchChrome, chromeDebugPort } from './fixtures/chrome.mjs';   // one launch config for every harness
 import { pipeEntity } from '../plugins/network/pipe-kind.mjs';   // V-b's board lays its pipes as the network names them
 
 const SKIP = NO_CHROME;
@@ -209,7 +209,6 @@ before(async () => {
 	fs.writeFileSync(path.join(dir, `${PARITY_DIAGRAM}.json`), JSON.stringify(parityBoard()));
 	fs.writeFileSync(path.join(dir, `${PIPE_DIAGRAM}.json`), JSON.stringify(pipeBoard()));
 	port = 8200 + (process.pid % 300);
-	cdp = 9600 + (process.pid % 300);
 
 	// H26.4 (the verifier's V2-2): a group of its own, so a test process stopped before its `after` stops it too (tests/fixtures/teardown.mjs)
 	srv = spawnGroup('node', ['server/server.js'], {
@@ -222,7 +221,8 @@ before(async () => {
 	}
 
 	// the shared launch config (tests/fixtures/chrome.mjs); the window size is this harness's own, because its clicks depend on it
-	chrome = launchChrome({ cdpPort: cdp, profileDir: `${dir}/cdp`, extra: ['--window-size=1600,1000'] });
+	chrome = launchChrome({ profileDir: `${dir}/cdp`, extra: ['--window-size=1600,1000'] });
+	cdp = await chromeDebugPort(chrome);   // B434: the port the system gave Chrome, never one from a range another program may hold
 	tab = await attach(`http://127.0.0.1:${port}/?diagram=${DIAGRAM}`);
 	await sleep(4000);
 

@@ -23,7 +23,8 @@ tick as 'error' and never as 'exit', and a process with no pid cannot be signall
 exit would never settle (found at review).
 */
 import fs from 'node:fs';
-import { spawn } from 'node:child_process';
+import { spawnTethered } from '../../tools/process-tether.mjs';
+import { chromeLockFolderOf, removeScratchTree } from '../../tools/chrome-profile.mjs';
 
 const exited = (p) => p.exitCode !== null || p.signalCode !== null;
 
@@ -50,31 +51,30 @@ const groupAlive = (pgid) => {
 
 /*
 The verifier's N1 (H26.4): a harness stopped before its `after` hook runs -- the runner cancelling a file, Ctrl-C, a kill sent to the
-test process -- never stopped its groups, and being detached they outlived it: a Chrome and its servers left running. So every group
-spawned here is kept until it is stopped, and a process that exits, or is stopped by SIGTERM, SIGINT or SIGHUP, first kills each one
-still standing; a signal is then raised again, with no handler left, so the process dies of it as it would have. SIGKILL can be caught
-by nothing (tests/teardown.test.js N1).
-*/
-const standing = new Set();
-let guarded = false;
-const killStanding = () => { for (const pgid of standing) { try { process.kill(-pgid, 'SIGKILL'); } catch { /* gone */ } } standing.clear(); };
-function guard() {
-	if (guarded) return;
-	guarded = true;
-	process.on('exit', killStanding);
-	for (const signal of ['SIGTERM', 'SIGINT', 'SIGHUP']) process.once(signal, () => { killStanding(); process.kill(process.pid, signal); });
-}
+test process -- never stopped its groups, and being detached they outlived it: a Chrome and its servers left running. This file then
+killed each group still standing from the process's `exit` and signal handlers, which a SIGKILL never runs.
 
+H26-19: so a group is started TETHERED (tools/process-tether.mjs): its leader is a tether holding a pipe only this process holds, and
+when this process ends -- by exit, a signal, or SIGKILL -- the tether stops the group and removes the Chrome profile, lock folder and
+temporary folder it was given. The pid is still the group's id and the group is still stopped the same way; nothing here runs at exit any more, so a
+process signalled dies of the signal as it would have (tests/teardown.test.js N1, H26-19).
+*/
 export function spawnGroup(cmd, args, opts = {}) {
-	const child = spawn(cmd, args, { ...opts, detached: true });
+	const child = spawnTethered(cmd, args, opts);
 	child.drawGroup = true;
-	if (child.pid !== undefined) { guard(); standing.add(child.pid); }
 	return child;
 }
 
+// a Chrome's lock folder is read before it is stopped, and removed once it has, with the temporary folder it was given: Chrome
+// leaves both behind (tools/chrome-profile.mjs, tests/fixtures/chrome.mjs). The profile stays: a harness may launch on it again.
 async function stopGroup(proc, graceMs) {
-	const pgid = proc.pid;
-	try { await stopGroupNow(pgid, graceMs); } finally { standing.delete(pgid); }
+	const lock = proc.chromeProfile ? chromeLockFolderOf(proc.chromeProfile, proc.chromeTemp) : null;
+	await stopGroupNow(proc.pid, graceMs);
+	if (proc.chromeProfile) {
+		const folder = lock ?? chromeLockFolderOf(proc.chromeProfile, proc.chromeTemp);
+		if (folder) removeScratchTree(folder);
+	}
+	if (proc.chromeTemp) removeScratchTree(proc.chromeTemp);
 }
 async function stopGroupNow(pgid, graceMs) {
 	if (!groupAlive(pgid)) return;
