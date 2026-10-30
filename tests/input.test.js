@@ -28,7 +28,7 @@ import { linkBetween, linksBetween, makeLink } from '../plugins/network/link-que
 import { test } from 'node:test';
 import { makeZone } from '../plugins/zones/make-zone.mjs';   // O-b1: the zones plugin's factory
 import assert from 'node:assert/strict';
-import { makeInput, key, pointer, seedNodes } from './fixtures/client-harness.mjs';
+import { makeInput, key, pointer, seedNodes, GROUND } from './fixtures/client-harness.mjs';
 import { validateEntity } from './fixtures/composed.mjs';   // the network's kinds, as the server validates (S-e)
 import { bindGestureDefer } from '../app/src/sync.js';
 import * as commands from '../app/src/commands.js';
@@ -247,14 +247,22 @@ Fixed together in H3.1 because they are one edit in two directions. The durable 
 table, where each entry declares whether it mutates and the gate filters on the flag.
 */
 
+/*
+RESTATED at H26.8's picks move: a run-mode press lands on a panel's region the harness's renderer drew in run mode (`setMode`), its input
+or its action, picked and read by item -- where a stand-in answered the region's selectors for a node the document did not hold, and the
+label editor's lookup was planted. The label editor finds the drawn region as the page's does.
+*/
+function panel(h, region) {
+	h.model.put('node', { id: 'node-aa0001', name: 'p', type: 'host', shape: 'square', x: 0, y: 0, span: { cols: 2, rows: 1 },
+		content: [{ at: [0, 0], cols: 1, rows: 1, content: 'text', value: 'ping', ...region }] });
+	h.renderer.setMode('run');
+	return h.at({ key: 'node-aa0001', where: region.action ? { 'data-action': region.action } : { 'data-input': true } });
+}
+
 test('B18: while Server-Locked, a run-mode click must not reach the label editor', () => {
 	const h = makeInput({ readOnly: true });
 	try {
-		h.renderer.mode = 'run';
-		const hitEl = { dataset: { input: '', idx: '0' }, closest: () => ({ id: 'node-aa0001' }), querySelector: () => null };
-		// drawn, as a page has it: the label editor finds the region by its node and index (app/src/labeledit.js openRegion)
-		globalThis.__domIds.set('node-aa0001', { querySelector: (sel) => (sel === '[data-input][data-idx="0"]' ? hitEl : null) });
-		const target = { tagName: 'rect', closest: () => hitEl };
+		const target = panel(h, { input: true });
 		h.capture.onDown(pointer(100, 100, { target }));
 		assert.equal(h.called('labels.openContent'), false, 'a locked client must not open an editor whose commit it cannot send');
 	} finally { h.restore(); }
@@ -299,9 +307,7 @@ test('while Server-Locked, a run-mode ACTION still fires — it commits nothing'
 	// inspection and stays live. Blocking it would be B37 all over again, in a new place.
 	const h = makeInput({ readOnly: true });
 	try {
-		h.renderer.mode = 'run';
-		const hitEl = { dataset: { action: 'ping' }, closest: () => ({ id: 'node-aa0001' }) };
-		const target = { tagName: 'rect', closest: () => hitEl };
+		const target = panel(h, { action: 'ping' });
 		h.capture.onDown(pointer(100, 100, { target }));
 
 		// B45 — the host is injected now, so this reads the real outbound boundary instead of
@@ -319,11 +325,7 @@ test('unlocked, the same three paths still work — the gate is a gate, not a wa
 	{	// run-mode inline edit
 		const h = makeInput();
 		try {
-			h.renderer.mode = 'run';
-			const hitEl = { dataset: { input: '', idx: '0' }, closest: () => ({ id: 'node-aa0001' }), querySelector: () => null };
-		// drawn, as a page has it: the label editor finds the region by its node and index (app/src/labeledit.js openRegion)
-		globalThis.__domIds.set('node-aa0001', { querySelector: (sel) => (sel === '[data-input][data-idx="0"]' ? hitEl : null) });
-			h.capture.onDown(pointer(100, 100, { target: { tagName: 'rect', closest: () => hitEl } }));
+			h.capture.onDown(pointer(100, 100, { target: panel(h, { input: true }) }));
 			assert.equal(h.called('labels.openContent'), true, 'run-mode editing works when unlocked');
 		} finally { h.restore(); }
 	}
@@ -567,18 +569,16 @@ cannot know whether you are about to drag.
 These drive real pointer sequences through the table — down, move past the threshold, up — because
 the escalation is the one part of the recognizer's contract that a single event cannot exercise.
 */
-const onEntity = (id, x, y, mod = {}) => pointer(x, y, {
-	target: { tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: (s) => (s.includes('node') ? { id } : null) },
-	...mod,
-});
+// RESTATED at H26.8's picks move: the element the harness's renderer drew (`h.at`), picked by item, where a stand-in answered selectors
+const onEntity = (h, id, x, y, mod = {}) => pointer(x, y, { target: h.at(id), ...mod });
 
 test('H6.4: a right-drag escalates pending → move and commits the transition', () => {
 	const h = makeInput();
 	try {
 		const [a] = seedNodes(h.model, [[0, 0]]);
-		h.capture.onDown(onEntity(a.id, 0, 0, { button: 2 }));
-		h.capture.onMove(onEntity(a.id, 180, 0, { button: 2 }));
-		h.capture.onUp(onEntity(a.id, 180, 0, { button: 2 }));
+		h.capture.onDown(onEntity(h, a.id, 0, 0, { button: 2 }));
+		h.capture.onMove(onEntity(h, a.id, 180, 0, { button: 2 }));
+		h.capture.onUp(onEntity(h, a.id, 180, 0, { button: 2 }));
 
 		assert.equal(h.commits.length, 1, 'one drag is one change');
 		assert.equal(h.model.get('node', a.id).x, 180, 'and it landed on the grid');
@@ -589,9 +589,9 @@ test('H6.4: Ctrl+right-drag escalates clone-pending → clone', () => {
 	const h = makeInput();
 	try {
 		const [a] = seedNodes(h.model, [[0, 0]]);
-		h.capture.onDown(onEntity(a.id, 0, 0, { button: 2, ctrlKey: true }));
-		h.capture.onMove(onEntity(a.id, 180, 0, { button: 2, ctrlKey: true }));
-		h.capture.onUp(onEntity(a.id, 180, 0, { button: 2, ctrlKey: true }));
+		h.capture.onDown(onEntity(h, a.id, 0, 0, { button: 2, ctrlKey: true }));
+		h.capture.onMove(onEntity(h, a.id, 180, 0, { button: 2, ctrlKey: true }));
+		h.capture.onUp(onEntity(h, a.id, 180, 0, { button: 2, ctrlKey: true }));
 
 		assert.equal(h.commits.length, 1);
 		assert.equal(h.model.all('node').length, 2, 'the original stayed, the copy landed');
@@ -602,11 +602,11 @@ test('H6.4: while Server-Locked a press still selects, but the drag never escala
 	const h = makeInput({ readOnly: true });
 	try {
 		const [a] = seedNodes(h.model, [[0, 0]]);
-		h.capture.onDown(onEntity(a.id, 0, 0));
+		h.capture.onDown(onEntity(h, a.id, 0, 0));
 		assert.ok(h.selection.has(a.id), 'click-select survives the gate — SCOPE decision 5');
 
-		h.capture.onMove(onEntity(a.id, 180, 0));
-		h.capture.onUp(onEntity(a.id, 180, 0));
+		h.capture.onMove(onEntity(h, a.id, 180, 0));
+		h.capture.onUp(onEntity(h, a.id, 180, 0));
 		assert.equal(h.commits.length, 0, 'but the escalation is refused');
 		assert.equal(h.model.get('node', a.id).x, 0, 'and nothing moved, even locally');
 	} finally { h.restore(); }
@@ -619,9 +619,8 @@ B43 is the reason this matters. `dispatchUp` ended with a trailing `onGestureEnd
 `resize` could reach, because all fourteen other branches returned early. Correctness by "every
 branch remembers to return" is not correctness; `onUp`'s `finally` now owns the hook alone.
 */
-const handle = (corner, x, y) => pointer(x, y, {
-	target: { tagName: 'circle', classList: { contains: (c) => c === 'handle' }, dataset: { corner }, closest: () => null },
-});
+// RESTATED at H26.8's picks move: the element the harness's renderer drew (`h.at`), picked by item, where a stand-in answered selectors
+const handle = (h, corner, x, y) => pointer(x, y, { target: h.at({ key: 'handles', where: { 'data-corner': corner } }) });
 
 // AMENDED 2026-10-04 (V-d): the zone sits on the zone grid, offset half a cell; at (0, 0) it was a document the planner
 // refuses, which the preview now shows -- the resize was never one the server would take
@@ -632,13 +631,13 @@ test('B43: a resize commit fires the gesture-end hook exactly once', () => {
 		h.model.put('zone', z);
 		h.selection.set([z.id]);
 
-		h.capture.onDown(handle('se', 270, 270));
+		h.capture.onDown(handle(h, 'se', 270, 270));
 		let fired = 0;
 		h.input.onGestureEnd = () => fired++;
-		h.capture.onMove(handle('se', 450, 450));
+		h.capture.onMove(handle(h, 'se', 450, 450));
 		// the live preview moved, so the handle genuinely armed a resize — this test is not vacuous
 		assert.equal(h.model.get('zone', z.id).w, 480, 'the grabbed handle is dragging the zone');
-		h.capture.onUp(handle('se', 450, 450));
+		h.capture.onUp(handle(h, 'se', 450, 450));
 
 		assert.equal(fired, 1, 'D12 fires once per gesture — a double replay is the latent bug');
 		assert.equal(h.model.get('zone', z.id).w, 480, 'and the resize committed');
@@ -656,8 +655,8 @@ test('H6.4: a cancelled resize restores the pre-drag geometry', () => {
 		h.model.put('zone', z);
 		h.selection.set([z.id]);
 
-		h.capture.onDown(handle('se', 270, 270));
-		h.capture.onMove(handle('se', 480, 480));
+		h.capture.onDown(handle(h, 'se', 270, 270));
+		h.capture.onMove(handle(h, 'se', 480, 480));
 		assert.equal(h.model.get('zone', z.id).w, 540, 'the live preview writes the shared Model (B7)');
 
 		h.input.cancelDrag();
@@ -665,7 +664,7 @@ test('H6.4: a cancelled resize restores the pre-drag geometry', () => {
 		assert.equal(h.commits.length, 0, 'with nothing in history');
 
 		// the gesture is really over, not merely rewound: further movement must not resize
-		h.capture.onMove(handle('se', 600, 600));
+		h.capture.onMove(handle(h, 'se', 600, 600));
 		assert.equal(h.model.get('zone', z.id).w, 300, 'a dead gesture does not track the pointer');
 	} finally { h.restore(); }
 });
@@ -682,25 +681,25 @@ test('H6.4: a right-button release during a link chain does not commit a segment
 	const h = makeInput();
 	try {
 		const [a, b, c] = seedNodes(h.model, [[0, 0], [180, 0], [180, 180]]);
-		h.capture.onDown(onEntity(a.id, 0, 0));
-		h.capture.onMove(onEntity(b.id, 180, 0));
-		h.capture.onUp(onEntity(b.id, 180, 0, { shiftKey: true }));     // Shift held at the release: the link a-b, and a chain on from b
+		h.capture.onDown(onEntity(h, a.id, 0, 0));
+		h.capture.onMove(onEntity(h, b.id, 180, 0));
+		h.capture.onUp(onEntity(h, b.id, 180, 0, { shiftKey: true }));     // Shift held at the release: the link a-b, and a chain on from b
 		assert.deepEqual([h.model.all('link').length, h.input.isGesturing()], [1, true], 'precondition: a chain is live, no press held');
-		h.capture.onMove(onEntity(c.id, 180, 180));
-		h.capture.onUp(onEntity(c.id, 180, 180, { button: 2 }));         // a right release whose press never reached the canvas
+		h.capture.onMove(onEntity(h, c.id, 180, 180));
+		h.capture.onUp(onEntity(h, c.id, 180, 180, { button: 2 }));         // a right release whose press never reached the canvas
 		assert.equal(h.model.all('link').length, 1, 'a stray right-release commits no segment');
 		assert.equal(h.input.isGesturing(), true, 'and the chain is still LIVE, not silently dead');
-		h.capture.onDown(onEntity(c.id, 180, 180));
-		h.capture.onUp(onEntity(c.id, 180, 180));
+		h.capture.onDown(onEntity(h, c.id, 180, 180));
+		h.capture.onUp(onEntity(h, c.id, 180, 180));
 		assert.equal(h.model.all('link').length, 2, 'the chain\'s own left press and release land its segment');
 		assert.equal(linkBetween(h.model, b.id, c.id) ? 1 : 0, 1, 'from b to c');
 	} finally { h.restore(); }
 	const d = makeInput();
 	try {
 		const [a, b] = seedNodes(d.model, [[0, 0], [180, 0]]);
-		d.capture.onDown(onEntity(a.id, 0, 0));
-		d.capture.onMove(onEntity(b.id, 180, 0));
-		d.capture.onUp(onEntity(b.id, 180, 0, { button: 2 }));
+		d.capture.onDown(onEntity(d, a.id, 0, 0));
+		d.capture.onMove(onEntity(d, b.id, 180, 0));
+		d.capture.onUp(onEntity(d, b.id, 180, 0, { button: 2 }));
 		assert.equal(linkBetween(d.model, a.id, b.id) ? 1 : 0, 1, 'during a drag the right\'s release lands the link its left press began (B427)');
 		assert.equal(d.input.isGesturing(), false, 'and the link drag ended');
 	} finally { d.restore(); }
@@ -831,7 +830,6 @@ test('the key table\'s help guard through Input: with help open Delete deletes n
 });
 
 test('the key table\'s gesture guard through Input: with a gesture live Ctrl+A changes nothing; at rest it selects every device', () => {
-	const at = (id) => ({ tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: (sel) => (sel.includes('node') ? { id } : null) });
 	const rest = makeInput();
 	try {
 		const [a, b] = seedNodes(rest.model, [[0, 0], [360, 0]]);
@@ -841,8 +839,8 @@ test('the key table\'s gesture guard through Input: with a gesture live Ctrl+A c
 	const h = makeInput();
 	try {
 		const [a] = seedNodes(h.model, [[0, 0], [360, 0]]);
-		h.capture.onDown(pointer(0, 0, { target: at(a.id) }));
-		h.capture.onMove(pointer(120, 0, { target: at(a.id) }));
+		h.capture.onDown(pointer(0, 0, { target: h.at(a.id) }));   // H26.8's picks move: the device's element the harness's renderer drew
+		h.capture.onMove(pointer(120, 0, { target: h.at(a.id) }));
 		assert.equal(h.input.isGesturing(), true, 'precondition: a link drag is live');
 		const before = h.selection.list().slice();
 		h.capture.onKeyDown(key('a', { ctrlKey: true }));
@@ -890,9 +888,9 @@ test('B36: a zone resize pins the corner opposite the grabbed handle', () => {
 		h.selection.set([z.id]);
 
 		// grab NW and drag it outward past the origin; SE must not move
-		h.capture.onDown(handle('nw', -30, -30));
-		h.capture.onMove(handle('nw', -210, -210));
-		h.capture.onUp(handle('nw', -210, -210));
+		h.capture.onDown(handle(h, 'nw', -30, -30));
+		h.capture.onMove(handle(h, 'nw', -210, -210));
+		h.capture.onUp(handle(h, 'nw', -210, -210));
 
 		const after = h.model.get('zone', z.id);
 		assert.equal(after.x + after.w, 270, 'the SE corner stayed put in x');
@@ -1270,9 +1268,7 @@ test('B46: a routed link commits once, with its bend, and lands selected', () =>
 	const h = makeInput();
 	try {
 		const [a, b] = seedNodes(h.model, [[0, 0], [360, 0]]);
-		const at = (id, x, y) => pointer(x, y, {
-			target: { tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: (s) => (s.includes('node') ? { id } : null) },
-		});
+		const at = (id, x, y) => pointer(x, y, { target: h.at(id) });   // H26.8's picks move: the element the harness's renderer drew
 		h.capture.onDown(at(a.id, 0, 0));
 		h.capture.onMove(at(a.id, 180, 60));
 		h.capture.onKeyDown(key('w'));            // drop a bend mid-route
@@ -1306,9 +1302,7 @@ test('H6.12: F2 renames the entity you actually clicked, not an arbitrary one of
 		h.selection.set([a.id, b.id]);
 
 		// click b directly, then press F2 with BOTH still selected
-		const at = (id, x, y) => pointer(x, y, {
-			target: { tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: (s) => (s.includes('node') ? { id } : null) },
-		});
+		const at = (id, x, y) => pointer(x, y, { target: h.at(id) });   // H26.8's picks move: the element the harness's renderer drew
 		h.capture.onDown(at(b.id, 180, 0, { shiftKey: true }));
 		h.capture.onUp(at(b.id, 180, 0, { shiftKey: true }));
 		h.capture.onKeyDown(key('F2'));
@@ -1352,9 +1346,7 @@ test('B72: a second link between the same pair is allowed when it carries a bend
 	const h = makeInput();
 	try {
 		const [a, b] = seedNodes(h.model, [[0, 0], [360, 0]]);
-		const at = (id, x, y) => pointer(x, y, {
-			target: { tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: (s2) => (s2.includes('node') ? { id } : null) },
-		});
+		const at = (id, x, y) => pointer(x, y, { target: h.at(id) });   // H26.8's picks move: the element the harness's renderer drew
 		const plain = () => { h.capture.onDown(at(a.id, 0, 0)); h.capture.onMove(at(b.id, 360, 0)); h.capture.onUp(at(b.id, 360, 0)); };
 		const routed = () => {
 			h.capture.onDown(at(a.id, 0, 0));
@@ -1393,9 +1385,7 @@ test('B80: routed first then straight — the direct link is still permitted', (
 	const h = makeInput();
 	try {
 		const [a, b] = seedNodes(h.model, [[0, 0], [360, 0]]);
-		const at = (id, x, y) => pointer(x, y, {
-			target: { tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: (s2) => (s2.includes('node') ? { id } : null) },
-		});
+		const at = (id, x, y) => pointer(x, y, { target: h.at(id) });   // H26.8's picks move: the element the harness's renderer drew
 		const routed = () => {
 			h.capture.onDown(at(a.id, 0, 0)); h.capture.onMove(at(a.id, 180, 60));
 			h.capture.onKeyDown(key('w'));
@@ -1507,7 +1497,7 @@ test('B147: a digit mid-link-drag places that node, ends the segment on it, and 
 		field -- it is the fact that a SECOND digit chains onto the first, which is exactly what a
 		person means by one gesture.
 		*/
-		const target = { tagName: 'circle', closest: () => ({ id: a.id }) };
+		const target = h.at(a.id);   // H26.8's picks move: the device's element the harness's renderer drew
 		h.capture.onDown(pointer(-120, 0, { target, shiftKey: true }));
 		h.capture.onMove(pointer(0, 0));
 
@@ -1555,7 +1545,7 @@ test('B147: chaining refuses an occupied anchor, exactly as a bend does', () => 
 	const h = makeInput();
 	const [a, blocker] = seedNodes(h.model, [[-120, 0, 'router'], [0, 0, 'host']]);
 	try {
-		const target = { tagName: 'circle', closest: () => ({ id: a.id }) };
+		const target = h.at(a.id);   // H26.8's picks move: the device's element the harness's renderer drew
 		h.capture.onDown(pointer(-120, 0, { target, shiftKey: true }));
 		h.capture.onMove(pointer(0, 0));
 		h.capture.onMove(pointer(0, 0));                  // sitting on `blocker`
@@ -1602,7 +1592,7 @@ test('B147: chaining leaves exactly one live preview, not one per hop', () => {
 	const h = makeInput();
 	const [a] = seedNodes(h.model, [[-120, 0, 'router']]);
 	try {
-		const target = { tagName: 'circle', closest: () => ({ id: a.id }) };
+		const target = h.at(a.id);   // H26.8's picks move: the device's element the harness's renderer drew
 		h.capture.onDown(pointer(-120, 0, { target, shiftKey: true }));
 		h.capture.onMove(pointer(0, 0));
 		assert.equal(h.drawn('#overlay', 'link-live').length, 1, 'one preview while drawing');
@@ -1636,13 +1626,15 @@ diagram draggable while it runs. The B202 CSS hides the anchor and removes its g
 looks like it covers this and does not: the endpoint pad is still hit-testable in run mode by
 design, so a drag started on the pad is the case that would slip through.
 */
+// RESTATED at H26.8's picks move: on a waypoint and a device the harness's renderer drew in run mode, where a stand-in answered every
+// selector for an id the document did not hold
 test('B202: a press in run mode starts no gesture, on a waypoint or a node', () => {
 	for (const kind of ['node-ea0001', 'node-aa0001']) {
 		const h = makeInput();
 		try {
-			h.renderer.mode = 'run';
-			const el = { id: kind, closest: () => el, querySelector: () => null, dataset: {} };
-			const target = { tagName: 'circle', closest: () => el };
+			h.model.put('node', kind === 'node-ea0001' ? { id: kind, name: 'w', x: 120, y: 120 } : { id: kind, name: 'd', type: 'host', shape: 'circle', x: 120, y: 120 });
+			h.renderer.setMode('run');
+			const target = h.at(kind);
 
 			h.capture.onDown(pointer(100, 100, { target }));
 			h.capture.onMove(pointer(160, 160, { target }));
@@ -1688,7 +1680,7 @@ test('B211: a left CLICK on a linked waypoint selects it', () => {
 		h.model.put('link', { id: 'link-aa0001', name: 'l', src: 'node-ea0001', dst: 'node-ea0002' });
 		const at = (x, y) => pointer(x, y, {
 			button: 0,
-			target: { tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: (s) => (s.includes('waypoint') ? { id: 'node-ea0001' } : null) },
+			target: h.at('node-ea0001'),   // H26.8's picks move: the waypoint's element the harness's renderer drew
 		});
 
 		// press and release on the spot -- no drag
@@ -1708,7 +1700,7 @@ test('B203: a left drag never MOVES a waypoint', () => {
 		h.model.put('node', { id: 'node-ea0002', name: 'w2', x: 180, y: 0 });
 		h.model.put('link', { id: 'link-aa0001', name: 'l', src: 'node-ea0001', dst: 'node-ea0002' });
 		const at = (x, y, mod) => pointer(x, y, {
-			target: { tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: (s) => (s.includes('waypoint') ? { id: 'node-ea0001' } : null) },
+			target: h.at('node-ea0001'),   // H26.8's picks move: the waypoint's element the harness's renderer drew
 			...mod,
 		});
 
@@ -1729,7 +1721,7 @@ test('B203: right-drag still moves a waypoint', () => {
 		h.model.put('link', { id: 'link-aa0001', name: 'l', src: 'node-ea0001', dst: 'node-ea0002' });
 		const at = (x, y) => pointer(x, y, {
 			button: 2,
-			target: { tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: (s) => (s.includes('waypoint') ? { id: 'node-ea0001' } : null) },
+			target: h.at('node-ea0001'),   // H26.8's picks move: the waypoint's element the harness's renderer drew
 		});
 
 		h.capture.onDown(at(0, 0));
@@ -1770,7 +1762,7 @@ test('B213: a drag onto a bend splits it, and the src half keeps the original id
 
 		const at = (x, y, id) => pointer(x, y, {
 			button: 0,
-			target: { tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: () => (id ? { id } : null) },
+			target: id ? h.at(id) : GROUND,   // H26.8's picks move: the element the harness's renderer drew, or open ground
 		});
 		h.capture.onDown(at(0, 120, 'node-aa0003'));
 		h.capture.onMove(at(0, 60, null));
@@ -1799,7 +1791,7 @@ test('B284: a drag onto a bend of a control link with a direction splits it into
 		m.put('node', { id: 'node-aa0003', name: 'c', type: 'host', x: 0, y: 120 });
 		m.put('node', { id: 'node-ea0001', name: 'w', x: 0, y: 0 });
 		m.put('link', { id: 'link-aa0001', name: 'l1', src: 'node-aa0001', dst: 'node-aa0002', via: ['node-ea0001'], control: true, direction: 'forward' });
-		const at = (x, y, id) => pointer(x, y, { button: 0, target: { tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: () => (id ? { id } : null) } });
+		const at = (x, y, id) => pointer(x, y, { button: 0, target: id ? h.at(id) : GROUND });   // H26.8's picks move: drawn, or open ground
 		h.capture.onDown(at(0, 120, 'node-aa0003'));
 		h.capture.onMove(at(0, 60, null));
 		h.capture.onUp(at(0, 0, 'node-ea0001'));
@@ -1821,7 +1813,7 @@ test('B258: Alt+right-click deletes the node under the cursor on a board that ho
 	try {
 		const [a, b, c] = seedNodes(h.model, [[0, 0], [360, 0], [0, 240]]);
 		h.model.put('link', { id: 'link-00000e', name: 'l', src: a.id, dst: b.id });
-		h.capture.onDown(onEntity(c.id, 0, 240, { button: 2, altKey: true }));
+		h.capture.onDown(onEntity(h, c.id, 0, 240, { button: 2, altKey: true }));
 		assert.equal(h.model.get('node', c.id), undefined, 'the chord deletes the node under the cursor');
 		assert.ok(h.model.get('link', 'link-00000e'), 'and leaves the unrelated link alone');
 	} finally { h.restore(); }

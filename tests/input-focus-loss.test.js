@@ -26,9 +26,10 @@ const focusLost = (h) => h.capture.onBlur({ timeStamp: 1, preventDefault() {}, s
 const shiftDown = (h, mod = {}) => h.capture.onKeyDown(key('Shift', { code: 'ShiftLeft', shiftKey: true, ...mod }));
 const shiftUp = (h, mod = {}) => h.capture.onKeyUp(key('Shift', { code: 'ShiftLeft', ...mod }));
 const inField = { target: { tagName: 'INPUT', closest: () => null } };   // a key typed into a field: capture drops its key-down (app/src/capture.js)
-const onZone = (z, x, y, mod = {}) => pointer(x, y, { target: { tagName: 'rect', classList: { contains: () => false }, dataset: {}, closest: (s) => (s.includes('zone') ? { id: z.id } : null) }, ...mod });
-const rightOnZone = (z, x, y, mod = {}) => onZone(z, x, y, { button: 2, buttons: 2, ...mod });   // H24.5: a zone is pressed with the right button
-const overNode = (id, x, y, mod = {}) => pointer(x, y, { target: { tagName: 'g', closest: () => ({ id }) }, ...mod });
+// RESTATED at H26.8's picks move: the element the harness's renderer drew (`h.at`), picked by item, where a stand-in answered selectors
+const onZone = (h, z, x, y, mod = {}) => pointer(x, y, { target: h.at({ key: z.id, where: { class: 'zone-rect' } }), ...mod });
+const rightOnZone = (h, z, x, y, mod = {}) => onZone(h, z, x, y, { button: 2, buttons: 2, ...mod });   // H24.5: a zone is pressed with the right button
+const overNode = (h, id, x, y, mod = {}) => pointer(x, y, { target: h.at(id), ...mod });
 const onGround = (x, y, mod = {}) => pointer(x, y, mod);
 const gridShown = (h) => h.svg.classList.contains('zonegrid');
 // whether the renderer was last told to mark `id` armed -- replayed from what Input told the renderer, the boundary these assert at
@@ -48,8 +49,8 @@ test('B413: Shift held, focus lost, Shift released elsewhere -- the zone grid is
 	try {
 		const { z } = board(h);
 		shiftDown(h);
-		h.capture.onDown(rightOnZone(z, 200, 200, { shiftKey: true }));
-		h.capture.onUp(rightOnZone(z, 200, 200, { shiftKey: true }));
+		h.capture.onDown(rightOnZone(h, z, 200, 200, { shiftKey: true }));
+		h.capture.onUp(rightOnZone(h, z, 200, 200, { shiftKey: true }));
 		assert.deepEqual([gridShown(h), h.selection.list()], [true, [z.id]], 'precondition: Shift shows the zone grid, and Shift+right click selects the zone');
 		focusLost(h);
 		assert.equal(gridShown(h), false, 'the focus loss stands in for the Shift release the canvas never saw: the grid hidden');
@@ -67,8 +68,8 @@ test('B413: the same, with a pointer event whose shiftKey is false between the S
 	try {
 		const { z } = board(h);
 		shiftDown(h);
-		h.capture.onDown(rightOnZone(z, 200, 200, { shiftKey: true }));
-		h.capture.onUp(rightOnZone(z, 200, 200, { shiftKey: true }));
+		h.capture.onDown(rightOnZone(h, z, 200, 200, { shiftKey: true }));
+		h.capture.onUp(rightOnZone(h, z, 200, 200, { shiftKey: true }));
 		h.capture.onMove(onGround(400, 400));   // a pointer event saying Shift is up: it hides the grid, and the zone stays selected
 		assert.deepEqual([gridShown(h), h.selection.list()], [false, [z.id]], 'precondition: the event hid the grid and left the zone selected');
 		focusLost(h);
@@ -80,8 +81,8 @@ test('B413: Shift held before the page had focus, a Shift+right click on a zone,
 	const h = makeInput();
 	try {
 		const { z } = board(h);
-		h.capture.onDown(rightOnZone(z, 200, 200, { shiftKey: true }));   // no Shift key-down ever reached the canvas
-		h.capture.onUp(rightOnZone(z, 200, 200, { shiftKey: true }));
+		h.capture.onDown(rightOnZone(h, z, 200, 200, { shiftKey: true }));   // no Shift key-down ever reached the canvas
+		h.capture.onUp(rightOnZone(h, z, 200, 200, { shiftKey: true }));
 		assert.deepEqual([gridShown(h), h.selection.list()], [true, [z.id]], 'precondition: the press showed the grid and selected the zone');
 		focusLost(h);
 		assert.deepEqual([gridShown(h), h.selection.list()], [false, []], 'the events carrying Shift owed its cleanup: grid hidden, zone dropped');
@@ -94,8 +95,8 @@ test('B413: Shift pressed while typing in a field, its key-down dropped, then a 
 		const { z } = board(h);
 		shiftDown(h, inField);
 		assert.equal(gridShown(h), false, 'precondition: the key-down typed into a field reached nothing');
-		h.capture.onDown(rightOnZone(z, 200, 200, { shiftKey: true }));
-		h.capture.onUp(rightOnZone(z, 200, 200, { shiftKey: true }));
+		h.capture.onDown(rightOnZone(h, z, 200, 200, { shiftKey: true }));
+		h.capture.onUp(rightOnZone(h, z, 200, 200, { shiftKey: true }));
 		assert.deepEqual([gridShown(h), h.selection.list()], [true, [z.id]], 'precondition: the Shift-press showed the grid and selected the zone');
 		focusLost(h);
 		assert.deepEqual([gridShown(h), h.selection.list()], [false, []], 'grid hidden, zone dropped');
@@ -106,7 +107,7 @@ test('B413: Alt held over a node, focus lost -- the node is disarmed; and Contro
 	const h = makeInput();
 	try {
 		const { n } = board(h);
-		h.capture.onHover(overNode(n.id, -300, 0), true);
+		h.capture.onHover(overNode(h, n.id, -300, 0), true);
 		h.capture.onKeyDown(key('Alt', { code: 'AltLeft', altKey: true }));
 		assert.equal(armedNow(h, n.id), true, 'precondition: Alt over the node arms it to delete');
 		focusLost(h);
@@ -129,7 +130,7 @@ test('B413: Shift and Alt held over a device, focus lost -- the zone grid is hid
 	try {
 		const { n } = board(h);
 		shiftDown(h);
-		h.capture.onHover(overNode(n.id, -300, 0, { shiftKey: true }), true);
+		h.capture.onHover(overNode(h, n.id, -300, 0, { shiftKey: true }), true);
 		h.capture.onKeyDown(key('Alt', { code: 'AltLeft', altKey: true, shiftKey: true }));
 		assert.deepEqual([gridShown(h), armedNow(h, n.id)], [true, true], 'precondition: Shift shows the zone grid, and Alt over the device arms it');
 		focusLost(h);
@@ -142,15 +143,15 @@ test('B413 (section 4, item 1): Shift owed while a press owns the pointer -- the
 	try {
 		const { z } = board(h);
 		shiftDown(h);
-		h.capture.onDown(rightOnZone(z, 200, 200, { shiftKey: true }));
-		h.capture.onMove(rightOnZone(z, 260, 200, { shiftKey: true }));
-		h.capture.onMove(rightOnZone(z, 320, 200, { shiftKey: true }));
+		h.capture.onDown(rightOnZone(h, z, 200, 200, { shiftKey: true }));
+		h.capture.onMove(rightOnZone(h, z, 260, 200, { shiftKey: true }));
+		h.capture.onMove(rightOnZone(h, z, 320, 200, { shiftKey: true }));
 		focusLost(h);
 		assert.deepEqual(h.selection.list(), [z.id], 'mid-drag the zone stays selected: the drag owns the pointer, and the focus loss cancelled nothing');
 		// RESTATED at H26.5's verification: no check of the grid here. The drag's own moves hid it before the focus loss -- an assertion that
 		// it was hidden passed on the old release too -- so a focus loss hiding it cannot be seen mid-drag; the tests above hold it at rest
-		h.capture.onMove(rightOnZone(z, 380, 200));
-		h.capture.onUp(rightOnZone(z, 380, 200));
+		h.capture.onMove(rightOnZone(h, z, 380, 200));
+		h.capture.onUp(rightOnZone(h, z, 380, 200));
 		assert.notEqual(h.model.get('zone', z.id).x, 150, 'the drag went on across the focus loss and moved the zone');
 		assert.deepEqual(h.selection.list(), [], 'and once it ended, Shift up, the zone is dropped (shiftUpPending, afterShiftUpPress)');
 	} finally { h.restore(); }
@@ -230,18 +231,18 @@ test('B413: a focus loss cancels no gesture and ends no press -- a move and a li
 	const h = makeInput();
 	try {
 		const [a, b] = seedNodes(h.model, [[0, 0], [360, 0]]);
-		h.capture.onDown(overNode(a.id, 0, 0, { button: 2, buttons: 2 }));
-		h.capture.onMove(overNode(a.id, 120, 0, { button: 2, buttons: 2 }));
+		h.capture.onDown(overNode(h, a.id, 0, 0, { button: 2, buttons: 2 }));
+		h.capture.onMove(overNode(h, a.id, 120, 0, { button: 2, buttons: 2 }));
 		focusLost(h);
-		h.capture.onMove(overNode(a.id, 180, 0, { button: 2, buttons: 2 }));
-		h.capture.onUp(overNode(a.id, 180, 0, { button: 2, buttons: 0 }));
+		h.capture.onMove(overNode(h, a.id, 180, 0, { button: 2, buttons: 2 }));
+		h.capture.onUp(overNode(h, a.id, 180, 0, { button: 2, buttons: 0 }));
 		assert.equal(h.model.get('node', a.id).x, 180, 'the move went on across the focus loss, and its release committed it');
 		h.reset();
-		h.capture.onDown(overNode(a.id, 180, 0));
-		h.capture.onMove(overNode(a.id, 240, 0));
+		h.capture.onDown(overNode(h, a.id, 180, 0));
+		h.capture.onMove(overNode(h, a.id, 240, 0));
 		focusLost(h);
-		h.capture.onMove(overNode(b.id, 360, 0));
-		h.capture.onUp(overNode(b.id, 360, 0, { buttons: 0 }));
+		h.capture.onMove(overNode(h, b.id, 360, 0));
+		h.capture.onUp(overNode(h, b.id, 360, 0, { buttons: 0 }));
 		assert.ok(h.commits.some((c) => (c.ops ?? []).some((o) => o.kind === 'link' && o.op === 'put')), 'the link drag went on and its release made the link');
 	} finally { h.restore(); }
 });

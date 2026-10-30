@@ -13,17 +13,16 @@ import assert from 'node:assert/strict';
 import { makeInput, key, pointer, seedNodes } from './fixtures/client-harness.mjs';
 
 // a pointer event over node `id` at (x, y), in the harness's shape
-const over = (id, x, y) => pointer(x, y, {
-	target: { tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: (s) => (s.includes('node') ? { id } : null) },
-});
+// RESTATED at H26.8's picks move: the element the harness's renderer drew (`h.at`), picked by item, where a stand-in answered selectors
+const over = (h, id, x, y) => pointer(x, y, { target: h.at(id) });
 const empty = (x, y) => pointer(x, y);
 
 // drag from a to b, pressing `keys` at the listed points on the way
 function drag(h, a, b, hops) {
-	h.capture.onDown(over(a.id, a.x, a.y));
+	h.capture.onDown(over(h, a.id, a.x, a.y));
 	for (const [k, x, y] of hops) { h.capture.onMove(empty(x, y)); h.capture.onKeyDown(key(k)); }
-	h.capture.onMove(over(b.id, b.x, b.y));
-	h.capture.onUp(over(b.id, b.x, b.y));
+	h.capture.onMove(over(h, b.id, b.x, b.y));
+	h.capture.onUp(over(h, b.id, b.x, b.y));
 }
 
 /*
@@ -48,7 +47,7 @@ test('the product page: `g` claims the key, because it does something', () => {
 	const h = makeInput();
 	try {
 		const [a] = seedNodes(h.model, [[0, 0]]);
-		h.capture.onDown(over(a.id, 0, 0));
+		h.capture.onDown(over(h, a.id, 0, 0));
 		h.capture.onMove(empty(180, 60));
 		let prevented = 0;
 		const e = key('g'); e.preventDefault = () => { prevented++; };
@@ -207,11 +206,11 @@ test('the product page: w on a node makes it a stop -- two links ending there', 
 	const h = makeInput();
 	try {
 		const [a, n, b] = seedNodes(h.model, [[0, 0], [360, 0], [360, 360]]);
-		h.capture.onDown(over(a.id, 0, 0));
-		h.capture.onMove(over(n.id, 360, 0));
+		h.capture.onDown(over(h, a.id, 0, 0));
+		h.capture.onMove(over(h, n.id, 360, 0));
 		h.capture.onKeyDown(key('w'));
-		h.capture.onMove(over(b.id, 360, 360));
-		h.capture.onUp(over(b.id, 360, 360));
+		h.capture.onMove(over(h, b.id, 360, 360));
+		h.capture.onUp(over(h, b.id, 360, 360));
 		const ends = h.model.all('link').map((l) => `${l.src}>${l.dst}`).sort();
 		assert.deepEqual(ends, [`${a.id}>${n.id}`, `${n.id}>${b.id}`].sort(), 'two links, each ending at the node');
 		assert.ok(h.model.all('link').every((l) => !l.via?.length), 'and nothing bends at a node');
@@ -224,11 +223,11 @@ remains the sole selected anchor, and the next gesture is a drag. This eliminate
 to unselect it - then the drag would follow normal link commit rules". Input sees every press, so the w counts only for
 the very next press, and only if that press drags from the anchor while it is still the sole selection.
 */
-const onWp = (id, x, y) => pointer(x, y, { target: { tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: (s) => (s.includes('waypoint') ? { id } : null) } });
+const onWp = (h, id, x, y) => pointer(x, y, { target: h.at(id) });
 function dragFromWp(h, wp, b) {
-	h.capture.onDown(onWp(wp.id, wp.x, wp.y));
-	h.capture.onMove(over(b.id, b.x, b.y));
-	h.capture.onUp(over(b.id, b.x, b.y));
+	h.capture.onDown(onWp(h, wp.id, wp.x, wp.y));
+	h.capture.onMove(over(h, b.id, b.x, b.y));
+	h.capture.onUp(over(h, b.id, b.x, b.y));
 }
 
 test('the w that placed the source counts when the next press drags from it, still the sole selection', () => {
@@ -300,13 +299,13 @@ test('B261: w during a chained link drag adds its bend, and the chained link com
 	const h = makeInput();
 	try {
 		const [a, b, c] = seedNodes(h.model, [[0, 0], [360, 0], [360, 360]]);
-		h.capture.onDown(over(a.id, a.x, a.y));
-		h.capture.onMove(over(b.id, b.x, b.y));
-		h.capture.onUp({ ...over(b.id, b.x, b.y), shiftKey: true });
+		h.capture.onDown(over(h, a.id, a.x, a.y));
+		h.capture.onMove(over(h, b.id, b.x, b.y));
+		h.capture.onUp({ ...over(h, b.id, b.x, b.y), shiftKey: true });
 		h.capture.onMove(empty(480, 180));
 		assert.doesNotThrow(() => h.capture.onKeyDown(key('w')));
-		h.capture.onMove(over(c.id, c.x, c.y));
-		h.capture.onUp(over(c.id, c.x, c.y));
+		h.capture.onMove(over(h, c.id, c.x, c.y));
+		h.capture.onUp(over(h, c.id, c.x, c.y));
 		const chained = h.model.all('link').find((l) => l.src === b.id && l.dst === c.id);
 		assert.ok(chained, 'the chained link is made');
 		assert.equal(chained.via?.length, 1, 'through the bend w dropped');

@@ -26,6 +26,6 @@ export const NETWORK_CANVAS = { owner: 'network', stylesheets: ['plugins/network
 	describe: LINK_DESCRIBE, selectAll: LINK_SELECT_ALL,   // C-e: how a link reads, and Ctrl+A
 	reflects: NETWORK_REFLECTS,   // C-e: what a selected link lights -- its waypoints, its blockers
 	// C-f: what it draws, and what a run-mode press aims at -- a waypoint, an endpoint to arm; and its count
-	drawn: ['.link'], runTargets: ['.waypoint'], helpWords: { link: 'a link' },
+	helpWords: { link: 'a link' },
 	linkDrag: { pathOf, makeLink, rolesOf: waypointRolesIn, admitted: (model, src, dst, via) => !pairHolders({ src, dst, via }, linksBetween(model, src, dst), model).length },
 	tally: { rank: 1, word: 'links', of: (model) => model.all('link').length } };

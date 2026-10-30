@@ -284,7 +284,7 @@ test('Input commits the pieces a judge names as ONE edit, pinned between the cut
 	const h = makeInput({ routeHook: (facts) => ({ ok: true, cutAt: [facts.pins[0]] }) });
 	try {
 		const [a, b] = seedNodes(h.model, [[0, 0], [360, 0]]);
-		const over = (id, x, y) => pointer(x, y, { target: { tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: (s) => (s.includes(id.split('-')[0]) ? { id } : null) } });
+		const over = (id, x, y) => pointer(x, y, { target: h.at(id) });   // H26.8's picks move: the element the harness's renderer drew
 		h.capture.onDown(over(a.id, 0, 0)); h.capture.onMove(pointer(120, 120)); h.capture.onKeyDown(key('w'));
 		const cut = h.model.all('node').filter((n) => !n.type)[0].id;
 		h.capture.onMove(pointer(240, 120)); h.capture.onKeyDown(key('w'));

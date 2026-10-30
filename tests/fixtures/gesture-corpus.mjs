@@ -31,7 +31,7 @@ in the commit that makes it:
 import { makeLink } from '../../plugins/network/link-queries.mjs';   // K13d: the network's link queries
 import fs from 'node:fs';
 import { makeZone } from '../../plugins/zones/make-zone.mjs';   // O-b1: the zones plugin's factory
-import { makeInput } from './client-harness.mjs';
+import { makeInput, targetOf, GROUND } from './client-harness.mjs';
 import { makeNode, makeWaypoint } from '../../plugins/devices/make-node.mjs';   // O-e1: the devices plugin's factories
 
 const GOLDEN = new URL('./gesture-corpus.json', import.meta.url);
@@ -50,6 +50,9 @@ const BOARDS = {
 	// the preview refused every edit to it, as the server would have (H18.28)
 	zone: () => [['z0', 'zone', -150, -150, 300, 300], ['n0', 'node', 0, 0], ['n1', 'node', 360, 0]],
 	chain: () => [['n0', 'node', 0, 0], ['n1', 'node', 180, 0], ['n2', 'node', 360, 0]],
+	// H26.8's picks move (NS15): the pair and a panel -- a device two cells wide holding a glyph region whose press is the `help` action,
+	// what a run-mode press on a panel button presses on a page
+	panel: () => [['n0', 'node', 0, 0], ['n1', 'node', 360, 0], ['p0', 'panel', -360, 360]],
 };
 
 function seed(h, board) {
@@ -57,10 +60,12 @@ function seed(h, board) {
 	for (const [alias, kind, ...a] of BOARDS[board]()) {
 		let e;
 		if (kind === 'node') e = makeNode(h.model, 'host', { x: a[0], y: a[1] });
+		else if (kind === 'panel') e = { ...makeNode(h.model, 'host', { x: a[0], y: a[1] }), shape: 'square', span: { cols: 2, rows: 1 },
+			content: [{ at: [0, 0], cols: 1, rows: 1, content: 'glyph', glyph: 'router', action: 'help' }] };
 		else if (kind === 'waypoint') e = makeWaypoint(h.model, { x: a[0], y: a[1] });
 		else if (kind === 'zone') e = makeZone(h.model, { x: a[0], y: a[1], w: a[2], h: a[3] });
 		else { e = makeLink(h.model, ids[a[0]], ids[a[1]]); if (a[2]) e.via = a[2].map((w) => ids[w]); }
-		h.model.put(kind === 'waypoint' ? 'node' : kind, e);   // a waypoint is a node with no type (F-c)
+		h.model.put(kind === 'waypoint' || kind === 'panel' ? 'node' : kind, e);   // a waypoint is a node with no type (F-c); a panel a device
 		ids[alias] = e.id;
 	}
 	return ids;
@@ -70,23 +75,27 @@ function seed(h, board) {
 
 const MODS = (m = {}) => ({ shiftKey: !!m.shift, ctrlKey: !!m.ctrl, altKey: !!m.alt, metaKey: !!m.meta });
 
-function targetFor(ids, on) {
-	const none = { contains: () => false };
-	if (!on) return { tagName: 'svg', classList: none, dataset: {}, closest: () => null };
-	if (on.handle) return { tagName: 'circle', classList: { contains: (c) => c === 'handle' }, dataset: { end: on.handle }, closest: () => null };
-	if (on.corner) return { tagName: 'rect', classList: { contains: (c) => c === 'handle' }, dataset: { corner: on.corner }, closest: () => null };
+/*
+RESTATED at H26.8's picks move (dev/design/components/NATIVE-SHAPES.md section 4.7; appendix A): each press lands on the element the scene
+drew for what the step names -- its own shape, a selected link's end handle, a selected zone's corner handle, a panel's action region --
+found by `targetOf`, which throws when nothing is drawn there; open ground otherwise, and where the entity a step names was deleted by a
+step before it, as the pointer is over open ground once its element is gone. The targets were stand-ins answering selectors, one
+answer for a device and a waypoint alike.
+*/
+function targetFor(h, ids, on) {
+	if (!on) return GROUND;
+	if (on.handle) return targetOf(h, { key: 'handles', where: { 'data-end': on.handle } });
+	if (on.corner) return targetOf(h, { key: 'handles', where: { 'data-corner': on.corner } });
+	if (on.action) return targetOf(h, { key: ids[on.on], where: { 'data-action': on.action } });
 	const id = ids[on] ?? on;
-	const kind = id.split('-')[0];
-	return {
-		tagName: 'g', id, dataset: {},
-		classList: { contains: (c) => kind === 'link' && c === 'link' },
-		closest: (sel) => (sel.includes(kind) ? { id } : null),
-	};
+	// an entity a step before deleted -- a release after the delete chord -- is drawn no more: the pointer is over open ground, as on a page
+	if (!h.model.get(id.split('-')[0], id)) return GROUND;
+	return targetOf(h, id);
 }
 
-function pointerEvent(ids, x, y, on, m = {}) {
+function pointerEvent(h, ids, x, y, on, m = {}) {
 	const ev = { clientX: x, clientY: y, button: m.button ?? 0, buttons: m.up ? 0 : 1, pointerId: 1, ...MODS(m),
-		target: targetFor(ids, on), claimed: 0, stopPropagation() {} };
+		target: targetFor(h, ids, on), claimed: 0, stopPropagation() {} };
 	ev.preventDefault = () => { ev.claimed++; };
 	return ev;
 }
@@ -194,7 +203,8 @@ export const SCENARIOS = [
 	{ id: 'read-only-refuses', board: 'straight', steps: [['readOnly'], ...drag([0, 0], [360, 0], 'n0', 'n1'), ['select', ['l0']], ['key', 'c'], ['key', 'Delete'], ['key', 'f'], ['key', 'a', { ctrl: true }]] },
 	{ id: 'read-only-right-drag-does-not-move', board: 'pair', steps: [['readOnly'], ...drag([0, 0], [120, 60], 'n0', 'n0', { button: 2 })] },
 	{ id: 'run-mode-places-tower', board: 'pair', steps: [['mode', 'run'], ['down', 180, 240], ['up', 180, 240, null, { up: true }]] },
-	{ id: 'run-mode-action', board: 'pair', steps: [['mode', 'run'], ['down', 0, 0, { action: 'help' }]] },
+	// RESTATED at H26.8's picks move (NS15): pressed on a panel's action region, where it pressed a stand-in on no entity, which no page draws
+	{ id: 'run-mode-action', board: 'panel', steps: [['mode', 'run'], ['down', -360, 360, { action: 'help', on: 'p0' }]] },
 	// ---- the plugin seam: the network's keys, with a recording judge ----
 	{ id: 'plugin-g-accepted', board: 'pair', judge: 'accept', steps: drag([0, 0], [360, 0], 'n0', 'n1', {}, [['g', 180, 120]]) },
 	{ id: 'plugin-g-refused-keeps', board: 'pair', judge: 'keep-guides', steps: drag([0, 0], [360, 0], 'n0', 'n1', {}, [['w', 120, 120], ['g', 240, 120]]) },
@@ -234,12 +244,6 @@ export const SCENARIOS = [
 	{ id: 'dblclick-edits-cancels-chain', board: 'three', steps: [['down', 0, 0, 'n0'], ['move', 360, 0, 'n1'], ['up', 360, 0, 'n1', { shift: true, up: true }], ['move', 0, 0, 'n0'], ['dbl', 0, 0, 'n0']] },
 ];
 
-// the targets a `run-mode-action` press needs: an element carrying data-action
-function actionTarget(on) {
-	const el = { tagName: 'g', dataset: { action: on.action }, classList: { contains: () => false }, closest: () => null };
-	return { tagName: 'g', dataset: {}, classList: { contains: () => false }, closest: (sel) => (sel.includes('data-action') ? el : null) };
-}
-
 // ---- recording ----
 
 const JUDGES = {
@@ -274,7 +278,7 @@ export function record(scenario, { withHarness = null, afterStep = null } = {}) 
 			const on = (o) => (o === 'last' ? h.selection.list()[0] : o);
 			if (op === 'down' || op === 'move' || op === 'up' || op === 'dbl') {
 				const [x, y, target, mods] = a;
-				const ev = target && target.action ? Object.assign(pointerEvent(ids, x, y, null, mods), { target: actionTarget(target) }) : pointerEvent(ids, x, y, on(target), mods);
+				const ev = pointerEvent(h, ids, x, y, target && typeof target === 'object' ? target : on(target), mods);
 				const method = { down: 'onDown', move: 'onMove', up: 'onUp', dbl: 'onDblClick' }[op];
 				run(() => h.capture[method](ev));   // through capture, as a browser's events arrive (L0)
 				out.claims.push(ev.claimed > 0);
@@ -282,15 +286,15 @@ export function record(scenario, { withHarness = null, afterStep = null } = {}) 
 				const ev = keyEvent(a[0], a[1]);
 				run(() => h.capture[op === 'key' ? 'onKeyDown' : 'onKeyUp'](ev));
 				out.claims.push(ev.claimed > 0);
-			} else if (op === 'cancel') run(() => h.capture.onCancel(pointerEvent(ids, 0, 0, null, { up: true })));
+			} else if (op === 'cancel') run(() => h.capture.onCancel(pointerEvent(h, ids, 0, 0, null, { up: true })));
 			else if (op === 'select') h.selection.set(a[0].map((x) => ids[x]));
 			else if (op === 'selectLast') h.selection.set([lastLink]);
 			else if (op === 'link') { const l = makeLink(h.model, ids[a[0]], ids[a[1]]); h.model.put('link', l); lastLink = l.id; }
 			else if (op === 'hand') h.tools.setHand(a[0]);
 			else if (op === 'readOnly') h.input.setReadOnly(true);
 			else if (op === 'load') run(() => h.model.load(h.model.toJSON()));   // H26.2: a document replaced mid-gesture
-			else if (op === 'mode') h.renderer.mode = a[0];
-			else if (op === 'at') run(() => h.capture.onMove(pointerEvent(ids, a[0], a[1], null, { up: true })));
+			else if (op === 'mode') h.renderer.setMode(a[0]);   // H26.8's picks move: drawn, the harness's renderer real
+			else if (op === 'at') run(() => h.capture.onMove(pointerEvent(h, ids, a[0], a[1], null, { up: true })));
 			else throw new Error(`corpus: unknown step ${op}`);
 			afterStep?.(h, i);
 		});

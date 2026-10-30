@@ -32,6 +32,7 @@ const GROUP_PAINTER = {
 	kind: 'group',
 	layer: 'groups',
 	stacked: false,
+	run: { entity: [''] },   // C-f: what it draws, a press on which run mode places nothing (H26.8's picks move: by item, where it was `drawn`)
 	shapes(entity, { model, sizeOf }) {
 		const box = groupBox(entity, model, sizeOf);
 		if (!box) return null;   // no resolvable member, no hull -- and one that shrank below a member drops it
@@ -43,5 +44,4 @@ const GROUP_PAINTER = {
 
 // the groups plugin's canvas part (C-a: its painter)
 // C-e: and its keys -- Ctrl+G, Ctrl+Shift+G -- and its rank in a delete: first, before what it gathers
-export const GROUPS_CANVAS = { owner: 'groups', stylesheets: ['plugins/groups/groups.css'], painters: [GROUP_PAINTER] , keys: GROUP_KEYS, deleteRanks: { group: 0 }, follows: [GROUP_FOLLOWER],
-	drawn: ['.group'] };   // C-f: what it draws, a press on which run mode places nothing on
+export const GROUPS_CANVAS = { owner: 'groups', stylesheets: ['plugins/groups/groups.css'], painters: [GROUP_PAINTER] , keys: GROUP_KEYS, deleteRanks: { group: 0 }, follows: [GROUP_FOLLOWER] };

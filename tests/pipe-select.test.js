@@ -28,10 +28,10 @@ import { linkWidth } from '../plugins/network/appearance.mjs';
 import { picksOf, hitWith } from '../app/src/pick.js';
 import { Renderer } from '../app/src/renderer.js';
 import { EditingStates } from '../app/src/editing-states.js';
-import { makeRenderer } from './fixtures/client-harness.mjs';
+import { makeRenderer, targetOf } from './fixtures/client-harness.mjs';
 import { PRODUCT_CANVAS } from '../product/canvas.mjs';
-// RESTATED at C-b (H19.30): the picker is composed from the plugins' picks; a mark is still the canvas's own rule
-const hitOf = hitWith(picksOf(PRODUCT_CANVAS));
+// RESTATED at C-b (H19.30): the picker is composed from the plugins' picks; a mark is still the canvas's own rule. RESTATED at H26.8's
+// picks move: the mark is the pipe painter's pick, `{ mark: true, on: 'data-select' }`, read by item from the scene the renderer drew
 import { PRESS_DRAGS } from '../app/src/releases.js';
 import { deleteSelection } from '../app/src/commands.js';
 import { createNetwork as netFor } from '../plugins/network/network.mjs';
@@ -47,7 +47,8 @@ function drawn(m, test) {
 		const r = new Renderer(m, svg, { parts: PRODUCT_CANVAS, scene, states });
 		r.syncAll();
 		const group = (id) => scene.items('pipes').find((it) => it.key === id)?.shapes[0] ?? null;
-		return test({ r, states, scene, group, element: (id) => svg.ownerDocument.getElementById(id) });
+		const hitOf = hitWith(picksOf(PRODUCT_CANVAS), { scene, drawerOf: (id) => r.drawerOf(id) });
+		return test({ r, states, scene, group, element: (id) => svg.ownerDocument.getElementById(id), at: (on) => targetOf({ scene, svg }, on), hitOf });
 	} finally { restore(); }
 }
 function board() {
@@ -106,11 +107,15 @@ test('the painter keeps one element per pipe across paints, updating it in place
 	});
 });
 
-test('N-c2: an element naming what a click selects is a mark, its kind read off the id', () => {
-	const target = { closest: () => null, classList: { contains: () => false }, dataset: { select: 'pipe-00000a-00000c' } };
-	assert.deepEqual(hitOf({ target }), { kind: 'pipe', id: 'pipe-00000a-00000c', mark: true });
-	assert.deepEqual(hitOf({ target: { ...target, dataset: {} } }), { kind: 'canvas', id: null }, 'without one, the canvas');
-});
+// RESTATED at H26.8's picks move: on the elements the renderer drew -- a hand pipe's hit line, carrying `data-select`, is its mark; its line,
+// its group and a link pipe's line carry none, and are open ground to a press
+test('N-c2: an element naming what a click selects is a mark, its kind read off the id', () => drawn(board(), ({ at, hitOf }) => {
+	const hand = pipeEntity(A, W, 'hand').id, link = pipeEntity(W, B, 'link').id;
+	assert.deepEqual(hitOf({ target: at({ key: hand, where: { 'data-select': hand } }) }), { kind: 'pipe', id: hand, mark: true });
+	for (const [what, on] of [['its line', { key: hand, path: [0, 0] }], ['its group', hand], ['a link pipe\'s line', { key: link, path: [0, 0] }]]) {
+		assert.deepEqual(hitOf({ target: at(on) }), { kind: 'canvas', id: null }, `${what}: without one, the canvas`);
+	}
+}));
 
 test('N-c2: a drag that starts on a mark never moves it, as on a link', () => {
 	const [startMove] = PRESS_DRAGS;

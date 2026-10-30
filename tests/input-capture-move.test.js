@@ -17,9 +17,11 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { FOLDERS, PARTS } from '../tools/layers.mjs';
 import * as adapter from '../app/src/capture.js';
-import { picksOf, regionsOf } from '../app/src/pick.js';
+import { picksOf } from '../app/src/pick.js';
 import { PRODUCT_CANVAS } from '../product/canvas.mjs';
-import { installDom } from './fixtures/client-harness.mjs';
+import { installDom, makeRenderer, targetOf } from './fixtures/client-harness.mjs';
+import { Renderer } from '../app/src/renderer.js';
+import { Model } from './fixtures/composed.mjs';
 import { sceneOver } from './fixtures/capture-parity.mjs';   // H26.4: a scene over a surface, whose toDrawing the adapter converts by
 
 /*
@@ -63,12 +65,22 @@ function recorded(fields) {
 // RESTATED at H26.5 (dev/design/components/RELEASES-0.2.md section 4): and `blur`, the host's focus loss, which draw lists (B413)
 const SINK = ['press', 'move', 'release', 'cancelDrag', 'hover', 'double', 'keyDown', 'keyUp', 'leave', 'blur'];
 const recordingSink = (got, answer = () => {}) => Object.fromEntries(SINK.map((m) => [m, (...args) => { got.push([m, args]); answer(m, args[0]); }]));
-const open = (got = [], answer) => {
+// RESTATED at H26.8's picks move: `drawn`, a scene a renderer drew into and its drawers, which the picks and run regions read by item
+const open = (got = [], answer, drawn = null) => {
 	const f = fakes();
 	// RESTATED at H26.4 (dev/design/components/VECTOR-SCENE.md appendix B): handed the canvas's scene, as the composition hands it
-	const capture = adapter.captureCanvas({ svg: f.svg, scene: sceneOver(f.svg), host: f.host, sink: recordingSink(got, answer), picks: picksOf(PRODUCT_CANVAS), regions: regionsOf(PRODUCT_CANVAS) });
+	const capture = adapter.captureCanvas({ svg: f.svg, scene: drawn?.scene ?? sceneOver(f.svg), host: f.host, sink: recordingSink(got, answer), picks: picksOf(PRODUCT_CANVAS),
+		...(drawn ? { drawerOf: drawn.drawerOf } : {}) });
 	return { ...f, capture, got };
 };
+// a device the real renderer drew, `node-000001`, and the element to press on -- the scene the canvas reads its presses by
+function drawnDevice() {
+	const r = makeRenderer();
+	const m = new Model();
+	const renderer = new Renderer(m, r.svg, { parts: PRODUCT_CANVAS, scene: r.scene });
+	m.put('node', { id: 'node-000001', name: 'a', type: 'host', shape: 'circle', x: 0, y: 0 });
+	return { ...r, drawerOf: (id) => renderer.drawerOf(id), target: targetOf(r, 'node-000001') };
+}
 
 test('H26.3 step 3: app/src/capture.js exports captureCanvas and emitToHost, and no class', () => {
 	assert.deepEqual(Object.keys(adapter).sort(), ['captureCanvas', 'emitToHost']);
@@ -138,8 +150,9 @@ test('H26.3 (V4): a host that refuses the menu\'s listener leaves nothing listen
 	assert.deepEqual(f.removed.filter((n) => n.startsWith('svg:')).length, 8, 'every removal attempted past the ones that threw');
 });
 
+// RESTATED at H26.8's picks move: its target the device's element the renderer drew (`drawnDevice`), set where the test draws it
 const POINTER = { clientX: 30, clientY: 40, button: 0, buttons: 1, pointerId: 1, pointerType: 'mouse', shiftKey: true, ctrlKey: false, altKey: false, metaKey: false,
-	target: { tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: (s) => (s.includes('node') ? { id: 'node-000001' } : null) }, preventDefault() {} };
+	target: null, preventDefault() {} };
 const KEY = { key: 'Tab', code: 'Tab', repeat: false, shiftKey: false, ctrlKey: true, altKey: false, metaKey: false, target: { tagName: 'BODY', closest: () => null }, preventDefault() {} };
 // RESTATED at H26.5 (dev/design/components/RELEASES-0.2.md section 4, RD18): a pointer's input event carries its fact's `pointerId`, after `on`
 const FORM = {
@@ -151,12 +164,12 @@ const FORM = {
 };
 
 test('H26.3 step 3: the adapter reads no field of a pointer or key event -- the component reads each -- and Input\'s entry points take today\'s input events', () => {
-	const restore = installDom();
+	const drawn = drawnDevice(), restore = drawn.restore;
 	try {
-		const o = open([], (m, e) => { if (m === 'press') { e.claimed = true; e.capture = true; } if (m === 'keyDown') e.claimed = true; });
+		const o = open([], (m, e) => { if (m === 'press') { e.claimed = true; e.capture = true; } if (m === 'keyDown') e.claimed = true; }, drawn);
 		const reads = [];
 		const fire = (key, fields) => { const r = recorded(fields); o.listeners.get(key)(r.evt); reads.push(...r.reads.map(([f, who]) => [key, f, who])); };
-		for (const n of ['pointerdown', 'pointermove', 'pointerup', 'pointercancel', 'pointerover', 'pointerout', 'dblclick', 'pointerleave']) fire(`svg:${n}`, { ...POINTER });
+		for (const n of ['pointerdown', 'pointermove', 'pointerup', 'pointercancel', 'pointerover', 'pointerout', 'dblclick', 'pointerleave']) fire(`svg:${n}`, { ...POINTER, target: drawn.target });
 		fire('host:keydown', { ...KEY });
 		fire('host:keyup', { ...KEY, key: 'Shift' });
 		fire('host:keydown', { ...KEY, target: { tagName: 'INPUT', closest: () => null } });   // typed into a field: dropped
@@ -195,8 +208,9 @@ test('H26.3 step 3 (G5, D9): of the product\'s modules, app/src/capture.js alone
 	assert.ok(PARTS.canvas.modules.includes('app/src/capture.js'), 'the adapter is the canvas part\'s');
 	const compose = fs.readFileSync(path.join(ROOT, 'app/src/compose-canvas.js'), 'utf8');
 	assert.match(compose, /import \{ captureCanvas \} from '\.\/capture\.js';/);
-	// RESTATED at H26.4 (VECTOR-SCENE.md appendix B): handing the scene, whose toDrawing is capture's conversion
-	assert.match(compose, /const listen = \(\) => \(capture \?\?= captureCanvas\(\{ svg, scene, host, sink: input, picks: picksOf\(parts\), regions: regionsOf\(parts\) \}\)\);/,
+	// RESTATED at H26.4 (VECTOR-SCENE.md appendix B): handing the scene, whose toDrawing is capture's conversion; at H26.8's picks move the
+	// renderer's drawers, which the picks and run regions read each item by
+	assert.match(compose, /const listen = \(\) => \(capture \?\?= captureCanvas\(\{ svg, scene, host, sink: input, picks: picksOf\(parts\), drawerOf: \(id\) => renderer\.drawerOf\(id\) \}\)\);/,
 		'listen() keeps its place, calling captureCanvas where it made the class');
 	assert.match(fs.readFileSync(path.join(ROOT, 'app/src/capture.js'), 'utf8'), /toDrawing: \(screen\) => scene\.toDrawing\(screen\),/, 'and the adapter converts by the scene\'s toDrawing');
 });

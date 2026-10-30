@@ -530,8 +530,8 @@ test('a snapshot the tab asked for, arriving mid-drag, ends the drag first: its 
 			bindGestureDefer(h.input, w.sync);
 			w.changes.commit(move(A, 240, 0));                 // onto b: the server will refuse it
 			w.serve();
-			const onA = (x) => pointer(x, 0, { button: 2,
-				target: { tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: (s) => (s.includes('node') ? { id: A } : null) } });
+			// H26.8's picks move: the element the harness's renderer drew (`targetOf`), picked by item, where a stand-in answered selectors
+			const onA = (x) => pointer(x, 0, { button: 2, target: h.at(A) });
 			h.capture.onDown(onA(240));
 			h.capture.onMove(onA(420));                          // a real move gesture, from where the tab shows a
 			assert.equal(h.input.isGesturing(), true, 'a drag is live -- the case under test');
@@ -562,7 +562,8 @@ test('o:F4 (RD18): another writer\'s change queued behind a touch\'s link drag s
 		], { tab: { model: h.model, changes: h.history, selection: h.selection } });
 		try {
 			bindGestureDefer(h.input, w.sync);
-			const on = (id, x, y, m) => pointer(x, y, { ...m, target: { tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: (s) => (s.includes('node') ? { id } : null) } });
+			// H26.8's picks move: the element the harness's renderer drew (`targetOf`), picked by item, where a stand-in answered selectors
+			const on = (id, x, y, m) => pointer(x, y, { ...m, target: h.at(id) });
 			const touch = { pointerId: 2, pointerType: 'touch' }, mouse = { pointerId: 1, pointerType: 'mouse' };
 			const seenAtCommit = [];
 			w.changes.onCommit(() => seenAtCommit.push(w.tab.get('node', B).name));   // what the tab showed of b when its own commit was made

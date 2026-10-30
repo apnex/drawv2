@@ -11,8 +11,9 @@ WHAT DRAW SUPPLIES, each draw's content or policy:
 	toDrawing   where a screen point lies in the drawing: the canvas's scene's (H26.4, app/src/renderer.js `openCanvasScene`), through the root's screen
 	            transform read at each event, the arithmetic `toCanvas` did
 	hit         what is under the pointer: `on`, by the parts' picks (pick.js `hitWith`), and on a press `region`, run mode's controls
-	            under it -- the waypoint, a `data-action` or `data-input` region and its node, whether any entity is there; null when
-	            the target cannot be asked, which is itself an answer: run mode places nothing then. Null on a `leave`
+	            under it -- the waypoint, a `data-action` or `data-input` region and its node, whether any entity is there (pick.js
+	            `regionWith`). Both read the item the scene made the target for, never the target's ancestors (H26.8's picks move,
+	            NATIVE-SHAPES.md section 3.2). Null on a `leave`
 	focus       on a key-down alone: a key typed into a field (the header's inputs, the label editor), which canvas shortcuts never
 	            see; otherwise whether focus is on a button, link, field or tabbable element, where Tab must keep its meaning
 	deliver     the round trip: each fact made into draw's INPUT EVENT, handed to the input layers, and in a `finally` the reply asked
@@ -41,30 +42,17 @@ released while the page lacks focus still makes no key-up, but the focus loss be
 which clears what Shift, Alt and Control left (B413, RELEASES-0.2.md section 4).
 */
 import { openCapture } from '@apnex/input-capture';
-import { hitWith } from './pick.js';
+import { hitWith, regionWith } from './pick.js';
 
 const FIELD = 'input, textarea, select, [contenteditable=""], [contenteditable="true"]';
 const CONTROL = 'button, a[href], select, input, textarea, [tabindex]';
 const askable = (t) => !!t && typeof t.closest === 'function';
 
-// the run-mode controls under a press, from the target -- null when the target cannot be asked. C-f: by the parts' selectors
-// (app/src/pick.js `regionsOf`) -- what they draw, and what a run press aims at
-function regionOf(target, { drawn = '', target: aim = '' } = {}) {
-	if (!askable(target)) return null;
-	const t = aim ? target.closest(aim) : null;
-	const c = target.closest('[data-action],[data-input]');
-	const owner = c && drawn && typeof c.closest === 'function' ? c.closest(drawn) : null;   // the drawn item a control sits in
-	const data = (c && c.dataset) || {};   // read defensively: an element without a dataset carries no control
-	return {
-		target: t ? t.id : null,
-		overTarget: !!t,   // an element answered, id or not -- run mode places nothing over one
-		action: data.action ? data.action : null,
-		input: c && !data.action && data.input !== undefined ? Number(data.idx) : null,
-		owner: owner ? owner.id : null,
-		control: !!c,
-		entity: drawn ? !!target.closest(drawn) : false,   // on something a part draws
-	};
-}
+/*
+H26.8's picks move (NATIVE-SHAPES.md sections 3.2 and 4.7): the run-mode controls under a press were read here from the target by the
+parts' selectors (`regionOf`), and what it landed on by picks walking up from it; both are app/src/pick.js's now, by the item the scene
+made the target for. The target reaches only `hit`, `focus` and the menu (GR8).
+*/
 
 // a key typed into a field: canvas shortcuts never apply there
 const typing = (target) => ['INPUT', 'TEXTAREA', 'SELECT'].includes(target && target.tagName);
@@ -88,20 +76,20 @@ function inputEventOf(event) {
 
 /*
 The canvas's capture, opened once a root's own listeners are in (app/src/compose-canvas.js `listen`). `sink` is the input layers' side
--- Input -- and receives only input events. C-b: `picks`, the canvas parts' (pick.js `picksOf`); C-f: `regions`, their run-mode
-selectors (pick.js `regionsOf`); H26.4: `scene`, the canvas's (app/src/renderer.js `openCanvasScene`), whose `toDrawing` converts each
-point. Answers a frozen `{ close }`, closing the component's capture and the menu's listener, which nothing in draw calls today; a
+-- Input -- and receives only input events. C-b: `picks`, the canvas parts' (pick.js `picksOf`); H26.4: `scene`, the canvas's
+(app/src/renderer.js `openCanvasScene`), whose `toDrawing` converts each point; H26.8's picks move: and `drawerOf`, the renderer's, which
+names the drawer of each item the scene made -- what a pick and a run region are read from (pick.js `hitWith`, `regionWith`). Answers a frozen `{ close }`, closing the component's capture and the menu's listener, which nothing in draw calls today; a
 declaration the component refuses throws here, before any listener is added.
 */
-export function captureCanvas({ svg, scene, host, sink, picks = [], regions = {} }) {
-	const hitOf = hitWith(picks);
+export function captureCanvas({ svg, scene, host, sink, picks = [], drawerOf = () => null }) {
+	const hitOf = hitWith(picks, { scene, drawerOf }), regionOf = regionWith({ scene, drawerOf });
 	const opened = openCapture({
 		surface: svg,
 		keys: host,
 		toDrawing: (screen) => scene.toDrawing(screen),   // H26.4 (VECTOR-SCENE.md section 5.1): the scene's; H26.8 hands it whole
 		hit: (target, event) => (event.type === 'leave' ? null : {
 			on: hitOf({ target, shiftKey: event.shiftKey, ctrlKey: event.ctrlKey, altKey: event.altKey, metaKey: event.metaKey }),
-			region: event.type === 'down' ? regionOf(target, regions) : null,
+			region: event.type === 'down' ? regionOf(target) : null,
 		}),
 		// the field test first, and the control test only on a key not typed into a field, as the old capture dropped the key first
 		focus: (target, event) => {

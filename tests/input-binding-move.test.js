@@ -47,7 +47,8 @@ const ANSWERS = {
 };
 const NOW = 'after';
 
-const corner = (x, y, m = {}) => pointer(x, y, { ...m, target: { tagName: 'rect', classList: { contains: (c) => c === 'handle' }, dataset: { corner: 'se' }, closest: () => null } });
+// RESTATED at H26.8's picks move: the selected zone's corner handle the overlay drew (`h.at`), picked by item -- `h` the test's harness
+const corner = (h, x, y, m = {}) => pointer(x, y, { ...m, target: h.at({ key: 'handles', where: { 'data-corner': 'se' } }) });
 const thrown = (fn) => { try { fn(); return null; } catch (e) { return e.message; } };
 
 test(`H26.2 (section 6.3; B410 kept): a pointer cancel over the empty handle gesture -- the ${NOW === 'before' ? 'old' : 'new'} answer, both stated`, () => {
@@ -58,9 +59,9 @@ test(`H26.2 (section 6.3; B410 kept): a pointer cancel over the empty handle ges
 		h.selection.set([z.id]);
 		let ends = 0;
 		h.input.onGestureEnd = () => { ends++; };
-		h.capture.onDown(corner(150, 150, { shiftKey: true }));   // the corner pressed with Shift held: the handle gesture, its zone selected
+		h.capture.onDown(corner(h, 150, 150, { shiftKey: true }));   // the corner pressed with Shift held: the handle gesture, its zone selected
 		h.capture.onKeyUp(key('Shift'));                            // Shift released, the pointer still down: the zone goes when the press ends
-		h.capture.onDown(corner(150, 150));                         // a second pointer on the still-drawn handle
+		h.capture.onDown(corner(h, 150, 150));                       // a second pointer on the still-drawn handle
 		assert.deepEqual(h.selection.list(), [], 'the cancel of the live handle gesture dropped the zone (H24.3), before the new start ran');
 		const got = { started: liveGesture(h) };
 		const torn = () => h.calls.filter((c) => c.name === 'readout.clearTransient').length;

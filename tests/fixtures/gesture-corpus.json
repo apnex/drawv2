@@ -4720,14 +4720,14 @@
 				"draw:action",
 				{
 					"action": "help",
-					"id": null
+					"id": "node#1"
 				}
 			]
 		],
 		"final": {
 			"nodes": [
 				{
-					"id": "node#1",
+					"id": "node#2",
 					"name": "host-1",
 					"order": 1,
 					"type": "host",
@@ -4736,13 +4736,39 @@
 					"y": 0
 				},
 				{
-					"id": "node#2",
+					"id": "node#3",
 					"name": "host-2",
 					"order": 2,
 					"type": "host",
 					"shape": "circle",
 					"x": 360,
 					"y": 0
+				},
+				{
+					"id": "node#1",
+					"name": "host-3",
+					"order": 3,
+					"type": "host",
+					"shape": "square",
+					"x": -360,
+					"y": 360,
+					"span": {
+						"cols": 2,
+						"rows": 1
+					},
+					"content": [
+						{
+							"at": [
+								0,
+								0
+							],
+							"cols": 1,
+							"rows": 1,
+							"content": "glyph",
+							"glyph": "router",
+							"action": "help"
+						}
+					]
 				}
 			],
 			"waypoints": [],

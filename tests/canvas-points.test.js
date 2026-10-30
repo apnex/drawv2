@@ -18,7 +18,8 @@ import { makeWaypoint } from '../plugins/devices/make-node.mjs';
 import { makeLink } from '../plugins/network/link-queries.mjs';
 
 const code = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
-const on = (word, id) => ({ tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: (s) => (s.includes(word) ? { id } : null) });
+// RESTATED at H26.8's picks move: a press lands on the element the harness's renderer drew (`h.at`), read by item, where a stand-in
+// answered the selectors carrying a word
 const board = (h) => {
 	const [d] = seedNodes(h.model, [[0, 0, 'host']]);
 	const w = makeWaypoint(h.model, { x: 240, y: 0 }); h.model.put('node', w);
@@ -42,7 +43,7 @@ test('C-e: a link drawn from a waypoint ends on the device it is released over -
 	try {
 		const { d } = board(h);
 		const w2 = makeWaypoint(h.model, { x: 240, y: 240 }); h.model.put('node', w2);
-		h.capture.onDown(pointer(240, 240, { target: on('waypoint', w2.id) }));
+		h.capture.onDown(pointer(240, 240, { target: h.at(w2.id) }));
 		h.capture.onMove(pointer(120, 120));
 		h.capture.onUp(pointer(4, 4));
 		assert.equal(linksBetween(h, w2.id, d.id), 1);
@@ -56,7 +57,7 @@ test('C-e: without the devices plugin\'s part a marquee takes no device and a li
 		marquee(h);
 		assert.deepEqual(h.selection.list(), [w.id], 'the waypoint alone');
 		const w2 = makeWaypoint(h.model, { x: 240, y: 240 }); h.model.put('node', w2);
-		h.capture.onDown(pointer(240, 240, { target: on('waypoint', w2.id) }));
+		h.capture.onDown(pointer(240, 240, { target: h.at(w2.id) }));
 		h.capture.onMove(pointer(120, 120));
 		h.capture.onUp(pointer(4, 4));
 		assert.equal(linksBetween(h, w2.id, d.id), 0);
@@ -79,7 +80,7 @@ test('C-e: a link\'s end handle lands on a device, not on a waypoint -- the word
 		const w = makeWaypoint(h.model, { x: 0, y: 0 }); h.model.put('node', w);
 		const l = makeLink(h.model, n2.id, n1.id); h.model.put('link', l);
 		h.selection.set([l.id]);
-		const end = { tagName: 'circle', classList: { contains: (c) => c === 'handle' }, dataset: { end: 'src' }, closest: () => null };
+		const end = h.at({ key: 'handles', where: { 'data-end': 'src' } });   // the link's src handle, drawn since it is selected
 		h.capture.onDown(pointer(360, 330, { target: end }));
 		h.capture.onMove(pointer(30, 0));
 		h.capture.onUp(pointer(0, 0));
@@ -99,7 +100,7 @@ test('C-e: a hovered wide device stays hovered when a gesture ends over its far 
 		const [d] = seedNodes(h.model, [[0, 0, 'host']]);
 		h.model.set('node', d.id, { span: { cols: 3, rows: 1 } });
 		const endAt = (x, y) => {
-			h.capture.onHover(pointer(0, 0, { target: on('node', d.id) }), true);
+			h.capture.onHover(pointer(0, 0, { target: h.at(d.id) }), true);
 			h.capture.onDown(pointer(-300, -300)); h.capture.onMove(pointer(x - 10, y - 10)); h.capture.onUp(pointer(x, y));
 			return h.input.overlayUi.hovered;
 		};

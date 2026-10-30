@@ -76,9 +76,10 @@ const DEVICE = {
 	state: (entity) => (hasDevice(entity) ? 'device' : null),
 	composes: false,
 	root: { layer: 'nodes', class: () => 'node' },
-	// C-b: a held tool's ghost is no device; D4: Ctrl+left clones it; C-f: idle under the pointer it shows the crosshair ring -- a
-	// left drag draws a link from it
-	picks: [{ closest: 'g.node:not(.ghost)', word: 'node', clones: true, idle: 'linkband' }],
+	// C-b: a held tool's ghost is no device -- an editing visual, no item of a device's (H26.8); D4: Ctrl+left clones it; C-f: idle under
+	// the pointer it shows the crosshair ring -- a left drag draws a link from it
+	picks: [{ word: 'node', clones: true, idle: 'linkband' }],
+	run: { entity: [''] },   // C-f: what it draws, a press on which run mode places nothing (H26.8's picks move: by item, where it was `drawn`)
 	// its footprint and content, when either is more than one plain cell, then its place
 	rootAttrs: (entity) => [['data-span', spanSig(entity)], ['data-content', contentSig(entity)], ['transform', `translate(${entity.x},${entity.y})`]].filter(([, v]) => v),
 	parts: {
@@ -119,4 +120,4 @@ const DEVICE = {
 // C-d: the text box's row; C-e: its hand, what a device covers, its size step under the canvas's Shift+arrow
 export const DEVICES_CANVAS = { owner: 'devices', stylesheets: ['plugins/devices/devices.css'], defs: GLYPH_DEFS, bare: { make: makeWaypoint, at: waypointAt, of: bareAnchor }, appearances: [DEVICE], presses: DEVICE_PRESSES, hand: DEVICE_HAND, at: DEVICE_POINTS, sizeStep: DEVICE_SIZE_STEP, sizes: DEVICE_SIZES, outlines: DEVICE_OUTLINES,
 	keys: DEVICE_KEYS, describe: DEVICE_DESCRIBE, selectAll: DEVICE_SELECT_ALL, labels: DEVICE_LABELS,
-	drawn: ['.node'], tally: { rank: 0, word: 'nodes', of: (model) => typedNodes(model).length } };   // C-f: what it draws; its count   // C-e: its key, `s`; how it reads, Ctrl+A; where its label edits
+	tally: { rank: 0, word: 'nodes', of: (model) => typedNodes(model).length } };   // C-f: its count   // C-e: its key, `s`; how it reads, Ctrl+A; where its label edits

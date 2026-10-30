@@ -24,7 +24,8 @@ import { makeInput, pointer, seedNodes } from './fixtures/client-harness.mjs';
 import { bindGestureDefer } from '../app/src/sync.js';
 import { liveGesture } from './fixtures/binding-parity.mjs';   // the live gesture by name, as Input hands its key rows the situation
 
-const overNode = (id, x, y, mod = {}) => pointer(x, y, { target: { tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: (s) => (s.includes('node') ? { id } : null) }, ...mod });
+// RESTATED at H26.8's picks move: the element the harness's renderer drew (`h.at`), picked by item, where a stand-in answered selectors
+const overNode = (h, id, x, y, mod = {}) => pointer(x, y, { target: h.at(id), ...mod });
 const links = (h) => h.commits.flatMap((c) => (c.ops ?? []).filter((o) => o.kind === 'link' && o.op === 'put').map((o) => [o.entity.src, o.entity.dst]));
 // every release Input took, with the trigger it wrote back -- 'unwritten' where it wrote none
 const triggersOf = (h) => {
@@ -37,12 +38,12 @@ test('B427: a link drag, the right button pressed and the left released, then th
 	const h = makeInput();
 	try {
 		const [a, b] = seedNodes(h.model, [[0, 0], [360, 0]]);
-		h.capture.onDown(overNode(a.id, 0, 0, { button: 0, buttons: 1 }));
-		h.capture.onMove(overNode(a.id, 120, 0, { button: -1, buttons: 1 }));
+		h.capture.onDown(overNode(h, a.id, 0, 0, { button: 0, buttons: 1 }));
+		h.capture.onMove(overNode(h, a.id, 120, 0, { button: -1, buttons: 1 }));
 		assert.equal(h.input.isGesturing(), true, 'precondition: the left press opened the link drag');
-		h.capture.onMove(overNode(b.id, 360, 0, { button: 2, buttons: 3 }));   // the right button pressed: a move, as the platform delivers a chord
-		h.capture.onMove(overNode(b.id, 360, 0, { button: 0, buttons: 2 }));   // the left released: a move too
-		h.capture.onUp(overNode(b.id, 360, 0, { button: 2, buttons: 0 }));     // the right released: the release that ends the press names 2
+		h.capture.onMove(overNode(h, b.id, 360, 0, { button: 2, buttons: 3 }));   // the right button pressed: a move, as the platform delivers a chord
+		h.capture.onMove(overNode(h, b.id, 360, 0, { button: 0, buttons: 2 }));   // the left released: a move too
+		h.capture.onUp(overNode(h, b.id, 360, 0, { button: 2, buttons: 0 }));     // the right released: the release that ends the press names 2
 		assert.equal(h.input.isGesturing(), false, 'the link drag ended');
 		assert.deepEqual(links(h), [[a.id, b.id]], 'and committed, a to b, where the pointer lifted');
 	} finally { h.restore(); }
@@ -52,11 +53,11 @@ test('B427 control: the right button pressed and released as moves, then the lef
 	const h = makeInput();
 	try {
 		const [a, b] = seedNodes(h.model, [[0, 0], [360, 0]]);
-		h.capture.onDown(overNode(a.id, 0, 0, { button: 0, buttons: 1 }));
-		h.capture.onMove(overNode(a.id, 120, 0, { button: -1, buttons: 1 }));
-		h.capture.onMove(overNode(b.id, 360, 0, { button: 2, buttons: 3 }));
-		h.capture.onMove(overNode(b.id, 360, 0, { button: 2, buttons: 1 }));
-		h.capture.onUp(overNode(b.id, 360, 0, { button: 0, buttons: 0 }));
+		h.capture.onDown(overNode(h, a.id, 0, 0, { button: 0, buttons: 1 }));
+		h.capture.onMove(overNode(h, a.id, 120, 0, { button: -1, buttons: 1 }));
+		h.capture.onMove(overNode(h, b.id, 360, 0, { button: 2, buttons: 3 }));
+		h.capture.onMove(overNode(h, b.id, 360, 0, { button: 2, buttons: 1 }));
+		h.capture.onUp(overNode(h, b.id, 360, 0, { button: 0, buttons: 0 }));
 		assert.deepEqual([h.input.isGesturing(), links(h)], [false, [[a.id, b.id]]]);
 	} finally { h.restore(); }
 });
@@ -68,8 +69,8 @@ function touchLink() {
 	const released = [];
 	bindGestureDefer(h.input, { deferInbound: null, releaseDeferred: () => released.push(links(h).length) });
 	const seen = triggersOf(h);
-	const touch = (id, x, y, m = {}) => overNode(id, x, y, { pointerId: 2, pointerType: 'touch', ...m });
-	const mouse = (id, x, y, m = {}) => overNode(id, x, y, { pointerId: 1, pointerType: 'mouse', ...m });
+	const touch = (id, x, y, m = {}) => overNode(h, id, x, y, { pointerId: 2, pointerType: 'touch', ...m });
+	const mouse = (id, x, y, m = {}) => overNode(h, id, x, y, { pointerId: 1, pointerType: 'mouse', ...m });
 	h.capture.onDown(touch(a.id, 0, 0));
 	h.capture.onMove(touch(a.id, 120, 120));
 	assert.equal(h.input.isGesturing(), true, 'precondition: the touch opened the link drag');
@@ -120,15 +121,15 @@ test('RD18: another pointer\'s move during a pending right press on a device -- 
 	const h = makeInput();
 	try {
 		const [a] = seedNodes(h.model, [[0, 0], [360, 0]]);
-		h.capture.onDown(overNode(a.id, 0, 0, { button: 2, buttons: 2 }));
+		h.capture.onDown(overNode(h, a.id, 0, 0, { button: 2, buttons: 2 }));
 		assert.deepEqual([liveGesture(h), h.input.isGesturing()], ['pending', false], 'precondition: a pending press, not yet a gesture in progress');
 		const at = h.input.state.pointer.at;
 		h.reset();
 		h.capture.onMove(pointer(300, 300, { pointerId: 2, pointerType: 'touch' }));
 		assert.equal(h.input.state.pointer.at, at, 'another pointer\'s move is not tracked');
 		assert.deepEqual(h.calls.map((x) => x.name), [], 'and draws nothing -- no hand, no readout, no hover');
-		h.capture.onMove(overNode(a.id, 120, 0, { button: -1, buttons: 2 }));
-		h.capture.onUp(overNode(a.id, 120, 0, { button: 2, buttons: 0 }));
+		h.capture.onMove(overNode(h, a.id, 120, 0, { button: -1, buttons: 2 }));
+		h.capture.onUp(overNode(h, a.id, 120, 0, { button: 2, buttons: 0 }));
 		assert.equal(h.model.get('node', a.id).x, 120, 'the press\'s own pointer made it the move, and its release committed it');
 	} finally { h.restore(); }
 });
@@ -136,7 +137,7 @@ test('RD18: another pointer\'s move during a pending right press on a device -- 
 test('RD18: another pointer\'s move during a run-mode press -- not tracked, nothing drawn', () => {
 	const h = makeInput();
 	try {
-		h.renderer.mode = 'run';
+		h.renderer.setMode('run');
 		h.capture.onDown(pointer(300, 300));
 		const at = h.input.state.pointer.at;
 		h.reset();
@@ -151,13 +152,13 @@ test('RD18: another pointer\'s release during a pending right press -- nothing w
 	try {
 		const [a] = seedNodes(h.model, [[0, 0], [360, 0]]);
 		const seen = triggersOf(h);
-		h.capture.onDown(overNode(a.id, 0, 0, { button: 2, buttons: 2 }));
+		h.capture.onDown(overNode(h, a.id, 0, 0, { button: 2, buttons: 2 }));
 		h.reset();
 		h.capture.onUp(pointer(300, 300, { button: 0, buttons: 0, pointerId: 2, pointerType: 'touch' }));
 		assert.deepEqual(h.calls.map((x) => x.name), [], 'another pointer\'s release runs nothing');
 		assert.equal(liveGesture(h), 'pending', 'the press is still pending');
-		h.capture.onMove(overNode(a.id, 120, 0, { button: -1, buttons: 2 }));
-		h.capture.onUp(overNode(a.id, 120, 0, { button: 2, buttons: 0 }));
+		h.capture.onMove(overNode(h, a.id, 120, 0, { button: -1, buttons: 2 }));
+		h.capture.onUp(overNode(h, a.id, 120, 0, { button: 2, buttons: 0 }));
 		assert.equal(h.model.get('node', a.id).x, 120, 'its own pointer made it the move, and its release committed it');
 		assert.deepEqual(seen, [[2, 'unwritten'], [1, 'drop']], 'the other pointer\'s release wrote nothing back; the press\'s own was a drop by its travel');
 	} finally { h.restore(); }

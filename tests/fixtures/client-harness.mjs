@@ -37,13 +37,13 @@ import { Tools } from '../../app/src/tools.js';
 import { Selection } from '../../app/src/selection.js';
 import { EditingStates } from '../../app/src/editing-states.js';   // H26.8: the editing states, Input's and its overlay's (a:F12)
 import { crosshair } from '../../app/src/editing-visuals.js';   // H26.4: the editing part's, an item of the scene
-import { openCanvasScene } from '../../app/src/renderer.js';
+import { Renderer, openCanvasScene } from '../../app/src/renderer.js';
 import { CANVAS_SCENE } from '../../product/canvas.mjs';
 import { CANVAS, GAP } from '../../app/src/snap.js';
 import { Input } from '../../app/src/input.js';
 import { RUN_PRESSES } from '../../app/src/run-mode.js';
 import { captureCanvas } from '../../app/src/capture.js';
-import { picksOf, regionsOf } from '../../app/src/pick.js';
+import { picksOf } from '../../app/src/pick.js';
 import { PRODUCT_CANVAS } from '../../product/canvas.mjs';
 import { networkInput } from '../../plugins/network/keys.mjs';
 import { createNetworkSession } from '../../plugins/network/session.mjs';
@@ -225,8 +225,6 @@ export function makeInput({ readOnly = false, bare = false, host: hostOverride =
 
 	const calls = [];
 	const rec = (name) => (...args) => { calls.push({ name, args }); };
-	const renderer = { mode: 'view', setMode: rec('renderer.setMode'),
-		toggleLabels: rec('renderer.toggleLabels') };   // Tab calls it; a stub must be total (the gesture corpus found the gap)
 	/*
 	H26.8 (dev/design/components/NATIVE-SHAPES.md section 3.2, appendix A, a:F12) -- THE EDITING STATES, real, their calls recorded by
 	forwarding spies: Input and its overlay hold the hover, the arming, the idle ring and a link end's drag state in
@@ -281,6 +279,18 @@ export function makeInput({ readOnly = false, bare = false, host: hostOverride =
 
 	// H26.4 (VECTOR-SCENE.md section 5.1): the canvas's scene, opened over the fake root as the page opens it, and its layers found
 	const { svg, scene } = sceneOver(fakeEl('svg', 'canvas'));
+	/*
+	H26.8's picks move (dev/design/components/NATIVE-SHAPES.md section 4.7, "The harness draws"; appendix A) -- THE REAL RENDERER, over the
+	model and the scene with the product's parts and the editing states, as the page composes it (app/src/compose-canvas.js): what a test
+	seeds is drawn, so a press lands on an element the scene made (`targetOf`), picked and read by item as the page picks it, and run mode
+	is drawn by `setMode`. Its mode and labels calls are recorded by forwarding spies, `renderer.setMode` and `renderer.toggleLabels`, as
+	the stub recorded them, and reach the renderer.
+	*/
+	const renderer = new Renderer(model, svg, { parts, scene, states });
+	for (const name of ['setMode', 'toggleLabels']) {
+		const real = renderer[name].bind(renderer);
+		renderer[name] = (...args) => { calls.push({ name: `renderer.${name}`, args }); return real(...args); };
+	}
 
 	/*
 	B45 — the host surface and the help element are INJECTED, not reached for. Input used to take
@@ -324,14 +334,17 @@ export function makeInput({ readOnly = false, bare = false, host: hostOverride =
 				parts });   // C-c: the placed kinds, as the page composes them
 	} catch (e) { restore(); throw e; }   // a refused composition must not leave the stub DOM installed
 	if (readOnly) input.setReadOnly(true);
-	// L0: tests drive the page's events through capture, as a browser does -- Input itself takes only input events
-	const opened = { svg, scene, host, sink: input, picks: picksOf(parts), regions: regionsOf(parts) };   // C-b: the plugins' picks; C-f: run mode's regions, as the page composes them
+	// L0: tests drive the page's events through capture, as a browser does -- Input itself takes only input events. C-b: the plugins'
+	// picks; H26.8's picks move: read by item, each item's drawer the renderer's, run mode's regions from the same, as the page composes them
+	const opened = { svg, scene, host, sink: input, picks: picksOf(parts), drawerOf: (id) => renderer.drawerOf(id) };
 	// H26.3 (INPUT-CAPTURE.md section 5): through the listeners input-capture and the adapter add, as the page's events arrive. RESTATED at
 	// H26.5 (RELEASES-0.2.md section 4): the parity hook, which drove the old capture beside it when DRAW_CAPTURE_PARITY was set, is retired
 	const capture = captureDispatch(opened);
 
-	return {
+	const handle = {
 		input, capture, model, history, selection, svg, scene, commits, calls, restore, renderer, states, labels, tools, help, snap,
+		// H26.8's picks move: the element the scene drew for an item, to press on (`targetOf`)
+		at: (on) => targetOf(handle, on),
 		// events Input handed to the host (W5 `draw:action`) — an outbound boundary, so a fair assertion
 		dispatched,
 		// the transient-feedback layers, so a test can ask "what is drawn right now" without
@@ -349,6 +362,7 @@ export function makeInput({ readOnly = false, bare = false, host: hostOverride =
 		opsOf(i = 0) { return commits[i]?.ops ?? []; },
 		reset() { commits.length = 0; calls.length = 0; dispatched.length = 0; },
 	};
+	return handle;
 }
 
 /*
@@ -361,7 +375,7 @@ RESTATED at H26.5 (dev/design/components/RELEASES-0.2.md section 4): and the hos
 tenth method, `onBlur`, which calls nothing when no blur listener was added -- a focus loss the platform fires though nothing hears it.
 */
 export function dispatchFor(open) {
-	return ({ svg, scene, host, sink, picks = [], regions = {} }) => {   // H26.4: and the canvas's scene, whose toDrawing converts
+	return ({ svg, scene, host, sink, picks = [], drawerOf = () => null }) => {   // H26.4: and the canvas's scene, whose toDrawing converts; H26.8: the drawers
 		const listeners = new Map();
 		let opening = false;
 		for (const [fake, tag] of [[svg, 'svg'], [host, 'host']]) {
@@ -373,7 +387,7 @@ export function dispatchFor(open) {
 			};
 		}
 		opening = true;
-		try { open({ svg, scene, host, sink, picks, regions }); } finally { opening = false; }
+		try { open({ svg, scene, host, sink, picks, drawerOf }); } finally { opening = false; }
 		const call = (key) => (evt) => listeners.get(key)(evt);
 		return {
 			onDown: call('svg:pointerdown'), onMove: call('svg:pointermove'), onUp: call('svg:pointerup'), onCancel: call('svg:pointercancel'),
@@ -395,12 +409,43 @@ export const key = (k, mod = {}) => ({
 	target: { tagName: 'BODY' }, preventDefault() {}, stopPropagation() {}, ...mod,
 });
 
+// H26.8's picks move: a pointer's target is open ground unless a test hands the element the scene drew (`targetOf`) -- the root, which the
+// scene did not make, so picked as the canvas and read as no region; no stub answers a selector
+export const GROUND = Object.freeze({ tagName: 'svg' });
 export const pointer = (x, y, mod = {}) => ({
 	clientX: x, clientY: y, button: 0, buttons: 1,
 	shiftKey: false, ctrlKey: false, altKey: false, metaKey: false,
-	target: { tagName: 'svg', closest: () => null }, pointerId: 1,
+	target: GROUND, pointerId: 1,
 	preventDefault() {}, stopPropagation() {}, ...mod,
 });
+
+/*
+H26.8's picks move (dev/design/components/NATIVE-SHAPES.md section 4.7; appendix A) -- THE ELEMENT THE SCENE MADE for an item and a path,
+what a test presses on: `on` is an item's key -- `<id>`, `<id>/<part>`, an editing visual's -- or `{ key, path?, where?, layer? }`, `path`
+the shape's indices from the item's own shapes down (`[0]` its own shape, the default), `where` the attributes the shape must hold, the
+first such in the item, depth first. Found among the elements under the scene's layers by `scene.itemOf`, as the page's picks find what a
+press landed on; it throws when the scene drew none -- a test pressing on what is not drawn is restated to its intent, never answered by
+a stub.
+*/
+export function targetOf(h, on) {
+	const { key, path = null, where = null, layer = null } = typeof on === 'string' ? { key: on } : on;
+	const want = path ?? (where ? null : [0]);
+	const found = [];
+	for (const l of h.scene.layers) {
+		if (l.foreign || (layer && l.name !== layer)) continue;
+		const walk = (el) => {
+			for (const c of el.children ?? []) {
+				const at = h.scene.itemOf(c);
+				if (at && at.key === key && (!want || JSON.stringify(at.path) === JSON.stringify(want))
+					&& (!where || Object.entries(where).every(([k, v]) => (v === true ? c.attrs?.[k] !== undefined : c.attrs?.[k] === String(v))))) found.push(c);
+				walk(c);
+			}
+		};
+		walk(h.svg.byId[`#${l.name}`]);
+	}
+	if (!found.length) throw new Error(`targetOf: the scene drew no element for ${JSON.stringify(on)} -- press on what is drawn`);
+	return found[0];
+}
 
 // ---- document builders (the model is real; these just seed it) ----
 

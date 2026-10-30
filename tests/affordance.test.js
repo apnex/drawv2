@@ -27,18 +27,19 @@ import { makeZone } from '../plugins/zones/make-zone.mjs';   // O-b1: the zones 
 import assert from 'node:assert/strict';
 import { makeInput, key, pointer, seedNodes } from './fixtures/client-harness.mjs';
 
-// a pointer event whose target resolves to an entity, as the real DOM would
-const over = (id, x, y, mod = {}) => pointer(x, y, { target: { tagName: 'g', closest: (sel) => (sel === '[id]' || sel === '.node' ? { id } : { id }) }, ...mod });
+// a pointer event whose target is an entity's element -- RESTATED at H26.8's picks move: the element the harness's renderer drew for it
+// (`targetOf`), picked by item, where a stand-in answered every selector with the id
+const over = (h, id, x, y, mod = {}) => pointer(x, y, { target: h.at(id), ...mod });
 
 test('hovering an entity tells the renderer, and leaving clears it', () => {
 	const h = makeInput();
 	try {
 		const [a] = seedNodes(h.model, [[0, 0]]);
-		h.capture.onHover(over(a.id, 0, 0), true);
+		h.capture.onHover(over(h, a.id, 0, 0), true);
 		assert.ok(h.stateCalls('states.setState').some(([id, cls]) => id === a.id && cls === 'hover'),
 			'the hovered entity is marked, so the crosshair ring appears');
 
-		h.capture.onHover(over(a.id, 0, 0), false);
+		h.capture.onHover(over(h, a.id, 0, 0), false);
 		assert.ok(h.stateCalls('states.setState').some(([id, cls, on]) => id === a.id && cls === 'hover' && on === false),
 			'and unmarked on leave — the renderer is told, whichever unit is doing the telling');
 	} finally { h.restore(); }
@@ -48,11 +49,11 @@ test('Alt arms the hovered entity red; Ctrl arms it clone-blue', () => {
 	const h = makeInput();
 	try {
 		const [a] = seedNodes(h.model, [[0, 0]]);
-		h.capture.onHover(over(a.id, 0, 0, { altKey: true }), true);
+		h.capture.onHover(over(h, a.id, 0, 0, { altKey: true }), true);
 		assert.ok(h.stateCalls('states.setState').some(([id, cls]) => id === a.id && cls === 'armed'),
 			'Alt is the delete chord — threat may shout (DESIGN U2)');
 
-		h.capture.onHover(over(a.id, 0, 0, { ctrlKey: true }), true);
+		h.capture.onHover(over(h, a.id, 0, 0, { ctrlKey: true }), true);
 		assert.ok(h.stateCalls('states.setState').some(([id, cls]) => id === a.id && cls === 'armed-clone'),
 			'Ctrl is the clone chord');
 	} finally { h.restore(); }
@@ -62,7 +63,7 @@ test('arming is suppressed while Server-Locked — a locked client must not prom
 	const h = makeInput({ readOnly: true });
 	try {
 		const [a] = seedNodes(h.model, [[0, 0]]);
-		h.capture.onHover(over(a.id, 0, 0, { altKey: true }), true);
+		h.capture.onHover(over(h, a.id, 0, 0, { altKey: true }), true);
 		assert.equal(h.stateCalls('states.setState').some(([, cls]) => cls === 'armed'), false,
 			'arming red says "this click deletes" — while locked it does not');
 	} finally { h.restore(); }

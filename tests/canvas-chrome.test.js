@@ -21,17 +21,16 @@ import { makeWaypoint } from '../plugins/devices/make-node.mjs';
 import { makeLink } from '../plugins/network/link-queries.mjs';
 
 const code = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
-// a target answering a selector list as a page would: any of its classes in the list
-const target = (classes, id = null) => ({ tagName: 'g', id, dataset: {}, classList: { contains: (c) => classes.includes(c) },
-	closest: (sel) => (sel.split(',').map((s) => s.trim().replace(/^\./, '')).some((s) => classes.includes(s)) ? { id } : null) });
+// RESTATED at H26.8's picks move: each press lands on the element the harness's renderer drew (`h.at`), read by item, where a stand-in
+// answered a selector list by its classes; and run mode is drawn (`setMode`)
 
 test('C-f: in run mode a press on a zone places no tower; on open ground it does -- the state under test', () => {
 	const h = makeInput();
 	try {
 		const z = makeZone(h.model, { x: 150, y: 150, w: 240, h: 180 }); h.model.put('zone', z);
-		h.renderer.mode = 'run';
+		h.renderer.setMode('run');
 		const towers = () => h.model.all('node').filter((n) => n.type === 'loadbalancer').length;
-		h.capture.onDown(pointer(240, 240, { target: target(['zone'], z.id) })); h.capture.onUp(pointer(240, 240));
+		h.capture.onDown(pointer(240, 240, { target: h.at({ key: z.id, where: { class: 'zone-rect' } }) })); h.capture.onUp(pointer(240, 240));
 		assert.equal(towers(), 0, 'on a zone: nothing');
 		h.capture.onDown(pointer(-240, -240)); h.capture.onUp(pointer(-240, -240));
 		assert.equal(towers(), 1, 'on open ground: a tower');
@@ -41,8 +40,11 @@ test('C-f: in run mode a press on a zone places no tower; on open ground it does
 test('C-f: without the zones plugin, a press on what it would have drawn is open ground', () => {
 	const h = makeInput({ parts: PRODUCT_CANVAS.filter((p) => p.owner !== 'zones') });
 	try {
-		h.renderer.mode = 'run';
-		h.capture.onDown(pointer(240, 240, { target: target(['zone'], 'zone-0c0f01') })); h.capture.onUp(pointer(240, 240));
+		// the zone in the document, drawn by no part: a press where it would be lands on open ground (H26.8's picks move restated it so)
+		h.model.put('zone', { id: 'zone-0c0f01', name: 'z', x: 150, y: 150, w: 240, h: 180 });
+		assert.throws(() => h.at('zone-0c0f01'), /drew no element/, 'precondition: no part draws it');
+		h.renderer.setMode('run');
+		h.capture.onDown(pointer(240, 240)); h.capture.onUp(pointer(240, 240));
 		assert.equal(h.model.all('node').filter((n) => n.type === 'loadbalancer').length, 1);
 	} finally { h.restore(); }
 });
@@ -66,11 +68,11 @@ test('C-f: idle over a device it shows the crosshair ring, which Ctrl drops; ove
 		const [d] = seedNodes(h.model, [[0, 0]]);
 		const w = makeWaypoint(h.model, { x: 240, y: 0 }); h.model.put('node', w);
 		const ring = (id) => h.stateCalls('states.setState').filter(([x, cls]) => x === id && cls === 'linkband').map(([, , on]) => on);
-		const over = (word, id, mod = {}) => pointer(0, 0, { buttons: 0, target: { tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: (s) => (s.includes(word) ? { id } : null) }, ...mod });
-		h.capture.onMove(over('node', d.id));
-		h.capture.onMove(over('node', d.id, { ctrlKey: true }));
+		const over = (id, mod = {}) => pointer(0, 0, { buttons: 0, target: h.at(id), ...mod });
+		h.capture.onMove(over(d.id));
+		h.capture.onMove(over(d.id, { ctrlKey: true }));
 		assert.deepEqual(ring(d.id), [true, false]);
-		h.capture.onMove(over('waypoint', w.id));
+		h.capture.onMove(over(w.id));
 		assert.deepEqual(ring(w.id), []);
 	} finally { h.restore(); }
 });

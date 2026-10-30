@@ -20,7 +20,8 @@ const code = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), '
 // a 3x1 wide device of a type, its anchor at (0, y): its covered cells (60, y) and (120, y)
 const wide = (model, type, y) => { const n = { ...makeNode(model, type, { x: 0, y }), span: { cols: 3, rows: 1 } }; model.put('node', n); return n; };
 const at = (h, x, y) => h.model.all('node').filter((n) => n.x === x && n.y === y);
-const onDevice = (id, x, y, mod = {}) => pointer(x, y, { target: { tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: (s) => (s.includes('node') ? { id } : null) }, ...mod });
+// RESTATED at H26.8's picks move: the element the harness's renderer drew (`h.at`), picked by item, where a stand-in answered selectors
+const onDevice = (h, id, x, y, mod = {}) => pointer(x, y, { target: h.at(id), ...mod });
 const ghost = (h) => h.stateCalls('readout.setCursor').at(-1)?.[2];
 
 for (const type of ['host', 'text']) {
@@ -54,7 +55,7 @@ for (const type of ['host', 'text']) {
 				h.input.stampAt({ x, y }, 'router');                 // what a palette drop calls
 				const afterDrop = h.model.all('node').length;
 				h.tools.setHand(null);
-				h.capture.onDown(onDevice(src.id, -240, 240));       // a link drag from a device, then a digit
+				h.capture.onDown(onDevice(h, src.id, -240, 240));       // a link drag from a device, then a digit
 				h.capture.onMove(pointer(x, y));
 				h.capture.onKeyDown(key('1'));
 				h.input.cancelDrag();
@@ -78,7 +79,7 @@ test('WD-a: Enter, a drop and a digit each place on a covered cell from just out
 			h.capture.onMove(pointer(60, 26, { buttons: 0 }));
 			if (how === 'enter') { h.tools.setHand('server'); h.capture.onMove(pointer(60, 26, { buttons: 0 })); h.capture.onKeyDown(key('Enter')); }
 			if (how === 'drop') h.input.stampAt({ x: 60, y: 26 }, 'router');
-			if (how === 'digit') { h.capture.onDown(onDevice(src.id, -240, 240)); h.capture.onMove(pointer(60, 26)); h.capture.onKeyDown(key('1')); h.input.cancelDrag(); }
+			if (how === 'digit') { h.capture.onDown(onDevice(h, src.id, -240, 240)); h.capture.onMove(pointer(60, 26)); h.capture.onKeyDown(key('1')); h.input.cancelDrag(); }
 			assert.equal(at(h, 60, 0).filter((n) => n.type).length, 1, `${how}: a device on the covered cell`);
 		} finally { h.restore(); }
 	}
@@ -90,7 +91,7 @@ test('WD-a: a click with a type held on a covered cell lands on the device -- a 
 		try {
 			const d = wide(h.model, type, 0);
 			h.tools.setHand(held);
-			h.capture.onDown(onDevice(d.id, 60, 0)); h.capture.onUp(onDevice(d.id, 60, 0));
+			h.capture.onDown(onDevice(h, d.id, 60, 0)); h.capture.onUp(onDevice(h, d.id, 60, 0));
 			assert.equal(h.model.all('node').length, 1, `${type} with ${held}: nothing new placed`);
 			assert.equal(h.model.get('node', d.id).type, want === 'retype' ? held : type, `${type} with ${held}: ${want}`);
 		} finally { h.restore(); }

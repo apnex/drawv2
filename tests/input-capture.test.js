@@ -10,18 +10,18 @@ through the harness's captureDispatch, calling the listeners the component and t
 removeEventListener the component requires; the reading of each field is the component's own tests', and these hold draw's side.
 */
 // RESTATED at C-b (H19.30): what a press lands on is answered by the plugins' picks, which the page hands Capture
-import { picksOf, regionsOf } from '../app/src/pick.js';
+import { picksOf } from '../app/src/pick.js';
 import { PRODUCT_CANVAS } from '../product/canvas.mjs';
 const PICKS = picksOf(PRODUCT_CANVAS);
-const REGIONS = regionsOf(PRODUCT_CANVAS);   // C-f: run mode's regions, the parts'
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { makeInput, pointer, key, seedNodes, installDom, captureDispatch as dispatchWith } from './fixtures/client-harness.mjs';
+import { makeInput, pointer, key, seedNodes, captureDispatch as dispatchWith } from './fixtures/client-harness.mjs';
 import { sceneOver } from './fixtures/capture-parity.mjs';
 // RESTATED at H26.4 (dev/design/components/VECTOR-SCENE.md section 5.1): the adapter converts by the canvas's scene, so each surface is
 // handed a scene over itself, which calls the surface's own getScreenCTM as toCanvas did
-const captureDispatch = (args) => dispatchWith({ ...args, scene: sceneOver(args.svg) });
+// H26.8's picks move: or the scene a test's renderer drew into, with its drawers, so a press is picked and read by item
+const captureDispatch = (args) => dispatchWith({ scene: sceneOver(args.svg), ...args });
 
 // a sink that records what it is handed, and optionally claims or captures. RESTATED at H26.5 (dev/design/components/RELEASES-0.2.md
 // section 4): and `blur`, the host's focus loss, which draw lists (B413)
@@ -34,9 +34,10 @@ function probe({ claim = false, capture = false } = {}) {
 const quietSvg = () => { const s = { calls: [], addEventListener() {}, removeEventListener() {}, setPointerCapture: (id) => s.calls.push(id), getScreenCTM: () => ({ inverse: () => ({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }) }) }; return s; };
 const quietHost = () => ({ addEventListener() {}, removeEventListener() {} });
 // the input event a sink is handed for one DOM event -- seen as the input layers see it, through capture
-function seen(svg, method, evt) {
+function seen(svg, method, evt, drawn = {}) {
 	const { got, sink } = probe();
-	captureDispatch({ svg, host: quietHost(), sink, picks: PICKS, regions: REGIONS })[method](evt);   // RESTATED at C-f: and the parts' run-mode regions
+	// RESTATED at C-f: and the parts' run-mode regions; at H26.8's picks move read by item, from the drawn scene and its drawers
+	captureDispatch({ svg, host: quietHost(), sink, picks: PICKS, ...drawn })[method](evt);
 	return got[0][1];
 }
 
@@ -44,8 +45,8 @@ test('an input event is plain data: it survives JSON unchanged, and carries the 
 	const h = makeInput();
 	try {
 		const [n] = seedNodes(h.model, [[0, 0]]);
-		const target = { tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: (s) => (s.includes('node') ? { id: n.id } : null) };
-		const e = seen(h.svg, 'onDown', pointer(60, 30, { target, shiftKey: true, button: 2 }));
+		// RESTATED at H26.8's picks move: on the device's element the renderer drew, picked by item
+		const e = seen(h.svg, 'onDown', pointer(60, 30, { target: h.at(n.id), shiftKey: true, button: 2 }), { scene: h.scene, drawerOf: (id) => h.renderer.drawerOf(id) });
 		assert.deepEqual(JSON.parse(JSON.stringify(e)), e, 'no functions, no elements, no event');
 		assert.equal(e.shiftKey, true);
 		assert.equal(e.button, 2);
@@ -69,9 +70,12 @@ test('H26.5 (RD18): every pointer\'s input event carries its pointerId for input
 	assert.equal('pointerId' in seen(quietSvg(), 'onKeyDown', key('c')), false, 'a key\'s input event has no pointerId, as it has no at');
 });
 
-test('a target that cannot be asked gives no region -- run mode places nothing then, as before', () => {
-	const e = seen(quietSvg(), 'onDown', { clientX: 0, clientY: 0, target: {}, preventDefault() {} });
-	assert.equal(e.region, null);
+// RESTATED at H26.8's picks move: a target is asked by item -- an object the scene did not make is open ground, every field empty -- and
+// none at all gives no region; a page's pointer event always has an element for its target, as it always had one to ask
+test('no target to ask gives no region -- run mode places nothing then, as before; one the scene did not make is open ground', () => {
+	assert.equal(seen(quietSvg(), 'onDown', { clientX: 0, clientY: 0, target: null, preventDefault() {} }).region, null);
+	assert.deepEqual(seen(quietSvg(), 'onDown', { clientX: 0, clientY: 0, target: {}, preventDefault() {} }).region,
+		{ target: null, overTarget: false, action: null, input: null, owner: null, control: false, entity: false });
 });
 
 test('what the input layers ask for is done on the real event: a claim is preventDefault, a capture takes the pointer', () => {
@@ -135,15 +139,13 @@ test('G1: app/src/input.js reads no DOM event and touches no DOM API -- that is 
 	assert.deepEqual(found, [], `DOM reads left in the input layers: ${found.join(', ')}`);
 });
 
+// RESTATED at H26.8's picks move: on the click twin the renderer drew for a link, its `hit` item
 test('B268: a press on a link\'s hit twin is a press on the link', () => {
-	const restore = installDom();
+	const h = makeInput();
 	try {
-	const svg = { addEventListener() {}, removeEventListener() {}, setPointerCapture() {}, getScreenCTM: () => ({ inverse: () => ({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }) }) };
-	const got = [];
-	const sink = new Proxy({}, { get: () => (e) => got.push(e) });
-	const c = captureDispatch({ svg, host: { addEventListener() {}, removeEventListener() {} }, sink, picks: PICKS });
-	const twin = { tagName: 'path', id: '', dataset: { link: 'link-000001' }, classList: { contains: (k) => k === 'link-hit' }, closest: () => null };
-	c.onDown({ clientX: 0, clientY: 0, button: 0, target: twin, preventDefault() {} });
-	assert.deepEqual(got[0].on, { kind: 'link', id: 'link-000001' });
-	} finally { restore(); }
+		const [a, b] = seedNodes(h.model, [[0, 0], [360, 0]]);
+		h.model.put('link', { id: 'link-000001', name: 'l', src: a.id, dst: b.id });
+		const e = seen(h.svg, 'onDown', pointer(180, 0, { target: h.at('link-000001/hit') }), { scene: h.scene, drawerOf: (id) => h.renderer.drawerOf(id) });
+		assert.deepEqual(e.on, { kind: 'link', id: 'link-000001' });
+	} finally { h.restore(); }
 });

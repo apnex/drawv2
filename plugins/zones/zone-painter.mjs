@@ -30,7 +30,8 @@ const ZONE_PAINTER = {
 	// C-b: an inert backdrop, picked only with Shift held -- a plain press passes through it to the canvas (DESIGN U1)
 	// H24.5: and pressed with the right button only -- Shift+right selects, moves and (with Ctrl) clones it, so Shift+left is
 	// free to draw a new zone over it (zone-gestures.mjs `ZONE_DRAW`)
-	picks: [{ closest: 'g.zone', word: 'zone', modifier: 'shiftKey', button: 'right', clones: true }],
+	picks: [{ word: 'zone', modifier: 'shiftKey', button: 'right', clones: true }],
+	run: { entity: [''] },   // C-f: what it draws, a press on which run mode places nothing (H26.8's picks move: by item, where it was `drawn`)
 	// the zone's rect and its label, the core's (H25.1), each attribute where its fresh draw wrote it; the spec owns the label's offset
 	shapes(entity, { pillWidth }) {
 		return [['', { tag: 'g', attrs: { id: entity.id, class: 'zone' }, children: [
@@ -50,4 +51,4 @@ const ZONE_PLACE = { kind: 'zone', layout: 'zone', ext: ZONE_EXT, grid: ZONE_GRI
 // C-e: and its keys -- `z` -- and its size step under the canvas's Shift+arrow
 export const ZONES_CANVAS = { owner: 'zones', stylesheets: ['plugins/zones/zones.css'], painters: [ZONE_PAINTER], places: [ZONE_PLACE], presses: ZONE_PRESSES, handles: ZONE_HANDLE_SPECS,
 	keys: ZONE_KEYS, sizeStep: ZONE_SIZE_STEP, deleteRanks: { zone: 1 }, describe: ZONE_DESCRIBE, selectAll: ZONE_SELECT_ALL, labels: ZONE_LABELS,
-	drawn: ['.zone'], helpWords: { zone: 'a zone' }, tally: { rank: 2, word: 'zones', of: (model) => model.all('zone').length } };   // C-f: what it draws, for run mode; its count   // a zone is deleted after a group, before a link
+	helpWords: { zone: 'a zone' }, tally: { rank: 2, word: 'zones', of: (model) => model.all('zone').length } };   // C-f: what it draws, for run mode; its count   // a zone is deleted after a group, before a link

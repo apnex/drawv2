@@ -64,9 +64,12 @@ test('C-e: the devices plugin reads a region\'s value and alignment, and none fo
 test('C-e: in run mode a panel button press hands the host draw:action -- the state under test', () => {
 	const h = makeInput();
 	try {
-		h.renderer.mode = 'run';
-		const hitEl = { dataset: { action: 'ping' }, closest: () => ({ id: 'node-aa0001' }) };
-		h.capture.onDown(pointer(100, 100, { target: { tagName: 'rect', closest: () => hitEl } }));
+		// RESTATED at H26.8's picks move: on the action region of a panel the harness's renderer drew, in run mode drawn by `setMode` -- a
+		// stand-in pressed a control on no entity
+		h.model.put('node', { id: 'node-aa0001', name: 'p', type: 'host', shape: 'square', x: 0, y: 0, span: { cols: 2, rows: 1 },
+			content: [{ at: [0, 0], cols: 1, rows: 1, content: 'text', value: 'ping', action: 'ping' }] });
+		h.renderer.setMode('run');
+		h.capture.onDown(pointer(100, 100, { target: h.at({ key: 'node-aa0001', where: { 'data-action': 'ping' } }) }));
 		assert.deepEqual(h.dispatched.map((d) => [d.type, d.detail.action, d.detail.id]), [['draw:action', 'ping', 'node-aa0001']]);
 	} finally { h.restore(); }
 });

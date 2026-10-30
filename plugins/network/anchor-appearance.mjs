@@ -44,7 +44,8 @@ const MARKS = {
 	composes: false,
 	root: { layer: 'waypoints', class: (entity, kit, state) => `waypoint ${state}` },
 	rootAttrs: (entity) => [['transform', `translate(${entity.x},${entity.y})`]],
-	picks: [{ closest: 'g.waypoint', word: 'waypoint' }],   // C-b: hit by the word people use (F4)
+	picks: [{ word: 'waypoint' }],   // C-b: hit by the word people use (F4)
+	run: { target: true },   // C-f: what a run-mode press aims at -- an endpoint to arm (H26.8's picks move: by item, where it was `runTargets`)
 	parts: {
 		marks(entity, { model, mode }, state) {
 			const roles = state === 'bend' ? [] : state.split(' ');

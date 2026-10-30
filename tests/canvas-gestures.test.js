@@ -19,7 +19,8 @@ import { PRODUCT_CANVAS } from '../product/canvas.mjs';
 
 const code = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
 const canvasAt = (x, y, mod = {}) => pointer(x, y, mod);   // the default target answers no pick: the canvas
-const handle = (corner, x, y) => pointer(x, y, { target: { tagName: 'rect', classList: { contains: (c) => c === 'handle' }, dataset: { corner }, closest: () => ({}) } });
+// RESTATED at H26.8's picks move: the element the harness's renderer drew (`h.at`), picked by item, where a stand-in answered selectors
+const handle = (h, corner, x, y) => pointer(x, y, { target: h.at({ key: 'handles', where: { 'data-corner': corner } }) });
 const drawBox = (h, from, to) => {
 	h.capture.onDown(canvasAt(...from, { shiftKey: true }));
 	h.capture.onMove(canvasAt(...to, { shiftKey: true }));
@@ -42,13 +43,13 @@ test('C-d: dragging a selected zone\'s corner resizes it, the opposite corner st
 	try {
 		const z = makeZone(h.model, { x: -30, y: -30, w: 120, h: 120 }); h.model.put('zone', z);
 		h.selection.set([z.id]);
-		h.capture.onDown(handle('se', 90, 90));
-		h.capture.onMove(handle('se', 210, 150));
-		h.capture.onUp(handle('se', 210, 150));
+		h.capture.onDown(handle(h, 'se', 90, 90));
+		h.capture.onMove(handle(h, 'se', 210, 150));
+		h.capture.onUp(handle(h, 'se', 210, 150));
 		const r = h.model.get('zone', z.id);
 		assert.deepEqual({ x: r.x, y: r.y, w: r.w, h: r.h }, { x: -30, y: -30, w: 240, h: 180 });
-		h.capture.onDown(handle('se', 210, 150));
-		h.capture.onMove(handle('se', 330, 150));
+		h.capture.onDown(handle(h, 'se', 210, 150));
+		h.capture.onMove(handle(h, 'se', 330, 150));
 		h.input.cancelDrag();
 		const c = h.model.get('zone', z.id);
 		assert.deepEqual({ w: c.w, h: c.h }, { w: 240, h: 180 }, 'a cancelled drag is a no-op');
@@ -81,7 +82,7 @@ test('C-d: a kind\'s handles brought twice are refused when Input is built, nami
 
 // ---- C-d, step two: the link's end handles and re-plug, the network's handles over the shared handle gesture ----
 
-const endHandle = (end, x, y) => pointer(x, y, { target: { tagName: 'circle', classList: { contains: (c) => c === 'handle' }, dataset: { end }, closest: () => null } });
+const endHandle = (h, end, x, y) => pointer(x, y, { target: h.at({ key: 'handles', where: { 'data-end': end } }) });
 const threeHosts = async (h) => {
 	const { seedNodes } = await import('./fixtures/client-harness.mjs');
 	const { makeLink } = await import('../plugins/network/link-queries.mjs');
@@ -95,11 +96,11 @@ test('C-d: dragging a selected link\'s src handle onto a device re-plugs it ther
 	const h = makeInput();
 	try {
 		const { n0, n1, n2, l } = await threeHosts(h);
-		h.capture.onDown(endHandle('src', 360, 330));
+		h.capture.onDown(endHandle(h, 'src', 360, 330));
 		h.capture.onMove(pointer(200, 0));
 		h.input.cancelDrag();
 		assert.deepEqual([h.model.get('link', l.id).src, h.model.get('link', l.id).dst], [n2.id, n1.id], 'cancelled: as it was');
-		h.capture.onDown(endHandle('src', 360, 330));
+		h.capture.onDown(endHandle(h, 'src', 360, 330));
 		h.capture.onMove(pointer(30, 0));
 		h.capture.onUp(pointer(0, 0));
 		assert.deepEqual([h.model.get('link', l.id).src, h.model.get('link', l.id).dst], [n0.id, n1.id], 're-plugged onto the device released on');
@@ -111,7 +112,9 @@ test('C-d: without the network\'s part a link has no handles, and a press on one
 	try {
 		const { n2, l } = await threeHosts(h);
 		assert.equal(h.input.handles.has('link'), false);
-		h.capture.onDown(endHandle('src', 360, 330));
+		// RESTATED at H26.8's picks move: no handle is drawn, so a press where its end would be lands on open ground
+		assert.throws(() => h.at({ key: 'handles', where: { 'data-end': 'src' } }), /drew no element/, 'precondition: no end handle drawn');
+		h.capture.onDown(pointer(360, 330));
 		h.capture.onUp(pointer(0, 0));
 		assert.equal(h.model.get('link', l.id).src, n2.id);
 	} finally { h.restore(); }
@@ -133,7 +136,7 @@ test('C-d: a re-plug marks its link while the end is dragged, and a cancel unmar
 	try {
 		const { l } = await threeHosts(h);
 		const marks = () => h.stateCalls('states.setState').filter(([id, cls]) => id === l.id && cls === 'replugging').map(([, , on]) => on);
-		h.capture.onDown(endHandle('src', 360, 330));
+		h.capture.onDown(endHandle(h, 'src', 360, 330));
 		h.capture.onMove(pointer(200, 0));
 		assert.deepEqual(marks(), [true], 'marked while dragged');
 		h.input.cancelDrag();
@@ -215,7 +218,7 @@ test('B317: hovering a link\'s end handle hovers nothing, and Ctrl pressed over 
 	const h = makeInput();
 	try {
 		await threeHosts(h);
-		h.capture.onHover(endHandle('src', 360, 330), true);
+		h.capture.onHover(endHandle(h, 'src', 360, 330), true);
 		assert.equal(h.input.overlayUi.hovered, null, 'a handle is no entity to hover');
 		assert.doesNotThrow(() => h.capture.onKeyDown(key('Control', { ctrlKey: true })));
 	} finally { h.restore(); }
@@ -259,7 +262,7 @@ test('C-d: Ctrl over a hovered device or zone lights the clone; over a waypoint 
 	try {
 		const [n] = seedNodes(h.model, [[0, 0]]);
 		const w = makeWaypoint(h.model, { x: 120, y: 120 }); h.model.put('node', w);
-		const over = (word, id) => pointer(0, 0, { target: { tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: (s) => (s.includes(word) ? { id } : null) } });
+		const over = (word, id) => pointer(0, 0, { target: h.at(id) });   // H26.8's picks move: the element the harness's renderer drew
 		const clone = (id) => h.stateCalls('states.setState').some(([x, cls, on]) => x === id && cls === 'armed-clone' && on);
 		h.capture.onHover(over('node', n.id), true);
 		h.capture.onKeyDown(key('Control', { ctrlKey: true }));
@@ -279,7 +282,7 @@ test('C-d: a Shift-press on a zone selects it alone -- Shift is the zone\'s laye
 		const [n] = seedNodes(h.model, [[0, 0]]);
 		const z = makeZone(h.model, { x: 150, y: 150, w: 120, h: 120 }); h.model.put('zone', z);
 		h.selection.set([n.id]);
-		const onZone = pointer(200, 200, { shiftKey: true, button: 2, buttons: 2, target: { tagName: 'rect', classList: { contains: () => false }, dataset: {}, closest: (s) => (s.includes('zone') ? { id: z.id } : null) } });
+		const onZone = pointer(200, 200, { shiftKey: true, button: 2, buttons: 2, target: h.at({ key: z.id, where: { class: 'zone-rect' } }) });   // H26.8's picks move
 		h.capture.onDown(onZone);
 		h.capture.onUp(onZone);
 		assert.deepEqual(h.selection.list(), [z.id]);
@@ -297,9 +300,9 @@ The canvas names no kind: it reads the modifier off the composed picks, as `onSh
 A drag owns the pointer: Shift released mid-drag (a zone moved, a corner dragged) leaves the zone selected until the drag
 ends, and the drop happens then, unless Shift is held again by the time the pointer comes up.
 */
-const zoneTarget = (z, x, y, mod = {}) => pointer(x, y, { target: { tagName: 'rect', classList: { contains: () => false }, dataset: {}, closest: (s) => (s.includes('zone') ? { id: z.id } : null) }, ...mod });
+const zoneTarget = (h, z, x, y, mod = {}) => pointer(x, y, { target: h.at({ key: z.id, where: { class: 'zone-rect' } }), ...mod });
 // H24.5: a zone is pressed with the right button
-const rightOn = (z, x, y, mod = {}) => zoneTarget(z, x, y, { button: 2, buttons: 2, ...mod });
+const rightOn = (h, z, x, y, mod = {}) => zoneTarget(h, z, x, y, { button: 2, buttons: 2, ...mod });
 const shiftDown = (h) => h.capture.onKeyDown({ key: 'Shift', code: 'ShiftLeft', shiftKey: true, ctrlKey: false, altKey: false, metaKey: false, target: { tagName: 'BODY' }, preventDefault() {}, stopPropagation() {} });
 const shiftUp = (h) => h.capture.onKeyUp({ key: 'Shift', code: 'ShiftLeft', shiftKey: false, ctrlKey: false, altKey: false, metaKey: false, target: { tagName: 'BODY' }, preventDefault() {}, stopPropagation() {} });
 
@@ -311,8 +314,8 @@ test('H24.3: releasing Shift deselects a zone picked with it; a device stays sel
 		const [n] = seedNodes(h.model, [[0, 0]]);
 		const z = makeZone(h.model, { x: 150, y: 150, w: 120, h: 120 }); h.model.put('zone', z);
 		shiftDown(h);
-		h.capture.onDown(rightOn(z, 200, 200, { shiftKey: true }));
-		h.capture.onUp(rightOn(z, 200, 200, { shiftKey: true }));
+		h.capture.onDown(rightOn(h, z, 200, 200, { shiftKey: true }));
+		h.capture.onUp(rightOn(h, z, 200, 200, { shiftKey: true }));
 		assert.deepEqual(h.selection.list(), [z.id], 'precondition: Shift+right click selects the zone');
 		shiftUp(h);
 		assert.deepEqual(h.selection.list(), [], 'and releasing Shift deselects it');
@@ -332,35 +335,35 @@ test('H24.3: Shift released mid-drag leaves the zone selected until the drag end
 	try {
 		const z = makeZone(h.model, { x: 150, y: 150, w: 120, h: 120 }); h.model.put('zone', z);
 		shiftDown(h);
-		h.capture.onDown(rightOn(z, 200, 200, { shiftKey: true }));
-		h.capture.onMove(rightOn(z, 260, 200, { shiftKey: true }));
-		h.capture.onMove(rightOn(z, 320, 200, { shiftKey: true }));
+		h.capture.onDown(rightOn(h, z, 200, 200, { shiftKey: true }));
+		h.capture.onMove(rightOn(h, z, 260, 200, { shiftKey: true }));
+		h.capture.onMove(rightOn(h, z, 320, 200, { shiftKey: true }));
 		shiftUp(h);
 		assert.deepEqual(h.selection.list(), [z.id], 'mid-drag the zone stays selected -- the drag owns the pointer');
-		h.capture.onMove(rightOn(z, 380, 200));
-		h.capture.onUp(rightOn(z, 380, 200));
+		h.capture.onMove(rightOn(h, z, 380, 200));
+		h.capture.onUp(rightOn(h, z, 380, 200));
 		assert.notEqual(h.model.get('zone', z.id).x, 150, 'the drag completed and moved the zone');
 		assert.deepEqual(h.selection.list(), [], 'and once it ended with Shift up, the zone is deselected');
 
 		// control: Shift held again by the time the pointer comes up keeps it
 		shiftDown(h);
-		h.capture.onDown(rightOn(z, 400, 200, { shiftKey: true }));
-		h.capture.onMove(rightOn(z, 460, 200, { shiftKey: true }));
+		h.capture.onDown(rightOn(h, z, 400, 200, { shiftKey: true }));
+		h.capture.onMove(rightOn(h, z, 460, 200, { shiftKey: true }));
 		shiftUp(h); shiftDown(h);
-		h.capture.onUp(rightOn(z, 460, 200, { shiftKey: true }));
+		h.capture.onUp(rightOn(h, z, 460, 200, { shiftKey: true }));
 		assert.deepEqual(h.selection.list(), [z.id], 'Shift held again at the end: the zone stays selected');
 
 		// each of the two ways "held again" is known, alone: a drag cancelled with no pointer event (a document swap) has only
 		// Shift's keydown to go on; a release whose Shift keydown was never seen (focus elsewhere) has only the event's own flag
-		h.capture.onDown(rightOn(z, 460, 200, { shiftKey: true }));
-		h.capture.onMove(rightOn(z, 520, 200, { shiftKey: true }));
+		h.capture.onDown(rightOn(h, z, 460, 200, { shiftKey: true }));
+		h.capture.onMove(rightOn(h, z, 520, 200, { shiftKey: true }));
 		shiftUp(h); shiftDown(h);
 		h.input.cancelDrag();
 		assert.deepEqual(h.selection.list(), [z.id], 'cancelled with no event after Shift was pressed again: the zone stays');
-		h.capture.onDown(rightOn(z, 460, 200, { shiftKey: true }));
-		h.capture.onMove(rightOn(z, 520, 200, { shiftKey: true }));
+		h.capture.onDown(rightOn(h, z, 460, 200, { shiftKey: true }));
+		h.capture.onMove(rightOn(h, z, 520, 200, { shiftKey: true }));
 		shiftUp(h);
-		h.capture.onUp(rightOn(z, 520, 200, { shiftKey: true }));
+		h.capture.onUp(rightOn(h, z, 520, 200, { shiftKey: true }));
 		assert.deepEqual(h.selection.list(), [z.id], 'released with Shift held, its keydown unseen: the zone stays');
 	} finally { h.restore(); }
 });
@@ -381,9 +384,9 @@ test('H24.5: Shift+left-drag inside an existing zone draws a new zone over it; a
 	try {
 		const z = makeZone(h.model, { x: 150, y: 150, w: 300, h: 300 }); h.model.put('zone', z);
 		shiftDown(h);
-		h.capture.onDown(zoneTarget(z, 215, 215, { shiftKey: true }));
-		h.capture.onMove(zoneTarget(z, 330, 330, { shiftKey: true }));
-		h.capture.onUp(zoneTarget(z, 330, 330, { shiftKey: true }));
+		h.capture.onDown(zoneTarget(h, z, 215, 215, { shiftKey: true }));
+		h.capture.onMove(zoneTarget(h, z, 330, 330, { shiftKey: true }));
+		h.capture.onUp(zoneTarget(h, z, 330, 330, { shiftKey: true }));
 		const zones = h.model.all('zone');
 		assert.equal(zones.length, 2, 'a second zone was drawn, starting inside the first');
 		const made = zones.find((x) => x.id !== z.id);
@@ -392,8 +395,8 @@ test('H24.5: Shift+left-drag inside an existing zone draws a new zone over it; a
 		assert.deepEqual(h.selection.list(), [made.id], 'the new zone is selected, as a drawn zone always is');
 
 		h.selection.clear();
-		h.capture.onDown(zoneTarget(z, 420, 420, { shiftKey: true }));
-		h.capture.onUp(zoneTarget(z, 420, 420, { shiftKey: true }));
+		h.capture.onDown(zoneTarget(h, z, 420, 420, { shiftKey: true }));
+		h.capture.onUp(zoneTarget(h, z, 420, 420, { shiftKey: true }));
 		assert.deepEqual(h.selection.list(), [], 'a Shift+left click on a zone no longer selects it');
 		assert.equal(h.model.all('zone').length, 2, 'and a click with no area draws nothing');
 	} finally { h.restore(); }
@@ -404,22 +407,22 @@ test('H24.5: Shift+right selects and moves a zone, Ctrl+Shift+right clones it, a
 	try {
 		const z = makeZone(h.model, { x: 150, y: 150, w: 120, h: 120 }); h.model.put('zone', z);
 		shiftDown(h);
-		h.capture.onDown(rightOn(z, 200, 200, { shiftKey: true }));
-		h.capture.onUp(rightOn(z, 200, 200, { shiftKey: true, buttons: 0 }));
+		h.capture.onDown(rightOn(h, z, 200, 200, { shiftKey: true }));
+		h.capture.onUp(rightOn(h, z, 200, 200, { shiftKey: true, buttons: 0 }));
 		assert.deepEqual(h.selection.list(), [z.id], 'Shift+right click selects the zone');
-		h.capture.onDown(rightOn(z, 200, 200, { shiftKey: true }));
-		h.capture.onMove(rightOn(z, 320, 200, { shiftKey: true }));
-		h.capture.onUp(rightOn(z, 320, 200, { shiftKey: true, buttons: 0 }));
+		h.capture.onDown(rightOn(h, z, 200, 200, { shiftKey: true }));
+		h.capture.onMove(rightOn(h, z, 320, 200, { shiftKey: true }));
+		h.capture.onUp(rightOn(h, z, 320, 200, { shiftKey: true, buttons: 0 }));
 		assert.equal(h.model.get('zone', z.id).x, 270, 'Shift+right drag moves it');
-		h.capture.onDown(rightOn(z, 320, 200, { shiftKey: true, ctrlKey: true }));
-		h.capture.onMove(rightOn(z, 320, 380, { shiftKey: true, ctrlKey: true }));
-		h.capture.onUp(rightOn(z, 320, 380, { shiftKey: true, ctrlKey: true, buttons: 0 }));
+		h.capture.onDown(rightOn(h, z, 320, 200, { shiftKey: true, ctrlKey: true }));
+		h.capture.onMove(rightOn(h, z, 320, 380, { shiftKey: true, ctrlKey: true }));
+		h.capture.onUp(rightOn(h, z, 320, 380, { shiftKey: true, ctrlKey: true, buttons: 0 }));
 		assert.equal(h.model.all('zone').length, 2, 'Ctrl+Shift+right drag clones it');
 
 		h.selection.set([z.id]);
-		h.capture.onDown(handle('se', 390, 270));
-		h.capture.onMove(handle('se', 510, 330));
-		h.capture.onUp(handle('se', 510, 330));
+		h.capture.onDown(handle(h, 'se', 390, 270));
+		h.capture.onMove(handle(h, 'se', 510, 330));
+		h.capture.onUp(handle(h, 'se', 510, 330));
 		const r = h.model.get('zone', z.id);
 		assert.deepEqual({ w: r.w, h: r.h }, { w: 240, h: 180 }, 'a corner handle resizes with the left button, as before');
 	} finally { h.restore(); }

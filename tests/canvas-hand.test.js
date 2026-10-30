@@ -74,7 +74,7 @@ test('C-e: a held type clicked onto a device\'s cell sends nothing; a click on a
 		h.capture.onMove(pointer(120, 120, { buttons: 0 }));
 		h.capture.onKeyDown(key('Enter'));   // stamp at the ghost: the cell is taken
 		assert.equal(h.commits.length, sent, 'a blocked stamp is not attempted');
-		const onDevice = pointer(120, 120, { target: { tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: (s) => (s.includes('node') ? { id: d.id } : null) } });
+		const onDevice = pointer(120, 120, { target: h.at(d.id) });   // H26.8's picks move: the device's element the harness's renderer drew
 		h.capture.onDown(onDevice); h.capture.onUp(onDevice);
 		assert.equal(h.commits.length, sent, 'the held type is its type: no retype is sent');
 		assert.deepEqual(h.selection.list(), [d.id]);

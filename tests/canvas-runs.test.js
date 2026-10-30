@@ -16,7 +16,8 @@ import { makeWaypoint } from '../plugins/devices/make-node.mjs';
 import { makeLink } from '../plugins/network/link-queries.mjs';
 
 const code = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
-const onWaypoint = (id) => ({ tagName: 'circle', closest: (s) => (s === '.waypoint' ? { id } : null) });
+// RESTATED at H26.8's picks move: the waypoint's element the harness's renderer drew, read by item -- a stand-in answered `.waypoint`
+const onWaypoint = (h, id) => h.at(id);
 
 test('C-e: in run mode a press on an endpoint arms it as a spawner, stamped from the agreed clock, and again disarms it -- the state under test', () => {
 	const h = makeInput();
@@ -24,12 +25,12 @@ test('C-e: in run mode a press on an endpoint arms it as a spawner, stamped from
 		const [a] = seedNodes(h.model, [[0, 0]]);
 		const w = makeWaypoint(h.model, { x: 240, y: 0 }); h.model.put('node', w);
 		h.model.put('link', makeLink(h.model, a.id, w.id));
-		h.renderer.mode = 'run';
-		h.capture.onDown(pointer(240, 0, { target: onWaypoint(w.id) })); h.capture.onUp(pointer(240, 0, { target: onWaypoint(w.id) }));
+		h.renderer.setMode('run');
+		h.capture.onDown(pointer(240, 0, { target: onWaypoint(h, w.id) })); h.capture.onUp(pointer(240, 0, { target: onWaypoint(h, w.id) }));
 		const spawn = h.model.get('node', w.id).spawn;
 		assert.deepEqual({ interval: spawn?.interval, speed: spawn?.speed, kind: spawn?.kind, stamped: typeof spawn?.since }, { interval: 900, speed: 1.4, kind: 'packet', stamped: 'number' });
 		assert.equal(h.commits.at(-1).label, 'spawn');
-		h.capture.onDown(pointer(240, 0, { target: onWaypoint(w.id) })); h.capture.onUp(pointer(240, 0, { target: onWaypoint(w.id) }));
+		h.capture.onDown(pointer(240, 0, { target: onWaypoint(h, w.id) })); h.capture.onUp(pointer(240, 0, { target: onWaypoint(h, w.id) }));
 		assert.equal('spawn' in h.model.get('node', w.id), false, 'disarmed: the key gone');
 		assert.equal(h.commits.at(-1).label, 'stop spawning');
 	} finally { h.restore(); }
@@ -40,7 +41,7 @@ test('C-e: in run mode a press on open ground places a load balancer there, unse
 	try {
 		const [a] = seedNodes(h.model, [[0, 0]]);
 		h.selection.set([a.id]);
-		h.renderer.mode = 'run';
+		h.renderer.setMode('run');
 		h.capture.onDown(pointer(242, 118)); h.capture.onUp(pointer(242, 118));
 		const towers = h.model.all('node').filter((n) => n.type === 'loadbalancer');
 		assert.deepEqual(towers.map((n) => [n.x, n.y]), [[240, 120]], 'on the snapped cell');

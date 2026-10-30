@@ -157,7 +157,7 @@ test('a double click on a device opens its name editor through Input, and on a l
 		const h = makeInput({ readOnly: locked });
 		try {
 			const [n] = seedNodes(h.model, [[0, 0]]);
-			h.capture.onDblClick(pointer(0, 0, { target: { tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: (sel) => (sel.includes('node') ? { id: n.id } : null) } }));
+			h.capture.onDblClick(pointer(0, 0, { target: h.at(n.id) }));   // H26.8's picks move: the device's element the harness's renderer drew
 			assert.deepEqual(h.stateCalls('labels.open'), locked ? [] : [['node', n.id]], locked ? 'locked: the guard refuses the row, nothing opens' : 'the device\'s name editor opens');
 		} finally { h.restore(); }
 	}

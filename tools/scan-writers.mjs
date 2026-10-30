@@ -243,12 +243,17 @@ const SCENE_READ = new RegExp([
 	String.raw`\.closest\s*\(`,
 	String.raw`\.(?:parentNode|parentElement|childNodes|children|firstChild|firstElementChild|lastChild|lastElementChild|nextSibling|previousSibling|nextElementSibling|previousElementSibling)\b`,
 ].join('|'), 'g');
-// file -> the exact count of its reads (3.3's table, the pipes move's column); every other walked file holds none
+// file -> the exact count of its reads (3.3's table, the picks move's column); every other walked file holds none
 const SCENE_READS = {
-	'app/src/capture.js': 7,          // the platform's hit and focus: six finds from an event's target up, and the menu's listener on the host
+	// the platform's focus and menu: two finds from an event's target up, and the menu's listener on the host -- H26.8's picks move took
+	// its four region finds (`regionOf`), what a press landed on read by item since (app/src/pick.js), 7 to 3
+	'app/src/capture.js': 3,
 	// app/src/compose-canvas.js held 2 -- the foreign layers' element and its lookup by id, for a pipe's states (foreignStates) -- until
 	// H26.8's pipes move made the pipes a painted kind (3.3's table: 0 from the pipes move)
-	'app/src/pick.js': 1,             // a pick's find from the target up, until the picks move
+	// app/src/pick.js held 1 -- a pick's find from the target up -- until H26.8's picks move read every pick by item; it holds 1 again, of
+	// another kind: the description's `children`, walked down the target's path in the scene's items to the shape it names (`shapesOn`),
+	// the word of the descriptions 3.3's limit counts where it is read -- where its table names 0 (an erratum of the picks move's build)
+	'app/src/pick.js': 1,
 	'app/src/labeledit.js': 10,       // the label editor's one exception (NS8): its four lookups, six listeners on its own input
 	'app/src/readout.js': 1,          // a listener on its own element
 	'app/src/painter.js': 2,          // a preview's `children`, a description's word (buildPreview)

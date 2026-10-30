@@ -40,7 +40,7 @@ import { LabelEditor } from './labeledit.js';
 import { Tools } from './tools.js';
 import { Input } from './input.js';
 import { captureCanvas } from './capture.js';
-import { picksOf, regionsOf } from './pick.js';
+import { picksOf } from './pick.js';
 import { Readout } from './readout.js';
 import { Grids } from './grids.js';   // WD-b2: the grids, from the open diagram's records
 
@@ -98,7 +98,8 @@ export function composeCanvas({ svg, scene: declared, defs, host, network = null
 		host, help, now, snap, plugins, runRules, parts });   // C-c, C-d: the canvas parts -- places, press rows, handles
 	let capture = null;
 	// the platform's events, as input events (dev/design/input/GESTURE-SYSTEM.md, L0), through input-capture (H26.3) -- once the root's own listeners are in
-	const listen = () => (capture ??= captureCanvas({ svg, scene, host, sink: input, picks: picksOf(parts), regions: regionsOf(parts) }));   // C-b: the plugins' picks; C-f: run mode's regions
+	// C-b: the plugins' picks; H26.8's picks move: read by item, each item's drawer the renderer's -- and run mode's regions from the same
+	const listen = () => (capture ??= captureCanvas({ svg, scene, host, sink: input, picks: picksOf(parts), drawerOf: (id) => renderer.drawerOf(id) }));
 	return { scene, model, history, renderer, states, selection, labels, readout: shownReadout, snap, tools: heldTools, input, listen };
 }
 

@@ -162,7 +162,7 @@ test('acceptance 4: a locked client\'s drag from a node does not become a move',
 	const h = makeInput({ readOnly: true });
 	try {
 		const [n] = seedNodes(h.model, [[0, 0]]);
-		const on = (x, y, m = {}) => pointer(x, y, { button: 2, ...m, target: { tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: (s) => (s.includes('node') ? { id: n.id } : null) } });
+		const on = (x, y, m = {}) => pointer(x, y, { button: 2, ...m, target: h.at(n.id) });   // H26.8's picks move: the element the harness's renderer drew
 		h.capture.onDown(on(0, 0)); h.capture.onMove(on(120, 60)); h.capture.onUp(on(120, 60, { buttons: 0 }));
 		assert.deepEqual([h.model.get('node', n.id).x, h.commits.length], [0, 0]);
 	} finally { h.restore(); }
@@ -178,7 +178,7 @@ test('acceptance 6, B245: threading a free waypoint commits the link alone, and 
 		const [a, b] = seedNodes(h.model, [[0, 0], [360, 0]]);
 		const w = makeWaypoint(h.model, { x: 180, y: 120 });
 		h.model.put('node', w);
-		const over = (id, x, y) => pointer(x, y, { target: { tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: (s) => (s.includes(id.split('-')[0]) ? { id } : null) } });
+		const over = (id, x, y) => pointer(x, y, { target: h.at(id) });   // H26.8's picks move: the element the harness's renderer drew
 		h.capture.onDown(over(a.id, 0, 0)); h.capture.onMove(over(w.id, 180, 120)); h.capture.onKeyDown(key('w'));
 		finish(h, over, b);
 		return { h, w };

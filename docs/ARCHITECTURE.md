@@ -208,10 +208,10 @@ What each plugin brings to the page (`product/canvas.mjs`).
 |---|---|
 | the product | `orders`, `deleteRanks` |
 | layouts | `stylesheets`, `places`, `grids` |
-| zones | `stylesheets`, `painters`, `places`, `presses`, `handles`, `keys`, `sizeStep`, `deleteRanks`, `describe`, `selectAll`, `labels`, `drawn`, `helpWords`, `tally` |
-| groups | `stylesheets`, `painters`, `keys`, `deleteRanks`, `follows`, `drawn` |
-| devices | `stylesheets`, `defs`, `bare`, `appearances`, `presses`, `hand`, `at`, `sizeStep`, `sizes`, `outlines`, `keys`, `describe`, `selectAll`, `labels`, `drawn`, `tally` |
-| network | `stylesheets`, `painters`, `appearances`, `presses`, `handles`, `at`, `deleteRanks`, `follows`, `describe`, `selectAll`, `reflects`, `drawn`, `runTargets`, `helpWords`, `linkDrag`, `tally` |
+| zones | `stylesheets`, `painters`, `places`, `presses`, `handles`, `keys`, `sizeStep`, `deleteRanks`, `describe`, `selectAll`, `labels`, `helpWords`, `tally` |
+| groups | `stylesheets`, `painters`, `keys`, `deleteRanks`, `follows` |
+| devices | `stylesheets`, `defs`, `bare`, `appearances`, `presses`, `hand`, `at`, `sizeStep`, `sizes`, `outlines`, `keys`, `describe`, `selectAll`, `labels`, `tally` |
+| network | `stylesheets`, `painters`, `appearances`, `presses`, `handles`, `at`, `deleteRanks`, `follows`, `describe`, `selectAll`, `reflects`, `helpWords`, `linkDrag`, `tally` |
 | the simulation | `stylesheets`, `appearances`, `marks`, `isSpawning` |
 <!-- END GENERATED: architecture-canvas -->
 

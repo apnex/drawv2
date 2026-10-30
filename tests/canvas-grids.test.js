@@ -18,7 +18,8 @@ import { gridDot } from '../kernel/geometry.mjs';
 
 const code = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
 const shift = (h, down) => (down ? h.capture.onKeyDown(key('Shift', { shiftKey: true })) : h.capture.onKeyUp(key('Shift')));
-const onDevice = (id, x, y, mod = {}) => pointer(x, y, { target: { tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: (s) => (s.includes('node') ? { id } : null) }, ...mod });
+// RESTATED at H26.8's picks move: the element the harness's renderer drew (`h.at`), picked by item, where a stand-in answered selectors
+const onDevice = (h, id, x, y, mod = {}) => pointer(x, y, { target: h.at(id), ...mod });
 
 test('C-e: Shift shows the zone grid and letting go hides it; during a move Shift does not show it -- the state under test', () => {
 	const h = makeInput();
@@ -28,12 +29,12 @@ test('C-e: Shift shows the zone grid and letting go hides it; during a move Shif
 		shift(h, false);
 		assert.equal(h.svg.classList.contains('zonegrid'), false);
 		const [d] = seedNodes(h.model, [[0, 0]]);
-		h.capture.onDown(onDevice(d.id, 0, 0, { button: 2, buttons: 2 }));
-		h.capture.onMove(onDevice(d.id, 120, 0, { button: 2, buttons: 2 }));
+		h.capture.onDown(onDevice(h, d.id, 0, 0, { button: 2, buttons: 2 }));
+		h.capture.onMove(onDevice(h, d.id, 120, 0, { button: 2, buttons: 2 }));
 		assert.equal(h.model.get('node', d.id).x, 120, 'a move under way -- its live preview writes the model (B7)');
 		shift(h, true);
 		assert.equal(h.svg.classList.contains('zonegrid'), false, 'Shift locks the axis mid-move; it raises no grid');
-		h.capture.onMove(onDevice(d.id, 180, 0, { button: 2, buttons: 2, shiftKey: true }));
+		h.capture.onMove(onDevice(h, d.id, 180, 0, { button: 2, buttons: 2, shiftKey: true }));
 		assert.equal(h.svg.classList.contains('zonegrid'), false, 'nor does the pointer moving on with Shift held');
 		h.input.cancelDrag();
 	} finally { h.restore(); }

@@ -64,10 +64,11 @@ test('a link never counts against itself, so a replug to its own pair is judged 
 The REPLUG gate had no test that drove it -- its B72 rule was held only by reading. Driven here through the real
 gesture: select a link, grab an end handle, release on another node.
 */
-const handle = (end, x, y) => pointer(x, y, { target: { tagName: 'circle', classList: { contains: (c) => c === 'handle' }, dataset: { end }, closest: () => null } });
+// RESTATED at H26.8's picks move: the end handle the overlay drew for the selected link (`h.at`), picked by item
+const handle = (h, end, x, y) => pointer(x, y, { target: h.at({ key: 'handles', where: { 'data-end': end } }) });
 function replug(h, link, end, x, y) {
 	h.selection.set([link.id]);
-	h.capture.onDown(handle(end, ...(end === 'src' ? [h.model.get('node', link.src).x, h.model.get('node', link.src).y] : [h.model.get('node', link.dst).x, h.model.get('node', link.dst).y])));
+	h.capture.onDown(handle(h, end, ...(end === 'src' ? [h.model.get('node', link.src).x, h.model.get('node', link.src).y] : [h.model.get('node', link.dst).x, h.model.get('node', link.dst).y])));
 	h.capture.onMove(pointer(x, y));
 	h.capture.onUp(pointer(x, y));
 }
@@ -165,7 +166,7 @@ const out = {};
 { const h = makeInput();
   try {
     const [a, b] = seedNodes(h.model, [[0, 0], [360, 0]]);
-    const at = (id, x, y) => pointer(x, y, { target: { tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: (s) => (s.includes('node') ? { id } : null) } });
+    const at = (id, x, y) => pointer(x, y, { target: h.at(id) });
     const plain = () => { h.capture.onDown(at(a.id, 0, 0)); h.capture.onMove(at(b.id, 360, 0)); h.capture.onUp(at(b.id, 360, 0)); };
     plain(); plain();
     out.release = h.model.all('link').length === 2;
@@ -178,7 +179,7 @@ const out = {};
     h.model.put('link', makeLink(h.model, a.id, b.id));
     const l = makeLink(h.model, c.id, b.id); h.model.put('link', l);
     h.selection.set([l.id]);
-    h.capture.onDown(pointer(c.x, c.y, { target: { tagName: 'circle', classList: { contains: (k) => k === 'handle' }, dataset: { end: 'src' }, closest: () => null } }));
+    h.capture.onDown(pointer(c.x, c.y, { target: h.at({ key: 'handles', where: { 'data-end': 'src' } }) }));
     h.capture.onMove(pointer(a.x, a.y)); h.capture.onUp(pointer(a.x, a.y));
     out.replug = h.model.get('link', l.id).src === a.id;
   } finally { h.restore(); } }

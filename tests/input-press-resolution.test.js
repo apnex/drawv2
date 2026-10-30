@@ -16,8 +16,9 @@ import assert from 'node:assert/strict';
 import { makeInput, key, pointer, seedNodes } from './fixtures/client-harness.mjs';
 import { makeZone } from '../plugins/zones/make-zone.mjs';
 
-const onNode = (id, x, y, mod = {}) => pointer(x, y, { target: { tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: (s) => (s.includes('node') ? { id } : null) }, ...mod });
-const onZone = (z, x, y, mod = {}) => pointer(x, y, { target: { tagName: 'rect', classList: { contains: () => false }, dataset: {}, closest: (s) => (s.includes('zone') ? { id: z.id } : null) }, ...mod });
+// RESTATED at H26.8's picks move: the element the harness's renderer drew (`h.at`), picked by item, where a stand-in answered selectors
+const onNode = (h, id, x, y, mod = {}) => pointer(x, y, { target: h.at(id), ...mod });
+const onZone = (h, z, x, y, mod = {}) => pointer(x, y, { target: h.at({ key: z.id, where: { class: 'zone-rect' } }), ...mod });
 const named = (h, name) => h.calls.filter((c) => c.name === name).map((c) => c.args);
 
 test('H26.5 (IB15): a press the live gesture does not take closes an open label editor, committing it, and hides the hand -- a row meaning it or none', () => {
@@ -36,9 +37,9 @@ test('H26.5 (IB15): a press the live gesture takes -- a chain\'s left press -- n
 	const h = makeInput();
 	try {
 		const [a, b] = seedNodes(h.model, [[0, 0], [360, 0]]);
-		h.capture.onDown(onNode(a.id, 0, 0));
-		h.capture.onMove(onNode(b.id, 360, 0));
-		h.capture.onUp(onNode(b.id, 360, 0, { shiftKey: true }));   // the link a-b, and a chain on from b
+		h.capture.onDown(onNode(h, a.id, 0, 0));
+		h.capture.onMove(onNode(h, b.id, 360, 0));
+		h.capture.onUp(onNode(h, b.id, 360, 0, { shiftKey: true }));   // the link a-b, and a chain on from b
 		assert.equal(h.input.isGesturing(), true, 'precondition: a chain is live');
 		h.labels.isOpen = () => true;
 		h.reset();
@@ -54,8 +55,8 @@ test('H26.5 (IB15): the teardown of a gesture the press cancels is handed the pr
 		try {
 			const z = makeZone(h.model, { x: 150, y: 150, w: 120, h: 120 }); h.model.put('zone', z);
 			h.capture.onKeyDown(key('Shift', { code: 'ShiftLeft', shiftKey: true }));
-			h.capture.onDown(onZone(z, 200, 200, { button: 2, buttons: 2, shiftKey: true }));   // Shift+right on the zone: it is picked
-			h.capture.onMove(onZone(z, 260, 200, { button: -1, buttons: 2, shiftKey: true }));
+			h.capture.onDown(onZone(h, z, 200, 200, { button: 2, buttons: 2, shiftKey: true }));   // Shift+right on the zone: it is picked
+			h.capture.onMove(onZone(h, z, 260, 200, { button: -1, buttons: 2, shiftKey: true }));
 			assert.deepEqual([h.selection.list(), h.input.isGesturing()], [[z.id], true], 'precondition: the zone picked, and its drag live');
 			h.capture.onKeyUp(key('Shift', { code: 'ShiftLeft' }));   // Shift released while the drag owns the pointer: the zone owed a drop
 			assert.deepEqual(h.selection.list(), [z.id], 'precondition: kept while the drag lasts (shiftUpPending)');
@@ -68,7 +69,7 @@ test('H26.5 (IB15): the teardown of a gesture the press cancels is handed the pr
 test('H26.5 (IB15): in run mode the session holds the press too, so its release is a drop by its travel', () => {
 	const h = makeInput();
 	try {
-		h.renderer.mode = 'run';
+		h.renderer.setMode('run');
 		const seen = [], real = h.input.release.bind(h.input);
 		h.input.release = (e) => { try { return real(e); } finally { seen.push(e.trigger); } };
 		h.capture.onDown(pointer(300, 300));

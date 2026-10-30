@@ -70,8 +70,10 @@ const LINK_PAINTER = {
 	kind: 'link',
 	layer: 'links',
 	stacked: true,
-	// C-b: the path itself, and its click twin wherever a dotted or dashed stroke has a gap (B268)
-	picks: [{ self: 'link', word: 'link', clones: true }, { self: 'link-hit', word: 'link', id: (t) => t.dataset.link, clones: true }],   // D4: Ctrl+left clones it
+	// C-b: the path itself, and its click twin wherever a dotted or dashed stroke has a gap (B268) -- RESTATED at H26.8's picks move: one
+	// pick, by item, its line (`''`) and its twin (`hit`) answering, its head and leg not; D4: Ctrl+left clones it
+	picks: [{ word: 'link', clones: true, parts: ['', 'hit'] }],
+	run: { entity: [''] },   // C-f: what it draws, its line alone, a press on which run mode places nothing (where it was `drawn`)
 	/*
 	The link, then its head straight after it -- the stylesheet colours a head by the element before it -- then its leg, then its click
 	twin, the whole line. B228 and H15.9 held an update to the same derivation create used, a set-or-remove over the declared keys; one

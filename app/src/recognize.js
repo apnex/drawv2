@@ -60,11 +60,13 @@ C-d, step four (H19.32; D4) -- WHAT A HIT IS, by what the plugins say: each draw
 places it, C-c), whether it is an ANCHOR (the core's anchor kinds), whether a Ctrl+left press CLONES it (the one fact a pick
 declares, since nothing else states it -- a waypoint's left press draws a link whatever the modifiers), and the modifier it is
 picked under (the zone, under Shift). A press on a drawn hit that is no anchor selects it.
+H26.8's picks move (NATIVE-SHAPES.md section 3.2; reading 3, o:F2): a mark pick -- the network's hand pipe -- names no word and is taken
+here no more than a handle is, so the press rows, the overlay's facts and the generated help see a mark only through `hit.mark`, as before.
 */
 export function hitFactsOf(picks, places) {
 	const facts = new Map();
 	for (const p of picks) {
-		if (p.handle) continue;
+		if (p.handle || p.mark) continue;
 		const was = facts.get(p.word) ?? {};
 		facts.set(p.word, { placed: was.placed || places.has(p.kind), anchor: was.anchor || ANCHOR_KINDS.includes(p.kind), clones: was.clones || !!p.clones, modifier: was.modifier ?? p.modifier ?? null,
 			idle: was.idle ?? p.idle ?? null,   // C-f: the state it shows idle under the pointer -- a device's ring

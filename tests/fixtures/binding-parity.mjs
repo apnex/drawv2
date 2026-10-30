@@ -12,7 +12,7 @@ the old matcher and the adapter, and the press, the old press and the session's 
 tests/fixtures/pre-binding/, and the press's record, binding-parity-press.json: draw composes its tables in input-binding's own form
 now, and the adapter they compared with is retired. The two records are the move's guard (section 4.1), each byte-identical.
 */
-import { makeInput, pointer } from './client-harness.mjs';
+import { makeInput, pointer, GROUND } from './client-harness.mjs';
 import { makeNode } from '../../plugins/devices/make-node.mjs';
 import { record } from './gesture-corpus.mjs';
 import { Input, GESTURES } from '../../app/src/input.js';
@@ -109,7 +109,8 @@ export function lifecycleOfSteps(steps) {
 	try {
 		const devices = [[0, 0], [360, 0], [0, 360]].map(([x, y]) => { const n = makeNode(h.model, 'host', { x, y }); h.model.put('node', n); return n.id; });
 		for (const [type, x, y, on, fields] of steps) {
-			const target = on === null ? { tagName: 'svg', closest: () => null } : { tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: (sel) => (sel.includes('node') ? { id: devices[on] } : null) };
+			// RESTATED at H26.8's picks move: on the device's element the harness's renderer drew (`h.at`), open ground otherwise
+			const target = on === null ? GROUND : h.at(devices[on]);
 			h.capture[{ down: 'onDown', move: 'onMove', up: 'onUp' }[type]](pointer(x, y, { target, ...fields }));
 			out.push(`${log.splice(0).join(',')}>${liveGesture(h) ?? '-'}`);
 		}

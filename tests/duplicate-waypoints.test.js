@@ -73,18 +73,16 @@ test('B311: a duplicate the planner refuses is reported as refused, not as a cop
 });
 
 // a press on an entity, as tests/input.test.js drives one: the target resolves to the node's group
-const onEntity = (id, x, y, mod = {}) => pointer(x, y, {
-	target: { tagName: 'g', classList: { contains: () => false }, dataset: {}, closest: (q) => (q.includes('node') ? { id } : null) },
-	...mod,
-});
+// RESTATED at H26.8's picks move: the element the harness's renderer drew (`h.at`), picked by item, where a stand-in answered selectors
+const onEntity = (h, id, x, y, mod = {}) => pointer(x, y, { target: h.at(id), ...mod });
 
 test('B311: a Ctrl-drag clone copies devices and a link through a bend, the bend moving with the link', () => {
 	const h = makeInput();
 	const { a, b, w, l } = bentLink(h);
 	h.selection.set([a.id, b.id, w.id, l.id]);
-	h.capture.onDown(onEntity(a.id, 0, 0, { button: 2, ctrlKey: true }));
-	h.capture.onMove(onEntity(a.id, 0, 240, { button: 2, ctrlKey: true }));
-	h.capture.onUp(onEntity(a.id, 0, 240, { button: 2, ctrlKey: true }));
+	h.capture.onDown(onEntity(h, a.id, 0, 0, { button: 2, ctrlKey: true }));
+	h.capture.onMove(onEntity(h, a.id, 0, 240, { button: 2, ctrlKey: true }));
+	h.capture.onUp(onEntity(h, a.id, 0, 240, { button: 2, ctrlKey: true }));
 	assert.equal(h.model.all('link').length, 2, 'the link was copied');
 	const copy = h.model.all('link').find((x) => x.id !== l.id);
 	const bend = h.model.get('node', copy.via[0]), src = h.model.get('node', copy.src);
