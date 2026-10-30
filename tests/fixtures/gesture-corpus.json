@@ -3124,7 +3124,13 @@
 		],
 		"judged": [],
 		"said": [],
-		"editor": [],
+		"editor": [
+			[
+				"labels.openContent",
+				"node#1",
+				0
+			]
+		],
 		"palette": [
 			[
 				"tools.setTextTool",

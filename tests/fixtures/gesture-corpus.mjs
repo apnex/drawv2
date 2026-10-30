@@ -177,6 +177,12 @@ export const SCENARIOS = [
 	{ id: 'replug-straight-to-free-pair', board: 'three', steps: [['link', 'n2', 'n1'], ['selectLast'], ...drag([360, 360], [0, 0], { handle: 'src' }, 'n0')] },
 	{ id: 'replug-straight-to-held-pair', board: 'three', steps: [['link', 'n0', 'n1'], ['link', 'n2', 'n1'], ['selectLast'], ...drag([360, 360], [0, 0], { handle: 'src' }, 'n0')] },
 	// ---- tools, double click, cancel ----
+	/*
+	RESTATED at H26.8's picks move, an erratum of its build: the box made, its text region's inline editor opens on it (`editor`), as
+	production's page opens it -- measured in Chrome at 22d9ddf, before the move, and after it. The record held no editor because the
+	harness drew nothing, so the label editor's lookup of the new box found no element; the harness draws through the real renderer since
+	(4.7), and the same lookup finds what the page finds. No code changed what the box does.
+	*/
 	{ id: 'text-tool-box', board: 'empty', steps: [['key', 't'], ...drag([0, 0], [120, 60], null, null)] },
 	{ id: 'dblclick-node-opens-editor', board: 'pair', steps: [['dbl', 0, 0, 'n0']] },
 	{ id: 'escape-cancels-link-drag', board: 'pair', steps: [['down', 0, 0, 'n0'], ['move', 180, 120], ['key', 'w'], ['key', 'Escape']] },
