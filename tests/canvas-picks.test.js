@@ -69,6 +69,23 @@ test('C-b: the product\'s picks answer a device, a waypoint, a zone under Shift,
 	assert.deepEqual(hit({ target: GROUND }), { kind: 'canvas', id: null }, 'what the scene did not make: the canvas');
 }));
 
+/*
+THE HARNESS'S TARGET (tests/fixtures/client-harness.mjs `targetOf`), pinned -- the verifier's M14 on the picks move: a press by path lands
+on the shape at that path, never the item's root, so "a hand pipe's line carries no `data-select`" is told apart from "its group". Each
+element found is the one the scene names by that key and path; a path the scene drew nothing at throws.
+*/
+test('the harness\'s targetOf: a path names the shape at it -- a hand pipe\'s group, its line, its hit line -- and the scene names that item and path', () => board(({ h, ids, at }) => {
+	const named = (el) => h.scene.itemOf(el);
+	const group = at(ids.hand), line = at({ key: ids.hand, path: [0, 0] }), hit = at({ key: ids.hand, path: [0, 1] });
+	assert.deepEqual([group.tagName, group.getAttribute('class').split(' ')[0], group.getAttribute('data-pipe')], ['G', 'pipe-of', ids.hand], 'its own shape: the group (under the link over it)');
+	assert.deepEqual([line.tagName, line.getAttribute('class'), line.getAttribute('id'), line.getAttribute('data-select')], ['LINE', 'pipe pipe-hand', ids.hand, null], '[0, 0]: the line.pipe, no data-select');
+	assert.deepEqual([hit.tagName, hit.getAttribute('class'), hit.getAttribute('data-select')], ['LINE', 'pipe-hit', ids.hand], '[0, 1]: the hit line');
+	assert.deepEqual([named(group), named(line), named(hit)].map((x) => [x.key, x.path]), [[ids.hand, [0]], [ids.hand, [0, 0]], [ids.hand, [0, 1]]], 'each the item and path asked');
+	assert.ok(new Set([group, line, hit]).size === 3 && line.parentNode === group && hit.parentNode === group, 'three elements, the lines beneath the group');
+	assert.throws(() => at({ key: ids.hand, path: [0, 5] }), /drew no element/, 'a path the scene drew nothing at');
+	assert.equal(named(at({ key: ids.device, where: { class: 'label' } })).key, ids.device, 'by attributes: a shape of the item asked for');
+}));
+
 test('C-b: without the zones plugin a zone is never picked -- the rule is the plugin\'s', () => board(({ ids, at, opts }) => {
 	const without = hitWith(picksOf(PRODUCT_CANVAS.filter((p) => p.owner !== 'zones')), opts);
 	assert.deepEqual(without({ target: at({ key: ids.zone, where: { class: 'zone-rect' } }), shiftKey: true }), { kind: 'canvas', id: null });

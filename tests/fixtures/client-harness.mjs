@@ -446,6 +446,12 @@ export function targetOf(h, on) {
 		walk(h.svg.byId[`#${l.name}`]);
 	}
 	if (!found.length) throw new Error(`targetOf: the scene drew no element for ${JSON.stringify(on)} -- press on what is drawn`);
+	// the element is the one asked for, as the scene answers it: its item's key, and the path asked -- or its own shape's -- never another
+	// of the item's shapes (H26.8's picks move, the verifier's M14: a press by path must not land on the item's root)
+	const at = h.scene.itemOf(found[0]);
+	if (at?.key !== key || (want && JSON.stringify(at.path) !== JSON.stringify(want))) {
+		throw new Error(`targetOf: ${JSON.stringify(on)} found an element the scene names ${JSON.stringify(at)} -- not the item and path asked for`);
+	}
 	return found[0];
 }
 
