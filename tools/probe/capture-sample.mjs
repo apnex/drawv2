@@ -42,12 +42,13 @@ its events still compare, `pointerId` still left out.
 
 Not a gate check: it runs two servers and Chrome. Every process is stopped and waited for and every worktree removed.
 */
-import { spawn, execFileSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import net from 'node:net';
 import path from 'node:path';
 import os from 'node:os';
 import { ownDependencies } from './sides.mjs';
+import { startProbeScaffold } from './probe-scaffold.mjs';   // H26-19: what the probe starts ends with it, even killed; what it makes goes
 import { productKinds } from '../../product/kinds.mjs';
 
 const ROOT = path.resolve(import.meta.dirname, '..', '..');
@@ -93,26 +94,30 @@ const SCENARIOS = {
 	'w chains a link through a waypoint, the next press ends it on c': [['down', -360, -120, L], ['move', 0, 60, L], ['key', 'w'], ['move', 0, 240, L], ['up', 0, 240, L]],
 };
 
-const procs = [], trees = [];
+const scaffold = startProbeScaffold({
+	root: ROOT,
+	trees: [['baseline', OLD], ['candidate', NEW]].filter(([, commit]) => commit).map(([name]) => path.join(OUT, `tree-${name}`)),
+	data: ['baseline', 'candidate'].map((name) => path.join(OUT, `data-${name}`)),
+	profile: path.join(OUT, 'profile'),
+});
 async function serve(name, commit) {
 	let root = ROOT, deps = 'its own';
 	if (commit) {
 		root = path.join(OUT, `tree-${name}`);
 		execFileSync('git', ['worktree', 'add', '--detach', root, commit], { cwd: ROOT, stdio: 'ignore' });
-		trees.push(root);
 		deps = ownDependencies(root, ROOT) === 'linked' ? 'linked from the root, its lockfile the same' : 'installed from its own lockfile';
 	}
 	const data = path.join(OUT, `data-${name}`);
 	fs.rmSync(data, { recursive: true, force: true }); fs.mkdirSync(data, { recursive: true });
 	Object.keys(SCENARIOS).forEach((_, n) => { const doc = board(n + 1); fs.writeFileSync(path.join(data, `${doc.meta.id}.json`), JSON.stringify(doc)); });
 	const port = await freePort();
-	procs.push(spawn('node', ['server/server.js'], { cwd: root, env: { PATH: process.env.PATH, HOME: process.env.HOME, PORT: String(port), DATA_DIR: data }, detached: true, stdio: 'ignore' }));
+	scaffold.start('node', ['server/server.js'], { cwd: root, env: { PATH: process.env.PATH, HOME: process.env.HOME, PORT: String(port), DATA_DIR: data } });
 	for (let i = 0; i < 100; i++) { try { if ((await fetch(`http://127.0.0.1:${port}/health`)).ok) break; } catch { /* not up */ } await sleep(200); }
 	const sha = execFileSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim();
 	return { name, port, deps, sha: commit ? sha : `${sha} + working tree` };
 }
 
-const cdpPort = await freePort();
+let cdpPort;   // the port the system gives Chrome (B434), read once it is launched
 let WebSocket;
 async function tab(url) {
 	const t = await (await fetch(`http://127.0.0.1:${cdpPort}/json/new?about:blank`, { method: 'PUT' })).json();
@@ -231,7 +236,7 @@ let failed = false;
 try {
 	({ default: WebSocket } = await import('ws'));
 	const sides = [await serve('baseline', OLD), await serve('candidate', NEW)];
-	procs.push(spawn('google-chrome', ['--headless=new', '--no-sandbox', '--disable-gpu', '--disable-extensions', `--remote-debugging-port=${cdpPort}`, `--user-data-dir=${path.join(OUT, 'profile')}`, 'about:blank'], { detached: true, stdio: 'ignore' }));
+	cdpPort = await scaffold.launchChrome(['--headless=new', '--no-sandbox', '--disable-gpu', '--disable-extensions']);
 	for (let i = 0; i < 80; i++) { try { await (await fetch(`http://127.0.0.1:${cdpPort}/json/version`)).json(); break; } catch { await sleep(200); } }
 	const report = { sides, scenarios: {} };
 	let n = 0;
@@ -270,12 +275,6 @@ try {
 	console.log(`  baseline ${sides[0].sha} (${sides[0].deps}); candidate ${sides[1].sha} (${sides[1].deps}); report ${path.join(OUT, 'capture-sample.json')}`);
 	console.log(failed ? '  FAIL -- a scenario differs' : `  PASS -- all ${n} scenarios alike on both sides`);
 } catch (e) { console.error(`  \u2717 ${e.stack}`); failed = true; } finally {
-	for (const p of procs) {
-		try { process.kill(-p.pid, 'SIGTERM'); } catch { /* gone */ }
-		for (let i = 0; i < 100 && p.exitCode === null && p.signalCode === null; i++) await sleep(50);
-		try { process.kill(-p.pid, 'SIGKILL'); } catch { /* gone */ }
-	}
-	for (const w of trees) { try { execFileSync('git', ['worktree', 'remove', '--force', w], { cwd: ROOT, stdio: 'ignore' }); } catch { /* left for git worktree prune */ } }
-	for (const f of fs.readdirSync(OUT)) if (f.startsWith('data-') || f === 'profile') fs.rmSync(path.join(OUT, f), { recursive: true, force: true });
+	await scaffold.stop();
 }
 process.exit(failed ? 1 : 0);

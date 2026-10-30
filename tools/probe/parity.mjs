@@ -28,7 +28,7 @@ Not a gate check: it needs Chrome, the docs and minutes. Each H25 stage is held 
 Lessons kept from tools/probe/measure.mjs: ports unique per run, every process stopped and waited for, and a step that could
 silently do nothing fails instead -- a probe that cannot prove what it photographed produces numbers, not evidence.
 */
-import { spawn, execFileSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import net from 'node:net';
@@ -37,6 +37,7 @@ import path from 'node:path';
 import zlib from 'node:zlib';
 import { PARITY_DIAGRAM, parityBoard } from './boards.mjs';
 import { ownDependencies, sideProblems } from './sides.mjs';   // H26.1 (G8): each side on its own dependencies, shown before measuring
+import { startProbeScaffold } from './probe-scaffold.mjs';   // H26-19: what the probe starts ends with it, even killed; what it makes goes
 
 const ROOT = path.resolve(import.meta.dirname, '..', '..');
 const args = process.argv.slice(2);
@@ -72,7 +73,7 @@ if (args[0] !== 'compare') die('usage: parity.mjs fetch --bucket B --owner P [--
 // ---- compare
 const baseline = flag('baseline'), candidate = flag('candidate');
 if (!baseline) die('compare needs --baseline <commit>');
-const OUT = flag('out', fs.mkdtempSync(path.join(os.tmpdir(), 'draw-parity-')));
+const OUT = flag('out') ?? fs.mkdtempSync(path.join(os.tmpdir(), 'draw-parity-'));   // made only when none is named: a default argument made one every run
 fs.mkdirSync(OUT, { recursive: true });
 
 // the pinned set, verified: a document changed since it was pinned is a different document, and the comparison would be of nothing
@@ -84,8 +85,14 @@ const docs = docFiles.map((f) => JSON.parse(fs.readFileSync(path.join(DOCS, f), 
 const seeds = Object.keys(JSON.parse(fs.readFileSync(path.join(ROOT, 'lab/seeds.json'), 'utf8')));
 
 const freePort = () => new Promise((resolve) => { const s = net.createServer(); s.listen(0, '127.0.0.1', () => { const { port } = s.address(); s.close(() => resolve(port)); }); });
-const procs = [], worktrees = [];
-const start = (cmd, argv, opts) => { const p = spawn(cmd, argv, { ...opts, detached: true, stdio: 'ignore' }); procs.push(p); return p; };
+// the worktrees, the servers' data and Chrome's profile are scaffolding, removed however the probe ends; the report and images stay
+const scaffold = startProbeScaffold({
+	root: ROOT,
+	trees: [['baseline', baseline], ['candidate', candidate]].filter(([, commit]) => commit).map(([name]) => path.join(OUT, `tree-${name}`)),
+	data: ['baseline', 'candidate'].map((name) => path.join(OUT, `data-${name}`)),
+	profile: path.join(OUT, 'chrome'),
+});
+const start = scaffold.start;
 const until = async (fn, ms, what) => { const end = Date.now() + ms; while (Date.now() < end) { try { if (await fn()) return; } catch { /* not yet */ } await sleep(200); } die(`${what} did not happen within ${ms} ms`); };
 
 async function serve(name, commit) {
@@ -93,7 +100,6 @@ async function serve(name, commit) {
 	if (commit) {
 		root = path.join(OUT, `tree-${name}`);
 		execFileSync('git', ['worktree', 'add', '--detach', root, commit], { cwd: ROOT, stdio: 'ignore' });
-		worktrees.push(root);
 		// H26.1 (G8): the root's node_modules only when its lockfile is the root's; else its own, from its own lockfile
 		deps = ownDependencies(root, ROOT) === 'linked' ? 'linked from the root, its lockfile the same' : 'installed from its own lockfile';
 	}
@@ -111,8 +117,8 @@ async function serve(name, commit) {
 	return { name, root, port, labPort, deps, sha: commit ? sha : `${sha} + working tree` };
 }
 
-// ---- one browser for both sides, over the DevTools protocol
-const cdpPort = await freePort();
+// ---- one browser for both sides, over the DevTools protocol, on the port the system gives it (B434)
+let cdpPort;
 let WebSocket;
 async function tab(url) {
 	const t = await (await fetch(`http://127.0.0.1:${cdpPort}/json/new?${encodeURIComponent(url)}`, { method: 'PUT' })).json();
@@ -250,8 +256,8 @@ try {
 		side.components = checked;
 		console.log(`  ${side.name} (${side.sha}): dependencies ${side.deps}; ${checked.length ? `its pages' import map names ${checked.join(', ')}, installed, every address answered 200` : 'no import map on its pages -- nothing to assert'}`);
 	}
-	start('google-chrome', ['--headless=new', '--no-sandbox', '--disable-gpu', '--disable-extensions', '--hide-scrollbars', '--force-device-scale-factor=1',
-		'--window-size=1600,1000', `--remote-debugging-port=${cdpPort}`, `--user-data-dir=${path.join(OUT, 'chrome')}`, 'about:blank'], {});
+	cdpPort = await scaffold.launchChrome(['--headless=new', '--no-sandbox', '--disable-gpu', '--disable-extensions', '--hide-scrollbars', '--force-device-scale-factor=1',
+		'--window-size=1600,1000']);
 	await until(async () => (await fetch(`http://127.0.0.1:${cdpPort}/json/list`)).ok, 20000, 'Chrome answering');
 	const [a, b] = [await capture(sides[0]), await capture(sides[1])];
 	const report = { baseline: sides[0].sha, candidate: sides[1].sha, components: Object.fromEntries(sides.map((s) => [s.name, s.components])), documents: docs.length, pixels: {}, styles: {} };
@@ -274,10 +280,6 @@ try {
 	if (pixelFaults.length || styleFaults.length) failed = true;
 	console.log(failed ? `\n  FAIL -- see ${OUT}/report.json and the images beside it\n` : `  PASS -- no pixel and no computed style differs (${OUT})\n`);
 } finally {
-	for (const p of procs) { try { process.kill(-p.pid, 'SIGTERM'); } catch { /* gone */ } }
-	await sleep(1500);
-	for (const p of procs) { try { process.kill(-p.pid, 'SIGKILL'); } catch { /* gone */ } }
-	for (const w of worktrees) { try { execFileSync('git', ['worktree', 'remove', '--force', w], { cwd: ROOT, stdio: 'ignore' }); } catch { /* reported by prune */ } }
-	execFileSync('git', ['worktree', 'prune'], { cwd: ROOT, stdio: 'ignore' });
+	await scaffold.stop();
 }
 process.exit(failed ? 1 : 0);

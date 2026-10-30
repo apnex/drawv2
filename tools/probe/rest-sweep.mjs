@@ -28,13 +28,14 @@ pass, so a classifier that passes everything cannot report a clean sweep.
 Not a gate check: it installs a side's dependencies from its own lockfile and runs two servers. Every process is stopped and waited
 for and every worktree removed; the report is left in --out.
 */
-import { spawn, execFileSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
 import { PARITY_DIAGRAM, parityBoard } from './boards.mjs';
 import { ownDependencies } from './sides.mjs';   // H26.1 (G8): each side on its own dependencies
+import { startProbeScaffold } from './probe-scaffold.mjs';   // H26-19: what the probe starts ends with it, even killed; what it makes goes
 
 const ROOT = path.resolve(import.meta.dirname, '..', '..');
 const args = process.argv.slice(2);
@@ -165,13 +166,16 @@ function board() {
 
 // ---- the two sides
 const freePort = () => new Promise((resolve) => { const s = net.createServer(); s.listen(0, '127.0.0.1', () => { const { port } = s.address(); s.close(() => resolve(port)); }); });
-const procs = [], worktrees = [];
+const scaffold = startProbeScaffold({
+	root: ROOT,
+	trees: [['baseline', baseline], ['candidate', candidate]].filter(([, commit]) => commit).map(([name]) => path.join(OUT, `tree-${name}`)),
+	data: ['baseline', 'candidate'].map((name) => path.join(OUT, `data-${name}`)),
+});
 async function serve(name, commit) {
 	let root = ROOT, deps = 'its own';
 	if (commit) {
 		root = path.join(OUT, `tree-${name}`);
 		execFileSync('git', ['worktree', 'add', '--detach', root, commit], { cwd: ROOT, stdio: 'ignore' });
-		worktrees.push(root);
 		deps = ownDependencies(root, ROOT) === 'linked' ? 'linked from the root, its lockfile the same' : 'installed from its own lockfile';
 	}
 	const data = path.join(OUT, `data-${name}`);
@@ -179,21 +183,12 @@ async function serve(name, commit) {
 	const doc = board();
 	fs.writeFileSync(path.join(data, `${doc.meta.id}.json`), JSON.stringify(doc));
 	const port = await freePort();
-	const p = spawn('node', ['server/server.js'], { cwd: root, env: { PATH: process.env.PATH, HOME: process.env.HOME, PORT: String(port), DATA_DIR: data }, detached: true, stdio: 'ignore' });
-	procs.push(p);
+	scaffold.start('node', ['server/server.js'], { cwd: root, env: { PATH: process.env.PATH, HOME: process.env.HOME, PORT: String(port), DATA_DIR: data } });
 	for (let i = 0; i < 100; i++) { try { if ((await fetch(`http://127.0.0.1:${port}/health`)).ok) break; } catch { /* not up */ } await sleep(200); }
 	const sha = execFileSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim();
 	return { name, port, deps, sha: commit ? sha : `${sha} + working tree` };
 }
-async function stopAll() {
-	for (const p of procs) {
-		try { process.kill(-p.pid, 'SIGTERM'); } catch { /* gone */ }
-		for (let i = 0; i < 100 && p.exitCode === null && p.signalCode === null; i++) await sleep(50);
-		try { process.kill(-p.pid, 'SIGKILL'); } catch { /* gone */ }
-	}
-	for (const w of worktrees) { try { execFileSync('git', ['worktree', 'remove', '--force', w], { cwd: ROOT, stdio: 'ignore' }); } catch { /* left for git worktree prune */ } }
-	for (const f of fs.readdirSync(OUT)) if (f.startsWith('data-')) fs.rmSync(path.join(OUT, f), { recursive: true, force: true });
-}
+const stopAll = () => scaffold.stop();
 
 const ask = async (side, p) => { const r = await fetch(`http://127.0.0.1:${side.port}${p}`); return { status: r.status, body: await r.text() }; };
 // a node's id, named by its stored name: the same on both sides for the pinned board, and said rather than assumed
