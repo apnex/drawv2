@@ -10,8 +10,9 @@ import os from 'node:os';
 import path from 'node:path';
 import { Store } from '../server/store.js';
 import { pipeEntity, pipeId } from '../plugins/network/pipe-kind.mjs';
+import { scratchDir } from './fixtures/scratch-dir.mjs';   // H26-19: removed when this file ends -- a run that leaves a folder fails
 
-const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'sb-'));
+const tmp = () => scratchDir('sb-');
 const [A, B, W] = ['node-00000a', 'node-00000b', 'node-00000e'];
 async function fresh(dir = tmp()) {
 	const store = new Store(dir, { flushMs: 3_600_000, authz: false });

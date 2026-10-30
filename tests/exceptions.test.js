@@ -11,9 +11,10 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { exceptionFaults } from '../tools/exceptions.mjs';
+import { scratchDir } from './fixtures/scratch-dir.mjs';   // H26-19: removed when this file ends -- a run that leaves a folder fails
 
 function records() {
-	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-exceptions-'));
+	const dir = scratchDir('draw-exceptions-');
 	fs.mkdirSync(path.join(dir, 'dev'));
 	fs.writeFileSync(path.join(dir, 'dev/BACKLOG.md'), [
 		'| **B1** | open | `[V]` | OPEN -- held. REVIVAL TRIGGER: x. |',

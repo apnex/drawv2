@@ -8,15 +8,16 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { scratchDir } from './fixtures/scratch-dir.mjs';   // H26-19: removed when this file ends -- a run that leaves a folder fails
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const TOOL = path.join(ROOT, 'tools/generate-architecture.mjs');
 // the target document copied too, so no test ever writes the real one
-const TARGET_COPY = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'draw-arch-target-')), 'ARCHITECTURE-TARGET.md');
+const TARGET_COPY = path.join(scratchDir('draw-arch-target-'), 'ARCHITECTURE-TARGET.md');
 fs.copyFileSync(path.join(ROOT, 'docs/ARCHITECTURE-TARGET.md'), TARGET_COPY);
 const run = (...a) => spawnSync(process.execPath, [TOOL, '--target-doc', TARGET_COPY, ...a], { encoding: 'utf8' });
 const copy = (edit) => {
-	const f = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'draw-arch-')), 'ARCHITECTURE.md');
+	const f = path.join(scratchDir('draw-arch-'), 'ARCHITECTURE.md');
 	fs.writeFileSync(f, edit(fs.readFileSync(path.join(ROOT, 'docs/ARCHITECTURE.md'), 'utf8')));
 	return f;
 };
@@ -51,7 +52,7 @@ test('H21.6: a document missing a region fails; the authored frame outside the r
 
 // the part rules, driven over a parts declaration of the test's own, written from the real one with one fault planted
 const partsWith = (edit) => {
-	const f = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'draw-parts-')), 'parts.json');
+	const f = path.join(scratchDir('draw-parts-'), 'parts.json');
 	return import('../tools/layers.mjs').then(({ PARTS }) => { const p = structuredClone(PARTS); edit(p); fs.writeFileSync(f, JSON.stringify(p)); return f; });
 };
 
@@ -135,7 +136,7 @@ test("H21.6 review 3: a door consumes no host, but for a consume a ruling in the
 
 // the alignment register (H21.9, A-0), driven over a register of the test's own, written from the real one with one fault planted
 const alignmentWith = (edit) => {
-	const f = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'draw-align-')), 'alignment.json');
+	const f = path.join(scratchDir('draw-align-'), 'alignment.json');
 	return import('../tools/layers.mjs').then(({ ALIGNMENT }) => { const a = structuredClone(ALIGNMENT); edit(a); fs.writeFileSync(f, JSON.stringify(a)); return f; });
 };
 
@@ -165,7 +166,7 @@ component's parts are parts that exist, each aligned to it in the mission-kit re
 target's justification chain, as every ruling a part is fixed by is.
 */
 const componentsWith = (edit) => {
-	const f = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'draw-components-')), 'components.json');
+	const f = path.join(scratchDir('draw-components-'), 'components.json');
 	return import('../tools/layers.mjs').then(({ COMPONENTS }) => { const c = structuredClone(COMPONENTS); edit(c); fs.writeFileSync(f, JSON.stringify(c)); return f; });
 };
 
@@ -205,7 +206,7 @@ the generator reads the composition, so the plant loads the package by a specifi
 */
 test('H26.1: a component a part\'s modules import today is rendered in the current document -- planted in a copy of the tree', async () => {
 	const { FOLDERS } = await import('../tools/layers.mjs');
-	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-arch-components-'));
+	const dir = scratchDir('draw-arch-components-');
 	try {
 		for (const f of FOLDERS) fs.cpSync(path.join(ROOT, f.dir), path.join(dir, f.dir), { recursive: true, filter: (src) => !(f.skip ?? []).some((s) => src.startsWith(path.join(ROOT, s))) });
 		for (const f of ['docs', 'dev/BACKLOG.md', 'package.json']) fs.cpSync(path.join(ROOT, f), path.join(dir, f), { recursive: true });

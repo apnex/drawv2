@@ -20,13 +20,14 @@ import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { main } from '../cli/draw.mjs';
 import { VERBS, byName, parityOf } from '../cli/verbs.mjs';
+import { scratchDir } from './fixtures/scratch-dir.mjs';   // H26-19: removed when this file ends -- a run that leaves a folder fails
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 let app, host, dataDir, home;
 
 async function boot() {
-	dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-cli-'));
-	home = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-home-'));
+	dataDir = scratchDir('draw-cli-');
+	home = scratchDir('draw-home-');
 	app = await makeApp({ dataDir, port: 0 });
 	host = `http://127.0.0.1:${app.port}`;
 }
@@ -790,7 +791,7 @@ whole suite green. The only observable that distinguishes the two is what happen
 ABSENT, so that is what this drives.
 */
 test('B135: with no HOME in the injected env, the real home is never touched', async () => {
-	const canary = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-canary-'));
+	const canary = scratchDir('draw-canary-');
 	const realHome = process.env.HOME;
 	try {
 		// point the process at a canary and plant a token the sweep WOULD delete if it looked here
@@ -866,7 +867,7 @@ So this one shells out on purpose. It is the only test here that does, and the r
 subprocess through a link is the only arrangement in which the defect exists.
 */
 test('B138: `draw` runs when invoked through a symlink, as both installers create it', () => {
-	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-link-'));
+	const dir = scratchDir('draw-link-');
 	try {
 		const target = path.join(root, 'cli/draw.mjs');
 		const link = path.join(dir, 'draw');
@@ -1426,8 +1427,8 @@ The context file is the CLI's session, and re-pointing it is what makes a later 
 the first instead of starting a third copy.
 */
 test('H9.9: a write to a template is announced, and the context follows the fork', async () => {
-	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-tplcli-'));
-	const hm = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-tplhome-'));
+	const dir = scratchDir('draw-tplcli-');
+	const hm = scratchDir('draw-tplhome-');
 	const templatesDir = fileURLToPath(new URL('../templates', import.meta.url));
 	const a = await makeApp({ dataDir: dir, port: 0, templatesDir });
 	const h = `http://127.0.0.1:${a.port}`;

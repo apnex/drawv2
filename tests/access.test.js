@@ -21,8 +21,9 @@ import { Locks } from '../server/locks.js';
 import { Model } from './fixtures/composed.mjs';   // the network's kinds, the link among them (S-e)
 import { Selection } from '../app/src/selection.js';
 import { Sync } from '../app/src/sync.js';
+import { scratchDir } from './fixtures/scratch-dir.mjs';   // H26-19: removed when this file ends -- a run that leaves a folder fails
 
-const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'draw-acl-'));
+const tmp = () => scratchDir('draw-acl-');
 const OWNER = 'user:owner@apnex.com.au';
 const GUEST = 'user:guest@example.com';
 const AGENT = 'agent:planner';

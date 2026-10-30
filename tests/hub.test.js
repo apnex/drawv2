@@ -21,6 +21,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { scratchDir } from './fixtures/scratch-dir.mjs';   // H26-19: removed when this file ends -- a run that leaves a folder fails
 
 // the narrow duck-typed Session the Hub speaks: { diagramId, send(cmd, body) }
 function viewer(diagramId, { throws = false } = {}) {
@@ -122,7 +123,7 @@ const until = async (what, ok, ms = 5000) => {
 };
 
 test('B54: a peer that misses a whole round is evicted; one that answered is not -- the rounds driven, in order', async () => {
-	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-ka-'));
+	const dir = scratchDir('draw-ka-');
 	const app = await makeApp({ dataDir: dir, port: 0, host: '127.0.0.1', pingMs: 0 });   // no timer: the test drives the rounds
 	try {
 		const silent = await halfOpenPeer(app.port);
@@ -150,7 +151,7 @@ test('B54: a peer that misses a whole round is evicted; one that answered is not
 });
 
 test('B54: the server\'s own timer drives the rounds -- a silent peer is evicted without anyone sweeping', async () => {
-	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-ka-'));
+	const dir = scratchDir('draw-ka-');
 	const app = await makeApp({ dataDir: dir, port: 0, host: '127.0.0.1', pingMs: 40 });
 	try {
 		const silent = await halfOpenPeer(app.port);

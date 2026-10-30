@@ -20,12 +20,13 @@ import path from 'node:path';
 import { makeApp } from './fixtures/app.mjs';
 import { main } from '../cli/draw.mjs';
 import { VERBS } from '../cli/verbs.mjs';
+import { scratchDir } from './fixtures/scratch-dir.mjs';   // H26-19: removed when this file ends -- a run that leaves a folder fails
 
 let app, host, dataDir, home;
 
 async function boot() {
-	dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-flag-'));
-	home = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-fhome-'));
+	dataDir = scratchDir('draw-flag-');
+	home = scratchDir('draw-fhome-');
 	app = await makeApp({ dataDir, port: 0 });
 	host = `http://127.0.0.1:${app.port}`;
 }
