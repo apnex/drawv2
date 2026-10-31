@@ -13,9 +13,9 @@ import { test } from 'node:test';
 import { KINDS } from './fixtures/composed.mjs';   // O-b1: a reader is handed its caller's kinds
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { openStore, OWNER } from './fixtures/app.mjs';
+import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
 
 // a document as the estate stored it before the cutover: schema 1, its waypoints kept apart
 const older = (id) => ({ meta: { id, name: 'before the cutover', version: 3, schema: 1, owner: '', grants: {} },
@@ -28,7 +28,7 @@ const current = (id) => ({ meta: { id, name: 'after the cutover', version: 0, sc
 const SAID = /written in schema 1, an older format: this version reads schema 3 only and keeps no migration/;
 
 test('B291: a stored file from before the cutover is skipped at boot, with the reason said; the rest load', async () => {
-	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-older-'));
+	const dir = scratchFolder('draw-older-');
 	fs.writeFileSync(path.join(dir, '00000000000d0001.json'), JSON.stringify(older('00000000000d0001')));
 	fs.writeFileSync(path.join(dir, '00000000000d0002.json'), JSON.stringify(current('00000000000d0002')));
 	const said = [], error = console.error, warn = console.warn;
@@ -43,7 +43,7 @@ test('B291: a stored file from before the cutover is skipped at boot, with the r
 });
 
 test('B291: create refuses a document in the older format, saying so; a current one is installed', async () => {
-	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-older-create-'));
+	const dir = scratchFolder('draw-older-create-');
 	try {
 		const s = await openStore(dir);
 		const refused = s.create('old', older('00000000000d0003'), OWNER);

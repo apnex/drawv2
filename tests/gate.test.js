@@ -35,6 +35,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import { execFileSync } from 'node:child_process';
+import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
 
 const root = path.resolve(import.meta.dirname, '..');
 const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
@@ -78,7 +79,7 @@ test('B423: the gate runs on the image\'s Node.js major -- its first step refuse
 	const { execFileSync, spawnSync } = await import('node:child_process');
 	const os = await import('node:os');
 	assert.ok(pkg.scripts.gate.startsWith('node tools/gate-runtime.mjs && '), 'the runtime check is the gate\'s first step, before the suite');
-	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gate-runtime-'));
+	const dir = scratchFolder('gate-runtime-');
 	try {
 		const major = Number(process.versions.node.split('.')[0]);
 		const run = (from) => { fs.writeFileSync(path.join(dir, 'Dockerfile'), `# a test image\nFROM ${from}\n`); return spawnSync(process.execPath, [path.join(root, 'tools/gate-runtime.mjs'), '--dockerfile', path.join(dir, 'Dockerfile')], { encoding: 'utf8' }); };
@@ -191,7 +192,7 @@ such a row. This builds a board whose lettered item is DONE while its B row is o
 exactly the R3 contract, and asserts the scanner REFUSES it.
 */
 test('GR14/B92: a rule fires on a lettered item, not only on an unlettered one', () => {
-	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'b92-'));
+	const dir = scratchFolder('b92-');
 	fs.mkdirSync(path.join(dir, 'dev'));
 	// The disposition must PROMISE a milestone or R3 skips the row by design (scan-board.mjs:161),
 	// so the fixture opens with `**H1**` and is not marked CLOSED. Read from the scanner rather than
@@ -233,7 +234,7 @@ test('GR16/B70: scan-wiring fails on a root that computes a value and does not p
 	// Run the scanner against a fixture reproducing B70 exactly -- `audience` computed, mentioned
 	// only inside Boolean(), never passed. Asserting the scanner's green on a correct tree proves
 	// nothing about its ability to fail; only this does.
-	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'wiring-'));
+	const dir = scratchFolder('wiring-');
 	fs.mkdirSync(path.join(dir, 'server'));
 	fs.writeFileSync(path.join(dir, 'server/app.js'),
 		"export async function createApp({ dataDir, authz = false, audience = '', owner = '' } = {}) {}\n");
@@ -306,7 +307,7 @@ Driven over fixtures. Asserting the real board is clean proves the rules agree w
 not that they can tell a violation from a compliance.
 */
 test('GR14/B77: a heading must agree with the states beneath it, and every item must declare one', () => {
-	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'board-'));
+	const dir = scratchFolder('board-');
 	fs.mkdirSync(path.join(dir, 'dev'));
 	fs.writeFileSync(path.join(dir, 'dev/BACKLOG.md'), '| **B1** | a row | `[V]` | OPEN |\n');
 	const write = (body) => fs.writeFileSync(path.join(dir, 'dev/BOARD.md'), body);
@@ -367,7 +368,7 @@ Driven over fixtures, for the reason the test above gives: asserting today's cle
 rules agree with today's file, not that they can tell a violation from a compliance.
 */
 test('GR14/B122+B123: an unknown verdict errors, and a live row cannot be absent from the plan', () => {
-	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'b122-'));
+	const dir = scratchFolder('b122-');
 	fs.mkdirSync(path.join(dir, 'dev'));
 	const run = () => {
 		try { return { out: execFileSync('node', [path.join(root, 'tools/scan-board.mjs'), '--root', dir], { encoding: 'utf8' }), code: 0 }; }
@@ -663,7 +664,7 @@ version worthless. A method nothing calls must FAIL. Both directions, because a 
 ever fails is as useless as one that only ever passes.
 */
 test('GR15/B91: a method nothing calls is caught; one called via this. is not', () => {
-	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'b91-'));
+	const dir = scratchFolder('b91-');
 	const run = () => {
 		try { return { out: execFileSync('node', [path.join(root, 'tools/scan-dead.mjs')], { cwd: dir, encoding: 'utf8' }), code: 0 }; }
 		catch (e) { return { out: (e.stdout || '') + (e.stderr || ''), code: e.status }; }
@@ -871,7 +872,7 @@ delete and `after` on a set, and the converter turns them into `id` and `patch`.
 one of those two tables flagged twenty-one healthy builders on this rule's first run.
 */
 test('GR3/B125: an entry missing a key its op requires is caught, in the ENTRY vocabulary', () => {
-	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'b125-'));
+	const dir = scratchFolder('b125-');
 	fs.mkdirSync(path.join(dir, 'app/src'), { recursive: true });
 	fs.mkdirSync(path.join(dir, 'model'), { recursive: true });
 	fs.mkdirSync(path.join(dir, 'server'), { recursive: true });
@@ -941,7 +942,7 @@ skips when its tools are missing is decorative, which is the shape B122, B128 an
 in CI the tools arrive by network fetch -- so absent tools is the LIKELY failure, not a hypothetical.
 */
 test('B51: scan-docstyle fails when it cannot find its rules, and never skips', () => {
-	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'docstyle-'));
+	const dir = scratchFolder('docstyle-');
 	fs.mkdirSync(path.join(dir, 'docs'));
 	fs.writeFileSync(path.join(dir, 'docs/X.md'), '# x\n\nA sentence.\n');
 	const run = (env) => {

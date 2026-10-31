@@ -18,18 +18,15 @@ The load-bearing assertions are the two that no unit test can reach:
 */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
 import { makeApp } from './fixtures/app.mjs';
 import { main } from '../cli/draw.mjs';
-import { scratchDir } from './fixtures/scratch-dir.mjs';   // H26-19: removed when this file ends -- a run that leaves a folder fails
+import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
 
 let app, host, dataDir, home;
 
 async function boot() {
-	dataDir = scratchDir('draw-draft-');
-	home = scratchDir('draw-dhome-');
+	dataDir = scratchFolder('draw-draft-');
+	home = scratchFolder('draw-dhome-');
 	app = await makeApp({ dataDir, port: 0 });
 	host = `http://127.0.0.1:${app.port}`;
 }

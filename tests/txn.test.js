@@ -13,6 +13,7 @@ import { validateDoc } from './fixtures/composed.mjs';   // the network's kinds,
 // B112: an unpositioned fixture node gets a DISTINCT anchor derived from its id -- one
 // anchor holds one occupant, so two fixtures defaulting to (0,0) is now a real violation.
 const _at = (id) => (parseInt(id.slice(-4), 16) % 15 + 1) * 60;
+import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
 const node = (id, x = null, extra = {}) => ({ id, name: id, type: 'host', shape: 'circle', x: x ?? _at(id), y: 0, ...extra });
 const fresh = () => ({ m: new Model(), log: new Log(0) });
 const put = (kind, entity) => ({ op: 'put', kind, entity });
@@ -1226,7 +1227,7 @@ test('PL-4: the clock passed in stamps the record and starts a beat, and undo an
 test('PL-4: the store hands the planner its own clock and its placement', async () => {
 	const fs = await import('node:fs'); const os = await import('node:os'); const path = await import('node:path');
 	const { Store } = await import('../server/store.js');
-	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pl4-'));
+	const dir = scratchFolder('pl4-');
 	try {
 		const store = new Store(dir, { now: () => 4242, authz: false });
 		await store.init();

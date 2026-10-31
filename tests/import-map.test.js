@@ -11,13 +11,13 @@ the map does not name. Each refusal is planted in a copy of the pages and the in
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { PAGES, COPIES } from '../tools/layers.mjs';
 import { markersOf } from '../tools/regions.mjs';
 import { PAGE_REGIONS, importMapRegion } from '../tools/page-regions.mjs';
 import { importMapOf } from '../tools/components.mjs';
+import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const TOOL = path.join(ROOT, 'tools/import-map.mjs');
@@ -29,11 +29,8 @@ const capture = JSON.parse(read(ROOT, 'node_modules/@apnex/input-capture/package
 const scene = JSON.parse(read(ROOT, 'node_modules/@apnex/vector-scene/package.json'));   // H26.4: and the fourth
 
 // a copy of what the generator reads: the declared pages, package.json, and the installed components -- each case edits its own
-const made = [];
-after(() => { for (const d of made) fs.rmSync(d, { recursive: true, force: true }); });
 function tree(edit = () => {}) {
-	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-import-map-'));
-	made.push(dir);
+	const dir = scratchFolder('draw-import-map-');
 	for (const f of ['package.json', ...Object.keys(PAGES)]) { fs.mkdirSync(path.dirname(path.join(dir, f)), { recursive: true }); fs.copyFileSync(path.join(ROOT, f), path.join(dir, f)); }
 	fs.cpSync(path.join(ROOT, 'node_modules/@apnex'), path.join(dir, 'node_modules/@apnex'), { recursive: true });
 	edit({

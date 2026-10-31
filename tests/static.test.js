@@ -6,6 +6,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import path from 'node:path';
 import { fileWithin } from '../server/static.mjs';
+import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
 
 const base = path.resolve('/srv/draw/kernel');
 
@@ -107,7 +108,7 @@ async function responder() {
 	const os = await import('node:os');
 	const http = await import('node:http');
 	const { sendFile } = await import('../server/static.mjs');
-	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-static-'));
+	const dir = scratchFolder('draw-static-');
 	const server = http.createServer((req, res) => sendFile(req, res, fileWithin(dir, new URL(req.url, 'http://x').pathname)));
 	await new Promise((r) => server.listen(0, '127.0.0.1', r));
 	const ask = (p, headers = {}, method = 'GET') => new Promise((resolve, reject) => {
@@ -219,7 +220,7 @@ async function vendorTree() {
 	const os = await import('node:os');
 	const http = await import('node:http');
 	const { sendFile, sendVendored } = await import('../server/static.mjs');
-	const root = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-vendor-'));
+	const root = scratchFolder('draw-vendor-');
 	const put = (f, text) => { fs.mkdirSync(path.dirname(path.join(root, f)), { recursive: true }); fs.writeFileSync(path.join(root, f), text); };
 	put('package.json', JSON.stringify({ dependencies: { '@apnex/kit': 'https://example.invalid/kit-1.2.3.tgz', ws: '^8' } }));
 	put('node_modules/@apnex/kit/package.json', JSON.stringify({ name: '@apnex/kit', version: '1.2.3' }));

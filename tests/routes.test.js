@@ -14,14 +14,13 @@ is the only thing being claimed here. What the handler then decides is every oth
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
 import { makeApp } from './fixtures/app.mjs';
 import { ROUTES, families } from '../server/routes.mjs';
 import { inventory } from '../tools/routes.mjs';
+import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
 
 test('B119: every declared route and method is answered by the running server', async () => {
-	const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-routes-'));
+	const dataDir = scratchFolder('draw-routes-');
 	const app = await makeApp({ dataDir, port: 0 });
 	const base = `http://127.0.0.1:${app.port}/api/v1`;
 	try {

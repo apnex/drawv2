@@ -14,10 +14,10 @@ the record compared with the live run's tags.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { NATIVE_RECORD } from './fixtures/native-record.mjs';
+import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const MOVE = 'pipes';   // as tests/native-record.test.js
@@ -77,7 +77,7 @@ console.log(JSON.stringify(out));
 
 let copy;
 before(() => {
-	copy = fs.mkdtempSync(path.join(os.tmpdir(), 'native-record-mutants-'));
+	copy = scratchFolder('native-record-mutants-');
 	for (const p of TREE) fs.cpSync(path.join(ROOT, p), path.join(copy, p), { recursive: true });
 	fs.symlinkSync(path.join(ROOT, 'node_modules'), path.join(copy, 'node_modules'));
 });

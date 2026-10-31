@@ -6,13 +6,13 @@ the three-way split on a module written to hold each case the scanner must tell 
 TypeScript's parser when the tool was built -- a component counted from its map's `sourcesContent`, and `--rev` on a commit with no
 components, one pinning the version installed and one pinning another.
 */
-import { test, before, after } from 'node:test';
+import { test, before } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { spawnSync, execFileSync } from 'node:child_process';
 import { classify, codeLines } from '../tools/code-split.mjs';
+import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
 
 const TOOL = path.resolve(import.meta.dirname, '../tools/code-split.mjs');
 
@@ -81,8 +81,8 @@ const pin = (version) => {
 const commits = {};
 
 before(() => {
-	root = fs.mkdtempSync(path.join(os.tmpdir(), 'code-split-tree-'));
-	scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'code-split-scratch-'));
+	root = scratchFolder('code-split-tree-');
+	scratch = scratchFolder('code-split-scratch-');
 	git('init', '-q');
 	write('.gitignore', 'node_modules/\ndiagrams/*.json\n');
 	write('tools/layers.mjs', `export const PARTS = {
@@ -124,7 +124,6 @@ before(() => {
 	write('node_modules/@apnex/thing/dist/index.js.map', JSON.stringify({ version: 3, file: 'index.js', sources: ['../src/index.ts'], sourcesContent: [SOURCE], mappings: '' }));
 	write('node_modules/@apnex/thing/dist/index.d.ts.map', JSON.stringify({ version: 3, sources: ['../src/declared.ts'], sourcesContent: ['export declare const NOT_COUNTED: 1;\n'.repeat(50)], mappings: '' }));
 });
-after(() => { for (const d of [root, scratch]) fs.rmSync(d, { recursive: true, force: true }); });
 
 // the tool as a command, with a TMPDIR of its own so a --rev run can be seen to leave nothing behind
 const run = (...args) => spawnSync(process.execPath, [TOOL, '--root', root, ...args], { encoding: 'utf8',

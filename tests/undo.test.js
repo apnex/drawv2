@@ -8,10 +8,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
 import { makeApp } from './fixtures/app.mjs';
 import { Locks } from '../server/locks.js';
+import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
 
 let app, base, dataDir;
 
@@ -21,7 +20,7 @@ const j = async (u, o) => {
 };
 
 test.before(async () => {
-	dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-undo-'));
+	dataDir = scratchFolder('draw-undo-');
 	app = await makeApp({ dataDir, port: 0 });
 	base = `http://localhost:${app.port}`;
 });

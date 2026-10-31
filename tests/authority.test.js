@@ -17,9 +17,8 @@ need opposite responses.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
 import { Store } from '../server/store.js';
+import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -54,7 +53,7 @@ function backend({ failWith = null } = {}) {
 }
 
 async function storeWith(opts, files, lost) {
-	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-auth-'));
+	const dir = scratchFolder('draw-auth-');
 	const s = new Store(dir, {
 		flushMs: 5, files, authz: false,
 		onLostAuthority: (id, reason) => lost.push([id, reason]),

@@ -20,7 +20,6 @@ import { makeLink } from '../plugins/network/link-queries.mjs';   // K13d: the n
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -30,6 +29,7 @@ import { makeWaypoint } from '../plugins/devices/make-node.mjs';   // O-e1: the 
 
 // admitted = no link holds the pair against it
 const admits = (link, among) => pairHolders(link, among).length === 0;
+import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
 
 const A = 'node-00000a', B = 'node-00000b', W = 'node-00000c';
 const straight = (id, src, dst) => ({ id, src, dst, via: [] });
@@ -191,7 +191,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const NEEDLE = 'export function straightCapacity(_model, _a, _b) {\n\treturn 1;\n}';   // its own module since S-b
 
 test('ONE HOME: raise straightCapacity to 2 in a copy, and all six sites admit a second straight link', () => {
-	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pair-capacity-'));
+	const dir = scratchFolder('pair-capacity-');
 	try {
 		for (const d of ['kernel', 'model', 'engine', 'app', 'server', 'planner', 'plugins', 'product', 'tests/fixtures']) fs.cpSync(path.join(ROOT, d), path.join(dir, d), { recursive: true });
 		fs.cpSync(path.join(ROOT, 'package.json'), path.join(dir, 'package.json'));

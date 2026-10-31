@@ -15,18 +15,16 @@ any one verb, and only 45 of 62 verbs declare `--diagram` while every one of the
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
 import { makeApp } from './fixtures/app.mjs';
 import { main } from '../cli/draw.mjs';
 import { VERBS } from '../cli/verbs.mjs';
-import { scratchDir } from './fixtures/scratch-dir.mjs';   // H26-19: removed when this file ends -- a run that leaves a folder fails
+import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
 
 let app, host, dataDir, home;
 
 async function boot() {
-	dataDir = scratchDir('draw-flag-');
-	home = scratchDir('draw-fhome-');
+	dataDir = scratchFolder('draw-flag-');
+	home = scratchFolder('draw-fhome-');
 	app = await makeApp({ dataDir, port: 0 });
 	host = `http://127.0.0.1:${app.port}`;
 }

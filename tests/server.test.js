@@ -2,15 +2,15 @@ import { heldLayouts } from './fixtures/composed.mjs';   // WD-b1: the two layou
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import WebSocket from 'ws';
 import { GUEST, OWNER, makeApp, openStore } from './fixtures/app.mjs';
+import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
 
 let app, base, dataDir;
 
 before(async () => {
-	dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-test-'));
+	dataDir = scratchFolder('draw-test-');
 	app = await makeApp({ dataDir, port: 0 });
 	base = `http://localhost:${app.port}`;
 });
@@ -576,7 +576,7 @@ test('B113: the collection cap is reachable on a kind that has no anchors', asyn
 	Links need DISTINCT pairs: the straight-link invariant allows one per pair, so 2001 links means
 	2001 pairs, which is why this needs its own setup rather than a tail on the anchor test.
 	*/
-	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-linkcap-'));
+	const dir = scratchFolder('draw-linkcap-');
 	const store = await openStore(dir);
 	const id = store.list(OWNER)[0].id;
 
@@ -656,7 +656,7 @@ so the assertion is that each lands somewhere IT may read, which a single lookup
 however the principal is threaded into it.
 */
 test('B130: two viewers of a deleted diagram each land on a survivor THEY may read', async () => {
-	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-b130-'));
+	const dir = scratchFolder('draw-b130-');
 	const app2 = await makeApp({ dataDir: dir, port: 0 });
 	const sock = (principal) => {
 		app2.as(principal);
@@ -731,7 +731,7 @@ test('B32: a diagram another controller is driving cannot be deleted, but its ho
 });
 
 test('B32: deleting the last diagram leaves a usable store rather than an empty one', async () => {
-	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-lastdel-'));
+	const dir = scratchFolder('draw-lastdel-');
 	const store = await openStore(dir);
 	for (const d of store.list(OWNER)) assert.equal(await store.remove(d.id, OWNER), null);
 	assert.ok(store.total() > 0, 'the store reseeded rather than going empty');
@@ -1152,7 +1152,7 @@ test('create {doc} validateDoc rejections: duplicate ids and self-links', async 
 });
 
 test('corrupt and invalid files in the data dir are skipped at boot', async () => {
-	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-corrupt-'));
+	const dir = scratchFolder('draw-corrupt-');
 	fs.writeFileSync(path.join(dir, '0000000000bad001.json'), 'not json at all {{{');
 	fs.writeFileSync(path.join(dir, '0000000000bad002.json'), JSON.stringify({ meta: { id: '0000000000bad002', name: 'x' }, nodes: [{ id: 'node-zz', evil: true }] }));
 	const good = {
@@ -1183,7 +1183,7 @@ test('collection caps are enforced on apply', async () => {
 	the thing under test here. That nodes are now anchor-limited rather than cap-limited is real and
 	tracked as B113; it is a finding about the two limits, not about this test.
 	*/
-	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-cap-'));
+	const dir = scratchFolder('draw-cap-');
 	const store = await openStore(dir);
 	const id = store.list(OWNER)[0].id;
 	const anchors = [];
@@ -1250,7 +1250,7 @@ test('delete removes a diagram, its file, and hands the session a survivor', asy
 });
 
 test('deleting the last diagram reseeds the example (store never goes empty)', async () => {
-	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-lastdel-'));
+	const dir = scratchFolder('draw-lastdel-');
 	const app2 = await makeApp({ dataDir: dir, port: 0 });
 	const base2 = `http://localhost:${app2.port}`;
 

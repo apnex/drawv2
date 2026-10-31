@@ -9,20 +9,18 @@ measures, the probe asks each side's servers for every address its pages' import
 the version installed on that side (sideProblems); a revision from before the map has nothing to assert. Not the probe itself -- it
 needs Chrome, the pinned documents and minutes -- but the two steps it now takes, each driven here beside a control.
 */
-import { test, after } from 'node:test';
+import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import http from 'node:http';
 import net from 'node:net';
 import { ownDependencies, sideProblems } from '../tools/probe/sides.mjs';
+import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const { version } = JSON.parse(fs.readFileSync(path.join(ROOT, 'node_modules/@apnex/snap-grid/package.json'), 'utf8'));
-const made = [];
-after(() => { for (const d of made) fs.rmSync(d, { recursive: true, force: true }); });
-const scratch = () => { const d = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-probe-sides-')); made.push(d); return d; };
+const scratch = () => scratchFolder('draw-probe-sides-');
 
 test('H26.1 (G8): a worktree whose lockfile is the root\'s links the root\'s node_modules; one whose lockfile differs installs from its own', () => {
 	const root = scratch(), same = scratch(), other = scratch(), installs = [];

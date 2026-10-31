@@ -20,14 +20,13 @@ tab close and not merely a socket drop.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
 import { Model } from './fixtures/composed.mjs';   // the network's kinds, the link among them (S-e)
 import { Session } from '../server/protocol.js';
 import { Selection } from '../app/src/selection.js';
 import { Changes } from '../app/src/changes.js';
 import { Sync } from '../app/src/sync.js';
 import { OWNER, GUEST, openStore } from './fixtures/app.mjs';
+import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
 
 // the browser API Sync persists its outbox through (D30)
 const storage = new Map();
@@ -280,7 +279,7 @@ function fakeWs() {
 }
 
 test('CS4 gate: a server killed mid-debounce REPORTS the loss — the acked change is never silently reverted', async () => {
-	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-rewind-'));
+	const dir = scratchFolder('draw-rewind-');
 	try {
 		// a long debounce stands in for a process that dies before its flush fires
 		const s1 = await openStore(dir, { flushMs: 3_600_000 });
@@ -311,7 +310,7 @@ test('CS4 gate: a server killed mid-debounce REPORTS the loss — the acked chan
 });
 
 test('resume: unknown diagram is a typed refusal, and never binds the session', async () => {
-	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-resume-'));
+	const dir = scratchFolder('draw-resume-');
 	try {
 		const store = await openStore(dir, { flushMs: 3_600_000 });
 		const ws = fakeWs();
@@ -330,7 +329,7 @@ is at version 0, as `syncBody` already answers. And a resume reads like an `open
 typed refusal, as `open` and `hello` give, where it threw inside `snapshotBody`'s defence.
 */
 test('B290: a resume against a template is answered at version 0, and the session binds to it', async () => {
-	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-resume-'));
+	const dir = scratchFolder('draw-resume-');
 	try {
 		const store = await openStore(dir, { flushMs: 3_600_000, templatesDir: new URL('../templates', import.meta.url).pathname });
 		const ws = fakeWs();
@@ -345,7 +344,7 @@ test('B290: a resume against a template is answered at version 0, and the sessio
 });
 
 test('B290: a resume against a diagram the caller may not read is a typed refusal, and never binds the session', async () => {
-	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-resume-'));
+	const dir = scratchFolder('draw-resume-');
 	try {
 		const store = await openStore(dir, { flushMs: 3_600_000, authz: true });
 		const id = store.list(OWNER)[0].id;
@@ -403,7 +402,7 @@ behind the tab with nothing to say so -- found by the verifier of H24.18's secon
 */
 test('B393: a lost answered change and an open nudge window -- the server and the tab both keep the later edit', async () => {
 	storage.clear();
-	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-b393-'));
+	const dir = scratchFolder('draw-b393-');
 	const tick = (ms = 20) => new Promise((r) => setTimeout(r, ms));
 	try {
 		let store = await openStore(dir, { flushMs: 3_600_000 });

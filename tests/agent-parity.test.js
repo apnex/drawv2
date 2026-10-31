@@ -6,12 +6,12 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { makeApp } from './fixtures/app.mjs';
 import { main } from '../cli/draw.mjs';
 import { createNetworkSession } from '../plugins/network/session.mjs';
 import { Model } from './fixtures/composed.mjs';
+import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
 
 const MATRIX = JSON.parse(fs.readFileSync(new URL('../dev/design/unification/BEHAVIOUR-MATRIX.json', import.meta.url), 'utf8'));
 const SEEDS = JSON.parse(fs.readFileSync(new URL('../lab/seeds.json', import.meta.url), 'utf8'));
@@ -19,8 +19,8 @@ const row = (id) => MATRIX.rows.find((r) => r.id === id);
 
 let app, dataDir, home, host;
 before(async () => {
-	dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-parity-'));
-	home = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-parity-home-'));
+	dataDir = scratchFolder('agent-parity-');
+	home = scratchFolder('agent-parity-home-');
 	app = await makeApp({ dataDir, port: 0 });
 	host = `http://127.0.0.1:${app.port}`;
 });

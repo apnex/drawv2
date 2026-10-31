@@ -10,17 +10,16 @@ lacking one is an error naming it, never the kernel's names put in its place.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
 import { makeApp } from './fixtures/app.mjs';
 import { Model } from './fixtures/composed.mjs';
 import { LAYOUT_TABLE } from '../plugins/layouts/layout-table.mjs';
 import { layoutRecords } from '../plugins/layouts/layout-records.mjs';
+import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
 
 const RECORDS = structuredClone(LAYOUT_TABLE).map((l) => ({ ...l, ext: { ...l.ext } }));
 let app, base, dataDir;
 before(async () => {
-	dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-layouts-api-'));
+	dataDir = scratchFolder('draw-layouts-api-');
 	app = await makeApp({ dataDir, port: 0 });
 	base = `http://localhost:${app.port}`;
 });

@@ -22,8 +22,6 @@ Oracles (all computed from the harness's OWN bookkeeping, never from Sync.pendin
   would show a person something the server does not hold.
 */
 import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
 import { Model } from '../../model/model.mjs';
 import { applyOps } from '../../model/ops.mjs';
 import { Changes, applyAnswer } from '../../app/src/changes.js';
@@ -41,6 +39,7 @@ import { NETWORK_ROWS } from '../../plugins/network/kinds.mjs';
 import { linkReading, readModel } from '../../plugins/network/read-model.mjs';
 import { createTransit } from '../../plugins/network/transit.mjs';
 import { pipeEntity } from '../../plugins/network/pipe-kind.mjs';
+import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
 
 let NOW = 1_700_000_000_000;
 const realNow = Date.now;
@@ -122,7 +121,7 @@ export async function makeWorld(code, { seed, tabs = 2, gestureCancelOnLoad = tr
 	if (storage) installStorage(); else delete globalThis.localStorage;
 	const shared = new Map();
 	const { Model, Changes, Sync, Session, Hub, OWNER, openStore, applyOps, createPageNetwork, plan, applyAnswer, KINDS: kinds } = code;
-	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'sync-world-'));
+	const dir = scratchFolder('sync-world-');
 	const store = await openStore(dir, { flushMs });
 	const made = store.create('sync-world', null, OWNER);
 	if (!made.ok) throw new Error(made.error);

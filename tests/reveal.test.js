@@ -19,7 +19,7 @@ import assert from 'node:assert/strict';
 import { Model, heldLayouts } from './fixtures/composed.mjs';   // the composition production runs (S-b)
 import { validateDoc } from './fixtures/composed.mjs';   // the network's kinds, as the store validates (S-e)
 import { revealedAt, beatsOf } from '../plugins/simulation/reveal.mjs';
-import { scratchDir } from './fixtures/scratch-dir.mjs';   // H26-19: removed when this file ends -- a run that leaves a folder fails
+import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
 
 const NODE = (id, name, x, y) => ({ id, name, type: 'server', x, y });
 function doc(nodes = [], extra = {}) {
@@ -343,8 +343,8 @@ test('a beat authored through the CLI reaches the document, end to end', async (
 	const path = await import('node:path');
 	const { makeApp } = await import('./fixtures/app.mjs');
 	const { main } = await import('../cli/draw.mjs');
-	const dataDir = scratchDir('draw-beat-');
-	const home = scratchDir('draw-bhome-');
+	const dataDir = scratchFolder('draw-beat-');
+	const home = scratchFolder('draw-bhome-');
 	const app = await makeApp({ dataDir, port: 0 });
 	const host = `http://127.0.0.1:${app.port}`;
 	const run = async (...argv) => {

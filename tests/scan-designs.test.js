@@ -5,11 +5,10 @@ FIELDS. Four checks, each failing on a planted case and passing on its control, 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { MOVED_BY } from '../tools/layers.mjs';
-import { scratchDir } from './fixtures/scratch-dir.mjs';   // H26-19: removed when this file ends -- a run that leaves a folder fails
+import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
 
 const SCANNER = path.resolve(import.meta.dirname, '../tools/scan-designs.mjs');
 const MARKER = '## Rulings recorded from 2026-10-11 -- each a structured block';
@@ -21,7 +20,7 @@ names, so each tree's decisions end with that ruling, its Affects: a file citing
 */
 const MOVE_RULING = [`**${MOVED_BY} -- the plugins moved -- 2026-10-21.**\\`, 'Director: "approved"\\', 'Shown: tools/layers.mjs@abc1234\\', 'Recorder: the move.\\', 'Affects: MOVE.md'].join('\n');
 function tree({ index = '| `A.md` | a | Delta; H1.1. |', files = ['A.md'], title = '# A thing (DELTA, proposed)', banner = true, decisions = `old text\n\n${MARKER}\n\n${RULING}\n`, move = true } = {}) {
-	const dir = scratchDir('draw-designs-');
+	const dir = scratchFolder('draw-designs-');
 	if (move) { decisions = `${decisions}\n${MOVE_RULING}\n`; fs.writeFileSync(path.join(dir, 'MOVE.md'), `absorbing ${MOVED_BY}\n`); }
 	const u = path.join(dir, 'dev/design/unification');
 	fs.mkdirSync(u, { recursive: true });

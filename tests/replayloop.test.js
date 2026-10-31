@@ -26,6 +26,7 @@ import fs from 'node:fs';
 import { Model } from '../model/model.mjs';
 import { Selection } from '../app/src/selection.js';
 import { Sync } from '../app/src/sync.js';
+import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
 
 const src = fs.readFileSync(new URL('../app/src/sync.js', import.meta.url), 'utf8');
 const MAX_REPLAYS = Number(src.match(/const MAX_REPLAYS = (\d+);/)[1]);
@@ -216,7 +217,7 @@ test('B184: the server applies a repeated commit ONCE and answers with the origi
 	const os = await import('node:os');
 	const path = await import('node:path');
 	const { Store } = await import('../server/store.js');
-	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-b184-'));
+	const dir = scratchFolder('draw-b184-');
 	try {
 		const store = new Store(dir, { flushMs: 5, authz: false });
 		await store.init();

@@ -16,8 +16,7 @@ import { productKinds } from '../product/kinds.mjs';
 import { NETWORK_ROWS } from '../plugins/network/kinds.mjs';
 import { makeApp } from './fixtures/app.mjs';
 import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
+import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
 
 const PAGE = productKinds(...NETWORK_ROWS), CORE = productKinds();
 // RESTATED at WD-b1 (H19.45): schema 3 -- a document holds its two layouts (tests/fixtures/composed.mjs `heldLayouts`)
@@ -40,7 +39,7 @@ test('B307: a plugin\'s collection on a composition without the plugin is refuse
 });
 
 test('B307: an agent posting the old shape -- waypoints, no schema -- is refused, saying why, where it was told "created"', async () => {
-	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-b307-'));
+	const dir = scratchFolder('draw-b307-');
 	const app = await makeApp({ dataDir: dir, port: 0 });
 	try {
 		const r = await fetch(`http://localhost:${app.port}/api/v1/diagrams`, { method: 'POST', headers: { 'Content-Type': 'application/json' },

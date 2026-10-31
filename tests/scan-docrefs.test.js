@@ -10,15 +10,15 @@ The scanner answers from `git ls-files` in the directory it runs in, so each cas
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { spawnSync, execFileSync } from 'node:child_process';
+import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
 
 const SCANNER = path.resolve(import.meta.dirname, '../tools/scan-docrefs.mjs');
 
 // a repository holding `files` (path -> text), every file tracked
 function repo(files) {
-	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-docrefs-'));
+	const dir = scratchFolder('draw-docrefs-');
 	for (const [f, text] of Object.entries(files)) {
 		fs.mkdirSync(path.join(dir, path.dirname(f)), { recursive: true });
 		fs.writeFileSync(path.join(dir, f), text);

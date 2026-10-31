@@ -19,7 +19,6 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import os from 'node:os';
 import crypto from 'node:crypto';
 import { execFileSync, execFile } from 'node:child_process';
 import { UNUSED_EXPORTS, SCANNER_ROOTS, FOLDERS, PAGES, RATCHETS, RATCHET_CEILING, ENTRIES, MOVED, MOVED_BY } from '../tools/layers.mjs';
@@ -27,6 +26,7 @@ import { movedTo } from '../tools/records.mjs';
 import { NETWORK_ROWS } from '../plugins/network/kinds.mjs';   // the network's kind and the field it contributes (S-a)
 import { createNetwork as netFor } from '../plugins/network/network.mjs';
 import { createTransit as transitFor } from '../plugins/network/transit.mjs';
+import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
 const aNetwork = () => netFor(transitFor());   // a Model holding links is given one (V-e, J2)
 
 const root = path.resolve(import.meta.dirname, '..');
@@ -504,7 +504,7 @@ const scanOwn = (dir) => new Promise((done) => {
 });
 
 test('K0 M1-M7 and the attack\'s A-mutants (on copies of this tree): each lands and each fails its rule', async () => {
-	const base = fs.mkdtempSync(path.join(os.tmpdir(), 'k0-mutants-'));
+	const base = scratchFolder('k0-mutants-');
 	try {
 		copyTree(path.join(base, 'control'));
 		const control = await scanOwn(path.join(base, 'control'));
@@ -539,7 +539,7 @@ place -- an editor's swap file left in network/ -- is not the moved path still t
 copies with no git, where the files on disk stand in, so this case is a copy made a repository.
 */
 test('H26.7 (R2-2): a moved path\'s old place is judged against what git tracks -- an untracked leftover there is no fault, a tracked one is', async () => {
-	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'k0-tracked-'));
+	const dir = scratchFolder('k0-tracked-');
 	try {
 		copyTree(dir);
 		execFileSync('git', ['init', '-q'], { cwd: dir });

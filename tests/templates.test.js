@@ -24,16 +24,16 @@ named in prose -- the set is curated, and a number in prose goes stale the first
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Store } from '../server/store.js';
 import { validateDoc } from './fixtures/composed.mjs';   // the network's kinds, as the store validates (S-e)
 import { OWNER, makeApp } from './fixtures/app.mjs';
 import { WebSocket } from 'ws';
+import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
 
 const TEMPLATES = fileURLToPath(new URL('../templates', import.meta.url));
-const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'draw-tpl-'));
+const tmp = () => scratchFolder('draw-tpl-');
 const shipped = () => fs.readdirSync(TEMPLATES).filter((f) => f.endsWith('.json'))
 	.map((f) => [f, JSON.parse(fs.readFileSync(path.join(TEMPLATES, f), 'utf8'))]);
 
@@ -163,7 +163,7 @@ test('deleting a fork does not resurrect it, and the template it came from stays
 
 test('a malformed template is skipped, not fatal -- a packaging bug must not block a boot', async () => {
 	const dir = tmp();
-	const tdir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-badtpl-'));
+	const tdir = scratchFolder('draw-badtpl-');
 	for (const [f, doc] of shipped()) fs.writeFileSync(path.join(tdir, f), JSON.stringify(doc));
 	fs.writeFileSync(path.join(tdir, 'template-ffffff.json'), '{ not json');
 	try {

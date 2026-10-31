@@ -5,15 +5,15 @@ import { heldLayouts } from './fixtures/composed.mjs';   // WD-b1: the two layou
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { Store } from '../server/store.js';
 import { openStore, OWNER } from './fixtures/app.mjs';
 import { fsFiles } from '../server/files.mjs';
 import { Log } from '../planner/log.mjs';
 import { serialize, parse } from '../server/docfile.mjs';
+import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
 
-const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'draw-cs2-'));
+const tmp = () => scratchFolder('draw-cs2-');
 // B112: an unpositioned fixture node gets a DISTINCT anchor derived from its id -- one
 // anchor holds one occupant, so two fixtures defaulting to (0,0) is now a real violation.
 const _at = (id) => (parseInt(id.slice(-4), 16) % 15 + 1) * 60;
@@ -506,7 +506,7 @@ that most need opening. This is the treatment the GR9 log invariant already gets
 above -- count it, name it, and let `/health` say `corrupt` rather than `degraded`.
 */
 test('B83: a document with a cross-entity violation LOADS, and is counted', async () => {
-	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-inv-'));
+	const dir = scratchFolder('draw-inv-');
 	const doc = {
 		// RESTATED at WD-b1 (H19.45): schema 3 -- a document holds its two layouts (tests/fixtures/composed.mjs `heldLayouts`)
 		meta: { id: '0000000000ee0001', name: 'broken', version: 0, schema: 3, owner: '', grants: {} }, layouts: heldLayouts(),
@@ -526,7 +526,7 @@ test('B83: a document with a cross-entity violation LOADS, and is counted', asyn
 });
 
 test('B83: a clean document counts nothing — the check is not always red', async () => {
-	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-inv-ok-'));
+	const dir = scratchFolder('draw-inv-ok-');
 	const s = await openStore(dir, { flushMs: 3_600_000 });
 	try {
 		assert.equal(s.invariantFailures(), 0);

@@ -16,6 +16,7 @@ import { waypointLayers } from '../plugins/network/appearance.mjs';
 import { NETWORK_ROWS } from '../plugins/network/kinds.mjs';   // the network's kind and the field it contributes (S-a)
 
 const W = 'node-e00001';
+import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
 const L = (n, src, dst, extra = {}) => ({ id: `link-00000${n}`, src, dst, via: [], ...extra });
 const SHAPES = {
 	'no links': [],
@@ -112,7 +113,7 @@ test('F-e: the export and the canvas give a waypoint whose transit is off the sa
 test('F-e: transit survives a reload -- stored in the document, written by the store and read back at boot', async () => {
 	const fs = await import('node:fs'); const os = await import('node:os'); const path = await import('node:path');
 	const { Store } = await import('../server/store.js');
-	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'fe-'));
+	const dir = scratchFolder('fe-');
 	try {
 		const store = new Store(dir, { flushMs: 3_600_000, authz: false });
 		await store.init();

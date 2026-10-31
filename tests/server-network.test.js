@@ -5,14 +5,11 @@ network's rows, and every commit, undo and redo plans with its tenant.
 import { isLinkDown } from '../plugins/network/network-queries.mjs';   // Q-a: the network's questions
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
 import { Store } from '../server/store.js';
 import { pipeEntity, pipeId } from '../plugins/network/pipe-kind.mjs';
-import { scratchDir } from './fixtures/scratch-dir.mjs';   // H26-19: removed when this file ends -- a run that leaves a folder fails
+import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
 
-const tmp = () => scratchDir('sb-');
+const tmp = () => scratchFolder('sb-');
 const [A, B, W] = ['node-00000a', 'node-00000b', 'node-00000e'];
 async function fresh(dir = tmp()) {
 	const store = new Store(dir, { flushMs: 3_600_000, authz: false });

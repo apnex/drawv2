@@ -4,13 +4,13 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
-import os from 'node:os';
+import { readFileSync, rmSync } from 'node:fs';
 import path from 'node:path';
 import { OWNER, openStore } from './fixtures/app.mjs';
+import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
 
 async function freshStore() {
-	const dir = mkdtempSync(path.join(os.tmpdir(), 'store-atom-'));
+	const dir = scratchFolder('store-atom-');
 	const store = await openStore(dir);                 // empty dir -> seeds one diagram
 	const id = store.list(OWNER)[0].id;
 	return { store, dir, id, model: store.get(id) };

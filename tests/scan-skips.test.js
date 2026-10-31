@@ -5,16 +5,16 @@ Driven against TAP records written here, so the rule is proven without depending
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { skipsIn } from '../tools/scan-skips.mjs';
+import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
 
 const TOOL = new URL('../tools/scan-skips.mjs', import.meta.url).pathname;
 const CLEAN = 'TAP version 13\n# Subtest: a\nok 1 - a\n  ---\n  ...\n1..1\n# tests 1\n# skipped 0\n# todo 0\n';
 const SKIPPED = 'TAP version 13\nok 1 - the lab boots # SKIP no chrome on PATH\n    ok 1 - nested check # SKIP no chrome on PATH\nok 2 - pending # TODO later\nok 3 - ran\n1..3\n';
 const run = (tap, env) => {
-	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'skips-'));
+	const dir = scratchFolder('skips-');
 	const f = path.join(dir, 'r.tap');
 	fs.writeFileSync(f, tap);
 	const { CI, ...rest } = process.env;

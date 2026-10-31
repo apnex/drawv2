@@ -8,13 +8,12 @@ ids, and tools/exceptions.mjs resolves each against the register, the board and 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { exceptionFaults } from '../tools/exceptions.mjs';
-import { scratchDir } from './fixtures/scratch-dir.mjs';   // H26-19: removed when this file ends -- a run that leaves a folder fails
+import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
 
 function records() {
-	const dir = scratchDir('draw-exceptions-');
+	const dir = scratchFolder('draw-exceptions-');
 	fs.mkdirSync(path.join(dir, 'dev'));
 	fs.writeFileSync(path.join(dir, 'dev/BACKLOG.md'), [
 		'| **B1** | open | `[V]` | OPEN -- held. REVIVAL TRIGGER: x. |',

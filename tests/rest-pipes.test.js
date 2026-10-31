@@ -4,10 +4,9 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
 import { makeApp } from './fixtures/app.mjs';
 import { pipeId } from '../plugins/network/pipe-kind.mjs';
+import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
 
 let app, dataDir, base, id, token;
 const H = () => ({ 'Content-Type': 'application/json', 'X-Draw-Lock': token });
@@ -15,7 +14,7 @@ const api = (p, init) => fetch(`${base}/api/v1/diagrams/${id}${p}`, init);
 const json = async (p) => (await api(p)).json();
 
 before(async () => {
-	dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-rest-pipes-'));
+	dataDir = scratchFolder('draw-rest-pipes-');
 	app = await makeApp({ dataDir, port: 0 });
 	base = `http://127.0.0.1:${app.port}`;
 	id = (await (await fetch(`${base}/api/v1/diagrams`)).json())[0].id;

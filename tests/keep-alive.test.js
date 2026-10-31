@@ -16,9 +16,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import http from 'node:http';
 import net from 'node:net';
-import os from 'node:os';
-import path from 'node:path';
 import { makeApp, TEST_KEEP_ALIVE_MS } from './fixtures/app.mjs';
+import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
 
 const stall = (ms) => { const until = Date.now() + ms; while (Date.now() < until) { /* the machine is busy */ } };
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -59,7 +58,7 @@ test('B164: a request sent on an idle connection, then a stall past the server\'
 });
 
 test('B164: every server a test makes holds an idle connection for a minute, and no test makes one around the fixture', async () => {
-	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-keepalive-'));
+	const dir = scratchFolder('draw-keepalive-');
 	const app = await makeApp({ dataDir: dir, port: 0 });
 	try {
 		assert.equal(app.server.keepAliveTimeout, TEST_KEEP_ALIVE_MS);

@@ -35,12 +35,11 @@ replug uses the real builder where the brief hand-built the op.
 // C-c (H19.31): the placed kinds, as the page composes them
 import { placesOf as placesOfCanvas } from '../app/src/snap.js';
 import { PRODUCT_CANVAS as CANVAS_PARTS } from '../product/canvas.mjs';
+import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
 const PLACES = placesOfCanvas(CANVAS_PARTS);
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
 import { Model } from '../model/model.mjs';
 import { Changes } from '../app/src/changes.js';
 import { Sync } from '../app/src/sync.js';
@@ -59,7 +58,7 @@ const PAGE_KINDS = productKinds(...NETWORK_ROWS);
 // ---- the two ends, joined by queues the test drains ----
 
 async function world(seed) {
-	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-b242-'));
+	const dir = scratchFolder('draw-b242-');
 	const store = await openStore(dir);
 	const made = store.create('b242', null, OWNER);
 	assert.equal(made.ok, true, made.error);

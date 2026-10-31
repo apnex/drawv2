@@ -11,8 +11,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
 import { Model } from '../model/model.mjs';
 import { applyOps } from '../model/ops.mjs';
 import { Changes } from '../app/src/changes.js';
@@ -24,6 +22,7 @@ import { productKinds } from '../product/kinds.mjs';
 import { NETWORK_ROWS } from '../plugins/network/kinds.mjs';
 import { createNetwork as netFor } from '../plugins/network/network.mjs';
 import { createTransit as transitFor } from '../plugins/network/transit.mjs';
+import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
 const aNetwork = () => netFor(transitFor());   // a Model holding links is given one (V-e, J2)
 const PAGE_KINDS = productKinds(...NETWORK_ROWS);
 
@@ -118,7 +117,7 @@ function world(store, id) {
 }
 
 async function setup(seed) {
-	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-conv-'));
+	const dir = scratchFolder('draw-conv-');
 	const store = await openStore(dir);
 	const id = store.list(OWNER)[0].id;
 	const w = world(store, id);

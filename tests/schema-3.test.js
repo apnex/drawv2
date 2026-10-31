@@ -12,7 +12,6 @@ the layouts by construction; `validateDoc` requires them.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { KINDS, validateDoc } from './fixtures/composed.mjs';
 import { openStore, OWNER } from './fixtures/app.mjs';
@@ -21,9 +20,10 @@ import { fsFiles } from '../server/files.mjs';
 import { serialize, parse } from '../server/docfile.mjs';
 import { completeAlwaysHeld } from '../model/shape.mjs';
 import { LAYOUT_TABLE } from '../plugins/layouts/layout-table.mjs';
+import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
 
 const LAYOUTS = structuredClone(LAYOUT_TABLE).map((l) => ({ ...l, ext: { ...l.ext } }));
-const tmp = (tag) => fs.mkdtempSync(path.join(os.tmpdir(), `draw-schema3-${tag}-`));
+const tmp = (tag) => scratchFolder(`draw-schema3-${tag}-`);
 // a second empty data directory inside the first, removed with it
 const tmpKept = (dir) => fs.mkdtempSync(path.join(dir, 'second-'));
 // a schema 3 document without its layouts -- as an agent writes one, or a tab from before schema 3 holds one; `schema` null: none at all

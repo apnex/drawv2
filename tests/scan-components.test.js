@@ -7,25 +7,22 @@ release that leaks draw's words cannot reach draw's pages (tools/scan-components
 each run whole, the run with its underscores and hyphens removed, and the run split at case changes, underscores, hyphens and digits,
 each with a trailing s or es removed. Planted in a copy of the install, beside the ordinary words a component needs, which pass.
 */
-import { test, after } from 'node:test';
+import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const TOOL = path.join(ROOT, 'tools/scan-components.mjs');
 const run = (root) => spawnSync(process.execPath, [TOOL, ...(root ? ['--root', root] : [])], { encoding: 'utf8' });
-const made = [];
-after(() => { for (const d of made) fs.rmSync(d, { recursive: true, force: true }); });
 // each finding as `<file> <word> <draw's word>`: a source map's finding names where in the map it is (`#/sourcesContent/0`), dropped here
 // RESTATED at H26.1's verification (F1): a map is read as JSON, so its findings carry the field they were read from
 const FINDING = /^ {2}(\S+):(\d+) {2}"([^"]+)" \(draw: (\w+)\)$/gm;
 const foundIn = (stdout) => [...stdout.matchAll(FINDING)].map((m) => `${path.basename(m[1].replace(/#.*$/, ''))} ${m[3]} ${m[4]}`);
 function install(edit = () => {}) {
-	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-scan-components-'));
-	made.push(dir);
+	const dir = scratchFolder('draw-scan-components-');
 	fs.copyFileSync(path.join(ROOT, 'package.json'), path.join(dir, 'package.json'));
 	fs.cpSync(path.join(ROOT, 'node_modules/@apnex'), path.join(dir, 'node_modules/@apnex'), { recursive: true });
 	edit((f, text) => fs.appendFileSync(path.join(dir, 'node_modules/@apnex/snap-grid/dist', f), text), dir);

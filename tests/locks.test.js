@@ -6,12 +6,12 @@ injected clock) + the REST write surface end-to-end against a real server.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { Locks } from '../server/locks.js';
 import http from 'node:http';
 import WebSocket from 'ws';
 import { makeApp } from './fixtures/app.mjs';
+import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
 
 // ---- Locks unit (injected clock, no timers) ----
 
@@ -101,7 +101,7 @@ let app, dataDir, base;
 const H = (token) => ({ 'Content-Type': 'application/json', ...(token ? { 'X-Draw-Lock': token } : {}) });
 
 before(async () => {
-	dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-lock-'));
+	dataDir = scratchFolder('draw-lock-');
 	app = await makeApp({ dataDir, port: 0 });
 	base = `http://127.0.0.1:${app.port}`;
 });
@@ -715,7 +715,7 @@ indistinguishable to the caller. Caught by reading the JSON after the deploy rat
 that a passing unit test meant the field arrived.
 */
 test('B140: the lock response reports whether it renewed or acquired', async () => {
-	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-renew-'));
+	const dir = scratchFolder('draw-renew-');
 	const app = await makeApp({ dataDir: dir, port: 0 });
 	const base = `http://127.0.0.1:${app.port}/api/v1`;
 	try {

@@ -8,10 +8,9 @@ the board held at the base -- the part a fixture without git would skip (the sec
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { scratchDir } from './fixtures/scratch-dir.mjs';   // H26-19: removed when this file ends -- a run that leaves a folder fails
+import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
 
 const SCANNER = path.resolve(import.meta.dirname, '../tools/scan-triggers.mjs');
 const row = (id, disposition) => `| **${id}** | finding | \`[V]\` | ${disposition} |`;
@@ -24,7 +23,7 @@ const board = ({ state = 'WIP', items = [], heldRows = [] } = {}) => [
 const backlog = (rows) => ['| # | Row | Evidence | Closes / Trigger |', '|---|---|---|---|', ...rows, ''].join('\n');
 
 function repo({ boardText, backlogText, files = {} }) {
-	const dir = scratchDir('draw-triggers-');
+	const dir = scratchFolder('draw-triggers-');
 	const g = (...a) => execFileSync('git', ['-C', dir, ...a], { stdio: 'ignore' });
 	g('init', '-q'); g('config', 'user.email', 't@t'); g('config', 'user.name', 't');
 	fs.mkdirSync(path.join(dir, 'dev'));

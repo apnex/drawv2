@@ -8,7 +8,6 @@ import { test } from 'node:test';
 import { KINDS, heldLayouts } from './fixtures/composed.mjs';   // O-b1: a reader is handed its caller's kinds
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { Model } from '../model/model.mjs';
 import { productKinds } from '../product/kinds.mjs';
@@ -23,6 +22,7 @@ import { Renderer } from '../app/src/renderer.js';
 import { makeRenderer } from './fixtures/client-harness.mjs';
 import { makeApp } from './fixtures/app.mjs';
 import { main } from '../cli/draw.mjs';
+import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
 
 const ID = '00000000000c0001';
 const since = Date.now() - 1000;
@@ -93,7 +93,7 @@ test('R-e: the read composition answers every link as the lab\'s tab does -- pat
 });
 
 test('R-e: REST and the CLI answer every link as the lab\'s tab does', async () => {
-	const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'parity-')), home = fs.mkdtempSync(path.join(os.tmpdir(), 'parity-home-'));
+	const dataDir = scratchFolder('parity-'), home = scratchFolder('parity-home-');
 	fs.writeFileSync(path.join(dataDir, `${ID}.json`), serialize(board(), null));
 	const app = await makeApp({ dataDir, port: 0 });
 	const run = async (...argv) => { const out = []; await main([...argv, '--host', `http://127.0.0.1:${app.port}`], { HOME: home }, (s) => out.push(s)); return out.join(''); };

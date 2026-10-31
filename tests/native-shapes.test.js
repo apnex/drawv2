@@ -22,7 +22,6 @@ Held here, beside the record the drawing moves answer to (tests/native-record.te
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { Model } from './fixtures/composed.mjs';
@@ -33,6 +32,7 @@ import { Renderer } from '../app/src/renderer.js';
 import { EditingStates } from '../app/src/editing-states.js';
 import { PRODUCT_CANVAS } from '../product/canvas.mjs';
 import { SIMULATION_CANVAS } from '../plugins/simulation/spawn-appearance.mjs';
+import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const RECORD = JSON.parse(fs.readFileSync(NATIVE_RECORD, 'utf8'));
@@ -195,7 +195,7 @@ test('GR8: the renderer answers data alone -- every member called over a drawn b
 
 // tools/scan-writers.mjs over a fixture; its scene-read lines alone (the other rules' broken-scan floors fire on any partial fixture)
 function sceneReadLines(files) {
-	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gr8-'));
+	const dir = scratchFolder('gr8-');
 	try {
 		for (const [file, body] of Object.entries(files)) {
 			fs.mkdirSync(path.dirname(path.join(dir, file)), { recursive: true });

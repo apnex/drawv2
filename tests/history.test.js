@@ -9,13 +9,12 @@ did, and what moved under them when a write was refused.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
 import { Model } from './fixtures/composed.mjs';   // the composition production runs (S-b)
 import { Log, LOG_MAX, LOG_HARD_MAX } from '../planner/log.mjs';
 import { commit, undo } from './fixtures/composed.mjs';
 import { Session } from '../server/protocol.js';
 import { OWNER, openStore } from './fixtures/app.mjs';
+import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
 
 // B112: an unpositioned fixture node gets a DISTINCT anchor derived from its id -- one
 // anchor holds one occupant, so two fixtures defaulting to (0,0) is now a real violation.
@@ -146,7 +145,7 @@ function fakeWs() {
 }
 
 async function live() {
-	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-hist-'));
+	const dir = scratchFolder('draw-hist-');
 	const store = await openStore(dir, { flushMs: 3_600_000 });
 	return { dir, store, id: store.list(OWNER)[0].id };
 }
@@ -199,7 +198,7 @@ test('D21: a run STOPS at a different actor — you cannot sweep away someone el
 
 test('a stale `expect` answers with WHAT MOVED, so the caller can reconcile instead of refetching', async () => {
 	const { makeApp } = await import('./fixtures/app.mjs');
-	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-409-'));
+	const dir = scratchFolder('draw-409-');
 	const app = await makeApp({ dataDir: dir, port: 0 });
 	const base = `http://localhost:${app.port}`;
 	try {

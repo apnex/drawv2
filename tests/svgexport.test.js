@@ -16,15 +16,13 @@ instead of the diagram, and only opening the URL would ever reveal it.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
 import { makeApp } from './fixtures/app.mjs';
-import { stopGroup } from '@apnex/test-harness';   // H26.4 (V2-2), H26-19 as amended: the lab server a tethered group of its own
+import { scratchFolder, stopGroup } from '@apnex/test-harness';   // H26.4 (V2-2), H26-19 as amended: the lab server a tethered group of its own
 import { startLab } from './fixtures/lab-server.mjs';   // H26.5 (the verifier's finding 1): started and waited for in one place
 
 let app, base, dataDir;
 before(async () => {
-	dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-svg-'));
+	dataDir = scratchFolder('draw-svg-');
 	app = await makeApp({ dataDir, port: 0 });
 	base = `http://127.0.0.1:${app.port}`;
 });
@@ -89,8 +87,8 @@ test('/<id> without the suffix still serves the editor — the deep link is unch
 test('H23: a private diagram answers 404 to an unauthenticated SVG request; publishing it serves the SVG with safe headers, and draw publish toggles both ways', async () => {
 	const { createApp } = await import('../server/app.js');
 	const { main } = await import('../cli/draw.mjs');
-	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-h23-'));
-	const home = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-h23-home-'));
+	const dir = scratchFolder('draw-h23-');
+	const home = scratchFolder('draw-h23-home-');
 	let currentPrincipal = 'user:owner@example.com';
 	const srv = await createApp({
 		dataDir: dir, port: 0, authz: true, owner: 'user:owner@example.com',
@@ -161,7 +159,7 @@ test('B351 (H23): the server mints a diagram id from crypto.randomBytes(8), redr
 	const crypto = (await import('node:crypto')).default;
 	const { Store } = await import('../server/store.js');
 	const { newId } = await import('../model/model.mjs');
-	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-b351-'));
+	const dir = scratchFolder('draw-b351-');
 	const store = new Store(dir, { authz: false });
 	await store.init();
 	const realBytes = crypto.randomBytes;

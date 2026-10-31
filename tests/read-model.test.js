@@ -9,6 +9,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readModel, readerNetwork } from '../plugins/network/read-model.mjs';
+import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -88,7 +89,7 @@ test('R-a: a diagram the store boots from disk draws with the network, as one it
 	const os = await import('node:os');
 	const { Store } = await import('../server/store.js');
 	const { serialize } = await import('../server/docfile.mjs');
-	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'read-model-'));
+	const dir = scratchFolder('read-model-');
 	try {
 		fs.writeFileSync(path.join(dir, '0000000000000001.json'), serialize(detour(), null));
 		const store = new Store(dir, { flushMs: 3_600_000, authz: false });

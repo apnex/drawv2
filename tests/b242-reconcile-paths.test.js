@@ -26,12 +26,11 @@ hold an answer back, lose one with a socket, or deliver one mid-gesture.
 // C-c (H19.31): the placed kinds, as the page composes them
 import { placesOf as placesOfCanvas } from '../app/src/snap.js';
 import { PRODUCT_CANVAS as CANVAS_PARTS } from '../product/canvas.mjs';
+import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
 const PLACES = placesOfCanvas(CANVAS_PARTS);
 import { test, mock } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
 import { Model } from '../model/model.mjs';
 import { Changes } from '../app/src/changes.js';
 import { Sync, bindGestureDefer } from '../app/src/sync.js';
@@ -67,7 +66,7 @@ const cmds = (msgs) => msgs.filter((m) => DOC.has(m.cmd)).map((m) => m.cmd);
 async function world(seed, { tab: given = null, disk: kept = true } = {}) {
 	disk.clear();
 	diskOn = kept;
-	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-b242-paths-'));
+	const dir = scratchFolder('draw-b242-paths-');
 	let store = await openStore(dir);
 	const made = store.create('b242-paths', null, OWNER);
 	assert.equal(made.ok, true, made.error);

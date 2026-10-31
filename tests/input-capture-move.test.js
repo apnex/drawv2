@@ -11,7 +11,6 @@ which module's code adds each listener and reads each field is read off the stac
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -30,6 +29,7 @@ path, so a tree whose node_modules is a symlink -- a worktree linking its root's
 paths are compared only once both sides are resolved.
 */
 const real = (p) => { try { return fs.realpathSync(p); } catch { return p; } };
+import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
 const ROOT = real(path.resolve(import.meta.dirname, '..'));
 const HERE = real(fileURLToPath(import.meta.url));
 const ADAPTER = real(path.join(ROOT, 'app/src/capture.js'));
@@ -222,7 +222,7 @@ load it, since only the pages compose a canvas. Each module graph is loaded in a
 the control, resolves its entry.
 */
 test('H26.3 step 7: the server and the export load no file of input-capture; the canvas\'s composition does', () => {
-	const log = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'resolve-log-')), 'log');
+	const log = path.join(scratchFolder('resolve-log-'), 'log');
 	try {
 		const loads = (code) => {
 			fs.writeFileSync(log, '');

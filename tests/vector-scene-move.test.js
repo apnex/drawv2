@@ -12,12 +12,12 @@ product's modules only the renderer's names the component, and the server and th
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 import { FOLDERS, PARTS, PAGES } from '../tools/layers.mjs';
 import { PAGE_REGIONS } from '../tools/page-regions.mjs';
+import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
 
 const real = (p) => { try { return fs.realpathSync(p); } catch { return p; } };
 const ROOT = real(path.resolve(import.meta.dirname, '..'));
@@ -130,7 +130,7 @@ load it by name, since the export draws through it. Each module graph is loaded 
 (tests/fixtures/resolve-log/): the server's app, and the export drawing a diagram, resolve the component's entry.
 */
 test('H26.4 step 7 (D8): the server and the export load vector-scene by name, the export drawing a diagram through it', () => {
-	const log = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'resolve-log-')), 'log');
+	const log = path.join(scratchFolder('resolve-log-'), 'log');
 	try {
 		const loads = (source) => {
 			fs.writeFileSync(log, '');
