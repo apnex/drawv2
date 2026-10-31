@@ -113,14 +113,27 @@ export const PARTS = {
 		consumes: ['lattice', 'kind-contract', 'document', 'relations', 'colours', 'primitives', 'rules', 'network', 'devices'] },
 	product: { duty: 'Compose the plugins into the product', kind: 'composition', by: ['N1', 'D1'],
 		modules: ['product/'], consumes: ['kind-contract', 'lattice', 'colours', 'layouts', 'devices', 'network', 'zones', 'groups', 'simulation'] },
+	// H26.8's capture move (dev/design/components/NATIVE-SHAPES.md section 3.3): the label editor and the help leave for parts of their own
 	canvas: { duty: 'Turn input into edits through the parts\' declarations', kind: 'host', by: ['D1', 'D2', 'D5'],
-		modules: ['app/src/actions.js', 'app/src/capture.js', 'app/src/changes.js', 'app/src/commands.js', 'app/src/compose-canvas.js', 'app/src/help.js',
-			'app/src/input.js', 'app/src/input-state.js', 'app/src/keymap.js', 'app/src/labeledit.js', 'app/src/pick.js',
+		modules: ['app/src/capture.js', 'app/src/changes.js', 'app/src/commands.js', 'app/src/compose-canvas.js',
+			'app/src/input.js', 'app/src/input-state.js', 'app/src/keymap.js', 'app/src/pick.js',
 			'app/src/readout.js', 'app/src/recognize.js', 'app/src/releases.js', 'app/src/snap.js', 'app/src/tools.js',
 			// app/src/grids.js draws the grids placement snaps to, from the canvas's places (app/src/snap.js gridsOf); in the renderer
 			// it would make the renderer and the canvas consume each other. H26.2: the triggers module went, its press the session's
 			'app/src/grids.js', 'engine/situation.mjs'],
-		consumes: ['lattice', 'kind-contract', 'document', 'relations', 'rules', 'planner', 'renderer', 'editing', 'primitives', 'colours'] },
+		consumes: ['lattice', 'kind-contract', 'document', 'relations', 'rules', 'planner', 'renderer', 'editing', 'label-editor', 'primitives', 'colours'] },
+	/*
+	H26.8's capture move (dev/design/components/NATIVE-SHAPES.md sections 3.1 to 3.3, NS8; H26-10) -- TWO GENERAL DUTIES OUT OF THE CANVAS,
+	declared inside draw, each extracted when a second application needs it. The label editor places a native input over a drawn label
+	or region and commits what is typed, handed its two edits by the composition (B416); it imports the document and the kind contract
+	alone (GR7), and reads the scene's elements by the design's one exception, five reads and no write (GR8). The help shows what each
+	input does, generated from the rows the bindings resolve (B417); it imports nothing outside its part, and the product page consumes
+	it. The canvas consumes the label editor, so the edge runs one way.
+	*/
+	'label-editor': { duty: 'Edit a drawn label in place', kind: 'host', by: ['H26-10', 'H26-16'],
+		modules: ['app/src/labeledit.js'], consumes: ['document', 'kind-contract'] },
+	help: { duty: 'Show what each input does', kind: 'host', by: ['H26-10', 'H26-16'],
+		modules: ['app/src/help.js', 'app/src/actions.js'], consumes: [] },
 	/*
 	H26.4 (dev/design/components/VECTOR-SCENE.md section 5.3, D13; H26-10) -- THE EDITING DUTY, declared inside draw: the selection and
 	the visuals that show what an edit will do, written natively as items of the scene they are handed; the five generic gestures' bodies
