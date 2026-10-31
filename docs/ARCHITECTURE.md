@@ -330,7 +330,7 @@ What `npm run gate` runs, before every commit and again before every push.
 | # | Step |
 |---|---|
 | 1 | `node tools/gate-runtime.mjs` |
-| 2 | `test-harness run --test-force-exit tests/*.test.js` |
+| 2 | `test-harness run tests/*.test.js` |
 | 3 | `node tools/scan-skips.mjs` |
 | 4 | `node tools/scan-writers.mjs` |
 | 5 | `node tools/scan-claims.mjs dev/COMMIT-DELIVERY.md#2 dev/COMMIT-DELETIONS.md` |
