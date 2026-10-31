@@ -18,6 +18,10 @@ import { stopGroup } from '@apnex/test-harness';   // H26-19 as amended: the lab
 import { lex } from '../tools/js-tokens.mjs';
 
 const groupGone = (pid) => { try { process.kill(-pid, 0); return false; } catch (e) { return e.code === 'ESRCH'; } };
+// a process stopped is gone from the group once its parent has collected it: on a busy machine that comes a moment after stopGroup
+// answers -- stopGroup reads the process table, where an exited, uncollected process is not running -- so the group is asked again,
+// for at most two seconds (H26-19 as amended; CI's runner showed the moment)
+const groupGoneSoon = async (pid) => { for (const until = Date.now() + 2000; !groupGone(pid) && Date.now() < until; ) await new Promise((r) => setTimeout(r, 25)); return groupGone(pid); };
 const freePort = () => new Promise((r) => { const s = net.createServer().listen(0, '127.0.0.1', () => { const { port } = s.address(); s.close(() => r(port)); }); });
 const nothingAnswers = (port) => assert.rejects(fetch(`http://127.0.0.1:${port}/health`, { signal: AbortSignal.timeout(1000) }), 'nothing answers on its port: the lab was stopped');
 
@@ -26,8 +30,8 @@ test('H26.5: startLab answers once the lab answers /health, on a port of its own
 	try {
 		assert.equal(lab.origin, `http://127.0.0.1:${lab.port}`);
 		assert.equal((await fetch(`${lab.origin}/health`)).status, 200);
-	} finally { await stopGroup(lab.proc.pid); }
-	assert.ok(groupGone(lab.proc.pid), 'and stopGroup stops it, group and all');
+	} finally { assert.equal(await stopGroup(lab.proc.pid), true, 'stopGroup answers that no member is left running'); }
+	assert.ok(await groupGoneSoon(lab.proc.pid), 'and stopGroup stops it, group and all');
 });
 
 test('H26.5: a lab that exits before answering -- its port taken by a listener that never answers -- rejects naming the exit', { timeout: 30000 }, async () => {
