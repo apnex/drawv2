@@ -313,6 +313,8 @@ const VERBATIM = [
 	{ file: `${VF}/painter.js`, create: "export { el } from '../../../app/src/painter.js';\n" },
 	{ file: MAN, replace: ['\tL4: { verbatim: [\n', `\tL4: { verbatim: [\n\t\t{ copy: '${VF}/copy.js', shims: ['${VF}/painter.js', '${VF}/pick.js'], cites: ['H26-14', 'H26.5'], reason: 'the falsifiers\\' own copy and shims', trigger: 'the falsifiers are restated' },\n`] },
 ];
+// H26-19 as amended: an @apnex/ package declared among the devDependencies alone, as `test-harness` is
+const DEV_ONLY = { file: 'package.json', replace: ['"devDependencies": {\n', '"devDependencies": {\n\t\t"@apnex/dev-only": "https://example.invalid/dev-only.tgz",\n'] };
 const MUTANTS = [
 	// RESTATED at H21.8 (B341): model/invariants.mjs is core now, so M1 imports model/ (L3) and network/ (L2)
 	{ id: 'M1', rule: 'L2', also: ['L3'], edits: [{ file: 'kernel/spec.mjs', append: "\nimport { violations } from '../model/invariants.mjs';\nimport { splitAtBend } from '../plugins/network/link-rules.mjs';\n" }] },
@@ -394,6 +396,9 @@ const MUTANTS = [
 	{ id: 'C3', rule: 'L12', needle: /kernel\/geometry\.mjs:\d+ import\('@apnex\/snap-grid'\) -- a component is imported statically \(D7\)/, edits: [{ file: 'kernel/geometry.mjs', append: "\nconst __d7 = async () => (await import('@apnex/snap-grid')).openGrid;\n" }] },
 	{ id: 'C4', rule: 'L12', needle: /tools\/__d7\.mjs:\d+ import\('@apnex\/snap-grid\/conformance'\) -- a component is imported statically \(D7\)/, edits: [{ file: 'tools/__d7.mjs', create: "#!/usr/bin/env node\nconst __d7 = async () => (await import('@apnex/snap-grid/conformance')).checkGridShape;\n" }] },
 	{ id: 'C5', rule: 'L12', needle: /package\.json depends on @apnex\/other, which COMPONENTS does not declare/, edits: [{ file: 'package.json', replace: ['"ws": "^8.21.0"', '"@apnex/other": "https://example.invalid/other.tgz",\n\t\t"ws": "^8.21.0"'] }] },
+	// H26-19 as amended: a devDependency is the tests' tooling and never ships, so a module of a folder that ships may not import it
+	{ id: 'DV1', rule: 'L12', needle: /kernel\/geometry\.mjs:\d+ import '@apnex\/dev-only' -- @apnex\/dev-only is a devDependency, the tests' tooling, which never ships/,
+		edits: [DEV_ONLY, { file: 'kernel/geometry.mjs', append: "\nimport { tool as __dev } from '@apnex/dev-only';\n" }] },
 	{ id: 'C6', rule: 'L12', needle: /COMPONENTS declares @apnex\/snap-grid, which package\.json does not depend on/, edits: [{ file: 'package.json', replace: ['"@apnex/snap-grid": "', '"@apnex/snap-grid-renamed": "'] }] },
 	{ id: 'C7', rule: 'L12', needle: /COMPONENTS\.@apnex\/snap-grid lets part latice import it, and PARTS holds no such part/, edits: [{ file: MAN, replace: ["'@apnex/snap-grid': { parts: ['lattice'],", "'@apnex/snap-grid': { parts: ['latice'],"] }] },
 	/*
@@ -479,6 +484,9 @@ const CONTROLS = [
 	{ id: 'C0', edits: [{ file: 'kernel/geometry.mjs', append: "\nimport { openGrid as __og } from '@apnex/snap-grid';\n" },
 		{ file: 'kernel/spec.mjs', append: "\nimport { checkGridShape as __k } from '@apnex/snap-grid/conformance';\n" },
 		{ file: 'tests/__c0.test.js', create: "import { openGrid } from '@apnex/snap-grid';\nexport const __c0 = openGrid;\n" }] },
+	// H26-19 as amended: an @apnex/ devDependency is no component -- COMPONENTS declares none -- and a test and a tool may import it
+	{ id: 'DV0', edits: [DEV_ONLY, { file: 'tests/__dv0.test.js', create: "import { tool } from '@apnex/dev-only';\nexport const __dv0 = tool;\n" },
+		{ file: 'tools/__dv0.mjs', create: "#!/usr/bin/env node\nimport { tool } from '@apnex/dev-only';\nexport const __dv0 = tool;\n" }] },
 ];
 
 // a copy of the tree scan-layers reads: every folder it scans and the pages it names (the mutants below each run in one)

@@ -21,5 +21,8 @@
 		"@apnex/snap-grid": "https://github.com/apnex/snap-grid/releases/download/v0.1.0/apnex-snap-grid-0.1.0.tgz",
 		"@apnex/vector-scene": "https://github.com/apnex/vector-scene/releases/download/v0.2.0/apnex-vector-scene-0.2.0.tgz",
 		"ws": "^8.21.0"
+	},
+	"devDependencies": {
+		"@apnex/test-harness": "https://github.com/apnex/test-harness/releases/download/v0.1.0/apnex-test-harness-0.1.0.tgz"
 	}
 }

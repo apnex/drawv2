@@ -387,6 +387,8 @@ served folder. An absolute path, a URL and a package subpath import (`#x`) are r
 */
 const PACKAGE = (() => { try { return JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8')); } catch { return {}; } })();
 const DEPENDENCIES = new Set(['dependencies', 'devDependencies', 'optionalDependencies', 'peerDependencies'].flatMap((k) => Object.keys(PACKAGE[k] ?? {})));
+// H26-19 as amended: what ships is what `npm ci --omit=dev` installs; a package only devDependencies declares is the tests' tooling
+const SHIPPED_DEPENDENCIES = new Set(['dependencies', 'optionalDependencies', 'peerDependencies'].flatMap((k) => Object.keys(PACKAGE[k] ?? {})));
 const CODE_LOADING_BUILTINS = new Set(['module', 'vm']);   // createRequire, register(), runInThisContext: loading outside import
 function resolveSpec(from, spec) {
 	if (/^\.{1,2}\//.test(spec)) {
@@ -402,7 +404,7 @@ function resolveSpec(from, spec) {
 		return CODE_LOADING_BUILTINS.has(pkg) ? { external: true, loader: `node:${pkg}` } : { external: true };
 	}
 	// H26.1: a component is resolved as every declared package is, the package and its subpaths alike, and judged by L12
-	if (DEPENDENCIES.has(pkg)) return M.COMPONENTS[pkg] ? { external: true, component: pkg } : { external: true };
+	if (DEPENDENCIES.has(pkg)) return M.COMPONENTS[pkg] ? { external: true, component: pkg } : SHIPPED_DEPENDENCIES.has(pkg) ? { external: true } : { external: true, devOnly: pkg };
 	return { refused: 'neither a builtin nor a package that package.json declares' };
 }
 for (const file of modules) {
@@ -413,6 +415,7 @@ for (const file of modules) {
 		if (r.refused) x.refused = r.refused;
 		if (r.loader) x.loader = r.loader;
 		if (r.component) x.component = r.component;
+		if (r.devOnly) x.devOnly = r.devOnly;
 	}
 }
 
@@ -870,14 +873,17 @@ const rules = {
 	layer. A dynamic import of one is refused everywhere: draw imports components only statically, so the whole of a component's graph
 	loads with the page, and a page kept across a deploy never asks for a version the deploy removed (D7's second condition). And every
 	@apnex/ dependency is declared here, so a component cannot be installed without saying who may import it.
+	H26-19 as amended: an @apnex/ package only devDependencies declares -- `test-harness`, which the tests alone use -- is no component and
+	is not declared here; it never ships, the image installing with `npm ci --omit=dev`, so no module of a folder that ships may import it.
 	*/
 	L12: () => {
 		for (const [pkg, c] of Object.entries(M.COMPONENTS)) {
-			if (!DEPENDENCIES.has(pkg)) fail('L12', `COMPONENTS declares ${pkg}, which package.json does not depend on`);
+			if (!SHIPPED_DEPENDENCIES.has(pkg)) fail('L12', `COMPONENTS declares ${pkg}, which package.json does not depend on`);
 			for (const p of c.parts ?? []) if (!M.PARTS[p]) fail('L12', `COMPONENTS.${pkg} lets part ${p} import it, and PARTS holds no such part`);
 		}
-		for (const pkg of DEPENDENCIES) if (pkg.startsWith('@apnex/') && !M.COMPONENTS[pkg]) fail('L12', `package.json depends on ${pkg}, which COMPONENTS does not declare -- name the parts that may import it and the ruling that admits it`);
+		for (const pkg of SHIPPED_DEPENDENCIES) if (pkg.startsWith('@apnex/') && !M.COMPONENTS[pkg]) fail('L12', `package.json depends on ${pkg}, which COMPONENTS does not declare -- name the parts that may import it and the ruling that admits it`);
 		for (const file of modules) for (const e of A[file].edges) {
+			if (e.devOnly && layerOf[file] !== 'tools' && layerOf[file] !== 'tests') { fail('L12', `${site(file, e)} -- ${e.devOnly} is a devDependency, the tests' tooling, which never ships: ${file} is ${layerOf[file]}, which does`); continue; }
 			if (!e.component) continue;
 			if (e.kind === 'dynamic') { fail('L12', `${site(file, e)} -- a component is imported statically (D7), so its whole graph loads with the page`); continue; }
 			const part = partOfModule(file);
