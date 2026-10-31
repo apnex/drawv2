@@ -464,7 +464,7 @@ export const ENTRIES = {
 			'plugins/network/transit.mjs', // transit: the per-type table and the session's settings (TRANSIT.md section 12)
 			'plugins/network/host.mjs',    // the network attached to a page: its choreography around an edit (item 3, 2026-10-01)
 			'app/src/capture.js', 'app/src/changes.js', 'app/src/commands.js', 'app/src/input-state.js', 'app/src/input.js', 'app/src/keymap.js', 'app/src/labeledit.js',
-			'app/src/overlay.js', 'app/src/editing-visuals.js', 'app/src/painter.js', 'app/src/pick.js', 'app/src/readout.js',
+			'app/src/overlay.js', 'app/src/editing-visuals.js', 'app/src/pick.js', 'app/src/readout.js',
 			'app/src/recognize.js', 'app/src/releases.js', 'app/src/renderer.js', 'app/src/selection.js', 'app/src/editing-states.js', 'app/src/snap.js', 'app/src/tools.js', 'app/src/compose-canvas.js', 
 			'engine/ivm.mjs', 'engine/relations.mjs',
 			'engine/situation.mjs', 'engine/store.mjs', 

@@ -39,7 +39,6 @@ import { KEYMAP, KEY_RELEASES } from './keymap.js';
 import { openTable, openGestures } from '../../kernel/input-rules.mjs';   // H26.2: the rules part; H26.8: its tables in input-binding's own form
 import { occupiedAnyAt, picksOf, pointsOf, grabbedAt, takenIn } from './pick.js';
 import { GAP, orthoDelta, snappedDelta, clampDelta, snapNode, snapIn, placesOf, gridsOf, resolveBox, dist, nearOrigin } from './snap.js';
-import { isShown, setShown } from './painter.js';
 import { previewRect, previewLine, previewPath } from './editing-visuals.js';   // H26.4: the gestures' previews, items of the scene (section 5.3)
 import { emitToHost } from './capture.js';
 import { initialInputState, track } from './input-state.js';
@@ -364,7 +363,8 @@ export class Input {
 	the browser. Injected rather than reached for (B45): Input is the class H6 exists to decompose, and
 	a module that grabs its own collaborators cannot be composed differently or tested without a global.
 	`help` arrives the same way; main.js already had that element, and resolving it twice meant two
-	owners of one node.
+	owners of one node. H26.8's capture move (NATIVE-SHAPES.md section 3.2): the panel, `{ shown(), show(on) }`, which the page hands --
+	whether it shows, and show or hide it -- never the element.
 	*/
 	constructor({ svg, scene, model, history, selection, renderer, states, labels, readout, tools, host, help, snap, now, plugins = [], runRules = [], parts = [] }) {
 		// C-c: the kinds placed on the grid, and how -- the canvas parts' (snap.js placesOf); C-d: their press rows and handles, below
@@ -1399,7 +1399,7 @@ export class Input {
 	// ---- help overlay ----
 	toggleHelp(show) {
 		if (!this.help) return;
-		setShown(this.help, show === undefined ? !isShown(this.help) : show);
+		this.help.show(show === undefined ? !this.help.shown() : show);
 	}
 
 	// ---- keyboard ----
@@ -1415,7 +1415,7 @@ export class Input {
 		// the Rules engine finds the ONE row this key means in this situation (dev/RULES.md section 11)
 		const { match, claimed } = this.keyRules.matchInput(evt, this.situation(null, this.mode), {
 			readOnly: this.readOnly,
-			helpOpen: !!(this.help && isShown(this.help)),
+			helpOpen: !!(this.help && this.help.shown()),
 			gesturing: this.isGesturing(),
 		});
 		const rule = match?.row;
@@ -1477,7 +1477,7 @@ export class Input {
 
 	onEscape(evt) {
 		// priority: close help > cancel gesture > disarm the tool > clear hand > clear selection
-		if (this.help && isShown(this.help)) return this.toggleHelp(false);
+		if (this.help && this.help.shown()) return this.toggleHelp(false);
 		if (this.mode) this.cancelDrag(evt);
 		else if (this.tools.textTool) this.tools.setTextTool(false);
 		else if (this.tools.hand) {
@@ -1661,7 +1661,7 @@ export class Input {
 	keyUp(evt, reply) {
 		this.#markShiftOwed(evt);   // H26.5 (B413)
 		const rule = this.releaseRules.matchInput(evt, this.situation(null, this.mode), {
-			readOnly: this.readOnly, helpOpen: !!(this.help && isShown(this.help)), gesturing: this.isGesturing(),
+			readOnly: this.readOnly, helpOpen: !!(this.help && this.help.shown()), gesturing: this.isGesturing(),
 		}).match?.row;
 		if (rule) this[rule.run](evt, reply);
 	}

@@ -30,6 +30,14 @@ const svg = document.getElementById('container');
 const helpBtn = document.getElementById('help-btn');
 const help = document.getElementById('help');
 /*
+H26.8's capture move (dev/design/components/NATIVE-SHAPES.md section 3.2, the help panel): whether the panel shows, and show or hide it --
+the page's own questions of its own element, which app/src/painter.js held for the input layers until Input was handed the panel,
+`{ shown(), show(on) }`, rather than the element.
+*/
+const isShown = (el) => !el.hidden;
+const setShown = (el, show) => { el.hidden = !show; };
+const helpPanel = help ? Object.freeze({ shown: () => isShown(help), show: (on) => setShown(help, on) }) : null;
+/*
 H12.4/H12.8 -- ONE clock, owned by the composition root and handed to whoever needs an instant.
 
 Sync seeds it from the server's snapshot; Input stamps `since` with it when an endpoint is armed;
@@ -64,7 +72,7 @@ const { scene, model, history, renderer, states, selection, labels, readout, sna
 	host: window,
 	readoutEl: document.getElementById('readout-bottom'),
 	tools: true,
-	help,
+	help: helpPanel,   // H26.8: the panel, never the element
 	now: () => clock.now(),
 	runRules: RUN_PRESSES,
 });
@@ -129,8 +137,8 @@ model.onChange(() => reveal.sync());
 reveal.sync();
 
 if (helpBtn && help) {
-	helpBtn.addEventListener('click', () => { help.hidden = !help.hidden; helpBtn.blur(); });
-	help.addEventListener('click', (e) => { if (e.target === help) help.hidden = true; });
+	helpBtn.addEventListener('click', () => { setShown(help, !isShown(help)); helpBtn.blur(); });
+	help.addEventListener('click', (e) => { if (e.target === help) setShown(help, false); });
 }
 
 // W5 — diagram-as-UI: a clickable panel region fires 'draw:action' in run mode; the HOST wires it. This is
@@ -138,7 +146,7 @@ if (helpBtn && help) {
 // real; the rest show a transient banner toast (safe — real destructive wiring is out of this slice's scope).
 window.addEventListener('draw:action', (e) => {
 	const action = e && e.detail && e.detail.action;
-	if (action === 'help') { if (help) help.hidden = false; return; }
+	if (action === 'help') { if (help) setShown(help, true); return; }
 	const banner = document.getElementById('banner');
 	/*
 	B152 extends to the CLIENT: a string a person or an agent reads must be typeable back into a

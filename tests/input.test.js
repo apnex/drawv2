@@ -800,10 +800,11 @@ test('B45: keyboard listeners bind to the injected host, not a global', () => {
 	} finally { h.restore(); }
 });
 
+// RESTATED at H26.8's capture move (NATIVE-SHAPES.md section 3.2): Input is handed the panel the composition root makes of its element
 test('B45: the help element is the injected one — not a second lookup of the same id', () => {
 	const h = makeInput();
 	try {
-		assert.equal(h.input.help, h.help, 'one owner of #help, and it is the composition root');
+		assert.equal(h.input.help, h.helpPanel, 'one owner of #help, and it is the composition root, which hands Input its panel');
 		h.capture.onKeyDown(key('?', { shiftKey: true }));
 		assert.equal(h.help.hidden, false, 'and toggling help acts on that very element');
 	} finally { h.restore(); }

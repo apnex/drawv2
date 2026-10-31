@@ -310,6 +310,9 @@ export function makeInput({ readOnly = false, bare = false, host: hostOverride =
 		dispatchEvent(e) { dispatched.push(e); return true; },
 	};
 	const help = fakeEl('div', 'help');
+	// H26.8's capture move (NATIVE-SHAPES.md section 3.2, the help panel): Input is handed the panel the page makes of its element --
+	// whether it shows, and show or hide it -- never the element; the page's own two questions (app/src/main.js)
+	const helpPanel = Object.freeze({ shown: () => !help.hidden, show: (on) => { help.hidden = !on; } });
 	// B36 — the single crosshair main.js owns, injected here the same way. Sharing it is the point:
 	// two instances on one layer is the defect, so the harness must not quietly create a second.
 	const snap = crosshair(scene, CANVAS, GAP);
@@ -322,9 +325,9 @@ export function makeInput({ readOnly = false, bare = false, host: hostOverride =
 	let input;
 	try {
 		input = bare
-			? new Input({ svg, scene, model, history, selection, renderer, states, labels, host, help, snap, parts })   // places are composition, not a collaborator (C-c)
+			? new Input({ svg, scene, model, history, selection, renderer, states, labels, host, help: helpPanel, snap, parts })   // places are composition, not a collaborator (C-c)
 			// run mode's rows as the production root hands them in (K5); `bare` omits them as it omits every collaborator
-			: new Input({ svg, scene, model, history, selection, renderer, states, labels, readout, tools, dataview, host, help, snap, runRules,
+			: new Input({ svg, scene, model, history, selection, renderer, states, labels, readout, tools, dataview, host, help: helpPanel, snap, runRules,
 				/*
 				P7 X-a (H18.37) -- THE PRODUCT PAGE'S INPUT, as app/src/main.js composes it since V-b: the network's keys and its REAL
 				drag judge (plugins/network/session.mjs `judge`, what plugins/network/page.mjs attaches), judging on the board the tab holds. Before
@@ -344,7 +347,7 @@ export function makeInput({ readOnly = false, bare = false, host: hostOverride =
 	const capture = captureDispatch(opened);
 
 	const handle = {
-		input, capture, model, history, selection, svg, scene, commits, calls, restore, renderer, states, labels, tools, help, snap,
+		input, capture, model, history, selection, svg, scene, commits, calls, restore, renderer, states, labels, tools, help, helpPanel, snap,
 		// H26.8's picks move: the element the scene drew for an item, to press on (`targetOf`)
 		at: (on) => targetOf(handle, on),
 		// events Input handed to the host (W5 `draw:action`) — an outbound boundary, so a fair assertion
