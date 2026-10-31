@@ -39,7 +39,8 @@ import { KEYMAP, KEY_RELEASES } from './keymap.js';
 import { openTable, openGestures } from '../../kernel/input-rules.mjs';   // H26.2: the rules part; H26.8: its tables in input-binding's own form
 import { occupiedAnyAt, picksOf, pointsOf, grabbedAt, takenIn } from './pick.js';
 import { GAP, orthoDelta, snappedDelta, clampDelta, snapNode, snapIn, placesOf, gridsOf, resolveBox, dist, nearOrigin } from './snap.js';
-import { previewRect, previewLine, previewPath } from './editing-visuals.js';   // H26.4: the gestures' previews, items of the scene (section 5.3)
+import { previewRect, previewPath } from './editing-visuals.js';   // H26.4: the box's and the link drag's previews, items of the scene (section 5.3)
+import { EDITING_GESTURES } from './editing-gestures.js';   // H26.8: the editing gestures' bodies, the editing duty's, behind the host
 import { emitToHost } from './capture.js';
 import { initialInputState, track } from './input-state.js';
 import { LINK_RELEASES, MARQUEE_RELEASES, CTRL_CLICKS, PRESS_DRAGS, CLONE_DRAGS } from './releases.js';
@@ -58,9 +59,6 @@ be a click, ruled 2026-09-30 (dev/design/input/GESTURE-SYSTEM.md section 13, sta
 (input-binding IB10, D7); the link release alone reads it again, asking whether a click landed at the drag's start -- draw's policy.
 */
 const DRAG_THRESHOLD = 4;
-// H25.3 (B373): the selection rectangle's class, declared as a box row declares its preview (plugins/zones/zone-gestures.mjs), where the
-// copy measure reads what a module puts on its elements (tools/copies.mjs) -- passed bare to previewRect, it read as never drawn
-const MARQUEE = { preview: 'marquee' };
 
 // A1 — the node-frame rect spanning two snapped cell-centre points: the text-box draw preview + its
 // footprint (origin cell + span counts). a click (a===b) → a 1×1 frame; a drag → the spanned frame.
@@ -68,156 +66,25 @@ const MARQUEE = { preview: 'marquee' };
 /*
 GESTURES — one entry per mode, one uniform shape (INPUT.md §7).
 
-	start(input, hit, pos, evt) → ctx
-	commit(input, ctx, pos, evt, outcome)   H26.8's capture move: `outcome` the session's, holding the release's `trigger`
+	start(subject, hit, pos, evt, rule) -> ctx
+	update(subject, ctx, pos, evt)            `ctx` Input's current one
+	commit(subject, ctx, pos, evt, outcome)   H26.8's capture move: `outcome` the session's, holding the release's `trigger`
+	cancel(subject, ctx)
 
-`start` is all H6.4 unifies. `update`, `commit` and `cancel` still dispatch through the switches in
-onMove / dispatchUp / cancelDrag; folding those in is the same shape of work and is deliberately a
-separate step, because rewriting four dispatchers in one commit would leave nothing to bisect if the
-net went red.
-
-The bodies are the branches they replace, moved not rewritten. `move` and `clone` delegate to the
-existing startMove/startClone, which already had this shape — the design was latent in three of ten
-modes and this finishes it rather than imposing it.
+`start` is all H6.4 unifies; the bodies were the branches they replaced, moved not rewritten.
 
 H26.2 (dev/design/components/INPUT-BINDING.md section 5; G9): WHEN each body runs is the gesture session's to decide -- input-binding,
 opened from this table by kernel/input-rules.mjs `openGestures` -- and Input runs a body only on an outcome naming its phase. Each slot
 declares what the session needs of it: `button`, the button whose presses it takes while live and the only one whose release commits
 it, absent for any; and `engaged: false` for a press not yet a gesture in progress (`isGesturing`), absent for one that is.
+
+H26.8's capture move (dev/design/components/NATIVE-SHAPES.md section 3.2, the editing gestures; NS7): the five generic bodies and the
+marquee -- `move`, `clone`, `pending`, `clone-pending`, `handle`, `marquee` -- are the editing duty's, app/src/editing-gestures.js
+`EDITING_GESTURES`, each phase handed the frozen HOST Input makes (`#host`) in place of Input. `link` and `box` stay here, dispatched
+with the same phases, Input their subject: they name Input's own working data -- the drag's stops, its chain, its route judge, a box's
+place. The table below is the session's declaration and the one dispatch, in the order the gestures were always declared.
 */
-// H26.2: exported for tests/fixtures/binding-parity.mjs alone, the fixture of tests/input-binding-parity.test.js, which records which
-// body runs for each input before the move onto input-binding and after it (dev/design/components/INPUT-BINDING.md acceptance step 4);
-// no module reads it
-export const GESTURES = {
-	move: {
-		update: (i, pos, evt) => i.updateMove(pos, evt.shiftKey),
-		commit: (i, ctx, pos) => {
-			i.overlayUi.crosshair.hide();
-			// commit with the flag of the last RENDERED frame, never re-sampled: Shift may have
-			// changed state since, with the pointer stationary
-			i.commitMove(ctx, pos, ctx.orthoActive);
-		},
-		cancel: (i, ctx) => {
-			ctx.moved.forEach((m) => i.model.set(m.kind, m.id, { x: m.before.x, y: m.before.y }));
-			i.overlayUi.crosshair.hide();
-		}
-	},
-
-	clone: {
-		update: (i, pos, evt) => i.updateMove(pos, evt.shiftKey),
-		commit: (i, ctx, pos) => {
-			i.overlayUi.crosshair.hide();
-			i.commitClone(ctx, pos, ctx.orthoActive);
-		},
-		cancel: (i, ctx) => {
-			[...ctx.clones].reverse().forEach((c) => i.model.del(c.kind, c.entity.id));   // uncommitted clones vanish entirely
-			i.selection.clear();
-			i.overlayUi.crosshair.hide();
-		}
-	},
-
-	pending: {
-		engaged: false,   // a press, not yet a gesture in progress: no guard sees it until it becomes a move (H26.2)
-		/*
-		B203 -- a LEFT drag never moves a waypoint. Left is the link button on a waypoint, and the
-		gesture it must not turn into is a move.
-
-		Two rules produce this gesture: `r-press` on the right button and `press` on the left. The
-		left one is the click-to-select path shared with every other kind, so a waypoint cannot
-		simply leave it -- dropping out of `press` would take selection with it. What is suppressed
-		is the ESCALATION: the press still selects, the drag just never becomes a move.
-
-		`link` claims a left drag on a waypoint, as it does on a node -- B211 removed the FREE
-		condition so a junction can be started from a bend. Before that, a waypoint carrying a link
-		fell through to here, and the escalation turned the link button into the move button for
-		exactly the waypoints that are part of a route. That was the defect the director reported.
-		*/
-		// what the drag becomes is a row (app/src/releases.js PRESS_DRAGS): B203, links, and a locked client by the guard
-		update: (i, pos, evt) => i.escalate(pos, evt, 'pressDrag',
-			// D4: what the press was on, by the plugins' facts -- something not placed (a link) never moves; an anchor whose left press
-			// always draws a link (a waypoint, B203) never moves on a left drag
-			{ unplaced: !i.hitFacts.get(i.ctx.hit.kind)?.placed && !i.ctx.hit.mark, onMark: !!i.ctx.hit.mark,
-				linksOnLeft: !!(i.hitFacts.get(i.ctx.hit.kind)?.anchor && !i.hitFacts.get(i.ctx.hit.kind)?.clones), leftPress: !!i.ctx.leftPress }, 'move'),
-		start: (i, hit, pos, evt) => {
-			i.beginPress(hit, pos, evt.shiftKey && i.hitFacts.get(hit.kind)?.modifier !== 'shiftKey');   // Shift is the layer key of what it picks -- a zone -- not selection-add (D4)
-			i.ctx.orthoReady = !evt.shiftKey;
-			i.ctx.leftPress = evt.button === 0;   // which button opened this press; only the left one is barred above
-			return i.ctx;
-		}
-	},
-
-	'clone-pending': {
-		engaged: false,   // a press, not yet a gesture in progress, until it becomes a clone (H26.2)
-		// Ctrl+click without drag: toggle selection (draw.io behavior) -- app/src/releases.js CTRL_CLICKS
-		commit: (i, ctx, pos, evt) => i.act(i.decide('ctrlClick', evt, { exists: !!i.model.get(kindOf(ctx.hit.id), ctx.hit.id) }), ctx),
-		update: (i, pos, evt) => i.escalate(pos, evt, 'cloneDrag', {}, 'clone'),
-		start: (i, hit, pos, evt) => ({ hit, start: pos, orthoReady: !evt.shiftKey })
-	},
-
-	/*
-	C-d (H19.32; D2) -- THE SHARED HANDLE GESTURE: drag a handle of the lone selected entity, by what the plugin that declared the
-	handle says (`handles`) -- where they are, and one of two previews:
-	  reshape   what a drag to a point makes of the entity, written live to the shared Model (B7) and rewound at the end -- a
-	            zone's corners, the box its readout
-	  retarget  a preview line from the fixed anchor to the pointer or the device under it, the dragged entity marked -- a link's
-	            ends
-	On release the plugin says what it found (`released`), and its release rows say what that means -- the gesture commits
-	nothing itself, so a plugin's handle reaches the document through its own rows (a zone's resize, a link's re-plug).
-	*/
-	handle: {
-		commit: (i, ctx, pos, evt) => {
-			const { spec } = ctx;
-			let found;
-			if (spec.preview === 'reshape') {
-				const after = spec.at(ctx, pos);
-				i.model.set(ctx.kind, ctx.id, { ...ctx.before });   // rewind the live preview; history owns the real edit
-				found = spec.released(ctx, after, i.model);
-			} else {
-				i.endRetarget(ctx);
-				found = spec.released(ctx, i.anchorAt(pos, spec.targets), i.model);   // what the handle lands on: its words (C-e)
-			}
-			i.act(i.decide(`handle:${ctx.kind}`, evt, found), { id: ctx.id, ...found });
-			i.overlayUi.handles();   // the handles ride the (possibly new) entity
-		},
-		cancel: (i, ctx) => {
-			// a cancelled gesture is a no-op: a reshape rewound, a retarget's preview dropped
-			if (ctx.spec.preview === 'reshape') i.model.set(ctx.kind, ctx.id, { ...ctx.before });
-			else i.endRetarget(ctx);
-		},
-		update: (i, pos) => {
-			const { spec } = i.ctx;
-			if (spec.preview === 'reshape') {
-				const patch = spec.at(i.ctx, pos);
-				i.model.set(i.ctx.kind, i.ctx.id, patch);   // live preview writes the shared Model (B7)
-				i.readout.setBox(patch);
-				return;
-			}
-			// the fixed end is anchored; the dragged end follows the cursor or the device it hovers
-			const target = i.anchorAt(pos, spec.targets);
-			i.ctx.line.update(i.ctx.fixed, target || pos);
-			i.retarget(target, i.ctx.fixedId);
-			i.readout.setLink(i.ctx.fixed.name || '?', (target && target.id !== i.ctx.fixedId) ? (target.name || '?') : snapNode(pos));
-		},
-		start: (i, hit, pos) => {
-			const spec = i.handleWords.get(hit.kind);
-			const id = spec && i.selection.list().find((x) => kindOf(x) === spec.kind);
-			const entity = id && i.model.get(spec.kind, id);
-			if (!entity) return null;
-			const ctx = { kind: spec.kind, id, spec, ...spec.start(entity, hit.id) };
-			if (spec.preview === 'retarget') {
-				ctx.fixed = i.model.endpointOf(ctx.fixedId);   // an anchor is a node OR a waypoint (B29)
-				if (!ctx.fixed) return null;
-				i.states.setState(id, spec.dragState, true);   // de-emphasize the real one while its end is dragged
-				ctx.line = previewLine(i.scene);
-				ctx.target = null;
-				ctx.line.update(ctx.fixed, pos);
-			}
-			return ctx;
-		}
-	},
-
-
-
+const INPUT_GESTURES = {
 	link: {
 		// only the LEFT button drives link mode: a right-button release during a chain (chord delete,
 		// stray right-click) must never commit a segment, and a left press during a chain is the chain's
@@ -289,11 +156,11 @@ export const GESTURES = {
 			if (ctx.target) i.states.setState(ctx.target, 'hover', false);
 			i.cleanupRoute(ctx);
 		},
-		update: (i, pos) => {
+		update: (i, ctx, pos) => {
 			const target = i.anchorAt(pos);
 			i.updateLinkPreview(pos);
-			i.retarget(target, i.ctx.src.id);
-			i.readout.setLink(i.ctx.src.name || '?', (target && target.id !== i.ctx.src.id) ? (target.name || '?') : snapNode(pos));
+			i.retarget(target, ctx.src.id);
+			i.readout.setLink(ctx.src.name || '?', (target && target.id !== ctx.src.id) ? (target.name || '?') : snapNode(pos));
 		},
 		start: (i, hit, pos, evt) => {
 			const src = i.model.get(kindOf(hit.id), hit.id);   // a hit names what is drawn; the id names how it is stored (F-c)
@@ -318,9 +185,9 @@ export const GESTURES = {
 			i.act(i.decide(ctx.releases, evt, { area: box.w > 0 && box.h > 0 }), box);
 		},
 		cancel: (i, ctx) => ctx.rect.remove(),
-		update: (i, pos) => {
-			const box = i.ctx.shape(i.ctx.p1, snapIn(i.ctx.place, pos));
-			i.ctx.rect.update(box);
+		update: (i, ctx, pos) => {
+			const box = ctx.shape(ctx.p1, snapIn(ctx.place, pos));
+			ctx.rect.update(box);
 			i.readout.setBox(box);
 		},
 		// the row's box: the grid it snaps to, its preview's class, and its shape -- the rect two points span, or the row's own
@@ -333,22 +200,14 @@ export const GESTURES = {
 			return ctx;
 		}
 	},
-
-
-	marquee: {
-		commit: (i, ctx, pos, evt, outcome) => {
-			ctx.rect.remove();
-			const box = resolveBox(ctx.p1, pos);
-			// a click stamps the held type or clears; a drag selects or adds (app/src/releases.js MARQUEE_RELEASES)
-			i.act(i.decide('marquee', evt, { click: outcome.trigger === 'click', hand: !!i.tools.hand, shift: !!evt.shiftKey, ctrl: !!evt.ctrlKey, alt: !!evt.altKey }), { pos, box });
-		},
-		cancel: (i, ctx) => ctx.rect.remove(),
-		update: (i, pos) => i.ctx.rect.update(resolveBox(i.ctx.p1, pos)),
-		start: (i, hit, pos) => ({ p1: pos, rect: previewRect(i.scene, MARQUEE.preview) })
-	},
-
-
 };
+
+// H26.2: exported for tests/fixtures/binding-parity.mjs alone, the fixture of tests/input-binding-parity.test.js, which records which
+// body runs for each input before the move onto input-binding and after it (dev/design/components/INPUT-BINDING.md acceptance step 4);
+// no module reads it. H26.8's capture move: the editing gestures' slots and Input's own, one table in the declared order
+const E = EDITING_GESTURES;
+export const GESTURES = { move: E.move, clone: E.clone, pending: E.pending, 'clone-pending': E['clone-pending'], handle: E.handle, ...INPUT_GESTURES,
+	marquee: E.marquee };
 
 export class Input {
 	/*
@@ -358,6 +217,14 @@ export class Input {
 	is the live gesture's name, read through the getter below.
 	*/
 	#session;
+	/*
+	H26.8's capture move (dev/design/components/NATIVE-SHAPES.md section 3.2, the host table; NS7) -- THE HOST the editing gestures are
+	handed (app/src/editing-gestures.js), frozen, holding exactly the table's members: the values Input holds; the overlay's, the readout's
+	and the editing states' calls; Input's tables, tools and verbs -- `press`, `escalate`, `drag` and `retarget` over its current context,
+	`endRetarget`, `act`, `commitMove` and `commitClone` over the context they are handed -- and draw's geometry. Made once Input's
+	collaborators are in, each call read when it is made.
+	*/
+	#host;
 	/*
 	`host` is the surface that owns GLOBAL key events and receives outbound host actions — `window` in
 	the browser. Injected rather than reached for (B45): Input is the class H6 exists to decompose, and
@@ -547,6 +414,29 @@ export class Input {
 		this.overlayUi = new Overlay({ svg, scene, near: nearOrigin, model, selection, states, snap, handles: () => this.handles, hitFacts: () => this.hitFacts, points: () => this.points,
 			grids: () => this.shownGrids });   // C-e: the grids a modifier shows   // C-d: the kinds' handles; D4: what each hit is
 		this.ctx = {};   // the live gesture's working data: its bodies' (B389)
+		this.#host = Object.freeze({
+			model: this.model, selection: this.selection, scene: this.scene,
+			hideCrosshair: () => this.overlayUi.crosshair.hide(),
+			showHandles: () => this.overlayUi.handles(),
+			showBox: (patch) => this.readout.setBox(patch),
+			showLink: (from, to) => this.readout.setLink(from, to),
+			setState: (id, cls, on) => this.states.setState(id, cls, on),
+			factsOf: (word) => this.hitFacts.get(word),
+			handleOf: (word) => this.handleWords.get(word),
+			holding: () => this.tools.hand,
+			anchorAt: (pos, targets) => this.anchorAt(pos, targets),
+			decide: (table, evt, facts) => this.decide(table, evt, facts),
+			act: (rule, ctx) => this.act(rule, ctx),
+			press: (hit, pos, shift) => this.beginPress(hit, pos, shift),
+			escalate: (pos, evt, table, facts, become) => this.escalate(pos, evt, table, facts, become),
+			drag: (pos, shiftHeld) => this.updateMove(pos, shiftHeld),
+			retarget: (target, excludeId) => this.retarget(target, excludeId),
+			endRetarget: (ctx) => this.endRetarget(ctx),
+			commitMove: (ctx, pos, ortho) => this.commitMove(ctx, pos, ortho),
+			commitClone: (ctx, pos, ortho) => this.commitClone(ctx, pos, ortho),
+			cellName: (pos) => snapNode(pos),
+			boxOf: (p1, p2) => resolveBox(p1, p2),
+		});
 
 
 		this.lastDelta = { x: GAP, y: 0 }; // remembered pitch for Ctrl+D duplicate
@@ -605,6 +495,11 @@ export class Input {
 	// is now such a caller (bindGestureDefer).
 	isGesturing() {
 		return this.#session.state.gesture?.engaged === true;   // H26.2: the live gesture's declared `engaged`
+	}
+
+	// what a gesture's phases are handed: the host for an editing gesture's (H26.8), Input itself for its own, `link` and `box`
+	#subjectOf(name) {
+		return Object.hasOwn(EDITING_GESTURES, name) ? this.#host : this;
 	}
 
 	// the live gesture's name, or null -- the session's (H26.2)
@@ -690,7 +585,7 @@ export class Input {
 		if (rule.run) return this[rule.run](hit, evt, pos);
 		// C-d: the row too -- a shared gesture reads what its row declares. KEPT (B410): a start answering null leaves its gesture live with
 		// an empty context -- a handle press that finds no entity -- as it always did
-		if (outcome.phase === 'start') this.ctx = GESTURES[outcome.gesture.name].start(this, hit, pos, evt, rule) || {};
+		if (outcome.phase === 'start') this.ctx = GESTURES[outcome.gesture.name].start(this.#subjectOf(outcome.gesture.name), hit, pos, evt, rule) || {};
 	}
 
 
@@ -751,6 +646,7 @@ export class Input {
 	}
 
 
+	// the host's `press` (H26.8): answers the context it opens, Input's current one
 	beginPress(hit, pos, shift) {
 		this.ctx = { hit, start: pos, shift };   // the press opened `pending` (H26.2: the session's start)
 		this.labels.setFocus(hit.id); // F2's deterministic target within group selections
@@ -759,6 +655,7 @@ export class Input {
 		} else if (!this.selection.has(hit.id)) {
 			this.selection.set([hit.id]);
 		}
+		return this.ctx;
 	}
 
 	startMove(pos) {
@@ -1027,7 +924,7 @@ export class Input {
 		this.overlayUi.showGrids(evt, moving);
 		const pos = evt.at;
 
-		if (outcome.phase === 'update') return GESTURES[outcome.gesture.name].update?.(this, pos, evt);
+		if (outcome.phase === 'update') return GESTURES[outcome.gesture.name].update?.(this.#subjectOf(outcome.gesture.name), this.ctx, pos, evt);
 		// idle: the stamp ghost rides the snapped cell and the readout states the landing
 		const snapped = snapNode(pos);
 		const blocked = this.handBlocked(pos);
@@ -1148,7 +1045,7 @@ export class Input {
 		this.readout.clearTransient();
 		this.overlayUi.refreshHover(pos);
 		this.overlayUi.showGrids(evt, false);   // gesture over: the layer indicator follows Shift again
-		GESTURES[outcome.gesture.name].commit?.(this, ctx, pos, evt, outcome);
+		GESTURES[outcome.gesture.name].commit?.(this.#subjectOf(outcome.gesture.name), ctx, pos, evt, outcome);
 	}
 
 	/*
@@ -1339,7 +1236,7 @@ export class Input {
 	// a gesture the session cancelled: its body, then the teardown a commit does, onGestureEnd and H24.3's drop -- with the event that ended it
 	#cancelled(outcome, evt) {
 		const ctx = this.ctx;
-		try { if (outcome.phase === 'cancel') GESTURES[outcome.gesture.name].cancel?.(this, ctx); } finally {
+		try { if (outcome.phase === 'cancel') GESTURES[outcome.gesture.name].cancel?.(this.#subjectOf(outcome.gesture.name), ctx); } finally {
 			this.ctx = {};
 			this.readout.clearTransient();
 			this.overlayUi.refreshHover(null);

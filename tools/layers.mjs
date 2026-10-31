@@ -141,9 +141,11 @@ export const PARTS = {
 	parts' declarations arriving as values; the canvas and the product page consume it, so the edge runs one way (B389).
 	AMENDED H26.8's painters move (dev/design/components/NATIVE-SHAPES.md sections 3.1, 3.3): it gains app/src/editing-states.js, the
 	editing states held in one place (NS13), which imports nothing; the gestures' bodies join it at the capture move.
+	AMENDED H26.8's capture move (NATIVE-SHAPES.md section 3.2, NS7): it gains app/src/editing-gestures.js, the five generic gestures'
+	bodies and the marquee, each handed the frozen host Input makes, importing the document and its own visuals alone (GR7, GR13).
 	*/
 	editing: { duty: 'Let a person select, move and resize what the canvas draws', kind: 'host', by: ['D1', 'H26-10'],
-		modules: ['app/src/selection.js', 'app/src/overlay.js', 'app/src/editing-visuals.js', 'app/src/editing-states.js'], consumes: ['document'] },
+		modules: ['app/src/selection.js', 'app/src/overlay.js', 'app/src/editing-visuals.js', 'app/src/editing-states.js', 'app/src/editing-gestures.js'], consumes: ['document'] },
 	// H26.4: the live shadow joined it, draw's translation onto vector-scene; H26.8's painters move retired it, each painter describing
 	// its item directly (NATIVE-SHAPES.md section 3.3)
 	renderer: { duty: 'Draw a document through the parts\' painters', kind: 'host', by: ['D1', 'D3'],
@@ -246,7 +248,7 @@ export const ALIGNMENT = {
 	hub: { to: ['entity-api', 'agp', 'resource-lease'], waits: 'OD-2' },
 	cli: { to: ['operation-command'], waits: 'OD-3' },
 	export: { to: ['vector-scene'], waits: 'draws through it with no root (H26-11)' },
-	editing: { to: ['canvas-editing'], waits: 'declared inside draw (H26-10); its gestures\' bodies join at H26.8, extracted when a second app needs it (B389)' },
+	editing: { to: ['canvas-editing'], waits: 'declared inside draw (H26-10); its gestures\' bodies joined it at H26.8; extracted when a second app needs it (B389)' },
 };
 
 export const ALLOWED = {
@@ -351,7 +353,7 @@ export const LAYER = {
 		'app/src/capture.js', 'app/src/changes.js', 'app/src/commands.js', 'app/src/input-state.js', 'app/src/input.js', 'app/src/keymap.js',
 		'app/src/labeledit.js',  // the label editor Input drives for t, F2 and double-click; the lab loads it, and its window reads are L11's canvas ratchet
 		'app/src/overlay.js', 'app/src/painter.js', 'app/src/pick.js', 'app/src/recognize.js', 'app/src/releases.js', 'app/src/renderer.js',
-		'app/src/editing-visuals.js', 'app/src/editing-states.js',   // H26.4: the editing part's native visuals; H26.8: and its states
+		'app/src/editing-visuals.js', 'app/src/editing-states.js', 'app/src/editing-gestures.js',   // H26.4: the editing part's native visuals; H26.8: its states and its gestures' bodies
 		'app/src/selection.js', 'app/src/snap.js', 'app/src/grids.js',   // WD-b2 (H19.46): the grids, drawn from the open diagram
 		'app/src/actions.js',    // every action a binding names, with its label (gesture system stage 6)
 		'app/src/tools.js',      // K7: the held tools -- stamp hand, text tool, the hand's ghost; the palette is a view of them
@@ -406,7 +408,7 @@ export const ENTRIES = {
 			'plugins/devices/device-panels.mjs',   // C-e (H19.33): the devices plugin's panel rows, likewise
 			'app/src/actions.js', 'app/src/help.js', 'app/src/run-mode.js', 'app/src/labeledit.js', 'app/src/main.js', 'plugins/simulation/mover-painter.mjs', 'app/src/net.js', 'app/src/overlay.js',
 			'app/src/editing-visuals.js', 'app/src/painter.js', 'plugins/simulation/paintloop.mjs', 'app/src/palette.js', 'app/src/pick.js', 'app/src/readout.js',
-			'app/src/recognize.js', 'app/src/releases.js', 'app/src/renderer.js', 'plugins/simulation/reveal-painter.mjs', 'app/src/selection.js', 'app/src/editing-states.js', 'app/src/snap.js', 'app/src/tools.js', 'app/src/compose-canvas.js',
+			'app/src/recognize.js', 'app/src/releases.js', 'app/src/renderer.js', 'plugins/simulation/reveal-painter.mjs', 'app/src/selection.js', 'app/src/editing-states.js', 'app/src/editing-gestures.js', 'app/src/snap.js', 'app/src/tools.js', 'app/src/compose-canvas.js',
 			'app/src/spectate.js', 'app/src/sync.js', 'app/src/watchdog.js', 'engine/ivm.mjs',
 			'plugins/simulation/kinds.mjs', 'plugins/simulation/movers.mjs', 'engine/relations.mjs', 'plugins/simulation/rules.mjs',
 			'engine/situation.mjs', 'plugins/simulation/spawners.mjs', 'engine/store.mjs', 
@@ -478,7 +480,7 @@ export const ENTRIES = {
 			'plugins/network/host.mjs',    // the network attached to a page: its choreography around an edit (item 3, 2026-10-01)
 			'app/src/capture.js', 'app/src/changes.js', 'app/src/commands.js', 'app/src/input-state.js', 'app/src/input.js', 'app/src/keymap.js', 'app/src/labeledit.js',
 			'app/src/overlay.js', 'app/src/editing-visuals.js', 'app/src/pick.js', 'app/src/readout.js',
-			'app/src/recognize.js', 'app/src/releases.js', 'app/src/renderer.js', 'app/src/selection.js', 'app/src/editing-states.js', 'app/src/snap.js', 'app/src/tools.js', 'app/src/compose-canvas.js', 
+			'app/src/recognize.js', 'app/src/releases.js', 'app/src/renderer.js', 'app/src/selection.js', 'app/src/editing-states.js', 'app/src/editing-gestures.js', 'app/src/snap.js', 'app/src/tools.js', 'app/src/compose-canvas.js', 
 			'engine/ivm.mjs', 'engine/relations.mjs',
 			'engine/situation.mjs', 'engine/store.mjs', 
 			'kernel/geometry.mjs', 'plugins/network/roles.mjs', 'plugins/network/appearance.mjs', 'kernel/input-rules.mjs', 'kernel/renderer.mjs',

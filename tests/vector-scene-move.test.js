@@ -24,7 +24,8 @@ const ROOT = real(path.resolve(import.meta.dirname, '..'));
 const COMPONENT_ENTRY = pathToFileURL(real(path.join(ROOT, 'node_modules/@apnex/vector-scene/dist/index.js'))).href;
 // a module's code, its comments taken out, so a word a comment names is not a call
 const code = (file) => fs.readFileSync(path.join(ROOT, file), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
-const EDITING = ['app/src/selection.js', 'app/src/overlay.js', 'app/src/editing-visuals.js', 'app/src/editing-states.js'];   // H26.8: and its states
+const EDITING = ['app/src/selection.js', 'app/src/overlay.js', 'app/src/editing-visuals.js', 'app/src/editing-states.js',
+	'app/src/editing-gestures.js'];   // H26.8: and its states, and its gestures' bodies (the capture move)
 // what makes or reaches a platform element: the painter's builder (not the renderer's own `this.el`, which builds shadow nodes), the
 // document, a lookup on the page, or a write through an element's own method
 const MAKES = /(?<![.\w])el\(|\bcreateElementNS\b|\bcreateElement\b|\bdocument\b|\bownerDocument\b|\.appendChild\(|\.insertBefore\(|\.replaceChildren\(|\.innerHTML\b|\bgetElementById\b|\b(svg|layer|overlay|snapLayer)\.querySelector(All)?\(/g;

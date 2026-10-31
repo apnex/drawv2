@@ -350,7 +350,7 @@ Why each mapping fits, and the rulings composing it would change, are `dev/desig
 | `hub` | `entity-api`, `agp`, `resource-lease` | entity-api: proposed in zorg, certified; agp: registered in mission-kit, C1; resource-lease: candidate, zorg D32 | OD-2 |
 | `cli` | `operation-command` | operation-command: proposed in zorg, certified | OD-3 |
 | `export` | `vector-scene` | vector-scene: proposed in drawv2, released from its own repository, composed (H26-11); a candidate in zorg D32, steered in D35 | draws through it with no root (H26-11) |
-| `editing` | `canvas-editing` | canvas-editing: a drawv2 candidate by H26-10, B389 | declared inside draw (H26-10); its gestures' bodies join at H26.8, extracted when a second app needs it (B389) |
+| `editing` | `canvas-editing` | canvas-editing: a drawv2 candidate by H26-10, B389 | declared inside draw (H26-10); its gestures' bodies joined it at H26.8; extracted when a second app needs it (B389) |
 <!-- END GENERATED: architecture-target-alignment -->
 
 **The owed designs,** each designed and asked on its own when its trigger fires:

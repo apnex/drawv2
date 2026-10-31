@@ -138,6 +138,8 @@ test('H26.2 (acceptance step 3; G7, G9): a body runs only on an outcome naming i
 	assert.deepEqual(bodies.map((m) => m[2]).sort(), ['cancel', 'commit', 'start', 'update'], 'one dispatch of each phase');
 	for (const [, index, phase] of bodies) {
 		assert.equal(index, 'outcome.gesture.name', `${phase}: the body of the gesture the outcome names`);
+		// RESTATED at H26.8's capture move (NATIVE-SHAPES.md section 3.2, NS7): handed the host for an editing gesture, Input for its own
+		assert.match(INPUT, new RegExp(`GESTURES\\[outcome\\.gesture\\.name\\]\\??\\.${phase}\\??\\.?\\(this\\.#subjectOf\\(outcome\\.gesture\\.name\\)`), `${phase}: its subject the host or Input, by the gesture`);
 		const holder = methods().find((m) => new RegExp(`GESTURES\\[outcome\\.gesture\\.name\\]\\??\\.${phase}\\b`).test(method(m)));
 		assert.match(method(holder), new RegExp(`outcome\\.phase\\s*[!=]==\\s*'${phase}'`), `${phase}: run in ${holder} on an outcome naming it`);
 	}

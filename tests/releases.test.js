@@ -139,12 +139,17 @@ test('acceptance 3: every release a table decides names an action that exists, a
 	}
 });
 
+// RESTATED at H26.8's capture move (NATIVE-SHAPES.md section 3.2, NS7): Input's own slots, link and box, in app/src/input.js, each body's
+// subject Input; the editing gestures' -- Ctrl+click, the handle, the marquee -- in app/src/editing-gestures.js, each handed the host
+const EDITING_SRC = fs.readFileSync(new URL('../app/src/editing-gestures.js', import.meta.url), 'utf8');
+const slotsOf = (src, head) => code(src.slice(src.indexOf(head), src.indexOf('\n};', src.indexOf(head))));
 test('acceptance 3: the link, marquee, Ctrl+click, replug and zone releases commit nothing and select nothing themselves', () => {
-	const slots = code(INPUT_SRC.slice(INPUT_SRC.indexOf('const GESTURES = {'), INPUT_SRC.indexOf('\n};', INPUT_SRC.indexOf('const GESTURES = {'))));
-	for (const name of ['link', "'clone-pending'", 'handle', 'box', 'marquee']) {   // the zone's draw is the shared box gesture; a handle the shared handle gesture (C-d)
+	const tables = [[slotsOf(INPUT_SRC, 'const INPUT_GESTURES = {'), ['link', 'box'], 'i'], [slotsOf(EDITING_SRC, 'export const EDITING_GESTURES = {'), ["'clone-pending'", 'handle', 'marquee'], 'host']];
+	for (const [slots, names, subject] of tables) for (const name of names) {   // the zone's draw is the shared box gesture; a handle the shared handle gesture (C-d)
 		const at = slots.indexOf(`\t${name}: {`);
+		assert.ok(at >= 0, `control: ${name}'s slot found`);
 		const commit = slots.slice(slots.indexOf('commit:', at), slots.indexOf('cancel:', at) > 0 && slots.indexOf('cancel:', at) < slots.indexOf('\t},', at) ? slots.indexOf('cancel:', at) : slots.indexOf('update:', at));
-		assert.match(commit, /i\.decide\(/, `${name}: its release asks the engine`);
+		assert.match(commit, new RegExp(`\\b${subject}\\.decide\\(`), `${name}: its release asks the engine`);
 		assert.doesNotMatch(commit, /history\.commit|selection\.(set|toggle|add|clear)/, `${name}: its release performs nothing itself`);
 	}
 });

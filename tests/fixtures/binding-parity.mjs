@@ -45,7 +45,9 @@ export function liveGesture(h) {
 	try { h.input.keyDown(keyEvent('key-down', '\u0000', {}), NO_REPLY); } finally { Input.prototype.situation = real; }
 	return seen;
 }
-// every gesture body, and each of Input's methods that starts a chain or becomes a gesture, logged as it runs
+// every gesture body, and each of Input's methods that starts a chain or becomes a gesture, logged as it runs. RESTATED at H26.8's capture
+// move: Input's GESTURES holds the editing gestures' own slots (app/src/editing-gestures.js) beside link and box, so a body logged here is
+// the one Input dispatches, whichever module declares it
 function spied(log) {
 	const undo = [];
 	for (const [name, slot] of Object.entries(GESTURES)) for (const phase of ['start', 'update', 'commit', 'cancel']) {

@@ -127,8 +127,12 @@ test('C-d: the canvas holds no link handle or re-plug of its own; the handle ges
 	assert.doesNotMatch(code('app/src/releases.js'), /REPLUG_RELEASES/);
 	assert.doesNotMatch(code('app/src/overlay.js'), /pathOf|'end'|'link'/);
 	assert.doesNotMatch(code('app/src/pick.js'), /dataset\.end|dataset\.corner|'lhandle'|'handle' \}/);
-	const slot = input.slice(input.indexOf('\thandle: {'), input.indexOf('\n\t},', input.indexOf('\thandle: {')));
-	assert.doesNotMatch(slot, /history\.commit/, 'its end is the declaring plugin\'s release rows');
+	// RESTATED at H26.8's capture move: the handle gesture's body is the editing duty's, app/src/editing-gestures.js, handed the host
+	const editing = code('app/src/editing-gestures.js');
+	assert.ok(editing.includes('\thandle: {'), 'control: the handle gesture\'s slot found');
+	const slot = editing.slice(editing.indexOf('\thandle: {'), editing.indexOf('\n\t},', editing.indexOf('\thandle: {')));
+	assert.doesNotMatch(slot, /history\.commit|commands\./, 'its end is the declaring plugin\'s release rows');
+	assert.doesNotMatch(input, /\thandle: \{/, 'and Input holds no handle body of its own');
 });
 
 test('C-d: a re-plug marks its link while the end is dragged, and a cancel unmarks it', async () => {
