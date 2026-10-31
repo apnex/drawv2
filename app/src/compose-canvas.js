@@ -37,6 +37,7 @@ import { Renderer, openCanvasScene } from './renderer.js';
 import { Selection } from './selection.js';
 import { EditingStates } from './editing-states.js';   // H26.8: the editing part's states (NS13)
 import { LabelEditor } from './labeledit.js';
+import { setFields, renameEntity } from './commands.js';   // H26.8: the label editor's two edits, handed to it
 import { Tools } from './tools.js';
 import { Input } from './input.js';
 import { captureCanvas } from './capture.js';
@@ -86,7 +87,8 @@ export function composeCanvas({ svg, scene: declared, defs, host, network = null
 	const renderer = new Renderer(model, svg, { parts, scene, states });   // C-a: the plugins' canvas parts, their painters among them
 	selection.subscribe(() => states.reflect(selection.list()));   // the selected look and what it lights, held for what is selected
 	// C-e: where each kind's label sits -- the first part that says so
-	const labels = new LabelEditor({ svg, scene, model, history, labelAt: (e) => parts.map((p) => p.labels?.labelAt?.(e)).find((x) => x) ?? null,
+	// H26.8's capture move: the label editor handed the two edits it commits, the canvas's builders (NATIVE-SHAPES.md section 3.2)
+	const labels = new LabelEditor({ svg, scene, model, history, edits: { setFields, rename: renameEntity }, labelAt: (e) => parts.map((p) => p.labels?.labelAt?.(e)).find((x) => x) ?? null,
 		wordOf: (kind, e) => parts.map((p) => p.labels?.wordOf?.(kind, e)).find((x) => x) ?? null,   // C-e: and what a Tab run groups by
 		contentOf: (e, idx) => parts.map((p) => p.labels?.content).filter(Boolean).find((c) => c.valueOf(e, idx) != null) ?? null });   // and a panel's regions
 	const shownReadout = readoutEl ? new Readout({ model, selection, elements: [readoutEl], parts }) : null;   // C-e: each kind's words, from its part

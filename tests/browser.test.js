@@ -1426,6 +1426,33 @@ test('C-e: a device\'s name editor opens centred under the device', { skip: SKIP
 });
 
 /*
+H26.8's capture move (dev/design/components/NATIVE-SHAPES.md section 3.2, the label editor's one exception; appendix A) -- THE LABEL
+EDITOR ON THE REAL PAGE, handed its two edits by the canvas's composition where it imported the canvas's commands: opened on the
+fixture's load balancer, placed under it, a name typed and committed reaches the document as one rename, and undo takes it back.
+*/
+test('H26.8 (capture move): the name editor, placed under its device, commits a typed name through the edits the composition hands it', { skip: SKIP }, async () => {
+	const t = await freshTab();
+	try {
+		const got = JSON.parse(await t.eval(`(async () => {
+			const id = 'node-ba0004', before = draw.model.get('node', id).name;
+			draw.labels.open('node', id);
+			await new Promise((r) => requestAnimationFrame(r));
+			const ed = document.getElementById('label-editor'), box = ed.getBoundingClientRect();
+			const dev = document.getElementById(id).querySelector('[data-layer="frame"]').getBoundingClientRect();
+			ed.value = '  renamed  ';
+			draw.labels.close(true);
+			return JSON.stringify({ before, after: draw.model.get('node', id).name, placed: box.top >= dev.bottom && box.top - dev.bottom <= 12 });
+		})()`));
+		assert.equal(got.placed, true, 'placed just below the device it names');
+		assert.equal(got.after, 'renamed', `the typed name committed, trimmed: ${JSON.stringify(got)}`);
+		// the K8 board is shared: once the server has answered the rename, undo it and wait for the name to come back
+		assert.equal(await until(t, `window.draw.sync.outbox.every((m) => m.answered) ? 1 : 0`, 6000), 1, 'the server answered the rename');
+		await t.eval(`draw.history.undo(), 1`);
+		assert.equal(await until(t, `draw.model.get('node', 'node-ba0004').name === ${JSON.stringify(got.before)} ? 1 : 0`, 6000), 1, 'and undo took it back');
+	} finally { await t.close(); }
+});
+
+/*
 H26.4 (the verifier's F2; dev/design/components/VECTOR-SCENE.md sections 5.1 and 5.2) -- the name editor is placed through the scene's
 toScreen, where it built a DOMPoint and transformed it by the canvas's screen transform. Read off the real page, whose screen transform
 letterboxes and scales the drawing: a device's editor, centred under it, and a waypoint's, beside its corner, each placed exactly where

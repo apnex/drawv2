@@ -14,6 +14,9 @@ import fs from 'node:fs';
 import { makeInput, pointer } from './fixtures/client-harness.mjs';
 import { PRODUCT_CANVAS } from '../product/canvas.mjs';
 import { LabelEditor } from '../app/src/labeledit.js';
+import { setFields, renameEntity } from '../app/src/commands.js';
+// H26.8's capture move (NATIVE-SHAPES.md section 3.2): the label editor handed its two edits, as the canvas's composition hands them
+const EDITS = { setFields, rename: renameEntity };
 
 const code = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
 const panel = { id: 'node-c10001', name: 'p', type: 'host', shape: 'square', x: 0, y: 0, content: [
@@ -25,7 +28,7 @@ test('C-e: committing a panel input sets the device\'s content with that region 
 	try {
 		h.model.put('node', structuredClone(panel));
 		const sent = [];
-		const ed = new LabelEditor({ svg: {}, model: h.model, history: { commit: (c) => sent.push(c) }, contentOf });
+		const ed = new LabelEditor({ svg: {}, model: h.model, history: { commit: (c) => sent.push(c) }, edits: EDITS, contentOf });
 		ed.input = { value: 'edited', remove() {} };
 		ed.editing = { mode: 'content', nodeId: panel.id, idx: 1, before: 'b' };
 		ed.close(true);
@@ -43,13 +46,37 @@ test('C-e: an unchanged value, or a region the device no longer has, commits not
 	try {
 		h.model.put('node', structuredClone(panel));
 		const sent = [];
-		const ed = new LabelEditor({ svg: {}, model: h.model, history: { commit: (c) => sent.push(c) }, contentOf });
+		const ed = new LabelEditor({ svg: {}, model: h.model, history: { commit: (c) => sent.push(c) }, edits: EDITS, contentOf });
 		for (const [value, idx] of [['b', 1], ['x', 5]]) {
 			ed.input = { value, remove() {} };
 			ed.editing = { mode: 'content', nodeId: panel.id, idx, before: 'b' };
 			ed.close(true);
 		}
 		assert.equal(sent.length, 0);
+	} finally { h.restore(); }
+});
+
+/*
+H26.8's capture move (dev/design/components/NATIVE-SHAPES.md section 3.2, the label editor's one exception; GR7): the label editor commits
+what its handed edits answer -- a region's value through `setFields`, a name through `rename` -- and imports the canvas's commands no more.
+*/
+test('the label editor commits through the edits it is handed: a region through setFields, a name through rename', () => {
+	const h = makeInput();
+	try {
+		h.model.put('node', structuredClone(panel));
+		const sent = [], asked = [];
+		const edits = { setFields: (...a) => { asked.push(['setFields', ...a]); return { label: 'set by the hand' }; }, rename: (...a) => { asked.push(['rename', ...a]); return { label: 'renamed by the hand' }; } };
+		const ed = new LabelEditor({ svg: {}, model: h.model, history: { commit: (c) => sent.push(c) }, edits, contentOf });
+		ed.input = { value: 'edited', remove() {} };
+		ed.editing = { mode: 'content', nodeId: panel.id, idx: 1, before: 'b' };
+		ed.close(true);
+		ed.input = { value: '  q  ', remove() {} };
+		ed.editing = { kind: 'node', id: panel.id, before: 'p' };   // a name's edit, as `open` holds it
+		ed.close(true);
+		assert.deepEqual(asked.map((x) => x[0]), ['setFields', 'rename']);
+		assert.deepEqual(asked[1], ['rename', 'node', panel.id, 'p', 'q'], 'the name trimmed, as before');
+		assert.deepEqual(sent, [{ label: 'set by the hand' }, { label: 'renamed by the hand' }], 'what each edit answered is what is committed');
+		assert.doesNotMatch(code('app/src/labeledit.js'), /commands\.js/, 'the canvas\'s commands are not imported');
 	} finally { h.restore(); }
 });
 

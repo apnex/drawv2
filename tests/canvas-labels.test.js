@@ -79,6 +79,7 @@ test('C-e: the canvas holds no double-click target, label placement or F2 filter
 
 test('C-e: a Tab rename run advances to the next entity of the same drawn kind -- a device to a device, a waypoint to a waypoint', async () => {
 	const { LabelEditor } = await import('../app/src/labeledit.js');
+	const { setFields, renameEntity } = await import('../app/src/commands.js');   // H26.8's capture move: its two edits, as the composition hands them
 	const { makeWaypoint } = await import('../plugins/devices/make-node.mjs');
 	const h = makeInput();
 	try {
@@ -86,7 +87,7 @@ test('C-e: a Tab rename run advances to the next entity of the same drawn kind -
 		const w1 = makeWaypoint(h.model, { x: 120, y: 0 }); h.model.put('node', w1);
 		const w2 = makeWaypoint(h.model, { x: 120, y: 120 }); h.model.put('node', w2);
 		const DEVICE_LABELS = PRODUCT_CANVAS.find((p) => p.owner === 'devices').labels;
-		const ed = new LabelEditor({ svg: {}, model: h.model, history: {}, wordOf: DEVICE_LABELS.wordOf });
+		const ed = new LabelEditor({ svg: {}, model: h.model, history: {}, edits: { setFields, rename: renameEntity }, wordOf: DEVICE_LABELS.wordOf });
 		assert.equal(ed.neighbor('node', a.id, 1), b.id, 'past the waypoint between them');
 		assert.equal(ed.neighbor('node', w1.id, 1), w2.id);
 	} finally { h.restore(); }

@@ -5,7 +5,6 @@ the entity's label; Enter/blur commits an undoable rename, Escape cancels.
 
 import { kindOf } from '../../model/model.mjs';
 import { NAME_MAX, CONTENT_VALUE_MAX } from '../../model/limits.mjs';
-import * as commands from './commands.js';
 
 // the caps are the model's, shared with the server rather than restated here (B86)
 
@@ -15,7 +14,10 @@ export class LabelEditor {
 	// and `contentOf(entity, idx)` -- what reads and edits an entity's region, the parts' (a panel's, the devices plugin's), or null
 	// H26.4 (dev/design/components/VECTOR-SCENE.md sections 5.1 and 5.2; the verifier's F2): `scene`, the canvas's, whose `toScreen` places
 	// the editor; `svg` stays for what is draw's own -- an element by id, its box, the screen's scale
-	constructor({ svg, scene, model, history, labelAt = () => null, wordOf = () => null, contentOf = () => null }) {
+	// H26.8's capture move (dev/design/components/NATIVE-SHAPES.md section 3.2, the label editor's one exception): `edits`, the two edits
+	// it commits -- `setFields(label, kind, id, after)` and `rename(kind, id, before, after)`, each answering the edit -- handed by the
+	// composition where it imported the canvas's commands, so the label editor imports the document and the kind contract alone (GR7)
+	constructor({ svg, scene, model, history, edits, labelAt = () => null, wordOf = () => null, contentOf = () => null }) {
 		this.labelAt = labelAt;
 		this.contentOf = contentOf;
 		this.wordOf = (kind, e) => wordOf(kind, e) ?? kind;
@@ -23,6 +25,7 @@ export class LabelEditor {
 		this.scene = scene;
 		this.model = model;
 		this.history = history;
+		this.edits = edits;
 		this.input = null;
 		/*
 		The entity the user last touched DIRECTLY — a press, a stamp, a drop. "Focus" here means
@@ -194,7 +197,7 @@ export class LabelEditor {
 			const spec = entity && this.contentOf(entity, editing.idx);
 			if (!spec) return;
 			const edit = spec.edit(entity, editing.idx, after);   // the part's edit -- a copy of the regions (C-e)
-			this.history.commit(commands.setFields(edit.label, kind, editing.nodeId, edit.after));
+			this.history.commit(this.edits.setFields(edit.label, kind, editing.nodeId, edit.after));
 			return;
 		}
 		// rename a node / zone (Enter/blur)
@@ -202,6 +205,6 @@ export class LabelEditor {
 		const after = input.value.trim().slice(0, NAME_MAX);
 		if (!after || after === before) return;
 		if (!this.model.get(kind, id)) return;
-		this.history.commit(commands.renameEntity(kind, id, before, after));
+		this.history.commit(this.edits.rename(kind, id, before, after));
 	}
 }
