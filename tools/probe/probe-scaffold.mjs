@@ -2,7 +2,7 @@
 /*
 probe-scaffold -- H26-19, as amended. What a probe starts ends with it, even when it is killed, and what it makes to run is removed.
 
-The probes (parity, capture-sample, gesture-sample, rest-sweep) each serve two commits from worktrees of their own, write each side's
+The probes (parity, gesture-sample, rest-sweep) each serve two commits from worktrees of their own, write each side's
 documents into a data folder, and drive one headless Chrome. Each started its servers and Chrome detached and stopped them in a
 `finally` -- which a probe killed, or ended by `process.exit` inside its `try`, never runs: the servers and the Chrome ran on, the
 worktrees stayed registered, and Chrome's lock folder was never removed even when the `finally` ran.
