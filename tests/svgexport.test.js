@@ -17,7 +17,7 @@ import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { makeApp } from './fixtures/app.mjs';
-import { scratchFolder, stopGroup } from '@apnex/test-harness';   // H26.4 (V2-2), H26-19 as amended: the lab server a tethered group of its own
+import { scratchFolder, stopGroup } from '@apnex/clean-runner';   // H26.4 (V2-2), H26-19 as amended: the lab server a tethered group of its own
 import { startLab } from './fixtures/lab-server.mjs';   // H26.5 (the verifier's finding 1): started and waited for in one place
 
 let app, base, dataDir;

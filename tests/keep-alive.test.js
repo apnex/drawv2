@@ -17,7 +17,7 @@ import fs from 'node:fs';
 import http from 'node:http';
 import net from 'node:net';
 import { makeApp, TEST_KEEP_ALIVE_MS } from './fixtures/app.mjs';
-import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
+import { scratchFolder } from '@apnex/clean-runner';   // H26-19 as amended: removed when this file ends, however it ends
 
 const stall = (ms) => { const until = Date.now() + ms; while (Date.now() < until) { /* the machine is busy */ } };
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));

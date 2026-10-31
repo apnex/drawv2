@@ -8,7 +8,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { skipsIn } from '../tools/scan-skips.mjs';
-import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
+import { scratchFolder } from '@apnex/clean-runner';   // H26-19 as amended: removed when this file ends, however it ends
 
 const TOOL = new URL('../tools/scan-skips.mjs', import.meta.url).pathname;
 const CLEAN = 'TAP version 13\n# Subtest: a\nok 1 - a\n  ---\n  ...\n1..1\n# tests 1\n# skipped 0\n# todo 0\n';

@@ -29,7 +29,7 @@ path, so a tree whose node_modules is a symlink -- a worktree linking its root's
 paths are compared only once both sides are resolved.
 */
 const real = (p) => { try { return fs.realpathSync(p); } catch { return p; } };
-import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
+import { scratchFolder } from '@apnex/clean-runner';   // H26-19 as amended: removed when this file ends, however it ends
 const ROOT = real(path.resolve(import.meta.dirname, '..'));
 const HERE = real(fileURLToPath(import.meta.url));
 const ADAPTER = real(path.join(ROOT, 'app/src/capture.js'));

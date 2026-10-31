@@ -35,7 +35,7 @@ replug uses the real builder where the brief hand-built the op.
 // C-c (H19.31): the placed kinds, as the page composes them
 import { placesOf as placesOfCanvas } from '../app/src/snap.js';
 import { PRODUCT_CANVAS as CANVAS_PARTS } from '../product/canvas.mjs';
-import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
+import { scratchFolder } from '@apnex/clean-runner';   // H26-19 as amended: removed when this file ends, however it ends
 const PLACES = placesOfCanvas(CANVAS_PARTS);
 import { test } from 'node:test';
 import assert from 'node:assert/strict';

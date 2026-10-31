@@ -17,7 +17,7 @@ import { PAGES, COPIES } from '../tools/layers.mjs';
 import { markersOf } from '../tools/regions.mjs';
 import { PAGE_REGIONS, importMapRegion } from '../tools/page-regions.mjs';
 import { importMapOf } from '../tools/components.mjs';
-import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
+import { scratchFolder } from '@apnex/clean-runner';   // H26-19 as amended: removed when this file ends, however it ends
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const TOOL = path.join(ROOT, 'tools/import-map.mjs');

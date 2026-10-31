@@ -26,7 +26,7 @@ import { Selection } from '../app/src/selection.js';
 import { Changes } from '../app/src/changes.js';
 import { Sync } from '../app/src/sync.js';
 import { OWNER, GUEST, openStore } from './fixtures/app.mjs';
-import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
+import { scratchFolder } from '@apnex/clean-runner';   // H26-19 as amended: removed when this file ends, however it ends
 
 // the browser API Sync persists its outbox through (D30)
 const storage = new Map();

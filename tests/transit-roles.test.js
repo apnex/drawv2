@@ -16,7 +16,7 @@ import { waypointLayers } from '../plugins/network/appearance.mjs';
 import { NETWORK_ROWS } from '../plugins/network/kinds.mjs';   // the network's kind and the field it contributes (S-a)
 
 const W = 'node-e00001';
-import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
+import { scratchFolder } from '@apnex/clean-runner';   // H26-19 as amended: removed when this file ends, however it ends
 const L = (n, src, dst, extra = {}) => ({ id: `link-00000${n}`, src, dst, via: [], ...extra });
 const SHAPES = {
 	'no links': [],

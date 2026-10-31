@@ -12,7 +12,8 @@ import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { launchChrome, scratchFolder, spawnTethered, stopGroup } from '@apnex/test-harness';   // H26-19 as amended: each ends with this file
+import { scratchFolder, spawnTethered, stopGroup } from '@apnex/clean-runner';   // H26-19 as amended: each ends with this file
+import { launchChrome } from '@apnex/headless-chromium';
 import { NO_CHROME } from './fixtures/chrome.mjs';
 import { createTab, inputOf, matrixTests, sleep } from './fixtures/matrix-runner.mjs';
 import { pipeEntity } from '../plugins/network/pipe-kind.mjs';

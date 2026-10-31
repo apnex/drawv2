@@ -14,7 +14,7 @@ import { Log, LOG_MAX, LOG_HARD_MAX } from '../planner/log.mjs';
 import { commit, undo } from './fixtures/composed.mjs';
 import { Session } from '../server/protocol.js';
 import { OWNER, openStore } from './fixtures/app.mjs';
-import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
+import { scratchFolder } from '@apnex/clean-runner';   // H26-19 as amended: removed when this file ends, however it ends
 
 // B112: an unpositioned fixture node gets a DISTINCT anchor derived from its id -- one
 // anchor holds one occupant, so two fixtures defaulting to (0,0) is now a real violation.

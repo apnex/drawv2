@@ -30,7 +30,7 @@ import { Store } from '../server/store.js';
 import { validateDoc } from './fixtures/composed.mjs';   // the network's kinds, as the store validates (S-e)
 import { OWNER, makeApp } from './fixtures/app.mjs';
 import { WebSocket } from 'ws';
-import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
+import { scratchFolder } from '@apnex/clean-runner';   // H26-19 as amended: removed when this file ends, however it ends
 
 const TEMPLATES = fileURLToPath(new URL('../templates', import.meta.url));
 const tmp = () => scratchFolder('draw-tpl-');

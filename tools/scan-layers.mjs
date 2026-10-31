@@ -873,8 +873,8 @@ const rules = {
 	layer. A dynamic import of one is refused everywhere: draw imports components only statically, so the whole of a component's graph
 	loads with the page, and a page kept across a deploy never asks for a version the deploy removed (D7's second condition). And every
 	@apnex/ dependency is declared here, so a component cannot be installed without saying who may import it.
-	H26-19 as amended: an @apnex/ package only devDependencies declares -- `test-harness`, which the tests alone use -- is no component and
-	is not declared here; it never ships, the image installing with `npm ci --omit=dev`, so no module of a folder that ships may import it.
+	H26-19 as amended: an @apnex/ package only devDependencies declares -- `clean-runner` and `headless-chromium`, which the tests alone
+	use -- is no component and is not declared here; it never ships, the image installing with `npm ci --omit=dev`, so no module of a folder that ships may import it.
 	*/
 	L12: () => {
 		for (const [pkg, c] of Object.entries(M.COMPONENTS)) {

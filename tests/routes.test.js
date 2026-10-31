@@ -17,7 +17,7 @@ import fs from 'node:fs';
 import { makeApp } from './fixtures/app.mjs';
 import { ROUTES, families } from '../server/routes.mjs';
 import { inventory } from '../tools/routes.mjs';
-import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
+import { scratchFolder } from '@apnex/clean-runner';   // H26-19 as amended: removed when this file ends, however it ends
 
 test('B119: every declared route and method is answered by the running server', async () => {
 	const dataDir = scratchFolder('draw-routes-');

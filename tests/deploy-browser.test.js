@@ -29,7 +29,8 @@ import net from 'node:net';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 // H26-19 as amended: each server and Chrome ends with this file, even killed; each folder goes when it ends
-import { launchChrome, scratchFolder, spawnTethered, stopGroup } from '@apnex/test-harness';
+import { scratchFolder, spawnTethered, stopGroup } from '@apnex/clean-runner';
+import { launchChrome } from '@apnex/headless-chromium';
 import { NO_CHROME } from './fixtures/chrome.mjs';
 import { sleep } from './fixtures/matrix-runner.mjs';
 

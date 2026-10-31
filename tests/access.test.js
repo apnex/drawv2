@@ -14,7 +14,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { Store } from '../server/store.js';
 import { validateMetaPatch } from '../planner/validate.js';
-import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
+import { scratchFolder } from '@apnex/clean-runner';   // H26-19 as amended: removed when this file ends, however it ends
 import { validateDoc, heldLayouts } from './fixtures/composed.mjs';   // the network's kinds, as the store validates (S-e)
 import { testApp } from './fixtures/app.mjs';   // B164: createApp, its idle connections held as every test server's are
 import { Session, snapshotBody } from '../server/protocol.js';

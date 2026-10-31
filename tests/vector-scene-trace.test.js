@@ -21,7 +21,7 @@ import fs from 'node:fs';
 import net from 'node:net';
 import http from 'node:http';
 import path from 'node:path';
-import { launchChrome } from '@apnex/test-harness';   // H26-19 as amended: Chrome ends with this file, its launch folder with it
+import { launchChrome } from '@apnex/headless-chromium';   // H26-19 as amended: Chrome ends with this file, its launch folder with it
 import { NO_CHROME } from './fixtures/chrome.mjs';
 import { createTab, sleep } from './fixtures/matrix-runner.mjs';
 import { PAGE_STYLESHEETS, CANVAS_VIEWBOX } from '../product/canvas.mjs';

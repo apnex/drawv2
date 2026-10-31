@@ -14,7 +14,7 @@ import { makeApp } from './fixtures/app.mjs';
 import { Model } from './fixtures/composed.mjs';
 import { LAYOUT_TABLE } from '../plugins/layouts/layout-table.mjs';
 import { layoutRecords } from '../plugins/layouts/layout-records.mjs';
-import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
+import { scratchFolder } from '@apnex/clean-runner';   // H26-19 as amended: removed when this file ends, however it ends
 
 const RECORDS = structuredClone(LAYOUT_TABLE).map((l) => ({ ...l, ext: { ...l.ext } }));
 let app, base, dataDir;

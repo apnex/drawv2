@@ -39,7 +39,7 @@ import { NETWORK_ROWS } from '../../plugins/network/kinds.mjs';
 import { linkReading, readModel } from '../../plugins/network/read-model.mjs';
 import { createTransit } from '../../plugins/network/transit.mjs';
 import { pipeEntity } from '../../plugins/network/pipe-kind.mjs';
-import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
+import { scratchFolder } from '@apnex/clean-runner';   // H26-19 as amended: removed when this file ends, however it ends
 
 let NOW = 1_700_000_000_000;
 const realNow = Date.now;

@@ -16,7 +16,7 @@ import { productKinds } from '../product/kinds.mjs';
 import { NETWORK_ROWS } from '../plugins/network/kinds.mjs';
 import { makeApp } from './fixtures/app.mjs';
 import fs from 'node:fs';
-import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
+import { scratchFolder } from '@apnex/clean-runner';   // H26-19 as amended: removed when this file ends, however it ends
 
 const PAGE = productKinds(...NETWORK_ROWS), CORE = productKinds();
 // RESTATED at WD-b1 (H19.45): schema 3 -- a document holds its two layouts (tests/fixtures/composed.mjs `heldLayouts`)

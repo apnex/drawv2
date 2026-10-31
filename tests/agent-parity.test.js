@@ -11,7 +11,7 @@ import { makeApp } from './fixtures/app.mjs';
 import { main } from '../cli/draw.mjs';
 import { createNetworkSession } from '../plugins/network/session.mjs';
 import { Model } from './fixtures/composed.mjs';
-import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
+import { scratchFolder } from '@apnex/clean-runner';   // H26-19 as amended: removed when this file ends, however it ends
 
 const MATRIX = JSON.parse(fs.readFileSync(new URL('../dev/design/unification/BEHAVIOUR-MATRIX.json', import.meta.url), 'utf8'));
 const SEEDS = JSON.parse(fs.readFileSync(new URL('../lab/seeds.json', import.meta.url), 'utf8'));

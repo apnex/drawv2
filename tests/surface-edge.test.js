@@ -19,7 +19,7 @@ import { Model, plan, validateDoc, heldLayouts } from './fixtures/composed.mjs';
 import { makeApp } from './fixtures/app.mjs';
 import { makeInput, key, seedNodes } from './fixtures/client-harness.mjs';
 import { DEVICE_SIZE_STEP } from '../plugins/devices/device-size.mjs';
-import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
+import { scratchFolder } from '@apnex/clean-runner';   // H26-19 as amended: removed when this file ends, however it ends
 
 const zone = (patch = {}) => ({ id: 'zone-0b2701', name: 'z', x: 750, y: 330, w: 180, h: 180, ...patch });   // to the edge exactly: 930, 510
 const panel = (patch = {}) => ({ id: 'node-0b2701', name: 'p', type: 'host', shape: 'square', x: 780, y: 360, span: { cols: 3, rows: 3 }, ...patch });   // 900, 480

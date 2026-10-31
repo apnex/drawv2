@@ -13,7 +13,7 @@ import { validateDoc } from './fixtures/composed.mjs';   // the network's kinds,
 // B112: an unpositioned fixture node gets a DISTINCT anchor derived from its id -- one
 // anchor holds one occupant, so two fixtures defaulting to (0,0) is now a real violation.
 const _at = (id) => (parseInt(id.slice(-4), 16) % 15 + 1) * 60;
-import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
+import { scratchFolder } from '@apnex/clean-runner';   // H26-19 as amended: removed when this file ends, however it ends
 const node = (id, x = null, extra = {}) => ({ id, name: id, type: 'host', shape: 'circle', x: x ?? _at(id), y: 0, ...extra });
 const fresh = () => ({ m: new Model(), log: new Log(0) });
 const put = (kind, entity) => ({ op: 'put', kind, entity });

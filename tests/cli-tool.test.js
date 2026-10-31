@@ -15,7 +15,7 @@ import path from 'node:path';
 import { makeApp } from './fixtures/app.mjs';
 import { execFileSync } from 'node:child_process';
 import http from 'node:http';
-import { scratchFolder, spawnTethered } from '@apnex/test-harness';
+import { scratchFolder, spawnTethered } from '@apnex/clean-runner';
 import { fileURLToPath } from 'node:url';
 import { main } from '../cli/draw.mjs';
 import { VERBS, byName, parityOf } from '../cli/verbs.mjs';

@@ -26,7 +26,7 @@ import fs from 'node:fs';
 import { Model } from '../model/model.mjs';
 import { Selection } from '../app/src/selection.js';
 import { Sync } from '../app/src/sync.js';
-import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
+import { scratchFolder } from '@apnex/clean-runner';   // H26-19 as amended: removed when this file ends, however it ends
 
 const src = fs.readFileSync(new URL('../app/src/sync.js', import.meta.url), 'utf8');
 const MAX_REPLAYS = Number(src.match(/const MAX_REPLAYS = (\d+);/)[1]);

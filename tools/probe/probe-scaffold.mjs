@@ -7,8 +7,8 @@ documents into a data folder, and drive one headless Chrome. Each started its se
 `finally` -- which a probe killed, or ended by `process.exit` inside its `try`, never runs: the servers and the Chrome ran on, the
 worktrees stayed registered, and Chrome's lock folder was never removed even when the `finally` ran.
 
-`startProbeScaffold({ root, trees, data, chrome })` names the scaffolding before any of it exists, and a warden of the harness's
-(`@apnex/test-harness` `spawnWarden`) holds it from then on: once the probe has ended, however it ended, the warden stops whatever names
+`startProbeScaffold({ root, trees, data, chrome })` names the scaffolding before any of it exists, and a warden of clean-runner's
+(`@apnex/clean-runner` `spawnWarden`) holds it from then on: once the probe has ended, however it ended, the warden stops whatever names
 it, removes each worktree and prunes its registration -- `git worktree` as its cleanup commands -- and removes the worktrees and the data
 folders. Answers:
   start(cmd, args, opts)  a process tethered to the probe (`spawnTethered`), stopped by stop() or by the probe's end, however it ends
@@ -18,7 +18,8 @@ folders. Answers:
 A tree a killed run left before this existed is removed and its registration pruned first, so the worktree can be made again.
 */
 import { execFileSync } from 'node:child_process';
-import { launchChrome, spawnTethered, spawnWarden, stopGroup } from '@apnex/test-harness';
+import { spawnTethered, spawnWarden, stopGroup } from '@apnex/clean-runner';
+import { launchChrome } from '@apnex/headless-chromium';
 import fs from 'node:fs';
 
 const removeTree = (p) => fs.rmSync(p, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });

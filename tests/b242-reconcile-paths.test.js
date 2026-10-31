@@ -26,7 +26,7 @@ hold an answer back, lose one with a socket, or deliver one mid-gesture.
 // C-c (H19.31): the placed kinds, as the page composes them
 import { placesOf as placesOfCanvas } from '../app/src/snap.js';
 import { PRODUCT_CANVAS as CANVAS_PARTS } from '../product/canvas.mjs';
-import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
+import { scratchFolder } from '@apnex/clean-runner';   // H26-19 as amended: removed when this file ends, however it ends
 const PLACES = placesOfCanvas(CANVAS_PARTS);
 import { test, mock } from 'node:test';
 import assert from 'node:assert/strict';

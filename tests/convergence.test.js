@@ -22,7 +22,7 @@ import { productKinds } from '../product/kinds.mjs';
 import { NETWORK_ROWS } from '../plugins/network/kinds.mjs';
 import { createNetwork as netFor } from '../plugins/network/network.mjs';
 import { createTransit as transitFor } from '../plugins/network/transit.mjs';
-import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
+import { scratchFolder } from '@apnex/clean-runner';   // H26-19 as amended: removed when this file ends, however it ends
 const aNetwork = () => netFor(transitFor());   // a Model holding links is given one (V-e, J2)
 const PAGE_KINDS = productKinds(...NETWORK_ROWS);
 

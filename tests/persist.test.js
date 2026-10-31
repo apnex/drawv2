@@ -11,7 +11,7 @@ import { openStore, OWNER } from './fixtures/app.mjs';
 import { fsFiles } from '../server/files.mjs';
 import { Log } from '../planner/log.mjs';
 import { serialize, parse } from '../server/docfile.mjs';
-import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
+import { scratchFolder } from '@apnex/clean-runner';   // H26-19 as amended: removed when this file ends, however it ends
 
 const tmp = () => scratchFolder('draw-cs2-');
 // B112: an unpositioned fixture node gets a DISTINCT anchor derived from its id -- one

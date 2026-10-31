@@ -32,7 +32,7 @@ import { Renderer } from '../app/src/renderer.js';
 import { EditingStates } from '../app/src/editing-states.js';
 import { PRODUCT_CANVAS } from '../product/canvas.mjs';
 import { SIMULATION_CANVAS } from '../plugins/simulation/spawn-appearance.mjs';
-import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
+import { scratchFolder } from '@apnex/clean-runner';   // H26-19 as amended: removed when this file ends, however it ends
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const RECORD = JSON.parse(fs.readFileSync(NATIVE_RECORD, 'utf8'));

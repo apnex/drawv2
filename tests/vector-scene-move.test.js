@@ -17,7 +17,7 @@ import { spawnSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 import { FOLDERS, PARTS, PAGES } from '../tools/layers.mjs';
 import { PAGE_REGIONS } from '../tools/page-regions.mjs';
-import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
+import { scratchFolder } from '@apnex/clean-runner';   // H26-19 as amended: removed when this file ends, however it ends
 
 const real = (p) => { try { return fs.realpathSync(p); } catch { return p; } };
 const ROOT = real(path.resolve(import.meta.dirname, '..'));

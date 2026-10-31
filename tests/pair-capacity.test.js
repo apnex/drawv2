@@ -29,7 +29,7 @@ import { makeWaypoint } from '../plugins/devices/make-node.mjs';   // O-e1: the 
 
 // admitted = no link holds the pair against it
 const admits = (link, among) => pairHolders(link, among).length === 0;
-import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
+import { scratchFolder } from '@apnex/clean-runner';   // H26-19 as amended: removed when this file ends, however it ends
 
 const A = 'node-00000a', B = 'node-00000b', W = 'node-00000c';
 const straight = (id, src, dst) => ({ id, src, dst, via: [] });

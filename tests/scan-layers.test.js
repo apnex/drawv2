@@ -26,7 +26,7 @@ import { movedTo } from '../tools/records.mjs';
 import { NETWORK_ROWS } from '../plugins/network/kinds.mjs';   // the network's kind and the field it contributes (S-a)
 import { createNetwork as netFor } from '../plugins/network/network.mjs';
 import { createTransit as transitFor } from '../plugins/network/transit.mjs';
-import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
+import { scratchFolder } from '@apnex/clean-runner';   // H26-19 as amended: removed when this file ends, however it ends
 const aNetwork = () => netFor(transitFor());   // a Model holding links is given one (V-e, J2)
 
 const root = path.resolve(import.meta.dirname, '..');
@@ -313,7 +313,7 @@ const VERBATIM = [
 	{ file: `${VF}/painter.js`, create: "export { el } from '../../../app/src/painter.js';\n" },
 	{ file: MAN, replace: ['\tL4: { verbatim: [\n', `\tL4: { verbatim: [\n\t\t{ copy: '${VF}/copy.js', shims: ['${VF}/painter.js', '${VF}/pick.js'], cites: ['H26-14', 'H26.5'], reason: 'the falsifiers\\' own copy and shims', trigger: 'the falsifiers are restated' },\n`] },
 ];
-// H26-19 as amended: an @apnex/ package declared among the devDependencies alone, as `test-harness` is
+// H26-19 as amended: an @apnex/ package declared among the devDependencies alone, as `clean-runner` and `headless-chromium` are
 const DEV_ONLY = { file: 'package.json', replace: ['"devDependencies": {\n', '"devDependencies": {\n\t\t"@apnex/dev-only": "https://example.invalid/dev-only.tgz",\n'] };
 const MUTANTS = [
 	// RESTATED at H21.8 (B341): model/invariants.mjs is core now, so M1 imports model/ (L3) and network/ (L2)

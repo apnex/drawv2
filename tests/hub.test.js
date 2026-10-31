@@ -18,7 +18,7 @@ import { makeApp } from './fixtures/app.mjs';
 import { WebSocket } from 'ws';
 import net from 'node:net';
 import crypto from 'node:crypto';
-import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
+import { scratchFolder } from '@apnex/clean-runner';   // H26-19 as amended: removed when this file ends, however it ends
 
 // the narrow duck-typed Session the Hub speaks: { diagramId, send(cmd, body) }
 function viewer(diagramId, { throws = false } = {}) {

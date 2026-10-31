@@ -23,7 +23,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 // H26-19 as amended: the server and Chrome end with this probe, even killed, and Chrome's launch folder goes with it
-import { findChrome, launchChrome, spawnTethered, stopGroup } from '@apnex/test-harness';
+import { spawnTethered, stopGroup } from '@apnex/clean-runner';
+import { findChrome, launchChrome } from '@apnex/headless-chromium';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '../..');

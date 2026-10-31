@@ -8,7 +8,7 @@ tests/import-map-browser.test.js and tests/probe-sides.test.js -- and each polle
 test at H26.5 changed which files those were, and the failures became frequent. One wait now, as long as tests/browser.test.js gives the
 product's server: 15 s.
 
-`startLab({ env, port })` starts the lab tethered to the test's process (`@apnex/test-harness`'s `spawnTethered`: a process group of its
+`startLab({ env, port })` starts the lab tethered to the test's process (`@apnex/clean-runner`'s `spawnTethered`: a process group of its
 own that ends with the test, even when the test is killed -- H26-19 as amended), on `port` or a free one, with `env` -- the caller's
 whole environment by default, as most sites passed it -- and resolves once `/health` answers 200. Answers `{ proc, port, origin }`;
 `proc.pid` is the group's id, stopped with `stopGroup(proc.pid)`. A lab that exits first, or never answers within the wait, is stopped
@@ -16,7 +16,7 @@ and the start rejects naming which -- never a test left to fail later on a refus
 */
 import net from 'node:net';
 import path from 'node:path';
-import { spawnTethered, stopGroup } from '@apnex/test-harness';
+import { spawnTethered, stopGroup } from '@apnex/clean-runner';
 
 export const LAB_START_WAIT_MS = 15000;
 const ROOT = path.resolve(import.meta.dirname, '..', '..');

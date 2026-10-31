@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { makeApp } from './fixtures/app.mjs';
 import { pipeId } from '../plugins/network/pipe-kind.mjs';
-import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
+import { scratchFolder } from '@apnex/clean-runner';   // H26-19 as amended: removed when this file ends, however it ends
 
 let app, dataDir, base, id, token;
 const H = () => ({ 'Content-Type': 'application/json', 'X-Draw-Lock': token });

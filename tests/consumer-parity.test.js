@@ -22,7 +22,7 @@ import { Renderer } from '../app/src/renderer.js';
 import { makeRenderer } from './fixtures/client-harness.mjs';
 import { makeApp } from './fixtures/app.mjs';
 import { main } from '../cli/draw.mjs';
-import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
+import { scratchFolder } from '@apnex/clean-runner';   // H26-19 as amended: removed when this file ends, however it ends
 
 const ID = '00000000000c0001';
 const since = Date.now() - 1000;

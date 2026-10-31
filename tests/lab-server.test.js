@@ -14,7 +14,7 @@ import fs from 'node:fs';
 import net from 'node:net';
 import path from 'node:path';
 import { startLab, LAB_START_WAIT_MS } from './fixtures/lab-server.mjs';
-import { stopGroup } from '@apnex/test-harness';   // H26-19 as amended: the lab a tethered group of its own
+import { stopGroup } from '@apnex/clean-runner';   // H26-19 as amended: the lab a tethered group of its own
 import { lex } from '../tools/js-tokens.mjs';
 
 const groupGone = (pid) => { try { process.kill(-pid, 0); return false; } catch (e) { return e.code === 'ESRCH'; } };
@@ -122,6 +122,6 @@ test('H26.5: no test names lab/server.mjs to run it but startLab -- a copy with 
 	const naming = Object.fromEntries(files.filter((f) => f !== 'fixtures/lab-server.mjs').map((f) => [f, labNamedIn(read(f))]).filter(([, found]) => found.length));
 	assert.deepEqual(naming, {}, 'no other test names the lab\'s server but to read it');
 	const callers = files.filter((f) => /\bstartLab\(/.test(read(f))).sort();
-	assert.deepEqual(callers, ['fixtures/lab-server.mjs', 'import-map-browser.test.js', 'lab-browser.test.js', 'lab-server.test.js', 'probe-sides.test.js', 'static.test.js', 'svgexport.test.js', 'test-harness.test.js'],
+	assert.deepEqual(callers, ['dev-tooling.test.js', 'fixtures/lab-server.mjs', 'import-map-browser.test.js', 'lab-browser.test.js', 'lab-server.test.js', 'probe-sides.test.js', 'static.test.js', 'svgexport.test.js'],
 		'the seven sites that start it -- H26-19\'s kill test the seventh -- each through the helper');
 });

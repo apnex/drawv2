@@ -12,7 +12,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync, execFileSync } from 'node:child_process';
 import { classify, codeLines } from '../tools/code-split.mjs';
-import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
+import { scratchFolder } from '@apnex/clean-runner';   // H26-19 as amended: removed when this file ends, however it ends
 
 const TOOL = path.resolve(import.meta.dirname, '../tools/code-split.mjs');
 

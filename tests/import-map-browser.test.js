@@ -31,7 +31,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import net from 'node:net';
 import path from 'node:path';
-import { launchChrome, scratchFolder, spawnTethered, stopGroup } from '@apnex/test-harness';   // H26-19 as amended: each ends with this file
+import { scratchFolder, spawnTethered, stopGroup } from '@apnex/clean-runner';   // H26-19 as amended: each ends with this file
+import { launchChrome } from '@apnex/headless-chromium';
 import { startLab } from './fixtures/lab-server.mjs';   // H26.5 (the verifier's finding 1): started and waited for in one place
 import { NO_CHROME } from './fixtures/chrome.mjs';
 import { createTab, sleep } from './fixtures/matrix-runner.mjs';   // the one-tab client, recording every request and its answer

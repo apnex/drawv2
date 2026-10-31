@@ -20,7 +20,7 @@ import { fsFiles } from '../server/files.mjs';
 import { serialize, parse } from '../server/docfile.mjs';
 import { completeAlwaysHeld } from '../model/shape.mjs';
 import { LAYOUT_TABLE } from '../plugins/layouts/layout-table.mjs';
-import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
+import { scratchFolder } from '@apnex/clean-runner';   // H26-19 as amended: removed when this file ends, however it ends
 
 const LAYOUTS = structuredClone(LAYOUT_TABLE).map((l) => ({ ...l, ext: { ...l.ext } }));
 const tmp = (tag) => scratchFolder(`draw-schema3-${tag}-`);

@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, rmSync } from 'node:fs';
 import path from 'node:path';
 import { OWNER, openStore } from './fixtures/app.mjs';
-import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
+import { scratchFolder } from '@apnex/clean-runner';   // H26-19 as amended: removed when this file ends, however it ends
 
 async function freshStore() {
 	const dir = scratchFolder('store-atom-');

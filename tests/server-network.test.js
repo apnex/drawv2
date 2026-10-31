@@ -7,7 +7,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Store } from '../server/store.js';
 import { pipeEntity, pipeId } from '../plugins/network/pipe-kind.mjs';
-import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
+import { scratchFolder } from '@apnex/clean-runner';   // H26-19 as amended: removed when this file ends, however it ends
 
 const tmp = () => scratchFolder('sb-');
 const [A, B, W] = ['node-00000a', 'node-00000b', 'node-00000e'];

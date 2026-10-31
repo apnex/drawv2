@@ -20,7 +20,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathGeometry, roundedPath, pathLength, pointAtDistance } from '../kernel/router.mjs';
-import { launchChrome, scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: Chrome and the page's folder end with this file
+import { scratchFolder } from '@apnex/clean-runner';   // H26-19 as amended: Chrome and the page's folder end with this file
+import { launchChrome } from '@apnex/headless-chromium';
 import { CHROME, NO_CHROME } from './fixtures/chrome.mjs';
 
 

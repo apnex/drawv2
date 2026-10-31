@@ -1,18 +1,22 @@
 /*
-H26-19 as amended (B428, H26.10) -- draw's tests run on `@apnex/test-harness`, and nothing of it ships.
+H26-19 as amended again (B428, H26.10) -- draw's tests run on `@apnex/clean-runner` and `@apnex/headless-chromium`, and nothing of
+either ships.
 
 H26-19 had draw's gate run its tests in a folder of their own and fail on anything left, with a runner, a tether, a Chrome launcher and
 a scratch helper of draw's own; the four components and `input-tester` each needed the same, so the director ruled one shared
-component, `test-harness`, which every repository uses in its tests alone, pinned to its release file, so that nothing of it reaches
-what the repository ships. What stays draw's own is what the harness's survey says it keeps -- its servers and the lab, its pages,
-its `ws` client, its probes' steps and the flags only its harnesses add.
+component, which every repository uses in its tests alone, pinned to its release file, so that nothing of it reaches what the
+repository ships. Amended again, that component was split by its duties into `clean-runner` -- the runner, a started process's
+lifetime, scratch folders -- and `headless-chromium` -- the Chrome launcher, the DevTools session, trusted input, the static server --
+which depends on `clean-runner`. What stays draw's own is what the survey of the six repositories says it keeps -- its servers and the
+lab, its pages, its `ws` client, its probes' steps and the flags only its harnesses add.
 
-These tests hold draw's use of it: the suite runs under its runner; it is pinned as a devDependency by its release file; it never reaches
-the image -- installed with `npm ci --omit=dev`, imported by nothing the image copies (tools/scan-layers.mjs L12 refuses that too), and
-not served by the vendor mount, which serves only what `dependencies` names; and what draw's own fixtures start through it -- Chrome,
-the lab, the product's server and a scratch folder -- ends with a harness killed by SIGKILL, leaving nothing. The harness's own tests
-hold its rules (its CONTRACT.md, TH1 to TH8); this last one holds that draw's fixtures use them, as the kill that found a Chrome and two
-servers running after a verifier's session was cut off would.
+These tests hold draw's use of them: the suite runs under clean-runner's runner; each is pinned as a devDependency by its release
+file, headless-chromium's own clean-runner the same file, and the component they replaced is not kept beside them; neither reaches the
+image -- installed with `npm ci --omit=dev`, imported by nothing the image copies (tools/scan-layers.mjs L12 refuses that too), and not
+served by the vendor mount, which serves only what `dependencies` names; and what draw's own fixtures start through them -- Chrome, the
+lab, the product's server and a scratch folder -- ends with a harness killed by SIGKILL, leaving nothing. Their own tests hold their
+rules (each one's CONTRACT.md); this last one holds that draw's fixtures use them, as the kill that found a Chrome and two servers
+running after a verifier's session was cut off would.
 */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -20,33 +24,45 @@ import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import http from 'node:http';
 import path from 'node:path';
-import { processesNaming } from '@apnex/test-harness';
+import { processesNaming } from '@apnex/clean-runner';
 import { NO_CHROME } from './fixtures/chrome.mjs';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
-const HARNESS = '@apnex/test-harness';
+const RUNNER = '@apnex/clean-runner', CHROMIUM = '@apnex/headless-chromium';
+const TOOLING = [RUNNER, CHROMIUM];   // the tests' tooling: development dependencies, never shipped
 const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
 const lock = JSON.parse(fs.readFileSync(path.join(ROOT, 'package-lock.json'), 'utf8'));
-const installed = JSON.parse(fs.readFileSync(path.join(ROOT, 'node_modules', HARNESS, 'package.json'), 'utf8'));
+const installed = Object.fromEntries(TOOLING.map((name) => [name, JSON.parse(fs.readFileSync(path.join(ROOT, 'node_modules', name, 'package.json'), 'utf8'))]));
+const releaseFile = (name, v) => { const repo = name.slice('@apnex/'.length); return `https://github.com/apnex/${repo}/releases/download/v${v}/apnex-${repo}-${v}.tgz`; };
 
 test('H26-19 as amended: `npm test` -- and with it the gate and CI -- runs the suite under the harness\'s runner', () => {
-	assert.match(pkg.scripts.test, /^test-harness run /, 'the runner gives the run a folder of its own and fails on anything left');
+	assert.match(pkg.scripts.test, /^clean-runner run /, 'the runner gives the run a folder of its own and fails on anything left');
 	assert.doesNotMatch(pkg.scripts.test, /--test-force-exit/, 'no forced exit: on Node.js 22 it can drop a file\'s reported results while the run still passes (found switching snap-grid; draw counted the same 2,644 either way)');
 	assert.match(pkg.scripts.test, / tests\/\*\.test\.js$/, 'every test file');
 	assert.ok(pkg.scripts.gate.split(/\s*&&\s*/).includes('npm test'), 'the gate runs it');
-	assert.equal(installed.bin?.['test-harness'], 'dist/cli.js', 'the command is the installed harness\'s own');
+	assert.equal(installed[RUNNER].bin?.['clean-runner'], 'dist/cli.js', 'the command is the installed clean-runner\'s own');
 	for (const gone of ['tools/run-tests.mjs', 'tools/process-tether.mjs', 'tools/chrome-profile.mjs', 'tests/fixtures/teardown.mjs']) assert.equal(fs.existsSync(path.join(ROOT, gone)), false, `${gone}, draw's copy, is deleted`);
 });
 
 test('H26-19 as amended: the harness is a devDependency, pinned by its release file and its hash', () => {
-	const spec = pkg.devDependencies?.[HARNESS];
-	const v = installed.version;
-	assert.equal(spec, `https://github.com/apnex/test-harness/releases/download/v${v}/apnex-test-harness-${v}.tgz`, 'named by the release file of the version installed');
-	assert.equal(pkg.dependencies?.[HARNESS], undefined, 'and not among what draw runs on');
-	const entry = lock.packages[`node_modules/${HARNESS}`];
-	assert.equal(entry.resolved, spec, 'the lockfile resolves the same file');
-	assert.match(entry.integrity, /^sha512-[A-Za-z0-9+/]{86}==$/, 'and pins its hash, so `npm ci` refuses any other');
-	assert.equal(entry.dev, true, 'as a development dependency');
+	for (const name of TOOLING) {
+		const spec = pkg.devDependencies?.[name];
+		assert.equal(spec, releaseFile(name, installed[name].version), `${name} named by the release file of the version installed`);
+		assert.equal(pkg.dependencies?.[name], undefined, 'and not among what draw runs on');
+		const entry = lock.packages[`node_modules/${name}`];
+		assert.equal(entry.resolved, spec, 'the lockfile resolves the same file');
+		assert.match(entry.integrity, /^sha512-[A-Za-z0-9+/]{86}==$/, 'and pins its hash, so `npm ci` refuses any other');
+		assert.equal(entry.dev, true, 'as a development dependency');
+	}
+	// headless-chromium depends on clean-runner by the same release file, so it is installed once, the one draw's tests use
+	assert.equal(lock.packages[`node_modules/${CHROMIUM}`].dependencies?.[RUNNER], pkg.devDependencies[RUNNER], 'headless-chromium\'s clean-runner is the one draw pins');
+	assert.deepEqual(Object.keys(lock.packages).filter((k) => k.endsWith(`node_modules/${RUNNER}`)), [`node_modules/${RUNNER}`], 'and installed once');
+	// H26-19 amended again: what the two replaced is purged, not kept beside them -- the @apnex/ packages are the components and the two
+	const apnex = (names) => names.filter((n) => n.startsWith('@apnex/')).sort();
+	const expected = [...apnex(Object.keys(pkg.dependencies)), ...TOOLING].sort();
+	assert.deepEqual(apnex(Object.keys(lock.packages).map((k) => k.replace(/^.*node_modules\//, ''))), expected, 'the lockfile holds no other @apnex/ package');
+	assert.deepEqual(fs.readdirSync(path.join(ROOT, 'node_modules/@apnex')).map((n) => `@apnex/${n}`).sort(), expected, 'nor does node_modules');
+	assert.deepEqual(apnex(Object.keys(pkg.devDependencies)), [...TOOLING].sort(), 'and the devDependencies name no other');
 });
 
 test('H26-19 as amended: nothing of the harness reaches the image -- installed without dev dependencies, imported by nothing it copies', () => {
@@ -60,11 +76,11 @@ test('H26-19 as amended: nothing of the harness reaches the image -- installed w
 		for (const e of fs.readdirSync(path.join(ROOT, dir), { withFileTypes: true })) {
 			const rel = `${dir}/${e.name}`;
 			if (e.isDirectory()) walk(rel);
-			else if (fs.readFileSync(path.join(ROOT, rel), 'utf8').includes(HARNESS)) naming.push(rel);
+			else if (TOOLING.some((name) => fs.readFileSync(path.join(ROOT, rel), 'utf8').includes(name))) naming.push(rel);
 		}
 	};
 	for (const dir of copied) walk(dir);
-	assert.deepEqual(naming, [], 'no file the image copies names the harness');
+	assert.deepEqual(naming, [], 'no file the image copies names clean-runner or headless-chromium');
 });
 
 test('H26-19 as amended: the vendor mount does not serve the harness, though it is installed beside the components', async () => {
@@ -75,13 +91,15 @@ test('H26-19 as amended: the vendor mount does not serve the harness, though it 
 	try {
 		const component = JSON.parse(fs.readFileSync(path.join(ROOT, 'node_modules/@apnex/snap-grid/package.json'), 'utf8')).version;
 		assert.equal(await at(`/vendor/@apnex/snap-grid@${component}/index.js`), 200, 'control: a component draw runs on is served');
-		assert.ok(fs.existsSync(path.join(ROOT, 'node_modules', HARNESS, 'dist/index.js')), 'control: the harness is installed');
-		assert.equal(await at(`/vendor/${HARNESS}@${installed.version}/index.js`), 404, 'the harness is not');
+		for (const name of TOOLING) {
+			assert.ok(fs.existsSync(path.join(ROOT, 'node_modules', name, 'dist/index.js')), `control: ${name} is installed`);
+			assert.equal(await at(`/vendor/${name}@${installed[name].version}/index.js`), 404, `${name} is not served`);
+		}
 	} finally { server.close(); }
 });
 
 /*
-H26-19's kill test, restated on the harness: a harness that launched Chrome, the lab and the product's server and made a scratch folder,
+H26-19's kill test, restated on clean-runner and headless-chromium: a harness that launched Chrome, the lab and the product's server and made a scratch folder,
 through the fixtures every browser test uses, is killed by SIGKILL -- which runs no handler of its own -- and within a bounded wait no
 process naming its folder or Chrome's launch folder is left, every group it started is gone, and the launch folder (the profile and the
 lock folder in it) and the scratch folder are removed. Against e3833cd's fixtures the same harness left 16 processes running 10 s after
@@ -94,7 +112,8 @@ const LOCK_FOLDER = /^\.?com\.google\.Chrome\.[A-Za-z0-9]{6}$/;
 test('H26-19 as amended: a harness killed by SIGKILL leaves no Chrome, no server and no folder behind', { skip: NO_CHROME, timeout: 60000 }, async () => {
 	const body = `
 		import fs from 'node:fs'; import os from 'node:os'; import path from 'node:path'; import net from 'node:net';
-		import { launchChrome, scratchFolder, spawnTethered } from '@apnex/test-harness';
+		import { scratchFolder, spawnTethered } from '@apnex/clean-runner';
+		import { launchChrome } from '@apnex/headless-chromium';
 		import { startLab } from ${JSON.stringify(new URL('./fixtures/lab-server.mjs', import.meta.url).href)};
 		const dir = scratchFolder('h-');
 		const chrome = await launchChrome();
@@ -107,7 +126,7 @@ test('H26-19 as amended: a harness killed by SIGKILL leaves no Chrome, no server
 		setInterval(() => {}, 1000);
 	`;
 	// its run report turned off: what it leaves is meant for its tethers and its warden to clean, not a fault of this run
-	const child = spawn(process.execPath, ['--input-type=module', '-e', body], { cwd: ROOT, stdio: ['ignore', 'pipe', 'inherit'], env: { ...process.env, TEST_HARNESS_RUN: '' } });
+	const child = spawn(process.execPath, ['--input-type=module', '-e', body], { cwd: ROOT, stdio: ['ignore', 'pipe', 'inherit'], env: { ...process.env, CLEAN_RUNNER_RUN: '' } });
 	try {
 		const { dir, port, cdp, folder, groups } = await new Promise((resolve, reject) => {
 			let out = '';

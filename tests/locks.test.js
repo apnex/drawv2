@@ -11,7 +11,7 @@ import { Locks } from '../server/locks.js';
 import http from 'node:http';
 import WebSocket from 'ws';
 import { makeApp } from './fixtures/app.mjs';
-import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
+import { scratchFolder } from '@apnex/clean-runner';   // H26-19 as amended: removed when this file ends, however it ends
 
 // ---- Locks unit (injected clock, no timers) ----
 

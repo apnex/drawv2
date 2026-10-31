@@ -10,7 +10,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
+import { scratchFolder } from '@apnex/clean-runner';   // H26-19 as amended: removed when this file ends, however it ends
 
 const SCANNER = path.resolve(import.meta.dirname, '../tools/scan-triggers.mjs');
 const row = (id, disposition) => `| **${id}** | finding | \`[V]\` | ${disposition} |`;

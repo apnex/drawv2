@@ -15,7 +15,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { openStore, OWNER } from './fixtures/app.mjs';
-import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
+import { scratchFolder } from '@apnex/clean-runner';   // H26-19 as amended: removed when this file ends, however it ends
 
 // a document as the estate stored it before the cutover: schema 1, its waypoints kept apart
 const older = (id) => ({ meta: { id, name: 'before the cutover', version: 3, schema: 1, owner: '', grants: {} },

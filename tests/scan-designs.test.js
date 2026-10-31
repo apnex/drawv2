@@ -8,7 +8,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { MOVED_BY } from '../tools/layers.mjs';
-import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
+import { scratchFolder } from '@apnex/clean-runner';   // H26-19 as amended: removed when this file ends, however it ends
 
 const SCANNER = path.resolve(import.meta.dirname, '../tools/scan-designs.mjs');
 const MARKER = '## Rulings recorded from 2026-10-11 -- each a structured block';

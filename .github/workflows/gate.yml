@@ -100,11 +100,11 @@ jobs:
       - name: the editor is served
         run: curl -fsS -o /dev/null http://localhost:8080/
 
-      # H26-19 as amended: the tests' harness, `@apnex/test-harness`, is a devDependency, so `npm ci --omit=dev` leaves it out of the
-      # image while the components draw runs on are in it. tests/test-harness.test.js holds the Dockerfile's install and copies; this
-      # holds the image itself.
-      - name: the image holds nothing of the tests' harness
-        run: docker run --rm drawv2:ci sh -c 'test -d node_modules/@apnex/snap-grid && ! test -e node_modules/@apnex/test-harness'
+      # H26-19 as amended again: the tests' tooling, `@apnex/clean-runner` and `@apnex/headless-chromium`, are devDependencies, so
+      # `npm ci --omit=dev` leaves both out of the image while the components draw runs on are in it. tests/dev-tooling.test.js holds the
+      # Dockerfile's install and copies; this holds the image itself.
+      - name: the image holds neither of the tests' tooling packages
+        run: docker run --rm drawv2:ci sh -c 'test -d node_modules/@apnex/snap-grid && ! test -e node_modules/@apnex/clean-runner && ! test -e node_modules/@apnex/headless-chromium'
 
       # H26.1 (dev/design/components/SNAP-GRID.md section 7.6): the components arrive by `npm ci --omit=dev`, not by a COPY, so only the
       # image can show that the page it serves loads them. Every address the served page's import map names is asked of the container

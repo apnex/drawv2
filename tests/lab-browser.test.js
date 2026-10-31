@@ -23,7 +23,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { launchChrome, stopGroup } from '@apnex/test-harness';   // H26-19 as amended: Chrome and the lab end with this file, even killed
+import { stopGroup } from '@apnex/clean-runner';   // H26-19 as amended: Chrome and the lab end with this file, even killed
+import { launchChrome } from '@apnex/headless-chromium';
 import { startLab } from './fixtures/lab-server.mjs';   // H26.5 (the verifier's finding 1): started and waited for in one place
 import { NO_CHROME } from './fixtures/chrome.mjs';
 import { createTab, inputOf, MATRIX, matrixProblems, matrixTests } from './fixtures/matrix-runner.mjs';   // the matrix's runner (P7 X-b)

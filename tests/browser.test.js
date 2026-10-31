@@ -28,7 +28,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 // H26.4 (V2-2), H26-19 as amended: the server and Chrome tethered groups that end with this file, even killed; the focus loss a real one
-import { launchChrome, loseFocus, scratchFolder, spawnTethered, stopGroup } from '@apnex/test-harness';
+import { scratchFolder, spawnTethered, stopGroup } from '@apnex/clean-runner';
+import { launchChrome, loseFocus } from '@apnex/headless-chromium';
 import { NO_CHROME } from './fixtures/chrome.mjs';
 import { pipeEntity } from '../plugins/network/pipe-kind.mjs';   // V-b's board lays its pipes as the network names them
 
@@ -220,7 +221,7 @@ before(async () => {
 		await sleep(250);
 	}
 
-	// the shared launch config (the harness's); the window size is this harness's own, because its clicks depend on it
+	// the shared launch config (headless-chromium's); the window size is this harness's own, because its clicks depend on it
 	chrome = await launchChrome({ args: ['--window-size=1600,1000'] });
 	cdp = chrome.port;   // B434: the port the system gave Chrome, never one from a range another program may hold
 	tab = await attach(`http://127.0.0.1:${port}/?diagram=${DIAGRAM}`);
@@ -1841,7 +1842,7 @@ test('H26.5 (B413): on the product page a focus loss hides the zone grid, drops 
 		const screen = (x, y) => t.eval(`JSON.stringify((() => { const m = document.getElementById('container').getScreenCTM(); return [m.a * ${x} + m.e, m.d * ${y} + m.f]; })())`).then(JSON.parse);
 		const seen = (id) => t.eval(`JSON.stringify({ grid: document.getElementById('container').classList.contains('zonegrid'), selected: window.draw.selection.list(),
 			armed: document.getElementById('${id}')?.classList.contains('armed') ?? null })`).then(JSON.parse);
-		// the focus loss, the harness's (H26-19 as amended): the page brought to the front holding the window's focus, a second tab taking
+		// the focus loss, headless-chromium's (H26-19 as amended): the page brought to the front holding the window's focus, a second tab taking
 		// it, the tab closed and the page brought back, each step waited for -- over this file's own client, which keeps its `ws` session
 		const session = {
 			send: async (method, params) => { const m = await t.send(method, params); if (m.error) throw new Error(`${method}: ${m.error.message}`); return m.result; },

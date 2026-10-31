@@ -19,7 +19,7 @@ import assert from 'node:assert/strict';
 import { Model, heldLayouts } from './fixtures/composed.mjs';   // the composition production runs (S-b)
 import { validateDoc } from './fixtures/composed.mjs';   // the network's kinds, as the store validates (S-e)
 import { revealedAt, beatsOf } from '../plugins/simulation/reveal.mjs';
-import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
+import { scratchFolder } from '@apnex/clean-runner';   // H26-19 as amended: removed when this file ends, however it ends
 
 const NODE = (id, name, x, y) => ({ id, name, type: 'server', x, y });
 function doc(nodes = [], extra = {}) {

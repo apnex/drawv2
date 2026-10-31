@@ -16,7 +16,7 @@ import path from 'node:path';
 import http from 'node:http';
 import net from 'node:net';
 import { ownDependencies, sideProblems } from '../tools/probe/sides.mjs';
-import { scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: removed when this file ends, however it ends
+import { scratchFolder } from '@apnex/clean-runner';   // H26-19 as amended: removed when this file ends, however it ends
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const { version } = JSON.parse(fs.readFileSync(path.join(ROOT, 'node_modules/@apnex/snap-grid/package.json'), 'utf8'));
@@ -75,7 +75,7 @@ test('H26.1 (G8): before measuring, each side answers every address its pages\' 
 });
 
 test('H26.1 (G8): this tree\'s two real servers pass the check the probe makes of a side -- the product page and the lab page', { timeout: 60000 }, async () => {
-	const { spawnTethered, stopGroup } = await import('@apnex/test-harness');   // H26-19 as amended: each server ends with this file
+	const { spawnTethered, stopGroup } = await import('@apnex/clean-runner');   // H26-19 as amended: each server ends with this file
 	const { startLab } = await import('./fixtures/lab-server.mjs');   // H26.5 (the verifier's finding 1): started and waited for in one place
 	const free = () => new Promise((resolve) => { const s = net.createServer().listen(0, () => { const p = s.address().port; s.close(() => resolve(p)); }); });
 	const port = await free();
