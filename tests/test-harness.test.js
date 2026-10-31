@@ -30,7 +30,8 @@ const lock = JSON.parse(fs.readFileSync(path.join(ROOT, 'package-lock.json'), 'u
 const installed = JSON.parse(fs.readFileSync(path.join(ROOT, 'node_modules', HARNESS, 'package.json'), 'utf8'));
 
 test('H26-19 as amended: `npm test` -- and with it the gate and CI -- runs the suite under the harness\'s runner', () => {
-	assert.match(pkg.scripts.test, /^test-harness run --test-force-exit /, 'the runner gives the run a folder of its own and fails on anything left');
+	assert.match(pkg.scripts.test, /^test-harness run /, 'the runner gives the run a folder of its own and fails on anything left');
+	assert.doesNotMatch(pkg.scripts.test, /--test-force-exit/, 'no forced exit: on Node.js 22 it can drop a file\'s reported results while the run still passes (found switching snap-grid; draw counted the same 2,644 either way)');
 	assert.match(pkg.scripts.test, / tests\/\*\.test\.js$/, 'every test file');
 	assert.ok(pkg.scripts.gate.split(/\s*&&\s*/).includes('npm test'), 'the gate runs it');
 	assert.equal(installed.bin?.['test-harness'], 'dist/cli.js', 'the command is the installed harness\'s own');

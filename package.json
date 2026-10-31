@@ -10,7 +10,7 @@
 	},
 	"scripts": {
 		"start": "node server/server.js",
-		"test": "test-harness run --test-force-exit --test-reporter=spec --test-reporter-destination=stdout --test-reporter=tap --test-reporter-destination=.test-results.tap tests/*.test.js",
+		"test": "test-harness run --test-reporter=spec --test-reporter-destination=stdout --test-reporter=tap --test-reporter-destination=.test-results.tap tests/*.test.js",
 		"gate": "node tools/gate-runtime.mjs && npm test && node tools/scan-skips.mjs && node tools/scan-writers.mjs && node tools/scan-claims.mjs dev/COMMIT-DELIVERY.md#2 dev/COMMIT-DELETIONS.md && node tools/scan-board.mjs && node tools/scan-triggers.mjs && node tools/scan-designs.mjs && node tools/generate-architecture.mjs --check && node tools/scan-docstyle.mjs && node tools/scan-dead.mjs && node tools/scan-twins.mjs && node tools/scan-copies.mjs && node tools/scan-docrefs.mjs && node tools/scan-wiring.mjs && node tools/scan-cli.mjs && node tools/scan-layers.mjs && node tools/lab-matrix.mjs --check && node tools/gesture-table.mjs --check && node tools/reaction-table.mjs --check && node tools/colour-tokens.mjs --check && node tools/stylesheets.mjs --check && node tools/canvas-layout.mjs --check && node tools/import-map.mjs --check && node tools/scan-components.mjs",
 		"gate:install": "sh tools/install-hook.sh",
 		"prepare": "[ ! -f tools/install-hook.sh ] || sh tools/install-hook.sh"
