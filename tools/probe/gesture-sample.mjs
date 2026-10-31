@@ -77,7 +77,6 @@ const scaffold = startProbeScaffold({
 	root: ROOT,
 	trees: [['baseline', baseline], ['candidate', candidate]].filter(([, commit]) => commit).map(([name]) => path.join(OUT, `tree-${name}`)),
 	data: ['baseline', 'candidate'].map((name) => path.join(OUT, `data-${name}`)),
-	profile: path.join(OUT, 'profile'),
 });
 async function serve(name, commit) {
 	let root = ROOT, deps = 'its own';
@@ -159,7 +158,7 @@ try {
 	({ default: WebSocket } = await import('ws'));
 	const sides = [await serve('baseline', baseline), await serve('candidate', candidate)];
 	// launched as tools/probe/parity.mjs launches it: a probe takes no test fixture (L2), and the flags are the harness's own
-	cdpPort = await scaffold.launchChrome(['--headless=new', '--no-sandbox', '--disable-gpu', '--disable-extensions']);
+	cdpPort = await scaffold.launchChrome([]);   // the harness's shared flags alone
 	for (let i = 0; i < 80; i++) { try { await (await fetch(`http://127.0.0.1:${cdpPort}/json/version`)).json(); break; } catch { await sleep(200); } }
 	const report = { baseline: sides[0], candidate: sides[1], gestures: {} };
 	let n = 0;

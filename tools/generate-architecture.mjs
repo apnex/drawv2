@@ -122,7 +122,7 @@ const copies = table(['Measure', 'Standing', 'Findings'],
 	]));
 
 // ---- the gate
-// `npm test` shown as what it runs, its reporters left out (H26-19: the suite runs through tools/run-tests.mjs)
+// `npm test` shown as what it runs, its reporters left out (H26-19 as amended: the suite runs under test-harness's runner)
 const scripts = JSON.parse(read('package.json')).scripts;
 const steps = scripts.gate.split(/\s*&&\s*/).map((s) => (s === 'npm test' ? scripts.test.replace(/ --test-reporter(?:-destination)?=\S+/g, '') : s));
 const gate = table(['#', 'Step'], steps.map((s, i) => [i + 1, `\`${s}\``]));

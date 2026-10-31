@@ -16,11 +16,10 @@ narrowing: a pointer whose press the canvas never saw.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import net from 'node:net';
 import path from 'node:path';
-import { teardown, spawnGroup } from './fixtures/teardown.mjs';
-import { NO_CHROME, launchChrome } from './fixtures/chrome.mjs';
+import { launchChrome, scratchFolder, spawnTethered, stopGroup } from '@apnex/test-harness';   // H26-19 as amended: each ends with this file
+import { NO_CHROME } from './fixtures/chrome.mjs';
 import { createTab, sleep } from './fixtures/matrix-runner.mjs';
 import { productKinds } from '../product/kinds.mjs';
 
@@ -33,21 +32,21 @@ const doc = {
 		{ id: 'node-6e0b02', name: 'b', type: 'host', shape: 'square', x: 360, y: -120, order: 2 }],
 	links: [], pipes: [], zones: [], groups: [], selection: [],
 };
-let dir, procs = [], port, cdp, theTab;
+let dir, procs = [], chrome, port, cdp, theTab;
 
 before(async () => {
 	if (NO_CHROME) return;
-	dir = fs.mkdtempSync(path.join(os.tmpdir(), 'input-binding-browser-'));
+	dir = scratchFolder('input-binding-browser-');
 	fs.mkdirSync(path.join(dir, 'data'), { recursive: true });
 	fs.writeFileSync(path.join(dir, 'data', `${DIAGRAM}.json`), JSON.stringify(doc));
-	[port, cdp] = [await free(), await free()];
-	procs.push(spawnGroup('node', ['server/server.js'], { cwd: root, env: { PATH: process.env.PATH, HOME: process.env.HOME, PORT: String(port), DATA_DIR: path.join(dir, 'data') }, stdio: 'ignore' }));
+	port = await free();
+	procs.push(spawnTethered('node', ['server/server.js'], { cwd: root, env: { PATH: process.env.PATH, HOME: process.env.HOME, PORT: String(port), DATA_DIR: path.join(dir, 'data') }, stdio: 'ignore' }));
 	for (let i = 0; i < 100; i++) { try { if ((await fetch(`http://127.0.0.1:${port}/health`)).ok) break; } catch { /* not up */ } await sleep(100); }
-	procs.push(launchChrome({ cdpPort: cdp, profileDir: path.join(dir, 'profile'), url: 'about:blank' }));
-	for (let i = 0; i < 80; i++) { try { await (await fetch(`http://127.0.0.1:${cdp}/json/version`)).json(); break; } catch { await sleep(200); } }
+	chrome = await launchChrome();
+	cdp = chrome.port;
 	theTab = createTab(cdp);
 });
-after(() => teardown(procs, dir));
+after(async () => { await chrome?.close(); for (const p of procs) await stopGroup(p.pid); });
 
 test('H26.2 (B409 kept): during a link drawn with the mouse, a touch contact\'s press is taken by it, and its release commits the link where it lifted', { skip: NO_CHROME, timeout: 60000 }, async () => {
 	const t = await theTab();

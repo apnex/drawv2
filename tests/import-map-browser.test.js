@@ -29,12 +29,11 @@ neither is, whatever of the page lies there.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import net from 'node:net';
 import path from 'node:path';
-import { teardown, spawnGroup } from './fixtures/teardown.mjs';
+import { launchChrome, scratchFolder, spawnTethered, stopGroup } from '@apnex/test-harness';   // H26-19 as amended: each ends with this file
 import { startLab } from './fixtures/lab-server.mjs';   // H26.5 (the verifier's finding 1): started and waited for in one place
-import { NO_CHROME, launchChrome } from './fixtures/chrome.mjs';   // one launch config for every harness, a profile of this file's own
+import { NO_CHROME } from './fixtures/chrome.mjs';
 import { createTab, sleep } from './fixtures/matrix-runner.mjs';   // the one-tab client, recording every request and its answer
 
 const root = path.resolve(import.meta.dirname, '..');
@@ -43,22 +42,22 @@ const binding = JSON.parse(fs.readFileSync(path.join(root, 'node_modules/@apnex/
 const capture = JSON.parse(fs.readFileSync(path.join(root, 'node_modules/@apnex/input-capture/package.json'), 'utf8')).version;   // H26.3
 const scene = JSON.parse(fs.readFileSync(path.join(root, 'node_modules/@apnex/vector-scene/package.json'), 'utf8')).version;   // H26.4
 const free = () => new Promise((resolve) => { const s = net.createServer().listen(0, '127.0.0.1', () => { const p = s.address().port; s.close(() => resolve(p)); }); });
-let dir, procs = [], port, labPort, cdp, theTab;
+let dir, procs = [], chrome, port, labPort, cdp, theTab;
 
 before(async () => {
 	if (NO_CHROME) return;
-	dir = fs.mkdtempSync(path.join(os.tmpdir(), 'import-map-browser-'));
-	[port, cdp] = [await free(), await free()];
+	dir = scratchFolder('import-map-browser-');
+	port = await free();
 	const env = { PATH: process.env.PATH, HOME: process.env.HOME };
-	procs.push(spawnGroup('node', ['server/server.js'], { cwd: root, env: { ...env, PORT: String(port), DATA_DIR: path.join(dir, 'data') }, stdio: 'ignore' }));
+	procs.push(spawnTethered('node', ['server/server.js'], { cwd: root, env: { ...env, PORT: String(port), DATA_DIR: path.join(dir, 'data') }, stdio: 'ignore' }));
 	const lab = await startLab({ env });
 	procs.push(lab.proc); labPort = lab.port;
 	for (let i = 0; i < 100; i++) { try { if ((await fetch(`http://127.0.0.1:${port}/health`)).ok) break; } catch { /* not up */ } await sleep(100); }
-	procs.push(launchChrome({ cdpPort: cdp, profileDir: path.join(dir, 'profile'), url: 'about:blank' }));
-	for (let i = 0; i < 80; i++) { try { await (await fetch(`http://127.0.0.1:${cdp}/json/version`)).json(); break; } catch { await sleep(200); } }
+	chrome = await launchChrome();
+	cdp = chrome.port;
 	theTab = createTab(cdp);
 });
-after(() => teardown(procs, dir));
+after(async () => { await chrome?.close(); for (const p of procs) await stopGroup(p.pid); });
 
 // load a page in the one tab, wait for it to boot, and hand back every request it made with its answer
 async function load(url, booted) {

@@ -77,13 +77,13 @@ test('H26.1 (G8): before measuring, each side answers every address its pages\' 
 });
 
 test('H26.1 (G8): this tree\'s two real servers pass the check the probe makes of a side -- the product page and the lab page', { timeout: 60000 }, async () => {
-	const { spawnGroup, stopProcess } = await import('./fixtures/teardown.mjs');
+	const { spawnTethered, stopGroup } = await import('@apnex/test-harness');   // H26-19 as amended: each server ends with this file
 	const { startLab } = await import('./fixtures/lab-server.mjs');   // H26.5 (the verifier's finding 1): started and waited for in one place
 	const free = () => new Promise((resolve) => { const s = net.createServer().listen(0, () => { const p = s.address().port; s.close(() => resolve(p)); }); });
 	const port = await free();
 	const data = scratch();
 	const env = { PATH: process.env.PATH, HOME: process.env.HOME };
-	const procs = [spawnGroup('node', ['server/server.js'], { cwd: ROOT, env: { ...env, PORT: String(port), DATA_DIR: data }, stdio: 'ignore' })];
+	const procs = [spawnTethered('node', ['server/server.js'], { cwd: ROOT, env: { ...env, PORT: String(port), DATA_DIR: data }, stdio: 'ignore' })];
 	try {
 		const lab = await startLab({ env });
 		procs.push(lab.proc);
@@ -97,5 +97,5 @@ test('H26.1 (G8): this tree\'s two real servers pass the check the probe makes o
 		// RESTATED at H26.4: and the fourth, vector-scene
 		const scene = JSON.parse(fs.readFileSync(path.join(ROOT, 'node_modules/@apnex/vector-scene/package.json'), 'utf8')).version;
 		assert.deepEqual(r, { problems: [], checked: [`@apnex/input-binding@${binding}`, `@apnex/input-capture@${capture}`, `@apnex/snap-grid@${version}`, `@apnex/vector-scene@${scene}`] });
-	} finally { for (const p of procs) await stopProcess(p); }
+	} finally { for (const p of procs) await stopGroup(p.pid); }
 });

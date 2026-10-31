@@ -18,24 +18,21 @@ worse than no probe, because it produces numbers.
 
 Not a gate check: it needs Chrome and its output is a number a person reads.
 */
-import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { spawnTethered } from '../process-tether.mjs';   // H26-19: the server and Chrome end with this probe, even killed
-import { readDevToolsActivePort, removeChromeLockFolder, removeScratchTree } from '../chrome-profile.mjs';
+// H26-19 as amended: the server and Chrome end with this probe, even killed, and Chrome's launch folder goes with it
+import { findChrome, launchChrome, spawnTethered, stopGroup } from '@apnex/test-harness';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '../..');
 const OUT = process.env.PROBE_OUT || path.join(os.tmpdir(), `draw-probe-${process.pid}`);
 
-const CHROME = ['google-chrome', 'chromium', 'chromium-browser']
-	.find((c) => { try { execFileSync('which', [c], { stdio: 'pipe' }); return true; } catch { return false; } });
-if (!CHROME) { console.error('no chrome on PATH'); process.exit(1); }
+if (!findChrome()) { console.error('no chrome on PATH'); process.exit(1); }
 
 // unique per run. A fixed port is how the second version came to attach to a stale browser. Chrome's is the one the system gives
-// it (B434), read from its profile once it has started.
+// it (B434), as the harness launches every Chrome.
 const PORT = 20000 + (process.pid % 20000);
 let CDP;
 
@@ -45,11 +42,7 @@ fs.mkdirSync(OUT, { recursive: true });
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const srv = spawnTethered('python3', ['-m', 'http.server', String(PORT), '--directory', path.join(ROOT, 'app')],
 	{ stdio: 'ignore' });
-// Chrome's temporary folder its own, as tests/fixtures/chrome.mjs gives one: Chrome leaves folders there, its lock folder among them
-const chromeTemp = fs.mkdtempSync(path.join(os.tmpdir(), 'chrome-'));
-const chrome = spawnTethered(CHROME, ['--headless=new', '--remote-debugging-port=0', '--no-sandbox',
-	'--disable-gpu', '--window-size=1400,900', `--user-data-dir=${OUT}/cdp`,
-	'--force-device-scale-factor=1'], { stdio: 'ignore', env: { ...process.env, TMPDIR: chromeTemp }, chromeProfile: `${OUT}/cdp`, remove: [chromeTemp] });
+let chrome = null;
 
 let code = 0;
 try {
@@ -60,7 +53,8 @@ try {
 	}
 	if (!up) throw new Error(`the static server never came up on ${PORT}`);
 
-	CDP = await readDevToolsActivePort(`${OUT}/cdp`, { exited: () => chrome.exitCode !== null || chrome.signalCode !== null });
+	chrome = await launchChrome({ args: ['--window-size=1400,900', '--force-device-scale-factor=1'] });   // the probe's own flags
+	CDP = chrome.port;
 	let ver = null;
 	for (let i = 0; i < 40 && !ver; i++) {
 		try { ver = await (await fetch(`http://127.0.0.1:${CDP}/json/version`)).json(); } catch { await sleep(150); }
@@ -165,10 +159,7 @@ try {
 	console.error(`  probe failed: ${e.message}`);
 	code = 1;
 } finally {
-	for (const p of [chrome, srv]) { try { process.kill(-p.pid, 'SIGKILL'); } catch { /* gone */ } }
-	for (let i = 0; i < 40 && [chrome, srv].some((p) => p.exitCode === null && p.signalCode === null); i++) await sleep(50);
-	removeChromeLockFolder(`${OUT}/cdp`, chromeTemp);
-	removeScratchTree(chromeTemp);
-	removeScratchTree(`${OUT}/cdp`);
+	await chrome?.close();
+	await stopGroup(srv.pid);
 }
 process.exit(code);

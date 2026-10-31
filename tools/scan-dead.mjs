@@ -44,6 +44,9 @@ const EXT = /\.(js|mjs)$/;
 // symbol -> why it has no production consumer. Reviewed at each milestone close.
 const ALLOW = {
 	'server/svg-style.mjs:rulesOfSheets': 'H25.2 (B366): the parser behind `drawingRules`, which reads the page\'s own sheets through it in this module. Exported so tests/svg-style.test.js hands it sheets of its own and proves each refusal -- an at-rule, a step or selector the cascade cannot match, a token no registry declares, and since H26.8 a `@keyframes` block or string left open -- on rules the real sheets do not hold, and the one at-rule it reads and leaves out, `@keyframes <name>`, with braces quoted and escaped and two blocks around rules (dev/design/components/NATIVE-SHAPES.md section 5).',
+	// H26.10: read as live only by a name the scan matched -- tools/probe/measure.mjs called its list of Chrome binaries `CHROME` -- until the
+	// probe took test-harness's findChrome; judged then, and kept
+	'kernel/theme.mjs:CHROME': 'the chrome roles resolved to values, beside TOKENS, for code that draws with them; no product module reads it today, and the tests that hold a painted colour against its role read it (tests/gate.test.js among them), so the role and the value cannot drift apart unseen.',
 	'tools/scan-skips.mjs:skipsIn': 'the TAP parser behind B250`s skip check. Its production caller is the CLI half of the same file, so the export earns its keep from tests/scan-skips.test.js, which drives it on written TAP -- nested subtests, todo, reasons -- without needing a machine that lacks Chrome.',
 	// K12 (2026-10-01): exports the deleted barrels had hidden, each kept for its own reason; the rest were deleted or un-exported.
 	'plugins/simulation/kinds.mjs:MOVERS': 'the mover kinds table; `moverFor` reads it in this module. Exported so tests/rules.test.js asserts every kind against the table itself rather than a copy that would drift.',

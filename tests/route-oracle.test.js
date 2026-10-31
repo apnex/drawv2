@@ -18,11 +18,10 @@ loudly, when no Chrome is present, so a contributor without one is not blocked -
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { pathGeometry, roundedPath, pathLength, pointAtDistance } from '../kernel/router.mjs';
-import { teardown } from './fixtures/teardown.mjs';
-import { CHROME, NO_CHROME, launchChrome } from './fixtures/chrome.mjs';   // one launch config for every harness
+import { launchChrome, scratchFolder } from '@apnex/test-harness';   // H26-19 as amended: Chrome and the page's folder end with this file
+import { CHROME, NO_CHROME } from './fixtures/chrome.mjs';
 
 
 // the shapes that exercise every branch of the decomposition: no corner, one corner, several, a
@@ -42,13 +41,13 @@ let dir = null, chrome = null, browser = null;
 
 before(async () => {
 	if (!CHROME) return;
-	dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-oracle-'));
+	dir = scratchFolder('draw-oracle-');
 	const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400">${
 		CASES.map((c, i) => `<path id="p${i}" d="${roundedPath(c.pts, 20, c.close)}" fill="none" stroke="#000"/>`).join('')}</svg>`;
 	fs.writeFileSync(path.join(dir, 'p.html'), svg);
 
-	const port = 9400 + (process.pid % 400);
-	chrome = launchChrome({ cdpPort: port, profileDir: `${dir}/profile`, url: 'about:blank' });
+	chrome = await launchChrome();   // on the port the system gives it, no longer one from a range another program may hold (B434)
+	const { port } = chrome;
 
 	const { default: WebSocket } = await import('ws');
 	const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -77,8 +76,8 @@ before(async () => {
 	ws.close();
 });
 
-// B238 -- Chrome writes its profile while it shuts down, so the profile is removed only after it exits.
-after(() => teardown([chrome], dir));
+// B238 -- Chrome writes its profile while it shuts down: closing it stops its whole group before its launch folder goes
+after(() => chrome?.close());
 
 test('H12.2: kernel route length agrees with the length the browser measures', { skip: NO_CHROME }, () => {
 	let worst = 0;

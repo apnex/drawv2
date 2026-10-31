@@ -11,10 +11,9 @@ page's outbox is answered, since the planner is across a socket rather than in t
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
-import { teardown, spawnGroup } from './fixtures/teardown.mjs';
-import { NO_CHROME, launchChrome, chromeDebugPort } from './fixtures/chrome.mjs';
+import { launchChrome, scratchFolder, spawnTethered, stopGroup } from '@apnex/test-harness';   // H26-19 as amended: each ends with this file
+import { NO_CHROME } from './fixtures/chrome.mjs';
 import { createTab, inputOf, matrixTests, sleep } from './fixtures/matrix-runner.mjs';
 import { pipeEntity } from '../plugins/network/pipe-kind.mjs';
 
@@ -27,15 +26,15 @@ const api = (p, init) => fetch(`http://127.0.0.1:${port}/api/v1${p}`, { ...init,
 
 before(async () => {
 	if (SKIP) return;
-	dir = fs.mkdtempSync(path.join(os.tmpdir(), 'page-matrix-'));
+	dir = scratchFolder('page-matrix-');
 	port = 8600 + (process.pid % 200);
-	srv = spawnGroup('node', ['server/server.js'], { cwd: root, env: { ...process.env, DATA_DIR: dir, PORT: String(port) }, stdio: 'ignore' });
+	srv = spawnTethered('node', ['server/server.js'], { cwd: root, env: { ...process.env, DATA_DIR: dir, PORT: String(port) }, stdio: 'ignore' });
 	for (let i = 0; i < 60; i++) { try { if ((await fetch(`http://127.0.0.1:${port}/health`)).ok) break; } catch { /* not up yet */ } await sleep(200); }
-	chrome = launchChrome({ profileDir: `${dir}/cdp`, url: 'about:blank' });
-	cdp = await chromeDebugPort(chrome);   // B434: the port the system gave Chrome, never one from a range another program may hold
+	chrome = await launchChrome();
+	cdp = chrome.port;   // B434: the port the system gave Chrome, never one from a range another program may hold
 	for (let i = 0; i < 80; i++) { try { await (await fetch(`http://127.0.0.1:${cdp}/json/version`)).json(); break; } catch { await sleep(200); } }
 });
-after(() => teardown([chrome, srv], dir));
+after(async () => { await chrome?.close(); if (srv) await stopGroup(srv.pid); });
 
 const theTab = createTab(() => cdp);
 

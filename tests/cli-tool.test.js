@@ -16,7 +16,7 @@ import path from 'node:path';
 import { makeApp } from './fixtures/app.mjs';
 import { execFileSync } from 'node:child_process';
 import http from 'node:http';
-import { spawn } from 'node:child_process';
+import { spawnTethered } from '@apnex/test-harness';
 import { fileURLToPath } from 'node:url';
 import { main } from '../cli/draw.mjs';
 import { VERBS, byName, parityOf } from '../cli/verbs.mjs';
@@ -1404,8 +1404,9 @@ test('B160: a non-JSON body that is NOT a 429 still asks about the credential', 
 		// never accept the connection and the two deadlock -- the child waits for a response the
 		// parent cannot serve. Cost me a 300-second test timeout to find.
 		const stderr = await new Promise((resolve) => {
-			const kid = spawn(process.execPath, [tool, 'health'], {
-				env: { ...process.env, DRAW_HOST: `http://127.0.0.1:${srv.address().port}`, DRAW_CODE: '' },
+			// tethered (H26-19 as amended): this file killed mid-call takes the CLI with it
+			const kid = spawnTethered(process.execPath, [tool, 'health'], {
+				env: { ...process.env, DRAW_HOST: `http://127.0.0.1:${srv.address().port}`, DRAW_CODE: '' }, stdio: ['ignore', 'ignore', 'pipe'],
 			});
 			let err = '';
 			kid.stderr.on('data', (d) => { err += d; });

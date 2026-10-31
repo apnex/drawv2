@@ -26,10 +26,10 @@ import { heldLayouts } from './fixtures/composed.mjs';   // WD-b1: the two layou
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
-import { teardown, spawnGroup } from './fixtures/teardown.mjs';   // H26.4 (V2-2): the server a group of its own, stopped with the test process
-import { NO_CHROME, launchChrome, chromeDebugPort } from './fixtures/chrome.mjs';   // one launch config for every harness
+// H26.4 (V2-2), H26-19 as amended: the server and Chrome tethered groups that end with this file, even killed; the focus loss a real one
+import { launchChrome, loseFocus, scratchFolder, spawnTethered, stopGroup } from '@apnex/test-harness';
+import { NO_CHROME } from './fixtures/chrome.mjs';
 import { pipeEntity } from '../plugins/network/pipe-kind.mjs';   // V-b's board lays its pipes as the network names them
 
 const SKIP = NO_CHROME;
@@ -202,7 +202,7 @@ async function until(tabRef, expr, ms = 8000) {
 
 before(async () => {
 	if (SKIP) return;
-	dir = fs.mkdtempSync(path.join(os.tmpdir(), 'draw-harness-'));
+	dir = scratchFolder('draw-harness-');
 	fs.writeFileSync(path.join(dir, `${DIAGRAM}.json`), JSON.stringify(fixture()));
 	fs.writeFileSync(path.join(dir, `${K8_DIAGRAM}.json`), JSON.stringify({ ...fixture(), meta: { ...fixture().meta, id: K8_DIAGRAM, name: 'k8' } }));
 	fs.writeFileSync(path.join(dir, `${NET_DIAGRAM}.json`), JSON.stringify(networkBoard()));
@@ -210,8 +210,8 @@ before(async () => {
 	fs.writeFileSync(path.join(dir, `${PIPE_DIAGRAM}.json`), JSON.stringify(pipeBoard()));
 	port = 8200 + (process.pid % 300);
 
-	// H26.4 (the verifier's V2-2): a group of its own, so a test process stopped before its `after` stops it too (tests/fixtures/teardown.mjs)
-	srv = spawnGroup('node', ['server/server.js'], {
+	// H26.4 (the verifier's V2-2): a group of its own, so a test process stopped before its `after` stops it too -- tethered, so even by SIGKILL
+	srv = spawnTethered('node', ['server/server.js'], {
 		env: { ...process.env, DATA_DIR: dir, PORT: String(port) },
 		stdio: 'pipe', cwd: path.resolve(path.dirname(new URL(import.meta.url).pathname), '..'),
 	});
@@ -220,9 +220,9 @@ before(async () => {
 		await sleep(250);
 	}
 
-	// the shared launch config (tests/fixtures/chrome.mjs); the window size is this harness's own, because its clicks depend on it
-	chrome = launchChrome({ profileDir: `${dir}/cdp`, extra: ['--window-size=1600,1000'] });
-	cdp = await chromeDebugPort(chrome);   // B434: the port the system gave Chrome, never one from a range another program may hold
+	// the shared launch config (the harness's); the window size is this harness's own, because its clicks depend on it
+	chrome = await launchChrome({ args: ['--window-size=1600,1000'] });
+	cdp = chrome.port;   // B434: the port the system gave Chrome, never one from a range another program may hold
 	tab = await attach(`http://127.0.0.1:${port}/?diagram=${DIAGRAM}`);
 	await sleep(4000);
 
@@ -245,9 +245,9 @@ before(async () => {
 	booted = { inRun: !!inRun, loaded: !!loaded, movers: Number(movers) || 0 };
 });
 
-// B238 -- both processes write into `dir` as they shut down (Chrome its profile, the server its
-// debounced diagram flush), so the directory is removed only once both have exited.
-after(() => teardown([chrome, srv], dir));
+// B238 -- both processes write as they shut down (Chrome its profile, the server its debounced diagram flush into `dir`), so each is
+// stopped, group and all, and waited for; `dir` goes when this file ends, after both
+after(async () => { await chrome?.close(); if (srv) await stopGroup(srv.pid); });
 
 test('H13.8/B170: real key input reaches the app -- run mode entered by pressing r', { skip: SKIP }, () => {
 	// the B170 discharge, stated as its own test. A synthetic KeyboardEvent does not do this.
@@ -1841,22 +1841,13 @@ test('H26.5 (B413): on the product page a focus loss hides the zone grid, drops 
 		const screen = (x, y) => t.eval(`JSON.stringify((() => { const m = document.getElementById('container').getScreenCTM(); return [m.a * ${x} + m.e, m.d * ${y} + m.f]; })())`).then(JSON.parse);
 		const seen = (id) => t.eval(`JSON.stringify({ grid: document.getElementById('container').classList.contains('zonegrid'), selected: window.draw.selection.list(),
 			armed: document.getElementById('${id}')?.classList.contains('armed') ?? null })`).then(JSON.parse);
-		const hasFocus = (want) => until(t, `document.hasFocus() === ${want} ? 1 : 0`, 4000);
-		const front = async () => { await t.send('Page.bringToFront'); assert.equal(await hasFocus(true), 1, 'the page holds the window\'s focus'); };
-		const focusLost = async () => {
-			await front();
-			const made = await t.send('Target.createTarget', { url: 'about:blank' });
-			const other = made.result?.targetId;
-			assert.ok(other, `a second tab opened: ${JSON.stringify(made.error ?? made.result)}`);
-			try {
-				assert.equal(await hasFocus(false), 1, 'the second tab took the window\'s focus from the page');
-				await sleep(60);
-			} finally {
-				await t.send('Target.closeTarget', { targetId: other });
-				for (let i = 0; i < 100 && (await (await fetch(`http://127.0.0.1:${cdp}/json/list`)).json()).some((x) => x.id === other); i++) await sleep(20);
-			}
-			await front();
+		// the focus loss, the harness's (H26-19 as amended): the page brought to the front holding the window's focus, a second tab taking
+		// it, the tab closed and the page brought back, each step waited for -- over this file's own client, which keeps its `ws` session
+		const session = {
+			send: async (method, params) => { const m = await t.send(method, params); if (m.error) throw new Error(`${method}: ${m.error.message}`); return m.result; },
+			evaluate: (expression) => t.eval(expression),
 		};
+		const focusLost = () => loseFocus(session, () => sleep(60));
 
 		// Shift held, a Shift+right click on the zone
 		const [zx, zy] = await screen(0, 330);

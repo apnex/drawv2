@@ -30,7 +30,7 @@ dangerous is to serve a file it should not: the product's store, or anything a t
 tree and asked raw, since `fetch` would normalize the `..` away before sending.
 */
 test('K9, K4: the lab serves its mounts, the planner whole, and nothing else, however the path is spelled', async () => {
-	const { stopProcess } = await import('./fixtures/teardown.mjs');
+	const { stopGroup } = await import('@apnex/test-harness');
 	const { startLab } = await import('./fixtures/lab-server.mjs');   // H26.5: started and waited for in one place
 	const http = await import('node:http');
 	const { proc: srv, port } = await startLab();
@@ -57,7 +57,7 @@ test('K9, K4: the lab serves its mounts, the planner whole, and nothing else, ho
 			assert.equal((await ask(p)).status, 404, `${p} must not be served`);
 		}
 		assert.equal((await ask('/kernel/geometry.mjs', 'POST')).status, 405, 'and it takes no writes');
-	} finally { await stopProcess(srv); }
+	} finally { await stopGroup(srv.pid); }
 });
 
 /*
@@ -66,7 +66,7 @@ a module of each of the six plugins is served; a plugin folder that is not there
 sent raw, are each a 404.
 */
 test('H26.7: the lab serves every plugin from /plugins/, and nothing else there -- an absent plugin, an old root, a walk out', async () => {
-	const { stopProcess } = await import('./fixtures/teardown.mjs');
+	const { stopGroup } = await import('@apnex/test-harness');
 	const { startLab } = await import('./fixtures/lab-server.mjs');   // H26.5: started and waited for in one place
 	const http = await import('node:http');
 	const { proc: srv, port } = await startLab();
@@ -90,7 +90,7 @@ test('H26.7: the lab serves every plugin from /plugins/, and nothing else there 
 			'/plugins/..%5cpackage.json', '/plugins/%2fetc%2fpasswd', '/plugins/server/store.js', '/plugins/package.json', '/plugins/', '/plugins/network/']) {
 			assert.equal((await ask(p)).status, 404, `${p} is outside plugins/`);
 		}
-	} finally { await stopProcess(srv); }
+	} finally { await stopGroup(srv.pid); }
 });
 
 /*
@@ -294,7 +294,7 @@ test('H26.1: the vendor mount answers 404 for any other name, version or file, h
 
 test('H26.1: the lab serves the installed component on the vendor mount, kept a year, and nothing else there; its own files stay no-store', async () => {
 	const fs = await import('node:fs');
-	const { stopProcess } = await import('./fixtures/teardown.mjs');
+	const { stopGroup } = await import('@apnex/test-harness');
 	const { startLab } = await import('./fixtures/lab-server.mjs');   // H26.5: started and waited for in one place
 	const http = await import('node:http');
 	const root = new URL('../', import.meta.url).pathname;
@@ -317,5 +317,5 @@ test('H26.1: the lab serves the installed component on the vendor mount, kept a 
 		const own = await ask('/src/root.js');
 		assert.deepEqual([own.status, own.cache], [200, 'no-store'], 'the lab\'s own module is never kept');
 		assert.equal((await ask('/')).cache, 'no-store', 'nor the page that holds the map, so a page reached by Back fetches a fresh map (D7)');
-	} finally { await stopProcess(srv); }
+	} finally { await stopGroup(srv.pid); }
 });

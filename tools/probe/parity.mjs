@@ -85,12 +85,11 @@ const docs = docFiles.map((f) => JSON.parse(fs.readFileSync(path.join(DOCS, f), 
 const seeds = Object.keys(JSON.parse(fs.readFileSync(path.join(ROOT, 'lab/seeds.json'), 'utf8')));
 
 const freePort = () => new Promise((resolve) => { const s = net.createServer(); s.listen(0, '127.0.0.1', () => { const { port } = s.address(); s.close(() => resolve(port)); }); });
-// the worktrees, the servers' data and Chrome's profile are scaffolding, removed however the probe ends; the report and images stay
+// the worktrees and the servers' data are scaffolding, removed however the probe ends, and Chrome's launch folder with it; the report and images stay
 const scaffold = startProbeScaffold({
 	root: ROOT,
 	trees: [['baseline', baseline], ['candidate', candidate]].filter(([, commit]) => commit).map(([name]) => path.join(OUT, `tree-${name}`)),
 	data: ['baseline', 'candidate'].map((name) => path.join(OUT, `data-${name}`)),
-	profile: path.join(OUT, 'chrome'),
 });
 const start = scaffold.start;
 const until = async (fn, ms, what) => { const end = Date.now() + ms; while (Date.now() < end) { try { if (await fn()) return; } catch { /* not yet */ } await sleep(200); } die(`${what} did not happen within ${ms} ms`); };
@@ -256,8 +255,8 @@ try {
 		side.components = checked;
 		console.log(`  ${side.name} (${side.sha}): dependencies ${side.deps}; ${checked.length ? `its pages' import map names ${checked.join(', ')}, installed, every address answered 200` : 'no import map on its pages -- nothing to assert'}`);
 	}
-	cdpPort = await scaffold.launchChrome(['--headless=new', '--no-sandbox', '--disable-gpu', '--disable-extensions', '--hide-scrollbars', '--force-device-scale-factor=1',
-		'--window-size=1600,1000']);
+	// the probe's own flags, after the harness's shared ones
+	cdpPort = await scaffold.launchChrome(['--hide-scrollbars', '--force-device-scale-factor=1', '--window-size=1600,1000']);
 	await until(async () => (await fetch(`http://127.0.0.1:${cdpPort}/json/list`)).ok, 20000, 'Chrome answering');
 	const [a, b] = [await capture(sides[0]), await capture(sides[1])];
 	const report = { baseline: sides[0].sha, candidate: sides[1].sha, components: Object.fromEntries(sides.map((s) => [s.name, s.components])), documents: docs.length, pixels: {}, styles: {} };

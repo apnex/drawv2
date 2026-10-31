@@ -14,7 +14,7 @@ import fs from 'node:fs';
 import net from 'node:net';
 import path from 'node:path';
 import { startLab, LAB_START_WAIT_MS } from './fixtures/lab-server.mjs';
-import { stopProcess } from './fixtures/teardown.mjs';
+import { stopGroup } from '@apnex/test-harness';   // H26-19 as amended: the lab a tethered group of its own
 import { lex } from '../tools/js-tokens.mjs';
 
 const groupGone = (pid) => { try { process.kill(-pid, 0); return false; } catch (e) { return e.code === 'ESRCH'; } };
@@ -26,8 +26,8 @@ test('H26.5: startLab answers once the lab answers /health, on a port of its own
 	try {
 		assert.equal(lab.origin, `http://127.0.0.1:${lab.port}`);
 		assert.equal((await fetch(`${lab.origin}/health`)).status, 200);
-	} finally { await stopProcess(lab.proc); }
-	assert.ok(groupGone(lab.proc.pid), 'and stopProcess stops it, as before');
+	} finally { await stopGroup(lab.proc.pid); }
+	assert.ok(groupGone(lab.proc.pid), 'and stopGroup stops it, group and all');
 });
 
 test('H26.5: a lab that exits before answering -- its port taken by a listener that never answers -- rejects naming the exit', { timeout: 30000 }, async () => {
@@ -89,11 +89,11 @@ function labNamedIn(src) {
 test('H26.5 (notes G2 to G4): the guard finds the lab named to run it however it is spelled or run, and passes a read, a comment, a title, a pattern', () => {
 	const run = [
 		"spawn(\"node\", [\"lab/server.mjs\"], {})",
-		"spawnGroup('node', ['./lab/server.mjs'], {})",
+		"spawnTethered('node', ['./lab/server.mjs'], {})",
 		"spawn(process.execPath, ['lab/server.mjs'])",
 		"spawn(process.execPath, [`${root}/lab/server.mjs`])",
 		"spawn('node', [path.join(root, 'lab', 'server.mjs')])",
-		"const LAB = 'lab/server.mjs';\nspawnGroup('node', [LAB]);",
+		"const LAB = 'lab/server.mjs';\nspawnTethered('node', [LAB]);",
 		"fork('./lab/server.mjs')",
 		"execFile(process.execPath, ['../lab/server.mjs'])",
 		"const s = fs.readFileSync(p, 'utf8'); spawn('node', ['lab/server.mjs']);",   // a read on the line excuses no run beside it
@@ -118,6 +118,6 @@ test('H26.5: no test names lab/server.mjs to run it but startLab -- a copy with 
 	const naming = Object.fromEntries(files.filter((f) => f !== 'fixtures/lab-server.mjs').map((f) => [f, labNamedIn(read(f))]).filter(([, found]) => found.length));
 	assert.deepEqual(naming, {}, 'no other test names the lab\'s server but to read it');
 	const callers = files.filter((f) => /\bstartLab\(/.test(read(f))).sort();
-	assert.deepEqual(callers, ['fixtures/lab-server.mjs', 'import-map-browser.test.js', 'lab-browser.test.js', 'lab-server.test.js', 'probe-sides.test.js', 'process-tether.test.js', 'static.test.js', 'svgexport.test.js'],
+	assert.deepEqual(callers, ['fixtures/lab-server.mjs', 'import-map-browser.test.js', 'lab-browser.test.js', 'lab-server.test.js', 'probe-sides.test.js', 'static.test.js', 'svgexport.test.js', 'test-harness.test.js'],
 		'the seven sites that start it -- H26-19\'s kill test the seventh -- each through the helper');
 });

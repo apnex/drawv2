@@ -25,12 +25,12 @@ test's own.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import net from 'node:net';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
-import { teardown, spawnGroup, stopProcess } from './fixtures/teardown.mjs';
-import { NO_CHROME, launchChrome } from './fixtures/chrome.mjs';   // one launch config for every harness, a profile of this file's own
+// H26-19 as amended: each server and Chrome ends with this file, even killed; each folder goes when it ends
+import { launchChrome, scratchFolder, spawnTethered, stopGroup } from '@apnex/test-harness';
+import { NO_CHROME } from './fixtures/chrome.mjs';
 import { sleep } from './fixtures/matrix-runner.mjs';
 
 const root = path.resolve(import.meta.dirname, '..');
@@ -55,19 +55,19 @@ function revision(dir) {
 function serving(tree, dir, port) {
 	let proc = null;
 	const start = async () => {
-		proc = spawnGroup('node', ['server/server.js'], { cwd: tree, env: { PATH: process.env.PATH, HOME: process.env.HOME, PORT: String(port), DATA_DIR: path.join(dir, 'data') }, stdio: 'ignore' });
+		proc = spawnTethered('node', ['server/server.js'], { cwd: tree, env: { PATH: process.env.PATH, HOME: process.env.HOME, PORT: String(port), DATA_DIR: path.join(dir, 'data') }, stdio: 'ignore' });
 		for (let i = 0; i < 100; i++) { try { if ((await fetch(`http://127.0.0.1:${port}/health`)).ok) return; } catch { /* not up */ } await sleep(100); }
 		throw new Error('the server never answered');
 	};
 	// the deploy: the server stopped, the release's version installed and the pages' map regenerated for it, the server started again
 	const deploy = async (version) => {
-		await stopProcess(proc);
+		await stopGroup(proc.pid);
 		const manifest = path.join(tree, 'node_modules', COMPONENT, 'package.json');
 		fs.writeFileSync(manifest, JSON.stringify({ ...JSON.parse(fs.readFileSync(manifest, 'utf8')), version }, null, 2));
 		execFileSync(process.execPath, [path.join(tree, 'tools/import-map.mjs'), '--write', '--root', tree], { stdio: 'ignore' });
 		await start();
 	};
-	return { start, deploy, stop: () => stopProcess(proc), url: `http://127.0.0.1:${port}/` };
+	return { start, deploy, stop: () => stopGroup(proc.pid), url: `http://127.0.0.1:${port}/` };
 }
 
 // a Chrome DevTools session on one page target: commands, every response by its path, and what the page threw
@@ -124,14 +124,16 @@ function assertFresh(got, how) {
 }
 
 test('A9 (D7): a page reached by Back across a deploy is asked again -- its fresh map names the deployed version; at one revision, a second visit asks again for draw\'s files and not for the kept release', { skip: NO_CHROME, timeout: 120000 }, async () => {
-	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'deploy-back-'));
+	const dir = scratchFolder('deploy-back-');
 	const procs = [];
 	let side = null, tab = null;
 	try {
-		const [port, cdp] = [await free(), await free()];
+		const port = await free();
 		side = serving(revision(dir), dir, port);
 		await side.start();
-		procs.push(launchChrome({ cdpPort: cdp, profileDir: path.join(dir, 'profile'), url: side.url }));
+		const chrome = await launchChrome({ url: side.url });
+		procs.push(chrome);
+		const cdp = chrome.port;
 		await cdpUp(cdp);
 		tab = await attach((await pageOn(cdp, port)).webSocketDebuggerUrl);
 		assert.equal(await tab.booted(), true, `the page booted at the released version: ${JSON.stringify(tab.thrown)}`);
@@ -161,21 +163,22 @@ test('A9 (D7): a page reached by Back across a deploy is asked again -- its fres
 	} finally {
 		tab?.close();
 		await side?.stop();
-		await teardown(procs, dir);
+		for (const chrome of procs) await chrome.close();
 	}
 });
 
 test('A9 (D7): a session restored across a deploy loads its page afresh -- the restored page asked again, its map naming the deployed version', { skip: NO_CHROME, timeout: 120000 }, async () => {
-	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'deploy-restore-'));
+	const dir = scratchFolder('deploy-restore-');
 	const procs = [];
 	let side = null;
 	try {
-		const [port, cdp] = [await free(), await free()];
+		const port = await free();
 		side = serving(revision(dir), dir, port);
 		await side.start();
-		const profileDir = path.join(dir, 'profile');
-		const first = launchChrome({ cdpPort: cdp, profileDir, url: side.url });
+		const profileDir = path.join(dir, 'profile');   // this test's own, so a second launch restores the session the first wrote
+		const first = await launchChrome({ profile: profileDir, url: side.url });
 		procs.push(first);
+		let cdp = first.port;
 		await cdpUp(cdp);
 		const tab = await attach((await pageOn(cdp, port)).webSocketDebuggerUrl);
 		assert.equal(await tab.booted(), true, 'the page booted at the released version');
@@ -185,13 +188,14 @@ test('A9 (D7): a session restored across a deploy loads its page afresh -- the r
 
 		// the browser closed, as a person closes it, then the deploy, then the browser started again restoring its session
 		const browser = await attach((await cdpUp(cdp)).webSocketDebuggerUrl, []);
-		const closed = new Promise((resolve) => first.once('exit', resolve));
 		browser.send('Browser.close');
-		await Promise.race([closed, sleep(10000)]);
+		for (const end = Date.now() + 10000; first.exited() === null && Date.now() < end;) await sleep(50);
 		browser.close();
-		await stopProcess(first);
+		await first.close();   // its profile is this test's, and is kept
 		await side.deploy(DEPLOYED);
-		procs.push(launchChrome({ cdpPort: cdp, profileDir, extra: ['--restore-last-session'] }));
+		const second = await launchChrome({ profile: profileDir, args: ['--restore-last-session'] });
+		procs.push(second);
+		cdp = second.port;
 		await cdpUp(cdp);
 		const restored = await attach((await pageOn(cdp, port)).webSocketDebuggerUrl);
 		assert.equal(await restored.booted(), true, `the restored page booted: ${JSON.stringify(restored.thrown)}`);
@@ -200,19 +204,21 @@ test('A9 (D7): a session restored across a deploy loads its page afresh -- the r
 		restored.close();
 	} finally {
 		await side?.stop();
-		await teardown(procs, dir);
+		for (const chrome of procs) await chrome.close();
 	}
 });
 
 test('A9 (B403): a cold load in flight across a deploy asks the deployed revision for the version its page named -- a 404, and the page does not start until it is reloaded', { skip: NO_CHROME, timeout: 120000 }, async () => {
-	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'deploy-inflight-'));
+	const dir = scratchFolder('deploy-inflight-');
 	const procs = [];
 	let side = null, tab = null;
 	try {
-		const [port, cdp] = [await free(), await free()];
+		const port = await free();
 		side = serving(revision(dir), dir, port);
 		await side.start();
-		procs.push(launchChrome({ cdpPort: cdp, profileDir: path.join(dir, 'profile'), url: 'about:blank' }));
+		const chrome = await launchChrome();
+		procs.push(chrome);
+		const cdp = chrome.port;
 		await cdpUp(cdp);
 		const blank = (await (await fetch(`http://127.0.0.1:${cdp}/json/list`)).json()).find((t) => t.type === 'page');
 		tab = await attach(blank.webSocketDebuggerUrl);
@@ -256,6 +262,6 @@ test('A9 (B403): a cold load in flight across a deploy asks the deployed revisio
 	} finally {
 		tab?.close();
 		await side?.stop();
-		await teardown(procs, dir);
+		for (const chrome of procs) await chrome.close();
 	}
 });

@@ -18,12 +18,11 @@ Chrome launches through tests/fixtures/chrome.mjs on a port and a profile of thi
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import net from 'node:net';
 import http from 'node:http';
 import path from 'node:path';
-import { teardown } from './fixtures/teardown.mjs';
-import { NO_CHROME, launchChrome } from './fixtures/chrome.mjs';
+import { launchChrome } from '@apnex/test-harness';   // H26-19 as amended: Chrome ends with this file, its launch folder with it
+import { NO_CHROME } from './fixtures/chrome.mjs';
 import { createTab, sleep } from './fixtures/matrix-runner.mjs';
 import { PAGE_STYLESHEETS, CANVAS_VIEWBOX } from '../product/canvas.mjs';
 import { board, IDS } from './fixtures/trace-record.mjs';   // the record's board: the parity board, a control link, a closed ring
@@ -49,10 +48,9 @@ ${PAGE_STYLESHEETS.map((s) => `<link rel="stylesheet" href="/${s}">`).join('\n')
 const TOP = `<!doctype html><html><head><style>html,body{margin:0;background:#fff} iframe{position:absolute;left:0;top:0;border:0;width:${W}px;height:${H}px}</style></head><body>
 <iframe id="a" src="/side.html"></iframe><iframe id="b" src="/side.html" style="visibility:hidden"></iframe></body></html>`;
 
-let dir, server, procs = [], tab;
+let server, chrome, tab;
 before(async () => {
 	if (NO_CHROME) return;
-	dir = fs.mkdtempSync(path.join(os.tmpdir(), 'vector-scene-trace-'));
 	server = http.createServer((req, res) => {
 		const u = new URL(req.url, 'http://x');
 		const page = u.pathname === '/top.html' ? TOP : u.pathname === '/side.html' ? SIDE : null;
@@ -65,15 +63,13 @@ before(async () => {
 	});
 	const httpPort = await free();
 	await new Promise((r) => server.listen(httpPort, '127.0.0.1', r));
-	const cdp = await free();
-	procs.push(launchChrome({ cdpPort: cdp, profileDir: path.join(dir, 'profile'), extra: ['--font-render-hinting=none', '--force-color-profile=srgb'], url: 'about:blank' }));
-	for (let i = 0; i < 80; i++) { try { await (await fetch(`http://127.0.0.1:${cdp}/json/version`)).json(); break; } catch { await sleep(200); } }
-	tab = await createTab(cdp)();
+	chrome = await launchChrome({ args: ['--font-render-hinting=none', '--force-color-profile=srgb'] });
+	tab = await createTab(chrome.port)();
 	await tab.send('Emulation.setDeviceMetricsOverride', { width: W, height: H, deviceScaleFactor: 1, mobile: false });
 	await tab.send('Page.navigate', { url: `http://127.0.0.1:${httpPort}/top.html` });
 	for (let i = 0; i < 200 && !(await tab.run('!!(frames[0]?.side && frames[1]?.side)').catch(() => false)); i++) await sleep(100);
 });
-after(async () => { if (server) server.close(); await teardown(procs, dir); });
+after(async () => { if (server) server.close(); await chrome?.close(); });
 
 /*
 A picture of one frame, painted whole: both hidden for two frames, then the one shown. A frame left shown repaints only what a change

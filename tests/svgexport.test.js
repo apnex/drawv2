@@ -19,7 +19,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { makeApp } from './fixtures/app.mjs';
-import { stopProcess } from './fixtures/teardown.mjs';   // H26.4 (V2-2): the lab server a group of its own
+import { stopGroup } from '@apnex/test-harness';   // H26.4 (V2-2), H26-19 as amended: the lab server a tethered group of its own
 import { startLab } from './fixtures/lab-server.mjs';   // H26.5 (the verifier's finding 1): started and waited for in one place
 
 let app, base, dataDir;
@@ -242,5 +242,5 @@ test('H25.2: every stylesheet the pages list is served, by the product\'s server
 			}
 		}
 		assert.equal((await fetch(`http://127.0.0.1:${port}/nope.css`)).status, 404, 'control: the lab serves no sheet the list does not name');
-	} finally { await stopProcess(lab); }
+	} finally { await stopGroup(lab.pid); }
 });
