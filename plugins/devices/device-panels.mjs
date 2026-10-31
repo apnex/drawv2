@@ -11,9 +11,9 @@ and acting through the host's `emit` and `editRegion`. They were app/src/input.j
 
 export const PANEL_RUNS = [
 	{ id: 'fire-action', input: ['left on region:action'], mutates: false, prevent: false, doc: 'press the panel button',
-		on: (e) => e.button === 0 && !!e.region?.action,
-		run: (host, evt) => { evt.claimed = true; host.emit('draw:action', { action: evt.region.action, id: evt.region.owner }); } },
+		on: (e) => e.button === 0 && !!e.hit?.region?.action,
+		run: (host, evt, reply) => { reply.claim(); host.emit('draw:action', { action: evt.hit.region.action, id: evt.hit.region.owner }); } },
 	{ id: 'open-input', input: ['left on region:input'], mutates: true, prevent: false, doc: 'edit the panel input',
-		on: (e) => e.button === 0 && !!e.region && e.region.input !== null && !e.region.action,
-		run: (host, evt) => { evt.claimed = true; if (evt.region.owner) host.editRegion(evt.region.owner, evt.region.input); } },
+		on: (e) => e.button === 0 && !!e.hit?.region && e.hit.region.input !== null && !e.hit.region.action,
+		run: (host, evt, reply) => { reply.claim(); if (evt.hit.region.owner) host.editRegion(evt.hit.region.owner, evt.hit.region.input); } },
 ];

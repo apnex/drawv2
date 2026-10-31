@@ -97,7 +97,7 @@ export function composeCanvas({ svg, scene: declared, defs, host, network = null
 	const input = new Input({ svg, scene, model, history, selection, renderer, states, labels, readout: shownReadout, tools: heldTools,
 		host, help, now, snap, plugins, runRules, parts });   // C-c, C-d: the canvas parts -- places, press rows, handles
 	let capture = null;
-	// the platform's events, as input events (dev/design/input/GESTURE-SYSTEM.md, L0), through input-capture (H26.3) -- once the root's own listeners are in
+	// the platform's events, as input-capture's facts (dev/design/input/GESTURE-SYSTEM.md, L0; H26.3, H26.8) -- once the root's own listeners are in
 	// C-b: the plugins' picks; H26.8's picks move: read by item, each item's drawer the renderer's -- and run mode's regions from the same
 	const listen = () => (capture ??= captureCanvas({ svg, scene, host, sink: input, picks: picksOf(parts), drawerOf: (id) => renderer.drawerOf(id) }));
 	return { scene, model, history, renderer, states, selection, labels, readout: shownReadout, snap, tools: heldTools, input, listen };

@@ -9,6 +9,8 @@ have activated it: Shift's whole cleanup (`onShiftUp`) when Shift is OWED -- set
 event Input is handed whose `shiftKey` is true, cleared only when `onShiftUp` runs -- and the arming's (`onArmingUp`) with the blur's
 event, whose modifiers are all false. It cancels no gesture and ends no press: a drag continues across a focus change, as it did.
 
+RESTATED at H26.8's capture move (NATIVE-SHAPES.md section 3.2, Facts): Input is handed input-capture's facts themselves, the focus loss's
+among them, frozen -- an "event" below is the fact Input is handed for it.
 Each case is driven through the harness's capture, the focus loss the host's `blur` (tests/fixtures/client-harness.mjs `onBlur`), so
 each B413 case reproduces the defect against input-capture 0.1.0 -- which adds no blur listener, so the focus loss reaches nothing --
 and holds it fixed after. The two controls hold what must not change: zones Ctrl+A selected with no Shift held stay selected across a

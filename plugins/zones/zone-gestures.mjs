@@ -62,7 +62,7 @@ function resizeBox(pos, fixedCorner) {
 // so a zone can be drawn over or inside another
 const ZONE_DRAW = {
 	id: 'zone-draw', input: ['Shift+left on canvas|zone'], mutates: true, doc: 'draw a zone',
-	on: (e) => e.button === 0 && (e.on.kind === 'canvas' || e.on.kind === 'zone') && e.shiftKey,
+	on: (e) => e.button === 0 && (e.hit.kind === 'canvas' || e.hit.kind === 'zone') && e.shiftKey,
 	when: (s) => !s.tool,
 	gesture: 'box',
 	box: {
@@ -92,7 +92,7 @@ const ZONE_HANDLES = {
 // a press on a corner handle opens the shared handle gesture -- handles are drawn ON TOP, so they win over what is beneath
 const ZONE_RESIZE = {
 	id: 'resize', input: ['left on handle'], context: 'a zone selected', mutates: true, doc: 'resize the zone',
-	on: (e) => e.button === 0 && e.on.kind === ZONE_HANDLES.word,
+	on: (e) => e.button === 0 && e.hit.kind === ZONE_HANDLES.word,
 	when: (s) => !s.tool,
 	gesture: 'handle',
 };

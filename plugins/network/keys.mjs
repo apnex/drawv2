@@ -18,7 +18,7 @@ Each run asks the host for ONE thing, the product's generic drag step: add a sto
 which key made it; what that step MEANS for pipes and links is the network's drag grammar, read when the drag ends.
 
 `prevent: false` for the reason the product's `w` gives: the key is claimed only on the path that acts, and the run
-claims it there.
+claims it there, through the fact's reply (H26.8's capture move: `run(host, fact, reply)`).
 
 THE SITUATION TERMS are the plugin's own, over the fields the host's situation documents (engine/situation.mjs):
 `gesture` and `step`. The plugin cannot import the product's predicates, and should not -- it names what it asks.
@@ -40,11 +40,11 @@ const networkKeys = (session) => [
 	{ id: 'guide', input: ['g'], context: 'while drawing a link', doc: 'g during a link drag: a guide -- the route passes this anchor, placed or existing, node or waypoint, and the link does not pin it',
 		prevent: false, mutates: true, duringGesture: true,
 		on: (e) => is(e, 'g') && plain(e), when: drawingALink,
-		run: (host, evt) => { evt.claimed = true; host.addStop({ key: 'g', pin: false, nodes: true }); } },
+		run: (host, evt, reply) => { reply.claim(); host.addStop({ key: 'g', pin: false, nodes: true }); } },
 	{ id: 'stop-on-node', input: ['w'], context: 'over a node while drawing a link', doc: 'w on a node during a link drag: a pin, the node a junction if it passes routes, cut there if it does not; released on it, the node is the destination',
 		prevent: false, mutates: true, duringGesture: true,
 		on: (e) => is(e, 'w') && plain(e), when: (s) => drawingALink(s) && overANode(s),
-		run: (host, evt) => { evt.claimed = true; host.addStop({ key: 'w', pin: true, nodes: true }); } },
+		run: (host, evt, reply) => { reply.claim(); host.addStop({ key: 'w', pin: true, nodes: true }); } },
 	// TRANSIT (ruled 2026-09-28; TRANSIT.md section 12, X1): `x` flips each selected anchor's transit on its own -- `x` for
 	// ergonomics, beside the wasd keys. Not during a drag: it is a declaration about anchors, not a step of a gesture
 	{ id: 'transit', input: ['x'], context: 'anchors or nodes selected', doc: 'x: flip transit on each selected anchor or node -- off, links stop there and a dashed ring shows it; a host offers no choice',

@@ -35,8 +35,11 @@ test('a press on a hand pipe\'s mark -- each button and modifier, locked or not,
 		try {
 			if (hand) h.tools.setHand(hand);
 			for (const button of [0, 2]) for (let mods = 0; mods < 8; mods++) {
-				const evt = { type: 'down', button, key: undefined, repeat: false, shiftKey: !!(mods & 1), ctrlKey: !!(mods & 2), altKey: !!(mods & 4), metaKey: false,
-					at: { x: 0, y: 0 }, on: { kind: 'pipe', id, mark: true }, pointerId: 1, region: blank, claimed: false, capture: false };
+				// RESTATED at H26.8's capture move (NATIVE-SHAPES.md section 3.2, Facts): the press as input-capture's fact, frozen, its `hit`
+				// what it is on and its region
+				const evt = Object.freeze({ type: 'down', at: { x: 0, y: 0 }, screen: { x: 0, y: 0 }, hit: { kind: 'pipe', id, mark: true, region: blank }, focus: null,
+					button, buttons: button ? 2 : 1, pointerId: 1, pointerType: 'mouse', key: null, code: null, repeat: null,
+					shiftKey: !!(mods & 1), ctrlKey: !!(mods & 2), altKey: !!(mods & 4), metaKey: false, deltaX: null, deltaY: null, deltaZ: null, deltaMode: null, time: null });
 				const row = h.input.pressRules.matchInput(evt, h.input.situation(), { readOnly }).match?.row;
 				got[`${readOnly ? 'locked' : 'writer'} ${hand ? 'hand' : 'no tool'} ${button ? 'right' : 'left'}${mods & 1 ? '+Shift' : ''}${mods & 2 ? '+Ctrl' : ''}${mods & 4 ? '+Alt' : ''}`] = row
 					? `${row.id}${row.gesture ? `/${row.gesture}` : ''}${row.run ? `/${row.run}` : ''}` : null;

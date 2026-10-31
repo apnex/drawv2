@@ -70,6 +70,7 @@ const MARQUEE = { preview: 'marquee' };
 GESTURES — one entry per mode, one uniform shape (INPUT.md §7).
 
 	start(input, hit, pos, evt) → ctx
+	commit(input, ctx, pos, evt, outcome)   H26.8's capture move: `outcome` the session's, holding the release's `trigger`
 
 `start` is all H6.4 unifies. `update`, `commit` and `cancel` still dispatch through the switches in
 onMove / dispatchUp / cancelDrag; folding those in is the same shape of work and is deliberately a
@@ -225,7 +226,7 @@ export const GESTURES = {
 		// RESTATED at H26.5 (B427; input-binding's IB11): and on any release of a press the left began -- a chord's last release names
 		// the last button released -- so a chain, which holds no press, still commits on a left release alone
 		button: 0,
-		commit: (i, ctx, pos, evt) => {
+		commit: (i, ctx, pos, evt, outcome) => {
 			ctx.path.remove();
 			if (ctx.target) i.states.setState(ctx.target, 'hover', false);
 			const target = i.anchorAt(pos);
@@ -278,7 +279,7 @@ export const GESTURES = {
 			const hand = i.tools.hand ?? null;
 			i.act(i.decide('link', evt, {
 				dst: !!dst, dstIsSrc: dst === ctx.src.id, srcAlive: !!srcAlive, validTarget: !!validTarget, hasVia, admitted, judged: !!i.judgeDrag,
-				click: evt.trigger === 'click', atStart: dist(pos, ctx.start) <= DRAG_THRESHOLD,
+				click: outcome.trigger === 'click', atStart: dist(pos, ctx.start) <= DRAG_THRESHOLD,
 				shift: !!evt.shiftKey, ctrl: !!evt.ctrlKey, alt: !!evt.altKey, pressShift: !!ctx.shift,
 				srcIsNode: i.handSpec?.itemOf(i.model.get('node', ctx.src.id)) != null, hand, handIsSrcType: hand !== null && hand === i.handSpec?.itemOf(ctx.src), chained: !!i.state.chained,
 				srcSelected: i.selection.has(ctx.src.id),
@@ -336,11 +337,11 @@ export const GESTURES = {
 
 
 	marquee: {
-		commit: (i, ctx, pos, evt) => {
+		commit: (i, ctx, pos, evt, outcome) => {
 			ctx.rect.remove();
 			const box = resolveBox(ctx.p1, pos);
 			// a click stamps the held type or clears; a drag selects or adds (app/src/releases.js MARQUEE_RELEASES)
-			i.act(i.decide('marquee', evt, { click: evt.trigger === 'click', hand: !!i.tools.hand, shift: !!evt.shiftKey, ctrl: !!evt.ctrlKey, alt: !!evt.altKey }), { pos, box });
+			i.act(i.decide('marquee', evt, { click: outcome.trigger === 'click', hand: !!i.tools.hand, shift: !!evt.shiftKey, ctrl: !!evt.ctrlKey, alt: !!evt.altKey }), { pos, box });
 		},
 		cancel: (i, ctx) => ctx.rect.remove(),
 		update: (i, pos) => i.ctx.rect.update(resolveBox(i.ctx.p1, pos)),
@@ -585,7 +586,7 @@ export class Input {
 			}
 		});
 
-		// the DOM listeners are capture's (app/src/capture.js, L0): this receives input events, never DOM events
+		// the DOM listeners are capture's (app/src/capture.js, L0): this receives input-capture's facts, each with its reply, never DOM events
 		this.host = host;
 	}
 
@@ -634,14 +635,20 @@ export class Input {
 	One press → one rule → one gesture. The 167-line nest this replaces is now three things: a
 	surface-mode guard, a live-gesture hook, and an ordered table (app/src/recognize.js).
 	*/
-	press(evt) {
+	/*
+	H26.8's capture move (NATIVE-SHAPES.md section 3.2, Facts; GR5): each entry point capture routes to is handed input-capture's fact
+	whole and its reply -- `evt` here is the fact, frozen, which nothing writes; what is under the pointer is `evt.hit`, its run-mode
+	region `evt.hit.region` on a press, a key's focus `evt.focus`; a claim and the pointer's capture are asked of the reply at once, by
+	the entry points that claim (a press, a key, a double click, a key release) and the handlers they run.
+	*/
+	press(evt, reply) {
 		this.#markShiftOwed(evt);   // H26.5 (B413)
 		// L1 first: every press moves the pointer, hands the armed `w` over, and ends a chain (app/src/input-state.js)
 		this.state = track(this.state, evt);
 		// W5 — RUN mode: the diagram ACTS as UI, and is not a gesture surface at all. A guard rather
 		// than a rule, because it is a mode of the whole surface (INPUT.md §4).
 		// The session holds its press too (H26.2), taken or not.
-		if (this.renderer.mode === 'run') { this.#session.pointerDown(evt); return this.runModePress(evt); }
+		if (this.renderer.mode === 'run') { this.#session.pointerDown(evt); return this.runModePress(evt, reply); }
 
 		/*
 		THE w THAT PLACED THE SOURCE -- ruled 2026-09-30: it counts as the drag's first key "if that same anchor remains
@@ -649,7 +656,7 @@ export class Input {
 		`armed.placed` to `armed.source` -- and the link drag's start keeps it only if it begins on that anchor while it is
 		still the sole selection.
 		*/
-		const hit = evt.on;
+		const hit = evt.hit;
 		const pos = evt.at;
 		let rule = null;
 		/*
@@ -678,7 +685,7 @@ export class Input {
 		// a press the live gesture took -- its match never asked, so no row -- already ended the chain (input state); and one no row means
 		if (!rule) return;
 		this.overlayUi.showGrids(evt, false);
-		evt.capture = true;   // capture takes the pointer once this returns (app/src/capture.js)
+		reply.takePointer();   // the pointer taken at once (IC8); false when the platform refuses it, as for a synthetic event
 
 		if (rule.run) return this[rule.run](hit, evt, pos);
 		// C-d: the row too -- a shared gesture reads what its row declares. KEPT (B410): a start answering null leaves its gesture live with
@@ -725,12 +732,13 @@ export class Input {
 	Each authoring row is refused on a locked client by the engine's guard; each handler claims the press only on the path
 	that acts. The rows are app/src/run-mode.js, handed in by the composition root (K5); the handlers are here.
 	*/
-	runModePress(evt) {
-		const rule = this.runRules.matchInput(evt, this.situation(evt.region?.target ?? null), { readOnly: this.readOnly }).match?.row;   // C-f: what the press aims at
+	runModePress(evt, reply) {
+		const rule = this.runRules.matchInput(evt, this.situation(evt.hit?.region?.target ?? null), { readOnly: this.readOnly }).match?.row;   // C-f: what the press aims at
 		if (!rule) return;
-		// a plugin's row -- the simulation's spawner and tower (C-e) -- acts through the host; what it changed may move occupancy
-		if (typeof rule.run === 'function') { rule.run(this.pluginHost, evt); this.afterHistory(); return; }
-		this[rule.run](evt);
+		// a plugin's row -- the simulation's spawner and tower (C-e) -- acts through the host, and claims through the fact's reply (H26.8);
+		// what it changed may move occupancy
+		if (typeof rule.run === 'function') { rule.run(this.pluginHost, evt, reply); this.afterHistory(); return; }
+		this[rule.run](evt, reply);
 	}
 
 
@@ -1091,9 +1099,9 @@ export class Input {
 	// crosshair cursor + ring emphasis when idle over a node: left-drag draws a link
 	idleAffordance(evt) {
 		// C-f: the state the item under the pointer shows when idle, its pick's -- a device's crosshair ring: a left drag draws a link
-		const idle = this.hitFacts.get(evt.on.kind)?.idle;
+		const idle = this.hitFacts.get(evt.hit.kind)?.idle;
 		if (!idle) return;
-		this.states.setState(evt.on.id, idle, !evt.ctrlKey && !evt.altKey);
+		this.states.setState(evt.hit.id, idle, !evt.ctrlKey && !evt.altKey);
 	}
 
 
@@ -1113,10 +1121,11 @@ export class Input {
 		// H26.2: the press ends, and the live gesture commits if it takes this release. H26.5 (B427, IB11): a release commits the gesture
 		// the press's own button declares, whatever button the release names -- a chord's last release is another button's
 		const outcome = this.#session.pointerUp(evt);
-		// H26.5 (RD18): another pointer's release ends no press and commits nothing, so draw runs nothing: no trigger written, no
-		// dispatch, and none of the teardown -- onGestureEnd would release the remote changes queued behind a gesture still live (D12)
+		// H26.5 (RD18): another pointer's release ends no press and commits nothing, so draw runs nothing: no dispatch, and none of the
+		// teardown -- onGestureEnd would release the remote changes queued behind a gesture still live (D12)
 		if (outcome.otherPointer) return;
-		evt.trigger = outcome.trigger;   // L2: a click or a drop, from the press the session tracked
+		// L2: a click or a drop, from the press the session tracked -- its outcome's `trigger`, handed to the commit, nothing written on the
+		// fact (H26.8's capture move)
 		try { this.dispatchUp(evt, outcome); } finally {
 			if (wasGesturing) this.onGestureEnd();
 			this.afterShiftUpPress(evt);   // H24.3
@@ -1128,7 +1137,7 @@ export class Input {
 	a trailing `onGestureEnd()` that only `resize` could reach, because every other branch returned
 	early (B43). `onUp`'s `finally` is now the single owner of that hook, so it fires exactly once per
 	gesture BY CONSTRUCTION rather than by fourteen branches each remembering to return. (`onUp` is `release` since
-	stage 1 of the gesture system: capture hands it an input event.)
+	stage 1 of the gesture system: capture hands it input-capture's fact, since H26.8's capture move.)
 	*/
 	// H26.2: on the session's commit alone -- a release the live gesture does not take leaves it live, and the session decided which
 	dispatchUp(evt, outcome) {
@@ -1139,7 +1148,7 @@ export class Input {
 		this.readout.clearTransient();
 		this.overlayUi.refreshHover(pos);
 		this.overlayUi.showGrids(evt, false);   // gesture over: the layer indicator follows Shift again
-		GESTURES[outcome.gesture.name].commit?.(this, ctx, pos, evt);
+		GESTURES[outcome.gesture.name].commit?.(this, ctx, pos, evt, outcome);
 	}
 
 	/*
@@ -1361,10 +1370,10 @@ export class Input {
 	// ---- handles: zone corners (resize) and link endpoints (re-plug) ----
 
 	// ---- label editing ----
-	double(evt) {
+	double(evt, reply) {
 		this.#markShiftOwed(evt);   // H26.5 (B413)
 		const rule = this.doubleRules.matchInput(evt, this.situation(), { readOnly: this.readOnly }).match?.row;
-		if (rule) this[rule.run](evt);
+		if (rule) this[rule.run](evt, reply);
 	}
 
 	// the `edit-label` binding: a locked client never reaches here -- the engine's guard refuses it (app/src/recognize.js)
@@ -1400,7 +1409,7 @@ export class Input {
 	sit below (INPUT.md §4). Each entry now declares its own tolerances and the dispatcher applies
 	them uniformly.
 	*/
-	keyDown(evt) {
+	keyDown(evt, reply) {
 		this.#markShiftOwed(evt);   // H26.5 (B413)
 		// typing contexts (header menu, label editor) never reach here: capture keeps them (app/src/capture.js)
 		// the Rules engine finds the ONE row this key means in this situation (dev/RULES.md section 11)
@@ -1410,10 +1419,10 @@ export class Input {
 			gesturing: this.isGesturing(),
 		});
 		const rule = match?.row;
-		if (claimed) evt.claimed = true;   // B47 — bind a key and you own it
+		if (claimed) reply.claim();   // B47 -- bind a key and you own it
 		if (!rule) return;
-		if (typeof rule.run === 'function') rule.run(this.pluginHost, evt);   // a plugin's row acts through the host
-		else this[rule.run](evt);
+		if (typeof rule.run === 'function') rule.run(this.pluginHost, evt, reply);   // a plugin's row acts through the host, claiming through the reply
+		else this[rule.run](evt, reply);
 	}
 
 	/*
@@ -1444,8 +1453,8 @@ export class Input {
 		}
 	}
 
-	onArmingKey(evt) {
-		if (evt.key === 'Alt') evt.claimed = true;   // keep Firefox's menu bar out of the delete chord
+	onArmingKey(evt, reply) {
+		if (evt.key === 'Alt') reply.claim();   // keep Firefox's menu bar out of the delete chord
 		this.overlayUi.arm(evt, { readOnly: this.readOnly, gesturing: this.isGesturing() });
 	}
 
@@ -1457,12 +1466,12 @@ export class Input {
 	// Tab shows or hides names. It used to toggle a numeric overlay of every coordinate, which was
 	// deleted rather than rebound: it was never properly useful, and carrying it forward would have
 	// meant keeping an X-ray nobody read to avoid admitting that.
-	onLabels(evt) {
+	onLabels(evt, reply) {
 		// claim Tab only when the canvas holds focus, so it can still traverse the toolbar. B47
 		// records this as a deliberate opt-out from the dispatcher's default claim, and changing
 		// the verb behind the key is no reason to change what the key does to focus.
-		if (evt.onControl) return;
-		evt.claimed = true;
+		if (evt.focus.onControl) return;
+		reply.claim();
 		this.renderer.toggleLabels();
 	}
 
@@ -1501,9 +1510,9 @@ export class Input {
 
 	// 'w' drops/threads a waypoint: mid-route it adds a bend (the button is still held), idle it
 	// places a standalone one. The one mutating verb that belongs DURING a gesture.
-	onWaypointKey(evt) {
-		if (this.mode === 'link') { evt.claimed = true; return this.addStop({ key: 'w', pin: true }); }
-		if (!this.mode) { evt.claimed = true; this.placeWaypoint(); }
+	onWaypointKey(evt, reply) {
+		if (this.mode === 'link') { reply.claim(); return this.addStop({ key: 'w', pin: true }); }
+		if (!this.mode) { reply.claim(); this.placeWaypoint(); }
 	}
 
 	// A1 — tap to ARM/disarm the text tool. A toggle, not a held key; auto-repeat ignored.
@@ -1512,13 +1521,13 @@ export class Input {
 	}
 
 	// ---- the stamp hand, and mid-drag chaining. ----
-	onHandDigit(evt) {
+	onHandDigit(evt, reply) {
 		// B146: no `7` branch. The waypoint left the palette because it is a routing anchor rather
 		// than a node type, and `w` already places one in both states.
 		const type = this.handSpec?.items[Number(evt.key) - 1];   // C-e: the hand's nth item
 		if (!type) return;
 		// B147: mid-link-drag a digit CREATES that node and carries the run through it
-		if (this.mode === 'link') { evt.claimed = true; return this.chainThroughNode(type); }
+		if (this.mode === 'link') { reply.claim(); return this.chainThroughNode(type); }
 		if (this.mode) return;
 		this.tools.toggleHand(type);
 		this.refreshHand();
@@ -1585,11 +1594,11 @@ export class Input {
 		this.refreshHand();
 	}
 
-	onStampKey(evt) {
+	onStampKey(evt, reply) {
 		if (this.mode || !this.tools.hand) return;
 		// mouseless chaining: stamp at the ghost, then re-evaluate the cell — it is occupied now,
 		// and the feedback must say so without a mouse move
-		evt.claimed = true;
+		reply.claim();
 		if (this.state.pointer.at) { this.stampAt(this.state.pointer.at); this.refreshHand(); }
 	}
 
@@ -1629,31 +1638,32 @@ export class Input {
 	onRedoKey() { this.history.redo(); this.afterHistory(); }
 	onDuplicate() { this.duplicateSelection(); }   // claims the bookmark shortcut
 
-	onDeleteKey(evt) {
+	onDeleteKey(evt, reply) {
 		if (this.selection.size() === 0) return;
-		evt.claimed = true;
+		reply.claim();
 		this.history.commit(commands.deleteSelection(this.model, new Set(this.selection.list()), this.deleteRanks));
 		// selection auto-prunes on the delete's emits (selection.js)
 	}
 
 	/*
 	Hover and key-up stay HERE and delegate to the overlay, which owns the state and the drawing. The DOM wiring is
-	capture's since stage 1 of the gesture system (app/src/capture.js): these receive input events. (Deleted twice
+	capture's since stage 1 of the gesture system (app/src/capture.js): these receive input-capture's facts (H26.8). (Deleted twice
 	during H6 by slices that ran to `onKeyUp` — the second time is why they sit above the key handlers.)
 	*/
-	hover(evt, on) {
+	// H26.8's capture move: an `over` fact enters, an `out` fact does not -- read from the fact, which capture hands whole
+	hover(evt) {
 		this.#markShiftOwed(evt);   // H26.5 (B413)
-		this.overlayUi.hover(evt.on, on, evt, this.isGesturing());
+		this.overlayUi.hover(evt.hit, evt.type === 'over', evt, this.isGesturing());
 		this.overlayUi.arm(evt, { readOnly: this.readOnly, gesturing: this.isGesturing() });
 	}
 
 	// a key release: the ONE row it means (app/src/keymap.js KEY_RELEASES), through the same engine as a key press
-	keyUp(evt) {
+	keyUp(evt, reply) {
 		this.#markShiftOwed(evt);   // H26.5 (B413)
 		const rule = this.releaseRules.matchInput(evt, this.situation(null, this.mode), {
 			readOnly: this.readOnly, helpOpen: !!(this.help && isShown(this.help)), gesturing: this.isGesturing(),
 		}).match?.row;
-		if (rule) this[rule.run](evt);
+		if (rule) this[rule.run](evt, reply);
 	}
 
 	/*

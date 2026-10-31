@@ -27,10 +27,23 @@ import { liveGesture } from './fixtures/binding-parity.mjs';   // the live gestu
 // RESTATED at H26.8's picks move: the element the harness's renderer drew (`h.at`), picked by item, where a stand-in answered selectors
 const overNode = (h, id, x, y, mod = {}) => pointer(x, y, { target: h.at(id), ...mod });
 const links = (h) => h.commits.flatMap((c) => (c.ops ?? []).filter((o) => o.kind === 'link' && o.op === 'put').map((o) => [o.entity.src, o.entity.dst]));
-// every release Input took, with the trigger it wrote back -- 'unwritten' where it wrote none
+/*
+Every release Input took, with the trigger of the session's outcome it handed on to the commit (`dispatchUp`, which hands it to the live
+gesture's commit) -- 'unhanded' where it handed none. RESTATED at H26.8's capture move (NATIVE-SHAPES.md section 3.2, Facts; a:F16): the
+trigger was written back on draw's input event, 'unwritten' where it was not; it is the outcome's now, and nothing is written on the
+fact, which this holds too.
+*/
 const triggersOf = (h) => {
-	const seen = [], real = h.input.release.bind(h.input);
-	h.input.release = (e) => { try { return real(e); } finally { seen.push([e.pointerId, 'trigger' in e ? e.trigger : 'unwritten']); } };
+	const seen = [], release = h.input.release.bind(h.input), dispatch = h.input.dispatchUp.bind(h.input);
+	let handed;
+	h.input.dispatchUp = (fact, outcome) => { handed = outcome.trigger; return dispatch(fact, outcome); };
+	h.input.release = (fact, reply) => {
+		handed = 'unhanded';
+		try { return release(fact, reply); } finally {
+			assert.equal('trigger' in fact, false, 'nothing written on the fact');
+			seen.push([fact.pointerId, handed]);
+		}
+	};
 	return seen;
 };
 
@@ -105,7 +118,7 @@ test('o:F4 (RD18): after the mouse\'s move and release, the touch\'s own release
 		h.capture.onMove(touch(c.id, 0, 360));
 		h.capture.onUp(touch(c.id, 0, 360, { buttons: 0 }));
 		assert.deepEqual(links(h), [[a.id, c.id]], 'the touch\'s release committed the link, a to c, where the touch lifted');
-		assert.deepEqual(seen, [[1, 'unwritten'], [2, 'drop']], 'with its own trigger: the touch\'s press survived the mouse\'s release, so its travel made a drop; the mouse\'s release wrote nothing back');
+		assert.deepEqual(seen, [[1, 'unhanded'], [2, 'drop']], 'with its own trigger: the touch\'s press survived the mouse\'s release, so its travel made a drop; the mouse\'s release handed nothing on');
 		assert.deepEqual(released, [1], 'and the queue was released once, after the commit');
 		assert.equal(h.input.isGesturing(), false, 'the link drag ended with it');
 	} finally { h.restore(); }
@@ -115,7 +128,7 @@ test('o:F4 (RD18): after the mouse\'s move and release, the touch\'s own release
 H26.5's input-binding move (the verifier's V11): RD18 HOLDS WHATEVER THE PRESS IS, not only while an engaged gesture is live. A press
 not yet a gesture -- `pending`, a right press on a device, engaged false -- and a run-mode press, which opens none, are held by the
 session too, so another pointer's move or release while one is held changes nothing, and Input returns at once: nothing tracked, drawn
-or written back. The press goes on as its own pointer takes it.
+or handed on (written back, before H26.8's capture move). The press goes on as its own pointer takes it.
 */
 test('RD18: another pointer\'s move during a pending right press on a device -- not tracked, nothing drawn; the press then becomes the move', () => {
 	const h = makeInput();
@@ -147,7 +160,7 @@ test('RD18: another pointer\'s move during a run-mode press -- not tracked, noth
 	} finally { h.restore(); }
 });
 
-test('RD18: another pointer\'s release during a pending right press -- nothing written back; the press survives, and its own release commits the move as a drop', () => {
+test('RD18: another pointer\'s release during a pending right press -- nothing handed on; the press survives, and its own release commits the move as a drop', () => {
 	const h = makeInput();
 	try {
 		const [a] = seedNodes(h.model, [[0, 0], [360, 0]]);
@@ -160,6 +173,9 @@ test('RD18: another pointer\'s release during a pending right press -- nothing w
 		h.capture.onMove(overNode(h, a.id, 120, 0, { button: -1, buttons: 2 }));
 		h.capture.onUp(overNode(h, a.id, 120, 0, { button: 2, buttons: 0 }));
 		assert.equal(h.model.get('node', a.id).x, 120, 'its own pointer made it the move, and its release committed it');
-		assert.deepEqual(seen, [[2, 'unwritten'], [1, 'drop']], 'the other pointer\'s release wrote nothing back; the press\'s own was a drop by its travel');
+		// H26.8's capture move (appendix A): and a press of its own that does not travel, whose release is a click
+		h.capture.onDown(overNode(h, a.id, 120, 0, { button: 2, buttons: 2 }));
+		h.capture.onUp(overNode(h, a.id, 120, 0, { button: 2, buttons: 0 }));
+		assert.deepEqual(seen, [[2, 'unhanded'], [1, 'drop'], [1, 'click']], 'the other pointer\'s release handed nothing on; the press\'s own was a drop by its travel, then a click');
 	} finally { h.restore(); }
 });

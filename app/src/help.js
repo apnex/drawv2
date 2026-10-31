@@ -21,8 +21,7 @@ import { ACTION_LABELS, actionOf } from './actions.js';
 
 const MODS = { Ctrl: 'ctrlKey', Shift: 'shiftKey', Alt: 'altKey', Meta: 'metaKey' };
 const NAMED = { Space: [' '], Arrows: ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'], '1-6': ['1', '2', '3', '4', '5', '6'] };
-// C-f: a press's region as capture reads it by the parts' selectors -- what a run press aims at (an endpoint), and the drawn item a
-// control sits in
+// C-f: a press's region as capture reads it -- what a run press aims at (an endpoint), and the drawn item a control sits in
 const REGIONS = {
 	endpoint: { target: 'node-000001', overTarget: true },
 	ground: {},
@@ -33,14 +32,15 @@ const blank = { target: null, overTarget: false, action: null, input: null, owne
 // a `mark` is what a plugin draws for the canvas to select (app/src/pick.js, H17.22 N-c2): any kind, flagged as a mark
 const hitOf = (kind) => (kind === 'canvas' ? { kind, id: null } : kind === 'handle' ? { kind, id: 'se', handle: true } : kind === 'lhandle' ? { kind, id: 'src', handle: true } : kind === 'mark' ? { kind: 'plugin', id: 'plugin-000001', mark: true } : { kind, id: `${kind}-000001` });
 
-// every event an input names -- a key chord may name several (Arrows), a press one per kind
+// every event an input names -- a key chord may name several (Arrows), a press one per kind. H26.8's capture move (NATIVE-SHAPES.md
+// section 3.2, Facts): a press is a fact's shape as the rows read it, what it is on and its run-mode region both in its `hit`
 export function eventsFor(input) {
 	if (input === 'double') return [{ type: 'double' }];
 	const press = /^(?:(.+)\+)?(left|right) on (.+)$/.exec(input);
 	if (press) {
 		const mods = Object.fromEntries((press[1] ? press[1].split('+') : []).map((m) => [MODS[m], true]));
 		return press[3].split('|').map((k) => ({ type: 'down', button: press[2] === 'left' ? 0 : 2, shiftKey: false, ctrlKey: false, altKey: false, metaKey: false, ...mods,
-			...(k.startsWith('region:') ? { on: { kind: 'canvas', id: null }, region: { ...blank, ...REGIONS[k.slice(7)] } } : { on: hitOf(k) }) }));
+			hit: k.startsWith('region:') ? { kind: 'canvas', id: null, region: { ...blank, ...REGIONS[k.slice(7)] } } : { ...hitOf(k), region: null } }));
 	}
 	const parts = input.split('+');
 	const key = parts.pop();

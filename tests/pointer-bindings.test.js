@@ -67,7 +67,9 @@ const HITS = [{ kind: 'canvas', id: null }, { kind: 'node', id: 'node-000001' },
 	{ kind: 'zone', id: 'zone-000001' }, { kind: 'link', id: 'link-000001' }, { kind: 'handle', id: 'se', handle: true }, { kind: 'lhandle', id: 'src', handle: true }];   // C-d: a handle's hit carries the handle as its id, flagged
 const MODSETS = [];
 for (const shiftKey of [false, true]) for (const ctrlKey of [false, true]) for (const altKey of [false, true]) MODSETS.push({ shiftKey, ctrlKey, altKey, metaKey: false });
-const PRESSES = HITS.flatMap((on) => [0, 1, 2].flatMap((button) => MODSETS.map((m) => ({ type: 'down', button, on, ...m }))));
+// RESTATED at H26.8's capture move (NATIVE-SHAPES.md section 3.2, Facts): a press as the fact Input is handed -- what it is on, and its
+// run-mode region, in its `hit`
+const PRESSES = HITS.flatMap((on) => [0, 1, 2].flatMap((button) => MODSETS.map((m) => ({ type: 'down', button, hit: { ...on, region: null }, ...m }))));
 const SITUATIONS = [{ tool: false }, { tool: true }];
 const GUARDS = [{ readOnly: false }, { readOnly: true }];
 // the press rows as the page composes them: the product's and each canvas part's (C-d)
@@ -99,7 +101,7 @@ a writer's Shift+left on a zone, with no tool held, draws a zone; a held text to
 other left press on a zone starts nothing. A zone is
 selected, moved and cloned with the right button, which the old table still answers for.
 */
-const ruledAnew = (e) => e.on.kind === 'zone' && e.button === 0;
+const ruledAnew = (e) => e.hit.kind === 'zone' && e.button === 0;
 
 test('H24.5: a left press on a zone draws a zone under Shift for a writer, places a held text tool\'s box, and starts nothing otherwise', () => {
 	const differ = [];
@@ -120,20 +122,20 @@ test('the pointer table starts exactly the gesture the old ordered table did, fo
 		if (ruledAnew(e)) continue;   // H24.5, held above
 		// CORRECTED at B316: the old table saw a link end's hit with no id ({ kind: 'lhandle', end }) -- C-d step two gave the old side
 		// the new shape, and so hid that the delete chord came to match a link end's handle
-		const was = outcome(oldResolve(oldHit(e.on), e, { readOnly: g.readOnly, tool: s.tool }));
+		const was = outcome(oldResolve(oldHit(e.hit), e, { readOnly: g.readOnly, tool: s.tool }));
 		const now = outcome(rowOf(PRESS_TABLE, e, s, g));
-		if (was !== now) differ.push(`${JSON.stringify(g)} tool=${s.tool} ${e.on.kind} b${e.button} ${JSON.stringify({ s: e.shiftKey, c: e.ctrlKey, a: e.altKey })}: ${now}, was ${was}`);
+		if (was !== now) differ.push(`${JSON.stringify(g)} tool=${s.tool} ${e.hit.kind} b${e.button} ${JSON.stringify({ s: e.shiftKey, c: e.ctrlKey, a: e.altKey })}: ${now}, was ${was}`);
 	}
 	assert.equal(PRESSES.length, 168, '7 hits x 3 buttons x 8 modifier sets, in each of 3 reachable tool and lock states');
 	assert.deepEqual(differ, []);
 });
 
 test('Q3: no press matches two pointer rows, in any tool or lock state -- the 14 overlapping pairs are gone', () => {
-	const found = PRESS_TABLE.findOverlaps(PRESSES, SITUATIONS, GUARDS).map((o) => `${JSON.stringify(o.guards)} ${o.fact.on.kind} b${o.fact.button} -> ${o.ids.join('/')}`);
+	const found = PRESS_TABLE.findOverlaps(PRESSES, SITUATIONS, GUARDS).map((o) => `${JSON.stringify(o.guards)} ${o.fact.hit.kind} b${o.fact.button} -> ${o.ids.join('/')}`);
 	assert.deepEqual(found, []);
 	let pairs = 0;
 	for (let i = 0; i < OLD.length; i++) for (let j = i + 1; j < OLD.length; j++) {
-		if (PRESSES.some((e) => [false, true].some((tool) => OLD[i].when(e.on, e, { tool }) && OLD[j].when(e.on, e, { tool })))) pairs++;
+		if (PRESSES.some((e) => [false, true].some((tool) => OLD[i].when(e.hit, e, { tool }) && OLD[j].when(e.hit, e, { tool })))) pairs++;
 	}
 	assert.equal(pairs, 14, 'the old table had 14 pairs a single press could match');
 });
@@ -177,12 +179,12 @@ test('run mode\'s presses are rows too, and no run-mode press matches two of the
 	const region = (o) => ({ waypoint: null, overWaypoint: false, action: null, input: null, node: null, control: false, entity: false, ...o });
 	const presses = [region({}), region({ waypoint: 'node-e00001', overWaypoint: true }), region({ action: 'help', control: true }),
 		region({ input: 0, node: 'node-000001', control: true, entity: true }), region({ entity: true }), null]
-		.flatMap((r) => [0, 2].map((button) => ({ type: 'down', button, region: r, on: { kind: 'canvas' } })));
+		.flatMap((r) => [0, 2].map((button) => ({ type: 'down', button, hit: { kind: 'canvas', region: r } })));   // H26.8: the region in the fact's hit
 	const endpoint = { mode: 'run', target: { kind: 'waypoint', id: 'node-e00001', roles: ['endpoint'] } };
 	const bend = { mode: 'run', target: { kind: 'waypoint', id: 'node-e00001', roles: [] } };
 	const ground = { mode: 'run', target: null };
 	assert.deepEqual(t.findOverlaps(presses, [endpoint, bend, ground], GUARDS), []);
-	const id = (r, s, g) => rowOf(t, { type: 'down', button: 0, region: r }, s, g)?.id ?? null;
+	const id = (r, s, g) => rowOf(t, { type: 'down', button: 0, hit: { kind: 'canvas', region: r } }, s, g)?.id ?? null;
 	assert.equal(id(region({ action: 'help', control: true }), ground, { readOnly: true }), 'fire-action', 'an action fires on a locked client: it commits nothing');
 	assert.equal(id(region({ waypoint: 'node-e00001', overWaypoint: true }), endpoint, { readOnly: true }), null, 'arming is refused by the guard');
 	assert.equal(id(region({}), ground, { readOnly: true }), null, 'so is placing a tower');

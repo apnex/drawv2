@@ -64,7 +64,8 @@ function recorded(fields) {
 
 // RESTATED at H26.5 (dev/design/components/RELEASES-0.2.md section 4): and `blur`, the host's focus loss, which draw lists (B413)
 const SINK = ['press', 'move', 'release', 'cancelDrag', 'hover', 'double', 'keyDown', 'keyUp', 'leave', 'blur'];
-const recordingSink = (got, answer = () => {}) => Object.fromEntries(SINK.map((m) => [m, (...args) => { got.push([m, args]); answer(m, args[0]); }]));
+// RESTATED at H26.8's capture move: each entry point is handed the fact and its reply, which `answer` may ask as Input does
+const recordingSink = (got, answer = () => {}) => Object.fromEntries(SINK.map((m) => [m, (...args) => { got.push([m, args]); answer(m, ...args); }]));
 // RESTATED at H26.8's picks move: `drawn`, a scene a renderer drew into and its drawers, which the picks and run regions read by item
 const open = (got = [], answer, drawn = null) => {
 	const f = fakes();
@@ -154,21 +155,20 @@ test('H26.3 (V4): a host that refuses the menu\'s listener leaves nothing listen
 const POINTER = { clientX: 30, clientY: 40, button: 0, buttons: 1, pointerId: 1, pointerType: 'mouse', shiftKey: true, ctrlKey: false, altKey: false, metaKey: false,
 	target: null, preventDefault() {} };
 const KEY = { key: 'Tab', code: 'Tab', repeat: false, shiftKey: false, ctrlKey: true, altKey: false, metaKey: false, target: { tagName: 'BODY', closest: () => null }, preventDefault() {} };
-// RESTATED at H26.5 (dev/design/components/RELEASES-0.2.md section 4, RD18): a pointer's input event carries its fact's `pointerId`, after `on`
-const FORM = {
-	press: ['type', 'button', 'key', 'repeat', 'shiftKey', 'ctrlKey', 'altKey', 'metaKey', 'at', 'on', 'pointerId', 'region', 'claimed', 'capture'],
-	pointer: ['type', 'button', 'key', 'repeat', 'shiftKey', 'ctrlKey', 'altKey', 'metaKey', 'at', 'on', 'pointerId', 'claimed', 'capture'],
-	keyDown: ['type', 'button', 'key', 'repeat', 'shiftKey', 'ctrlKey', 'altKey', 'metaKey', 'onControl', 'claimed', 'capture'],
-	keyUp: ['type', 'button', 'key', 'repeat', 'shiftKey', 'ctrlKey', 'altKey', 'metaKey', 'claimed', 'capture'],
-	blur: ['type', 'button', 'key', 'repeat', 'shiftKey', 'ctrlKey', 'altKey', 'metaKey', 'claimed', 'capture'],   // H26.5: a key-up's form
-};
+// RESTATED at H26.8's capture move (NATIVE-SHAPES.md section 3.2, Facts; GR5): the input layers are handed input-capture's fact itself, every
+// one of the same form, in the component's order (its IC5) -- draw's input event, its form per family, is gone (T1)
+const FACT = ['type', 'at', 'screen', 'hit', 'focus', 'button', 'buttons', 'pointerId', 'pointerType', 'key', 'code', 'repeat',
+	'shiftKey', 'ctrlKey', 'altKey', 'metaKey', 'deltaX', 'deltaY', 'deltaZ', 'deltaMode', 'time'];
+const NO_WHEEL = { deltaX: null, deltaY: null, deltaZ: null, deltaMode: null };
 
-test('H26.3 step 3: the adapter reads no field of a pointer or key event -- the component reads each -- and Input\'s entry points take today\'s input events', () => {
+// RESTATED at H26.8's capture move: Input's entry points take the fact itself and its reply, which they ask at once
+test('H26.3 step 3: the adapter reads no field of a pointer or key event -- the component reads each -- and Input\'s entry points take the fact itself and its reply', () => {
 	const drawn = drawnDevice(), restore = drawn.restore;
 	try {
-		const o = open([], (m, e) => { if (m === 'press') { e.claimed = true; e.capture = true; } if (m === 'keyDown') e.claimed = true; }, drawn);
-		const reads = [];
-		const fire = (key, fields) => { const r = recorded(fields); o.listeners.get(key)(r.evt); reads.push(...r.reads.map(([f, who]) => [key, f, who])); };
+		const taken = [];   // what each takePointer answered: true once the surface's setPointerCapture returns (its IC8)
+		const o = open([], (m, fact, reply) => { if (m === 'press') { reply.claim(); taken.push(reply.takePointer()); } if (m === 'keyDown') reply.claim(); }, drawn);
+		const reads = [], claimed = [];
+		const fire = (key, fields) => { const r = recorded({ ...fields, preventDefault() { claimed.push(key); } }); o.listeners.get(key)(r.evt); reads.push(...r.reads.map(([f, who]) => [key, f, who])); };
 		for (const n of ['pointerdown', 'pointermove', 'pointerup', 'pointercancel', 'pointerover', 'pointerout', 'dblclick', 'pointerleave']) fire(`svg:${n}`, { ...POINTER, target: drawn.target });
 		fire('host:keydown', { ...KEY });
 		fire('host:keyup', { ...KEY, key: 'Shift' });
@@ -176,20 +176,26 @@ test('H26.3 step 3: the adapter reads no field of a pointer or key event -- the 
 		fire('host:blur', { timeStamp: 7, preventDefault() {} });   // H26.5: the host's focus loss, as a FocusEvent offers it
 		assert.deepEqual(reads.filter(([, , who]) => who !== 'component'), [], 'every field of every pointer, key and blur event read by the component, none by the adapter');
 		assert.ok(reads.length > 100, `the reads were seen: ${reads.length}`);
-		assert.deepEqual(o.got.map(([m, args]) => [m, args.length]), [['press', 1], ['move', 1], ['release', 1], ['cancelDrag', 1], ['hover', 2], ['hover', 2], ['double', 1], ['leave', 0], ['keyDown', 1], ['keyUp', 1], ['blur', 1]],
-			'each to the entry point the old capture called, over and out to hover entering and not, the leave with nothing, the typed key to none, the focus loss to blur');
-		const [press, move, , , over, out, , , keyDown, keyUp, blur] = o.got.map(([, args]) => args);
-		assert.deepEqual(Object.keys(press[0]), FORM.press);
-		assert.deepEqual(Object.keys(move[0]), FORM.pointer);
-		assert.deepEqual([over[1], out[1]], [true, false]);
-		assert.deepEqual(Object.keys(keyDown[0]), FORM.keyDown);
-		assert.deepEqual(Object.keys(keyUp[0]), FORM.keyUp);
-		assert.deepEqual({ ...press[0], at: { ...press[0].at } }, { type: 'down', button: 0, key: null, repeat: false, shiftKey: true, ctrlKey: false, altKey: false, metaKey: false,
-			at: { x: 30, y: 40 }, on: { kind: 'node', id: 'node-000001' }, pointerId: 1, region: press[0].region, claimed: true, capture: true });
-		assert.equal(keyDown[0].onControl, false);
-		// H26.5: the blur's input event, every modifier false -- what Input's `blur` hands the arming (RELEASES-0.2.md section 4, item 3)
-		assert.deepEqual(Object.keys(blur[0]), FORM.blur);
-		assert.deepEqual(blur[0], { type: 'blur', button: 0, key: null, repeat: null, shiftKey: false, ctrlKey: false, altKey: false, metaKey: false, claimed: false, capture: false });
+		assert.deepEqual(o.got.map(([m, args]) => [m, args.length]), [['press', 2], ['move', 2], ['release', 2], ['cancelDrag', 2], ['hover', 2], ['hover', 2], ['double', 2], ['leave', 2], ['keyDown', 2], ['keyUp', 2], ['blur', 2]],
+			'each to the entry point the old capture called, over and out to hover, the typed key to none, the focus loss to blur -- each handed the fact and its reply');
+		const [press, move, , , over, out, , leave, keyDown, keyUp, blur] = o.got.map(([, args]) => args);
+		for (const [fact, reply] of o.got.map(([, args]) => args)) {
+			assert.ok(Object.isFrozen(fact), 'input-capture\'s fact, frozen');
+			assert.deepEqual(Object.keys(fact), FACT, 'the component\'s own form, for every family');
+			assert.deepEqual(Object.keys(reply), ['claim', 'takePointer'], 'with its reply');
+		}
+		assert.deepEqual([over[0].type, out[0].type, leave[0].type], ['over', 'out', 'leave'], 'hover reads entering from the fact\'s type');
+		assert.deepEqual({ ...press[0], at: { ...press[0].at }, screen: { ...press[0].screen } }, { type: 'down', at: { x: 30, y: 40 }, screen: { x: 30, y: 40 },
+			hit: { kind: 'node', id: 'node-000001', region: press[0].hit.region }, focus: null, button: 0, buttons: 1, pointerId: 1, pointerType: 'mouse',
+			key: null, code: null, repeat: null, shiftKey: true, ctrlKey: false, altKey: false, metaKey: false, ...NO_WHEEL, time: null });
+		assert.equal(move[0].hit.region, null, 'a region on a press alone');
+		assert.equal(leave[0].hit, null, 'nothing under a pointer that left');
+		assert.deepEqual(keyDown[0].focus, { typing: false, onControl: false });
+		assert.equal(keyUp[0].focus, null, 'a key-up asks no focus');
+		assert.deepEqual([claimed, taken], [['svg:pointerdown', 'host:keydown'], [true]], 'what the sink asked of each reply was done on its event, at once');
+		// H26.5: the blur's fact, every modifier false -- what Input's `blur` hands the arming (RELEASES-0.2.md section 4, item 3)
+		assert.deepEqual(blur[0], { type: 'blur', at: null, screen: null, hit: null, focus: null, button: null, buttons: null, pointerId: null, pointerType: null,
+			key: null, code: null, repeat: null, shiftKey: false, ctrlKey: false, altKey: false, metaKey: false, ...NO_WHEEL, time: 7 });
 	} finally { restore(); }
 });
 

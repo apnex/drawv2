@@ -108,7 +108,7 @@ What stays here is the lab's own: the in-page planner below (the authority model
 planner's document back, the notice, and which fixed board to load.
 */
 const net = page.attach({ model, renderer, selection, states, edit: (label, entries) => history.commit(editOf(label, entries)), say });   // C-e (D5)
-const capture = listen();   // the DOM's events, as input events (L0)
+const capture = listen();   // the DOM's events, as input-capture's facts (L0)
 /*
 THE DOOR (G11): a planner refusal is VISIBLE.
 

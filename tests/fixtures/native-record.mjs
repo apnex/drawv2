@@ -484,7 +484,10 @@ export const E = {
 export const answer = (w, ops, request = { label: 'answer' }, version = 2) => { applyAnswer(w.model, w.selection, ops); w.host.settled(request, { ok: true, version, ops }); };
 // the overlay's hover and arming, Input's idle affordance: as the pointer and the modifiers ask them on the page
 export const hover = (w, kind, id, on = true) => w.input.overlayUi.hover({ kind, id }, on, {}, false);
-export const idle = (w, kind, id) => w.input.idleAffordance({ on: { kind, id }, ctrlKey: false, altKey: false });
+// THE ADAPTER's second half (section 4.2; H26.8's capture move): Input's idle affordance read what the pointer is over off draw's input
+// event's `on` at `ca492da`, and off the fact's `hit` after the capture move (NATIVE-SHAPES.md section 3.2, Facts) -- handed both, so the
+// same call drives `ca492da`, whose archive regenerates the record, and the tree after the move
+export const idle = (w, kind, id) => w.input.idleAffordance({ on: { kind, id }, hit: { kind, id, region: null }, ctrlKey: false, altKey: false });
 export const arm = (w, mods) => w.input.overlayUi.arm({ altKey: !!mods.alt, ctrlKey: !!mods.ctrl }, { readOnly: false, gesturing: false });
 // a link end dragged, as Input's handle gesture marks it (through the adapter), and its end as the gesture's cancel or release asks
 export const replug = (w, id, on = true) => STATES.set(w, id, 'replugging', on);

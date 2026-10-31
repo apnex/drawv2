@@ -2,7 +2,7 @@
 input-state.js -- L1 of the gesture system: what the input has done, as ONE plain value
 (dev/design/input/GESTURE-SYSTEM.md, section 5.2; stage 2).
 
-`track(state, event) -> state` is a pure reducer. It reads input events from capture (L0), and two NOTES the gesture
+`track(state, event) -> state` is a pure reducer. It reads input-capture's facts, handed by capture (L0; H26.8), and two NOTES the gesture
 layer leaves for the next gesture; it writes nothing, keeps nothing between calls, and the same stream always yields the
 same state -- so a gesture can be replayed exactly (invariant G2).
 

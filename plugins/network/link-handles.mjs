@@ -53,7 +53,7 @@ const LINK_HANDLES = {
 // a press on an end handle opens the shared handle gesture
 const LINK_REPLUG = {
 	id: 'replug', input: ['left on lhandle'], context: 'a link selected', mutates: true, doc: 're-plug the link onto another node',
-	on: (e) => e.button === 0 && e.on.kind === LINK_HANDLES.word,
+	on: (e) => e.button === 0 && e.hit.kind === LINK_HANDLES.word,
 	when: (s) => !s.tool,
 	gesture: 'handle',
 };

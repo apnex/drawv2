@@ -26,9 +26,14 @@ export function withInput(opts, fn) {
 	try { return fn(h); } finally { h.restore(); }
 }
 
-// a key event as capture makes one (app/src/capture.js `inputEventOf`): the one liveGesture hands Input
-const keyEvent = (type, key, m, repeat = false) => ({ type, button: 0, key, repeat, shiftKey: !!m.shiftKey, ctrlKey: !!m.ctrlKey, altKey: !!m.altKey, metaKey: !!m.metaKey,
-	...(type === 'key-down' ? { onControl: false } : {}), claimed: false, capture: false });
+// a key fact as input-capture makes one, frozen, its focus as the adapter answers off a control, with a reply that asks nothing of a
+// platform: the one liveGesture hands Input. RESTATED at H26.8's capture move (NATIVE-SHAPES.md section 3.2, Facts): it was draw's input
+// event, made by app/src/capture.js `inputEventOf`, which is gone with the event (T1)
+const keyEvent = (type, key, m, repeat = false) => Object.freeze({ type, at: null, screen: null, hit: null,
+	focus: type === 'key-down' ? { typing: false, onControl: false } : null, button: null, buttons: null, pointerId: null, pointerType: null,
+	key, code: key, repeat, shiftKey: !!m.shiftKey, ctrlKey: !!m.ctrlKey, altKey: !!m.altKey, metaKey: !!m.metaKey,
+	deltaX: null, deltaY: null, deltaZ: null, deltaMode: null, time: null });
+const NO_REPLY = Object.freeze({ claim() {}, takePointer: () => false });
 
 // ---- the lifecycle ----
 
@@ -37,7 +42,7 @@ export function liveGesture(h) {
 	let seen;
 	const real = Input.prototype.situation;
 	Input.prototype.situation = function (targetId, gesture) { seen = gesture ?? null; return real.call(this, targetId, gesture); };
-	try { h.input.keyDown(keyEvent('key-down', '\u0000', {})); } finally { Input.prototype.situation = real; }
+	try { h.input.keyDown(keyEvent('key-down', '\u0000', {}), NO_REPLY); } finally { Input.prototype.situation = real; }
 	return seen;
 }
 // every gesture body, and each of Input's methods that starts a chain or becomes a gesture, logged as it runs

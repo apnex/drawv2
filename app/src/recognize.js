@@ -39,7 +39,7 @@ const free = (s) => !s.tool;
 THE ROWS -- stage 4 of the gesture system (dev/design/input/GESTURE-SYSTEM.md): rows of the Rules engine
 (kernel/input-rules.mjs), resolved exactly as the keys are.
 
-`on(e)` reads the press -- its button, its modifiers, and what is under it (`e.on`, from capture); `when(s)` reads the
+`on(e)` reads the press -- its button, its modifiers, and what is under it (`e.hit`, the fact's, from capture -- H26.8); `when(s)` reads the
 situation -- whether a tool is held. The outcome is a GESTURE to start or an immediate `run`.
 
 NO ROW WINS BY POSITION (Q3). This table was ordered, and 14 pairs of its rows could match one press; each row now says
@@ -98,27 +98,27 @@ export function pressRows(picks, places) {
 	};
 	return [
 		// right button: the delete chord, then clone, then press
-		{ id: 'chord', input: onRight(['Alt'], drawn),     mutates: true,  on: (e) => R(e) && e.altKey && !!e.on.id && !e.on.handle,      run: 'deleteUnderCursor' },
-		{ id: 'r-clone', input: onRight(['Ctrl'], placed),   mutates: true,  on: (e) => R(e) && e.ctrlKey && !e.altKey && placed(e.on),           gesture: 'clone-pending' },
-		{ id: 'r-press', input: onRight([], placed),   mutates: false, on: (e) => R(e) && !e.ctrlKey && !e.altKey && placed(e.on),          gesture: 'pending' },
+		{ id: 'chord', input: onRight(['Alt'], drawn),     mutates: true,  on: (e) => R(e) && e.altKey && !!e.hit.id && !e.hit.handle,      run: 'deleteUnderCursor' },
+		{ id: 'r-clone', input: onRight(['Ctrl'], placed),   mutates: true,  on: (e) => R(e) && e.ctrlKey && !e.altKey && placed(e.hit),           gesture: 'clone-pending' },
+		{ id: 'r-press', input: onRight([], placed),   mutates: false, on: (e) => R(e) && !e.ctrlKey && !e.altKey && placed(e.hit),          gesture: 'pending' },
 
 		// left button, most specific first in reading, and disjoint in fact: a press on a handle opens the shared handle gesture from
 		// the row of the plugin that declared it; a held tool's press is the devices plugin's text box (C-d). A kind pressed with the
 		// right button only -- a zone -- is taken by no left row here, so its plugin's own left row may (H24.5: Shift+left draws over it)
-		{ id: 'l-clone', input: [`Ctrl+left on ${words((h) => clones(h) && !right(h))}`],   mutates: true,  on: (e) => L(e) && e.ctrlKey && clones(e.on) && !right(e.on), when: free,                gesture: 'clone-pending' },
+		{ id: 'l-clone', input: [`Ctrl+left on ${words((h) => clones(h) && !right(h))}`],   mutates: true,  on: (e) => L(e) && e.ctrlKey && clones(e.hit) && !right(e.hit), when: free,                gesture: 'clone-pending' },
 		// a left press on an anchor draws a link from it -- with Ctrl, one that clones is cloned instead (the row above)
-		{ id: 'link', input: [`left on ${words(anchor)}`],      mutates: true,  on: (e) => L(e) && anchor(e.on) && !(e.ctrlKey && clones(e.on)), when: free, gesture: 'link' },
+		{ id: 'link', input: [`left on ${words(anchor)}`],      mutates: true,  on: (e) => L(e) && anchor(e.hit) && !(e.ctrlKey && clones(e.hit)), when: free, gesture: 'link' },
 
 		// the non-mutating tail. These are what a Server-Locked client is left with, and SCOPE decision 5
 		// promises exactly them: "selection, the data view, and the readout still work".
 		// a plugin's mark (app/src/pick.js) is pressed as a link is: it selects, and a drag never moves it (H17.22 N-c2)
-		{ id: 'press', input: [...pressed, 'left on mark'],     mutates: false, on: (e) => L(e) && selects(e.on) && !right(e.on) && !e.ctrlKey, when: free, gesture: 'pending' },
-		{ id: 'marquee', input: ['left on canvas'],   mutates: false, on: (e) => L(e) && e.on.kind === 'canvas' && !e.shiftKey, when: free,    gesture: 'marquee' },
+		{ id: 'press', input: [...pressed, 'left on mark'],     mutates: false, on: (e) => L(e) && selects(e.hit) && !right(e.hit) && !e.ctrlKey, when: free, gesture: 'pending' },
+		{ id: 'marquee', input: ['left on canvas'],   mutates: false, on: (e) => L(e) && e.hit.kind === 'canvas' && !e.shiftKey, when: free,    gesture: 'marquee' },
 
 		// ...and what a locked client reached by falling past the authoring rows above, which a writer never sees
-		{ id: 'press-locked',   mutates: false, whileReadOnly: true, on: (e) => L(e) && drawn(e.on) && !right(e.on) && (anchor(e.on) || e.ctrlKey), gesture: 'pending' },
-		{ id: 'marquee-locked', mutates: false, whileReadOnly: true, on: (e) => L(e) && e.on.kind === 'canvas' && e.shiftKey, gesture: 'marquee' },
-		{ id: 'r-press-locked', mutates: false, whileReadOnly: true, on: (e) => R(e) && (e.ctrlKey || e.altKey) && placed(e.on), gesture: 'pending' },
+		{ id: 'press-locked',   mutates: false, whileReadOnly: true, on: (e) => L(e) && drawn(e.hit) && !right(e.hit) && (anchor(e.hit) || e.ctrlKey), gesture: 'pending' },
+		{ id: 'marquee-locked', mutates: false, whileReadOnly: true, on: (e) => L(e) && e.hit.kind === 'canvas' && e.shiftKey, gesture: 'marquee' },
+		{ id: 'r-press-locked', mutates: false, whileReadOnly: true, on: (e) => R(e) && (e.ctrlKey || e.altKey) && placed(e.hit), gesture: 'pending' },
 	];
 }
 

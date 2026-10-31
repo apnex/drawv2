@@ -37,6 +37,16 @@ test('every documented input, turned back into an event, is matched by its row',
 	assert.deepEqual(wrong, []);
 });
 
+// H26.8's capture move (NATIVE-SHAPES.md section 3.2, Facts): an input turned back into a fact as the rows read it -- what a press is on
+// and its run-mode region in its `hit`, as capture answers them; a key's no hit
+test('a documented press is turned back into a fact\'s hit: what it is on, and its run-mode region; a key has none', () => {
+	assert.deepEqual(eventsFor('left on node')[0].hit, { kind: 'node', id: 'node-000001', region: null });
+	assert.deepEqual(eventsFor('left on region:endpoint')[0].hit,
+		{ kind: 'canvas', id: null, region: { target: 'node-000001', overTarget: true, action: null, input: null, owner: null, control: false, entity: false } });
+	assert.equal('hit' in eventsFor('Delete')[0], false);
+	assert.equal(eventsFor('Ctrl+right on node')[0].on, undefined, 'no `on` and no `region` beside the hit: draw\'s input event is gone');
+});
+
 test('every row a person performs is documented; the locked fallbacks are not, since they repeat a writer\'s inputs', () => {
 	for (const [table, rows] of Object.entries(PERFORMED)) for (const r of rows) assert.ok(r.input?.length, `${table} ${r.id} has no input, so the overlay would not show it`);
 	for (const r of RECOGNIZE.filter((x) => x.whileReadOnly)) assert.equal(r.input, undefined, `${r.id}`);

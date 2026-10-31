@@ -55,7 +55,8 @@ export function spawnCommand(model, id, now) {
 		set: (label, kind, eid, after) => { sent = setFields(label, kind, eid, after); },
 		put: (label, kind, make) => { sent = putEntity(label, kind, make(model)); },
 	};
-	SPAWN_RUNS.find((r) => r.id === 'toggle-spawn').run(host, { region: { target: id } });   // C-f: what the press aims at
+	// C-f: what the press aims at; H26.8's capture move: the fact's hit holding its region, the claim asked of a reply that does nothing here
+	SPAWN_RUNS.find((r) => r.id === 'toggle-spawn').run(host, { hit: { kind: 'canvas', id: null, region: { target: id } } }, { claim() {} });
 	return sent;
 }
 

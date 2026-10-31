@@ -70,8 +70,10 @@ test('H26.5 (IB15): in run mode the session holds the press too, so its release 
 	const h = makeInput();
 	try {
 		h.renderer.setMode('run');
-		const seen = [], real = h.input.release.bind(h.input);
-		h.input.release = (e) => { try { return real(e); } finally { seen.push(e.trigger); } };
+		// RESTATED at H26.8's capture move (NATIVE-SHAPES.md section 3.2, Facts; a:F16): the trigger of the session's outcome Input hands on to
+		// the commit (`dispatchUp`), where it was written back on draw's input event; nothing is written on the fact
+		const seen = [], dispatch = h.input.dispatchUp.bind(h.input);
+		h.input.dispatchUp = (fact, outcome) => { assert.equal('trigger' in fact, false, 'nothing written on the fact'); seen.push(outcome.trigger); return dispatch(fact, outcome); };
 		h.capture.onDown(pointer(300, 300));
 		h.capture.onMove(pointer(340, 300));
 		h.capture.onUp(pointer(340, 300, { buttons: 0 }));

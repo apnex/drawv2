@@ -204,7 +204,8 @@ test('B316: Alt+right on a link\'s end handle or a zone\'s corner starts nothing
 	const h = makeInput();
 	try {
 		for (const on of [{ kind: 'lhandle', id: 'src', handle: true }, { kind: 'handle', id: 'se', handle: true }]) {
-			const evt = { type: 'down', button: 2, altKey: true, shiftKey: false, ctrlKey: false, metaKey: false, on };
+			// RESTATED at H26.8's capture move (NATIVE-SHAPES.md section 3.2, Facts): the press as the fact, what it is on its `hit`
+			const evt = { type: 'down', button: 2, altKey: true, shiftKey: false, ctrlKey: false, metaKey: false, hit: { ...on, region: null } };
 			// RESTATED at H26.8: the press table asked as Input asks it, input-binding's own matchInput
 			assert.equal(h.input.pressRules.matchInput(evt, h.input.situation(), { readOnly: false }).match, null, `${on.kind}: no row`);
 		}
