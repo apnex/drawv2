@@ -24,6 +24,7 @@ import { nudgeSelection } from '../app/src/commands.js';
 import { PRODUCT_CANVAS } from '../product/canvas.mjs';
 import { ZONE_EXT, ZONE_GRIDS } from '../plugins/layouts/layout-table.mjs';
 import { NODE_GRID, nodeGridWithin } from '../kernel/geometry.mjs';
+import { openGrid } from '@apnex/snap-grid';   // H26.8's grid move: a grid bounded off centre, which no product place carries
 
 const code = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
 const PLACES = placesOf(PRODUCT_CANVAS);
@@ -87,15 +88,19 @@ test('C-c: a malformed place is refused when the places are composed, naming its
 });
 
 // H26.8's grid move (NATIVE-SHAPES.md section 3.2, 4.9): the extent a drag is held in is the bounds of the grid the place carries, and
-// nothing else: a place on a grid bounded at 120 by 60 holds its kind there, and the product's places carry no `ext` at all
-test('H26.8: a place\'s extent is its grid\'s bounds -- a drag is held there, and no place keeps an extent beside its grid', async () => {
+// nothing else: a place on a grid bounded off centre -- -60,-120 to 180,60, each edge its own -- holds its kind at each edge, so the clamp
+// reads the bounds' min and max, never an extent mirrored about the origin; and the product's places carry no `ext` at all
+test('H26.8: a place\'s extent is its grid\'s bounds -- a drag is held at each edge, and no place keeps an extent beside its grid', async () => {
 	const { clampDelta } = await import('../app/src/snap.js');
-	const places = placesOf([{ owner: 'p', places: [{ kind: 'node', layout: 'node', grid: nodeGridWithin({ x: 120, y: 60 }), size: () => ({ w: 0, h: 0 }) }] }]);
+	const opened = openGrid({ shape: 'square', pitch: 60, origin: { x: 0, y: 0 }, bounds: { min: { x: -60, y: -120 }, max: { x: 180, y: 60 } } });
+	assert.ok(opened.ok, 'control: snap-grid opens the off-centre grid');
+	const places = placesOf([{ owner: 'p', places: [{ kind: 'node', layout: 'node', grid: opened.grid, size: () => ({ w: 0, h: 0 }) }] }]);
 	const m = board();
 	const moved = [{ kind: 'node', id: 'node-0d0001', before: { x: 0, y: 0 } }];
 	assert.ok(m.get('node', 'node-0d0001'), 'control: the moved anchor is on the board');
-	assert.deepEqual(clampDelta(m, moved, { x: 600, y: -600 }, places), { x: 120, y: -60 }, 'held at the grid\'s bounds, 120 by 60');
-	assert.deepEqual(clampDelta(m, moved, { x: -60, y: 60 }, places), { x: -60, y: 60 }, 'and free within them');
+	assert.deepEqual(clampDelta(m, moved, { x: 600, y: -600 }, places), { x: 180, y: -120 }, 'held at the grid\'s max x and min y');
+	assert.deepEqual(clampDelta(m, moved, { x: -600, y: 600 }, places), { x: -60, y: 60 }, 'and at its min x and max y');
+	assert.deepEqual(clampDelta(m, moved, { x: 120, y: -60 }, places), { x: 120, y: -60 }, 'and free within them');
 	for (const [kind, p] of PLACES) assert.equal('ext' in p, false, `${kind}: its place carries no extent of its own`);
 	assert.deepEqual(PLACES.get('zone').grid.declaration.bounds, { min: { x: -ZONE_EXT.x, y: -ZONE_EXT.y }, max: { x: ZONE_EXT.x, y: ZONE_EXT.y } }, 'the zone\'s grid bounded by the zone layout\'s extent');
 });
