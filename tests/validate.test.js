@@ -212,10 +212,36 @@ test('B113: the positioned cap is DERIVED from the grid, not a flat constant', a
 	assert.equal(node, anchors, 'the node cap IS the number of node anchors');
 	assert.equal(node, 527);
 	assert.notEqual(node, 2000, 'a flat 2000 is unreachable for a positioned kind and so is not a limit');
-	assert.equal(ZONE_ROWS[0].cap, (Math.floor(ZONE_EXT.x / STD.pitch) * 2 + 1) * (Math.floor(ZONE_EXT.y / STD.pitch) * 2 + 1), 'derived from the zone extent');
+	// RESTATED at H26.11 (H26-21; B400): the zone grid's own positions within its own bounds -- half a pitch off, 32 by 18 -- where it counted
+	// the node grid's form over the zone extent, 31 by 17, 527
+	assert.equal(ZONE_ROWS[0].cap, ((2 * ZONE_EXT.x) / STD.pitch + 1) * ((2 * ZONE_EXT.y) / STD.pitch + 1), 'the zone grid\'s positions within the zone extent');
+	assert.equal(ZONE_ROWS[0].cap, 576);
 	// unpositioned kinds have no anchors, so the flat cap stands and stays reachable
 	assert.equal(LINK_ROW.cap, 2000);
 	assert.equal(GROUP_ROWS[0].cap, 2000);
+});
+
+/*
+H26.11 (H26-21; B400) -- THE ZONE CAP IS THE ZONE GRID'S OWN COUNT, its positions within its bounds, 576, where it was 527. Zones may
+overlap, so a document may hold more than one to a position and the cap speaks: 576 zones are a document, 577 are not -- in a whole
+document and in a transaction, one put past the cap refused. The node cap is unchanged: 527 nodes, one to each anchor, and not 528.
+*/
+const zonesOf = (n) => Array.from({ length: n }, (_, i) => ({ id: `zone-${(i + 1).toString(16).padStart(6, '0')}`, name: `z${i}`,
+	x: -930 + 60 * (i % 31), y: -510 + 60 * (Math.floor(i / 31) % 17), w: 60, h: 60 }));
+const nodesOf = (n) => Array.from({ length: n }, (_, i) => ({ id: `node-${(i + 1).toString(16).padStart(6, '0')}`, name: `n${i}`,
+	x: -900 + 60 * (i % 31), y: -480 + 60 * (Math.floor(i / 31) % 17) }));
+test('H26.11: a document holds 576 zones and not 577, a transaction puts the 576th and refuses the 577th; the node cap 527 as before', () => {
+	assert.equal(validateDoc({ ...baseDoc([]), zones: zonesOf(576) }), null, '576 zones: the zone grid\'s count');
+	assert.equal(validateDoc({ ...baseDoc([]), zones: zonesOf(577) }), 'zones exceeds entity limit', '577 zones: one past it');
+	const m = new Model();
+	m.load({ ...baseDoc([]), zones: zonesOf(575) });
+	assert.equal(m.all('zone').length, 575, 'control: the board holds 575 zones');
+	const [z576, z577] = zonesOf(577).slice(575);
+	const log = new Log();
+	assert.equal(commit(m, log, { ops: [{ op: 'put', kind: 'zone', entity: z576 }] }, 'test', 'test').ok, true, 'the 576th zone put');
+	assert.equal(commit(m, log, { ops: [{ op: 'put', kind: 'zone', entity: z577 }] }, 'test', 'test').error, 'zone collection limit reached', 'the 577th refused');
+	assert.equal(validateDoc({ ...baseDoc([]), nodes: nodesOf(527) }), null, '527 nodes, one to each anchor of the node extent');
+	assert.equal(validateDoc({ ...baseDoc([]), nodes: nodesOf(528) }), 'nodes exceeds entity limit', 'and not 528');
 });
 
 test('B113: the server refuses what the editor could never have produced', () => {

@@ -162,8 +162,8 @@ test('F3: an anchor\'s shape is stated once, in the lattice -- every module the 
 const RECORD = {
 	'app/src/snap.js': { count: 2, cites: ['SNAP-GRID.md appendix B'],
 		reason: '`clampDelta`: a drag\'s clamp and its quantisation by the declared pitch, which stays draw\'s' },
-	'model/surface.mjs': { count: 2, cites: ['SNAP-GRID.md appendix B', 'B400'],
-		reason: '`anchorCellsWithin`: the cap on how many things fit, which stays draw\'s; the zone cap kept (section 6.3, B400)' },
+	// model/surface.mjs held 2 -- `anchorCellsWithin`, a positioned kind's cap by the node grid's form -- until H26.11 (H26-21, B400): each
+	// cap counts its own grid's positions within its bounds (kernel/geometry.mjs `positionsWithin`), and the formula went
 	'plugins/simulation/spawners.mjs': { count: 1, cites: ['SNAP-GRID.md appendix B'],
 		reason: 'a route\'s length in pitches, to two places, for the readout: a length read in the declared pitch, which stays' },
 	'cli/verbs.mjs': { count: 4, cites: ['B402'],

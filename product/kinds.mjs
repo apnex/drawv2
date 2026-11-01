@@ -17,8 +17,8 @@ the grid (kernel/), and model/ and kernel/ import nothing from each other (C9). 
 
 import { CORE_ROWS, composeKinds } from '../model/shape.mjs';
 import { NAME_MAX } from '../model/limits.mjs';
-import { NODE_EXT, anchorCellsWithin } from '../model/surface.mjs';
-import { NODE_GRID } from '../kernel/geometry.mjs';
+import { NODE_EXT } from '../model/surface.mjs';
+import { NODE_GRID, nodeGridWithin, positionsWithin } from '../kernel/geometry.mjs';
 import { ZONE_ROWS } from '../plugins/zones/zone-kind.mjs';
 import { LAYOUT_ROWS } from '../plugins/layouts/layout-kind.mjs';   // WD-b1: the layouts plugin's kind
 import { GROUP_ROWS } from '../plugins/groups/group-kind.mjs';
@@ -70,7 +70,7 @@ trust boundary is never delegated to the module that supplies the magnitude.
 // H26.1 (SNAP-GRID.md section 5, appendix B): ON the node lattice is snap-grid's exact question, `positionAt` on NODE_GRID, one axis
 // at a time with the other held at the origin; the extent check stays first, so it is asked only of a finite number within the
 // extent. Exact where `v % pitch` was too: on the node lattice's origin of 0 the remainder never rounded.
-const { pitch: PITCH, origin: NODE_ORIGIN } = NODE_GRID.declaration;
+const { origin: NODE_ORIGIN } = NODE_GRID.declaration;
 const onNodeX = (v) => NODE_GRID.positionAt({ x: v, y: NODE_ORIGIN.y }) !== null;
 const onNodeY = (v) => NODE_GRID.positionAt({ x: NODE_ORIGIN.x, y: v }) !== null;
 
@@ -81,8 +81,9 @@ const int = (v, lo, hi) => Number.isInteger(v) && v >= lo && v <= hi;
 // an entity id of one kind: the kind, a dash, six hex digits
 const id = (v, kind) => typeof v === 'string' && new RegExp(`^${kind}-[0-9a-f]{6}$`).test(v);
 
-// B113: one anchor to an anchor cell of the node extent -- the cell count the core's grid derives (model/surface.mjs)
-const ANCHOR_CAP = anchorCellsWithin(NODE_EXT, PITCH);
+// B113: one anchor to an anchor cell of the node extent. H26.11 (H26-21): the node grid's own positions within the extent that bounds it,
+// read from the grid as the zone's cap is (plugins/zones/zone-kind.mjs), where model/surface.mjs counted them by a formula of its own
+const ANCHOR_CAP = positionsWithin(nodeGridWithin(NODE_EXT)).length;
 
 const ANCHOR_FIELDS = {
 	id: (v) => id(v, 'node'),

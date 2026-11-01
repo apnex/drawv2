@@ -382,6 +382,8 @@ It is state rather than an event, so a client that connects after a lock was tak
 A diagram holds at most one node or waypoint per anchor, so the canvas caps at 527 of them together.\
 The per-collection limit is the anchor count for a positioned kind and 2000 for a kind with no coordinates, so the number the code names is the number that binds.
 
+AMENDED 2026-11-01 (H26-21, H26.11): a positioned kind's limit is its own grid's positions within its bounds -- 527 for nodes and waypoints, and 576 for zones, where the zone's counted the node grid's form, 527.
+
 A node reaches to 900 by 480 and a zone half a cell further, to 930 by 510.\
 These are what the editor has always clamped to; the server now refuses the same set rather than a wider one.
 

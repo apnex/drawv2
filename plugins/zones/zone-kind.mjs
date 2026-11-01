@@ -11,8 +11,7 @@ entry -- loads the row alone (tools/layers.mjs L10).
 */
 
 import { NAME_MAX } from '../../model/limits.mjs';
-import { anchorCellsWithin } from '../../model/surface.mjs';
-import { NODE_GRID } from '../../kernel/geometry.mjs';
+import { NODE_GRID, positionsWithin } from '../../kernel/geometry.mjs';
 import { ZONE_EXT, ZONE_GRIDS } from '../layouts/layout-table.mjs';   // WD-b1: the zone layout's extent, the layouts plugin's; H26.1: its grids
 
 const ORDER_MAX = Number.MAX_SAFE_INTEGER;
@@ -59,9 +58,9 @@ const ZONE_ROW = {
 	*/
 	refers: (z) => (z.x + z.w > ZONE_EXT.x || z.y + z.h > ZONE_EXT.y
 		? `${z.id} reaches ${z.x + z.w},${z.y + z.h}, past the surface's edge at ${ZONE_EXT.x},${ZONE_EXT.y}` : null),
-	// KEPT (SNAP-GRID.md section 6.3, B400): it counts 527 places, the node grid's within the zone extent, where the zone lattice
-	// within it has 576 -- kept exactly as it is, and registered for its own ruling
-	cap: anchorCellsWithin(ZONE_EXT, PITCH),
+	// H26.11 (H26-21; B400): the zone grid's own positions within its own bounds, read from the grid, so the cap follows it when its size
+	// becomes configurable -- where it counted the node grid's form over the zone extent, 527 against the zone lattice's 576
+	cap: positionsWithin(ZONE_GRIDS.bounded).length,
 };
 
 // the zones plugin's rows, as the network's are NETWORK_ROWS (plugins/network/kinds.mjs)
