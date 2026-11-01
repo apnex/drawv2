@@ -50,6 +50,19 @@ export function anchorOn(name, grid, position) {
 }
 
 /*
+H26.11 (H26-21; B399, B400) -- A BOUNDED GRID'S OWN POSITIONS WITHIN ITS OWN BOUNDS, row by row then column: snap-grid's positions in view
+of the rectangle its bounds enclose, at a scale of one, so every position and none thinned. What the agents' anchor list walks for each
+layout and what a positioned kind's cap counts, read from the grid itself -- its bounds, not an extent or a count stated beside it -- so
+both follow the grid when its size becomes configurable (H26-21). A grid with no bounds has no positions to count, and is refused.
+*/
+export function positionsWithin(grid) {
+	const bounds = grid?.declaration?.bounds;
+	if (!bounds) throw new Error('positionsWithin: the grid has no bounds, so no positions within them to list or count');
+	const { min, max } = bounds;
+	return grid.inView({ region: { kind: 'rect', x: min.x, y: min.y, w: max.x - min.x, h: max.y - min.y }, scale: 1 }).positions.map(({ position }) => position);
+}
+
+/*
 THE GRID DOT. A waypoint does not own it -- a waypoint HIGHLIGHTS it.
 
 Every snap point on the node grid carries this dot, drawn dim at `#202020`. A waypoint sits exactly

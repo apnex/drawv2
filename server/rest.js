@@ -11,8 +11,7 @@ import { layoutRecords } from '../plugins/layouts/layout-records.mjs';   // WD8 
 import { linksOf, linksAt, makeLink } from '../plugins/network/link-queries.mjs';   // which links meet an anchor: the network's (K13d)
 import { snapshotBody, changeBody, reversalBody } from './protocol.js';
 import { announceActivity, announceAccess, viewersFor } from './hub.js';   // B342 (H21.8): in the hub, so the hub does not import REST
-import { NODE_GRID, nodeGridWithin, anchorOn } from '../kernel/geometry.mjs';   // H26.1: the grids, and an anchor's one builder (F3)
-import { NODE_EXT } from '../model/surface.mjs';
+import { NODE_GRID, nodeGridWithin, anchorOn, positionsWithin } from '../kernel/geometry.mjs';   // H26.1: the grids, and an anchor's one builder (F3)
 import { LAYOUT_TABLE, ZONE_GRIDS } from '../plugins/layouts/layout-table.mjs';   // H26.1: the layouts table's names, and the zone's grids
 import { makeZone } from '../plugins/zones/make-zone.mjs';   // the zones plugin's factory (O-b1)
 import { makeGroup } from '../plugins/groups/make-group.mjs';   // the groups plugin's factory (O-c)
@@ -132,12 +131,12 @@ function contextOf(model, kind, e) {
 	return out;
 }
 
-// H26.1 (SNAP-GRID.md section 5): each layout's grid with no bounds, by its name in the layouts table; the node grid within its extent,
-// whose positions the anchors route lists for both layouts; and the nearest route's limit (section 6.3)
+// H26.1 (SNAP-GRID.md section 5): each layout's grid with no bounds, by its name in the layouts table; and the nearest route's limit
+// (section 6.3). H26.11 (H26-21; B399): and each layout's grid within its own bounds, whose positions the anchors route lists -- the grid
+// its place carries: the node grid bounded by the node record's extent (plugins/layouts/layout-canvas.mjs), the zone's own (ZONE_GRIDS)
 const [NODE_LAYOUT, ZONE_LAYOUT] = LAYOUT_TABLE;
 const UNBOUNDED_GRIDS = new Map([[NODE_LAYOUT.name, NODE_GRID], [ZONE_LAYOUT.name, ZONE_GRIDS.unbounded]]);
-const NODE_PLACES = nodeGridWithin(NODE_EXT);
-const NODE_EXTENT_VIEW = { region: { kind: 'rect', x: -NODE_EXT.x, y: -NODE_EXT.y, w: 2 * NODE_EXT.x, h: 2 * NODE_EXT.y }, scale: 1 };
+const BOUNDED_GRIDS = new Map([[NODE_LAYOUT.name, nodeGridWithin(NODE_LAYOUT.ext)], [ZONE_LAYOUT.name, ZONE_GRIDS.bounded]]);
 const NEAREST_LIMIT = 2 ** 49;
 
 function occupantAt(model, anchor) {
@@ -680,12 +679,12 @@ export function handleRest(req, res, store, locks, hub, principal = null, sessio
 		if (parts[6] === 'anchors' && parts.length === 7) {
 			const wantFree = url.searchParams.get('free') === '1';
 			const out = [];
-			// the node extent bounds BOTH grids here: a zone anchor outside it cannot hold a node
-			// anyway, and one list with one rule beats two that drift
-			// H26.1: the node extent's positions, by row then column, each placed on this layout's grid with no bounds -- KEPT exactly
-			// (section 6.3, B399): on the zone grid this omits a column and a row of the zone lattice within its own extent
-			for (const { position } of NODE_PLACES.inView(NODE_EXTENT_VIEW).positions) {
-				const a = anchorOn(L.name, grid, position);
+			// H26.11 (H26-21; B399): this layout's own grid's positions within that grid's own bounds, by row then column, read from the
+			// grid -- so the list follows it when its size becomes configurable. Both lists walked the node extent's positions until then,
+			// so the zone list lacked its lattice's first column and row; the node list is as it was
+			const within = BOUNDED_GRIDS.get(L.name);
+			for (const position of positionsWithin(within)) {
+				const a = anchorOn(L.name, within, position);
 				const occupant = occupantAt(model, a);
 				if (wantFree && occupant) continue;
 				out.push(occupant ? { ...a, occupant } : a);

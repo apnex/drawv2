@@ -33,6 +33,40 @@ const get = async (p) => {
 };
 const firstId = async () => (await get('/api/v1/diagrams')).body[0].id;
 
+/*
+H26.11 (H26-21; B399, dev/DECISIONS.md) -- EACH LAYOUT LISTS ITS OWN GRID'S POSITIONS WITHIN THAT GRID'S OWN BOUNDS, row then column. Both
+lists walked the node extent's index range, each index placed on its layout's grid, so the zone list ran x -870 to 930 and y -450 to 510:
+the zone lattice's column at -930 and row at -510, where zones sit, were missing, and its right edge held where its left did not. The
+zone list is the zone grid's 576 positions now; the node list is its 527, byte for byte as before, built here from the lattice itself --
+x -900 to 900 and y -480 to 480 a pitch apart, an occupied anchor carrying its node -- and compared as the bytes the route answers.
+*/
+const lattice = (layout, x0, x1, y0, y1, offset) => {
+	const out = [];
+	for (let y = y0; y <= y1; y += 60) for (let x = x0; x <= x1; x += 60) out.push({ layout, cx: (x - offset) / 60, cy: (y - offset) / 60, x, y });
+	return out;
+};
+test('H26.11: the zone list is the zone grid\'s 576 positions within its own bounds; the node list its 527, byte for byte', async () => {
+	const id = await firstId();
+	const zone = (await get(`/api/v1/diagrams/${id}/layouts/zone/anchors`)).body;
+	assert.deepEqual([zone.layout, zone.count, zone.anchors.length], ['zone', 576, 576], 'the zone grid within its bounds: 32 columns by 18 rows');
+	assert.deepEqual(zone.anchors, lattice('zone', -930, 930, -510, 510, 30), 'every position, row then column, from -930,-510 to 930,510');
+	assert.deepEqual([zone.anchors[0], zone.anchors.at(-1)], [{ layout: 'zone', cx: -16, cy: -9, x: -930, y: -510 }, { layout: 'zone', cx: 15, cy: 8, x: 930, y: 510 }], 'its first and last');
+	assert.equal(zone.anchors.filter((a) => a.x === -930).length, 18, 'the column at x -930, one to a row');
+	assert.equal(zone.anchors.filter((a) => a.y === -510).length, 32, 'the row at y -510, one to a column');
+	const free = (await get(`/api/v1/diagrams/${id}/layouts/zone/anchors?free=1`)).body;
+	assert.deepEqual([free.count, free.anchors], [576, zone.anchors], 'free=1 as now: no node or waypoint sits on a zone position');
+	// the node list: the bytes the route answers, against the lattice built here and the board's nodes on it
+	const doc = (await get(`/api/v1/diagrams/${id}`)).body;
+	const at = new Map(doc.nodes.map((n) => [`${n.x},${n.y}`, n.id]));
+	assert.ok(at.size > 0, 'control: the board has nodes on anchors');
+	const nodes = lattice('node', -900, 900, -480, 480, 0).map((a) => (at.has(`${a.x},${a.y}`) ? { ...a, occupant: at.get(`${a.x},${a.y}`) } : a));
+	const text = await (await fetch(`${base}/api/v1/diagrams/${id}/layouts/node/anchors`)).text();
+	assert.equal(text, JSON.stringify({ layout: 'node', count: 527, anchors: nodes }, null, '\t') + '\n', 'the node list, byte for byte, as the route writes it');
+	const freeText = await (await fetch(`${base}/api/v1/diagrams/${id}/layouts/node/anchors?free=1`)).text();
+	const unoccupied = nodes.filter((a) => !a.occupant);
+	assert.equal(freeText, JSON.stringify({ layout: 'node', count: unoccupied.length, anchors: unoccupied }, null, '\t') + '\n', 'and its free anchors, byte for byte');
+});
+
 test('WD-b1 test 11: GET /diagrams/<id>/layouts serves the diagram\'s two records, with the product\'s values', async () => {
 	const id = await firstId();
 	const r = await get(`/api/v1/diagrams/${id}/layouts`);
@@ -47,7 +81,8 @@ test('WD-b1 test 11: the grid routes answer as before -- nearest on the node gri
 	assert.deepEqual({ layout: n.layout, cx: n.cx, cy: n.cy, x: n.x, y: n.y }, { layout: 'node', cx: 5, cy: -2, x: 300, y: -120 });
 	const z = (await get(`/api/v1/diagrams/${id}/layouts/zone/anchors`)).body;
 	assert.equal(z.layout, 'zone');
-	assert.equal(z.count, 31 * 17, 'one anchor to a cell of the node extent, as before');
+	// RESTATED at H26.11 (H26-21; B399): the zone grid's own positions within its own bounds, 32 by 18, where it listed the node extent's 31 by 17
+	assert.equal(z.count, 32 * 18, 'one anchor to each position of the zone grid within its bounds');
 	assert.ok(z.anchors.every((a) => (a.x - 30) % 60 === 0 && (a.y - 30) % 60 === 0), 'on the zone lattice, half a pitch off');
 	const unknown = await get(`/api/v1/diagrams/${id}/layouts/sideways/anchors`);
 	assert.equal(unknown.status, 404);

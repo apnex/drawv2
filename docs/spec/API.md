@@ -320,6 +320,9 @@ The pixels are there so you never multiply and the cell is there so you never di
 `anchors?free=1` answers *where may I put something*, and omits every anchor a node or waypoint already holds.\
 A waypoint counts, because a waypoint is a node for placement.
 
+AMENDED 2026-11-01 (H26-21, H26.11): `anchors` lists each layout's own grid's positions within that grid's own bounds, row then column -- the node grid's 527 and the zone grid's 576.\
+Both lists walked the node extent's positions until then, so the zone list lacked its lattice's column at x -930 and its row at y -510, where zones sit.
+
 Reads, so neither takes the lock.\
 The layout name travels with an anchor because the same cell resolves to different pixels on the two grids.
 
