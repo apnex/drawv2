@@ -4,7 +4,7 @@ The design of record for H26.6, from the director's intent captured in `PAN-ZOOM
 Draw's canvas loses its edges: one grid per diagram, 60 by default and changeable, devices at its square centres and zones on its lines; a viewer pans and zooms with the touchpad and mouse gestures the intent names, and each viewer's view is remembered per diagram in their browser, with a reticle button home to 0,0.\
 It overturns decision 1's fixed canvas and WD7's refusal of other grid values once ratified, and meets B289 and B325; it is built component first, as H26-3 ordered and H26-22 confirms, on the four components draw runs on -- `input-binding`, `input-capture` and `vector-scene` `0.2.0`, `snap-grid` `0.1.0` -- and the gesture tester.
 
-**Standing:** revision 7, not ratified: the director's walkthrough is complete -- PZ6, PZ7, PZ12, PZ21 and PZ27 ruled, Q3 clarified (devices keep their square), PZ2 and PZ3 closed by that clarification, so all seven of the director's decisions are settled (section 9); reading 1's 32 findings disposed of in section 8.1, reading 2's 26 in 8.2, reading 3's 2 in 8.3, reading 4's 3 in 8.4, reading 5's 2 in 8.5 and reading 6's 9 in 8.6; awaiting a last confirming reading scoped to revision 7's design-level folds (8.6); the code read is `1fbbc5b`, and no product file has changed since (measured again at `a8a32c7`); code lines measured by `tools/code-split.mjs` and its `codeLines`, browser behaviour in headless Chrome through `@apnex/headless-chromium` on draw's lab page, the scripts and their outputs at `~/taceng/drawv2-eval-runs/h26-pan-zoom/probes/`.
+**Standing:** revision 7, not ratified: the director's walkthrough is complete -- PZ6, PZ7, PZ12, PZ21 and PZ27 ruled, Q3 clarified (devices keep their square), PZ2 and PZ3 closed by that clarification, so all seven of the director's decisions are settled (section 9); reading 1's 32 findings disposed of in section 8.1, reading 2's 26 in 8.2, reading 3's 2 in 8.3, reading 4's 3 in 8.4, reading 5's 2 in 8.5 and reading 6's 9 in 8.6; reading 7, the last confirming reading, scoped to revision 7's design-level folds, found every fold holding in all three families (8.7); awaiting the director's ratification; the code read is `1fbbc5b`, and no product file has changed since (measured again at `a8a32c7`); code lines measured by `tools/code-split.mjs` and its `codeLines`, browser behaviour in headless Chrome through `@apnex/headless-chromium` on draw's lab page, the scripts and their outputs at `~/taceng/drawv2-eval-runs/h26-pan-zoom/probes/`.
 
 ---
 
@@ -606,6 +606,12 @@ The two blocking findings meet in PZ19 and were measured through draw's own netw
 | o:F6 | build | appendix A, move 6: the pane's gesture and precision checks at its own levels, scale 4 kept to `vector-scene`'s Chrome tests |
 
 The last confirming reading is scoped to exactly revision 7's design-level folds: the simulation handed the grid and its narrowed claim (3.8, PZ19, section 7's A2 tension; a:F1, a:F2, o:F1, o:F4), the wheel's accumulator (3.6; o:F2), the remembered level (3.7, PZ23; a:F3, o:F3), and PZ21's ruling carried through -- 3.4's stored form and validation, moves 13 to 15, GR4 and the oracle (section 9; o:F5).
+
+### 8.7 Reading 7 -- 2026-11-01, of revision 7 at `ccdd98b`, confirming
+
+Scoped to revision 7's four design-level folds: how the simulation receives the grid and its narrowed timing claim, the wheel's accumulator, the remembered level's validation and mapping, and PZ21's ruling carried through.\
+Its prompt, findings and replies are kept at `~/taceng/drawv2-eval-runs/h26-readings/pz/reading-7/`.\
+Every member, `gemini-4-argon` (`a`), `grok-4.20-non-reasoning` (`x`) and `gpt-6-astra` (`o`), answered with an empty array: every fold holds, and nothing is open.
 
 ---
 
