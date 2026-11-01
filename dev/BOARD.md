@@ -515,7 +515,7 @@ The reasoning that survived is `docs/spec/HOSTING.md`; the deployment procedure 
 |---|---|---|---|---|
 | H8.1 | Widen the persistence seam to `{list, read, write, remove}`, filesystem default, pure refactor | **B55** | S3 - M | `DONE` |
 | H8.2 | Make the seam async, then the GCS adapter on raw `fetch` with `ifGenerationMatch` for compare-and-swap | **B6**, **B59** | S2 - L | `DONE` |
-| H8.3 | Slides refresh token moves off the ephemeral filesystem -- **dropped with the feature**; Slides is purged in both phases, so there is no token. B56 and B57 carry the revival trigger | **B56**, **B57** | S3 - S | `DROPPED` |
+| H8.3 | Slides refresh token moves off the ephemeral filesystem -- **dropped with the feature**; Slides is purged in both phases, so there is no token. B56 and B57 carry the revival trigger. AMENDED 2026-11-01 (the director: "delete. we dont do slides"): the leftover credential files deleted from the one machine that held them, Google answering that their OAuth client was already deleted, and the ignore rules that kept them out of the repository removed with them | **B56**, **B57** | S3 - S | `DROPPED` |
 | H8.4 | Manual image build to Artifact Registry, deploy to Cloud Run `australia-southeast1` | -- | S3 - M | `DONE` |
 | H8.5 | Serverless NEG, backend service, host rule, certificate MAP attach (atomic -- ignores classic certs), DNS cutover | **B58** | S3 - M | `DONE` |
 | H8.7 | Public `/about`, `/privacy`, `/terms` on a separate backend bucket -- IAP has no path exclusion, so verification cannot reach an app route | -- | S2 - S | `DONE` |

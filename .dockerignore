@@ -1,6 +1,5 @@
 .git
 .refs
-secrets/
 node_modules
 diagrams
 tests

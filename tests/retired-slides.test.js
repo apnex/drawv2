@@ -6,9 +6,9 @@ with Google Slides, its mentions to go from the repository's description and eve
 descriptions, the current spec text, the comments, the control-bar fixture and the test names no longer name it.
 
 The records written while the feature existed keep their mentions, because a record is frozen at authorship and amended rather
-than rewritten (mission-kit RU2), and `.gitignore` keeps the feature's leftover credential files out of this public repository; each
-is listed below with why. A mention anywhere else fails, and so does a listed file that no longer mentions it, so the list stays
-exactly the files that do.
+than rewritten (mission-kit RU2); each is listed below with why. The feature's leftover credential files, and the ignore rules
+that kept them out of this public repository, were deleted 2026-11-01. A mention anywhere else fails, and so does a listed file that
+no longer mentions it, so the list stays exactly the files that do.
 */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -38,7 +38,6 @@ const KEPT = {
 	'docs/spec/TRANSACTIONS.md': 'locked rulings, changed only by a dated amendment in the file; the Slides binding marked retired by one',
 	'tools/copies-ceiling.json': 'the frozen ceiling of H25.0, its hash pinned by tests/scan-copies.test.js',
 	'tools/scan-docrefs.mjs': 'allows the purged paths the records above cite',
-	'.gitignore': 'keeps the feature\'s leftover credential files, still present on a machine that once ran it, out of this public repository',
 	'tests/retired-slides.test.js': 'this guard',
 };
 
