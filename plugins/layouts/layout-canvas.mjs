@@ -37,8 +37,8 @@ const NODE_GRID = grid('node', { layer: 'grid-nodes', r: gridDot().radius });
 const ZONE_GRID = grid('zone', { layer: 'grid-zones', r: 5, shownWith: 'shiftKey', cls: 'zonegrid' });
 
 // its kind's parts size it -- the devices plugin a device, by its span; with no part answering, one cell (app/src/snap.js `placesOf`)
-// H26.1: and it carries the node grid bounded by its extent, which it snaps to (`nodeGridWithin`, SNAP-GRID.md section 5)
-const ANCHOR_EXT = LAYOUT_TABLE.find((l) => l.name === 'node').ext;
-const ANCHOR_PLACE = { kind: 'node', layout: 'node', ext: ANCHOR_EXT, grid: nodeGridWithin(ANCHOR_EXT), sizedBy: 'parts' };
+// H26.1: and it carries the node grid bounded by its extent, which it snaps to (`nodeGridWithin`, SNAP-GRID.md section 5). H26.8's grid
+// move (NATIVE-SHAPES.md section 3.2, "A place carries its grid alone"): the table's extent bounds the grid, and the place keeps no `ext`
+const ANCHOR_PLACE = { kind: 'node', layout: 'node', grid: nodeGridWithin(LAYOUT_TABLE.find((l) => l.name === 'node').ext), sizedBy: 'parts' };
 
 export const LAYOUTS_CANVAS = { owner: 'layouts', stylesheets: ['plugins/layouts/layouts.css'], places: [ANCHOR_PLACE], grids: [NODE_GRID, ZONE_GRID] };
