@@ -171,7 +171,7 @@ How the planner holds it (added after reading 2, a:F5), the planner itself uncha
 - **the bound**: the first refusal holds every anchor, every zone's corner and every zone's far edge to PZ31's bound -- a size change multiplies every position by the new size over the old, so a diagram reaching past 1,000,000 times the old size over the new is refused -- naming the entity and the point where it would land; every readable document reaches 930 at most, so the bound is met only above a size of 64,000 (`size-change.mjs`); so the sentence is the plugin's and not `validateEntity`'s;
 - **the notice**: the layouts plugin's `sizeChangeNotice(before, change)` computes step 5's notice from the model before and the committed change; the REST commit route answers it as `notice` beside `change` for a change that set the grid, the browser flashes the same from its own commit, and the CLI prints the route's.
 
-`size-change-lib.mjs` is this transaction, by lattice index, as one function, and `size-change.expected.json` its result for every pinned production document and stored board at 40, 80, 120 and 240 -- every anchor's point and every zone's rect -- the oracle move 15 is checked against; revisions 1 to 5's transaction by nearest point, with its free-point search, its ties and its closed zones, and every figure it gave are set apart in `superseded-nearest/` beside the probes, none of them the design's (revised after the Q3 clarification, section 9).
+`size-change-lib.mjs` is this transaction, by lattice index, as one function, and `size-change.expected.json` its result for every pinned production document and stored board at 40, 80, 120 and 240 -- every anchor's point and every zone's rect -- the oracle move 15 is checked against; revisions 1 to 5's transaction by nearest point, with its free-point search, its ties and its closed zones, was purged with its probes after the Q3 clarification (section 9; what is superseded is purged, never kept beside its successor, H26-19), its figures standing only in section 8's records.
 
 ### 3.6 The gestures, as rows
 
@@ -277,7 +277,7 @@ Added after reading 1 (o:F9, x:F4, o:F7): every reader of the pitch and of `NODE
 ## 4. Decisions owed
 
 Each offered with its options, doing nothing among them where it applies, their costs, a recommendation apart, and its evidence; marked *the director's* where the director's judgement is needed, the rest the architect's to settle at ratification.\
-The figures are the probes' at `~/taceng/drawv2-eval-runs/h26-pan-zoom/probes/`, over the 19 production documents the pixel probe pins and the 18 stored and seeded boards; since the director's Q3 clarification (section 9) the size change is by lattice index, measured by `size-change.mjs`, `size-overlap.mjs` and `simulation-reach.mjs` through `size-change-lib.mjs`; revisions 1 to 5's figures for a size change by nearest point stand in `superseded-nearest/` and in section 8's records, and none is cited here.
+The figures are the probes' at `~/taceng/drawv2-eval-runs/h26-pan-zoom/probes/`, over the 19 production documents the pixel probe pins and the 18 stored and seeded boards; since the director's Q3 clarification (section 9) the size change is by lattice index, measured by `size-change.mjs`, `size-overlap.mjs` and `simulation-reach.mjs` through `size-change-lib.mjs`; revisions 1 to 5's figures for a size change by nearest point stand only in section 8's records, their probes purged, and none is cited here.
 
 | # | Decision | Options, and what each costs | Recommendation, and its evidence |
 |---|---|---|---|
