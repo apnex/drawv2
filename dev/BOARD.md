@@ -1582,6 +1582,7 @@ Opened 2026-10-18 by the director (`dev/DECISIONS.md` H26): the canvas and the i
 | H26.5 | The gesture tester at `input.apnex.io`, built from the four alone, after a fresh agent tries to build it from the contracts (H26.5); its cold-agent experiment run 2026-10-24, the tester built from the four alone with nineteen gaps logged (B426); a sovereign application in a repository of its own, `input-tester`, with its own vision and architecture (H26-12), its vision ratified, the touchpad in its scope (H26-13); its architecture and the components' next releases ratified as recommended (H26-14), carrying B411, B412, B413, B424 and B427 to close with the releases and draw's moves; the four releases published 2026-10-24, closing B411, B412 and B424; draw on all three `0.2.0` releases in production at `ca492da` 2026-10-25, closing B413 and B427; the tester itself next, its verification proportional to severity (H26-15); `input-tester` `v0.1.0` released and in its lab at `input-lab.apnex.io` 2026-10-26, accepted on the director's Chromebook and live in production at `input.apnex.io` the same day, closing B426 | **B426** | S3 | `DONE` |
 | H26.6 | Pan and zoom: in `vector-scene`, then the tester, then draw -- overturning decision 1 and firing B289 and B325, ruled when reached (H26.6) | feature | S3 | `TODO` |
 | H26.7 | The plugins under one folder: `layouts`, `devices`, `network`, `zones`, `groups` and the simulation's modules from `engine/` and `model/` moved to `plugins/<name>/`, a pure move, so the tree shows the core, the hosts, the composition and the plugins apart, and the servers, the image and the manifest name one folder where they named five (H26-7); live in production (`draw-00239-pxx`, `b1e8c6e`), an independent verifier passing it after restoring three checks' reach over the moved modules; `bcd3e47` alone fails GR1, four tools' executable bit dropped and restored by `bb1c80d`, kept in history unrewritten | feature | S4 | `DONE` |
+| H26.11 | Zone positions counted on the zone grid itself: the agents' zone anchor list and the zone kind's cap read the zone grid's own positions within its own bounds, 576 where both counted the node grid's 527 (H26-21) | **B399**, **B400** | S4 | `WIP` |
 
 **Exit:** each of the four components in its own public repository, released by its own CI, free of draw's words by a check in its gate, and registered in mission-kit; draw running on all four, its gate passing and the probe unchanged except where a ruling changes what is drawn; the gesture tester live at `input.apnex.io`, built from the four alone.
 
@@ -1690,12 +1691,11 @@ The deployment that fired its trigger is also the one that answered it: object s
 
 ## Decisions required
 
-B163, the last entry, was ratified and closed on 2026-10-01: the standing goals framework is `VISION.md`.
+B163, the last entry, was ratified and closed on 2026-10-01: the standing goals framework is `VISION.md`.\
+B399 and B400 were ruled on 2026-11-01 (H26-21) and left this table; none is owed now.
 
 | Row | Decision owed | Why it cannot be settled without you |
 |---|---|---|
-| **B399** | The REST zone anchor list: the zone grid within its extent (576) or the node extent's range (527) | It changes what agents are answered, and section 6.3 kept it for a ruling of its own (H26.1 live) |
-| **B400** | The zone kind's cap: the zone grid's places (576) or the node grid's form (527) | It changes which documents the write path accepts, and section 6.3 kept it for a ruling of its own (H26.1 live) |
 
 **R13 reads this table in both directions**, which is what `Held` has had since B123 and this section never did.\
 A row recording `RULING-OWED` must appear here, so a decision cannot wait unseen; an entry here must still be `RULING-OWED`, so a ruling that has landed cannot keep asserting itself.\
