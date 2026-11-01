@@ -57,9 +57,9 @@ calibration-data:
 ## S0 Context
 
 H26-3 put pan and zoom last in H26: in `vector-scene` first, then the gesture tester, then draw.\
-The board item says it overturns decision 1 -- a fixed logical canvas of 1920 by 1080, scaled to fit the window, no pan or zoom, made when a diagram had to map onto a Google Slide -- and fires B289 (unload what is out of view) and B325 (a diagram's own grids), each ruled when reached.\
+The board item says it overturns decision 1 -- a fixed logical canvas of 1920 by 1080, scaled to fit the window, no pan or zoom, made when a diagram had to map one to one onto a fixed page in an external presentation tool -- and fires B289 (unload what is out of view) and B325 (a diagram's own grids), each ruled when reached.\
 H26.8 left draw ready for it: every part speaks the components' own shapes, picks are by item, and the native-shapes design notes that under H26.6 a view carries every layer and a culled entity is one removal.\
-The Slides feature that decision 1 served is purged, so its reason no longer holds.\
+The feature that decision 1 served is purged (H24.11), so its reason no longer holds.\
 Before the survey, H26-21 recorded the director's direction "grid size will be configurable and unified", for this design.
 
 ---
