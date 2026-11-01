@@ -22,6 +22,8 @@ import { EDITING_GESTURES } from '../app/src/editing-gestures.js';
 import { PARTS } from '../tools/layers.mjs';
 import { lex } from '../tools/js-tokens.mjs';
 import { makeInput, pointer, key, seedNodes } from './fixtures/client-harness.mjs';
+import { makeZone } from '../plugins/zones/make-zone.mjs';
+import { snapNode } from '../app/src/snap.js';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 // section 3.2's host table, member by member, in its order
@@ -183,6 +185,41 @@ test('GR13 through Input: a handle\'s retarget committed and cancelled -- its pr
 		h.capture.onUp(pointer(0, 0, { buttons: 0 }));
 		assert.deepEqual([previews(h), marked()], [0, false], 'committed: no preview, no drag state');
 		assert.deepEqual([h.model.get('link', l.id).src, h.model.get('link', l.id).dst], [n0.id, n1.id], 'and re-plugged onto the device released on');
+	} finally { h.restore(); }
+});
+
+/*
+Move 6's verification (should-fix 3) -- THREE HOST MEMBERS REACH THE COLLABORATORS THE TABLE NAMES, WITH THEIR ARGUMENTS. GR13 above runs
+each body on a host of recorders, so a member wired to the wrong thing, or to nothing, passed it: `showBox` is the readout's box, `cellName`
+draw's snapped cell, and `retarget` hands Input its excluded id -- the fixed end, which a dragged end never hovers. Each read through Input,
+from what the readout was told and what the editing states hold.
+*/
+test('the host\'s showBox, cellName and retarget reach the readout, the snapped cell and the states, each with its arguments, during a drag', async () => {
+	const h = makeInput();
+	try {
+		// showBox: a zone's corner dragged, the readout told the box the live preview wrote
+		const z = makeZone(h.model, { x: -30, y: -30, w: 120, h: 120 }); h.model.put('zone', z);
+		h.selection.set([z.id]);
+		const corner = (x, y) => pointer(x, y, { target: h.at({ key: 'handles', where: { 'data-corner': 'se' } }) });
+		h.capture.onDown(corner(90, 90));
+		h.reset();
+		h.capture.onMove(corner(210, 150));
+		assert.deepEqual(h.stateCalls('readout.setBox'), [[{ x: -30, y: -30, w: 240, h: 180 }]], 'the readout\'s box, the reshaped zone\'s');
+		h.capture.onUp(corner(210, 150));
+		// cellName and retarget: a link's source end dragged, its destination the fixed end
+		const { n0, n1 } = await threeHosts(h);
+		h.capture.onDown(endHandle(h, 'src', 360, 360));
+		h.reset();
+		h.capture.onMove(pointer(-300, 200));
+		assert.deepEqual(h.stateCalls('readout.setLink'), [[n1.name, snapNode({ x: -300, y: 200 })]], 'over open ground: the fixed end\'s name and the snapped cell');
+		h.reset();
+		h.capture.onMove(pointer(360, 0, { target: h.at(n1.id) }));
+		assert.equal(h.states.classesOf(n1.id).includes('hover'), false, 'over the fixed end: never hovered, the id excluded');
+		assert.deepEqual(h.stateCalls('states.setState').filter(([id]) => id === n1.id), [], 'and no state set on it');
+		assert.deepEqual(h.stateCalls('readout.setLink'), [[n1.name, snapNode({ x: 360, y: 0 })]], 'its cell named, as over ground');
+		h.capture.onMove(pointer(0, 0, { target: h.at(n0.id) }));
+		assert.deepEqual(h.states.classesOf(n0.id), ['hover'], 'control: over another device, hovered');
+		h.capture.onKeyDown(key('Escape'));
 	} finally { h.restore(); }
 });
 

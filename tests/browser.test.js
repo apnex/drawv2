@@ -1739,6 +1739,47 @@ test('B422: on the product page a route lengthened mid-trace is traced whole, an
 });
 
 /*
+Move 6's verification (should-fix 5) -- THE PRODUCT PAGE'S HELP PANEL, BY REAL KEYS. Since the capture move Input is handed the panel the
+page makes of its element, `{ shown(), show(on) }` (app/src/main.js); the lab's panel was tested in Chrome, the product page's was not, and
+a `show` that did nothing passed. `?` shows it; while it shows, a key that is not the help's -- Delete, on a selected device -- does nothing
+(the help-open guard, kernel/input-rules.mjs); Escape hides it and does nothing more, the selection kept. Delete then deletes the device:
+the control that the key would have acted, and the board left as it was.
+*/
+test('move 6 (capture move): on the product page ? shows the help, Delete does nothing while it shows, and Escape hides it keeping the selection', { skip: SKIP }, async () => {
+	const t = await attach(`http://127.0.0.1:${port}/${NET_DIAGRAM}`);
+	const press = async (k, code, vk) => {
+		for (const type of ['keyDown', 'keyUp']) await t.send('Input.dispatchKeyEvent', { type, key: k, code, windowsVirtualKeyCode: vk, ...(type === 'keyDown' && k.length === 1 ? { text: k } : {}) });
+	};
+	let id = null;
+	try {
+		await until(t, `document.getElementById('node-ab00a1') ? 1 : 0`, 8000);
+		await t.eval(`window.draw.input.setReadOnly(false), 1`);
+		id = await t.eval(`(async () => { const { makeNode } = await import('/plugins/devices/make-node.mjs');
+			const m = window.draw.model; const a = makeNode(m, 'host', { x: -360, y: 480 });
+			window.draw.history.commit({ label: 'help panel', entries: [{ op: 'put', kind: 'node', entity: a }] }); return a.id; })()`);
+		await until(t, `document.getElementById('${id}') && window.draw.sync.outbox.every((m) => m.answered) ? 1 : 0`, 6000);
+		await t.eval(`window.draw.selection.set(['${id}']), 1`);
+		const seen = async () => JSON.parse(await t.eval(`JSON.stringify({ help: !document.getElementById('help').hidden,
+			selected: window.draw.selection.list(), device: !!window.draw.model.get('node', '${id}') })`));
+		assert.deepEqual(await seen(), { help: false, selected: [id], device: true }, 'precondition: the help hidden, a device selected');
+		await press('?', 'Slash', 191);
+		assert.deepEqual(await seen(), { help: true, selected: [id], device: true }, '? shows the help');
+		await press('Delete', 'Delete', 46);
+		assert.deepEqual(await seen(), { help: true, selected: [id], device: true }, 'Delete does nothing while it shows');
+		await press('Escape', 'Escape', 27);
+		assert.deepEqual(await seen(), { help: false, selected: [id], device: true }, 'Escape hides it, and keeps the selection');
+		await press('Delete', 'Delete', 46);
+		await until(t, `window.draw.model.get('node', '${id}') ? 0 : 1`, 3000);
+		assert.equal((await seen()).device, false, 'control: with the help hidden, Delete deletes the selected device');
+		await until(t, `window.draw.sync.outbox.every((m) => m.answered) ? 1 : 0`, 6000);
+	} finally {
+		if (id) await t.eval(`(() => { const e = window.draw.model.get('node', '${id}');
+			if (e) window.draw.history.commit({ label: 'help panel done', entries: [{ op: 'del', kind: 'node', entity: { ...e } }] }); return 1; })()`).catch(() => {});
+		await t.close();
+	}
+});
+
+/*
 H24.1 (B264) -- ON THE PAGE, WITH REAL INPUT: a double-click inside a zone renames it only with Shift held.
 
 The unit test drives the capture with a built event (tests/canvas-labels.test.js H24.1). This drives Chrome's own mouse, so the

@@ -342,12 +342,22 @@ export function makeInput({ readOnly = false, bare = false, host: hostOverride =
 	// L0: tests drive the page's events through capture, as a browser does -- Input itself takes only input events. C-b: the plugins'
 	// picks; H26.8's picks move: read by item, each item's drawer the renderer's, run mode's regions from the same, as the page composes them
 	const opened = { svg, scene, host, sink: input, picks: picksOf(parts), drawerOf: (id) => renderer.drawerOf(id) };
+	/*
+	Move 6's verification (should-fix 1) -- EACH POINTER TAKE RECORDED, then refused as before: the reply reads the surface's
+	setPointerCapture as the capture opens, so it is wrapped here, before, and every take Input asks of a reply is seen -- its pointer id --
+	where the refusal alone answered false to a take and to none alike.
+	*/
+	const takes = [];
+	const refuse = svg.setPointerCapture;
+	svg.setPointerCapture = function (pointerId) { takes.push(pointerId); return Reflect.apply(refuse, this, [pointerId]); };
 	// H26.3 (INPUT-CAPTURE.md section 5): through the listeners input-capture and the adapter add, as the page's events arrive. RESTATED at
 	// H26.5 (RELEASES-0.2.md section 4): the parity hook, which drove the old capture beside it when DRAW_CAPTURE_PARITY was set, is retired
 	const capture = captureDispatch(opened);
 
 	const handle = {
 		input, capture, model, history, selection, svg, scene, commits, calls, restore, renderer, states, labels, tools, help, helpPanel, snap,
+		// the pointer ids each take asked of a reply, the platform refusing each (move 6's verification, should-fix 1)
+		takes,
 		// H26.8's picks move: the element the scene drew for an item, to press on (`targetOf`)
 		at: (on) => targetOf(handle, on),
 		// events Input handed to the host (W5 `draw:action`) — an outbound boundary, so a fair assertion

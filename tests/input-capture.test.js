@@ -119,6 +119,47 @@ test('a key says whether focus is on a control, which Tab must leave to the brow
 	assert.equal(seen(quietSvg(), 'onKeyDown', key('Tab')).focus.onControl, false);
 });
 
+/*
+Move 6's verification (should-fix 1) -- INPUT TAKES THE POINTER ON A PRESS THAT STARTS A GESTURE, AND ON NO OTHER EVENT. Since the move the
+take is asked of the reply at once (IC8), where the old capture took it after Input returned; the platform refuses a synthetic pointer, so a
+take and its absence answered alike, and a press that took nothing passed. The harness records each take before refusing it (`h.takes`).
+*/
+test('Input takes the pointer once, its own id, on a press that starts a gesture -- not on a press no row matches, a move or a release', () => {
+	const h = makeInput();
+	try {
+		const [a] = seedNodes(h.model, [[0, 0]]);
+		const took = (f) => { const n = h.takes.length; f(); return h.takes.slice(n); };
+		assert.deepEqual(took(() => h.capture.onDown(pointer(0, 0, { target: h.at(a.id), pointerId: 5 }))), [5], 'a left press on a device, the link gesture starting: taken, its pointer');
+		assert.deepEqual(took(() => h.capture.onMove(pointer(40, 0, { target: h.at(a.id), pointerId: 5 }))), [], 'its move takes nothing');
+		assert.deepEqual(took(() => h.capture.onUp(pointer(40, 0, { buttons: 0, pointerId: 5 }))), [], 'nor its release');
+		assert.deepEqual(took(() => h.capture.onDown(pointer(-600, -600, { pointerId: 6 }))), [6], 'a left press on open ground, the marquee starting: taken');
+		h.capture.onUp(pointer(-600, -600, { buttons: 0, pointerId: 6 }));
+		assert.deepEqual(took(() => h.capture.onDown(pointer(-600, -600, { button: 2, buttons: 2, pointerId: 7 }))), [], 'a right press on open ground, which no row matches: nothing taken');
+		h.capture.onUp(pointer(-600, -600, { button: 2, buttons: 0, pointerId: 7 }));
+		assert.deepEqual(took(() => h.capture.onDown(pointer(-600, -600, { button: 1, buttons: 4, pointerId: 8 }))), [], 'nor a middle press');
+		h.capture.onUp(pointer(-600, -600, { button: 1, buttons: 0, pointerId: 8 }));
+		assert.deepEqual(h.takes, [5, 6], 'two takes in all');
+	} finally { h.restore(); }
+});
+
+/*
+Move 6's verification (should-fix 2) -- TAB THROUGH CAPTURE, BY WHERE FOCUS IS. Tab shows or hides the names only while the canvas holds
+focus, and is claimed only then, so on a toolbar control it traverses the page (B47): the fact's `focus`, draw's own answer, read before
+anything is claimed. Driven through capture, the claim the reply makes is the real event's preventDefault.
+*/
+test('Tab through capture: on a control, nothing claimed and the names untouched; off one, claimed once and the names toggled', () => {
+	const h = makeInput();
+	try {
+		const toggles = () => h.calls.filter((c) => c.name === 'renderer.toggleLabels').length;
+		const onButton = { tagName: 'BUTTON', closest: (s) => (s.includes('button') ? {} : null) };
+		let claimed = 0;
+		h.capture.onKeyDown(key('Tab', { target: onButton, preventDefault: () => { claimed++; } }));
+		assert.deepEqual([claimed, toggles()], [0, 0], 'focus on a button: the key left to the browser, the names as they were');
+		h.capture.onKeyDown(key('Tab', { preventDefault: () => { claimed++; } }));
+		assert.deepEqual([claimed, toggles()], [1, 1], 'focus off any control: claimed, and the names toggled');
+	} finally { h.restore(); }
+});
+
 test('H26.5 (B413): the host\'s focus loss reaches the input layers\' blur, as plain data with every modifier false, and takes no pointer', () => {
 	const svg = quietSvg();
 	const { got, sink } = probe({ capture: true });
@@ -167,7 +208,33 @@ FROZEN, AND WRITES NOTHING ON IT. Every scenario of the gesture corpus is driven
 routes to watched: the fact it is handed is input-capture's, frozen, its properties in the component's order, with a reply; and when the scenario
 ends, every fact Input was handed -- its `hit` and `focus`, draw's own answers, among it -- reads as it did when it arrived. A write on
 the fact itself throws, Input's module being strict; one on its `hit` is found here.
+RESTATED at move 6's verification (should-fix 4): `hit`, `focus` and `hit.region` are compared by their own keys, where JSON compared
+them -- every key, a string or a symbol, enumerable or not, with its value, so a function, a symbol or an `undefined` written on one is
+seen, as JSON saw none of them; each object by identity too, so one replaced by its copy is seen; what `region` holds -- the element
+pressed, its entity, the page's to change -- by identity alone.
 */
+const OWN_DEPTH = 2;   // hit, then region, its own keys; what region holds by identity
+function ownEntries(v, at = '', depth = 0) {
+	if (v === null || typeof v !== 'object' || depth === OWN_DEPTH) return [[at, typeof v, v]];
+	const out = [[at, 'object', v, Object.isFrozen(v), Object.getPrototypeOf(v)]];
+	for (const k of Reflect.ownKeys(v)) {
+		const d = Object.getOwnPropertyDescriptor(v, k);
+		const name = `${at}[${typeof k === 'symbol' ? 'symbol ' : ''}${String(k)}]`;
+		if ('value' in d) out.push(...ownEntries(d.value, name, depth + 1).map((e) => [...e, d.enumerable, d.writable]));
+		else out.push([name, 'accessor', d.get, d.set, d.enumerable]);
+	}
+	return out;
+}
+const ownOf = (fact) => [...ownEntries(fact.hit, 'hit'), ...ownEntries(fact.focus, 'focus'), ...ownEntries(fact.hit?.region, 'region', 1)];
+// the first entry that differs, by Object.is, or null when none
+function ownChange(was, now) {
+	for (let i = 0; i < Math.max(was.length, now.length); i++) {
+		const a = was[i], b = now[i];
+		const said = (e) => (e ? `${e[0]} = ${String(e[2])}` : 'absent');
+		if (!a || !b || a.length !== b.length || a.some((x, j) => !Object.is(x, b[j]))) return `${said(a)} -> ${said(b)}`;
+	}
+	return null;
+}
 test('GR5: Input is handed each fact itself, frozen, with its reply, and writes nothing on it -- over the whole corpus', () => {
 	const ENTRIES = ['press', 'move', 'release', 'cancelDrag', 'hover', 'leave', 'double', 'keyDown', 'keyUp', 'blur'];
 	const real = Object.fromEntries(ENTRIES.map((m) => [m, Input.prototype[m]]));
@@ -175,7 +242,7 @@ test('GR5: Input is handed each fact itself, frozen, with its reply, and writes 
 	const writes = [];   // a write on the frozen fact throws in Input's strict module; the corpus records a throw, so it is caught here too
 	for (const m of ENTRIES) {
 		Input.prototype[m] = function (fact, reply, ...rest) {
-			if (reply !== undefined) handed.push({ m, fact, reply, was: JSON.stringify(fact) });
+			if (reply !== undefined) handed.push({ m, fact, reply, was: JSON.stringify(fact), own: ownOf(fact) });
 			try { return real[m].call(this, fact, reply, ...rest); } catch (e) {
 				if (e instanceof TypeError && /read only|read-only|not extensible|Cannot (?:assign|add|define)/i.test(e.message)) writes.push(`${m}: ${e.message}`);
 				throw e;
@@ -187,11 +254,12 @@ test('GR5: Input is handed each fact itself, frozen, with its reply, and writes 
 		for (const s of SCENARIOS) {
 			handed = [];
 			record(s);
-			for (const { m, fact, reply, was } of handed) {
+			for (const { m, fact, reply, was, own } of handed) {
 				assert.equal(Object.isFrozen(fact), true, `${s.id}: ${m} was handed a frozen fact`);
 				assert.deepEqual(Object.keys(fact).slice(0, 5), ['type', 'at', 'screen', 'hit', 'focus'], `${s.id}: ${m} was handed input-capture's fact, in its own order`);
 				assert.equal(typeof reply.claim === 'function' && typeof reply.takePointer === 'function', true, `${s.id}: and its reply`);
 				assert.equal(JSON.stringify(fact), was, `${s.id}: ${m}'s fact, its hit and focus among it, as it arrived`);
+				assert.equal(ownChange(own, ownOf(fact)), null, `${s.id}: ${m}'s hit, focus and region, every own key, as they arrived`);
 			}
 			facts += handed.length;
 		}
