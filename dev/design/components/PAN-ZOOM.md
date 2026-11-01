@@ -212,7 +212,8 @@ Dragging on open ground with the left button stays the selection box, and the wh
   a diagram's view is read once its document has loaded and before its first frame, and a value absent, unreadable, of a `v` other than 1, or out of range is ignored;
   a read or a write that throws -- storage blocked or full -- is ignored, the view working unremembered for the page's life, a new path that fails to the first opening and never to an error;
   the lab, holding no diagram id, remembers none.
-- **First opening** (PZ7, ruled, section 9): with nothing remembered, centre 0,0 at the scale that fits the old 1920 by 1080 frame in the canvas, so every diagram opens as it shows today.
+- **First opening** (PZ7, ruled, section 9): with nothing remembered, centre 0,0 at the scale that fits the old 1920 by 1080 frame in the canvas, so every diagram opens as it shows today.\
+  That scale is the default zoom, not a lock: the viewer zooms from it at once, and its rule stands in one place in `view.js`, so the default can be changed by one edit.
 - **Home** (PZ6): a reticle button, `button#view-home`, page chrome over the canvas's lower right corner beside `#container`, and the key `h`, each bringing the view's centre to cell 0,0 (Q5: "moves the camera back to cell 0,0"), the zoom kept -- a centre and a scale set outright, turned into the scene's top-left and handed to `setView`, since `zoomAbout` keeps a point and at an unchanged scale moves nothing (reading 2, o:F3).
 - **The other verbs** (PZ28; added after reading 1, o:F22; restated after reading 2, o:F3): zoom in, zoom out and actual size each answer a target scale, clamped to PZ12's range first, and a pivot, handed to `zoomAbout`; fit, like home, answers a centre and a clamped scale, set outright through `setView`:
   zoom in and out multiply and divide the scale by `2 ** 0.5`, about the canvas's centre, keys having no pointer;
@@ -571,7 +572,7 @@ The director's rulings on the seven decisions marked theirs, each recorded here 
 
 | Decision | Ruled | The director's words | What it binds |
 |---|---|---|---|
-| PZ7 -- what a diagram first shows | (a), the recommendation | "fixed zoom. centered on 0,0 so all existing diagrams show the same proportions - only difference is the grid extends in all directions and no longer gets cut of" | with nothing remembered, every diagram opens centred on 0,0 at the one scale that fits the old 1920 by 1080 frame in the window, the same for every diagram, so each opens as today and only the grid, now unbounded, reaches past the old edges (3.7); the pixel probe against production stays valid (2.5) |
+| PZ7 -- what a diagram first shows | (a), the recommendation | "fixed zoom. centered on 0,0 so all existing diagrams show the same proportions - only difference is the grid extends in all directions and no longer gets cut of"; then, clarifying: "by fixed I meant default zoom level (we can change it)" | with nothing remembered, every diagram opens centred on 0,0 at the one scale that fits the old 1920 by 1080 frame in the window, the same for every diagram, so each opens as today and only the grid, now unbounded, reaches past the old edges (3.7); that scale is the default a diagram opens at, never a lock -- a viewer zooms away from it at once, and its rule is held in one place in `view.js`, so changing the default is one edit; the pixel probe against production stays valid (2.5) |
 
 To come, each recorded here as it is ruled: PZ2 (a zone on a size change), PZ3 (two anchors landing on one point), PZ6 (the home button), PZ12 (the zoom range and what shows far out), PZ21 (the range of sizes) and PZ27 (Space).
 
