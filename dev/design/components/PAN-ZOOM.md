@@ -4,7 +4,7 @@ The design of record for H26.6, from the director's intent captured in `PAN-ZOOM
 Draw's canvas loses its edges: one grid per diagram, 60 by default and changeable, devices at its square centres and zones on its lines; a viewer pans and zooms with the touchpad and mouse gestures the intent names, and each viewer's view is remembered per diagram in their browser, with a reticle button home to 0,0.\
 It overturns decision 1's fixed canvas and WD7's refusal of other grid values once ratified, and meets B289 and B325; it is built component first, as H26-3 ordered and H26-22 confirms, on the four components draw runs on -- `input-binding`, `input-capture` and `vector-scene` `0.2.0`, `snap-grid` `0.1.0` -- and the gesture tester.
 
-**Standing:** revision 1, drafted, not ratified, awaiting its readings and the director's walkthrough; drafted in three parts, of which sections 1 to 4 are written and sections 5 to 8 and appendix A are to come; the code read is `1fbbc5b`; code lines measured by `tools/code-split.mjs` and its `codeLines`, browser behaviour in headless Chrome through `@apnex/headless-chromium` on draw's lab page, the scripts and their outputs at `~/taceng/drawv2-eval-runs/h26-pan-zoom/probes/`.
+**Standing:** revision 1, complete, drafted, not ratified, awaiting its readings and the director's walkthrough; drafted in three parts, every section written but section 8, which records the readings as they are made; the code read is `1fbbc5b`; code lines measured by `tools/code-split.mjs` and its `codeLines`, browser behaviour in headless Chrome through `@apnex/headless-chromium` on draw's lab page, the scripts and their outputs at `~/taceng/drawv2-eval-runs/h26-pan-zoom/probes/`.
 
 ---
 
@@ -227,19 +227,131 @@ The figures are the probes' at `~/taceng/drawv2-eval-runs/h26-pan-zoom/probes/`:
 
 ## 5. The moves
 
-To come: the component releases, the tester on the director's Chromebook, then draw, per-diagram grid size its own step, each with its guard and its validation in the live lab.
+### 5.1 The order, each move's guard, and who verifies it
+
+H26-3's order as H26-22 confirms: the component releases, the tester on the director's Chromebook, then draw, per-diagram grid size its own step, last.\
+Each move is sized for one agent task of about 45 minutes, built by an agent that did not draft this design; *verifier* marks a move whose change a person or an agent could notice, passed by an independent verifier as H26-15 as amended rules, each component release reviewed once in full as H25-3's correctness first holds; *gate* marks one whose guard holds every record byte for byte, passed by the builder's gate alone.\
+Draw's guards name its records: the native record (`tests/fixtures/native-record.mjs`, its comparator under the pipes move's allowances), the export's bytes over the 18 stored and seeded documents and the 19 pinned production documents (`tests/svgexport.test.js`, `tools/probe/parity.mjs`), the gesture corpus (`tests/fixtures/gesture-corpus.json`), and the pixel probe against production.
+
+| # | Move | What it does | Its guard | Deletes | Behaviour changes, and nothing else | Checked by |
+|---|---|---|---|---|---|---|
+| 1 | `vector-scene` 0.3.0: the view, contract and implementation | 3.2's view -- `view: true`, `setView`, `view`, `visible`, `zoomAbout`, the transform on every layer, the conversions composing it, `getBoundingClientRect` in VS1 -- with its Node tests on a recording root | every invariant of `0.2.0` passes unchanged for a scene declared without a view; the new invariants for a viewed scene | -- | a new capability; none for a scene without a view | verifier |
+| 2 | `vector-scene` 0.3.0: in Chrome, and released | the browser invariants: a viewed scene's layers, scene and foreign, carry the transform; `toDrawing` and `toScreen` equal `DOMPoint` over the root's transform and the view at thousands of points; `itemAt` and `itemOf` answer through a panned and zoomed view; `visible()` equals the box's corners converted; then the release by its CI | its gate, its consumer test, and the built files a release of its own CI | -- | -- | verifier |
+| 3 | `input-binding` 0.3.0: a threshold on screen | the declaration's `measure`, the session reading `screen` with it; tests, the consumer test, the release | every invariant of `0.2.0` passes unchanged for a declaration without `measure` | -- | none for a declaration without `measure` | verifier |
+| 4 | `snap-grid` 0.1.2: the build keeps its contract | `inView` freezing each value as made, with no `Set`; an invariant listing 2^24 positions; the release | every invariant of `0.1.1` unchanged; its corpus | the ceiling at 5,592,404 | a listing past 5,592,404 answers where it threw | verifier |
+| 5 | the tester: the view's rows | its table gains 3.6's rows and its session the three drag gestures measured on screen (`input-binding` 0.3.0); each verdict shown; its architecture's non-goal amended by a decision of its own record (PZ30) | its gate: trusted input in headless Chrome over every binding row, no input matching two rows | -- | the tester shows the view's verdicts | verifier |
+| 6 | the tester: the view pane, and the director's acceptance | the pane, a second scene on its own `svg` with a view (`vector-scene` 0.3.0): the grid drawn from `visible()` and thinned to 24 pixels, panned and zoomed by every gesture, its centre and scale shown, a reticle home; a line drawn at 2^20 and at 2^24 from the origin, measured, fixing PZ31's number; deployed to the tester's own address | its gate; then the director's acceptance on the Chromebook of each gesture -- two-finger scroll, pinch, Ctrl and the wheel, Space and drag, middle drag, right drag on open ground, the keys, the reticle | -- | the tester's view pane | verifier, then the director |
+| 7 | draw: the canvas viewed | the four pins raised; the canvas's scene opened with a view at the first opening's scale (PZ7); the `view` part declared, holding the view and setting it again on a resize; the root bare -- no `viewBox`, no ground rect -- the ground its fill, the mode an inset outline (PZ25); the label editor's font from the view's scale; a palette drop on any point of the canvas | the native record and the export's bytes unchanged; the gesture corpus byte-identical; the pixel probe differs only beyond the old 1920 by 1080 frame and at the mode's outline | `CANVAS_VIEWBOX`, the generated ground rect in `app/index.html` and `lab/index.html`, the palette's frame test (`app/src/palette.js:146-148`), the label editor's read of the root's scale (`app/src/labeledit.js:145`) | the canvas fills the stage, its ground where the letterbox was; the mode shown as an outline at the screen's edge | verifier |
+| 8 | draw: the grids and the crosshair from the view | each grid drawn from `visible()` by `inView`, a least spacing of 24 pixels, again at most once a frame when the view moves (PZ24); the crosshair across `visible()` | as move 7, the native record's crosshair line ends the one difference allowed | every lattice point listed within an extent (`plugins/layouts/layout-canvas.mjs:30-37`); the grids' draw at load alone | dots across the whole canvas; the crosshair across it | verifier |
+| 9 | draw: the gestures as rows | `wheel` listed beside `blur`; `viewRules` before the press table in every mode, its rows and the `pan` gesture of 3.6; the session measured on screen, 4 pixels (PZ17), the palette's threshold with it | the gesture corpus byte-identical, its harness converting at a scale of one (`tests/fixtures/client-harness.mjs:168`); `right-button.mjs` as a test: on open ground the middle and right buttons match the pan rows alone, every other button and kind as today | the threshold in drawing units (`app/src/input.js:61`) | pan and zoom by every gesture of the intent, in every mode, run mode among them, which takes no other gesture; a press travels 4 screen pixels before it is a drag | verifier |
+| 10 | draw: the keys, the remembered view and the way home | the zoom keys and `h` (PZ28); Space's datum on its key-up when no pan ran (PZ27); the view remembered in `localStorage` through a store the page hands the `view` part (PZ23); the reticle button (PZ6) | the gesture corpus but its Space scenario, its new record named; a view never in a commit | the datum on Space's press (`app/src/keymap.js:92`) | the keys; the datum on Space's release; each viewer's view kept per diagram; the button home to 0,0 | verifier |
+| 11 | draw: the extents gone | validation without an extent -- an anchor on the device lattice within PZ31's bound, a zone on the zone lattice in whole squares; snapping on the unbounded lattices; `clampDelta` without bounds; the zone's and the device's steps without an edge; the caps as the numbers 527 and 576 (PZ8) | the native record, the export's bytes and the gesture corpus unchanged; every stored document still accepted | `model/surface.mjs`; `NODE_EXT` and `ZONE_EXT`; `nodeGridWithin` and `positionsWithin`; the bound checks, the clamps' bounds and the edge steps of section 2.1's E5 and E6 | anything may be placed, moved or resized beyond the old frame | verifier |
+| 12 | draw: the lists, placement, the CLI's grid and the index | the anchors route by area (PZ9); placement's nearest free point by rings; the CLI's zone cells from the stored `pitch` (PZ15, B402) and its `map` and `anchor free` over the used bounds and a margin; the occupancy index keyed by the device lattice the composition hands (PZ26) | the agent door's answers for an area holding the old frame equal today's list; the CLI's tests; the native record unchanged | the bounded grids (`server/rest.js:137-139`); the extent's listing in placement (`server/anchor.mjs:62-70`); the CLI's literals (`cli/verbs.mjs:2096`, `:2264-2267`) | an anchors request without an area is refused, naming its parameters | verifier |
+| 13 | draw: the pitch read as the grid or as the unit | every reader of the pitch classified (PZ18, PZ19): a reader asking where a position lies takes the diagram's lattices through the composition; a device's size, the export's span bounds and the simulation's speeds and ranges read `STD.pitch`, 60 | every record byte for byte -- the native record, the export, the gesture corpus, the pixel probe -- since every diagram is still 60 | `GAP` and `NODE_GRID` read as the grid | none | gate |
+| 14 | draw: one stored grid | the `layout` row of one entity, `pitch` even (PZ20) and in range (PZ21); the second record and WD7's refusal gone; schema 4; the migration, rehearsed on a copy of production, run once in a freeze (WD9's form); the four templates migrated; `GET .../layouts` answering the one record | every pinned production document and template migrates to the one record and nothing else in it changes; the native record and the export's bytes unchanged | `plugins/layouts/layout-table.mjs`; the second layout; WD7's refusal (`plugins/layouts/layout-kind.mjs:37-42`); schema 3's reading | the agents' `layouts` answer is one record; stored documents are schema 4 | verifier |
+| 15 | draw: a size change | the layouts plugin's planner reaction (3.5; PZ1 to PZ4); the header's grid field (PZ29); the CLI's `grid` verb; the agent door's commit of a size | 60 to 60 changes nothing; for each pinned production document and stored board at 40, 80 and 120, the result equals `size-change.mjs`'s, one commit and one undo, the agent door's ops the browser's | -- | a diagram's grid size can be changed, its devices moved to their nearest points and its zones to the lines | verifier |
+
+### 5.2 The live lab and production
+
+Each move of draw's goes to the live lab first, as H26-14 as amended rules, and to production in batches with one approval each:
+- **batch 1, the infinite canvas at 60**: moves 7 to 12, released together, so production never holds a canvas that pans past an edge it still refuses;
+- **batch 2, per-diagram grid size**: moves 13 to 15, with move 14's freeze and migration, its own step as H26-22 orders.
+
+Draw's first move starts only when the director has accepted every gesture on the Chromebook in the tester (move 6); a gesture the director does not accept goes back to the tester, or to a component's release, before draw takes it.
 
 ---
 
 ## 6. Before and after, by part
 
-To come: the projection by part, estimated against H26.8's close in `dev/CODE-SPLIT.md`, as H26-16 asks.
+The declarative share is the code lines of top-level tables over all code lines; logic is the rest (`node tools/code-split.mjs --parts`).\
+Before: measured at `a4a90b3`, no product file changed since H26.11 went live at `ac0dda2`, beside H26.8's close in `dev/CODE-SPLIT.md`; after: estimates from section 2's measured ranges deleted or rewritten and each addition estimated, `=` unchanged.
+
+| Part | Lines | Share | After (est.) | Basis |
+|---|---:|---:|---:|---|
+| `lattice` | 169 | 13.6% | 152 | `positionsWithin` (14) and `nodeGridWithin` (1) go with `model/surface.mjs` (2); `latticeGrids` answers the two lattices in as many lines |
+| `layouts` | 68 | 54.4% | 90 | the table (10) goes; the row of one entity, 35 to about 22; the records, 11 to about 6; the size change's reaction, about 50 |
+| `devices` | 531 | 53.1% | 525 | a span's edge check (4) and the span step's edge (2) go |
+| `zones` | 162 | 65.4% | 155 | the extent checks and their sentence (6) and the size step's clamp (1) go |
+| `product` | 73 | 35.6% | 72 | `CANVAS_VIEWBOX` goes; the caps written as numbers in as many lines |
+| `canvas` | 1,832 | 8.1% | 1,871 | the view's rows (about 12, declared), the `pan` gesture (15), the wheel's entry (10), Space's datum on its release (6), the keys (5, declared), the wheel listed (3) added; the clamp's bounds (8), the palette's frame test (3), the surface's alias and a place's bounded check (3) go |
+| `view` (new) | -- | -- | 90 | the view, its clamp and setting (20), pan and zoom (15), home, fit and actual size (25), the store (15), a resize (5), its wiring (10) |
+| `grids` | 19 | 0.0% | 27 | drawn from the visible view, at most once a frame |
+| `editing`, `renderer` | 683 | -- | 687 | the crosshair from `visible()`; the scene opened with a view |
+| `label-editor` | 141 | 0.0% | = | the view's scale read in the line that read the root's |
+| `product-page`, `lab` | 736 | -- | 754 | the reticle button, the store over `localStorage` and the resize hook |
+| `rest`, `placement` | 736 | -- | 739 | the anchors by area; placement's rings for the extent's listing |
+| `cli` | 2,177 | 8.0% | 2,206 | the zone cells from `pitch` (4), `map` and `anchor free` over an area (5), the `grid` verb (20) |
+| `export`, `simulation`, `network`, `planner` and every other part | 6,652 | -- | = | untouched: the export's frame never read an extent, the simulation keeps its unit (PZ19), the reaction is the layouts plugin's tenant |
+| **draw, running** | **13,979** | **12.5%** | **about 14,160** | |
+
+**The headline, an estimate:** draw about 180 lines larger, 1.3%, its declarative share flat at 12.5%; a feature of new behaviour -- a view, its gestures, a size change -- where H26.8 retired translation, so the measure moves the other way.\
+The 274 lines that hold an extent today (section 2.1) are mostly rewritten in place, not deleted: what goes is the extent itself -- three constants, the layout table, two listing functions, every edge check and clamp bound -- about 80 lines, against about 260 added.\
+Outside draw's count, the components grow by their releases -- `vector-scene`'s view the largest, about 120 lines, `input-binding`'s `measure` about 15, `snap-grid`'s freeze a few -- and the tester by its pane, each measured in its own repository at its move.
+
+What the density measure will not show:
+- the extents' reach, gone: `NODE_EXT` on 20 lines in 7 files, `ZONE_EXT` on 13 in 4 and `LAYOUT_TABLE` on 15 in 5 read the edge today through a name, and each is a line rewritten, not removed (section 2.1);
+- whether a boundary holds -- the view the scene's, the grid `snap-grid`'s, a device's unit its own -- which the scanners and GR1 to GR15 check, not a line count;
+- behaviour, which the records and the director's acceptance hold.
 
 ---
 
 ## 7. Axiom alignment audit (M7)
 
-To come: the audit, its verdict, tensions and guardrails.
+**Identity:** H26.6 at revision 1, `PAN-ZOOM.md`, read against draw at `1fbbc5b`, the intent record and `H26-22`, the four components' released contracts at the versions draw pins, the tester's architecture target, and mission-kit at `15f265f`; draw's traits, the axioms' bindings: stateful (A1), declarative in its manifests and declarations (A2), multi-agent through its agent door and its builders (A5, A6, A7), any system (A3, A4, A8, A9, A14).
+
+**Verdict:** `pass, with guardrails`, by its author, GR1 to GR15 below; to be confirmed by the readings H26-15 as amended asks, recorded in section 8.
+
+| Axiom | Weight | How the design stands |
+|---|---|---|
+| `A3` | load-bearing | the view is `vector-scene`'s, written on the layer elements it alone owns (VS4), its visible area in `snap-grid`'s own view form, so draw composes the two natively; the grid's arithmetic stays `snap-grid`'s; a screen-measured threshold is `input-binding`'s; each component consumed by its one part, the new `view` part one duty behind its boundary; no surface added without a consumer -- `snap-grid`'s count withheld (PZ13), culling deferred (PZ11) |
+| `A13` | load-bearing | the director's four added constraints carried in their words where they bind (Q2, Q3, Q5, the right-button pan); seven decisions marked the director's, each with options and a recommendation, none narrowed; the gestures proven on the director's own device before draw depends on them |
+| `A2` | load-bearing | one stored grid, the zone lattice derived and never stored (GR7), so the stored and the drawn grid are one declaration; WD7's two records of one fact retired |
+| `A8` | load-bearing | components released and verified first, the tester accepted on the Chromebook, then draw, each move with a guard, the size change last in its own batch; the records held byte for byte where nothing is meant to change |
+| `A1` | supporting | the document stays the one truth, schema 4 its one form; the view is a viewer's presentation, held in their browser and never system truth (tension below) |
+| `A5` | supporting | a person and an agent read the same document and change the grid through the same edit, the planner computing it once (PZ4); what a viewer looks at is theirs alone (AG-1, tension below) |
+| `A7` | supporting | refusals that act -- an anchors request over its bound names its count, a size change's notice names each anchor moved to a free point and each zone whose anchors changed; an unreadable remembered view is ignored, never fatal |
+| `A4` | supporting | every figure from a kept probe; each finding the drafting made -- the pitch's double role, `snap-grid`'s ceiling, odd sizes, the Space datum -- a decision with its evidence |
+| `A14` | supporting | the defects found on the way registered as work: `snap-grid`'s build against its contract fixed by its own release (move 4); the held rows the design meets given their dispositions (deltas below) |
+| `A9` | supporting | each draw move in the live lab before production; the migration rehearsed on a copy of production before its freeze; no chaos testing beyond these, the design changing no failure path |
+| `A6`, `A10`, `A11`, `A12` | not materially implicated | no coordination substrate, self-correction loop or model invocation is changed |
+
+**Layered application:**
+- *Intent:* the picks, the constraints and the anti-goals carried whole; no anti-goal designed in (GR5, GR6).
+- *State and truth:* one stored grid per diagram; the view outside the document (GR5).
+- *Specification:* one declaration per grid; the device's unit fixed and named apart from the grid (GR4).
+- *Composition:* three component releases, each additive and invisible to a consumer that does not ask (moves 1 to 4); draw's new part declared.
+- *Perception:* agents' reads unchanged but the lists by area; the grid's size readable at `GET .../layouts`.
+- *Integrity:* component, tester, director, draw; batch 1 then batch 2.
+- *Director attention:* seven decisions the director's, the rest the architect's to settle at ratification.
+
+**Tensions, and how they resolve:**
+- A1 against a view held in a browser: the view is no system truth -- nothing reads it but the viewer's own page, and losing it costs a return home -- as the mode and label toggles are session state today; AG-1 rules it out of the document.
+- A5 against a view each viewer holds: the bound is the document, identical for every actor; where a person looks is excluded by AG-1, and nothing an agent decides depends on it.
+- A3 against unloading out of view: the scene could own it, but no measured board needs it at the caps kept (PZ8, PZ11); B289 stays held with a measured trigger.
+- Q3's "nearest point" against collisions: two devices cannot share a point (B112), so the later moves to the nearest free one (PZ3), which the director rules.
+- H26-16's density aim against a feature: draw grows about 1.3% (section 6); the aims of clean boundaries hold -- every extent gone, the view and the grid each in its component.
+- A8 against intermediate states: moves 7 to 10 show an infinite canvas while move 11's extents still bound editing; they live in the lab alone, production taking batch 1 whole.
+
+**Deltas:** the moves (section 5); thirty-one decisions (section 4); held rows given their dispositions at ratification, by the recorder -- B419 closed by moves 1 and 2, B404 by moves 3 and 9, B402 by move 12, B325 by moves 14 and 15, B415's trigger met by move 6 and the row restated, B289, B418 and B435 held with the triggers PZ11, PZ16 and PZ10 state; new rows -- the caps raised (PZ8), an odd size (PZ20), a culled board (PZ11).
+
+**Guardrails for the build:**
+- GR1: draw writes no attribute on a layer's element; the view is written by the scene alone (a source check over the canvas, renderer and view parts).
+- GR2: no grid is listed whole: every `inView` call in draw holds a region from `visible()` or an asked area and a `max` of at most 10,000, and `positionsWithin` and `nodeGridWithin` are gone (a source check).
+- GR3: no extent remains: `SURFACE`, `NODE_EXT`, `ZONE_EXT`, `CANVAS_VIEWBOX` and `LAYOUT_TABLE` are named nowhere in product code (a source check).
+- GR4: a device's size never reads the diagram's grid: at a grid of 40 a 3 by 2 panel draws the frame it draws at 60, and its sockets, content cells and export bounds with it (a test).
+- GR5: the view is never in a document, a commit or a request: the `view` part imports no commit, sync or store module, and only `app/src/main.js` touches `localStorage` (a source check and a test).
+- GR6: the wheel never zooms without Ctrl, and a left drag on open ground stays the selection box (AG-2; tests through the capture).
+- GR7: the zone lattice's origin is half the stored pitch, never stored: a layout record carrying any field but `id`, `name` and `pitch` is refused (a test).
+- GR8: a size change is one commit and one undo, computed by the planner: the agent door's ops for a request equal the browser's (a test).
+- GR9: no row of today's on open ground is taken: `right-button.mjs` as a test, before and after move 9.
+- GR10: each component is consumed by its one part (`tools/scan-layers.mjs` L12, as today), the `view` part handed the scene as a value.
+- GR11: the export's bytes unchanged at every move over the 18 stored and seeded documents and the 19 pinned production documents.
+- GR12: the native record holds at every draw move, its one allowed difference the crosshair's line ends from move 8.
+- GR13: the migration exact: every pinned production document and template migrates to `{ id: 'layout-000001', name: 'grid', pitch: 60 }` with no other byte changed, rehearsed on a copy before the freeze.
+- GR14: `node tools/code-split.mjs --parts` measured at each draw move and at the close, recorded in `dev/CODE-SPLIT.md`.
+- GR15: draw takes no gesture the director has not accepted on the Chromebook in the tester.
+
+**Closeout:** H26.6 closes when batch 2 is in production on the director's approval, each move's verifier has passed it against appendix A, `dev/CODE-SPLIT.md` holds the closing table, decision 1 and WD7 are recorded as overturned, and every held row above has its disposition.
 
 ---
 
@@ -251,4 +363,32 @@ To come: each reading recorded as it is made, its findings tiered as H26-15 as a
 
 ## Appendix A -- the build checklist
 
-To come: each row a move's builder satisfies and its independent verifier checks.
+The one place a builder reads: each row the builder satisfies and the move's independent verifier checks, beside the move's guard (5.1) and the gate; a move marked *gate* in 5.1 is checked by its builder's gate against these rows.
+
+| Move | The builder | The verifier checks |
+|---|---|---|
+| 1 | in `vector-scene`'s repository: its contract gains 3.2's view as numbered rules -- the declaration's optional `view`, `setView`, `view`, `visible`, `zoomAbout`, the transform written on every layer's element, the conversions composing it, `getBoundingClientRect` added to VS1 -- and its decision record the minor release, as `RELEASES-0.2.md` grew `0.2.0` | every rule of `0.2.0` read unchanged for a scene without `view`; the vocabulary check passes, no word of draw's in the source |
+| 1 | the implementation and its Node tests on a recording root: the transform's string, the conversions over a view, `visible()` against the root's box, `zoomAbout` keeping the point under the screen point, every refusal -- a non-finite member, a scale at or below 0, a view on a scene declared without one | each new rule has a test that fails on its mutant; the recording root logs no read but VS1's |
+| 2 | the browser invariants in Chrome, on `headless-chromium`: a viewed scene's scene and foreign layers carry the transform; the conversions equal `DOMPoint` over the root's transform and the view at thousands of points; `itemAt` and `itemOf` through a panned and a zoomed view; `visible()` equal to the box's corners converted; the consumer test | the tests run in Chrome and fail on a planted fault in the transform |
+| 2 | the release by the repository's CI, its built files attached to its release | the release's files are its CI's, its version `0.3.0`, its contract the one tested |
+| 3 | in `input-binding`'s repository: the declaration's `measure`, `'at'` by default or `'screen'`; IB1 reads `screen` where a session measures it; its decision record; tests over both measures, the consumer test, the release by its CI | every rule of `0.2.0` read unchanged for a declaration without `measure`; a press's travel measured on `screen` decides click and drop exactly; the release is its CI's |
+| 4 | in `snap-grid`'s repository: `inView` freezing each value as it makes it, with no `Set`; an invariant listing 2^24 positions in one answer; the release `0.1.2` by its CI | the corpus and every invariant of `0.1.1` unchanged; `grid-listing.mjs` run against the new build lists past 5,592,404 |
+| 5 | in the tester's repository: a decision of its own record amending "pan and zoom of the picture" (PZ30); its table gains 3.6's rows, its session the three `pan` gestures, `measure: 'screen'`, threshold 4; each verdict shown in its words | its gate's trusted input drives every new row in headless Chrome; no input matches two rows over its stated space; the pins are the released files |
+| 6 | the view pane: a second scene on an `svg` of its own declared with a view; the grid drawn from `visible()` by `inView`, a least spacing of 24 pixels; its centre and scale shown; the reticle home to 0,0; a line drawn at 2^20 and at 2^24 from the origin and its pixels measured, the measure recorded for PZ31; deployed to the tester's address | the pane pans and zooms by every gesture under trusted input; the keyboard picture never moves; the precision measure is recorded with its numbers |
+| 6 | the director's walkthrough on the Chromebook: each gesture tried and accepted or returned | each gesture's acceptance recorded before move 7 starts (GR15) |
+| 7 | draw's pins raised to `vector-scene` 0.3.0, `input-binding` 0.3.0 and `snap-grid` 0.1.2, `input-capture` staying at 0.2.0, the import map generated; the canvas's scene declared with `view: true` (`product/canvas.mjs`) | the gate's import-map and pin checks pass |
+| 7 | `view.js`, new in `app/src/`, the `view` part declared in `tools/layers.mjs` with `by` citing H26-22, which `docs/ARCHITECTURE-TARGET.md` section 2 cites first; the first opening at the old frame's fit (PZ7); a resize setting the view again | the part's imports are its declared consumes (`tools/generate-architecture.mjs`); the first opening's scale equals today's fit at three window sizes, measured as `fit-and-view.mjs` measures |
+| 7 | the root bare: `tools/canvas-layout.mjs` writes `#container` with no `viewBox` and no ground rect, `app/index.html` and `lab/index.html` regenerated; the ground the root's fill in `app/canvas.css`; the mode's inset outline in place of the ground's stroke (`app/canvas.css:15`, `:17`) | the pixel probe against production differs only beyond the old frame and at the outline, each difference shown |
+| 7 | the label editor's font from the view's scale (`app/src/labeledit.js:145`); a palette drop on any point of the canvas, `inCanvas` gone (`app/src/palette.js:146-148`) | the label editor's placement test in Chrome at two zooms; a drop beyond the old frame lands |
+| 8 | the grids part handed the scene's view: each grid drawn from `visible()` by `inView` with `minSpacing` 24 and a `max` of 10,000, again at most once a frame when the view moves; the crosshair across `visible()` (`app/src/editing-visuals.js:23-39`) | `dots-in-view.mjs`'s counts reproduced from the page at four scales; the native record's crosshair line ends its one difference (GR12) |
+| 9 | `wheel` listed beside `blur` (`app/src/capture.js:89`); `viewRules` in `input-binding`'s form, asked before the press table in every mode, run mode included; the `pan` gesture declared with buttons 0, 1 and 2; the session opened with `measure: 'screen'`, threshold 4; the palette's threshold in screen pixels | the gesture corpus byte-identical -- the harness's root answers an identity transform (`tests/fixtures/client-harness.mjs:168`), so screen and drawing points agree there; `right-button.mjs` as a test (GR9); wheel facts without Ctrl never zoom (GR6) |
+| 10 | the zoom keys and `h` as rows of the key table (PZ28); Space's datum on its key-up when no pan ran while it was held (PZ27); the store over `localStorage` made in `app/src/main.js` and handed to the `view` part, the key and value of 3.7, written half a second after the view last moved and when the page hides; the reticle button in `#stage` of `app/index.html` and `lab/index.html` | the corpus's Space scenario re-recorded and its difference named; a stored view absent, malformed or out of range is ignored; no commit carries a view (GR5); the button and `h` bring 0,0 to the centre with the zoom kept |
+| 11 | validation without an extent: an anchor's `x` and `y` on the device lattice within PZ31's bound (`product/kinds.mjs:91-92`), a zone's corner on the zone lattice and its sides whole squares (`plugins/zones/zone-kind.mjs:48-51`), its edge sentence gone (`:59-60`), a span's edge check gone and its content check kept (`plugins/devices/device-fields.mjs:69-79`); the caps the numbers 527 and 576 | every stored and pinned document still accepted; `tests/svgexport.test.js` and the native record unchanged |
+| 11 | snapping on the unbounded lattices (`app/src/snap.js:35-39`); `clampDelta` quantising without bounds (`:73-88`); a place's unbounded grid accepted (`:129`); the zone's and the device's steps without an edge; `model/surface.mjs`, `nodeGridWithin` and `positionsWithin` deleted | GR3 and GR2's source checks; a device dragged and a zone resized past the old frame in the lab |
+| 12 | the anchors route by area (`server/rest.js:681-692`), `x0`, `y0`, `x1`, `y1` required, at most 10,000 positions, refused past that naming the count; placement's nearest free point by rings (`server/anchor.mjs:62-70`) | an area holding the old frame answers today's list exactly; `tests/layouts-api.test.js`, `tests/server.test.js`, `tests/bare-anchor.test.js` and `tests/devices-plugin.test.js` restated where they read the whole list; placement on a full ring moves outward |
+| 12 | the CLI: a zone's cells from the stored `pitch` (`cli/verbs.mjs:2096`, `:2264-2267`), `map` and `anchor free` over the used bounds and a margin unless an area is given, `add` taking any cell; the occupancy index handed the device lattice by the composition (`app/src/compose-canvas.js:70`) | B402's literals gone; the CLI's tests pass at 60; `tests/cli-tool.test.js` restated where it read the whole list |
+| 13 | each reader of the pitch classified and rewired: as the grid -- `GAP`, snapping, the nudge, the readout's cells, the zone's keys, the crosshair's box, field validation, the occupancy index -- from the diagram's lattices; as the unit -- `plugins/devices/device-appearance.mjs:34`, `plugins/devices/device-types.mjs:161`, `plugins/devices/device-footprint.mjs:20`, `plugins/devices/device-gestures.mjs:27`, `server/svg.mjs:101`, `plugins/simulation/movers.mjs:77`, `plugins/simulation/rules.mjs:69` -- from `STD.pitch` | every record byte for byte; the gate alone (5.1) |
+| 14 | the `layout` row of one entity, `{ id, name: 'grid', pitch }`, `pitch` even and within 40 to 240, any other field refused (GR7); WD7's refusal and the second record gone; `latticeGrids` opening the device lattice at 0 and the zone lattice at `pitch / 2`; schema 4 in `model/shape.mjs`; `GET .../layouts` answering the one record | GR7's test; the agent door's `layouts` answer in its new form; `stored-grids.mjs` against the migrated copies |
+| 14 | the migration, schema 3 to 4, run once in a freeze as WD9 ran schema 3's, rehearsed first on a read-only copy of production; the four templates migrated in the tree; the deployed version reading schema 4 alone | GR13: every pinned production document and template migrated, no other byte changed; the rehearsal's record kept with the move |
+| 15 | the layouts plugin's planner reaction (3.5): anchors to the nearest point, a collision's later anchor to the nearest free one, zones' corners to the zone lattice, every size kept, one commit; its notice; the header's grid field; the CLI's `grid` verb; the agent door's commit of a size | GR8: one commit and one undo, the agent door's ops the browser's; at 40, 80 and 120 each pinned production document and stored board equal to `size-change.mjs`'s figures; GR4 at 40 |
+| each | `dev/CODE-SPLIT.md`'s row for the move (GR14); `docs/ARCHITECTURE.md` and `docs/ARCHITECTURE-TARGET.md` regenerated; the move in the live lab before its batch goes to production | the gate passes; the lab shows the move |
