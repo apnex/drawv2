@@ -4,7 +4,7 @@ The design of record for H26.6, from the director's intent captured in `PAN-ZOOM
 Draw's canvas loses its edges: one grid per diagram, 60 by default and changeable, devices at its square centres and zones on its lines; a viewer pans and zooms with the touchpad and mouse gestures the intent names, and each viewer's view is remembered per diagram in their browser, with a reticle button home to 0,0.\
 It overturns decision 1's fixed canvas and WD7's refusal of other grid values once ratified, and meets B289 and B325; it is built component first, as H26-3 ordered and H26-22 confirms, on the four components draw runs on -- `input-binding`, `input-capture` and `vector-scene` `0.2.0`, `snap-grid` `0.1.0` -- and the gesture tester.
 
-**Standing:** revision 9, not ratified: the director's walkthrough settled all seven decisions (section 9), and at ratification the director's three answers on the CLI's map became PZ33 (3.8), made exact after reading 8 -- its rules written as code in `chunk-rules.mjs` and its worked cases that code's output; reading 1's 32 findings disposed of in section 8.1, readings 2 to 6 in 8.2 to 8.6, reading 7 holding every fold (8.7), the ratification change in 8.8 and reading 8's 10 in 8.9; awaiting one confirming reading scoped to reading 8's nine folds (8.9); the code read is `1fbbc5b`, and no product file has changed since (measured again at `a8a32c7`); code lines measured by `tools/code-split.mjs` and its `codeLines`, browser behaviour in headless Chrome through `@apnex/headless-chromium` on draw's lab page, the scripts and their outputs at `~/taceng/drawv2-eval-runs/h26-pan-zoom/probes/`.
+**Standing:** revision 10, not ratified: every reading's design-level folds confirmed and nothing open -- readings 1 to 9 recorded in sections 8.1 to 8.10, the ratification change in 8.8, reading 9's one fold a sample made consistent with its rule (8.10) -- the director's seven decisions settled in the walkthrough and the CLI's map settled at ratification (section 9); awaiting the director's ratification; the code read is `1fbbc5b`, and no product file has changed since (measured again at `a8a32c7`); code lines measured by `tools/code-split.mjs` and its `codeLines`, browser behaviour in headless Chrome through `@apnex/headless-chromium` on draw's lab page, the scripts and their outputs at `~/taceng/drawv2-eval-runs/h26-pan-zoom/probes/`.
 
 ---
 
@@ -318,16 +318,16 @@ beyond the window:
   nw  nothing, chunk -1,-1                       draw map --diagram template-3acaca --layout node --chunk -1,-1
 ```
 
-The senses of the same board, were three devices placed in chunk 2,0 and one of its zones made to reach below the window, would read as follows -- an illustration of the form, not a measured board.
+The same board made to reach past chunk 0,0 -- three devices added at cells 62,0, 63,0 and 64,0, in chunk 2,0, and a zone over cells -2..2 by 6..10, reaching into chunk 0,1 -- makes plain `draw map` show chunk 0,0 whole, and its senses read as follows, produced by `chunk-rules.mjs` (`cli-map-illustration.mjs`) -- an illustration of the form, not a measured board (restated after reading 9, o:F1).
 
 ```text
-chunk 0,0 (cells -15..15 by -8..8), window -14..6 by -8..4
+chunk 0,0 (cells -15..15 by -8..8), window -15..15 by -8..8
 beyond the window:
   n   nothing, chunk 0,-1                        draw map --diagram template-3acaca --layout node --chunk 0,-1
   ne  nothing, chunk 1,-1                        draw map --diagram template-3acaca --layout node --chunk 1,-1
   e   3 devices, nearest in chunk 2,0            draw map --diagram template-3acaca --layout node --chunk 2,0
   se  nothing, chunk 1,1                         draw map --diagram template-3acaca --layout node --chunk 1,1
-  s   1 zone, in this chunk, 0,0                 draw map --diagram template-3acaca --layout node --chunk 0,0
+  s   1 zone, in chunk 0,1                       draw map --diagram template-3acaca --layout node --chunk 0,1
   sw  nothing, chunk -1,1                        draw map --diagram template-3acaca --layout node --chunk -1,1
   w   nothing, chunk -1,0                        draw map --diagram template-3acaca --layout node --chunk -1,0
   nw  nothing, chunk -1,-1                       draw map --diagram template-3acaca --layout node --chunk -1,-1
@@ -476,7 +476,7 @@ What the density measure will not show:
 
 ## 7. Axiom alignment audit (M7)
 
-**Identity:** H26.6 at revision 9, `PAN-ZOOM.md`, read against draw at `1fbbc5b`, the intent record and `H26-22`, the four components' released contracts at the versions draw pins, the tester's architecture target, and mission-kit at `15f265f`; draw's traits, the axioms' bindings: stateful (A1), declarative in its manifests and declarations (A2), multi-agent through its agent door and its builders (A5, A6, A7), any system (A3, A4, A8, A9, A14).
+**Identity:** H26.6 at revision 10, `PAN-ZOOM.md`, read against draw at `1fbbc5b`, the intent record and `H26-22`, the four components' released contracts at the versions draw pins, the tester's architecture target, and mission-kit at `15f265f`; draw's traits, the axioms' bindings: stateful (A1), declarative in its manifests and declarations (A2), multi-agent through its agent door and its builders (A5, A6, A7), any system (A3, A4, A8, A9, A14).
 
 **Verdict:** `pass, with guardrails`, by its author, GR1 to GR18 below, revision 2 restating GR3, GR4, GR5 and GR13 and adding GR16 and GR17 after reading 1, revision 5 adding GR18 after reading 4; to be confirmed by the readings H26-15 as amended asks, recorded in section 8.
 
@@ -725,6 +725,18 @@ The rules are now written as functions in `chunk-rules.mjs`, whose output 3.8's 
 | x:F1 | reject | **Not changed**: it reports the map's chunks absent from `cli/verbs.mjs`, which is so, and is this design's purpose -- a design of record precedes its build, move 12 builds the chunks and appendix A's rows check them (`a` and `o` refuted it) |
 
 The next confirming reading is scoped to exactly the nine design-level folds: 3.8's map bullet -- cells and chunks, windows, what the route is asked, plain `map`, the senses, the command, `--json`, `anchor free` -- its worked cases and both samples, PZ33's evidence, and appendix A move 12's checks.
+
+### 8.10 Reading 9 -- 2026-11-01, of revision 9 at `eb7a4d0`, confirming
+
+Read cold through the same panel, scoped to section 8.9's nine folds, by `gemini-4-argon` (`a`), `gpt-6-astra` (`o`) and `grok-4.20-non-reasoning` (`x`), kept at `~/taceng/drawv2-eval-runs/h26-readings/pz/reading-9/`.\
+`a` found every fold holding, returning no finding; `x` raised one, blocking, which `a` and `o` refuted; `o` raised one, should-fix, which `a` supported and `x` did not.
+
+| Finding | Tier | Disposition |
+|---|---|---|
+| x:F1 | reject | **Not changed**: it read the printed chunk, the chunk of the window's centre cell, as contradicting the senses, whose regions are measured against the window's own cells and whose nearest chunk is measured from the window's chunk; as `a` and `o` answered, the two are one coherent rule -- the window's chunk names where the window stands and anchors the distances, and the regions say what lies beyond its edges -- and both cited cases, windows -1..1 and -14..6 by -8..4, have their centre cells in chunk 0,0; the CLI's lack of chunk logic is the build's, move 12's |
+| o:F1 | design | **Fixed**: the second sample kept the tight window, -14..6 by -8..4, though the devices it added in chunk 2,0 make plain `map` show chunk 0,0 whole by the rule; it is regenerated as plain `map` over chunk 0,0, window -15..15 by -8..8, with a zone added reaching into chunk 0,1, its footer produced by `chunk-rules.mjs` (`cli-map-illustration.mjs`), not by hand (3.8) |
+
+With this fold every reading's design-level folds stand confirmed -- reading 9 confirming reading 8's nine, its one fold a sample made consistent with the rule it illustrates -- and nothing is open.
 
 ---
 
