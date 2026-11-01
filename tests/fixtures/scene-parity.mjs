@@ -71,8 +71,10 @@ export const readRecord = () => JSON.parse(fs.readFileSync(RECORD, 'utf8'));
 /*
 The corpus's harness, its grids drawn into it as the composition draws them. RESTATED at H26.4: the grids are items of the scene the
 harness opens, whose layers it finds; before the move they were drawn into layers made here, as the page's markup held them.
+RESTATED at H26.8's grid move (NATIVE-SHAPES.md section 3.2): handed the grids the places snap to, `gridsOf`, as the composition hands them.
 */
 export async function treesOpen() {
 	const { Grids } = await import('../../app/src/grids.js');
-	return (h) => { new Grids({ scene: h.scene, parts: PRODUCT_CANVAS, model: h.model }); };
+	const { gridsOf } = await import('../../app/src/snap.js');
+	return (h) => { new Grids({ scene: h.scene, grids: gridsOf(PRODUCT_CANVAS), model: h.model }); };
 }

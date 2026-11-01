@@ -39,7 +39,7 @@ test('WD-b2 test 9: the grids are drawn from the open diagram\'s records -- ever
 	const restore = installDom();
 	try {
 		const { svg, scene } = page();
-		new Grids({ scene, parts: PRODUCT_CANVAS, model: new Model() });
+		new Grids({ scene, grids: gridsOf(PRODUCT_CANVAS), model: new Model() });   // H26.8's grid move: handed its grids, as the composition hands them
 		const nodes = dots(svg, 'grid-nodes'), zones = dots(svg, 'grid-zones');
 		assert.equal(nodes.length, 31 * 17, 'the node grid: the node layout\'s lattice within its extent');
 		assert.deepEqual([at(nodes[0]), at(nodes.at(-1))], [[-900, -480, gridDot().radius], [900, 480, gridDot().radius]]);
@@ -52,7 +52,7 @@ test('WD-b2 test 9: a load redraws the grids from the loaded records; an edit do
 	const restore = installDom();
 	try {
 		const { svg, scene } = page(), model = new Model();
-		new Grids({ scene, parts: PRODUCT_CANVAS, model });
+		new Grids({ scene, grids: gridsOf(PRODUCT_CANVAS), model });
 		const first = dots(svg, 'grid-nodes')[0];
 		model.put('node', { id: 'node-0e0101', name: 'a', x: 0, y: 0 });
 		assert.equal(dots(svg, 'grid-nodes')[0], first, 'an edit leaves the dots as they were');
@@ -71,10 +71,10 @@ test('WD-b2: a diagram lacking a layout record is an error naming it; a page wit
 	const restore = installDom();
 	try {
 		const lacking = { get: () => undefined, onChange() {} };
-		assert.throws(() => new Grids({ scene: page().scene, parts: PRODUCT_CANVAS, model: lacking }), /the node layout \(layout-000001\) is missing/);
+		assert.throws(() => new Grids({ scene: page().scene, grids: gridsOf(PRODUCT_CANVAS), model: lacking }), /the node layout \(layout-000001\) is missing/);
 		const { svg, scene } = page();
 		const noZones = PRODUCT_CANVAS.filter((p) => p.owner !== 'zones');
-		new Grids({ scene, parts: noZones, model: new Model() });
+		new Grids({ scene, grids: gridsOf(noZones), model: new Model() });
 		assert.equal(dots(svg, 'grid-zones').length, 0, 'nothing places on the zone lattice, so no zone grid');
 		assert.equal(dots(svg, 'grid-nodes').length, 31 * 17, 'and the node grid as ever');
 		assert.deepEqual(gridsOf(noZones).map((g) => g.layout), ['node']);

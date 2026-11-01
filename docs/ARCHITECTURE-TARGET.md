@@ -154,9 +154,10 @@ Generated from `tools/layers.mjs` `PARTS`, and each part's components from its `
 | `groups` | Name sets of anchors | plugin | O1 | `lattice`, `kind-contract`, `document`, `relations`, `colours`, `primitives`, `rules` | -- |
 | `simulation` | Derive what the clock drives | plugin | AX1, AX4, SD11b | `lattice`, `kind-contract`, `document`, `relations`, `colours`, `primitives`, `rules`, `network`, `devices` | -- |
 | `product` | Compose the plugins into the product | composition | N1, D1 | `kind-contract`, `lattice`, `colours`, `layouts`, `devices`, `network`, `zones`, `groups`, `simulation` | -- |
-| `canvas` | Turn input into edits through the parts' declarations | host | D1, D2, D5 | `lattice`, `kind-contract`, `document`, `relations`, `rules`, `planner`, `renderer`, `editing`, `label-editor`, `primitives`, `colours` | `@apnex/input-capture` |
+| `canvas` | Turn input into edits through the parts' declarations | host | D1, D2, D5 | `lattice`, `kind-contract`, `document`, `relations`, `rules`, `planner`, `renderer`, `editing`, `grids`, `label-editor`, `primitives`, `colours` | `@apnex/input-capture` |
 | `label-editor` | Edit a drawn label in place | host | H26-10, H26-16 | `document`, `kind-contract` | -- |
 | `help` | Show what each input does | host | H26-10, H26-16 | -- | -- |
+| `grids` | Draw the grids places snap to | host | H26-10, H26-16 | -- | -- |
 | `editing` | Let a person select, move and resize what the canvas draws | host | D1, H26-10 | `document` | -- |
 | `renderer` | Draw a document through the parts' painters | host | D1, D3 | `lattice`, `document`, `primitives`, `colours` | `@apnex/vector-scene` |
 | `sync` | Keep a tab converged with the server | host | SD2 | `document`, `kind-contract`, `canvas` | -- |

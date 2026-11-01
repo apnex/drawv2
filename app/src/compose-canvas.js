@@ -28,7 +28,7 @@ and handed to the renderer, Input, the overlay and the network's settle, the sel
 import { sharedDefs } from '../../kernel/renderer.mjs';
 import { NODE_GRID } from '../../kernel/geometry.mjs';
 import { crosshair } from './editing-visuals.js';   // H26.4: the editing part's, an item of the scene
-import { CANVAS } from './snap.js';
+import { CANVAS, gridsOf } from './snap.js';
 import { Model } from '../../model/model.mjs';
 import { attachRelations } from '../../engine/store.mjs';
 import { Changes, applyAnswer } from './changes.js';
@@ -43,7 +43,7 @@ import { Input } from './input.js';
 import { captureCanvas } from './capture.js';
 import { picksOf } from './pick.js';
 import { Readout } from './readout.js';
-import { Grids } from './grids.js';   // WD-b2: the grids, from the open diagram's records
+import { Grids } from './grids.js';   // WD-b2: the grids, from the open diagram's records; H26.8: the grids part, handed its grids
 
 /*
   svg        the page's canvas element
@@ -68,8 +68,9 @@ export function composeCanvas({ svg, scene: declared, defs, host, network = null
 	// R3: the maintained reverse indices, registered before any other subscriber so they see a fresh index; the node grid's
 	// `nearest` is injected here, at a composition root, so engine/ imports no kernel (H26.1: it was `cellOf`)
 	attachRelations(model, { nearest: NODE_GRID.nearest });
-	// WD-b2 (H19.46): each grid a part declares, drawn from the open diagram and again on every load -- the layouts plugin's two
-	new Grids({ scene, parts, model });
+	// WD-b2 (H19.46): each grid a part declares, drawn from the open diagram and again on every load -- the layouts plugin's two. H26.8's
+	// grid move (NATIVE-SHAPES.md section 3.2): handed the grids the places snap to, `gridsOf`, asked here
+	new Grids({ scene, grids: gridsOf(parts), model });
 	const selection = new Selection(model);
 	/*
 	the commit boundary: a root's transport subscribes to it, not to the model. V-d (H18.28; PL-6): it previews each commit

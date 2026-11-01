@@ -113,15 +113,15 @@ export const PARTS = {
 		consumes: ['lattice', 'kind-contract', 'document', 'relations', 'colours', 'primitives', 'rules', 'network', 'devices'] },
 	product: { duty: 'Compose the plugins into the product', kind: 'composition', by: ['N1', 'D1'],
 		modules: ['product/'], consumes: ['kind-contract', 'lattice', 'colours', 'layouts', 'devices', 'network', 'zones', 'groups', 'simulation'] },
-	// H26.8's capture move (dev/design/components/NATIVE-SHAPES.md section 3.3): the label editor and the help leave for parts of their own
+	// H26.8's capture move (dev/design/components/NATIVE-SHAPES.md section 3.3): the label editor and the help leave for parts of their own;
+	// its grid move: and the grids
 	canvas: { duty: 'Turn input into edits through the parts\' declarations', kind: 'host', by: ['D1', 'D2', 'D5'],
 		modules: ['app/src/capture.js', 'app/src/changes.js', 'app/src/commands.js', 'app/src/compose-canvas.js',
 			'app/src/input.js', 'app/src/input-state.js', 'app/src/keymap.js', 'app/src/pick.js',
 			'app/src/readout.js', 'app/src/recognize.js', 'app/src/releases.js', 'app/src/snap.js', 'app/src/tools.js',
-			// app/src/grids.js draws the grids placement snaps to, from the canvas's places (app/src/snap.js gridsOf); in the renderer
-			// it would make the renderer and the canvas consume each other. H26.2: the triggers module went, its press the session's
-			'app/src/grids.js', 'engine/situation.mjs'],
-		consumes: ['lattice', 'kind-contract', 'document', 'relations', 'rules', 'planner', 'renderer', 'editing', 'label-editor', 'primitives', 'colours'] },
+			// H26.2: the triggers module went, its press the session's
+			'engine/situation.mjs'],
+		consumes: ['lattice', 'kind-contract', 'document', 'relations', 'rules', 'planner', 'renderer', 'editing', 'grids', 'label-editor', 'primitives', 'colours'] },
 	/*
 	H26.8's capture move (dev/design/components/NATIVE-SHAPES.md sections 3.1 to 3.3, NS8; H26-10) -- TWO GENERAL DUTIES OUT OF THE CANVAS,
 	declared inside draw, each extracted when a second application needs it. The label editor places a native input over a drawn label
@@ -134,6 +134,15 @@ export const PARTS = {
 		modules: ['app/src/labeledit.js'], consumes: ['document', 'kind-contract'] },
 	help: { duty: 'Show what each input does', kind: 'host', by: ['H26-10', 'H26-16'],
 		modules: ['app/src/help.js', 'app/src/actions.js'], consumes: [] },
+	/*
+	H26.8's grid move (dev/design/components/NATIVE-SHAPES.md sections 3.1 to 3.3, 4.9; H26-10) -- THE GRIDS, A DUTY OUT OF THE CANVAS,
+	declared inside draw: each grid the places snap to, drawn as one item of the scene's layer it names from the open diagram, again on
+	each load (B415). It is handed its grids by the composition (`gridsOf(parts)`, app/src/compose-canvas.js), where it asked the
+	canvas's places for them, so it imports nothing outside its part (GR7) and holds no element the scene made (GR8). In the renderer it
+	would make the renderer and the canvas consume each other; the canvas consumes it, so the edge runs one way.
+	*/
+	grids: { duty: 'Draw the grids places snap to', kind: 'host', by: ['H26-10', 'H26-16'],
+		modules: ['app/src/grids.js'], consumes: [] },
 	/*
 	H26.4 (dev/design/components/VECTOR-SCENE.md section 5.3, D13; H26-10) -- THE EDITING DUTY, declared inside draw: the selection and
 	the visuals that show what an edit will do, written natively as items of the scene they are handed; the five generic gestures' bodies

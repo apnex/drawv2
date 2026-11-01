@@ -8,14 +8,15 @@ what a grid is and where its dots fall are its part's.
 
 H26.4 (dev/design/components/VECTOR-SCENE.md section 5.1): each grid is one item of the scene's layer it names, keyed by its layout, removed
 and put afresh on each load as `replaceChildren` made its dots afresh -- a circle per point, made by the scene. It makes no element.
-*/
-import { gridsOf } from './snap.js';
 
+H26.8's grid move (dev/design/components/NATIVE-SHAPES.md sections 3.1 to 3.3; B415): the `grids` part, its own duty, handed the grids it
+draws -- `gridsOf(parts)`, the composition's to ask -- where it asked the canvas's places for them, so it imports nothing (GR7).
+*/
 export class Grids {
-	constructor({ scene, parts, model }) {
+	constructor({ scene, grids, model }) {
 		this.model = model;
 		this.scene = scene;
-		this.drawn = gridsOf(parts).map((g) => {
+		this.drawn = grids.map((g) => {
 			if (!scene.layers.some((l) => l.name === g.layer && !l.foreign)) throw new Error(`Grids: the ${g.layout} grid draws into #${g.layer}, which this page does not have`);
 			return { g, layer: g.layer };
 		});

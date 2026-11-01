@@ -230,8 +230,8 @@ over a drawn board -- tests/native-shapes.test.js), none FINDS one (this rule), 
 
 This rule counts, by file, every spelling that reaches an element from another, so a new path fails until it is reviewed and its count
 recorded here. The parts are read from the layer manifest's PARTS, each part's modules walked through `--root` like every rule above;
-a part the design names that PARTS does not yet hold (`grids`, `label-editor` and `help` join at a later move) has its modules walked
-under the part that holds them today, the canvas.
+a part the design names that PARTS does not yet hold has its modules walked under the part that holds them, the canvas. RESTATED at
+H26.8's grid move: every part the design names is declared -- `label-editor` and `help` at its capture move, `grids` at its grid move.
 
 ITS LIMIT, stated by the design: a counted spelling's reads are review's -- the count says a path exists, not where it goes -- and
 `.children` is also a word of the descriptions, so it is counted where a module reads a description's shapes: the renderer, putting

@@ -15,6 +15,7 @@ import fs from 'node:fs';
 import { makeInput, key, pointer, seedNodes } from './fixtures/client-harness.mjs';
 import { PRODUCT_CANVAS } from '../product/canvas.mjs';
 import { gridDot } from '../kernel/geometry.mjs';
+import { PARTS } from '../tools/layers.mjs';
 
 const code = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
 const shift = (h, down) => (down ? h.capture.onKeyDown(key('Shift', { shiftKey: true })) : h.capture.onKeyUp(key('Shift')));
@@ -63,4 +64,23 @@ test('C-e: the canvas draws and shows no grid of its own', () => {
 	assert.doesNotMatch(code('app/src/overlay.js'), /zonegrid|zoneGrid/);
 	assert.doesNotMatch(code('app/src/input.js'), /zoneGrid|syncZoneGrid/);
 	assert.doesNotMatch(code('app/src/snap.js'), /ZONE_EXT|zonePoints|nodePoints/);
+	// RESTATED at H26.8's grid move (NATIVE-SHAPES.md section 3.2): the composition hands the grids part the grids the places snap to
+	assert.match(code('app/src/compose-canvas.js'), /new Grids\(\{ scene, grids: gridsOf\(parts\), model \}\)/, 'the composition asks gridsOf and hands Grids its grids');
+});
+
+/*
+H26.8's grid move (dev/design/components/NATIVE-SHAPES.md sections 3.1 to 3.3, 4.9; GR7, GR8) -- THE GRIDS, A PART OF THEIR OWN: app/src/grids.js,
+`kind: 'host'`, by H26-10 and H26-16, consuming nothing, and the canvas consuming it, so the edge runs one way. It is handed its grids, so
+it asks no place, reads no part and imports nothing outside its part -- nothing at all.
+*/
+test('H26.8: PARTS.grids holds app/src/grids.js, consumes nothing, imports nothing, and the canvas consumes it', () => {
+	const g = PARTS.grids;
+	assert.ok(g, 'the part is declared');
+	assert.deepEqual([g.duty, g.kind, g.by, g.modules, g.consumes], ['Draw the grids places snap to', 'host', ['H26-10', 'H26-16'], ['app/src/grids.js'], []]);
+	assert.ok(PARTS.canvas.consumes.includes('grids') && !PARTS.canvas.modules.includes('app/src/grids.js'), 'the canvas consumes it, and holds it no longer');
+	assert.ok(!PARTS.renderer.consumes.includes('grids') && !g.consumes.includes('canvas'), 'the edge one way: neither the renderer nor the grids consume back');
+	const grids = code('app/src/grids.js');
+	assert.doesNotMatch(grids, /\bimport\b/, 'GR7: it imports nothing');
+	assert.match(grids, /constructor\(\{ scene, grids, model \}\)/, 'handed the scene, its grids and the model');
+	assert.doesNotMatch(grids, /\bparts\b|places|gridsOf/, 'and asks no part for its grids');
 });
