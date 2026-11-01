@@ -6,7 +6,8 @@ This file carries the cut plan, the guardrails and the conditions those rulings 
 
 **Where the evidence lives.**\
 The measurements, the design, the independent review and both axiom alignment passes are in the lab-design bench, outside this repository.\
-Its path is `/home/apnex/taceng/drawv2-archive/lab-design`, and the bench is durable but unversioned.
+Its path is `/home/apnex/taceng/drawv2-archive/lab-design`, and the bench is durable but unversioned.\
+AMENDED 2026-11-01 (H26-20): `~/taceng/drawv2-archive/` was purged, so the bench and every file of it named below no longer exist.
 - The first M7 pass is the bench file named measure2.
 - The second M7 pass is the report under m7-pass2/audit, with its sha256.
 - The independent check of the second pass is the file named m7-check.

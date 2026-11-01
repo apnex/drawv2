@@ -4,6 +4,7 @@
 > The probe scripts this map cites ([M-run] marks: probe*.mjs, stale-merge/, gapfill/, critic/ and the rest) were session-scratch files and are NOT preserved in the repository.
 > Their results are recorded here; re-running any of them means re-writing the probe from the mechanism the row describes.
 > Companion documents: `PROBLEM-SPACE.md` (the undecided register built from this map) and `DISCUSSION-SEEDS.md` (the director's verbatim statements from the design conversation).
+> AMENDED 2026-11-01 (H26-20): `~/taceng/drawv2-archive/` was purged, so the archive paths this map cites -- the old simulator, the arc programme's designs, the reference repositories -- no longer exist.
 
 This is the reality-establishing step of the unification programme, written 2026-09-25. It records what IS, cited to file:line. It contains no design and no recommendations.
 

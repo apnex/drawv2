@@ -137,6 +137,7 @@ AMENDED 2026-10-02: PU19's mechanism is built (H17.22 N-a, PU25), and `pipe` is 
 
 At the director's word, approving the re-triage's step 2 and to proceed as recommended, read in full before the deploy.\
 Production ran `draw-00153-4sj` on `draw:2814d8d`; the bucket `gs://diagrams.apnex.io` was copied first, 45 objects, 1,110,578 bytes, matching, into the private archive (`drawv2-archive/backups/2026-10-02-pre-d58816c/`).\
+AMENDED 2026-11-01 (H26-20): `~/taceng/drawv2-archive/` was purged, so that copy of the bucket no longer exists; production ran on the migrated data for a month first.\
 CI's gate passed on `d58816c`; the local gate passed 1716 of 1716.\
 Production sits behind IAP, which a headless browser cannot sign into, so an entry whose check is looking at the page is marked for the director's eye after the deploy.
 

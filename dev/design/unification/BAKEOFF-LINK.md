@@ -905,6 +905,8 @@ Labels are as in the main report.
 
 **Where the evidence lives.** A reboot on 2026-09-26 wiped the session scratch directory that held the bench. The bench was rebuilt from the session transcripts: all 669 paths accounted for, none lost, and all seven earlier models EXACT by sha256. It now lives durably at `~/taceng/drawv2-archive/link-bakeoff/`, outside this repository, with a README and recovery manifests. Directory names below are relative to it. The workflow's full reports are in its `RESULTS-v4` directory.
 
+AMENDED 2026-11-01 (H26-20): `~/taceng/drawv2-archive/` was purged, so the bench, its README, its recovery manifests and the directories named below no longer exist; this report and the ruling it informed are the record.
+
 **Roles** (workflow run wf_1b876d5c-fb2; each role had its own instruments):
 - a suite author wrote suite 1.4.0;
 - a builder wrote FR3-v4;
