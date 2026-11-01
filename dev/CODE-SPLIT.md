@@ -19,8 +19,9 @@ How it counts:
 | 2026-10-20 | 561a2df | 1,415 | 3,261 | 70 | 9,133 | 0 | 13,879 | 0 | 0.0% | 503 | 1,244 | 12,132 | 12.6% | 30,385 | 4,620 | 2,215 | 1,290 | 806 | 232 | 39,361 | 22,840 | 6,874 | 27,912 | 3,288 |
 | 2026-10-24 | c6e8358 | 1,437 | 3,252 | 73 | 9,262 | 0 | 14,024 | 3,471 | 19.8% | 512 | 1,243 | 12,269 | 12.5% | 35,043 | 5,560 | 2,215 | 1,290 | 806 | 238 | 45,462 | 40,593 | 8,146 | 30,633 | 3,305 |
 | 2026-10-25 | ca492da | 1,437 | 3,252 | 73 | 9,287 | 0 | 14,049 | 3,910 | 21.8% | 512 | 1,243 | 12,294 | 12.5% | 35,533 | 5,861 | 2,215 | 1,290 | 806 | 238 | 46,022 | 39,411 | 8,529 | 31,244 | 3,305 |
+| 2026-11-01 | f012dda | 1,404 | 3,222 | 73 | 9,269 | 0 | 13,968 | 3,910 | 21.9% | 517 | 1,225 | 12,226 | 12.5% | 37,229 | 5,735 | 2,215 | 1,290 | 819 | 238 | 48,296 | 73,766 | 8,456 | 31,901 | 3,313 |
 
-The first row is draw before H26 (`561a2df`); the second, draw on all four components, live in production (`c6e8358`, H26.4); the third, draw on the three `0.2.0` releases, live in production (`ca492da`, H26.5), the baseline of H26.8.
+The first row is draw before H26 (`561a2df`); the second, draw on all four components, live in production (`c6e8358`, H26.4); the third, draw on the three `0.2.0` releases, live in production (`ca492da`, H26.5), the baseline of H26.8; the fourth, H26.8 closed, live in production (`f012dda`).
 
 ---
 
@@ -62,3 +63,47 @@ A table is kept here at each baseline a change is measured from, and again when 
 | rest | door | 2 | 661 | 45 | 0 | 616 | 6.8% |
 | cli | door | 2 | 2,177 | 13 | 162 | 2,002 | 8.0% |
 | export | door | 2 | 265 | 0 | 0 | 265 | 0.0% |
+
+### H26.8's close -- `f012dda`, 2026-11-01, in production
+
+| Part | Kind | Modules | Code lines | Pure data | With predicates | Logic | Declarative share |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| lattice | core | 4 | 156 | 22 | 0 | 134 | 14.1% |
+| kind-contract | core | 2 | 121 | 17 | 0 | 104 | 14.0% |
+| document | core | 5 | 210 | 1 | 0 | 209 | 0.5% |
+| relations | core | 3 | 106 | 0 | 0 | 106 | 0.0% |
+| colours | core | 2 | 87 | 71 | 0 | 16 | 81.6% |
+| primitives | core | 1 | 27 | 0 | 0 | 27 | 0.0% |
+| rules | core | 1 | 23 | 10 | 0 | 13 | 43.5% |
+| planner | core | 5 | 674 | 5 | 22 | 647 | 4.0% |
+| layouts | plugin | 4 | 68 | 7 | 30 | 31 | 54.4% |
+| devices | plugin | 15 | 531 | 92 | 190 | 249 | 53.1% |
+| network | plugin | 35 | 1,691 | 48 | 311 | 1,332 | 21.2% |
+| zones | plugin | 7 | 163 | 6 | 100 | 57 | 65.0% |
+| groups | plugin | 7 | 159 | 6 | 97 | 56 | 64.8% |
+| simulation | plugin | 11 | 610 | 19 | 67 | 524 | 14.1% |
+| product | composition | 3 | 73 | 17 | 9 | 47 | 35.6% |
+| canvas | host | 14 | 1,832 | 17 | 131 | 1,684 | 8.1% |
+| label-editor | host | 1 | 141 | 0 | 0 | 141 | 0.0% |
+| help | host | 2 | 102 | 47 | 0 | 55 | 46.1% |
+| grids | host | 1 | 19 | 0 | 0 | 19 | 0.0% |
+| editing | host | 5 | 323 | 3 | 102 | 218 | 32.5% |
+| renderer | host | 2 | 360 | 3 | 0 | 357 | 0.8% |
+| sync | host | 4 | 587 | 8 | 0 | 579 | 1.4% |
+| product-page | composition root | 4 | 631 | 8 | 0 | 623 | 1.3% |
+| lab | composition root | 2 | 105 | 11 | 0 | 94 | 10.5% |
+| server | composition root | 3 | 329 | 18 | 4 | 307 | 6.7% |
+| access | door | 3 | 141 | 6 | 0 | 135 | 4.3% |
+| placement | door | 1 | 76 | 4 | 0 | 72 | 5.3% |
+| store | door | 5 | 934 | 8 | 0 | 926 | 0.9% |
+| hub | door | 4 | 544 | 5 | 0 | 539 | 0.9% |
+| rest | door | 2 | 661 | 45 | 0 | 616 | 6.8% |
+| cli | door | 2 | 2,177 | 13 | 162 | 2,002 | 8.0% |
+| export | door | 2 | 307 | 0 | 0 | 307 | 0.0% |
+
+Against the baseline and `dev/design/components/NATIVE-SHAPES.md` section 6's estimates:
+- **Draw, running:** 14,049 to 13,968, 81 lines and 0.6% smaller, where section 6 estimated about 250 and 1.8%; the declarative share flat at 12.5%, as estimated.
+- **The parts the moves aimed at:** `renderer` 479 to 360, 25% smaller (estimated 39%); `rules` 55 to 23, 58% smaller (estimated 64%), its share 18.2% to 43.5%; `canvas` 2,182 to 1,832, 16% smaller (estimated 18%), its share 13.3% to 8.1%, the gesture table having left it.
+- **Where duties went:** `editing` 179 to 323, its share 1.1% to 32.5% (estimated 310 at 33.5%); `label-editor`, `help` and `grids`, new parts out of `canvas`, 262 lines together (estimated 261).
+- **Larger than estimated:** `simulation` 572 to 610, estimated flat, most of it the trace's lifecycle and end; `export` 265 to 307, estimated 293.
+- **Tests:** 35,533 to 37,229 code lines, where section 6 estimated about 500 fewer; by raw lines the largest additions are the record and its comparator (`tests/fixtures/native-record.mjs`, 1,425 added, and its tests), the trace's record and the new guards (`tests/native-shapes.test.js`, `tests/editing-host.test.js`), against the copies and old sides deleted (`tests/fixtures/scene-parity.mjs` 518 fewer, `tests/fixtures/pre-scene/` and `tests/fixtures/pre-export/` among them).
