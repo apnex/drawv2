@@ -88,7 +88,8 @@ So the two `layout` entities each diagram stores today describe one grid, and a 
 
 Each diagram sets its own square size, 60 by default.\
 Changing it keeps every device's own size and moves each device to its nearest point on the new grid -- positions are statements about where a thing is on the grid (VISION.md, "Not a drawing tool"), so a new grid gives each its nearest place rather than scaling the drawing.\
-WD7's refusal of any other value, always meant as temporary, is lifted by this intent; how a size change behaves at its edges is the design's to settle (S6).
+WD7's refusal of any other value, always meant as temporary, is lifted by this intent; how a size change behaves at its edges is the design's to settle (S6).\
+AMENDED 2026-11-01, in the design's walkthrough (`PAN-ZOOM.md` section 9): the reading above is corrected by the director -- asked whether devices keep their place on the page and snap to the nearest new point, or keep their square while the layout scales, the director answered "Keep their square. This was my original intent." -- so a size change keeps every device, zone and waypoint in its square, the diagram growing or shrinking as a whole, each device keeping its own size; flags F1 to F3 below are answered by that, F2 and F3 losing their premise.
 
 **Round-1 composite read:** the canvas is infinite, and one grid per diagram, of a size the diagram chooses, governs both devices and zones; together they remove every extent and every hard-coded size from draw, which is the change B325 and B289 waited on.\
 The tension carried to round 2: an infinite canvas with a configurable grid moves what a person sees, how they move through it and where they are, from fixed to per-viewer state.
@@ -134,6 +135,7 @@ This refines round 1's scope into an order in which the riskiest part -- input o
 
 Draw's canvas becomes infinite.\
 Each diagram has one grid, 60 by default and changeable per diagram, devices at its square centres and zones on its lines, the zone lattice always half a square from the device lattice; a size change keeps every device's size and moves each to its nearest point.\
+AMENDED 2026-11-01 (the walkthrough, `PAN-ZOOM.md` section 9): a size change keeps every device in its square, the layout scaling with the grid, as the director clarified, not each device moved to its nearest point.\
 A viewer pans with a two-finger scroll, Space+drag, a middle-button drag or a right-button drag on open ground, and zooms with a pinch or Ctrl+wheel around the pointer or by keys; dragging on open ground still draws the selection box.\
 Each viewer's view is remembered per diagram in their browser, never stored in the diagram, so viewers look at different parts at once, and a reticle button returns the view to 0,0.\
 It is built component first -- `vector-scene`'s view, the gesture tester on the director's Chromebook, then draw, per-diagram grid size its own step -- each validated in the live lab, and nothing is built until the design is walked through with the director and ratified.
