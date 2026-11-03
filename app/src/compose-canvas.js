@@ -28,7 +28,7 @@ and handed to the renderer, Input, the overlay and the network's settle, the sel
 import { sharedDefs } from '../../kernel/renderer.mjs';
 import { NODE_GRID } from '../../kernel/geometry.mjs';
 import { crosshair } from './editing-visuals.js';   // H26.4: the editing part's, an item of the scene
-import { CANVAS, gridsOf } from './snap.js';
+import { gridsOf } from './snap.js';
 import { Model } from '../../model/model.mjs';
 import { attachRelations } from '../../engine/store.mjs';
 import { Changes, applyAnswer } from './changes.js';
@@ -73,8 +73,11 @@ export function composeCanvas({ svg, scene: declared, defs, host, network = null
 	// `nearest` is injected here, at a composition root, so engine/ imports no kernel (H26.1: it was `cellOf`)
 	attachRelations(model, { nearest: NODE_GRID.nearest });
 	// WD-b2 (H19.46): each grid a part declares, drawn from the open diagram and again on every load -- the layouts plugin's two. H26.8's
-	// grid move (NATIVE-SHAPES.md section 3.2): handed the grids the places snap to, `gridsOf`, asked here
-	new Grids({ scene, grids: gridsOf(parts), model });
+	// grid move (NATIVE-SHAPES.md section 3.2): handed the grids the places snap to, `gridsOf`, asked here. H26.6's move 8 (PAN-ZOOM.md
+	// section 3.7): drawn from the view, handed the view part's values for its level, and a redraw asked once a frame -- the host's
+	// animation frame where it has one, else the next microtask
+	const frame = typeof host?.requestAnimationFrame === 'function' ? (fn) => host.requestAnimationFrame(fn) : (fn) => queueMicrotask(fn);
+	new Grids({ scene, grids: gridsOf(parts), model, look: () => view.gridLook(), schedule: frame });
 	const selection = new Selection(model);
 	/*
 	the commit boundary: a root's transport subscribes to it, not to the model. V-d (H18.28; PL-6): it previews each commit
@@ -99,7 +102,7 @@ export function composeCanvas({ svg, scene: declared, defs, host, network = null
 	const shownReadout = readoutEl ? new Readout({ model, selection, elements: [readoutEl], parts }) : null;   // C-e: each kind's words, from its part
 	// B36 -- one crosshair on #snaplayer, owned here and shared by everything that draws it: Overlay inside Input, and the
 	// held tools' ghost. Two owners of one layer drew two crosshairs. H26.4: one item of the scene's snap layer
-	const snap = crosshair(scene, CANVAS, NODE_GRID.declaration.pitch);   // H26.1: a box a pitch wide, the node grid's
+	const snap = crosshair(scene, NODE_GRID.declaration.pitch, { schedule: frame });   // H26.1: a box a pitch wide, the node grid's; H26.6's move 8: across the view
 	const heldTools = tools ? new Tools({ svg, scene, snap, preview: parts.find((p) => p.hand)?.hand.preview ?? null }) : null;   // C-e: the ghost draws the hand's preview
 	const input = new Input({ svg, scene, model, history, selection, renderer, states, labels, readout: shownReadout, tools: heldTools,
 		host, help, now, snap, plugins, runRules, parts });   // C-c, C-d: the canvas parts -- places, press rows, handles

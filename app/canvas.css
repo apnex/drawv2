@@ -71,9 +71,11 @@ A text box that genuinely needs selectable content opts back in, and will have a
 .datum { fill: none; stroke: var(--tok-datum); stroke-width: 2; pointer-events: none; }
 
 /* ---- grid dots ---- */
-#grid-nodes circle { fill: var(--tok-grid-dot); pointer-events: none; }
+/* H26.6's move 8 (PAN-ZOOM.md section 3.7, PZ24): each tier of a grid one path of round zero-length strokes, its width the dot's diameter
+   on screen, a stroke that does not scale with the view -- so a dot keeps its size on screen at every level (app/src/grids.js) */
+#grid-nodes path { fill: none; stroke: var(--tok-grid-dot); stroke-linecap: round; vector-effect: non-scaling-stroke; pointer-events: none; }
 #grid-zones { visibility: hidden; }   /* shown with the zone grid by the layouts plugin, plugins/layouts/layouts.css */
-#grid-zones circle { fill: var(--tok-grid-dot); pointer-events: none; }
+#grid-zones path { fill: none; stroke: var(--tok-grid-dot); stroke-linecap: round; vector-effect: non-scaling-stroke; pointer-events: none; }
 
 /*
 H14.4 -- the beat.

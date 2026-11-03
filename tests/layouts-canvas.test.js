@@ -18,7 +18,7 @@ refused when the canvas is composed, naming the parts (the design's rule as buil
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { installDom, fakeEl, sceneOver } from './fixtures/client-harness.mjs';
+import { installDom, fakeEl, sceneOver, dotsOf } from './fixtures/client-harness.mjs';
 import { Model } from './fixtures/composed.mjs';
 import { PRODUCT_CANVAS } from '../product/canvas.mjs';
 import { LAYOUTS_CANVAS } from '../plugins/layouts/layout-canvas.mjs';
@@ -31,20 +31,34 @@ const code = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), '
 // RESTATED at H26.4 (dev/design/components/VECTOR-SCENE.md appendix B): the canvas's scene over a fake root, its layers found by id --
 // each grid one item of its layer -- where the page's two grid layers were made here
 const page = () => sceneOver(fakeEl('svg', 'canvas'));
-const dots = (svg, layer) => svg.byId[`#${layer}`].children;
-const at = (c) => [Number(c.attrs.cx), Number(c.attrs.cy), Number(c.attrs.r)];
 const docWith = (node) => ({ meta: { id: '00000000000e0101', name: 'd' }, layouts: [node, structuredClone(LAYOUT_TABLE[1])], nodes: [] });
 
-test('WD-b2 test 9: the grids are drawn from the open diagram\'s records -- every dot on its lattice, within its extent', () => {
+/*
+RESTATED at H26.6's move 8 (dev/design/components/PAN-ZOOM.md section 3.7, PZ24): a grid is drawn from the view -- every lattice point the
+canvas shows and the margin's beyond it, one path of round zero-length strokes per tier -- where every point within the record's
+extent was drawn at load. Here no view part is composed, so every dot is full at its drawing radius over the fake root's 1,920 by 1,080
+at a scale of one, with the margin the look hands; tests/grids-view.test.js holds the levels, the tiers and the bound.
+*/
+const LOOK = () => ({ tiers: [{ every: 1, opacity: 1 }], dotScale: null, margin: 32 });
+// every point of a lattice of `pitch` through `o` in the closed rect -- an independent count, a pitch at a time
+const brute = (pitch, o, x0, y0, x1, y1) => {
+	const out = [];
+	for (let y = o + Math.ceil((y0 - o) / pitch) * pitch; y <= y1; y += pitch) for (let x = o + Math.ceil((x0 - o) / pitch) * pitch; x <= x1; x += pitch) out.push({ x, y });
+	return out;
+};
+const xy = (d) => ({ x: d.x, y: d.y });
+
+test('WD-b2 test 9: the grids are drawn from the open diagram\'s records -- H26.6 move 8: every dot of its lattice the canvas shows and its margin', () => {
 	const restore = installDom();
 	try {
 		const { svg, scene } = page();
-		new Grids({ scene, grids: gridsOf(PRODUCT_CANVAS), model: new Model() });   // H26.8's grid move: handed its grids, as the composition hands them
-		const nodes = dots(svg, 'grid-nodes'), zones = dots(svg, 'grid-zones');
-		assert.equal(nodes.length, 31 * 17, 'the node grid: the node layout\'s lattice within its extent');
-		assert.deepEqual([at(nodes[0]), at(nodes.at(-1))], [[-900, -480, gridDot().radius], [900, 480, gridDot().radius]]);
-		assert.equal(zones.length, 32 * 18, 'the zone grid: half a pitch off, edge to edge of its extent');
-		assert.deepEqual([at(zones[0]), at(zones.at(-1))], [[-930, -510, 5], [930, 510, 5]]);
+		new Grids({ scene, grids: gridsOf(PRODUCT_CANVAS), model: new Model(), look: LOOK });   // H26.8's grid move: handed its grids, as the composition hands them
+		const nodes = dotsOf(svg.byId['#grid-nodes']), zones = dotsOf(svg.byId['#grid-zones']);
+		assert.deepEqual(nodes.map(xy), brute(60, 0, -32, -32, 1952, 1112), 'the node grid: its record\'s lattice over 0..1920 by 0..1080 grown by 32 pixels, row by row');
+		assert.deepEqual(zones.map(xy), brute(60, 30, -32, -32, 1952, 1112), 'the zone grid: half a pitch off, over the same area');
+		assert.deepEqual([nodes.length, zones.length], [33 * 19, 34 * 20], 'the zone lattice reaching a column and a row further, at -30');
+		assert.ok(nodes.every((d) => d.width === 2 * gridDot().radius && d.opacity === 1), 'each node dot full, its stroke the diameter of the grid dot at a scale of one');
+		assert.ok(zones.every((d) => d.width === 10), 'each zone dot 10 across');
 	} finally { restore(); }
 });
 
@@ -52,18 +66,16 @@ test('WD-b2 test 9: a load redraws the grids from the loaded records; an edit do
 	const restore = installDom();
 	try {
 		const { svg, scene } = page(), model = new Model();
-		new Grids({ scene, grids: gridsOf(PRODUCT_CANVAS), model });
-		const first = dots(svg, 'grid-nodes')[0];
+		new Grids({ scene, grids: gridsOf(PRODUCT_CANVAS), model, look: LOOK });
+		const first = svg.byId['#grid-nodes'].children[0];
 		model.put('node', { id: 'node-0e0101', name: 'a', x: 0, y: 0 });
-		assert.equal(dots(svg, 'grid-nodes')[0], first, 'an edit leaves the dots as they were');
+		assert.equal(svg.byId['#grid-nodes'].children[0], first, 'an edit leaves the dots as they were');
 		// a record no door admits while WD7 holds, loaded straight into the Model: the drawing reads the record, not a constant
 		model.load(docWith({ ...structuredClone(LAYOUT_TABLE[0]), pitch: 120 }));
-		// the lattice is the multiples of 120 from the origin: -840..840 across (900 is not one), -480..480 down
-		assert.equal(dots(svg, 'grid-nodes').length, 15 * 9, 'redrawn at the loaded pitch');
-		assert.deepEqual(at(dots(svg, 'grid-nodes')[0]), [-840, -480, gridDot().radius]);
-		assert.equal(dots(svg, 'grid-zones').length, 32 * 18, 'the zone grid from its own record, unchanged');
+		assert.deepEqual(dotsOf(svg.byId['#grid-nodes']).map(xy), brute(120, 0, -32, -32, 1952, 1112), 'redrawn at the loaded pitch');
+		assert.equal(dotsOf(svg.byId['#grid-zones']).length, 34 * 20, 'the zone grid from its own record, unchanged');
 		model.load(docWith(structuredClone(LAYOUT_TABLE[0])));
-		assert.equal(dots(svg, 'grid-nodes').length, 31 * 17, 'and back, on the next load');
+		assert.equal(dotsOf(svg.byId['#grid-nodes']).length, 33 * 19, 'and back, on the next load');
 	} finally { restore(); }
 });
 
@@ -71,12 +83,12 @@ test('WD-b2: a diagram lacking a layout record is an error naming it; a page wit
 	const restore = installDom();
 	try {
 		const lacking = { get: () => undefined, onChange() {} };
-		assert.throws(() => new Grids({ scene: page().scene, grids: gridsOf(PRODUCT_CANVAS), model: lacking }), /the node layout \(layout-000001\) is missing/);
+		assert.throws(() => new Grids({ scene: page().scene, grids: gridsOf(PRODUCT_CANVAS), model: lacking, look: LOOK }), /the node layout \(layout-000001\) is missing/);
 		const { svg, scene } = page();
 		const noZones = PRODUCT_CANVAS.filter((p) => p.owner !== 'zones');
-		new Grids({ scene, grids: gridsOf(noZones), model: new Model() });
-		assert.equal(dots(svg, 'grid-zones').length, 0, 'nothing places on the zone lattice, so no zone grid');
-		assert.equal(dots(svg, 'grid-nodes').length, 31 * 17, 'and the node grid as ever');
+		new Grids({ scene, grids: gridsOf(noZones), model: new Model(), look: LOOK });
+		assert.equal(dotsOf(svg.byId['#grid-zones']).length, 0, 'nothing places on the zone lattice, so no zone grid');
+		assert.equal(dotsOf(svg.byId['#grid-nodes']).length, 33 * 19, 'and the node grid as ever');
 		assert.deepEqual(gridsOf(noZones).map((g) => g.layout), ['node']);
 		assert.deepEqual(gridsOf(PRODUCT_CANVAS).map((g) => [g.layout, g.layer, g.shownWith ?? null, g.cls ?? null]),
 			[['node', 'grid-nodes', null, null], ['zone', 'grid-zones', 'shiftKey', 'zonegrid']], 'how each is shown, keyed by its layout');

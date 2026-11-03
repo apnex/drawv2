@@ -1009,8 +1009,25 @@ The moves the record answers to, in order; each allows what section 4.2's table 
             and each put of a load step only as section 4.2's load rule allows (NS17, `judgeLoad`), from the live run's tags -- in place
             of "no patch, no move", which `ca492da`'s own owners' puts within a load could not meet. And, an erratum of the build (the
             pipes layer's order, `pipesInOrder`): the pipes layer's items in the order rule P puts them
+  view      H26.6's move 8 (dev/design/components/PAN-ZOOM.md section 7, GR12): the crosshair's line ends, its one difference allowed --
+            each line spans what the canvas shows, `visible()`, where it spanned the old surface; the line's own place, the column or row
+            it marks, and the snap box, as recorded (`crosshairEnds`)
 */
-export const MOVES = ['record', 'trace', 'painters', 'pipes'];
+export const MOVES = ['record', 'trace', 'painters', 'pipes', 'view'];
+/*
+The crosshair's shapes as the record holds them, but each line's ends where the live line has them, the line marking the same column or
+row: a vertical line (`x1` equal to `x2`) takes the live `y1` and `y2` when its `x1` and `x2` are the live line's, a horizontal one its
+`x1` and `x2` likewise; every other attribute, and the snap box, as recorded.
+*/
+function crosshairEnds(want, got) {
+	return want.map((sh, i) => {
+		const live = got?.[i];
+		if (sh.tag !== 'line' || live?.tag !== 'line') return sh;
+		const a = sh.attrs, b = live.attrs;
+		const ends = a.x1 === a.x2 && b.x1 === a.x1 && b.x2 === a.x2 ? ['y1', 'y2'] : a.y1 === a.y2 && b.y1 === a.y1 && b.y2 === a.y2 ? ['x1', 'x2'] : [];
+		return { ...sh, attrs: Object.fromEntries(Object.entries(a).map(([k, v]) => [k, ends.includes(k) ? b[k] : v])) };
+	});
+}
 // the states NS13 rules -- each held by its owner and shown on the state target while held, after the painters move
 export const STATE_CLASSES = ['hover', 'linkband', 'armed', 'armed-clone', 'replugging', 'selected', 'on-selected-path', 'blocking'];
 // today's trace, as a line of the record shows it: the inline dash, never taken away (B422)
@@ -1275,7 +1292,9 @@ export function compareScenario(sc, rec, live, { move = 'trace' } = {}) {
 			const live2 = new Map(lItems);
 			for (const [key, shapes] of rItems) {
 				if (!live2.has(key)) continue;
-				const want = canonical(expectedItem(rec, k, layer, key, shapes, R[k], move), opts), got = canonical(live2.get(key), opts);
+				let item = expectedItem(rec, k, layer, key, shapes, R[k], move);
+				if (at >= MOVES.indexOf('view') && layer === 'snaplayer' && key === 'crosshair') item = crosshairEnds(item, live2.get(key));
+				const want = canonical(item, opts), got = canonical(live2.get(key), opts);
 				if (want !== got) { let i = 0; while (want[i] === got[i]) i++; problems.push(`${where}: ${layer} ${key}: ...${want.slice(Math.max(0, i - 60), i + 140)} | live ...${got.slice(Math.max(0, i - 60), i + 140)}`); }
 			}
 		}

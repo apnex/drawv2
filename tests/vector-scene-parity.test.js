@@ -33,6 +33,7 @@ import assert from 'node:assert/strict';
 import { readRecord, corpusTrees, compact, treesOpen } from './fixtures/scene-parity.mjs';
 import { SCENARIOS, record } from './fixtures/gesture-corpus.mjs';
 import { CORPUS_LISTED_APART } from './fixtures/binding-parity.mjs';   // H26.5: the corpus's scenarios input-binding 0.2.0 changes
+import { makeInput, dotsOf } from './fixtures/client-harness.mjs';
 
 const RECORD = readRecord();
 
@@ -45,16 +46,47 @@ earlier, at the right's -- the record's answer, and that one derived from it.
 const TREES_LISTED_APART = {
 	'link-right-button-release-ignored': (was) => ({ states: was.states, steps: [...was.steps.slice(0, 3), was.steps[4], was.steps[4]] }),
 };
-test('H26.4 (acceptance step 4): the gesture corpus\'s overlay, snap layer and grids are, after every step, the trees today\'s code wrote', { timeout: 120000 }, async () => {
+/*
+RESTATED at H26.6's move 8 (dev/design/components/PAN-ZOOM.md section 3.7; section 7, GR12, as the native record reads it): the crosshair's
+line ends and the grids are the view's. Each crosshair line spans what the harness's root shows, `visible()`'s region -- 0 to 1,920 by 0
+to 1,080 at a scale of one -- where it spanned the old surface, so its ends are set aside on both sides and held to that region here; the
+grids are drawn from the view, so they are held here apart: one drawing at every step of every scenario, no corpus step moving the view
+or loading another grid, and that drawing every lattice point the root shows, each full. The overlay, and the crosshair's place, as
+recorded.
+*/
+const isLine = (n) => n.tag === 'LINE' && n.attrs.some(([k, v]) => k === 'class' && v.split(' ').includes('gridline'));
+const attr = (n, k) => n.attrs.find(([a]) => a === k)?.[1];
+const endsOf = (n) => (attr(n, 'x1') === attr(n, 'x2') ? ['y1', 'y2'] : ['x1', 'x2']);
+const endless = (n) => (isLine(n) ? { ...n, attrs: n.attrs.filter(([k]) => !endsOf(n).includes(k)) } : n);
+const viewed = (state) => ({ overlay: state.overlay, snaplayer: state.snaplayer.map(endless), grids: 'the view\'s' });
+const steps = (trees) => trees.steps.map((i) => trees.states[i]);
+test('H26.6 move 8: the corpus\'s harness draws its grids from the view -- every point its root shows, each full', async () => {
+	const open = await treesOpen(), h = makeInput();
+	try {
+		open(h);
+		const nodes = dotsOf(h.layers['#grid-nodes']), zones = dotsOf(h.layers['#grid-zones']);
+		assert.deepEqual([nodes.length, zones.length], [33 * 19, 32 * 18], 'the lattices over 0..1920 by 0..1080');
+		assert.deepEqual([nodes[0], nodes.at(-1), zones[0], zones.at(-1)].map((d) => [d.x, d.y, d.opacity]), [[0, 0, 1], [1920, 1080, 1], [30, 30, 1], [1890, 1050, 1]]);
+	} finally { h.restore(); }
+});
+test('H26.4 (acceptance step 4): the gesture corpus\'s overlay, snap layer and grids are, after every step, the trees today\'s code wrote -- H26.6 move 8: the crosshair\'s ends and the grids the view\'s', { timeout: 120000 }, async () => {
 	const open = await treesOpen();
 	assert.deepEqual(Object.keys(RECORD.trees).sort(), SCENARIOS.map((s) => s.id).sort(), 'the record holds every scenario');
 	assert.deepEqual(Object.keys(TREES_LISTED_APART), Object.keys(CORPUS_LISTED_APART), 'the scenarios listed apart are the binding fixture\'s');
 	for (const [id, after] of Object.entries(TREES_LISTED_APART)) assert.notDeepEqual(after(RECORD.trees[id]), RECORD.trees[id], `${id}: its two answers differ`);
 	let drawn = 0;
+	let lines = 0;
 	for (const s of SCENARIOS) {
-		const live = compact(corpusTrees(s, { record, open }));
-		assert.deepEqual(live, TREES_LISTED_APART[s.id]?.(RECORD.trees[s.id]) ?? RECORD.trees[s.id], `${s.id}: every step's trees, attributes in order`);
-		drawn += live.states.filter((st) => st.overlay.length || st.snaplayer.length).length;
+		const live = steps(compact(corpusTrees(s, { record, open })));
+		const was = steps(TREES_LISTED_APART[s.id]?.(RECORD.trees[s.id]) ?? RECORD.trees[s.id]);
+		assert.deepEqual(compact(live.map(viewed)), compact(was.map(viewed)), `${s.id}: every step's trees, attributes in order, but the crosshair's ends and the grids`);
+		assert.ok(live.every((st) => JSON.stringify(st.grids) === JSON.stringify(live[0].grids)), `${s.id}: one drawing of the grids at every step`);
+		for (const n of live.flatMap((st) => st.snaplayer).filter(isLine)) {
+			assert.deepEqual(endsOf(n).map((k) => Number(attr(n, k))), endsOf(n)[0] === 'y1' ? [0, 1080] : [0, 1920], `${s.id}: a crosshair line across the root's region`);
+			lines++;
+		}
+		drawn += compact(live).states.filter((st) => st.overlay.length || st.snaplayer.length).length;
 	}
+	assert.ok(lines > 20, `the corpus draws the crosshair: ${lines} lines`);
 	assert.ok(drawn > 100, `the corpus draws on the overlay and the snap layer: ${drawn} states`);
 });

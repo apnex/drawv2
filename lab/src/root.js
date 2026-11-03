@@ -226,4 +226,4 @@ the page showed them, so the page is what the test runs.
 The product exposes `window.draw` for the same reason (tests/browser.test.js). Nothing here is
 reachable from production: `lab/` is served only at lab.apnex.io and imported by nothing.
 */
-window.lab = { model, authority, network, history, log, input, capture, routeHook: net.judge };
+window.lab = { model, authority, network, history, log, input, capture, routeHook: net.judge, view };   // H26.6 move 8: the view part, a level set in tests

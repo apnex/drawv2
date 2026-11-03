@@ -17,8 +17,10 @@ import { SURFACE, NODE_EXT as DOC_NODE_EXT } from '../model/surface.mjs';
 import { ZONE_EXT as DOC_ZONE_EXT } from '../plugins/layouts/layout-table.mjs';   // CORRECTED at O-b1: the zone extent is the zones plugin's
 // RESTATED at C-e step thirteen (H19.33): the grids' points are their parts', and snap.js no longer re-exports the zone extent
 const ZONE_EXT = DOC_ZONE_EXT;
-// RESTATED at WD-b2 (H19.46): a grid's points are read from the open diagram's layout record -- here a fresh Model's
-const nodePoints = () => PRODUCT_CANVAS.flatMap((p) => p.grids ?? []).find((g) => g.layer === 'grid-nodes').points(new Model());
+// RESTATED at WD-b2 (H19.46): a grid's points are read from the open diagram's layout record -- here a fresh Model's. RESTATED at H26.6's
+// move 8 (PAN-ZOOM.md section 3.7): a grid answers its lattice, drawn from the view; its points within the node extent, as it drew them
+const nodePoints = () => PRODUCT_CANVAS.flatMap((p) => p.grids ?? []).find((g) => g.layer === 'grid-nodes').lattice(new Model())
+	.inView({ region: { kind: 'rect', x: -NODE_EXT.x, y: -NODE_EXT.y, w: 2 * NODE_EXT.x, h: 2 * NODE_EXT.y }, scale: 1 }).positions.map(({ point }) => point);
 
 // Grid math lives in app/src/snap.js (shipped). The center-origin geometry was ported from the
 // retired client/src/grid.js; as of CL3 the canvas surface + usable extents are single-sourced

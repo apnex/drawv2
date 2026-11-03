@@ -367,7 +367,10 @@ export const REPLACEMENTS = {
 		ZONE_KEYS.find((k) => k.id === 'wrap').run({ selectionBounds: () => b, create: (kind, make) => { box = make(STUB); }, flash: () => {}, dims: () => '' });
 		return box && [box.x, box.y, box.w, box.h];
 	},
-	'latticePoints': (record) => LAYOUTS_CANVAS.grids.find((g) => g.layout === record.name).points(fakeModel(record)).flatMap((p) => [p.x, p.y]),
+	// RESTATED at H26.6's move 8 (PAN-ZOOM.md section 3.7): a grid answers its lattice, drawn from the view; its points within the record's
+	// extent, as `latticePoints` listed them until the move deleted it, are that lattice's in view of the extent
+	'latticePoints': (record) => LAYOUTS_CANVAS.grids.find((g) => g.layout === record.name).lattice(fakeModel(record))
+		.inView({ region: { kind: 'rect', x: -record.ext.x, y: -record.ext.y, w: 2 * record.ext.x, h: 2 * record.ext.y }, scale: 1 }).positions.flatMap(({ point }) => [point.x, point.y]),
 	'frameSpan': ([a, b]) => ((f) => [f.x, f.y, f.w, f.h, f.origin.x, f.origin.y, f.cols, f.rows])(DEVICE_PRESSES.find((r) => r.id === 'tool').box.frame(a, b)),
 	'deviceSizeStep': ({ node, dx, dy }) => ((s) => (s ? [s.span.cols, s.span.rows] : null))(DEVICE_SIZE_STEP.step(node, dx, dy)),
 	'deviceWithinSurface': (n) => DEVICE_FIELDS.refers(n, null, n, null),

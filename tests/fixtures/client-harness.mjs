@@ -39,7 +39,7 @@ import { EditingStates } from '../../app/src/editing-states.js';   // H26.8: the
 import { crosshair } from '../../app/src/editing-visuals.js';   // H26.4: the editing part's, an item of the scene
 import { Renderer, openCanvasScene } from '../../app/src/renderer.js';
 import { CANVAS_SCENE } from '../../product/canvas.mjs';
-import { CANVAS, GAP } from '../../app/src/snap.js';
+import { GAP } from '../../app/src/snap.js';
 import { Input } from '../../app/src/input.js';
 import { RUN_PRESSES } from '../../app/src/run-mode.js';
 import { captureCanvas } from '../../app/src/capture.js';
@@ -319,7 +319,7 @@ export function makeInput({ readOnly = false, bare = false, host: hostOverride =
 	const helpPanel = Object.freeze({ shown: () => !help.hidden, show: (on) => { help.hidden = !on; } });
 	// B36 — the single crosshair main.js owns, injected here the same way. Sharing it is the point:
 	// two instances on one layer is the defect, so the harness must not quietly create a second.
-	const snap = crosshair(scene, CANVAS, GAP);
+	const snap = crosshair(scene, GAP);   // H26.6's move 8: across what the scene shows
 
 	// the commit boundary — the ONLY surface these tests assert on
 	const commits = [];
@@ -505,6 +505,17 @@ H26.4 (dev/design/components/VECTOR-SCENE.md section 5.1, "The test harness") --
 it over its own (app/src/compose-canvas.js): the composition's declaration, the layers appended to the root, each then found by its id,
 so `svg.querySelector('#nodes')` and the harness's `layers` answer the layer the scene made. Needs the stub DOM installed.
 */
+// H26.6's move 8 (dev/design/components/PAN-ZOOM.md section 3.7): each dot a grid's layer draws -- its point, the stroke's width, the path's
+// opacity -- read back from its paths of zero-length strokes (app/src/grids.js `dotsPath`)
+export const dotsOf = (layer) => layer.children.flatMap((p) => {
+	const out = [];
+	let x = 0, y = 0;
+	for (const [, cmd, a, b] of (p.attrs.d ?? '').matchAll(/([Mm])(-?[\d.e]+) (-?[\d.e]+)h0/g)) {
+		if (cmd === 'M') { x = Number(a); y = Number(b); } else { x += Number(a); y += Number(b); }
+		out.push({ x, y, width: Number(p.attrs['stroke-width']), opacity: p.attrs.opacity === undefined ? 1 : Number(p.attrs.opacity) });
+	}
+	return out;
+});
 export function sceneOver(svg) {
 	const scene = openCanvasScene(CANVAS_SCENE, svg);
 	svg.byId = Object.fromEntries(svg.children.map((layer) => [`#${layer.attrs.id}`, layer]));

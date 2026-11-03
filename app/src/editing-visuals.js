@@ -20,20 +20,32 @@ let serial = 0;
 const keyOf = (kind) => `${kind}/${++serial}`;
 
 // v1's crosshair and cell-box snap feedback, on the snap layer
-export function crosshair(scene, canvas, gap) {
-	let shown = false;
+// H26.6's move 8 (dev/design/components/PAN-ZOOM.md sections 3.7 and 3.8): the lines span what the canvas shows, `visible()`'s region, where
+// they spanned the old 1920 by 1080 surface -- the region kept from each view the scene tells, so a pointer's move reads no layout, and a
+// crosshair shown put again for a new view, asked of `schedule` since the scene is not written while it tells (vector-scene VS17)
+export function crosshair(scene, gap, { schedule = (fn) => queueMicrotask(fn) } = {}) {
+	let at = null, pending = false, region = scene.visible().region;
+	const put = () => {
+		scene.put('snaplayer', 'crosshair', [
+			{ tag: 'line', attrs: { class: 'gridline', x1: at.x, y1: region.y, x2: at.x, y2: region.y + region.h } },
+			{ tag: 'line', attrs: { class: 'gridline', x1: region.x, y1: at.y, x2: region.x + region.w, y2: at.y } },
+			{ tag: 'rect', attrs: { class: 'snapbox', width: gap, height: gap, x: at.x - gap / 2, y: at.y - gap / 2 } },
+		]);
+	};
+	scene.onView((visible) => {
+		region = visible.region;
+		if (!at || pending) return;
+		pending = true;
+		schedule(() => { pending = false; if (at) put(); });
+	});
 	return {
 		show(pos) {
-			shown = true;
-			scene.put('snaplayer', 'crosshair', [
-				{ tag: 'line', attrs: { class: 'gridline', x1: pos.x, y1: -canvas.hh, x2: pos.x, y2: canvas.hh } },
-				{ tag: 'line', attrs: { class: 'gridline', x1: -canvas.hw, y1: pos.y, x2: canvas.hw, y2: pos.y } },
-				{ tag: 'rect', attrs: { class: 'snapbox', width: gap, height: gap, x: pos.x - gap / 2, y: pos.y - gap / 2 } },
-			]);
+			at = pos;
+			put();
 		},
 		hide() {
-			if (shown) scene.remove('snaplayer', 'crosshair');
-			shown = false;
+			if (at) scene.remove('snaplayer', 'crosshair');
+			at = null;
 		},
 	};
 }

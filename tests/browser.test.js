@@ -844,13 +844,15 @@ test('B202: run mode unhighlights a bend, and keeps the endpoint dot that shows 
 		const run = read();
 		r.setMode(was);
 		m.del('node', 'node-fe0b01');
-		// the grid must still be drawing dots, or "unhighlighted" is really "deleted"
-		const grid = document.querySelectorAll('#grid-nodes circle').length;
-		const gridR = grid ? document.querySelector('#grid-nodes circle').getAttribute('r') : null;
-		return JSON.stringify({ author, run, grid, gridR });
+		// the grid must still be drawing dots, or "unhighlighted" is really "deleted". RESTATED at H26.6's move 8 (PAN-ZOOM.md section 3.7):
+		// a tier of the grid is one path of round zero-length strokes, its width the dot's diameter on screen, drawn from the view
+		const path = document.querySelector('#grid-nodes path');
+		const grid = path ? (path.getAttribute('d').match(/h0/g) || []).length : 0;
+		const gridD = path ? Number(path.getAttribute('stroke-width')) : null, scale = window.draw.scene.view().scale;
+		return JSON.stringify({ author, run, grid, gridD, scale });
 	})()`);
 
-	const { author, run, grid, gridR } = JSON.parse(probe);
+	const { author, run, grid, gridD, scale } = JSON.parse(probe);
 
 	assert.notEqual(author.bendDot, 'none', 'a bend must show its dot while authoring');
 	assert.equal(run.bendDot, 'none', 'run mode still highlights a bend');
@@ -859,7 +861,8 @@ test('B202: run mode unhighlights a bend, and keeps the endpoint dot that shows 
 	assert.notEqual(run.endPad, 'none', 'the endpoint pad must survive run mode');
 
 	assert.ok(grid > 0, 'the node grid draws no dots -- a hidden bend dot would leave a hole, not the grid');
-	assert.equal(Number(gridR), 2, `the grid dot must be the same radius the bend was lit at, got ${gridR}`);
+	// at 1x the grid dot's diameter on screen is a radius of 2 drawing units at the view's scale -- the bend's dot, lit at that radius
+	assert.ok(Math.abs(gridD - 2 * 2 * scale) < 1e-9, `the grid dot must be the same size the bend was lit at: ${gridD} across, 4 x ${scale}`);
 });
 
 /*
@@ -1321,8 +1324,28 @@ test('K8: the page boots into the same DOM -- layers, defs, grid, palette and en
 		})`));
 		const GOLDEN = new URL('./fixtures/k8-dom.json', import.meta.url);
 		if (process.env.K8_WRITE) fs.writeFileSync(GOLDEN, `${JSON.stringify(snapshot, null, '\t')}\n`);
-		assert.deepEqual(snapshot, JSON.parse(fs.readFileSync(GOLDEN, 'utf8')));
-		assert.ok(snapshot.entities.flat().length > 3 && snapshot.grid[0][0] > 100, 'the snapshot holds a booted page, not an empty one');
+		/*
+		RESTATED at H26.6's move 8 (PAN-ZOOM.md section 3.7, PZ24; appendix A move 8): the grids are drawn from the view, so the golden's grid
+		entries -- the two layers' dots within the old extent, 527 and 576, the first a circle -- are what the page drew before the move, and
+		the page's grids are held to the view here: at the first opening each grid one path of every lattice point the canvas shows and 32
+		pixels beyond, each dot full, its stroke the diameter of the grid's dot at the view's scale. Everything else as the golden holds it.
+		*/
+		const golden = JSON.parse(fs.readFileSync(GOLDEN, 'utf8'));
+		const unGridded = (snap) => ({ ...snap, layers: snap.layers.filter(([id]) => !id.startsWith('grid-')), grid: null });
+		assert.deepEqual(unGridded(snapshot), unGridded(golden), 'the page boots into the golden\'s DOM, its grids apart');
+		assert.deepEqual(golden.grid.map(([n]) => n), [527, 576], 'control: the golden\'s grids, within the old extent');
+		const grids = JSON.parse(await t.eval(`JSON.stringify((() => {
+			const { region: r, scale } = draw.scene.visible(), m = 32 / scale, count = (o, lo, hi) => Math.floor((hi - o) / 60) - Math.ceil((lo - o) / 60) + 1;
+			return [['grid-nodes', 0, 2], ['grid-zones', 30, 5]].map(([id, o, radius]) => { const paths = [...document.getElementById(id).children];
+				return { paths: paths.map((p) => [p.tagName, p.getAttribute('opacity')]), dots: paths.reduce((n, p) => n + (p.getAttribute('d').match(/h0/g) || []).length, 0),
+					want: count(o, r.x - m, r.x + r.w + m) * count(o, r.y - m, r.y + r.h + m), width: Number(paths[0].getAttribute('stroke-width')), across: 2 * radius * scale }; });
+		})())`));
+		for (const g of grids) {
+			assert.deepEqual(g.paths, [['path', null]], 'one path, its dots full');
+			assert.equal(g.dots, g.want, 'every lattice point the canvas shows and its margin');
+			assert.ok(Math.abs(g.width - g.across) < 1e-9, `its stroke the dot's diameter at the view's scale: ${g.width}, ${g.across}`);
+		}
+		assert.ok(snapshot.entities.flat().length > 3 && grids[0].dots > 100, 'the snapshot holds a booted page, not an empty one');
 	} finally { await t.close(); }
 });
 

@@ -3,7 +3,8 @@ THE LAYOUTS PLUGIN'S CANVAS PART (WD-b2, H19.46; dev/design/unification/WIDE-DEV
 
 The two grids, drawn from the open diagram's layout records, and the anchor's place on the node layout. A record holds a grid's
 geometry -- its pitch, the offset of its lattice and its extent -- so a grid's dots are read from it, lattice point by lattice
-point within the extent (`points`, handed the Model; plugins/layouts/layout-records.mjs reads loudly). How a grid is shown is this
+point within the extent (`points`, handed the Model; plugins/layouts/layout-records.mjs reads loudly) -- H26.6's move 8: its lattice
+since, which the grids part lists in view (`lattice`). How a grid is shown is this
 plugin's code, keyed by the layout's name: the page layer its dots go into, the dot, and -- for the zone grid, Shift being the
 zone layer's key (DESIGN U1) -- the modifier and class that show it. The canvas draws a grid only where some part places a kind
 on its lattice (app/src/snap.js `gridsOf`), so a page without the zones plugin draws no zone grid.
@@ -23,16 +24,21 @@ import { LAYOUT_TABLE } from './layout-table.mjs';
 import { layoutNamed } from './layout-records.mjs';
 
 /*
-H26.1 (dev/design/components/SNAP-GRID.md appendix B): every point of a layout's lattice within its extent, row by row -- snap-grid's
-positions in view, asked of the grid the diagram's record opens bounded by its extent (`latticeGrids`, which refuses a record it
-cannot open, naming its problems), the region the extent, at a scale of one: no thinning, every position, by row then column.
+H26.1 (dev/design/components/SNAP-GRID.md appendix B): every point of a layout's lattice within its extent, row by row, was what a grid
+drew. H26.6's move 8 (dev/design/components/PAN-ZOOM.md section 3.7, PZ24): a grid is drawn from the view, so it answers its lattice --
+the grid with no bounds the diagram's record opens (`latticeGrids`, which refuses a record it cannot open, naming its problems), or one of
+`every` times its pitch through the same origin, a tier's, holding the points whose indices are both multiples of `every` -- and the grids
+part lists what the canvas shows of it (app/src/grids.js). Each is opened once for its pitch and origin, as the record's grid is read
+for every draw.
 */
-function latticePoints(record) {
-	const { ext } = record;
-	return latticeGrids(record).bounded.inView({ region: { kind: 'rect', x: -ext.x, y: -ext.y, w: 2 * ext.x, h: 2 * ext.y }, scale: 1 }).positions.map(({ point }) => ({ x: point.x, y: point.y }));
+const lattices = new Map();
+function latticeOf(record, every) {
+	const key = `${record.pitch}|${record.offset}|${every}`;
+	if (!lattices.has(key)) lattices.set(key, latticeGrids({ pitch: record.pitch * every, offset: record.offset }).unbounded);
+	return lattices.get(key);
 }
 
-const grid = (layout, shown) => ({ layout, points: (model) => latticePoints(layoutNamed(model, layout)), ...shown });
+const grid = (layout, shown) => ({ layout, lattice: (model, every = 1) => latticeOf(layoutNamed(model, layout), every), ...shown });
 const NODE_GRID = grid('node', { layer: 'grid-nodes', r: gridDot().radius });
 const ZONE_GRID = grid('zone', { layer: 'grid-zones', r: 5, shownWith: 'shiftKey', cls: 'zonegrid' });
 

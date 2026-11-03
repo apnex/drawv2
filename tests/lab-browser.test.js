@@ -127,6 +127,51 @@ test('H26.6 move 7: the first opening fits the old frame, centred on 0,0, at thr
 });
 
 /*
+H26.6's move 8 (dev/design/components/PAN-ZOOM.md section 3.7, PZ24; appendix A move 8) -- THE GRIDS FROM THE VIEW, ON THE PAGE, at the two
+canvases the design measured, 1,366 by 535 and 1,920 by 847 on screen (the window set by Chrome's device metrics, the lab's chrome above
+the canvas 41 pixels): at each level, set through the view part, each grid's dots read back from its paths -- dots-in-view.mjs's rows at the
+origin, the dots listed over the area drawn and each tier's within visible() -- and each dot's size on screen, a round stroke that does not
+scale with the view, its width the grid dot's diameter at the default scale at every level: 1.98 and 4.95 pixels, 3.14 and 7.84.
+*/
+test('H26.6 move 8: on the page, each grid draws dots-in-view.mjs\'s rows at the origin at every level, each dot the size it has at 1x', { skip: SKIP }, async () => {
+	const t = await theTab();
+	const AT = {
+		'1366 by 535': { metrics: [1366, 576], across: [1.98, 4.95], node: { 0.5: [275, [207]], 1: [1029, [855]], 2: [3977, [207, 3160]], 3: [8845, [65, 1798, 5672]] },
+			zone: { 0.5: [240, [220]], 1: [960, [828]], 2: [3840, [207, 3105]], 3: [8640, [65, 1798, 5589]] } },
+		'1920 by 847': { metrics: [1920, 888], across: [3.14, 7.84], node: { 0.5: [189, [189]], 1: [817, [779]], 2: [3315, [189, 2808]], 3: [7493, [65, 1582, 5118]] },
+			zone: { 0.5: [220, [200]], 1: [840, [720]], 2: [3192, [189, 2763]], 3: [7308, [65, 1582, 4941]] } },
+	};
+	const READ = (level) => `(async () => {
+		lab.view.set({ x: 0, y: 0, level: ${level} });
+		for (let i = 0; i < 3; i++) await new Promise((res) => requestAnimationFrame(res));
+		const svg = document.getElementById('container'), { region: r } = lab.input.scene.visible(), tiers = lab.view.gridLook().tiers;
+		const read = (id) => { const dots = [];
+			for (const p of document.getElementById(id).children) { let x = 0, y = 0; const o = Number(p.getAttribute('opacity') ?? 1), cs = getComputedStyle(p);
+				for (const [, c, a, b] of p.getAttribute('d').matchAll(/([Mm])(-?[\\d.e]+) (-?[\\d.e]+)h0/g)) { if (c === 'M') { x = +a; y = +b; } else { x += +a; y += +b; } dots.push({ x, y, o }); }
+				if (cs.vectorEffect !== 'non-scaling-stroke' || cs.strokeLinecap !== 'round') return { wrong: [cs.vectorEffect, cs.strokeLinecap] }; }
+			const inView = (d) => d.x >= r.x && d.x <= r.x + r.w && d.y >= r.y && d.y <= r.y + r.h;
+			return { listed: dots.length, perTier: tiers.map((tier) => dots.filter((d) => d.o === tier.opacity && inView(d)).length),
+				widths: [...new Set([...document.getElementById(id).children].map((p) => Math.round(Number(p.getAttribute('stroke-width')) * 100) / 100))] }; };
+		return JSON.stringify({ canvas: [svg.clientWidth, svg.clientHeight], node: read('grid-nodes'), zone: read('grid-zones') });
+	})()`;
+	try {
+		for (const [name, want] of Object.entries(AT)) {
+			await t.send('Emulation.setDeviceMetricsOverride', { width: want.metrics[0], height: want.metrics[1], deviceScaleFactor: 1, mobile: false });
+			await open('bend');
+			for (const level of [0.5, 1, 2, 3]) {
+				const got = JSON.parse(await t.run(READ(level)));
+				assert.deepEqual(got.canvas.join(' by '), name, `precondition: the canvas ${name}`);
+				for (const [k, grid] of [[0, 'node'], [1, 'zone']]) {
+					const [listed, perTier] = want[grid][level];
+					assert.deepEqual([got[grid].listed, got[grid].perTier], [listed, perTier], `${name}, the ${grid} grid at ${level}x: listed, and each tier in view`);
+					assert.deepEqual(got[grid].widths, [want.across[k]], `${name}, the ${grid} grid at ${level}x: every dot ${want.across[k]} pixels across, round, not scaled by the view`);
+				}
+			}
+		}
+	} finally { await t.send('Emulation.clearDeviceMetricsOverride'); }
+});
+
+/*
 The door tests prove the PLANNER's cascade and sweep reach the tab, so they clear the board's pipes
 first. Since pipes count as references, a hand pipe legitimately holds a waypoint the sweep would
 otherwise take -- a separate rule with its own test below, and mixing the two would let either one

@@ -25,7 +25,7 @@ import { svgDocument } from '../server/svg.mjs';
 
 const RECORD = JSON.parse(fs.readFileSync(NATIVE_RECORD, 'utf8'));
 const ALL = scenarios();
-const MOVE = 'pipes';   // the drawing moves built on this tree: moves 2, 3 and 4, the trace, the painters and the pipes
+const MOVE = 'view';   // the drawing moves built on this tree: moves 2, 3 and 4, the trace, the painters and the pipes; H26.6's move 8, the view
 // each scenario run live once, tagged (the pipes move's load rule), for the comparison and the faults planted in its tags below
 const LIVE = new Map();
 const liveOf = (name) => { if (!LIVE.has(name)) LIVE.set(name, runScenario(ALL[name], { tags: true })); return LIVE.get(name); };
@@ -141,6 +141,31 @@ function reshaped(rec, id, how, { loads = false } = {}) {
 	}
 	return rec;
 }
+
+/*
+H26.6's move 8 (PAN-ZOOM.md section 7, GR12): the crosshair's line ends its one difference allowed. The tree's own run, whose crosshair lines
+span the record's root as it is laid out -- at no size, so each line is of no length -- fails under the pipes move and holds under the
+view; the same run with its crosshair at another column or row, or its snap box moved, fails under both.
+*/
+test('the comparison allows the view move the crosshair\'s line ends, and nothing else of it', () => {
+	const TRANSIENT = 'transient targets: a zone\'s corners, a link\'s ends, the stamp ghost, the crosshair, the datum';
+	const live = liveOf(TRANSIENT);
+	const edited = (edit) => {
+		const run = copy(live);
+		let n = 0;
+		for (const s of run.steps) { const c = s.layers.snaplayer?.changed.crosshair; if (c) { edit(c); n++; } }
+		assert.equal(n, 3, 'control: three steps put the crosshair');
+		return run;
+	};
+	const problems = (move, run) => compareScenario(ALL[TRANSIENT], RECORD.scenarios[TRANSIENT], run, { move });
+	const lines = live.steps.map((s) => s.layers.snaplayer?.changed.crosshair).filter(Boolean).map((c) => c.slice(0, 2).map((l) => l.attrs));
+	assert.deepEqual(lines[0], [{ class: 'gridline', x1: '120', y1: '0', x2: '120', y2: '0' }, { class: 'gridline', x1: '0', y1: '-360', x2: '0', y2: '-360' }], 'control: the live lines span the root\'s region, of no size');
+	assert.ok(problems('pipes', live).some((p) => p.includes('snaplayer crosshair')), 'its line ends: refused under the pipes move');
+	assert.deepEqual(problems('view', live), [], 'and allowed under the view move');
+	assert.ok(problems('view', edited((c) => { c[0].attrs.x1 = c[0].attrs.x2 = '180'; })).length > 0, 'a crosshair at another column: refused under the view move');
+	assert.ok(problems('view', edited((c) => { c[1].attrs.y1 = c[1].attrs.y2 = '999'; })).length > 0, 'at another row: refused');
+	assert.ok(problems('view', edited((c) => { c[2].attrs.x = '0'; })).length > 0, 'its snap box moved: refused');
+});
 
 test('the comparison allows the painters move attribute order and class token order on every step but a load', () => {
 	const changes = 'changes in place: a zone, a group and its hull, a link and a ring left no room for their heads, a ring turned, the labels';

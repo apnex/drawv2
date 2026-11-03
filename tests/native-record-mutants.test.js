@@ -20,7 +20,7 @@ import { NATIVE_RECORD } from './fixtures/native-record.mjs';
 import { scratchFolder } from '@apnex/clean-runner';   // H26-19 as amended: removed when this file ends, however it ends
 
 const ROOT = path.resolve(import.meta.dirname, '..');
-const MOVE = 'pipes';   // as tests/native-record.test.js
+const MOVE = 'view';   // as tests/native-record.test.js
 // what the record's fixture imports, run from the copy: the product's code, the documents it loads, and the fixture itself
 const TREE = ['package.json', 'app', 'plugins', 'kernel', 'model', 'engine', 'planner', 'product', 'server', 'templates', 'lab/seeds.json', 'tools/probe', 'tests/fixtures/native-record.mjs'];
 const MUTANTS = [
@@ -69,7 +69,7 @@ const out = [];
 for (const [name, sc] of Object.entries(m.scenarios())) {
 	if (groups.length && !groups.includes(sc.group)) continue;
 	let p;
-	try { p = m.compareScenario(sc, rec.scenarios[name], m.runScenario(sc, { tags: move === 'pipes' }), { move }); } catch (e) { p = ['threw: ' + e.message]; }
+	try { p = m.compareScenario(sc, rec.scenarios[name], m.runScenario(sc, { tags: m.MOVES.indexOf(move) >= m.MOVES.indexOf('pipes') }), { move }); } catch (e) { p = ['threw: ' + e.message]; }
 	if (p.length) out.push([sc.group, name]);
 }
 console.log(JSON.stringify(out));
