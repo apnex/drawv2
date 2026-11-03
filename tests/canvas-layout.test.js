@@ -4,9 +4,9 @@ H25.4 (B376) -- THE CANVAS'S LAYOUT, DECLARED ONCE.
 Which part's layer lies over which is a fact of the composition: the links beneath the devices, the pipes beneath the links,
 the movers over everything they travel. It was typed in the product page and again in the lab -- the viewBox, the ground and
 eleven layers, fifteen lines alike -- and a third time as the ids the lab checks for, and the export read the order out of the
-product page's markup. Now product/canvas.mjs declares it (`CANVAS_VIEWBOX`, `CANVAS_LAYERS`), tools/canvas-layout.mjs writes it
-into each page between generated markers (the gate runs it with --check, as it runs tools/stylesheets.mjs), and the lab and the
-export read the declaration itself.
+product page's markup. Then product/canvas.mjs declared it (`CANVAS_VIEWBOX` until H26.6's move 7, and `CANVAS_LAYERS`),
+tools/canvas-layout.mjs writing it into each page between generated markers (the gate runs it with --check, as it runs
+tools/stylesheets.mjs), and the lab and the export reading the declaration itself.
 RESTATED at H26.6's move 7 (dev/design/components/PAN-ZOOM.md section 3.8, PZ25): `CANVAS_VIEWBOX` went, and the region holds the bare
 root -- no viewBox, the scene's view writing what one wrote, no ground, the root's CSS background painting it (app/canvas.css).
 */

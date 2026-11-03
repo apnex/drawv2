@@ -7,10 +7,10 @@ measure only when it holds exactly these lines (tools/regions.mjs). One definiti
 region by construction.
 
   PAGE_REGIONS.stylesheets  the stylesheets a page loads, in the composition's order (product/canvas.mjs PAGE_STYLESHEETS)
-  PAGE_REGIONS.canvas       the canvas a page lays out: its root, its viewBox and its ground (CANVAS_VIEWBOX); H26.4: no layer, the
-                            scene the canvas opens appending them after the ground (product/canvas.mjs CANVAS_SCENE); H26.6's move 7
-                            (PAN-ZOOM.md section 3.8, PZ25): the root bare -- no viewBox, the scene's view writing what one wrote, and
-                            no ground, the root's CSS background painting it (app/canvas.css)
+  PAGE_REGIONS.canvas       the canvas a page lays out: its bare root, with no layer -- the scene the canvas opens appending them
+                            (product/canvas.mjs CANVAS_SCENE, H26.4) -- and, since H26.6's move 7 (PAN-ZOOM.md section 3.8, PZ25),
+                            no viewBox, the scene's view writing what one wrote, and no ground, the root's CSS background painting
+                            it (app/canvas.css); until then it held the viewBox and its ground (`CANVAS_VIEWBOX`)
   PAGE_REGIONS.importmap    H26.1: the page's one import map, an entry per export of each component installed (tools/components.mjs)
   importMapRegion(imports)  that region for any map -- the generator writes it for the tree it is given, the measure for this one
 */

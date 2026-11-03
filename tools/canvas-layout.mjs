@@ -2,16 +2,16 @@
 /*
 canvas-layout -- H25.4 (B376). The canvas a page lays out is the composition's, written into the pages, never typed there.
 
-product/canvas.mjs declares the canvas's viewBox, whose rectangle is its ground, and its layers back to front
-(`CANVAS_VIEWBOX`, `CANVAS_LAYERS`). This writes the root, its viewBox and its ground into each page the manifest declares
-(tools/layers.mjs `PAGES`) as its
+product/canvas.mjs declares the canvas's layers back to front (`CANVAS_LAYERS`), opened as its scene (`CANVAS_SCENE`). This writes the
+canvas's root into each page the manifest declares (tools/layers.mjs `PAGES`) as its
 `<svg id="container">`, between its BEGIN and END GENERATED markers, and `--check` fails when a page lays out anything else --
 so the pages cannot drift from the composition, nor from each other (mission-kit P3), as tools/stylesheets.mjs holds the
 stylesheets they load. Before H25.4 each page typed its canvas, fifteen lines alike, and the export read the order from one.
 H26.4 (dev/design/components/VECTOR-SCENE.md section 5.1, D5): the region holds no layer -- the scene the canvas opens from the
 composition's declaration (product/canvas.mjs CANVAS_SCENE) appends the layers after the ground, in that order, so the page and the
 composition cannot disagree on them at all. H26.6's move 7 (dev/design/components/PAN-ZOOM.md section 3.8, PZ25): the root is written
-bare -- no viewBox, the scene's view writing what it wrote, and no ground, the root's CSS background painting it.
+bare -- no viewBox, the scene's view writing what it wrote, and no ground, the root's CSS background painting it; until then product/canvas.mjs
+declared the viewBox, whose rectangle was the ground (`CANVAS_VIEWBOX`), and this wrote both into the root.
 
 Usage: node tools/canvas-layout.mjs --check | --write
 */
