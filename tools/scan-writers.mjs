@@ -236,8 +236,13 @@ H26.8's grid move: every part the design names is declared -- `label-editor` and
 ITS LIMIT, stated by the design: a counted spelling's reads are review's -- the count says a path exists, not where it goes -- and
 `.children` is also a word of the descriptions, so it is counted where a module reads a description's shapes: the renderer, putting
 them, and the simulation's marks, writing on one beneath the entity's own.
+
+H26.6's move 7 (dev/design/components/PAN-ZOOM.md section 7, GR1; the move's verifier, S2) -- AND THE VIEW. Draw writes no attribute on a
+layer's element, the view being the scene's to write on every layer (GR1, a source check over the canvas, the renderer and the view): the
+`view` part is walked with the others, its one module allowed no read at all, so a layer's element reached through `layerElement` -- to
+write the view's transform itself, or anything on a foreign layer -- fails here until it is reviewed.
 */
-const SCENE_READ_PARTS = ['canvas', 'editing', 'renderer', 'grids', 'label-editor', 'help'];
+const SCENE_READ_PARTS = ['canvas', 'editing', 'renderer', 'grids', 'label-editor', 'help', 'view'];
 const SCENE_READ = new RegExp([
 	String.raw`\b(?:getElementById|querySelector|querySelectorAll|elementFromPoint|elementsFromPoint|layerElement|addEventListener)\s*\(`,
 	String.raw`\.closest\s*\(`,
@@ -261,6 +266,7 @@ const SCENE_READS = {
 	// H26.8's painters move: 3.3's table names no plugin, and the simulation's marks, declared `(parts, value) -> parts` (3.2, NS5), find
 	// the tower's glyph beneath the entity's own shape -- the word of the descriptions, counted as the renderer's are (an erratum)
 	'plugins/simulation/spawn-appearance.mjs': 2,
+	'app/src/view.js': 0,             // H26.6's move 7 (GR1): the view part, handed the scene, reaches no element -- the scene writes the view
 };
 // the modules of 3.3's parts, from PARTS: the named, then every plugin
 const sceneReadModules = () => [...new Set([
