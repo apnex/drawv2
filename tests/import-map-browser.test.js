@@ -25,6 +25,10 @@ AMENDED H26.5's vector-scene move (RELEASES-0.2.md section 4): vector-scene at 0
 the map, its scene has the ten members VS12's form lists, `itemAt` among them, and answers the item under a viewport point by the
 platform's own hit test -- the rect's path at a point inside it alone, the nested circle's at one inside it alone, and null where
 neither is, whatever of the page lies there.
+AMENDED H26.6's move 7 (dev/design/components/PAN-ZOOM.md section 5.1 row 7; appendix A move 7): vector-scene at 0.3.0, input-binding
+at 0.3.0 and snap-grid at 0.1.2, input-capture staying at 0.2.0, each read by the version installed; the scene's form gains the view's
+five members after `toScreen` (VS14 to VS17), whether or not it was declared with a view, the scene here declared without one and
+answering as it did; input-binding's session and snap-grid's grid answer as before, a declaration without `measure` being 0.2.0's.
 */
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
@@ -144,8 +148,9 @@ for (const [name, at, booted] of [['the product page', () => `http://127.0.0.1:$
 				['blur', null, null, null, null, null, null, null, null, null, false, true, 'number']] };   // H26.5: and the focus loss, its modifiers false
 		// H26.4: the scene's item, its nested shape at path [1, 0]; a 200 px root over 100 units halves a screen point, and doubles it back
 		const showing = { exports: ['openScene'], item: { layer: 'shown', key: 'item', path: [1, 0] }, layers: ['vs-shown', null], elements: 2, drawing: { x: 10, y: 20 }, back: { x: 20, y: 40 },
-			// H26.5: vector-scene 0.2.0's ten members, and the shape at each point
-			form: ['layers', 'put', 'remove', 'items', 'itemOf', 'itemAt', 'layerElement', 'toDrawing', 'toScreen', 'close'],
+			// H26.5: vector-scene 0.2.0's ten members, and the shape at each point. RESTATED at H26.6's move 7: 0.3.0's fifteen, the view's
+			// five among them (VS14 to VS17), on a scene declared without a view as on one declared with it
+			form: ['layers', 'put', 'remove', 'items', 'itemOf', 'itemAt', 'layerElement', 'toDrawing', 'toScreen', 'setView', 'view', 'visible', 'zoomAbout', 'onView', 'close'],
 			at: [{ layer: 'shown', key: 'item', path: [0] }, { layer: 'shown', key: 'item', path: [1, 0] }, null], left: 0 };
 		// H26.5: input-binding 0.2.0's session, its press resolved in one call, another pointer's release, and a chord's last
 		const releasing = { form: ['declaration', 'state', 'pointerDown', 'pressMatched', 'pointerMove', 'pointerUp', 'pointerLost', 'startGesture', 'becomeGesture', 'cancelGesture',
