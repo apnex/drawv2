@@ -8,7 +8,7 @@ app/src/tools.js, the canvas layer, where the gesture machine reads them; a tile
 digit does, and the tiles light up for whatever the tools hold.
 */
 
-import { CANVAS, snapNode } from './snap.js';
+import { snapNode } from './snap.js';
 import { buildPreview } from './painter.js';   // each tile, a standalone <svg> in the sidebar outside the canvas (H26.4: it stays)
 import { ghostNode } from './editing-visuals.js';   // H26.4: the dragged tile's ghost, an item of the canvas's scene
 
@@ -33,7 +33,9 @@ export class Palette {
 	// C-e: `hand` -- what can be held and how an item looks, the devices plugin's; `stamp(item, pos)` -- a drop, stamped by the canvas
 	// H26.4 (dev/design/components/VECTOR-SCENE.md section 5.1): `scene`, the canvas's -- its ghost is put there, and a pointer's place
 	// in the drawing is its `toDrawing`, the arithmetic `toCanvas` did
-	constructor({ container, scene, snap, tools, hand = null, stamp = () => false }) {
+	// H26.6's move 7 (dev/design/components/PAN-ZOOM.md section 3.8): `root`, the canvas's root element, which a drop is decided over
+	constructor({ container, root, scene, snap, tools, hand = null, stamp = () => false }) {
+		this.root = root;
 		this.scene = scene;
 		this.snap = snap;   // B36 — the one crosshair, shared with Overlay; see overlay.js
 		this.drag = null;
@@ -143,14 +145,24 @@ export class Palette {
 		item.addEventListener('pointerup', up);
 	}
 
-	inCanvas(pos) {
-		return Math.abs(pos.x) <= CANVAS.hw && Math.abs(pos.y) <= CANVAS.hh;
+	/*
+	H26.6's move 7 (dev/design/components/PAN-ZOOM.md section 3.8, "The palette's drop") -- OVER THE CANVAS, decided in screen space: a
+	pointer is over the canvas when its screen point lies within the root's box and the topmost element there is the root or within it.
+	It replaced `inCanvas`, a test of the drawing point against the old 1920 by 1080 frame, which also told a drop from a tile click and from
+	a release over the page's chrome: now any drawing point the canvas shows takes a drop, and a release over the header or the palette
+	takes none. Where a drop lands is the hand's snapping, which holds the old frame's edge until the extents go (move 11).
+	*/
+	overCanvas(evt) {
+		const box = this.root.getBoundingClientRect(), x = evt.clientX, y = evt.clientY;
+		if (!(x >= box.left && x <= box.right && y >= box.top && y <= box.bottom)) return false;
+		const top = this.root.ownerDocument.elementFromPoint(x, y);
+		return !!top && (top === this.root || this.root.contains(top));
 	}
 
 	onMove(evt) {
 		if (!this.drag) return;
 		const pos = this.scene.toDrawing({ x: evt.clientX, y: evt.clientY });
-		if (!this.inCanvas(pos)) {
+		if (!this.overCanvas(evt)) {
 			if (this.drag.ghost) { this.drag.ghost.remove(); this.drag.ghost = null; this.snap.hide(); }
 			return;
 		}
@@ -166,7 +178,7 @@ export class Palette {
 		if (ghost) ghost.remove();
 		this.snap.hide();
 		const pos = this.scene.toDrawing({ x: evt.clientX, y: evt.clientY });
-		if (!this.inCanvas(pos)) {
+		if (!this.overCanvas(evt)) {
 			// a click on the tile (no drag) toggles the stamp hand
 			if (Math.hypot(evt.clientX - sx, evt.clientY - sy) < CLICK_SLOP) this.tools.toggleHand(type);
 			return;

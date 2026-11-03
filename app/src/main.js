@@ -99,7 +99,7 @@ const networkHost = pageNetwork.attach({ model, renderer, selection, states, edi
 		if (banner) banner.textContent = text;
 	} });
 // C-e: the palette shows the hand's items in its preview, and a drop stamps through the canvas, as a click with the item held does
-const palette = new Palette({ container: document.getElementById('palette'), scene, snap, tools,
+const palette = new Palette({ container: document.getElementById('palette'), root: svg, scene, snap, tools,   // H26.6's move 7: the root, a drop decided over it
 	hand: PRODUCT_CANVAS.find((p) => p.hand)?.hand ?? null, stamp: (item, pos) => input.stampAt(pos, item) });
 // capture starts AFTER the palette's key listener is registered: its Escape cancels a sidebar drag and is spent there, so
 // the held hand stays (tests/browser.test.js "K8: Escape during a sidebar drag")

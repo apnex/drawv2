@@ -1404,6 +1404,82 @@ test('C-e: a tile dropped on a free cell stamps that device there, selected; dro
 
 
 /*
+H26.6's move 7 (dev/design/components/PAN-ZOOM.md section 3.8, "The palette's drop"; section 5.1 row 7; appendix A move 7) -- A DROP IS
+DECIDED IN SCREEN SPACE: a release is a drop when it lies within the canvas's root and the topmost element there is the canvas, so a release
+over the canvas beyond the old 1920 by 1080 frame -- where the letterbox was, the ground now -- stamps, landing where the hand's snapping
+puts it, the old frame's edge until move 11 unbounds it; a release over the header or the palette stamps nothing, and a press released
+where it began on a tile toggles the hand, as before. Then the same after the view is panned and zoomed: a release over a free cell the
+canvas shows stamps there, and over that cell with a page element laid over it, none -- the topmost element decides. Each stamp undone,
+the K8 board being shared.
+*/
+test('H26.6 move 7: a release over the canvas beyond the old frame is a drop, at the frame\'s edge; over the header or the palette none; a tile click toggles the hand -- and after a pan and a zoom', { skip: SKIP }, async () => {
+	const t = await freshTab();
+	try {
+		const centre = (sel) => t.eval(`JSON.stringify((() => { const r = document.querySelector('${sel}').getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; })())`).then(JSON.parse);
+		const [tx, ty] = await centre('.palette-item[data-type="host"]');
+		const drop = async (x, y) => {
+			await t.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: tx, y: ty });
+			await t.send('Input.dispatchMouseEvent', { type: 'mousePressed', x: tx, y: ty, button: 'left', clickCount: 1, buttons: 1 });
+			await t.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x, y, button: 'left', buttons: 1 });
+			await t.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', clickCount: 1 });
+			await sleep(300);
+		};
+		const nodes = () => t.eval(`draw.model.all('node').length`);
+		const selected = () => t.eval(`JSON.stringify((() => { const n = draw.model.get('node', draw.selection.list()[0]); return n ? [n.type, n.x, n.y] : null; })())`).then(JSON.parse);
+		// where the old frame lies on screen, and the canvas's root -- the frame fitted, centred, as the first opening shows it
+		const g = JSON.parse(await t.eval(`JSON.stringify((() => { const r = document.getElementById('container').getBoundingClientRect(); const a = draw.scene.toScreen({ x: -960, y: -540 }), b = draw.scene.toScreen({ x: 960, y: 540 });
+			return { root: [r.left, r.top, r.right, r.bottom], frame: [a.x, a.y, b.x, b.y] }; })())`));
+		const above = g.frame[1] - g.root[1] > 8;   // the letterbox was above and below the frame, or beside it
+		assert.ok(above || g.frame[0] - g.root[0] > 8, `precondition: the canvas shows ground beyond the old frame: ${JSON.stringify(g)}`);
+		const [bx, by] = above ? [(g.frame[0] + g.frame[2]) / 2, (g.root[1] + g.frame[1]) / 2] : [(g.root[0] + g.frame[0]) / 2, (g.frame[1] + g.frame[3]) / 2];
+		const was = await nodes();
+		await drop(bx, by);
+		assert.equal(await nodes(), was + 1, 'a release over the canvas beyond the old frame stamps');
+		const edge = await selected();
+		assert.deepEqual([edge[0], above ? edge[2] : edge[1]], ['host', above ? -480 : -900], 'landing at the old frame\'s edge, where the hand\'s snapping puts it until move 11');
+		await t.eval(`draw.history.undo(), 1`);
+		await sleep(200);
+		assert.equal(await nodes(), was, 'control: undone');
+		const [hx, hy] = await centre('header');
+		await drop(hx, hy);
+		assert.equal(await nodes(), was, 'a release over the header stamps nothing');
+		const [px, py] = await centre('.palette-item[data-type="router"]');
+		await drop(px, py);
+		assert.equal(await nodes(), was, 'nor one over the palette');
+		assert.equal(await t.eval(`draw.tools.hand`), null, 'and neither, travelling past the click slop, toggles the hand');
+		await drop(tx + 1, ty + 1);
+		assert.equal(await t.eval(`draw.tools.hand`), 'host', 'a press released where it began on a tile toggles the hand');
+		await drop(tx, ty);
+		assert.equal(await t.eval(`draw.tools.hand`), null, 'and again, off');
+		// panned and zoomed: the view set outright, its scale twice the first opening's, centred 30 and 15 units off a free cell below the
+		// load balancer, so the cell is shown away from where the first opening showed it
+		const free = JSON.parse(await t.eval(`JSON.stringify((() => { const lb = draw.model.get('node', 'node-ba0004'), p = { x: lb.x, y: lb.y + 180 };
+			const v = draw.scene.view(), { region } = draw.scene.visible(), w = region.w * v.scale, h = region.h * v.scale, scale = v.scale * 2;
+			const before = draw.scene.toScreen(p);
+			draw.scene.setView({ x: p.x + 30 - w / (2 * scale), y: p.y - 15 - h / (2 * scale), scale });
+			const taken = draw.model.all('node').some((n) => n.x === p.x && n.y === p.y), s = draw.scene.toScreen(p);
+			return { p, s: [s.x, s.y], moved: Math.hypot(s.x - before.x, s.y - before.y), taken }; })())`));
+		assert.ok(free.moved > 100, `precondition: the view moved the cell on screen (${free.moved} pixels)`);
+		assert.equal(free.taken, false, 'precondition: a free cell below the load balancer');
+		await drop(...free.s);
+		assert.equal(await nodes(), was + 1, 'after a pan and a zoom, a release over a free cell the canvas shows stamps');
+		assert.deepEqual(await selected(), ['host', free.p.x, free.p.y], 'there, on its cell');
+		await t.eval(`draw.history.undo(), 1`);
+		await sleep(200);
+		await drop(hx, hy);
+		assert.equal(await nodes(), was, 'and a release over the header stamps nothing still');
+		// the topmost element decides: a page element laid over the canvas -- as a menu or a dialog of the page's may be -- takes no drop
+		await t.eval(`(() => { const d = document.createElement('div'); d.id = 'drop-cover'; d.style.cssText = 'position: fixed; left: ${free.s[0] - 20}px; top: ${free.s[1] - 20}px; width: 40px; height: 40px; z-index: 5'; document.body.append(d); return 1; })()`);
+		await drop(...free.s);
+		await t.eval(`document.getElementById('drop-cover').remove(), 1`);
+		assert.equal(await nodes(), was, 'a release over the free cell with a page element laid over it stamps nothing');
+	} finally {
+		await t.eval(`draw.view.resized(), 1`).catch(() => {});   // the view part sets its view again: the first opening's
+		await t.close();
+	}
+});
+
+/*
 C-e step eleven (H19.33) -- where a kind's label sits is its plugin's to say: a device's name editor opens centred under the device.
 Read off the real page, since the editor is a DOM element the unit harness never builds.
 */
