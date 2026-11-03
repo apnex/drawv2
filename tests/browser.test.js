@@ -1480,6 +1480,96 @@ test('H26.6 move 7: a release over the canvas beyond the old frame is a drop, at
 });
 
 /*
+H26.6's move 7 (dev/design/components/PAN-ZOOM.md section 3.8, "The palette's drop": "its move uses the same test, so the ghost and the
+crosshair show over the canvas alone"; the move's verifier, S4) -- DURING A DRAG FROM A TILE, THE GHOST AND THE CROSSHAIR SHOW OVER THE
+CANVAS ALONE: carried over the header they are gone, over the canvas they are drawn, back over the palette gone again, and a release over
+the header stamps nothing.
+*/
+test('H26.6 move 7: a tile dragged shows its ghost and the crosshair over the canvas alone -- not over the header or the palette', { skip: SKIP }, async () => {
+	const t = await freshTab();
+	try {
+		const centre = (sel) => t.eval(`JSON.stringify((() => { const r = document.querySelector('${sel}').getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; })())`).then(JSON.parse);
+		const [tx, ty] = await centre('.palette-item[data-type="host"]'), [hx, hy] = await centre('header'), [px, py] = await centre('.palette-item[data-type="router"]');
+		const free = JSON.parse(await t.eval(`JSON.stringify((() => { const lb = draw.model.get('node', 'node-ba0004'), s = draw.scene.toScreen({ x: lb.x, y: lb.y + 180 }); return [s.x, s.y]; })())`));
+		const shown = () => t.eval(`JSON.stringify([document.querySelectorAll('#overlay .ghost').length, document.querySelectorAll('#snaplayer .snapbox').length])`).then(JSON.parse);
+		const move = async (x, y) => { await t.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x, y, button: 'left', buttons: 1 }); await sleep(120); };
+		const was = await t.eval(`draw.model.all('node').length`);
+		await t.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: tx, y: ty });
+		await t.send('Input.dispatchMouseEvent', { type: 'mousePressed', x: tx, y: ty, button: 'left', clickCount: 1, buttons: 1 });
+		await move(hx, hy);
+		assert.deepEqual(await shown(), [0, 0], 'over the header: no ghost and no crosshair');
+		await move(...free);
+		assert.deepEqual(await shown(), [1, 1], 'over the canvas: the ghost and the crosshair');
+		await move(px, py);
+		assert.deepEqual(await shown(), [0, 0], 'back over the palette: gone again');
+		await move(hx, hy);
+		await t.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: hx, y: hy, button: 'left', clickCount: 1 });
+		await sleep(200);
+		assert.equal(await t.eval(`draw.model.all('node').length`), was, 'released over the header: nothing stamped');
+	} finally { await t.close(); }
+});
+
+/*
+H26.6's move 7 (PAN-ZOOM.md section 3.8, PZ25; the move's verifier, S4) -- EDIT AND RUN MODE ARE AN INSET OUTLINE OF THE ROOT, at the
+screen's edge: drawn inside the canvas's box, its offset the negative of its width, in the mode's colour at half its opacity; none in view
+mode. Read as the browser computes it on the bare root, each mode entered by its real key.
+*/
+test('H26.6 move 7: edit and run mode show as an outline inset at the canvas\'s edge, in the mode\'s colour; view mode shows none', { skip: SKIP }, async () => {
+	const t = await freshTab();
+	try {
+		const look = () => t.eval(`JSON.stringify((() => { const c = document.getElementById('container'), cs = getComputedStyle(c), probe = document.createElement('div');
+			document.body.append(probe); const ink = (v) => { probe.style.color = 'var(' + v + ')'; return getComputedStyle(probe).color; };
+			const out = { mode: draw.renderer.mode, style: cs.outlineStyle, width: cs.outlineWidth, offset: cs.outlineOffset, colour: cs.outlineColor, link: ink('--tok-link'), accent: ink('--tok-accent') };
+			probe.remove(); return out; })())`).then(JSON.parse);
+		const nums = (c) => { const n = c.match(/-?[\d.]+/g).map(Number); return c.startsWith('color(') ? [n[0] * 255, n[1] * 255, n[2] * 255, n[3] ?? 1] : [n[0], n[1], n[2], n[3] ?? 1]; };
+		const inset = (m, token) => {
+			const [r, g, b, a] = nums(m.colour), [tr, tg, tb] = nums(m[token]);
+			return m.style === 'solid' && m.width === '2px' && m.offset === '-2px' && Math.abs(r - tr) < 1 && Math.abs(g - tg) < 1 && Math.abs(b - tb) < 1 && Math.abs(a - 0.5) < 0.01;
+		};
+		const view = await look();
+		assert.deepEqual([view.mode, view.style], ['view', 'none'], 'view mode: no outline');
+		await t.key('e');
+		assert.equal(await until(t, `draw.renderer.mode === 'edit' ? 1 : 0`, 4000), 1, 'precondition: edit mode, entered by pressing e');
+		const edit = await look();
+		assert.ok(inset(edit, 'link'), `edit mode: a 2px outline inset at the canvas's edge, the link colour at half opacity -- ${JSON.stringify(edit)}`);
+		await t.key('r');
+		assert.equal(await until(t, `draw.renderer.mode === 'run' ? 1 : 0`, 4000), 1, 'precondition: run mode, entered by pressing r');
+		const run = await look();
+		assert.ok(inset(run, 'accent'), `run mode: the same, in the accent colour -- ${JSON.stringify(run)}`);
+		await t.key('r');
+		assert.equal(await until(t, `draw.renderer.mode === 'view' ? 1 : 0`, 4000), 1, 'and back to view mode');
+		assert.equal((await look()).style, 'none', 'its outline gone');
+	} finally { await t.close(); }
+});
+
+/*
+H26.6's move 7 (PAN-ZOOM.md section 3.7: "when the canvas is resized the page tells the view part, which keeps the centre and the level
+and sets the view again at the new default's scale"; the move's verifier, S3) -- THE PRODUCT PAGE FOLLOWS A RESIZE: the window set to two
+sizes by Chrome's device metrics, no navigation between, and each time the view centred on 0,0 again at the old frame's fit for the root's
+new size, `min(W / 1920, H / 1080)`, as the first opening set it.
+*/
+test('H26.6 move 7: the product page follows a resize -- the view set again at the new fit, centred on 0,0', { skip: SKIP }, async () => {
+	const t = await freshTab();
+	const READ = `JSON.stringify((() => { const svg = document.getElementById('container'), r = svg.getBoundingClientRect(), s = draw.scene;
+		const o = s.toScreen({ x: 0, y: 0 }); return { w: svg.clientWidth, h: svg.clientHeight, left: r.left, top: r.top, scale: s.view().scale, origin: [o.x, o.y] }; })())`;
+	const near = (p, q) => Math.abs(p - q) < 1e-6;
+	const fits = (m) => near(m.scale, Math.min(m.w / 1920, m.h / 1080)) && near(m.origin[0], m.left + m.w / 2) && near(m.origin[1], m.top + m.h / 2);
+	try {
+		const first = JSON.parse(await t.eval(READ));
+		assert.ok(first.w > 0 && fits(first), `control: the first opening, at the old frame's fit -- ${JSON.stringify(first)}`);
+		for (const [width, height] of [[1366, 768], [1100, 900]]) {
+			await t.send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: false });
+			let m = null;
+			for (let i = 0; i < 40; i++) { await sleep(50); m = JSON.parse(await t.eval(READ)); if (m.w !== first.w && fits(m)) break; }
+			assert.ok(m.w !== first.w && fits(m), `${width} x ${height}: the root resized and the view set again at its fit, centred on 0,0 -- ${JSON.stringify(m)}`);
+		}
+	} finally {
+		await t.send('Emulation.clearDeviceMetricsOverride').catch(() => {});
+		await t.close();
+	}
+});
+
+/*
 C-e step eleven (H19.33) -- where a kind's label sits is its plugin's to say: a device's name editor opens centred under the device.
 Read off the real page, since the editor is a DOM element the unit harness never builds.
 */
