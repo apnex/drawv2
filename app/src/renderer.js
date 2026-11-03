@@ -73,9 +73,12 @@ AMENDED H26.5 (dev/design/components/RELEASES-0.2.md sections 3.3, 4 and 8): fro
 root's document's `elementsFromPoint` once as it opens, for `itemAt` -- the browser's on the page and in the lab, none on the test
 harness's fake document, which opens as before; the export's, on no root, reads no document. Draw calls no `itemAt` until H26.8's
 picks move, its picks reading a target by selector (D4); tests/vector-scene-move.test.js holds both.
+AMENDED H26.6's move 7 (dev/design/components/PAN-ZOOM.md sections 3.2 and 3.8; PZ22): on a root, viewed -- `view: true` beside it, so
+the scene writes the view on every layer (vector-scene 0.3.0, VS14), the root carrying no viewBox; the declaration the export shares
+(product/canvas.mjs CANVAS_SCENE) stays viewless, opened on no root, so its bytes are as they were.
 */
 export function openCanvasScene(declaration, root = null) {
-	const opened = openScene(root ? { ...declaration, root } : declaration);
+	const opened = openScene(root ? { ...declaration, root, view: true } : declaration);
 	if (opened.ok) return opened.scene;
 	throw new Error(`the canvas's scene refused its declaration: ${opened.problems.map((p) => `${p.pointer || '/'} ${p.problem}`).join(', ')}`);
 }

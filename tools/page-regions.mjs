@@ -8,19 +8,20 @@ region by construction.
 
   PAGE_REGIONS.stylesheets  the stylesheets a page loads, in the composition's order (product/canvas.mjs PAGE_STYLESHEETS)
   PAGE_REGIONS.canvas       the canvas a page lays out: its root, its viewBox and its ground (CANVAS_VIEWBOX); H26.4: no layer, the
-                            scene the canvas opens appending them after the ground (product/canvas.mjs CANVAS_SCENE)
+                            scene the canvas opens appending them after the ground (product/canvas.mjs CANVAS_SCENE); H26.6's move 7
+                            (PAN-ZOOM.md section 3.8, PZ25): the root bare -- no viewBox, the scene's view writing what one wrote, and
+                            no ground, the root's CSS background painting it (app/canvas.css)
   PAGE_REGIONS.importmap    H26.1: the page's one import map, an entry per export of each component installed (tools/components.mjs)
   importMapRegion(imports)  that region for any map -- the generator writes it for the tree it is given, the measure for this one
 */
 import path from 'node:path';
 import { COPIES } from './layers.mjs';
-import { PAGE_STYLESHEETS, CANVAS_VIEWBOX } from '../product/canvas.mjs';
+import { PAGE_STYLESHEETS } from '../product/canvas.mjs';
 import { markersOf } from './regions.mjs';
 import { importMapOf } from './components.mjs';
 
 // a sheet's address: a page's own folder is the root it is served from, every other folder is mounted under its name
 const href = (file) => (file.startsWith('app/') ? `/${file.slice('app/'.length)}` : `/${file}`);
-const [x, y, width, height] = CANVAS_VIEWBOX.split(' ');
 
 export const importMapRegion = (imports) => ({
 	...markersOf('importmap', COPIES.generated.importmap),
@@ -31,11 +32,7 @@ export const PAGE_REGIONS = {
 	stylesheets: { ...markersOf('stylesheets', COPIES.generated.stylesheets), lines: PAGE_STYLESHEETS.map((f) => `<link rel="stylesheet" href="${href(f)}">`) },
 	canvas: {
 		...markersOf('canvas', COPIES.generated.canvas),
-		lines: [
-			`<svg id="container" viewBox="${CANVAS_VIEWBOX}" xmlns="http://www.w3.org/2000/svg">`,
-			`\t<rect id="canvas" x="${x}" y="${y}" width="${width}" height="${height}"/>`,
-			'</svg>',
-		],
+		lines: ['<svg id="container" xmlns="http://www.w3.org/2000/svg"></svg>'],
 	},
 	// what this tree installs; a problem with it is the generator's to report (tools/import-map.mjs --check), never a throw here
 	importmap: importMapRegion(importMapOf(path.resolve(import.meta.dirname, '..')).imports),

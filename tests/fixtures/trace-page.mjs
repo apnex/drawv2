@@ -10,6 +10,7 @@ production did before the move -- an inline dash and offset, a layout forced, a 
 compared with, written here from `ca492da`'s plugins/simulation/reveal-painter.mjs `show` onto the line's element.
 */
 import { Renderer, openCanvasScene } from '../../app/src/renderer.js';
+import { View } from '../../app/src/view.js';   // H26.6's move 7: the root bare, viewed as the page views it
 import { pathLengthOf } from '../../app/src/painter.js';
 import { PRODUCT_CANVAS, CANVAS_SCENE } from '../../product/canvas.mjs';
 import { COMPOSED_KINDS } from '../../product/types.mjs';
@@ -25,6 +26,9 @@ import { createPageNetwork } from '../../plugins/network/page.mjs';
 const svg = document.getElementById('container');
 const clock = { frozen: null };
 const scene = openCanvasScene(CANVAS_SCENE, svg);
+// RESTATED at H26.6's move 7 (dev/design/components/PAN-ZOOM.md sections 3.7 and 3.8): the root bare, as the page's is, and viewed as
+// app/src/compose-canvas.js views it -- the first opening, the old frame fitted, so the frame shows what the viewBox showed
+new View({ scene });
 const net = createPageNetwork();
 const model = new Model({ kinds: COMPOSED_KINDS, attached: { network: net.network } });
 attachRelations(model, { nearest: NODE_GRID.nearest });

@@ -24,7 +24,7 @@ import path from 'node:path';
 import { launchChrome } from '@apnex/headless-chromium';   // H26-19 as amended: Chrome ends with this file, its launch folder with it
 import { NO_CHROME } from './fixtures/chrome.mjs';
 import { createTab, sleep } from './fixtures/matrix-runner.mjs';
-import { PAGE_STYLESHEETS, CANVAS_VIEWBOX } from '../product/canvas.mjs';
+import { PAGE_STYLESHEETS } from '../product/canvas.mjs';
 import { board, IDS } from './fixtures/trace-record.mjs';   // the record's board: the parity board, a control link, a closed ring
 import { pipeEntity } from '../plugins/network/pipe-kind.mjs';
 
@@ -42,7 +42,7 @@ const IMPORTS = JSON.stringify({ imports: Object.fromEntries(['snap-grid', 'inpu
 const SIDE = `<!doctype html><html><head><meta charset="utf-8"><script type="importmap">${IMPORTS}</script>
 ${PAGE_STYLESHEETS.map((s) => `<link rel="stylesheet" href="/${s}">`).join('\n')}
 <style>html,body{margin:0;overflow:hidden;background:#fff} #container{position:absolute;left:0;top:0;width:${W}px;height:${H}px;display:block}</style></head><body>
-<svg id="container" viewBox="${CANVAS_VIEWBOX}" xmlns="http://www.w3.org/2000/svg"><rect id="canvas" x="-960" y="-540" width="1920" height="1080"/></svg>
+<svg id="container" xmlns="http://www.w3.org/2000/svg"></svg>
 <script type="module" src="/tests/fixtures/trace-page.mjs"></script></body></html>`;
 // the two frames at one place, one shown at a time, so the two are rasterized alike
 const TOP = `<!doctype html><html><head><style>html,body{margin:0;background:#fff} iframe{position:absolute;left:0;top:0;border:0;width:${W}px;height:${H}px}</style></head><body>

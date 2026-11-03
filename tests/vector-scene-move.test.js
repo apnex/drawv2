@@ -83,7 +83,8 @@ test('H26.4 step 3 (F2): the label editor converts a drawing point to the screen
 	const editor = code('app/src/labeledit.js');
 	assert.doesNotMatch(editor, /\bDOMPoint\b/, 'no platform point of its own');
 	assert.match(editor, /this\.scene\.toScreen\(/, 'the scene\'s conversion');
-	assert.match(code('app/src/compose-canvas.js'), /new LabelEditor\(\{ svg, scene,/, 'handed the scene by the composition');
+	// RESTATED at H26.6's move 7: the scene alone, its view's scale the editor's zoom, where it was handed the root for its screen scale
+	assert.match(code('app/src/compose-canvas.js'), /new LabelEditor\(\{ scene,/, 'handed the scene by the composition');
 });
 
 test('H26.4 step 3 (G6): server/svg.mjs swaps no document and builds no tree of its own -- it draws through the scene with no root', () => {
@@ -92,12 +93,13 @@ test('H26.4 step 3 (G6): server/svg.mjs swaps no document and builds no tree of 
 	assert.match(svg, /openCanvasScene\(CANVAS_SCENE\)/, 'the composition\'s scene, opened with no root');
 });
 
-test('H26.4 step 3: each page\'s canvas region holds the root, its viewBox and its ground, and no layer -- the scene appends them', () => {
+// RESTATED at H26.6's move 7 (dev/design/components/PAN-ZOOM.md section 3.8, PZ25): the root bare, the view the scene's, the ground its CSS
+test('H26.4 step 3: each page\'s canvas region holds the bare root -- H26.6\'s move 7: no viewBox, no ground -- and no layer, the scene appending them', () => {
 	for (const page of Object.keys(PAGES)) {
 		const html = fs.readFileSync(path.join(ROOT, page), 'utf8');
 		const region = html.slice(html.indexOf(PAGE_REGIONS.canvas.begin), html.indexOf(PAGE_REGIONS.canvas.end));
-		assert.match(region, /<svg id="container" viewBox="-960 -540 1920 1080"/, `${page}: the root and its viewBox`);
-		assert.match(region, /<rect id="canvas" /, `${page}: its ground`);
+		assert.match(region, /<svg id="container" xmlns="http:\/\/www\.w3\.org\/2000\/svg"><\/svg>/, `${page}: the root, bare`);
+		assert.doesNotMatch(region, /viewBox|<rect id="canvas" /, `${page}: no viewBox, and no ground`);
 		assert.doesNotMatch(region, /<g\b/, `${page}: no layer`);
 	}
 });

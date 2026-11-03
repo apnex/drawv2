@@ -150,3 +150,51 @@ test('H24.1 (B264): a double-click inside a zone edits its name only with Shift 
 		assert.deepEqual(h.selection.list(), [tb.id], 'and so does a text box inside it');
 	} finally { h.restore(); }
 });
+
+/*
+H26.6's move 7 (dev/design/components/PAN-ZOOM.md section 3.7, "An open label editor"; appendix A move 7) -- AN OPEN EDITOR FOLLOWS THE VIEW.
+While open it listens through the scene's `onView` and is placed again at each view change, neither committing nor cancelling: a name's
+editor where the label is on screen, a region's over the region's box with its 15-unit text scaled by the view's scale, where it read
+the root's screen scale (`app/src/labeledit.js`); once closed it listens no more. The views set here stand for a pan and a zoom -- the
+verbs that set them, and home and fit, join at moves 9 and 10, each through the one `setView` -- on the harness's scene, viewed as the
+page's is, whose screen transform is the identity, so a point's place on screen is the view's arithmetic alone (vector-scene VS14).
+*/
+test('H26.6 move 7: an open label editor follows the view -- a name\'s and a region\'s placed again, the font scaled again, nothing committed; closed, it stops', async () => {
+	const { LabelEditor } = await import('../app/src/labeledit.js');
+	const h = makeInput();
+	const made = document.createElement;
+	document.createElement = (t) => Object.assign(made(t), { focus() {}, select() {}, addEventListener() {} });   // what the editor asks of its input
+	try {
+		const [d] = seedNodes(h.model, [[120, 60]]);
+		const panel = { id: 'node-c70001', name: 'p', type: 'host', shape: 'square', x: 300, y: 0, content: [{ at: [0, 0], content: 'text', value: 'a', input: true }] };
+		h.model.put('node', panel);
+		const contentOf = (e, idx) => PRODUCT_CANVAS.map((p) => p.labels?.content).filter(Boolean).find((c) => c.valueOf(e, idx) != null) ?? null;
+		const sent = [];
+		const ed = new LabelEditor({ scene: h.scene, model: h.model, history: { commit: (c) => sent.push(c) }, edits: {}, contentOf });
+		const at = (style) => [style.left, style.top];
+		// a name's editor, beside the corner (no part places a label in this composition's `labelAt`): drawing point 130,66
+		ed.open('node', d.id);
+		assert.deepEqual(at(ed.input.style), ['130px', '66px'], 'control: opened at the opening view, a unit to a pixel');
+		h.scene.setView({ x: -100, y: -50, scale: 2 });   // a zoom in, the drawing point -100,-50 at the root's corner
+		assert.deepEqual(at(ed.input.style), ['460px', '232px'], 'placed again: 2 x (130 + 100), 2 x (66 + 50)');
+		h.scene.setView({ x: 10, y: 20, scale: 0.5 });     // a zoom out and a pan
+		assert.deepEqual(at(ed.input.style), ['60px', '23px'], 'and again: (130 - 10) / 2, (66 - 20) / 2');
+		const named = ed.input;
+		ed.close(false);
+		h.scene.setView({ x: 0, y: 0, scale: 1 });
+		assert.deepEqual(at(named.style), ['60px', '23px'], 'closed: it follows no more');
+		// a region's editor, over the region's box -- the platform's box for the drawing rect 300,0 to 360,30, through the view
+		const rectEl = { getBoundingClientRect: () => { const a = h.scene.toScreen({ x: 300, y: 0 }), b = h.scene.toScreen({ x: 360, y: 30 }); return { left: a.x, top: a.y, width: b.x - a.x, height: b.y - a.y }; } };
+		ed.openContent(panel.id, 0, rectEl);
+		const box = (style) => [style.left, style.top, style.width, style.height, style.fontSize];
+		assert.deepEqual(box(ed.input.style), ['300px', '0px', '60px', '30px', '15px'], 'control: the region\'s box, its text 15 units at a unit to a pixel');
+		h.scene.setView({ x: 250, y: -10, scale: 2 });
+		assert.deepEqual(box(ed.input.style), ['100px', '20px', '120px', '60px', '30px'], 'placed again over the box, the font scaled by the view\'s scale');
+		const region = ed.input;
+		ed.close(false);
+		h.scene.setView({ x: 0, y: 0, scale: 1 });
+		assert.deepEqual(box(region.style), ['100px', '20px', '120px', '60px', '30px'], 'closed: it follows no more');
+		assert.deepEqual(sent, [], 'nothing committed by a view change');
+		assert.doesNotMatch(code('app/src/labeledit.js'), /getScreenCTM|\bsvg\b/, 'the root\'s screen scale is read no more');
+	} finally { document.createElement = made; h.restore(); }
+});

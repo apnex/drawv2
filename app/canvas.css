@@ -6,15 +6,21 @@ and footer -- stays there, and the export, which draws the canvas, can carry the
 app/style.css, where these rules stood after the chrome's palette rules (product/canvas.mjs PAGE_STYLESHEETS).
 */
 
-#container { width: 100%; height: 100%; display: block; touch-action: none; }
+/*
+H26.6's move 7 (dev/design/components/PAN-ZOOM.md section 3.8, PZ25): the root is bare -- no viewBox, no ground rect -- and fills the stage,
+so the ground is its CSS background, the token the export's own ground reads; an SVG root's `fill` paints its children, never its box.
+`#canvas` stays for the export alone, which draws its ground as a rect of its own (server/svg.mjs), so its bytes do not change.
+*/
+#container { width: 100%; height: 100%; display: block; touch-action: none; background: var(--tok-panel); }
 #canvas { fill: var(--tok-panel); }
 /* Tab hides names. A class rather than a re-render, so the toggle is instant on a large diagram. */
 #container.labels-off .label, #container.labels-off .label-pill { display: none; }
 
-/* W4 — edit mode: a subtle accent border cues that editing aids (the socket grid) are showing */
-#container.edit-mode #canvas { stroke: var(--tok-link); stroke-width: 2; stroke-opacity: 0.5; }
-/* W5 -- a green border cues run mode (its clickable regions are the devices plugin's, plugins/devices/devices.css) */
-#container.run-mode #canvas { stroke: var(--tok-accent); stroke-width: 2; stroke-opacity: 0.5; }
+/* W4 -- edit mode: a subtle accent border cues that editing aids (the socket grid) are showing. H26.6's move 7 (PZ25): an inset
+   outline of the root, at the screen's edge, where the ground's edge was stroked -- the canvas has no edge to stroke */
+#container.edit-mode { outline: 2px solid color-mix(in srgb, var(--tok-link) 50%, transparent); outline-offset: -2px; }
+/* W5 -- a green border cues run mode (its clickable regions are the devices plugin's, plugins/devices/devices.css); H26.6's move 7: likewise */
+#container.run-mode { outline: 2px solid color-mix(in srgb, var(--tok-accent) 50%, transparent); outline-offset: -2px; }
 
 /* ---- icon primitives (kernel art) ---- */
 .frame  { fill: var(--fill, var(--tok-panel)); fill-opacity: var(--outer-fill-opacity, 1); stroke: var(--outer, var(--tok-accent)); }

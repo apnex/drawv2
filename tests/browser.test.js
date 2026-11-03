@@ -1457,12 +1457,17 @@ H26.4 (the verifier's F2; dev/design/components/VECTOR-SCENE.md sections 5.1 and
 toScreen, where it built a DOMPoint and transformed it by the canvas's screen transform. Read off the real page, whose screen transform
 letterboxes and scales the drawing: a device's editor, centred under it, and a waypoint's, beside its corner, each placed exactly where
 the old conversion places that point, to the last digit of the style the editor is given.
+RESTATED at H26.6's move 7 (dev/design/components/PAN-ZOOM.md sections 3.2 and 3.7): the root bare, the view written on every layer, the
+platform's own transform of the point is a layer's, held in single precision, where the root's viewBox was the transform -- so the scene's
+toScreen, computed in binary64 from the view, agrees with it within a thousandth of a pixel, and the editor stands exactly where toScreen
+puts the point, to the last digit of its style.
 */
 test('H26.4 (F2): the name editor stands exactly where the old conversion put it -- a device\'s, centred, and a waypoint\'s', { skip: SKIP }, async () => {
 	const t = await freshTab();
 	try {
 		const got = JSON.parse(await t.eval(`(async () => {
-			const svg = document.getElementById('container'), out = [], scratch = document.createElement('div');
+			// RESTATED at H26.6's move 7: the drawing's screen transform is a layer's, the scene writing its view there (PAN-ZOOM.md 3.2)
+			const svg = document.getElementById('nodes'), out = [], scratch = document.createElement('div');
 			const styled = (v) => { scratch.style.left = v; return scratch.style.left; };   // a length as the CSSOM reads it back
 			const waypoint = draw.model.all('node').find((n) => !n.type);
 			for (const id of ['node-ba0004', waypoint.id]) {
@@ -1470,8 +1475,8 @@ test('H26.4 (F2): the name editor stands exactly where the old conversion put it
 				const was = new DOMPoint(pos.x, pos.y).matrixTransform(svg.getScreenCTM()), now = draw.labels.toScreen(pos);   // the old conversion, and the editor's
 				draw.labels.open('node', id);
 				const ed = document.getElementById('label-editor');
-				out.push({ id, centred: !!at?.centred, same: Object.is(now.x, was.x) && Object.is(now.y, was.y),
-					left: ed.style.left, top: ed.style.top, wasLeft: styled((at?.centred ? was.x - 80 : was.x) + 'px'), wasTop: styled(was.y + 'px'), scale: svg.getScreenCTM().a });
+				out.push({ id, centred: !!at?.centred, same: Math.abs(now.x - was.x) < 1e-3 && Math.abs(now.y - was.y) < 1e-3,
+					left: ed.style.left, top: ed.style.top, wasLeft: styled((at?.centred ? now.x - 80 : now.x) + 'px'), wasTop: styled(now.y + 'px'), scale: svg.getScreenCTM().a });
 				draw.labels.close(false);
 			}
 			return JSON.stringify(out);
@@ -1479,8 +1484,8 @@ test('H26.4 (F2): the name editor stands exactly where the old conversion put it
 		assert.deepEqual(got.map((g) => g.centred), [true, false], 'a centred placement and one beside the corner');
 		assert.ok(got[0].scale !== 1, `the page's screen transform scales the drawing (${got[0].scale}), so the conversion is tried`);
 		for (const g of got) {
-			assert.ok(g.same, `${g.id}: the scene's toScreen answers the old conversion's point exactly`);
-			assert.deepEqual({ left: g.left, top: g.top }, { left: g.wasLeft, top: g.wasTop }, `${g.id}: its editor where the old conversion put it`);
+			assert.ok(g.same, `${g.id}: the scene's toScreen answers the platform's transform of the point, within a thousandth of a pixel`);
+			assert.deepEqual({ left: g.left, top: g.top }, { left: g.wasLeft, top: g.wasTop }, `${g.id}: its editor exactly where the scene's toScreen puts it`);
 		}
 	} finally { await t.close(); }
 });
@@ -1607,7 +1612,7 @@ test('V-b: the product page draws routes and pipes, says why a link is down, and
 
 		// HEAL-02: drag from c to d, press g on d, release -- g lays the pipe by hand and makes no link, and the down link heals
 		await t.eval(`window.draw.selection.clear(), 1`);
-		const screen = (x, y) => t.eval(`JSON.stringify((() => { const m = document.getElementById('container').getScreenCTM(); return [m.a * ${x} + m.e, m.d * ${y} + m.f]; })())`).then(JSON.parse);
+		const screen = (x, y) => t.eval(`JSON.stringify((() => { const m = document.getElementById('nodes').getScreenCTM(); return [m.a * ${x} + m.e, m.d * ${y} + m.f]; })())`).then(JSON.parse);
 		const mouse = async (type, x, y, buttons) => { const [sx, sy] = await screen(x, y); await t.send('Input.dispatchMouseEvent', { type, x: sx, y: sy, button: 'left', buttons, clickCount: 1 }); await sleep(30); };
 		await mouse('mouseMoved', -360, 240, 0);
 		await mouse('mousePressed', -360, 240, 1);
@@ -1800,7 +1805,7 @@ test('H24.1: on the product page a plain double-click inside a zone opens no edi
 		await until(t, `document.getElementById('${zoneId}') && window.draw.sync.outbox.every((m) => m.answered) ? 1 : 0`, 6000);
 		await t.eval(`window.draw.selection.clear(), 1`);
 
-		const screen = (x, y) => t.eval(`JSON.stringify((() => { const m = document.getElementById('container').getScreenCTM(); return [m.a * ${x} + m.e, m.d * ${y} + m.f]; })())`).then(JSON.parse);
+		const screen = (x, y) => t.eval(`JSON.stringify((() => { const m = document.getElementById('nodes').getScreenCTM(); return [m.a * ${x} + m.e, m.d * ${y} + m.f]; })())`).then(JSON.parse);
 		const [sx, sy] = await screen(0, 330);   // inside the zone, nothing else there
 		const doubleClick = async (modifiers) => {
 			await t.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: sx, y: sy, modifiers });
@@ -1847,7 +1852,7 @@ test('H24.3: on the product page releasing Shift deselects a zone, and a Shift+d
 		await until(t, `document.getElementById('${zoneId}') && window.draw.sync.outbox.every((m) => m.answered) ? 1 : 0`, 6000);
 		await t.eval(`window.draw.selection.clear(), 1`);
 
-		const [sx, sy] = JSON.parse(await t.eval(`JSON.stringify((() => { const m = document.getElementById('container').getScreenCTM(); return [m.a * 0 + m.e, m.d * 330 + m.f]; })())`));
+		const [sx, sy] = JSON.parse(await t.eval(`JSON.stringify((() => { const m = document.getElementById('nodes').getScreenCTM(); return [m.a * 0 + m.e, m.d * 330 + m.f]; })())`));
 		const shift = (down) => t.send('Input.dispatchKeyEvent', { type: down ? 'rawKeyDown' : 'keyUp', key: 'Shift', code: 'ShiftLeft', windowsVirtualKeyCode: 16, modifiers: down ? 8 : 0 });
 		// RESTATED 2026-10-15 (H24.5): a zone is selected with Shift+RIGHT click; the rename stays a Shift+left double-click
 		const clicks = async (n, button = 'left') => {
@@ -1907,7 +1912,7 @@ test('H26.5 (B413): on the product page a focus loss hides the zone grid, drops 
 			return z.id; })()`);
 		await until(t, `document.getElementById('${zoneId}') && window.draw.sync.outbox.every((m) => m.answered) ? 1 : 0`, 6000);
 		await t.eval(`window.draw.selection.clear(), 1`);
-		const screen = (x, y) => t.eval(`JSON.stringify((() => { const m = document.getElementById('container').getScreenCTM(); return [m.a * ${x} + m.e, m.d * ${y} + m.f]; })())`).then(JSON.parse);
+		const screen = (x, y) => t.eval(`JSON.stringify((() => { const m = document.getElementById('nodes').getScreenCTM(); return [m.a * ${x} + m.e, m.d * ${y} + m.f]; })())`).then(JSON.parse);
 		const seen = (id) => t.eval(`JSON.stringify({ grid: document.getElementById('container').classList.contains('zonegrid'), selected: window.draw.selection.list(),
 			armed: document.getElementById('${id}')?.classList.contains('armed') ?? null })`).then(JSON.parse);
 		// the focus loss, headless-chromium's (H26-19 as amended): the page brought to the front holding the window's focus, a second tab taking
@@ -1976,7 +1981,7 @@ test('H24.5: on the product page Shift+left drag inside a zone draws a new zone 
 			return z.id; })()`);
 		await until(t, `document.getElementById('${zoneId}') && window.draw.sync.outbox.every((m) => m.answered) ? 1 : 0`, 6000);
 		await t.eval(`window.draw.selection.clear(), 1`);
-		const screen = (x, y) => t.eval(`JSON.stringify((() => { const m = document.getElementById('container').getScreenCTM(); return [m.a * ${x} + m.e, m.d * ${y} + m.f]; })())`).then(JSON.parse);
+		const screen = (x, y) => t.eval(`JSON.stringify((() => { const m = document.getElementById('nodes').getScreenCTM(); return [m.a * ${x} + m.e, m.d * ${y} + m.f]; })())`).then(JSON.parse);
 		const drag = async (from, to, button) => {
 			const [ax, ay] = await screen(...from), [bx, by] = await screen(...to);
 			const buttons = button === 'right' ? 2 : 1;
@@ -2047,7 +2052,10 @@ const PARITY_PICTURE = `(isPage) => {
 				const cs = getComputedStyle(n), look = {};
 				for (const p of n.tagName === 'text' ? [...PAINT, ...TYPE] : PAINT) look[p] = cs.getPropertyValue(p);
 				// its box on the diagram -- in the picture's own coordinates, whatever transforms the element sits under
-				const b = n.getBBox(), m = n.ownerSVGElement.getScreenCTM().inverse().multiply(n.getScreenCTM());
+				// RESTATED at H26.6's move 7: on the page the drawing's units are a layer's, the root bare and the view on every layer -- for an
+				// element whose nearest svg is the root; one inside a nested svg (a glyph's) is placed in that svg's units, on either side
+				const own = isPage && n.ownerSVGElement === root ? document.getElementById('nodes') : n.ownerSVGElement;
+				const b = n.getBBox(), m = own.getScreenCTM().inverse().multiply(n.getScreenCTM());
 				const xs = [], ys = [];
 				for (const [x, y] of [[b.x, b.y], [b.x + b.width, b.y], [b.x, b.y + b.height], [b.x + b.width, b.y + b.height]]) {
 					const q = new DOMPoint(x, y).matrixTransform(m); xs.push(q.x); ys.push(q.y);
@@ -2061,9 +2069,10 @@ const PARITY_PICTURE = `(isPage) => {
 		return out;
 	};
 	// RESTATED at H25.2 (B366): the ground -- the page's canvas, and the file's first rectangle, drawn as the canvas is -- compared by
-	// its paint, its size being each picture's own
-	const ground = isPage ? document.getElementById('canvas') : document.documentElement.querySelector(':scope > rect'), gcs = ground && getComputedStyle(ground);
-	return JSON.stringify({ ground: gcs ? [gcs.fill, gcs.fillOpacity].join(' ') : null, entities: entities.map((e) => ({ key: keyOf(e), drawn: drawn(e) })) });
+	// its paint, its size being each picture's own. RESTATED at H26.6's move 7 (PAN-ZOOM.md section 3.8, PZ25): the page's ground is the
+	// bare root's CSS background, its paint and its opacity, where it was a rect's fill
+	const ground = isPage ? document.getElementById('container') : document.documentElement.querySelector(':scope > rect'), gcs = ground && getComputedStyle(ground);
+	return JSON.stringify({ ground: gcs ? (isPage ? [gcs.backgroundColor, gcs.opacity] : [gcs.fill, gcs.fillOpacity]).join(' ') : null, entities: entities.map((e) => ({ key: keyOf(e), drawn: drawn(e) })) });
 }`;
 
 test('H24.8 (B361): the published SVG draws what view mode draws -- the same things stacked in the same order, each drawn element painted, set and placed alike', { skip: SKIP }, async () => {
@@ -2083,7 +2092,7 @@ test('H24.8 (B361): the published SVG draws what view mode draws -- the same thi
 		smaller than the page draws it -- and text drawn at another pixel size rounds its box to another height (14 units against 16,
 		found when the board grew a row of devices). The comparison is of looks, so both are drawn at one scale.
 		*/
-		const scale = await page.eval(`document.getElementById('container').getScreenCTM().a`);
+		const scale = await page.eval(`document.getElementById('nodes').getScreenCTM().a`);
 		assert.equal(await file.eval(`(() => { const r = document.documentElement, [, , w, h] = r.getAttribute('viewBox').split(/\\s+/).map(Number);
 			r.setAttribute('width', w * ${scale}); r.setAttribute('height', h * ${scale}); return Math.abs(r.getScreenCTM().a - ${scale}) < 1e-3; })()`), true, 'precondition: the file drawn at the page\'s scale');
 		const publishedAll = JSON.parse(await file.eval(`(${PARITY_PICTURE})(false)`)), published = publishedAll.entities;
@@ -2127,7 +2136,7 @@ test('H25.3: a drag on empty canvas draws the selection rectangle with the class
 	const t = await attach(`http://127.0.0.1:${port}/${PARITY_DIAGRAM}`);
 	try {
 		assert.ok(await until(t, `document.getElementById('node-fa00a1') ? 1 : 0`, 8000), 'precondition: the parity board loaded');
-		const screen = (x, y) => t.eval(`JSON.stringify((() => { const m = document.getElementById('container').getScreenCTM(); return [m.a * ${x} + m.e, m.d * ${y} + m.f]; })())`).then(JSON.parse);
+		const screen = (x, y) => t.eval(`JSON.stringify((() => { const m = document.getElementById('nodes').getScreenCTM(); return [m.a * ${x} + m.e, m.d * ${y} + m.f]; })())`).then(JSON.parse);
 		const rects = () => t.eval(`JSON.stringify([...document.querySelectorAll('#overlay rect')].map((r) => ({ cls: r.getAttribute('class'), dash: getComputedStyle(r).strokeDasharray })))`).then(JSON.parse);
 		const [ax, ay] = await screen(-820, 380), [bx, by] = await screen(-700, 480);   // left of everything the board draws
 		assert.deepEqual(await rects(), [], 'control: no rectangle before the drag');

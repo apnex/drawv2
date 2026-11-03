@@ -51,12 +51,13 @@ export const CHROME_STYLESHEETS = ['app/style.css'];
 
 /*
 H25.4 (B376): THE CANVAS'S LAYOUT -- the viewBox, whose rectangle is the canvas's ground, and the layers a page stacks, back to
-front. Which part's layer lies over which is a fact of the composition, so it is declared here once: tools/canvas-layout.mjs writes
+front. AMENDED H26.6's move 7 (dev/design/components/PAN-ZOOM.md section 3.8, PZ25): `CANVAS_VIEWBOX` went -- the root is bare, the
+scene's view writing what the viewBox wrote, the ground the root's CSS background; the layers stay declared here.
+Which part's layer lies over which is a fact of the composition, so it is declared here once: tools/canvas-layout.mjs writes
 it into each page's `#container` between generated markers (the gate checks), the lab checks its page holds each layer
 (lab/src/root.js), and the export stacks what it draws by it (server/svg.mjs) -- H24.8 (B361) found the published file stacking
 its layers in another order than the page. A part's painter names the layer it draws into; one this does not hold is refused.
 */
-export const CANVAS_VIEWBOX = '-960 -540 1920 1080';
 // H26.4: the layer a plugin draws itself, by the part that draws it -- foreign in the scene below, and asked of it by a page without the
 // page typing a plugin's kind (app/src/main.js). H26.8's pipes move (NATIVE-SHAPES.md section 4.6): the movers' alone, the network's
 // pipes a painted kind, drawn by the renderer into a layer of the scene's own

@@ -56,7 +56,7 @@ test('H26.2 (B409 kept): during a link drawn with the mouse, a touch contact\'s 
 	await t.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 2 });
 	await sleep(300);
 	await t.run(`(() => { window.__downs = []; document.addEventListener('pointerdown', (e) => window.__downs.push([e.pointerType, e.pointerId, e.button]), true); return true; })()`);
-	const [a, e, f] = await t.run(`(() => { const m = document.getElementById('container').getScreenCTM(); return [m.a, m.e, m.f]; })()`);
+	const [a, e, f] = await t.run(`(() => { const m = document.getElementById('nodes').getScreenCTM(); return [m.a, m.e, m.f]; })()`);
 	const at = (x, y) => ({ x: x * a + e, y: y * a + f });
 	const mouse = (type, p, buttons) => t.send('Input.dispatchMouseEvent', { type, ...p, button: 'left', buttons, clickCount: type === 'mouseMoved' ? 0 : 1 });
 	await mouse('mousePressed', at(-360, -120), 1); await sleep(60);
@@ -98,7 +98,7 @@ test('H26.5 (o:F4, RD18): a mouse pressed beyond the canvas and released over it
 	for (let i = 0; i < 60 && !(await t.run('window.draw.sync.outbox.every((m) => m.answered)')); i++) await sleep(100);
 	const before = await links();
 	assert.deepEqual(before, [], 'precondition: no link on the board');
-	const [a, e, f] = await t.run(`(() => { const m = document.getElementById('container').getScreenCTM(); return [m.a, m.e, m.f]; })()`);
+	const [a, e, f] = await t.run(`(() => { const m = document.getElementById('nodes').getScreenCTM(); return [m.a, m.e, m.f]; })()`);
 	const at = (x, y) => ({ x: x * a + e, y: y * a + f });
 	const footer = await t.run(`(() => { const r = document.getElementById('status').getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; })()`);
 	const mouse = (type, p, buttons) => t.send('Input.dispatchMouseEvent', { type, ...p, button: 'left', buttons, clickCount: type === 'mouseMoved' ? 0 : 1 });

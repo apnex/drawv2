@@ -89,6 +89,7 @@ Noted for PC1: AR1 asks for the system's north star and this one is the programm
 - **WD1, WD6, WD7, WD10:** a wide device is one anchor (WD1); a diagram stores its grids as layout records (WD6) holding today's values (WD7); a device owns its size (WD10).
 - **H26-1, H26-2, H26-4, H26-6, H26-8, H26-10, H26-11:** a grid's arithmetic is `snap-grid`'s, what an input means, and when each phase of a gesture is due, is `input-binding`'s, the platform's input events reach the canvas as facts through `input-capture`, and what the canvas draws is shown through `vector-scene`, each a component of one duty that knows nothing of drawv2 (H26-1); each component is its own public repository, released by its own CI, drawv2 pinning the release file by its hash, its server importing it by name and its pages through a generated import map (H26-2); `snap-grid`'s design is ratified, the `lattice` part alone composing it (H26-4); `input-binding`'s design is ratified, the `rules` part alone composing it (H26-6); `input-capture`'s design is ratified, the `canvas` part alone composing it (H26-8); each further boundary of the canvas layer is drawn first inside drawv2 as a declared part, held by the scanners and extracted when its second consumer is in sight, the editing duty the first (H26-10); `vector-scene`'s design is ratified, the `renderer` part alone composing it (H26-11).
 - **H26-9, H26-16:** the interfaces are held to their best target state, draw taking each component's own shapes directly and its adapters keeping only draw's policy and wiring, with no universal adapter (H26-9); H26.8 builds that, aimed at clean modular unification and sovereign boundaries and measured before and after by part (H26-16).
+- **H26-22, H26-23:** draw's canvas loses its edges -- an infinite canvas, one grid per diagram, each viewer's own view panned and zoomed by the director's gestures and remembered per diagram, a way home to 0,0 (H26-22); its design of record ratified, the view written by `vector-scene` on every layer and held by draw's `view` part (H26-23, `dev/design/components/PAN-ZOOM.md`).
 
 **Model.**\
 The **anchor** is the core: identity and position on one cell (SD11b, O4); connection is the network plugin's.\
@@ -154,10 +155,11 @@ Generated from `tools/layers.mjs` `PARTS`, and each part's components from its `
 | `groups` | Name sets of anchors | plugin | O1 | `lattice`, `kind-contract`, `document`, `relations`, `colours`, `primitives`, `rules` | -- |
 | `simulation` | Derive what the clock drives | plugin | AX1, AX4, SD11b | `lattice`, `kind-contract`, `document`, `relations`, `colours`, `primitives`, `rules`, `network`, `devices` | -- |
 | `product` | Compose the plugins into the product | composition | N1, D1 | `kind-contract`, `lattice`, `colours`, `layouts`, `devices`, `network`, `zones`, `groups`, `simulation` | -- |
-| `canvas` | Turn input into edits through the parts' declarations | host | D1, D2, D5 | `lattice`, `kind-contract`, `document`, `relations`, `rules`, `planner`, `renderer`, `editing`, `grids`, `label-editor`, `primitives`, `colours` | `@apnex/input-capture` |
+| `canvas` | Turn input into edits through the parts' declarations | host | D1, D2, D5 | `lattice`, `kind-contract`, `document`, `relations`, `rules`, `planner`, `renderer`, `editing`, `grids`, `label-editor`, `view`, `primitives`, `colours` | `@apnex/input-capture` |
 | `label-editor` | Edit a drawn label in place | host | H26-10, H26-16 | `document`, `kind-contract` | -- |
 | `help` | Show what each input does | host | H26-10, H26-16 | -- | -- |
 | `grids` | Draw the grids places snap to | host | H26-10, H26-16 | -- | -- |
+| `view` | Hold each viewer's view of the open diagram, apply it, remember it, and move it home | host | H26-22, H26-23 | -- | -- |
 | `editing` | Let a person select, move and resize what the canvas draws | host | D1, H26-10 | `document` | -- |
 | `renderer` | Draw a document through the parts' painters | host | D1, D3 | `lattice`, `document`, `primitives`, `colours` | `@apnex/vector-scene` |
 | `sync` | Keep a tab converged with the server | host | SD2 | `document`, `kind-contract`, `canvas` | -- |

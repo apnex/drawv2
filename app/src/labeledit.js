@@ -13,20 +13,21 @@ export class LabelEditor {
 	// C-e: and `wordOf(kind, entity)` -- the word a Tab rename run groups by, the parts' (a device or a waypoint); the kind without one
 	// and `contentOf(entity, idx)` -- what reads and edits an entity's region, the parts' (a panel's, the devices plugin's), or null
 	// H26.4 (dev/design/components/VECTOR-SCENE.md sections 5.1 and 5.2; the verifier's F2): `scene`, the canvas's, whose `toScreen` places
-	// the editor; `svg` stays for what is draw's own -- an element by id, its box, the screen's scale
+	// the editor; `svg` stays for what is draw's own -- an element by id, its box, the screen's scale. H26.6's move 7 (PAN-ZOOM.md sections
+	// 3.1 and 3.7): the screen's scale is the scene's view's, so `svg` went -- an element by id and its box are the page's
 	// H26.8's capture move (dev/design/components/NATIVE-SHAPES.md section 3.2, the label editor's one exception): `edits`, the two edits
 	// it commits -- `setFields(label, kind, id, after)` and `rename(kind, id, before, after)`, each answering the edit -- handed by the
 	// composition where it imported the canvas's commands, so the label editor imports the document and the kind contract alone (GR7)
-	constructor({ svg, scene, model, history, edits, labelAt = () => null, wordOf = () => null, contentOf = () => null }) {
+	constructor({ scene, model, history, edits, labelAt = () => null, wordOf = () => null, contentOf = () => null }) {
 		this.labelAt = labelAt;
 		this.contentOf = contentOf;
 		this.wordOf = (kind, e) => wordOf(kind, e) ?? kind;
-		this.svg = svg;
 		this.scene = scene;
 		this.model = model;
 		this.history = history;
 		this.edits = edits;
 		this.input = null;
+		this.offView = null;   // H26.6's move 7: while open, the editor follows the view (`follow`), and stops when it closes
 		/*
 		The entity the user last touched DIRECTLY — a press, a stamp, a drop. "Focus" here means
 		that, not DOM focus (the editor's own input is `this.input`); the name is kept because
@@ -67,12 +68,21 @@ export class LabelEditor {
 		return this.scene.toScreen(pos);
 	}
 
+	/*
+	H26.6's move 7 (dev/design/components/PAN-ZOOM.md section 3.7, "An open label editor") -- while it is open the editor listens through the
+	scene's `onView` and is placed again, its font scaled again, at every view change, neither committing nor cancelling; the listener
+	goes when it closes, and a window resize still closes it.
+	*/
+	follow(place) {
+		place();
+		this.offView = this.scene.onView(place);
+	}
+
 	open(kind, id) {
 		if (this.input) this.close(false);
 		const entity = this.model.get(kind, id);
 		if (!entity) return;
 		const at = this.labelAt(entity);   // under a device, centred; else beside the corner
-		const placement = at ? this.toScreen({ x: at.x, y: at.y }) : this.toScreen({ x: entity.x + 10, y: entity.y + 6 });
 
 		const input = document.createElement('input');
 		input.id = 'label-editor';
@@ -81,8 +91,12 @@ export class LabelEditor {
 		input.value = entity.name || '';
 		const width = 160;
 		input.style.width = `${width}px`;
-		input.style.left = `${at?.centred ? placement.x - width / 2 : placement.x}px`;
-		input.style.top = `${placement.y}px`;
+		// placed where the label is on screen, and again as the view moves (H26.6's move 7)
+		const place = () => {
+			const p = at ? this.toScreen({ x: at.x, y: at.y }) : this.toScreen({ x: entity.x + 10, y: entity.y + 6 });
+			input.style.left = `${at?.centred ? p.x - width / 2 : p.x}px`;
+			input.style.top = `${p.y}px`;
+		};
 
 		input.addEventListener('keydown', (evt) => {
 			evt.stopPropagation();
@@ -100,6 +114,7 @@ export class LabelEditor {
 
 		this.editing = { kind, id, before: entity.name || '' };
 		this.input = input;
+		this.follow(place);
 		this.onResize = () => this.close(true); // fixed positioning detaches on resize
 		window.addEventListener('resize', this.onResize);
 		document.body.appendChild(input);
@@ -133,7 +148,6 @@ export class LabelEditor {
 		const spec = entity && this.contentOf(entity, idx);
 		if (!spec) return;
 		const region = spec.valueOf(entity, idx);   // its value and alignment (C-e)
-		const box = rectEl.getBoundingClientRect();
 
 		const input = document.createElement('input');
 		input.id = 'label-editor';
@@ -142,13 +156,18 @@ export class LabelEditor {
 		input.value = region.value;
 		// match the box EXACTLY so the editor doesn't appear to enlarge it: border/padding inside the rect
 		// (border-box), the box's own width (no min), and the box's 15px SVG text scaled to the current zoom.
-		const scale = (this.svg.getScreenCTM() || { a: 1 }).a;
+		// H26.6's move 7 (PAN-ZOOM.md sections 3.1 and 3.7): the zoom is the scene's view's scale, screen pixels to a drawing unit on draw's
+		// root, which carries no CSS transform -- where it read the root's screen scale, which a viewBox set -- and the box and the scale
+		// are read again as the view moves
+		const place = () => {
+			const box = rectEl.getBoundingClientRect();
+			input.style.left = `${box.left}px`;
+			input.style.top = `${box.top}px`;
+			input.style.width = `${box.width}px`;
+			input.style.height = `${box.height}px`;
+			input.style.fontSize = `${15 * this.scene.view().scale}px`;
+		};
 		input.style.boxSizing = 'border-box';
-		input.style.left = `${box.left}px`;
-		input.style.top = `${box.top}px`;
-		input.style.width = `${box.width}px`;
-		input.style.height = `${box.height}px`;
-		input.style.fontSize = `${15 * scale}px`;
 		input.style.padding = '0 2px';
 		input.style.textAlign = region.align;
 
@@ -161,6 +180,7 @@ export class LabelEditor {
 
 		this.editing = { mode: 'content', nodeId, idx, before: region.value };
 		this.input = input;
+		this.follow(place);
 		this.onResize = () => this.close(true);
 		window.addEventListener('resize', this.onResize);
 		document.body.appendChild(input);
@@ -187,6 +207,7 @@ export class LabelEditor {
 		this.editing = null;
 		window.removeEventListener('resize', this.onResize);
 		this.onResize = null;
+		if (this.offView) { this.offView(); this.offView = null; }   // H26.6's move 7: no longer following the view
 		input.remove();
 		if (!commit) return;
 		// W6 — content-region value edit (run mode)

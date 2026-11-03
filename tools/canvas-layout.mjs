@@ -10,7 +10,8 @@ so the pages cannot drift from the composition, nor from each other (mission-kit
 stylesheets they load. Before H25.4 each page typed its canvas, fifteen lines alike, and the export read the order from one.
 H26.4 (dev/design/components/VECTOR-SCENE.md section 5.1, D5): the region holds no layer -- the scene the canvas opens from the
 composition's declaration (product/canvas.mjs CANVAS_SCENE) appends the layers after the ground, in that order, so the page and the
-composition cannot disagree on them at all.
+composition cannot disagree on them at all. H26.6's move 7 (dev/design/components/PAN-ZOOM.md section 3.8, PZ25): the root is written
+bare -- no viewBox, the scene's view writing what it wrote, and no ground, the root's CSS background painting it.
 
 Usage: node tools/canvas-layout.mjs --check | --write
 */
@@ -36,4 +37,4 @@ for (const page of Object.keys(PAGES)) {
 	else problems.push(`${page} lays out another canvas than the composition -- run node tools/canvas-layout.mjs --write`);
 }
 if (problems.length) { for (const p of problems) console.error(`  \u2717 ${p}`); console.error(`canvas-layout: FAIL -- ${problems.length} finding(s)`); process.exit(1); }
-console.log(`canvas-layout: PASS -- ${Object.keys(PAGES).length} page(s) lay out the composition's canvas, its root and its ground, the scene appending its layers`);
+console.log(`canvas-layout: PASS -- ${Object.keys(PAGES).length} page(s) lay out the composition's canvas, its bare root, the scene appending its layers`);

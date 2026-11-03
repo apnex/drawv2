@@ -34,6 +34,7 @@ import { attachRelations } from '../../engine/store.mjs';
 import { Changes, applyAnswer } from './changes.js';
 import { plan } from '../../planner/txn.mjs';   // the preview: the page plans its own view with the server's planner (V-d, PL-6)
 import { Renderer, openCanvasScene } from './renderer.js';
+import { View } from './view.js';   // H26.6's move 7: the viewer's view of the canvas, handed the scene
 import { Selection } from './selection.js';
 import { EditingStates } from './editing-states.js';   // H26.8: the editing part's states (NS13)
 import { LabelEditor } from './labeledit.js';
@@ -61,8 +62,11 @@ Returns every part, the opened scene among them, and `listen()`, which starts ev
 export function composeCanvas({ svg, scene: declared, defs, host, network = null, kinds = undefined, parts = [], readoutEl = null, tools = false, help = null, now, plugins = [], runRules = [] }) {
 	// the kernel's glyph and frame defs: the kernel owns the look
 	defs.innerHTML = sharedDefs(undefined, undefined, parts.map((p) => p.defs).filter(Boolean).join('\n'));
-	// H26.4: the canvas's scene, its layers appended after the root's ground -- opened, or refused naming each problem
+	// H26.4: the canvas's scene, its layers appended to the root -- opened, or refused naming each problem. H26.6's move 7
+	// (PAN-ZOOM.md sections 3.1 and 3.7): viewed, the root bare, and the view part handed it -- the first opening set at once (PZ7), and
+	// set again when the root says it was resized (`view.resized()`, the root's to call)
 	const scene = openCanvasScene(declared, svg);
+	const view = new View({ scene });
 
 	const model = new Model({ attached: { network }, kinds });   // the kinds a composition brings -- the core's when none are passed, so no links (S-e) (H17.22 N-a)
 	// R3: the maintained reverse indices, registered before any other subscriber so they see a fresh index; the node grid's
@@ -89,7 +93,7 @@ export function composeCanvas({ svg, scene: declared, defs, host, network = null
 	selection.subscribe(() => states.reflect(selection.list()));   // the selected look and what it lights, held for what is selected
 	// C-e: where each kind's label sits -- the first part that says so
 	// H26.8's capture move: the label editor handed the two edits it commits, the canvas's builders (NATIVE-SHAPES.md section 3.2)
-	const labels = new LabelEditor({ svg, scene, model, history, edits: { setFields, rename: renameEntity }, labelAt: (e) => parts.map((p) => p.labels?.labelAt?.(e)).find((x) => x) ?? null,
+	const labels = new LabelEditor({ scene, model, history, edits: { setFields, rename: renameEntity }, labelAt: (e) => parts.map((p) => p.labels?.labelAt?.(e)).find((x) => x) ?? null,
 		wordOf: (kind, e) => parts.map((p) => p.labels?.wordOf?.(kind, e)).find((x) => x) ?? null,   // C-e: and what a Tab run groups by
 		contentOf: (e, idx) => parts.map((p) => p.labels?.content).filter(Boolean).find((c) => c.valueOf(e, idx) != null) ?? null });   // and a panel's regions
 	const shownReadout = readoutEl ? new Readout({ model, selection, elements: [readoutEl], parts }) : null;   // C-e: each kind's words, from its part
@@ -103,7 +107,7 @@ export function composeCanvas({ svg, scene: declared, defs, host, network = null
 	// the platform's events, as input-capture's facts (dev/design/input/GESTURE-SYSTEM.md, L0; H26.3, H26.8) -- once the root's own listeners are in
 	// C-b: the plugins' picks; H26.8's picks move: read by item, each item's drawer the renderer's -- and run mode's regions from the same
 	const listen = () => (capture ??= captureCanvas({ svg, scene, host, sink: input, picks: picksOf(parts), drawerOf: (id) => renderer.drawerOf(id) }));
-	return { scene, model, history, renderer, states, selection, labels, readout: shownReadout, snap, tools: heldTools, input, listen };
+	return { scene, view, model, history, renderer, states, selection, labels, readout: shownReadout, snap, tools: heldTools, input, listen };
 }
 
 /*

@@ -162,6 +162,10 @@ export function fakeEl(tag = 'div', id = '') {
 			return this.children.filter((c) => (c.attrs.class || '').split(' ').includes(cls));
 		},
 		getBoundingClientRect() { return { left: 0, top: 0, width: 1920, height: 1080 }; },
+		// H26.6's move 7 (dev/design/components/PAN-ZOOM.md section 3.2): its size, as its box says -- what a viewed scene's `visible()`
+		// reads of its root (vector-scene VS15), when a view is set with a listener told (an open label editor's, tests/canvas-labels.test.js);
+		// nothing in the harness sets a view of its own, so its scene keeps the opening view, screen points its drawing points
+		clientWidth: 1920, clientHeight: 1080,
 		get ownerDocument() { return globalThis.document; },
 		// SVG-only, and the reason a stub beats jsdom here: jsdom implements neither, so a jsdom
 		// harness would need the same fiction with more machinery around it.

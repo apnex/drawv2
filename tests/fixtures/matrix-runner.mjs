@@ -63,8 +63,10 @@ export function createTab(cdp) {
 }
 
 // ---- real input, in canvas coordinates, through the canvas's own transform ----
+// RESTATED at H26.6's move 7 (dev/design/components/PAN-ZOOM.md sections 3.2 and 3.8): the drawing's screen transform is a layer's -- the
+// root bare, the scene writing its view on every layer -- where it was the root's, which a viewBox set; any layer's is the same
 export function inputOf(t) {
-	const screen = (x, y) => t.run(`(() => { const m = document.getElementById('container').getScreenCTM(); return [m.a * ${x} + m.e, m.d * ${y} + m.f]; })()`);
+	const screen = (x, y) => t.run(`(() => { const m = document.getElementById('nodes').getScreenCTM(); return [m.a * ${x} + m.e, m.d * ${y} + m.f]; })()`);
 	const mouse = async (type, x, y, buttons = 0) => {
 		const [sx, sy] = await screen(x, y);
 		await t.send('Input.dispatchMouseEvent', { type, x: sx, y: sy, button: 'left', buttons, clickCount: 1 });

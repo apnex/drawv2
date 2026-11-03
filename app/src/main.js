@@ -61,7 +61,7 @@ AMENDED 2026-10-04 (V-b, H18.26): removed. The page composes the network as the 
 with it -- routes over pipes, down links -- and Input takes its keys and drag judge, so `g` and `x` work here.
 */
 const pageNetwork = createPageNetwork();
-const { scene, model, history, renderer, states, selection, labels, readout, snap, tools, input, listen } = composeCanvas({
+const { scene, view, model, history, renderer, states, selection, labels, readout, snap, tools, input, listen } = composeCanvas({
 	svg,
 	scene: CANVAS_SCENE,   // H26.4: its layers, the pipes and the movers foreign, opened on the root
 	kinds: productKinds(...NETWORK_ROWS),
@@ -104,6 +104,9 @@ const palette = new Palette({ container: document.getElementById('palette'), sce
 // capture starts AFTER the palette's key listener is registered: its Escape cancels a sidebar drag and is spent there, so
 // the held hand stays (tests/browser.test.js "K8: Escape during a sidebar drag")
 listen();
+// H26.6's move 7 (dev/design/components/PAN-ZOOM.md section 3.7): the canvas resized -- the window, or the chrome about it -- is told to
+// the view part, which keeps its centre and level and sets the view again at the new default's scale; the root's size is the page's
+new ResizeObserver(() => view.resized()).observe(svg);
 // the help overlay is GENERATED from the bindings Input resolves -- no hand-written list of controls (RULES I4, stage 6)
 if (help) renderHelp(help.querySelector('#help-rows'), helpSections(input.bindings()));
 /*
@@ -863,4 +866,4 @@ menu.del.addEventListener('click', () => {
 
 net.init();
 
-window.draw = { model, history, renderer, states, selection, input, palette, tools, labels, readout, net, sync, reveal, movers, network: pageNetwork.network, networkHost };
+window.draw = { model, history, renderer, states, selection, input, palette, tools, labels, readout, net, sync, reveal, movers, network: pageNetwork.network, networkHost, scene, view };   // H26.6 move 7: the scene and the view part

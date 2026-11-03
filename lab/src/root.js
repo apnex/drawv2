@@ -49,8 +49,10 @@ H25.4 (B376): the canvas's layers are the composition's (product/canvas.mjs CANV
 tools/canvas-layout.mjs; this checks for them rather than typing them a third time.
 AMENDED H26.4 (dev/design/components/VECTOR-SCENE.md section 5.1): the page's markup holds the root and its ground, and the scene the
 canvas opens appends the layers -- so the markup is checked for the root, and the layers once the canvas is composed, below.
+AMENDED H26.6's move 7 (dev/design/components/PAN-ZOOM.md section 3.8, PZ25): the root is bare, its ground its CSS background, so the
+markup holds no ground to check.
 */
-const NEEDED = ['container', 'canvas', 'readout-bottom', 'lab-notice', 'kdefs'];
+const NEEDED = ['container', 'readout-bottom', 'lab-notice', 'kdefs'];
 const missing = NEEDED.filter((id) => !document.getElementById(id));
 if (missing.length) throw new Error(`the lab page is missing: ${missing.join(', ')}`);
 
@@ -72,15 +74,17 @@ K8 -- the canvas, composed by the one function the product page composes it with
 this network. The lab holds no tools and no run mode; its drag judge is the attached network's, below, reached lazily
 because the network attaches to the parts composed here.
 */
-const { model, history, renderer, states, selection, input, listen } = composeCanvas({
+const { view, model, history, renderer, states, selection, input, listen } = composeCanvas({
 	svg, scene: CANVAS_SCENE, defs: document.getElementById('kdefs'), host: window, network, kinds, parts: PRODUCT_CANVAS,   // C-a: the plugins' canvas parts
 	readoutEl: document.getElementById('readout-bottom'),
 	help: null, now: () => Date.now(),
 	plugins: page.plugins,   // its own keys, and its judge of a drag (dev/RULES.md section 11)
 });
-// H26.4: the scene opened has appended every layer of the composition's, in order, after the ground
-const unlaid = CANVAS_LAYERS.filter((id, i) => document.getElementById(id) !== svg.children[i + 1]);
+// H26.4: the scene opened has appended every layer of the composition's, in order -- H26.6's move 7: from the bare root's first child
+const unlaid = CANVAS_LAYERS.filter((id, i) => document.getElementById(id) !== svg.children[i]);
 if (unlaid.length) throw new Error(`the lab's canvas did not lay out: ${unlaid.join(', ')}`);
+// H26.6's move 7 (PAN-ZOOM.md section 3.7): the canvas resized is told to the view part, as the product page tells it
+new ResizeObserver(() => view.resized()).observe(svg);
 
 /*
 The AUTHORITY model, and why there are two.

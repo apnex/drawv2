@@ -97,6 +97,36 @@ async function open(seed, { block = [] } = {}) {
 }
 
 /*
+H26.6's move 7 (dev/design/components/PAN-ZOOM.md section 3.7, PZ7; appendix A move 7) -- THE FIRST OPENING FITS THE OLD FRAME. The root is
+bare and viewed, and with nothing remembered the view part centres 0,0 at the scale that fits the old 1920 by 1080 frame in the canvas --
+the scale its viewBox gave, `min(W / 1920, H / 1080)` for a root `W` by `H` (preserveAspectRatio's meet), as fit-and-view.mjs measured it
+-- so the frame stands where it stood, centred, at three window sizes; and a resize sets the view again, its centre and level kept, at the
+new size's fit. Read through the scene the lab composes and the root's own box, the window set by Chrome's device metrics.
+*/
+test('H26.6 move 7: the first opening fits the old frame, centred on 0,0, at three window sizes, and a resize sets it again at the new fit', { skip: SKIP }, async () => {
+	const t = await theTab();
+	const READ = `JSON.stringify((() => { const svg = document.getElementById('container'), r = svg.getBoundingClientRect(), s = lab.input.scene;
+		const v = s.view(), o = s.toScreen({ x: 0, y: 0 }), a = s.toScreen({ x: -960, y: -540 }), b = s.toScreen({ x: 960, y: 540 });
+		return { w: svg.clientWidth, h: svg.clientHeight, left: r.left, top: r.top, scale: v.scale, origin: [o.x, o.y], frame: [a.x, a.y, b.x, b.y], viewBox: svg.getAttribute('viewBox') }; })())`;
+	const near = (p, q) => Math.abs(p - q) < 1e-6;
+	const fits = (m) => { const k = Math.min(m.w / 1920, m.h / 1080), cx = m.left + m.w / 2, cy = m.top + m.h / 2;
+		return near(m.scale, k) && near(m.origin[0], cx) && near(m.origin[1], cy) && near(m.frame[0], cx - 960 * k) && near(m.frame[1], cy - 540 * k) && near(m.frame[2], cx + 960 * k) && near(m.frame[3], cy + 540 * k); };
+	try {
+		for (const [width, height] of [[1366, 768], [1920, 1080], [1280, 800]]) {
+			await t.send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: false });
+			await open('bend');
+			const m = JSON.parse(await t.run(READ));
+			assert.equal(m.viewBox, null, `${width} x ${height}: the root bare`);
+			assert.ok(m.w > 0 && m.h > 0 && fits(m), `${width} x ${height}: centred on 0,0 at the old frame's fit, ${Math.min(m.w / 1920, m.h / 1080)} -- ${JSON.stringify(m)}`);
+		}
+		await t.send('Emulation.setDeviceMetricsOverride', { width: 1500, height: 700, deviceScaleFactor: 1, mobile: false });
+		let m = null;
+		for (let i = 0; i < 40; i++) { await sleep(50); m = JSON.parse(await t.run(READ)); if (fits(m) && Math.abs(m.w - 1280) > 10) break; }
+		assert.ok(fits(m), `resized to 1500 x 700 with no navigation: the view set again at the new fit, centred on 0,0 -- ${JSON.stringify(m)}`);
+	} finally { await t.send('Emulation.clearDeviceMetricsOverride'); }
+});
+
+/*
 The door tests prove the PLANNER's cascade and sweep reach the tab, so they clear the board's pipes
 first. Since pipes count as references, a hand pipe legitimately holds a waypoint the sweep would
 otherwise take -- a separate rule with its own test below, and mixing the two would let either one
@@ -307,7 +337,7 @@ test('pipes are drawn in the plugin\'s one colour, and it is visible on the canv
 			const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
 			const lum = ([r, g, b]) => { const f = (c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
 				return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b); };
-			const canvas = rgb(getComputedStyle(document.getElementById('canvas')).fill);
+			const canvas = rgb(getComputedStyle(document.getElementById('container')).backgroundColor);   // H26.6's move 7: the bare root's ground
 			const stroke = rgb(cs.stroke);
 			const [hi, lo] = [lum(stroke), lum(canvas)].sort((x, y) => y - x);
 			return { stroke, token: hex(PIPE_STROKE), opacity: Number(cs.opacity), contrast: (hi + 0.05) / (lo + 0.05) };

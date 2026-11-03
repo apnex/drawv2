@@ -158,6 +158,10 @@ export function makeDocument() {
 			querySelectorAll(sel) { return walkTree(node, matcherOf(sel), false); },
 			getScreenCTM() { return { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0, inverse() { return { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }; } }; },
 			getBoundingClientRect() { return { x: 0, y: 0, width: 0, height: 0, left: 0, top: 0, right: 0, bottom: 0 }; },
+			// H26.6's move 7 (dev/design/components/PAN-ZOOM.md section 3.7): laid out at no size, as its box says -- what a viewed scene's
+			// `visible()` reads of its root (vector-scene VS15) -- so the view part has no default scale to set, and the scene keeps its
+			// opening view, a unit to a pixel at the origin, the screen points the record's events name being its drawing points
+			clientWidth: 0, clientHeight: 0,
 			animate() { return { currentTime: 0, cancel() {} }; },
 			addEventListener() {}, removeEventListener() {}, focus() {}, blur() {}, select() {},
 		};

@@ -117,7 +117,7 @@ async function tab(url) {
 const MODS = (o = {}) => (o.alt ? 1 : 0) | (o.ctrl ? 2 : 0) | (o.shift ? 8 : 0);
 const BUTTONS = { left: 1, right: 2 };
 async function drive(t, steps) {
-	const [a, d, e, f] = await t.ev(`(() => { const m = document.getElementById('container').getScreenCTM(); return [m.a, m.d, m.e, m.f]; })()`);
+	const [a, d, e, f] = await t.ev(`(() => { const m = document.getElementById('nodes').getScreenCTM(); return [m.a, m.d, m.e, m.f]; })()`);
 	if (a !== 1 || d !== 1) throw new Error(`the canvas is drawn at scale ${a}, not one CSS pixel to a canvas unit`);
 	let held = 0;
 	for (const [kind, x, y, o] of steps) {
