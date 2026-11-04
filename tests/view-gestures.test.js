@@ -106,6 +106,25 @@ test('H26.6 move 9, GR9 live: a right drag on open ground pans and commits nothi
 	assert.equal(altDrag.view.x - altDrag.view0.x, -60, 'a right drag with Alt on open ground pans, where it did nothing (5.1 move 9\'s named change)');
 });
 
+// 3.6, `pan-right` (PZ5, U1): open ground is the canvas, a zone pressed without Shift among it -- its pick is Shift's, so the press passes
+// through to the canvas -- and with Shift held the right press is the zone's own, as today: it selects the zone, the view still
+test('H26.6 move 9: a right drag on a zone pressed without Shift pans, as open ground; with Shift it is the zone\'s own right press, the view still', () => {
+	for (const shiftKey of [false, true]) {
+		const h = makeInput({ view: true });
+		try {
+			h.model.put('zone', { id: 'zone-000001', name: 'z', x: -150, y: -150, w: 300, h: 300 });
+			const v0 = centre(h), target = h.at('zone-000001');
+			// the harness's root at 1x, 1920 by 1080, centre 0,0: drawing (40, 60), inside the zone, is screen (1000, 600)
+			h.capture.onDown(mouse(1000, 600, { button: 2, buttons: 2, shiftKey, target }));
+			h.capture.onMove(mouse(1010, 600, { button: -1, buttons: 2, shiftKey, target }));
+			h.capture.onMove(mouse(1050, 630, { button: -1, buttons: 2, shiftKey, target }));
+			h.capture.onUp(mouse(1050, 630, { button: 2, buttons: 0, shiftKey, target }));
+			if (!shiftKey) assert.deepEqual([centre(h), h.selection.list()], [{ x: v0.x - 40, y: v0.y - 30, level: 1 }, []], 'no Shift: the zone passes through, and the right drag pans');
+			else assert.deepEqual([centre(h), h.selection.list()], [v0, ['zone-000001']], 'Shift: the zone\'s right press -- it is selected -- and the view still');
+		} finally { h.restore(); }
+	}
+});
+
 // appendix A move 9: the composed tables driven with a pen's barrel button, a touch, a right and a middle press travelling 3 and then 5 screen
 // pixels, a two-button chord, and a pan cancelled by focus loss
 test('H26.6 move 9: a pen\'s barrel button and a touch pan nothing, as today -- the pen\'s right drag does nothing, the touch\'s drag is the selection box', () => {
@@ -341,3 +360,4 @@ test('H26.6 move 9: the view\'s rows, as 3.6 states them -- five, none mutating,
 		['pan-middle', false, false, false, 'pan-middle'], ['pan-right', false, false, false, 'pan-right'], ['pan-space', false, false, false, 'pan-space'],
 	]);
 });
+
