@@ -15,6 +15,8 @@ so the ground is its CSS background, the token the export's own ground reads; an
 #canvas { fill: var(--tok-panel); }
 /* Tab hides names. A class rather than a re-render, so the toggle is instant on a large diagram. */
 #container.labels-off .label, #container.labels-off .label-pill { display: none; }
+/* H26.6's move 11 (PAN-ZOOM.md 3.7, "At each level"): and at a level where a label's text would fall under the view's floor (app/src/view.js LABEL_FLOOR) */
+#container.labels-far .label, #container.labels-far .label-pill { display: none; }
 
 /* W4 -- edit mode: a subtle accent border cues that editing aids (the socket grid) are showing. H26.6's move 7 (PZ25): an inset
    outline of the root, at the screen's edge, where the ground's edge was stroked -- the canvas has no edge to stroke */

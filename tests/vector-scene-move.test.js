@@ -33,8 +33,9 @@ const MAKES = /(?<![.\w])el\(|\bcreateElementNS\b|\bcreateElement\b|\bdocument\b
 test('H26.4 step 3: app/src/renderer.js writes no platform element -- it names no builder and no document, and draws whole with neither', async () => {
 	assert.deepEqual(code('app/src/renderer.js').match(MAKES) ?? [], [], 'no builder, no document, no element written through its own method');
 	assert.doesNotMatch(code('app/src/renderer.js'), /from '\.\/painter\.js'/, 'it imports nothing of app/src/painter.js');
-	// of the root it holds, it writes only draw's own classes -- modes and labels -- which stay draw's (section 5.3)
-	assert.deepEqual([...code('app/src/renderer.js').matchAll(/this\.svg\b(\??\.\w+)*/g)].map((m) => m[0]), ['this.svg', ...Array(3).fill('this.svg?.classList.toggle')],
+	// of the root it holds, it writes only draw's own classes -- modes and labels, and from H26.6's move 11 labels-far -- which stay
+	// draw's (section 5.3)
+	assert.deepEqual([...code('app/src/renderer.js').matchAll(/this\.svg\b(\??\.\w+)*/g)].map((m) => m[0]), ['this.svg', ...Array(4).fill('this.svg?.classList.toggle')],
 		'the root kept, and its classes toggled; nothing else of it read or written');
 	// and in a process with no document at all, a scene with no root holds what the renderer draws -- every stored template's
 	const r = spawnSync(process.execPath, ['--input-type=module', '-e', `

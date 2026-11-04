@@ -140,8 +140,9 @@ function holdsElement(v, seen = new WeakSet()) {
 /*
 Every member of the renderer, and how it is called over a drawn board -- for each of a zone, a group, a link, a device, a waypoint and a
 tower. A member this table does not name fails the test, so a new one is classed before it lands; the deleted members stay deleted.
+setLabelsFar (H26.6's move 11, PAN-ZOOM.md 3.7) toggles a class on the root beside toggleLabels, and answers nothing.
 */
-const RENDERER_MEMBERS = ['constructor', 'toggleLabels', 'renderOpts', 'setMode', 'watchMode', 'handle', 'invalidatedBy', 'syncAll', 'render', 'stackOf',
+const RENDERER_MEMBERS = ['constructor', 'toggleLabels', 'setLabelsFar', 'renderOpts', 'setMode', 'watchMode', 'handle', 'invalidatedBy', 'syncAll', 'render', 'stackOf',
 	'refFor', 'place', 'draws', 'update', 'kit', 'sharedOf', 'compose', 'describe', 'applied', 'putPart', 'putFresh', 'patch', 'reput', 'restate', 'mark',
 	'markOf', 'ownShapeOf', 'drawerOf', 'redrawAfter', 'refreshGatherer', 'unput', 'remove'];
 const RETIRED_MEMBERS = ['byId', 'glyphOf', 'setState', 'clearState', 'reflectSelection', 'elementOf', 'layerOf'];
@@ -159,7 +160,7 @@ test('GR8: the renderer answers data alone -- every member called over a drawn b
 		const ask = (name, ...args) => { answers.push([name, r[name](...args)]); };
 		ask('setMode', 'run');
 		frame(w);
-		ask('toggleLabels'); ask('toggleLabels'); ask('renderOpts'); ask('kit'); ask('watchMode', () => {});
+		ask('toggleLabels'); ask('toggleLabels'); ask('setLabelsFar', true); ask('setLabelsFar', false); ask('renderOpts'); ask('kit'); ask('watchMode', () => {});
 		const ENTITIES = [['zone', IDS.zone], ['group', IDS.group], ['link', IDS.link], ['node', IDS.device], ['node', IDS.waypoint], ['node', IDS.tower]];
 		for (const [kind, id] of ENTITIES) {
 			const e = w.model.get(kind, id), rec = () => r.drawn.get(id);

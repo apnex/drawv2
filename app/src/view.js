@@ -72,6 +72,13 @@ const LINE_PIXELS = 40;         // 3.6: a wheel's line, in pixels -- so three li
 const FIT_PAD = 24;             // 3.7: fit's padding, screen pixels on each side of the diagram's bounds
 const SAVE_AFTER_MS = 500;      // 3.7, PZ23: a view is saved half a second after it last moved
 const VIEW_BOUND = 1_000_000;   // PZ31: a remembered centre is read only within the bound every coordinate keeps
+/*
+H26.6's move 11 (PAN-ZOOM.md section 3.7, "At each level"; PZ12; the director's ruling after move 10, section 9): THE LABELS' FLOOR, the
+screen pixels a label's text must reach to be drawn -- under it, a label and its pill are hidden, at a level far enough out; on a canvas
+1,366 wide at 2x and 3x, on one 1,920 wide at 3x alone, the labels' 13 units then 3.2 and 2.1 pixels, and 3.4. Held here beside the other
+values, tuned in the lab by one edit; the export draws every label whatever the view (`labelsShown`, below).
+*/
+const LABEL_FLOOR = 5;
 
 /*
 3.7, PZ23: a level no longer among `levels` read as the nearest by ratio, `|log(level / preset)|`, a tie going to the farther -- so one
@@ -353,6 +360,16 @@ export class View {
 	// the pinch's held pixels, toward the next level: read by the tests of the accumulator
 	pinchHeld() {
 		return this.#pinchPixels;
+	}
+
+	/*
+	H26.6's move 11 (3.7): whether a label of `text` drawing units shows -- its text at least LABEL_FLOOR screen pixels -- at `scale`, the
+	screen pixels per drawing unit a listener is told (`visible().scale`), else at the view's own level's; a root not laid out has no scale,
+	so its labels show. A listener passes the scale it is told: this part writes the scene before it holds the new view (the header's WHEN A
+	VERB THROWS), so while the scene tells, the level held is the one before.
+	*/
+	labelsShown(text, scale = this.#scaleAt(this.view.level)) {
+		return scale === null || text * scale >= LABEL_FLOOR;
 	}
 
 	// the grid's values for the view's level: its tiers, the scale a dot's drawing radius is shown at, and the margin (3.7, PZ24)

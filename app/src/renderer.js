@@ -206,6 +206,15 @@ export class Renderer {
 		return this.labels;
 	}
 
+	/*
+	H26.6's move 11 (dev/design/components/PAN-ZOOM.md section 3.7, "At each level"): labels and their pills hidden at a level where their
+	text would be under the view's floor -- a class, as `labels-off` is, so the elements stay, the toggle is instant, and the export, which
+	reads no view, draws every label. The composition says when (app/src/compose-canvas.js); the two classes are independent.
+	*/
+	setLabelsFar(far) {
+		this.svg?.classList.toggle('labels-far', far);
+	}
+
 	// what this renderer would pass a headless renderer, so both answer the same predicates
 	renderOpts() {
 		return { sockets: this.mode === 'edit' };

@@ -27,6 +27,7 @@ and handed to the renderer, Input, the overlay and the network's settle, the sel
 */
 import { sharedDefs } from '../../kernel/renderer.mjs';
 import { NODE_GRID } from '../../kernel/geometry.mjs';
+import { STD } from '../../kernel/spec.mjs';   // H26.6's move 11: a label's text, 13 units, which the labels' floor is judged against
 import { crosshair } from './editing-visuals.js';   // H26.4: the editing part's, an item of the scene
 import { gridsOf } from './snap.js';
 import { Model } from '../../model/model.mjs';
@@ -102,6 +103,12 @@ export function composeCanvas({ svg, scene: declared, defs, host, network = null
 	*/
 	const states = new EditingStates({ model, parts });
 	const renderer = new Renderer(model, svg, { parts, scene, states });   // C-a: the plugins' canvas parts, their painters among them
+	// H26.6's move 11 (PAN-ZOOM.md section 3.7, "At each level"): every label is STD.fontSize units -- a device's name, a zone's -- so at
+	// each view the scene tells, judged at the scale it tells, and now, labels and their pills are hidden where that text falls under the
+	// view part's floor
+	const showLabels = (visible) => renderer.setLabelsFar(!view.labelsShown(STD.fontSize, visible?.scale));
+	scene.onView(showLabels);
+	showLabels();
 	selection.subscribe(() => states.reflect(selection.list()));   // the selected look and what it lights, held for what is selected
 	// C-e: where each kind's label sits -- the first part that says so
 	// H26.8's capture move: the label editor handed the two edits it commits, the canvas's builders (NATIVE-SHAPES.md section 3.2)
