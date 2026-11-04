@@ -15,7 +15,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import crypto from 'node:crypto';
-import { SWEEP, QUESTIONS, REPLACEMENTS, CLASSES, answersOf, differences, classOf, enc, unboundedAtMove11 } from './fixtures/grid-parity.mjs';
+import { SWEEP, QUESTIONS, REPLACEMENTS, CLASSES, answersOf, differences, classOf, enc, unboundedAtMove11, unboundedAtMove12 } from './fixtures/grid-parity.mjs';
 
 const RECORD = JSON.parse(fs.readFileSync(new URL('./fixtures/grid-parity-record.json', import.meta.url), 'utf8'));
 const pick = ({ question, index, old, new: now }) => ({ question, index, old, new: now });
@@ -39,6 +39,8 @@ them to it. So beside the differences recorded with both answers, every differen
 again from its input and both answers (tests/fixtures/grid-parity.mjs `unboundedAtMove11`): the unbounded lattice's exact answer where the
 old one stopped at the frame, a field accepted within PZ31's bound where it was refused past the frame. Any other difference fails, a
 recorded one gone fails, and the lists compared are of keys, never the thirteen thousand answers whole.
+RESTATED at H26.6's move 12 (PAN-ZOOM.md section 3.8, "Placement"): and placement's answers by rings within the bound, where it walked
+the old extent's list -- each such difference judged against a brute-force oracle (`unboundedAtMove12`), its old answer the frame's.
 */
 const MOVE_11 = ['snapNode', 'snapIn.node', 'snapIn.zone', 'snapZone', 'zoneResize', 'zoneWrap', 'deviceSizeStep', 'deviceWithinSurface',
 	'anchor.x', 'anchor.y', 'zone.x', 'zone.y', 'zone.w', 'zone.h'];
@@ -48,11 +50,14 @@ test('H26.1 (acceptance step 4): the replacements answer exactly as the old func
 	const live = new Set(found.map((d) => `${d.question}#${d.index}`));
 	const asRecorded = (d) => JSON.stringify(recorded.get(`${d.question}#${d.index}`)?.new) === JSON.stringify(d.new) && recorded.has(`${d.question}#${d.index}`);
 	const moved = found.filter((d) => !asRecorded(d) && unboundedAtMove11(d));
-	const unexplained = found.filter((d) => !asRecorded(d) && !unboundedAtMove11(d)).map((d) => `${d.question} #${d.index} ${JSON.stringify(d.input ?? null)}`);
+	const placed = found.filter((d) => !asRecorded(d) && unboundedAtMove12(d));
+	const unexplained = found.filter((d) => !asRecorded(d) && !unboundedAtMove11(d) && !unboundedAtMove12(d)).map((d) => `${d.question} #${d.index} ${JSON.stringify(d.input ?? null)}`);
 	assert.deepEqual(unexplained.slice(0, 20), [], `every difference recorded or the extent's removal (${unexplained.length} not)`);
 	assert.deepEqual(RECORD.changed.filter((d) => !live.has(`${d.question}#${d.index}`)).map((d) => `${d.question} #${d.index}`), [], 'no recorded difference is gone');
 	assert.ok(moved.length > 10000, `the extent's removal reaches the sweep's points beyond the frame: ${moved.length}`);
 	assert.deepEqual([...new Set(moved.map((d) => d.question))].sort(), [...MOVE_11].sort(), 'and each of the questions the frame held');
+	assert.ok(placed.length >= 40 && placed.some((d) => d.old === 'the canvas is full: every anchor is occupied') && placed.some((d) => typeof d.old === 'string' && d.old.startsWith('nothing free to the')) && placed.some((d) => Array.isArray(d.old)),
+		`move 12: placement past the frame -- the full frame answered, a walk past its edge, a nearer point past it (${placed.length})`);
 });
 
 test('H26.1 (section 6.3): every recorded difference is one section 6.3 rules -- classed again from its input and both answers', () => {
@@ -106,8 +111,12 @@ test('H26.1 (acceptance step 4): the sweep covers both grids, bounded and unboun
 	const moved = answersOf({ ...REPLACEMENTS, 'snapIn.node': (p) => (p.x === 450 && p.y === 0 ? [510, 0] : REPLACEMENTS['snapIn.node'](p)) });
 	// RESTATED at H26.6's move 11: the extent's removal set aside, as the comparison above sets it aside -- and the planted answer is not it
 	const all = differences(RECORD.old, moved).filter((d) => !RECORD.changed.some((c) => c.question === d.question && c.index === d.index));
-	const extra = all.filter((d) => !unboundedAtMove11(d));
+	const extra = all.filter((d) => !unboundedAtMove11(d) && !unboundedAtMove12(d));
 	assert.ok(extra.length >= 1, 'control: a planted difference is found');
 	assert.ok(extra.some((d) => d.question === 'snapIn.node' && JSON.stringify(d.new) === '[510,0]'), 'control: the planted one, not the extent\'s removal');
 	assert.ok(extra.every((d) => classOf(d) === null), 'control: and no class of 6.3 holds for it');
+	// RESTATED at H26.6's move 12: a placement past the frame that is not the nearest free point is no removal of the extent
+	const misplaced = answersOf({ ...REPLACEMENTS, resolveAnchor: (i) => (i.board === 0 && i.at.near === 'n3' && !i.at.dir ? ['node', 9, -10, 540, -600] : REPLACEMENTS.resolveAnchor(i)) });
+	const wrong = differences(RECORD.old, misplaced).filter((d) => d.question === 'resolveAnchor' && !RECORD.changed.some((c) => c.question === d.question && c.index === d.index) && !unboundedAtMove12(d));
+	assert.deepEqual(wrong.map((d) => d.new), [['node', 9, -10, 540, -600]], 'control: a point past the frame two cells out, where one was free one cell out, is not classed');
 });

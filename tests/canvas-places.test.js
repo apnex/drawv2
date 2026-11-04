@@ -25,7 +25,7 @@ import { PRODUCT_CANVAS } from '../product/canvas.mjs';
 import { ZONE_GRIDS } from '../plugins/layouts/layout-table.mjs';
 // H26.6's move 11: the old zone extent, no longer exported -- where a zone was held, and is held no more
 const ZONE_EXT = { x: 930, y: 510 };
-import { NODE_GRID, nodeGridWithin } from '../kernel/geometry.mjs';
+import { NODE_GRID, latticeGrids } from '../kernel/geometry.mjs';
 import { openGrid } from '@apnex/snap-grid';   // H26.8's grid move: a grid bounded off centre, which no product place carries
 
 const code = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
@@ -83,7 +83,7 @@ test('C-c: the canvas names no list of placed kinds', () => {
 // carrying no grid, or a grid with no bounds, is refused, naming its owner; the extent beside it, and its check, are gone
 // RESTATED at H26.6's move 11 (PAN-ZOOM.md section 3.8, "The extents"): a place carries the unbounded lattice its kind snaps to, so a grid with
 // no bounds is a place's; one carrying no grid at all is still refused, naming its owner
-const grid1 = nodeGridWithin({ x: 1, y: 1 });
+const grid1 = latticeGrids({ pitch: 60, offset: 0, ext: { x: 1, y: 1 } }).bounded;   // H26.6's move 12: nodeGridWithin gone
 test('C-c: a malformed place is refused when the places are composed, naming its owner', () => {
 	assert.throws(() => placesOf([{ owner: 'p', places: [{ kind: 'x', layout: 'nowhere', size: () => ({ w: 0, h: 0 }) }] }]), /place: p's place for x carries no grid/);
 	assert.equal(placesOf([{ owner: 'p', places: [{ kind: 'x', layout: 'node', grid: NODE_GRID, size: () => ({ w: 0, h: 0 }) }] }]).get('x').owner, 'p', 'a grid with no bounds is a place\'s (H26.6 move 11)');

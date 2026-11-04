@@ -25,7 +25,8 @@ const DELETED = ['px', 'cellOf', 'LAYOUTS', 'onLayout', 'snapLayout', 'cellOn', 
 
 test('H26.1 (acceptance step 3): the kernel exports none of its grid arithmetic, snap.js holds no clamp or half pitch, the zones plugin no snapZone', () => {
 	for (const name of DELETED) assert.equal(name in geometry, false, `kernel/geometry.mjs still exports ${name}`);
-	assert.deepEqual(['NODE_GRID', 'latticeGrids', 'nodeGridWithin'].filter((n) => !(n in geometry)), [], 'control: what replaced them is exported');
+	assert.deepEqual(['NODE_GRID', 'latticeGrids'].filter((n) => !(n in geometry)), [], 'control: what replaced them is exported');
+	assert.equal('nodeGridWithin' in geometry, false, 'H26.6 move 12 (GR2): the node grid within an extent is gone');
 	assert.doesNotMatch(code('app/src/snap.js'), /\b(clamped|HALF)\b/, 'app/src/snap.js holds `clamped` or `HALF`');
 	assert.doesNotMatch(code('plugins/zones/zone-gestures.mjs'), /\bsnapZone\b/, 'plugins/zones/zone-gestures.mjs holds `snapZone`');
 });

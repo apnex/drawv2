@@ -166,9 +166,10 @@ test('place refuses a direction with nothing free, rather than placing elsewhere
 		assert.match(err, /nothing called nonexistent/, 'the name is named');
 		assert.match(err, /draw show|draw map/, 'and it says how to find the real ones');
 
-		// PL-4: a direction with nothing free is refused by the server's resolver, and the tool adds where to look
+		// PL-4: a direction with nothing free is refused by the server's resolver, and the tool adds where to look. RESTATED at H26.6's
+		// move 12 (PAN-ZOOM.md section 3.8, "Placement"): the walk stops at PZ31's bound, no longer at the old frame's edge, 900
 		await run('commit', '--diagram', id, '--label', 'seed', '--ops', writeOps({ ops: [
-			{ op: 'put', kind: 'node', entity: { id: 'node-a00001', name: 'edge', type: 'router', x: 900, y: 0 } }] }));
+			{ op: 'put', kind: 'node', entity: { id: 'node-a00001', name: 'edge', type: 'router', x: 999960, y: 0 } }] }));
 		const boxed = await captureExit(() => run('place', 'server', 'near', 'edge', '--dir', 'right', '--diagram', id));
 		assert.match(boxed, /nothing free to the right of edge/, 'the server says what it could not do');
 		assert.match(boxed, /draw near/, 'and the tool says where to look');

@@ -4,8 +4,8 @@ Anchor resolution -- turning a RELATIONSHIP into a position, server-side.
   resolveAnchor(model, at)   PURE. Reads a model, returns an anchor or a refusal.
 
 Sovereign duty: choosing WHICH free anchor satisfies a relationship, and nothing else. The grid
-itself belongs to `kernel/geometry.mjs` (`NODE_GRID`, `nodeGridWithin`; snap-grid answers where its
-positions lie, H26.1), occupancy belongs to the model, and this composes the two rather than
+itself belongs to `kernel/geometry.mjs` (`NODE_GRID`; snap-grid answers where its positions lie,
+H26.1), occupancy belongs to the model, and this composes the two rather than
 restating either.
 
 B189 -- why this exists at all.
@@ -27,8 +27,8 @@ Placed in `server/` rather than `model/` deliberately: this needs `kernel/` for 
 `model/` is a sovereign sibling of `kernel/` that imports it nowhere (`model/limits.mjs`).
 */
 
-import { NODE_GRID, nodeGridWithin, anchorOn } from '../kernel/geometry.mjs';   // H26.1: the grids, and an anchor's one builder (F3)
-import { NODE_EXT } from '../model/surface.mjs';
+import { NODE_GRID, anchorOn } from '../kernel/geometry.mjs';   // H26.1: the grid, and an anchor's one builder (F3)
+import { COORD_BOUND } from '../model/limits.mjs';   // H26.6's move 12: PZ31's bound, which every candidate is kept within
 import { ANCHOR_KINDS } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
 import { typedNodes } from '../plugins/devices/device-shapes.mjs';
 
@@ -37,8 +37,8 @@ import { typedNodes } from '../plugins/devices/device-shapes.mjs';
 // cannot silently change where a node lands. H26.1: each names the node grid's direction it steps in (snap-grid's `next`).
 const DIRS = { right: '+x', left: '-x', up: '-y', down: '+y' };
 
-// How far a direction walks before giving up, in cells. 16 was the CLI's limit and is retained;
-// the grid's own extent bounds it in practice.
+// How far a direction walks before giving up, in cells. 16 was the CLI's limit and is retained; RESTATED at H26.6's move 12: no
+// extent bounds it now, only PZ31's bound and the 16 steps
 const DIR_STEPS = 16;
 
 const fail = (error) => ({ ok: false, error });
@@ -54,34 +54,54 @@ function takenSet(model) {
 	return taken;
 }
 
-// Every free anchor on the node grid. The node extent bounds it, which is the same rule the REST
-// anchors route applies: an anchor outside it cannot hold a node anyway.
-// H26.1 (SNAP-GRID.md appendix B): the node grid within its extent, its positions in view of the whole extent -- every one, by row
-// then column -- each mapped back to the anchor it was by the lattice's `anchorOn`; which are free stays decided here. The placement
-// part consumes the lattice alone (appendix B), so the name of the layout its anchors are on is stated here
-const NODE_LAYOUT = 'node';
-const NODE_PLACES = nodeGridWithin(NODE_EXT);
-const NODE_EXTENT_VIEW = { region: { kind: 'rect', x: -NODE_EXT.x, y: -NODE_EXT.y, w: 2 * NODE_EXT.x, h: 2 * NODE_EXT.y }, scale: 1 };
-function freeAnchors(model) {
-	const taken = takenSet(model);
-	return NODE_PLACES.inView(NODE_EXTENT_VIEW).positions
-		.map(({ position }) => anchorOn(NODE_LAYOUT, NODE_PLACES, position))
-		.filter((a) => !taken.has(`${a.x},${a.y}`));
-}
+/*
+H26.6's move 12 (dev/design/components/PAN-ZOOM.md section 3.8, "Placement"; PZ9) -- THE NEAREST FREE POINT, BY RINGS. Placement walked
+the old extent's 527 positions and kept the nearest free one; with no extent there is no list, so each relation searches outward from
+its reference instead: ring `r` holds the node grid's positions `r` steps from the reference's nearest position, in Chebyshev distance,
+each judged by its exact squared distance -- never a root (B176) -- the tie to the lesser `y`, then the lesser `x`, the order the old
+list was walked in, so a placement whose answer lies inside the old frame answers as it did. It ends one of two ways:
+  the sound stop    a point found at squared distance `d2` is nearer than any point of ring `r` or beyond once
+                    `d2 < ((r - 1/2) * pitch)^2`, since the reference lies within half a pitch of its nearest position on each axis; on
+                    equality ring `r` is still searched, a tie there perhaps winning on `y` -- compared as `4 * d2 < ((2r - 1) * pitch)^2`,
+                    exact in binary64 at every coordinate within the bound
+  the domain's end  once ring `r`'s columns lie either side of the domain and its rows likewise, ring `r` and every later ring lie
+                    wholly beyond it, so the search refuses -- the domain PZ31's bound, and for `inside` the zone's interior within it
+`placement-rings.mjs` measured the worst cases with 527 anchors packed nearest the reference: 13 rings in the open, 21 at the bound's
+corner, 264 in a zone one square wide, and a full zone refused (tests/placement-rings.test.js).
+*/
+const PITCH = NODE_GRID.declaration.pitch;
+const BOUND = { left: (x) => x < -COORD_BOUND, right: (x) => x > COORD_BOUND, above: (y) => y < -COORD_BOUND, below: (y) => y > COORD_BOUND };
+// a zone's interior, strictly, kept within the bound
+const interiorOf = (z) => ({
+	left: (x) => x <= z.x || BOUND.left(x), right: (x) => x >= z.x + z.w || BOUND.right(x),
+	above: (y) => y <= z.y || BOUND.above(y), below: (y) => y >= z.y + z.h || BOUND.below(y),
+});
+const admits = (domain, p) => !domain.left(p.x) && !domain.right(p.x) && !domain.above(p.y) && !domain.below(p.y);
+const d2 = (p, x, y) => (p.x - x) * (p.x - x) + (p.y - y) * (p.y - y);
 
-// Squared distance, never a root. Two engines may return different last bits for the same segment
-// under `Math.hypot` (B176), and a comparison does not need the root: ordering by d2 is ordering by
-// d. The CLI used hypot here; dropping it is a correction carried across with the rule.
-const d2 = (a, x, y) => (a.x - x) * (a.x - x) + (a.y - y) * (a.y - y);
-
-function nearest(candidates, x, y) {
-	let best = null, bestD = Infinity;
-	for (const a of candidates) {
-		const d = d2(a, x, y);
-		if (d < bestD) { best = a; bestD = d; }
+function nearestFree(ref, domain, taken) {
+	const at = NODE_GRID.nearest(ref);
+	let best = null;
+	for (let ring = 0; ; ring++) {
+		const reach = (2 * ring - 1) * PITCH;
+		if (best && 4 * best.d2 < reach * reach) return best.position;
+		const lo = NODE_GRID.pointOf({ col: at.col - ring, row: at.row - ring }), hi = NODE_GRID.pointOf({ col: at.col + ring, row: at.row + ring });
+		if (domain.left(lo.x) && domain.right(hi.x) && domain.above(lo.y) && domain.below(hi.y)) return best ? best.position : null;
+		for (let row = at.row - ring; row <= at.row + ring; row++) {
+			// the ring's own positions: its first and last rows whole, every other row its two ends
+			const whole = ring === 0 || row === at.row - ring || row === at.row + ring;
+			for (let col = at.col - ring; col <= at.col + ring; col += whole ? 1 : 2 * ring) {
+				const position = { col, row }, p = NODE_GRID.pointOf(position);
+				if (!admits(domain, p) || taken.has(`${p.x},${p.y}`)) continue;
+				const d = d2(p, ref.x, ref.y);
+				if (!best || d < best.d2 || (d === best.d2 && (p.y < best.p.y || (p.y === best.p.y && p.x < best.p.x)))) best = { position, p, d2: d };
+			}
+		}
 	}
-	return best;
 }
+// the placement part consumes the lattice alone (SNAP-GRID.md appendix B), so the name of the layout its anchors are on is stated here
+const NODE_LAYOUT = 'node';
+const anchorAt = (position) => ({ ok: true, ...anchorOn(NODE_LAYOUT, NODE_GRID, position) });
 
 // A named reference resolves against nodes by name or id. `resolveId`'s refusal of an ambiguous
 // name is the model's job at the trust boundary; here a miss is simply a refusal that names what
@@ -94,26 +114,22 @@ function nodeNamed(model, ref) {
 Resolve a relationship to an anchor.
 
   { near: <ref> }            the closest free anchor to that node
-  { near: <ref>, dir: ... }  the first free anchor walking that way from it
+  { near: <ref>, dir: ... }  the first free anchor walking that way from it, at most 16 steps
   { between: [<a>, <b>] }    the closest free anchor to the midpoint of two nodes
-  { inside: <zone> }         the closest free anchor to the zone's centre, within its bounds
+  { inside: <zone> }         the closest free anchor to the zone's centre, strictly inside it
 
-Returns `{ ok: true, layout, cx, cy, x, y }` or `{ ok: false, error }`. Never throws on a bad
-reference: a refusal is data, because this runs inside `plan()` where a throw would be a planner
-bug rather than a rejected request.
+Every candidate lies within PZ31's bound (H26.6's move 12, dev/design/components/PAN-ZOOM.md section 3.8), found by the rings above where
+the old extent's list was walked. Returns `{ ok: true, layout, cx, cy, x, y }` or `{ ok: false, error }`. Never throws on a bad
+reference: a refusal is data, because this runs inside `plan()` where a throw would be a planner bug rather than a rejected request.
 */
 export function resolveAnchor(model, at = {}) {
-	const free = freeAnchors(model);
-	if (!free.length) return fail('the canvas is full: every anchor is occupied');
+	const taken = takenSet(model);
 
 	if (at.inside !== undefined) {
 		const zone = model.all('zone').find((z) => z.name === at.inside || z.id === at.inside);
 		if (!zone) return fail(`${at.inside} is not a zone`);
-		const within = free.filter((a) => a.x >= zone.x && a.x <= zone.x + zone.w
-			&& a.y >= zone.y && a.y <= zone.y + zone.h);
-		if (!within.length) return fail(`zone ${at.inside} has no free anchor`);
-		const hit = nearest(within, zone.x + zone.w / 2, zone.y + zone.h / 2);
-		return { ok: true, ...hit };
+		const hit = nearestFree({ x: zone.x + zone.w / 2, y: zone.y + zone.h / 2 }, interiorOf(zone), taken);
+		return hit ? anchorAt(hit) : fail(`zone ${at.inside} has no free anchor`);
 	}
 
 	if (at.between !== undefined) {
@@ -122,8 +138,8 @@ export function resolveAnchor(model, at = {}) {
 		const b = nodeNamed(model, refB);
 		if (!a) return fail(`${refA} is not a node`);
 		if (!b) return fail(`${refB} is not a node`);
-		const hit = nearest(free, (a.x + b.x) / 2, (a.y + b.y) / 2);
-		return hit ? { ok: true, ...hit } : fail(`nothing free between ${refA} and ${refB}`);
+		const hit = nearestFree({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }, BOUND, taken);
+		return hit ? anchorAt(hit) : fail(`nothing free between ${refA} and ${refB}`);
 	}
 
 	if (at.near !== undefined) {
@@ -133,23 +149,24 @@ export function resolveAnchor(model, at = {}) {
 		if (at.dir !== undefined) {
 			const step = DIRS[at.dir];
 			if (!step) return fail(`dir must be one of ${Object.keys(DIRS).join(', ')}`);
-			const open = new Set(free.map((a) => `${a.x},${a.y}`));
 			/*
 			H26.1 (SNAP-GRID.md appendix B, section 6.3): the walk steps with `next` on the node grid from the reference's own position, the
 			free set deciding as it did for every reference on the lattice -- which every stored node is, its fields validated on it. A
 			reference off the lattice has no position, and the walk finds nothing, where adding pixels to it could round onto an anchor.
+			RESTATED at H26.6's move 12: a step is free when nothing stands on it and it lies within PZ31's bound, where it was a member of
+			the old extent's free list.
 			*/
 			let p = NODE_GRID.positionAt(ref);
 			for (let n = 1; p && n <= DIR_STEPS; n++) {
 				p = NODE_GRID.next(p, step);
 				const point = p && NODE_GRID.pointOf(p);
-				if (point && open.has(`${point.x},${point.y}`)) return { ok: true, ...free.find((a) => a.x === point.x && a.y === point.y) };
+				if (point && admits(BOUND, point) && !taken.has(`${point.x},${point.y}`)) return anchorAt(p);
 			}
 			return fail(`nothing free to the ${at.dir} of ${at.near}`);
 		}
 
-		const hit = nearest(free, ref.x, ref.y);
-		return { ok: true, ...hit };
+		const hit = nearestFree(ref, BOUND, taken);
+		return hit ? anchorAt(hit) : fail(`nothing free near ${at.near}`);
 	}
 
 	return fail('an anchor relationship needs one of near, between or inside');

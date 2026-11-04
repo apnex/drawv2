@@ -435,6 +435,59 @@ export function unboundedAtMove11(d) {
 }
 
 /*
+H26.6's move 12 (dev/design/components/PAN-ZOOM.md section 3.8, "Placement"): placement no longer walks the old extent's 527 positions
+but rings outward within PZ31's bound, so a placement answers the nearest free point past the old frame where one is nearer than any
+within it, a walk steps past the frame's edge, and the board whose frame was full -- "the canvas is full" -- is answered. A difference is
+the extent's removal when the new answer is this oracle's -- brute force over the node lattice about the reference, the exact squared
+distance, the tie to the lesser y then x, every candidate within the bound -- and the old answer is the frame's: the full canvas, or a
+new answer lying past the frame.
+*/
+const MOVE_12_REACH = 40;   // cells about a reference the oracle searches: every board's nearest free point lies within it
+function placedByOracle(board, at) {
+	const taken = new Set(board.nodes.map((n) => `${n.x},${n.y}`));
+	const free = (x, y) => !taken.has(`${x},${y}`) && Math.abs(x) <= BOUND && Math.abs(y) <= BOUND;
+	const answer = (x, y) => ['node', x / P, y / P, x, y];
+	const nearestTo = (rx, ry, admit) => {
+		let best = null;
+		const hc = Math.round(rx / P), hr = Math.round(ry / P);
+		for (let row = hr - MOVE_12_REACH; row <= hr + MOVE_12_REACH; row++) for (let col = hc - MOVE_12_REACH; col <= hc + MOVE_12_REACH; col++) {
+			const x = col * P, y = row * P;
+			if (!free(x, y) || !admit(x, y)) continue;
+			const d = (x - rx) * (x - rx) + (y - ry) * (y - ry);
+			if (!best || d < best.d || (d === best.d && (y < best.y || (y === best.y && x < best.x)))) best = { x, y, d };
+		}
+		return best;
+	};
+	const named = (ref) => board.nodes.find((n) => n.type && (n.name === ref || n.id === ref));
+	if (at.inside !== undefined) {
+		const z = board.zones.find((q) => q.name === at.inside || q.id === at.inside);
+		if (!z) return `${at.inside} is not a zone`;
+		const hit = nearestTo(z.x + z.w / 2, z.y + z.h / 2, (x, y) => x > z.x && x < z.x + z.w && y > z.y && y < z.y + z.h);
+		return hit ? answer(hit.x, hit.y) : `zone ${at.inside} has no free anchor`;
+	}
+	if (at.between !== undefined) {
+		const [a, b] = at.between.map(named);
+		const hit = nearestTo((a.x + b.x) / 2, (a.y + b.y) / 2, () => true);
+		return answer(hit.x, hit.y);
+	}
+	if (at.near !== undefined) {
+		const ref = named(at.near);
+		if (at.dir === undefined) { const hit = nearestTo(ref.x, ref.y, () => true); return answer(hit.x, hit.y); }
+		const [dx, dy] = { right: [1, 0], left: [-1, 0], up: [0, -1], down: [0, 1] }[at.dir];
+		for (let n = 1; n <= 16 && Number.isInteger(ref.x / P); n++) if (free(ref.x + n * dx * P, ref.y + n * dy * P)) return answer(ref.x + n * dx * P, ref.y + n * dy * P);
+		return `nothing free to the ${at.dir} of ${at.near}`;
+	}
+	return 'an anchor relationship needs one of near, between or inside';
+}
+export function unboundedAtMove12(d) {
+	if (d.question !== 'resolveAnchor') return false;
+	const { board, at } = QUESTIONS.resolveAnchor.inputs()[d.index];
+	if (JSON.stringify(d.new) !== JSON.stringify(placedByOracle(SWEEP.boards[board], at))) return false;
+	const pastTheFrame = Array.isArray(d.new) && (Math.abs(d.new[3]) > NODE_EXT.x || Math.abs(d.new[4]) > NODE_EXT.y);
+	return d.old === 'the canvas is full: every anchor is occupied' || pastTheFrame;
+}
+
+/*
 WHICH 6.3 CLASS A DIFFERENCE BELONGS TO, or null when none holds -- judged from the input and both answers, never from a list: the
 generator classes each difference it records, and the test classes each again.
 */

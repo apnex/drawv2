@@ -19,8 +19,8 @@ opened through one of the two functions below, so two parts asking one grid ask 
                         lattice fails where it is opened rather than answering wrongly later
   NODE_GRID             the node lattice with no bounds: the kernel's locked pitch, origin 0 -- the relation index, field
                         validation of positions and lengths, spans, steps and the REST routes ask it
-  nodeGridWithin(ext)   the node lattice bounded by an extent the caller holds -- the kernel cannot read model/surface.mjs (C9),
-                        so each part needing the node grid within its extent opens it here, every opening equal to the others
+`nodeGridWithin(ext)`, the node lattice bounded by an extent, went at H26.6's move 12 (dev/design/components/PAN-ZOOM.md 5.1 row 12,
+GR2): placement rings outward within PZ31's bound where it walked the extent's positions, so no reader asks a bounded node grid.
 */
 export function latticeGrids({ pitch, offset, ext } = {}) {
 	const lattice = { shape: 'square', pitch, origin: { x: offset, y: offset } };
@@ -35,7 +35,6 @@ export function latticeGrids({ pitch, offset, ext } = {}) {
 	};
 }
 export const NODE_GRID = latticeGrids({ pitch: STD.pitch, offset: 0 }).unbounded;
-export const nodeGridWithin = (ext) => latticeGrids({ pitch: NODE_GRID.declaration.pitch, offset: NODE_GRID.declaration.origin.x, ext }).bounded;
 
 /*
 H26.1 (SNAP-GRID.md appendix B; F3, H26.1's verification) -- AN ANCHOR, AS THE AGENT DOOR AND PLACEMENT ANSWER IT: a position on a

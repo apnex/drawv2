@@ -179,7 +179,7 @@ export const PARTS = {
 	access: { duty: 'Establish who a request comes from', kind: 'door', by: ['H9'],
 		modules: ['server/identity.mjs', 'server/codes.mjs', 'server/origin.mjs'], consumes: [] },
 	placement: { duty: 'Choose the free anchor a relationship names', kind: 'door', by: ['SD1'],
-		modules: ['server/anchor.mjs'], consumes: ['lattice', 'document', 'relations', 'devices'] },
+		modules: ['server/anchor.mjs'], consumes: ['lattice', 'document', 'relations', 'devices', 'kind-contract'] },   // H26.6's move 12: PZ31's bound (model/limits.mjs), which every candidate is kept within
 	store: { duty: 'Keep documents durable', kind: 'door', by: ['SD2', 'WD6'],
 		modules: ['server/store.js', 'server/files.mjs', 'server/docfile.mjs', 'server/seed.js', 'server/diagram-id.mjs'],
 		consumes: ['document', 'kind-contract', 'lattice', 'planner', 'product', 'relations', 'access', 'placement', 'network'] },
@@ -1017,8 +1017,7 @@ export const UNUSED_EXPORTS = {
 				// H26.1: the grid arithmetic deleted (SNAP-GRID.md section 7.7); the drawing helpers stay
 				'rebuild-debt': ['gridDot', 'groupHull'],
 				// anchorOn (F3, H26.1's verification): an anchor's one builder, for the REST door and server/anchor.mjs, which left the planner at PL-4
-				// nodeGridWithin (H26.6's move 11): the planner's kinds no longer bound an anchor by the extent; the REST door's lists read it until move 12
-				'serves-a-server-door': ['anchorOn', 'nodeGridWithin'],
+				'serves-a-server-door': ['anchorOn'],
 			},
 			'kernel/spec.mjs': {
 				'rebuild-debt': ['BEND_R', 'L_STD'],   // BEND_R and L_STD: their consumers (`roundedPath`, the painters) are outside the planner closure

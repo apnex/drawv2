@@ -11,7 +11,7 @@ import { layoutRecords } from '../plugins/layouts/layout-records.mjs';   // WD8 
 import { linksOf, linksAt, makeLink } from '../plugins/network/link-queries.mjs';   // which links meet an anchor: the network's (K13d)
 import { snapshotBody, changeBody, reversalBody } from './protocol.js';
 import { announceActivity, announceAccess, viewersFor } from './hub.js';   // B342 (H21.8): in the hub, so the hub does not import REST
-import { NODE_GRID, nodeGridWithin, anchorOn } from '../kernel/geometry.mjs';   // H26.1: the grids, and an anchor's one builder (F3)
+import { NODE_GRID, latticeGrids, anchorOn } from '../kernel/geometry.mjs';   // H26.1: the grids, and an anchor's one builder (F3)
 import { LAYOUT_TABLE, ZONE_GRIDS } from '../plugins/layouts/layout-table.mjs';   // H26.1: the layouts table's names, and the zone's grids
 import { makeZone } from '../plugins/zones/make-zone.mjs';   // the zones plugin's factory (O-b1)
 import { makeGroup } from '../plugins/groups/make-group.mjs';   // the groups plugin's factory (O-c)
@@ -167,7 +167,7 @@ function contextOf(model, kind, e) {
 // its place carries: the node grid bounded by the node record's extent (plugins/layouts/layout-canvas.mjs), the zone's own (ZONE_GRIDS)
 const [NODE_LAYOUT, ZONE_LAYOUT] = LAYOUT_TABLE;
 const UNBOUNDED_GRIDS = new Map([[NODE_LAYOUT.name, NODE_GRID], [ZONE_LAYOUT.name, ZONE_GRIDS.unbounded]]);
-const BOUNDED_GRIDS = new Map([[NODE_LAYOUT.name, nodeGridWithin(NODE_LAYOUT.ext)], [ZONE_LAYOUT.name, ZONE_GRIDS.bounded]]);
+const BOUNDED_GRIDS = new Map([[NODE_LAYOUT.name, latticeGrids(NODE_LAYOUT).bounded], [ZONE_LAYOUT.name, ZONE_GRIDS.bounded]]);
 const NEAREST_LIMIT = 2 ** 49;
 
 function occupantAt(model, anchor) {

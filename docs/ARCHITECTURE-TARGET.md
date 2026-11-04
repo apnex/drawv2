@@ -167,7 +167,7 @@ Generated from `tools/layers.mjs` `PARTS`, and each part's components from its `
 | `lab` | Compose the canvas over the real modules, without storage | composition root | H17-D1 | any part -- a composition root | -- |
 | `server` | Compose the server | composition root | SD2 | any part -- a composition root | -- |
 | `access` | Establish who a request comes from | door | H9 | -- | -- |
-| `placement` | Choose the free anchor a relationship names | door | SD1 | `lattice`, `document`, `relations`, `devices` | -- |
+| `placement` | Choose the free anchor a relationship names | door | SD1 | `lattice`, `document`, `relations`, `devices`, `kind-contract` | -- |
 | `store` | Keep documents durable | door | SD2, WD6 | `document`, `kind-contract`, `lattice`, `planner`, `product`, `relations`, `access`, `placement`, `network` | -- |
 | `hub` | Carry each change to the tabs watching a document | door | SD2 | `store`, `planner`, `document`, `kind-contract`, `access` | -- |
 | `rest` | Answer agents over HTTP | door | SD1, Q1 | `store`, `hub`, `planner`, `document`, `kind-contract`, `product`, `lattice`, `access`, `layouts`, `network`, `devices`, `zones`, `groups`, `simulation` | -- |
