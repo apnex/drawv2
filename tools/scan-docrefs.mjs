@@ -123,6 +123,8 @@ const ALLOW = {
 	'*:tests/fixtures/pre-capture/painter.js': 'a shim of the verbatim old capture, deleted with its copy at H26.5 when the parity mode was retired; records written while it lived cite it',
 	'dev/design/components/INPUT-BINDING.md:tests/triggers.test.js': 'the triggers\' tests, deleted with the module at H26.2 -- the press\'s to input-binding\'s own, the "decided once" test restated in tests/input-binding-move.test.js; the design names it as it stood',
 	'*:zones/zone-extent.mjs': 'the zone extent, moved at WD-b1 (H19.45) to the layouts plugin\'s table, layouts/layout-table.mjs; records written while it lived cite it',
+	// H26.6's move 12 (dev/design/components/PAN-ZOOM.md 5.1 row 12, GR3): the old extents' module, deleted with the last of the extent
+	'*:model/surface.mjs': 'the old 1920 by 1080 surface and the node extent (`SURFACE`, `NODE_EXT`), deleted at H26.6\'s move 12 when the canvas had no extent left to hold (PAN-ZOOM.md 5.1 row 12, GR3); records written while it lived cite it',
 	'*:tools/migrate-schema.mjs': 'the format batch\'s dry run, deleted at H19.3 (B291) with the migration it proved; records written while it lived cite it',
 	'*:tools/migrate-version.mjs': 'the CS5 migration, deleted at H19.3 (B291) once every stored document was schema 2; records written while it lived cite it',
 	'*:tests/migration.test.js': 'the CS5 migration\'s gates, deleted at H19.3 (B291) with tools/migrate-version.mjs; records written while it lived cite it',
