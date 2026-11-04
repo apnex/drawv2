@@ -19,8 +19,7 @@ own circle at the same radius in a brighter fill, one layer up. The zone grid's 
 lattice, and reads as bigger on purpose because it shows only while Shift is held.
 */
 
-import { gridDot, latticeGrids } from '../../kernel/geometry.mjs';
-import { LAYOUT_TABLE } from './layout-table.mjs';
+import { gridDot, latticeGrids, NODE_GRID as NODE_LATTICE } from '../../kernel/geometry.mjs';
 import { layoutNamed } from './layout-records.mjs';
 
 /*
@@ -45,7 +44,9 @@ const ZONE_GRID = grid('zone', { layer: 'grid-zones', r: 5, shownWith: 'shiftKey
 // its kind's parts size it -- the devices plugin a device, by its span; with no part answering, one cell (app/src/snap.js `placesOf`)
 // H26.1: and it carries the node grid bounded by its extent, which it snaps to (`nodeGridWithin`, SNAP-GRID.md section 5). H26.8's grid
 // move (NATIVE-SHAPES.md section 3.2, "A place carries its grid alone"): the table's extent bounds the grid, and the place keeps no `ext`
-// RESTATED at H26.6's move 11 (PAN-ZOOM.md section 3.8, "The extents"): the node lattice with no bounds, so an anchor snaps and moves anywhere
-const ANCHOR_PLACE = { kind: 'node', layout: 'node', grid: latticeGrids(LAYOUT_TABLE.find((l) => l.name === 'node')).unbounded, sizedBy: 'parts' };
+// RESTATED at H26.6's move 11 (PAN-ZOOM.md section 3.8, "The extents"): the node lattice with no bounds, so an anchor snaps and moves anywhere.
+// RESTATED at H26.6's move 12 (GR3): the kernel's node lattice itself, where it opened the layout table's node record -- the table is held
+// to the layout row and records; move 13 hands each place its lattice from the diagram's record
+const ANCHOR_PLACE = { kind: 'node', layout: 'node', grid: NODE_LATTICE, sizedBy: 'parts' };
 
 export const LAYOUTS_CANVAS = { owner: 'layouts', stylesheets: ['plugins/layouts/layouts.css'], places: [ANCHOR_PLACE], grids: [NODE_GRID, ZONE_GRID] };

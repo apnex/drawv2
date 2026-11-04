@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import fs from 'node:fs';
 import { LINK_ROW } from '../plugins/network/link-kind.mjs';
-import { NODE_EXT } from '../model/surface.mjs';
+const NODE_EXT = { x: 900, y: 480 };   // H26.6's move 12: the old node extent, model/surface.mjs deleted -- the figure B113's cap was counted from
 // RESTATED at H26.6's move 11 (PZ8): the caps are the numbers 527 and 576, which the old extents' positions counted to
 const ZONE_EXT = { x: 930, y: 510 };
 import { ZONE_ROWS } from '../plugins/zones/zone-kind.mjs';

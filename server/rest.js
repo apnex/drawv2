@@ -12,7 +12,7 @@ import { linksOf, linksAt, makeLink } from '../plugins/network/link-queries.mjs'
 import { snapshotBody, changeBody, reversalBody } from './protocol.js';
 import { announceActivity, announceAccess, viewersFor } from './hub.js';   // B342 (H21.8): in the hub, so the hub does not import REST
 import { NODE_GRID, anchorOn } from '../kernel/geometry.mjs';   // H26.1: the grids, and an anchor's one builder (F3)
-import { LAYOUT_TABLE, ZONE_GRIDS } from '../plugins/layouts/layout-table.mjs';   // H26.1: the layouts table's names, and the zone's grids
+import { ZONE_GRIDS } from '../plugins/layouts/layout-table.mjs';   // H26.1: the zone's grids
 import { makeZone } from '../plugins/zones/make-zone.mjs';   // the zones plugin's factory (O-b1)
 import { makeGroup } from '../plugins/groups/make-group.mjs';   // the groups plugin's factory (O-c)
 import { groupOf } from '../plugins/groups/group-of.mjs';   // and its lookup (O-c)
@@ -187,9 +187,10 @@ function contextOf(model, kind, e) {
 
 // H26.1 (SNAP-GRID.md section 5): each layout's grid with no bounds, by its name in the layouts table; and the nearest route's limit
 // (section 6.3). H26.11 (H26-21; B399) listed each layout's grid within its own bounds; RESTATED at H26.6's move 12 (PAN-ZOOM.md
-// section 3.8, "The anchor lists"): the anchors route asks the unbounded grid for an area, so no bounded grid remains
-const [NODE_LAYOUT, ZONE_LAYOUT] = LAYOUT_TABLE;
-const UNBOUNDED_GRIDS = new Map([[NODE_LAYOUT.name, NODE_GRID], [ZONE_LAYOUT.name, ZONE_GRIDS.unbounded]]);
+// section 3.8, "The anchor lists"; 3.4, "the routes by name keep node and zone"; GR3): the anchors route asks the unbounded grid for an
+// area, so no bounded grid remains, and the two names are the routes' own, each its lattice -- the layout table is held to the layout row
+// and records. A Map, so a name an object inherits is no layout (B401)
+const UNBOUNDED_GRIDS = new Map([['node', NODE_GRID], ['zone', ZONE_GRIDS.unbounded]]);
 const NEAREST_LIMIT = 2 ** 49;
 
 function occupantAt(model, anchor) {
@@ -705,12 +706,12 @@ export function handleRest(req, res, store, locks, hub, principal = null, sessio
 	/*
 	H26.1 (dev/design/components/SNAP-GRID.md section 5, section 6.3, appendix B): the name is looked up in the layouts plugin's table,
 	so a name an object inherits -- `constructor`, `toString` -- is unknown, 404, where it answered 200 with nulls (B401); and each
-	route asks that name's grid with no bounds, NODE_GRID or the zone's, as it asked the kernel's, reading no record.
+	route asks that name's grid with no bounds, NODE_GRID or the zone's, as it asked the kernel's, reading no record. RESTATED at H26.6's
+	move 12: looked up among the routes' own two names (`UNBOUNDED_GRIDS`, a Map), the table held to the layout row and records.
 	*/
 	if (parts[4] === 'layouts' && parts.length >= 6) {
-		const L = LAYOUT_TABLE.find((l) => l.name === parts[5]);
-		if (!L) return json(res, 404, { error: `unknown layout: ${parts[5]}`, code: 'unknown-layout' }), true;
-		const grid = UNBOUNDED_GRIDS.get(L.name);
+		const name = parts[5], grid = UNBOUNDED_GRIDS.get(name);
+		if (!grid) return json(res, 404, { error: `unknown layout: ${parts[5]}`, code: 'unknown-layout' }), true;
 		const model = store.get(parts[3]);
 		if (!model) return json(res, 404, { error: `unknown diagram: ${parts[3]}` }), true;
 
@@ -726,7 +727,7 @@ export function handleRest(req, res, store, locks, hub, principal = null, sessio
 				return json(res, 422, { error: `nearest requires x and y within 2^49 (${NEAREST_LIMIT}) in magnitude`, code: 'bad-query' }), true;
 			}
 			const at = grid.nearest({ x, y });
-			const a = anchorOn(L.name, grid, at);
+			const a = anchorOn(name, grid, at);
 			return json(res, 200, { ...a, occupant: occupantAt(model, a) }), true;
 		}
 		if (parts[6] === 'anchors' && parts.length === 7) {
@@ -741,12 +742,12 @@ export function handleRest(req, res, store, locks, hub, principal = null, sessio
 			if (area.tooLarge) return json(res, 422, { error: area.tooLarge, code: 'area-too-large' }), true;
 			const out = [];
 			for (const position of area.positions) {
-				const a = anchorOn(L.name, grid, position);
+				const a = anchorOn(name, grid, position);
 				const occupant = occupantAt(model, a);
 				if (wantFree && occupant) continue;
 				out.push(occupant ? { ...a, occupant } : a);
 			}
-			return json(res, 200, { layout: L.name, count: out.length, anchors: out }), true;
+			return json(res, 200, { layout: name, count: out.length, anchors: out }), true;
 		}
 		return json(res, 404, { error: `unknown layout route: ${parts.slice(6).join('/')}` }), true;
 	}

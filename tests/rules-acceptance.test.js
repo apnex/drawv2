@@ -24,7 +24,8 @@ import { Input } from '../app/src/input.js';
 import { pointsOf, grabbedAt } from '../app/src/pick.js';
 import { PRODUCT_CANVAS as PARTS_FOR_POINTS } from '../product/canvas.mjs';
 const nodeAt = (model, pos) => grabbedAt(pointsOf(PARTS_FOR_POINTS), model, pos, ['node']);
-import { GAP, NODE_EXT } from '../app/src/snap.js';
+import { GAP } from '../app/src/snap.js';
+const NODE_EXT = { x: 900, y: 480 };   // H26.6's move 12: the old frame's corner, snap.js re-exporting no extent
 import { makeNode, makeWaypoint } from '../plugins/devices/make-node.mjs';   // O-e1: the devices plugin's factories
 
 function board(bends) {

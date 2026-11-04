@@ -80,7 +80,7 @@ export const KIND_MAY_CONSUME = {
 export const NOT_PARTS = {};
 export const PARTS = {
 	lattice: { duty: 'Compute geometry on the grid', kind: 'core', by: ['O1'],
-		modules: ['kernel/geometry.mjs', 'kernel/spec.mjs', 'kernel/router.mjs', 'model/surface.mjs'], consumes: [] },
+		modules: ['kernel/geometry.mjs', 'kernel/spec.mjs', 'kernel/router.mjs'], consumes: [] },   // H26.6's move 12: model/surface.mjs deleted
 	'kind-contract': { duty: 'Compose kinds from the rows plugins declare', kind: 'core', by: ['N1', 'G3', 'WD6'],
 		modules: ['model/shape.mjs', 'model/limits.mjs'], consumes: [] },
 	document: { duty: 'Hold one document\'s entities', kind: 'core', by: ['O1', 'O4', 'Q1'],
@@ -352,7 +352,7 @@ export const LAYER = {
 		'model/model.mjs',       // the document store; its link methods moved to the network at K13d (H19.25, Q-a)
 		'model/anchors.mjs',     // the bare anchor: how it is stored, asked in one place (F-b, H18.4; F-c, H18.5)
 		// the drawn word for an anchor -- waypoint or node (F4); apart, because the planner reads none
-		'model/ops.mjs', 'model/shape.mjs', 'model/limits.mjs', 'model/surface.mjs',
+		'model/ops.mjs', 'model/shape.mjs', 'model/limits.mjs',   // H26.6's move 12: model/surface.mjs, the old extents, deleted
 		'model/order.mjs',       // K15: the one derivation order, by id (B246)
 		'model/stacking.mjs',    // the drawing order as readers compare it -- the canvas, the network's ages (F-d)
 		'kernel/palette.mjs',    // every colour value, by name (Material, a neutral ladder, four custom); roles elsewhere name them
@@ -440,7 +440,7 @@ export const ENTRIES = {
 			'plugins/network/transit.mjs', 'plugins/network/link-reactions.mjs', 'plugins/network/keys.mjs', 'plugins/network/grammar.mjs', 'plugins/network/guide.mjs', 'plugins/network/host.mjs',
 			// V-d (H18.28; PL-6): the planner, for the page's preview of every commit
 			'planner/txn.mjs', 'planner/validate.js', 'planner/edges.mjs', 'model/invariants.mjs',
-			'kernel/palette.mjs', 'plugins/simulation/reveal.mjs', 'model/shape.mjs', 'model/surface.mjs',
+			'kernel/palette.mjs', 'plugins/simulation/reveal.mjs', 'model/shape.mjs',
 			'product/kinds.mjs',   // the product's composition (O-d): the anchor and the shipped plugins, with the network's rows
 			'plugins/zones/zone-kind.mjs', 'plugins/layouts/layout-table.mjs', 'plugins/layouts/layout-kind.mjs', 'plugins/zones/make-zone.mjs',   // O-b1 (H19.19): the zones plugin -- its row, extent and factory
 			'plugins/zones/zone-painter.mjs', 'product/canvas.mjs',   // C-a (H19.29): the zones plugin's painter, and the product's canvas parts
@@ -506,7 +506,7 @@ export const ENTRIES = {
 			'kernel/router.mjs', 'kernel/spec.mjs', 'kernel/theme.mjs', 'model/invariants.mjs', 'plugins/network/link-rules.mjs', 'plugins/network/pair-capacity.mjs',
 			'model/limits.mjs', 'model/model.mjs', 'model/anchors.mjs', 'model/ops.mjs', 'model/order.mjs', 'model/stacking.mjs', 'kernel/palette.mjs', 'model/shape.mjs',
 			'plugins/network/link-kind.mjs', 'plugins/network/link-references.mjs', 'plugins/network/transit-offers.mjs',   // S-e (H18.15, G5): the network's link row and its references; H19.10 what each type offers
-			'model/surface.mjs', 'product/kinds.mjs', 'planner/log.mjs', 'planner/txn.mjs', 'planner/validate.js',
+			'product/kinds.mjs', 'planner/log.mjs', 'planner/txn.mjs', 'planner/validate.js',
 			'plugins/network/link-reactions.mjs',
 			'planner/edges.mjs',   // the planner's edges (PL-4)
 			'plugins/zones/zone-kind.mjs', 'plugins/layouts/layout-table.mjs', 'plugins/layouts/layout-kind.mjs', 'plugins/zones/make-zone.mjs',   // O-b1 (H19.19): the zones plugin -- its row, extent and factory
@@ -550,7 +550,7 @@ export const ENTRIES = {
 		modules: [
 			'kernel/geometry.mjs', 'kernel/spec.mjs',
 			'model/invariants.mjs', 'model/limits.mjs', 'model/model.mjs', 'model/anchors.mjs', 'model/ops.mjs', 'model/order.mjs',
-			'model/shape.mjs', 'model/surface.mjs', 'product/kinds.mjs', 'planner/log.mjs', 'planner/txn.mjs', 'planner/validate.js',
+			'model/shape.mjs', 'product/kinds.mjs', 'planner/log.mjs', 'planner/txn.mjs', 'planner/validate.js',
 			// S-e (H18.15): the planner loads no network module -- the link's references and its straight-pair invariant are the
 			// network's row's, handed in with the composition; model/referential.mjs and the pair capacity left its closure
 			'planner/edges.mjs',   // the planner's edges (PL-4)
@@ -1008,6 +1008,8 @@ export const UNUSED_EXPORTS = {
 			// H25.5 (B378, D4): the old scene renderer and its scene-element helpers, retired
 			'docToSchema', 'schemaToDoc', 'resolve', 'render', 'renderScene', 'renderElement', 'renderContentRegion',
 			'bboxOf', 'cellPx', 'derive', 'gridSnap', 'junction', 'port',
+			// H26.6's move 12 (dev/design/components/PAN-ZOOM.md 5.1 row 12, GR3): the old 1920 by 1080 surface, deleted with model/surface.mjs
+			'SURFACE',
 			// H26.1 (dev/design/components/SNAP-GRID.md sections 5 and 7.7): the kernel's grid arithmetic, and app/src/snap.js's half
 			// pitch, deleted -- the grids are snap-grid's, opened by the kernel and the layouts plugin
 			'px', 'cellOf', 'LAYOUTS', 'onLayout', 'snapLayout', 'cellOn', 'pxOn', 'nearestAnchor', 'anchorAt', 'spanExtent', 'HALF',
@@ -1033,9 +1035,6 @@ export const UNUSED_EXPORTS = {
 			'model/model.mjs': {
 				'serves-a-server-door': ['Model', 'newId'],
 				'rebuild-debt': ['kindOf'],
-			},
-			'model/surface.mjs': {
-				'rebuild-debt': ['SURFACE'],
 			},
 			'planner/log.mjs': {
 				'rebuild-debt': ['LOG_HARD_MAX', 'LOG_MAX'],

@@ -14,7 +14,6 @@ import { composeKinds } from '../model/shape.mjs';
 import { LAYOUT_TABLE } from '../plugins/layouts/layout-table.mjs';
 import { STD } from '../kernel/spec.mjs';
 import { NODE_GRID } from '../kernel/geometry.mjs';   // H26.1: the node lattice's declaration (the kernel's LAYOUTS is deleted)
-import { NODE_EXT } from '../model/surface.mjs';
 
 const layouts = (m) => m.all('layout').map((l) => [l.id, l.name, l.pitch, l.offset, l.ext.x, l.ext.y]);
 const WANT = [['layout-000001', 'node', 60, 0, 900, 480], ['layout-000002', 'zone', 60, 30, 930, 510]];
@@ -57,7 +56,7 @@ test('WD-b1: a layout is neither selectable nor named; the table is the constant
 	// RESTATED at H26.1 (SNAP-GRID.md section 5): the node's pitch and offset read from NODE_GRID's declaration; the zone's offset, half a
 	// pitch, the table's own, where the kernel's LAYOUTS held it
 	assert.deepEqual(LAYOUT_TABLE.map((l) => [l.pitch, l.offset]), [[STD.pitch, NODE_GRID.declaration.origin.x], [STD.pitch, STD.pitch / 2]]);
-	assert.deepEqual({ ...LAYOUT_TABLE[0].ext }, { ...NODE_EXT });
+	assert.deepEqual(LAYOUT_TABLE.map((l) => ({ ...l.ext })), [{ x: 900, y: 480 }, { x: 930, y: 510 }], 'the old extents, stored data until move 14 -- model/surface.mjs deleted at H26.6\'s move 12');
 });
 
 test('WD-b1: a fresh tab counts nothing as work drawn offline -- the layouts are no author\'s', async () => {

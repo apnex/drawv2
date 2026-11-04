@@ -111,7 +111,7 @@ The anchored core's parts, declared once in `tools/layers.mjs` `PARTS` and rende
 <!-- BEGIN GENERATED: architecture-parts. Run tools/generate-architecture.mjs; do not edit by hand. -->
 | Part | Duty | Kind | Made of | Imports today | Composes today |
 |---|---|---|---|---|---|
-| `lattice` | Compute geometry on the grid | core | `kernel/geometry.mjs`, `kernel/spec.mjs`, `kernel/router.mjs`, `model/surface.mjs` | -- | `@apnex/snap-grid` |
+| `lattice` | Compute geometry on the grid | core | `kernel/geometry.mjs`, `kernel/spec.mjs`, `kernel/router.mjs` | -- | `@apnex/snap-grid` |
 | `kind-contract` | Compose kinds from the rows plugins declare | core | `model/shape.mjs`, `model/limits.mjs` | -- | -- |
 | `document` | Hold one document's entities | core | `model/model.mjs`, `model/anchors.mjs`, `model/ops.mjs`, `model/order.mjs`, `model/stacking.mjs` | `kind-contract` | -- |
 | `relations` | Index which entities relate | core | `engine/relations.mjs`, `engine/ivm.mjs`, `engine/store.mjs` | `document` | -- |

@@ -12,20 +12,16 @@ clamping the snapped coordinate because every extent sits on its lattice (sectio
 stays draw's is a drag's clamp and its quantisation by the declared pitch (`clampDelta`), read from NODE_GRID's declaration.
 RESTATED at H26.6's move 11 (dev/design/components/PAN-ZOOM.md section 3.8, "The extents"; 5.1 row 11): every snap is on the unbounded
 lattices -- `snapNode` the node grid, `snapIn` the grid its place carries, which no extent bounds -- and `clampDelta` holds no edge; the
-editor clamps nothing, the planner refusing what lies past PZ31's bound. The extent's names stay exported for their readers until move 12.
+editor clamps nothing, the planner refusing what lies past PZ31's bound. RESTATED at H26.6's move 12 (5.1 row 12, GR3): the extent's
+names -- `CANVAS`, the old 1920 by 1080 surface, and `NODE_EXT` -- are deleted with model/surface.mjs; no reader remained.
 */
 import { L_STD } from '../../kernel/spec.mjs';
 import { NODE_GRID } from '../../kernel/geometry.mjs';
-// CL3: canvas surface + usable extents come from the sovereign model/ substrate (single source).
-// IMPORTED (not a bare re-export) — snapNode references NODE_EXT locally. AMENDED C-e (H19.33): the grids' points are their
-// parts'. AMENDED WD-b2 (H19.46): both grids are the layouts plugin's (plugins/layouts/layout-canvas.mjs), drawn by app/src/grids.js.
-import { SURFACE, NODE_EXT } from '../../model/surface.mjs';
+// AMENDED C-e (H19.33): the grids' points are their parts'. AMENDED WD-b2 (H19.46): both grids are the layouts plugin's
+// (plugins/layouts/layout-canvas.mjs), drawn by app/src/grids.js.
 import { ANCHOR_KINDS } from '../../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
 export const GAP = NODE_GRID.declaration.pitch;   // 60 -- the node grid's declared pitch: a length a drag, a nudge and a readout step by
 export const NODE_R = L_STD.frame.ext;            // node frame half-extent — from the kernel spec (20)
-
-// re-export the document-space magnitudes under the names snap.js consumers already use (CANVAS alias)
-export { SURFACE as CANVAS, NODE_EXT };
 
 // the point a grid places a pointer at: the position nearest it, as a fresh plain point a caller may keep or change, as it was. A
 // point snap-grid cannot place -- a coordinate that is not finite, or beyond its domain, which no pointer event and no validated

@@ -118,8 +118,8 @@ const PRODUCT_KIND_RECORD = {
 		reason: 'server-side placement resolving `at.inside` against the diagram\'s zones (SD1)',
 		trigger: 'permanent' },
 	// H26.7: server/app.js's 3 went -- it mounts /plugins once, where it mounted /layouts, /zones and /groups apart
-	'server/rest.js': { count: 23, cites: ['SD1'],
-		reason: 'the REST door\'s per-kind routes, entity summaries, and creation shortcuts',
+	'server/rest.js': { count: 24, cites: ['SD1', 'H26-23'],
+		reason: 'the REST door\'s per-kind routes, entity summaries, and creation shortcuts; RAISED at H26.6\'s move 12 by one: the routes\' own two lattice names, node and zone, where the layout table named them (3.4, GR3)',
 		trigger: 'the REST door dispatches per-kind routes and summaries through the composition\'s rows' },
 	'server/seed.js': { count: 9, cites: ['SD2'],
 		reason: 'the seed diagram\'s initial zones, groups, links and pipes',

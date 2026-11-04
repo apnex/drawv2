@@ -7,16 +7,15 @@ import { ZONE_GRIDS, LAYOUT_TABLE } from '../plugins/layouts/layout-table.mjs';
 import { spanThrough as spanExtent } from '../plugins/devices/device-footprint.mjs';
 import { STD } from '../kernel/spec.mjs';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import * as snap from '../app/src/snap.js';
-import { CANVAS, GAP, NODE_EXT, snapNode, resolveBox, dist, snapIn, placesOf } from '../app/src/snap.js';
+import { GAP, snapNode, resolveBox, dist, snapIn, placesOf } from '../app/src/snap.js';
 import { PRODUCT_CANVAS } from '../product/canvas.mjs';
 // RESTATED at C-d step one (H19.32): the zone grid is the zones plugin's place, snapped through it -- snapZone left the canvas
 const snapZone = (pos) => snapIn(placesOf(PRODUCT_CANVAS).get('zone'), pos);
-import { SURFACE, NODE_EXT as DOC_NODE_EXT } from '../model/surface.mjs';
-// RESTATED at H26.6's move 11: no longer exported; the zone layout record's extent is the table's own, until move 14
-const DOC_ZONE_EXT = LAYOUT_TABLE.find((l) => l.name === 'zone').ext;
-// RESTATED at C-e step thirteen (H19.33): the grids' points are their parts', and snap.js no longer re-exports the zone extent
-const ZONE_EXT = DOC_ZONE_EXT;
+// RESTATED at H26.6's move 12 (PAN-ZOOM.md 5.1 row 12, GR3): model/surface.mjs and the extents' names are deleted; the old frame here is
+// the layout records' stored extents, data until move 14
+const NODE_EXT = LAYOUT_TABLE.find((l) => l.name === 'node').ext, ZONE_EXT = LAYOUT_TABLE.find((l) => l.name === 'zone').ext;
 // RESTATED at WD-b2 (H19.46): a grid's points are read from the open diagram's layout record -- here a fresh Model's. RESTATED at H26.6's
 // move 8 (PAN-ZOOM.md section 3.7): a grid answers its lattice, drawn from the view; its points within the node extent, as it drew them
 const nodePoints = () => PRODUCT_CANVAS.flatMap((p) => p.grids ?? []).find((g) => g.layer === 'grid-nodes').lattice(new Model())
@@ -41,7 +40,7 @@ test('snapNode rounds to multiples of the gap', () => {
 });
 
 // RESTATED at H26.6's move 11 (dev/design/components/PAN-ZOOM.md section 3.8, "The extents"): a snap holds no extent -- the node grid's
-// nearest position, anywhere; the extent's names stay for their readers until move 12
+// nearest position, anywhere; the old frame's figures held as the records' stored extents
 test('snapNode clamps to no extent: the nearest position of the unbounded node grid -- H26.6 move 11', () => {
 	assert.deepEqual(snapNode({ x: -5000, y: -5000 }), { x: -4980, y: -4980 });
 	assert.deepEqual(snapNode({ x: 99999, y: 99999 }), { x: 100020, y: 100020 });
@@ -60,11 +59,6 @@ test('snapZone clamps to no extent: the nearest corner of the unbounded zone gri
 	assert.deepEqual(snapZone({ x: -5000, y: 99999 }), { x: -5010, y: 99990 });
 	assert.equal(ZONE_EXT.x, 930);
 	assert.equal(ZONE_EXT.y, 510);
-});
-
-test('canvas extents are symmetric halves', () => {
-	assert.equal(CANVAS.hw * 2, CANVAS.w);
-	assert.equal(CANVAS.hh * 2, CANVAS.h);
 });
 
 test('resolveBox normalizes any corner pair', () => {
@@ -89,14 +83,12 @@ test('dist is euclidean', () => {
 
 // ---- shipped-only additions ----
 
-test('CL3 single-source: snap re-exports the model/ surface + extents (no divergent copy)', () => {
-	// identical object references prove snap.js does not own a parallel literal (cleanliness #2)
-	assert.equal(snap.CANVAS, SURFACE, 'CANVAS aliases the document SURFACE object');
-	assert.equal(snap.NODE_EXT, DOC_NODE_EXT, 'NODE_EXT is the document object');
-	assert.equal(snap.ZONE_EXT, undefined, 'the zone extent is the zones plugin\'s alone (O-b1; C-e step thirteen: snap.js stopped re-exporting it)');
-	assert.deepEqual(snap.CANVAS, { w: 1920, h: 1080, hw: 960, hh: 540 });
-	assert.deepEqual(snap.NODE_EXT, { x: 900, y: 480 });
-	assert.deepEqual(DOC_ZONE_EXT, { x: 930, y: 510 });
+// RESTATED at H26.6's move 12 (dev/design/components/PAN-ZOOM.md 5.1 row 12, GR3): CL3's single source is deleted, not copied -- snap.js
+// re-exports no surface and no extent, and model/surface.mjs is gone
+test('CL3, restated at H26.6 move 12: snap.js exports no surface and no extent, and model/surface.mjs is gone', () => {
+	for (const name of ['CANVAS', 'NODE_EXT', 'ZONE_EXT', 'SURFACE']) assert.equal(name in snap, false, `snap.js exports no ${name}`);
+	assert.equal(fs.existsSync(new URL('../model/surface.mjs', import.meta.url)), false, 'model/surface.mjs deleted');
+	assert.deepEqual([{ ...NODE_EXT }, { ...ZONE_EXT }], [{ x: 900, y: 480 }, { x: 930, y: 510 }], 'the records hold the old values as data, until move 14');
 });
 
 /*
@@ -189,5 +181,5 @@ test('B111: a round trip through cell and back is the identity, on either grid',
 H26.11's verification (H26-21; B399, B400) held `positionsWithin` to list every position of a bounded grid, however many, against a brute
 force. RETIRED at H26.6's move 12 (dev/design/components/PAN-ZOOM.md 5.1 row 12, GR2): no grid is listed whole -- the anchors route asks an
 area of at most 10,000 positions (tests/anchors-area.test.js), placement rings outward (tests/placement-rings.test.js) -- and the function
-is deleted, held gone by tests/extent-gone.test.js.
+is deleted, held gone by tests/no-extent.test.js.
 */
