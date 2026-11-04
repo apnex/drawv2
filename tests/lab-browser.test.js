@@ -210,6 +210,62 @@ test('H26.6 move 8: a resize draws the whole grid in the same frame -- read befo
 });
 
 /*
+H26.6's move 8, the verifier's second folds -- ON THE PAGE. S1: a canvas narrowed at one scale, 1,920 by 535 to the director's 1,366 by 535,
+lists again at 3x, the 25% tier the bound left out on the wider canvas restored, each tier's count in view the design's for the 1,366
+canvas. S2: a view set on the scene directly, by nothing of the view part's, is drawn at the next frame -- twice, so a queue that ran once
+and asked no frame again is seen by the dots missing, and one that ran what it had run before by the view read more often at the second
+(the grids' asked redraw reads the view part's gridLook() once each run -- the scene a frozen value, its own reads not counted --
+counted from the set through the frames after).
+*/
+const GRID_READ = `(() => { const { region: r } = lab.input.scene.visible(), tiers = lab.view.gridLook().tiers;
+	return JSON.stringify(['grid-nodes', 'grid-zones'].map((id) => { const n = tiers.map(() => 0);
+		for (const p of document.getElementById(id).children) { let x = 0, y = 0; const o = Number(p.getAttribute('opacity') ?? 1), k = tiers.findIndex((t) => t.opacity === o);
+			for (const [, c, a, b] of p.getAttribute('d').matchAll(/([Mm])(-?[\\d.e]+) (-?[\\d.e]+)h0/g)) { if (c === 'M') { x = +a; y = +b; } else { x += +a; y += +b; } if (x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h) n[k]++; } }
+		return n; })); })()`;
+const frames = (n) => `(async () => { for (let i = 0; i < ${n}; i++) await new Promise((res) => requestAnimationFrame(res)); return 1; })()`;
+test('H26.6 move 8: a canvas narrowed at 3x from 1920 by 535 to 1366 by 535 draws every tier again, as the design counts it', { skip: SKIP }, async () => {
+	const t = await theTab();
+	try {
+		await t.send('Emulation.setDeviceMetricsOverride', { width: 1920, height: 576, deviceScaleFactor: 1, mobile: false });
+		await open('bend');
+		await t.run(`(lab.view.set({ x: 0, y: 0, level: 3 }), 1)`);
+		await t.run(frames(3));
+		const wide = JSON.parse(await t.run(GRID_READ));
+		assert.deepEqual([wide[0][2], wide[1][2]], [0, 0], 'control: on the 1,920 canvas at 3x the 25% tier is left out by the bound');
+		await t.send('Emulation.setDeviceMetricsOverride', { width: 1366, height: 576, deviceScaleFactor: 1, mobile: false });
+		await sleep(100);
+		await t.run(frames(3));
+		assert.equal(await t.run(`document.getElementById('container').clientWidth + ' by ' + document.getElementById('container').clientHeight`), '1366 by 535', 'precondition: the canvas narrowed');
+		assert.deepEqual(JSON.parse(await t.run(GRID_READ)), [[65, 1798, 5672], [65, 1798, 5589]], 'every tier drawn again, the design\'s counts for the 1,366 canvas at 3x');
+		await t.run(`(lab.view.set({ x: 0, y: 0, level: 3 }), 1)`);
+		await t.run(frames(2));
+		assert.deepEqual(JSON.parse(await t.run(GRID_READ)), [[65, 1798, 5672], [65, 1798, 5589]], 'and so after the same view set again');
+	} finally { await t.send('Emulation.clearDeviceMetricsOverride'); }
+});
+
+test('H26.6 move 8: a view set on the scene directly is drawn whole at the next frame, and again for a second', { skip: SKIP }, async () => {
+	const t = await theTab();
+	try {
+		await t.send('Emulation.setDeviceMetricsOverride', { width: 1366, height: 576, deviceScaleFactor: 1, mobile: false });
+		await open('bend');
+		const lattice = `(() => { const { region: r } = lab.input.scene.visible(), count = (o, lo, hi) => Math.floor((hi - o) / 60) - Math.ceil((lo - o) / 60) + 1;
+			return JSON.stringify([0, 30].map((o) => [count(o, r.x, r.x + r.w) * count(o, r.y, r.y + r.h)])); })()`;
+		await t.run(`(() => { const v = lab.view, gridLook = v.gridLook; window.viewReads = 0; v.gridLook = (...a) => (window.viewReads++, gridLook.apply(v, a)); return 1; })()`);
+		const reads = [];
+		for (const dx of [1500, -4000]) {
+			await t.run(`(() => { const v = lab.input.scene.view(); window.viewReads = 0; lab.input.scene.setView({ ...v, x: v.x + ${dx} }); return 1; })()`);
+			await t.run(frames(2));
+			reads.push(await t.run('window.viewReads'));
+			const want = JSON.parse(await t.run(lattice));
+			assert.ok(want[0][0] > 500, `control: the view shows a grid (${want[0][0]} points)`);
+			assert.deepEqual(JSON.parse(await t.run(GRID_READ)), want, `the view moved ${dx} units on the scene alone: at the next frame, every grid point in view drawn`);
+		}
+		assert.ok(reads[0] >= 1, `control: the redraw read the view (${reads[0]} times)`);
+		assert.equal(reads[1], reads[0], 'each asked redraw run once: the second move read the view as often as the first, nothing run again');
+	} finally { await t.send('Emulation.clearDeviceMetricsOverride'); }
+});
+
+/*
 The door tests prove the PLANNER's cascade and sweep reach the tab, so they clear the board's pipes
 first. Since pipes count as references, a hand pipe legitimately holds a waypoint the sweep would
 otherwise take -- a separate rule with its own test below, and mixing the two would let either one

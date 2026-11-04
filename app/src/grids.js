@@ -30,10 +30,12 @@ alone rasterised otherwise. Circles whose radius followed the level were measure
 (PAN-ZOOM.md appendix B, move 8).
 
 Drawn again only when what it showed would be wrong: the level's tiers, the dot's scale or the scene's scale changed, the diagram
-loaded or its grid's size changed, or the area in view left the area drawn. The scene tells its view through `onView`, while it may
-not be written (vector-scene VS17), so a redraw is asked of `schedule`, the composition's -- once a frame on a page, or at once when the
-view part has set the view and the scene has finished telling it (app/src/compose-canvas.js, the move's verifier, L2) -- and runs once
-however many views were told before it.
+loaded or its grid's size changed, the area in view left the area drawn, or -- the move's verifier at its second reading, S1 -- the
+area in view changed its size, so the tiers kept against the bound are found again: a canvas narrowed at one scale stays within the
+area drawn, and a tier the wider canvas left out must return (PAN-ZOOM.md appendix B, move 8, E7). A resize is rare, and a pan never
+changes the size. The scene tells its view through `onView`, while it may not be written (vector-scene VS17), so a redraw is asked of
+`schedule`, the composition's -- once a frame on a page, or at once when the view part has set the view and the scene has finished
+telling it (app/src/view.js `viewFrames`, the move's verifier, L2) -- and runs once however many views were told before it.
 */
 const LISTING_MOST = 10000;   // PZ13, GR2: the most positions any listing of draw's holds
 const ONE_FULL_TIER = Object.freeze([Object.freeze({ every: 1, opacity: 1 })]);
@@ -91,7 +93,8 @@ export class Grids {
 			const lattice = d.g.lattice(this.model);   // first, so a grid that cannot be read leaves the page as it was
 			const at = d.at;
 			const within = at && r.x >= at.area.x && r.y >= at.area.y && r.x + r.w <= at.area.x + at.area.w && r.y + r.h <= at.area.y + at.area.h;
-			if (!force && within && at.lattice === lattice && at.scale === scale && at.tiers === look.tiers && at.dotScale === look.dotScale) continue;
+			// and the region's size (the verifier's second reading, S1): a canvas narrowed at one scale lists again, a dropped tier restored
+			if (!force && within && at.w === r.w && at.h === r.h && at.lattice === lattice && at.scale === scale && at.tiers === look.tiers && at.dotScale === look.dotScale) continue;
 			const area = { kind: 'rect', x: r.x - m, y: r.y - m, w: r.w + 2 * m, h: r.h + 2 * m };
 			const { tiers } = look;
 			let kept = tiers.length;
@@ -111,7 +114,7 @@ export class Grids {
 				...(tiers[t].opacity !== 1 ? { opacity: tiers[t].opacity } : {}) } }] : []));
 			this.scene.remove(d.layer, d.g.layout);
 			if (shapes.length) this.scene.put(d.layer, d.g.layout, shapes);
-			d.at = { area, lattice, scale, tiers: look.tiers, dotScale: look.dotScale, kept, listed: positions.length };
+			d.at = { area, w: r.w, h: r.h, lattice, scale, tiers: look.tiers, dotScale: look.dotScale, kept, listed: positions.length };
 		}
 	}
 }

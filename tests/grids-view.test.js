@@ -22,7 +22,7 @@ import { installDom, fakeEl, sceneOver, dotsOf } from './fixtures/client-harness
 import { Model } from './fixtures/composed.mjs';
 import { PRODUCT_CANVAS } from '../product/canvas.mjs';
 import { Grids } from '../app/src/grids.js';
-import { View } from '../app/src/view.js';
+import { View, viewFrames } from '../app/src/view.js';
 import { crosshair } from '../app/src/editing-visuals.js';
 import { gridsOf } from '../app/src/snap.js';
 import { gridDot } from '../kernel/geometry.mjs';
@@ -288,6 +288,90 @@ test('H26.6 move 8: a view the view part sets is drawn as it is set -- no frame 
 	} finally { restore(); }
 });
 
+/*
+The move 8 verifier's second folds (S2, L1) -- THE VIEW'S FRAMES (app/src/view.js `viewFrames`): what the scene's listeners ask is run
+once per asking, the queue emptied, and a frame asked again for the next; and each asked redraw runs whatever another throws, the error
+still thrown when the queue has run.
+*/
+test('H26.6 move 8: the view\'s frames run each asked redraw once, empty the queue, and ask a frame again for the next', () => {
+	const frames = [], ran = [];
+	const { ask, run } = viewFrames((fn) => frames.push(fn));
+	ask(() => ran.push('a')); ask(() => ran.push('b'));
+	assert.deepEqual([frames.length, ran], [1, []], 'two asked, one frame asked, nothing run yet');
+	frames.shift()();
+	assert.deepEqual(ran, ['a', 'b'], 'the frame runs each, in order');
+	run();
+	assert.deepEqual(ran, ['a', 'b'], 'and empties the queue: run again, nothing runs twice');
+	ask(() => ran.push('c'));
+	assert.equal(frames.length, 1, 'the next ask asks a frame again');
+	run();   // the view part's settled, before the frame
+	assert.deepEqual(ran, ['a', 'b', 'c'], 'run at once, as a view the view part set is');
+	frames.shift()();
+	assert.deepEqual(ran, ['a', 'b', 'c'], 'the frame then finds nothing');
+	ask(() => ran.push('d'));
+	assert.equal(frames.length, 1, 'and another ask asks a frame again');
+});
+
+test('H26.6 move 8: one asked redraw throwing leaves the others theirs, the error thrown once the queue has run', () => {
+	const { ask, run } = viewFrames(() => {});
+	const ran = [], boom = new Error('the node layout is missing');
+	ask(() => { throw boom; }); ask(() => ran.push('after'));
+	assert.throws(() => run(), (e) => e === boom, 'the one error, as it was thrown');
+	assert.deepEqual(ran, ['after'], 'the redraw after it ran');
+	ask(() => { throw new Error('one'); }); ask(() => { throw new Error('two'); }); ask(() => ran.push('last'));
+	assert.throws(() => run(), (e) => e instanceof AggregateError && e.errors.length === 2, 'two errors, both thrown together');
+	assert.deepEqual(ran, ['after', 'last']);
+});
+
+// L1, as the verifier drove it: the node layout record removed, a view set throws; once the record returns, the crosshair follows views again
+test('H26.6 move 8: a grid that cannot be drawn throws from the view it fails, and the crosshair asked beside it still follows the next view', () => {
+	const restore = installDom();
+	try {
+		const root = fakeEl('svg', 'canvas');
+		root.clientWidth = 1366; root.clientHeight = 535;
+		const { svg, scene } = sceneOver(root);
+		const { ask, run } = viewFrames(() => {});
+		const view = new View({ scene, settled: run });
+		const model = new Model();
+		new Grids({ scene, grids: gridsOf(PRODUCT_CANVAS), model, look: () => view.gridLook(), schedule: ask });   // first, as the composition makes them
+		const snap = crosshair(scene, 60, { schedule: ask });
+		const ends = () => svg.byId['#snaplayer'].children.filter((c) => c.tagName === 'LINE').map((c) => Number(c.attrs.y1));
+		snap.show({ x: 120, y: -60 });
+		const record = model.get('layout', 'layout-000001');
+		model.del('layout', 'layout-000001');
+		assert.throws(() => view.set({ x: 2000, y: 0, level: 2 }), /the node layout \(layout-000001\) is missing/, 'the grid\'s failure surfaces from the view set');
+		assert.equal(ends()[0], scene.visible().region.y, 'the crosshair asked beside it followed that view all the same');
+		model.put('layout', record);
+		view.set({ x: -3000, y: 900, level: 3 });
+		assert.equal(ends()[0], scene.visible().region.y, 'and the next, the record back');
+		const r = scene.visible().region;
+		assert.ok(dotsOf(svg.byId['#grid-nodes']).some(inside(r)), 'the grid drawn again');
+	} finally { restore(); }
+});
+
+/*
+The move 8 verifier's second fold, S1: a canvas narrowed at one scale -- 1,920 by 535 to 1,366 by 535, the old frame fitting by its height
+on both -- lists again, so at 3x the 25% tier the bound left out on the wider canvas returns on the narrower: the design's rows for the
+1,366 canvas, here through the view part and the grids part as the page composes them.
+*/
+test('H26.6 move 8: at 3x, a canvas narrowed from 1920 by 535 to 1366 by 535 draws again, the tier the bound left out restored', () => {
+	const restore = installDom();
+	try {
+		const root = fakeEl('svg', 'canvas');
+		root.clientWidth = 1920; root.clientHeight = 535;
+		const { svg, scene } = sceneOver(root);
+		const { ask, run } = viewFrames(() => {});
+		const view = new View({ scene, settled: run });
+		new Grids({ scene, grids: gridsOf(PRODUCT_CANVAS), model: new Model(), look: () => view.gridLook(), schedule: ask });
+		view.set({ x: 0, y: 0, level: 3 });
+		const { tiers } = view.gridLook(), count = () => { const r = scene.visible().region; return ['#grid-nodes', '#grid-zones'].map((id) => perTier(dotsOf(svg.byId[id]), tiers, r)); };
+		assert.equal(count()[0][2], 0, 'control: on the 1,920 canvas at 3x the 25% tier is left out by the bound');
+		root.clientWidth = 1366;
+		view.resized();
+		assert.deepEqual(count(), [[65, 1798, 5672], [65, 1798, 5589]], 'narrowed: every tier, as the design counts the 1,366 canvas at 3x');
+	} finally { restore(); }
+});
+
 test('H26.6 move 8: a dot keeps on screen at every level the size it has at 1x -- today\'s -- and GRID_DOT_LEVEL planted at 2 halves every dot', () => {
 	const restore = installDom();
 	try {
@@ -306,7 +390,7 @@ test('H26.6 move 8: a dot keeps on screen at every level the size it has at 1x -
 		const src = fs.readFileSync(path.join(ROOT, 'app/src/view.js'), 'utf8');
 		assert.equal(src.match(/const GRID_DOT_LEVEL = 1;/g)?.length, 1, 'control: the value, once');
 		// view.js imports nothing, so its source, the value planted, is run as a function answering its class
-		const Planted = new Function(`${src.replace('const GRID_DOT_LEVEL = 1;', 'const GRID_DOT_LEVEL = 2;').replace('export class View', 'class View')}\nreturn View;`)();
+		const Planted = new Function(`${src.replace('const GRID_DOT_LEVEL = 1;', 'const GRID_DOT_LEVEL = 2;').replace(/^export /gm, '')}\nreturn View;`)();
 		const p = pageOf(1366, 535, Planted), fit = 535 / 1080;
 		for (const level of LEVELS) {
 			p.set({ x: 0, y: 0, level });

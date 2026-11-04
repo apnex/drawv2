@@ -44,6 +44,28 @@ const GRID_TIERS = Object.freeze({
 const GRID_DOT_LEVEL = 1;   // PZ24, the director's "fixed until we review": a dot shows its drawing radius at 1x, and that size at every level
 const GRID_MARGIN = 32;     // screen pixels drawn beyond the view on each side, so a pan within them draws nothing again
 
+/*
+THE VIEW'S FRAMES -- the move 8 verifier's folds (L2, S2, L1). What the scene's listeners ask to draw again (the grids', the crosshair's)
+waits until the scene has finished telling a view, since it may not be written while it tells (vector-scene VS17): `ask(fn)` queues it
+and asks `later` -- the host's next animation frame -- to `run` the queue, once however many were asked; `run`, also called by the view
+part as soon as a view it set has been told (`settled`), runs each asked function once and empties the queue, so the next ask asks a
+frame again. Each runs whatever another throws, so one failing redraw -- a grid whose record is missing -- leaves the others theirs and
+their own flags cleared; the error still surfaces, thrown when the queue has run, every error together when more than one throws.
+*/
+export function viewFrames(later) {
+	const asked = [];
+	let awaiting = false;
+	const run = () => {
+		awaiting = false;
+		const errors = [];
+		for (const fn of asked.splice(0)) { try { fn(); } catch (e) { errors.push(e); } }
+		if (errors.length === 1) throw errors[0];
+		if (errors.length > 1) throw new AggregateError(errors, `${errors.length} redraws failed: ${errors.map((e) => e?.message).join('; ')}`);
+	};
+	const ask = (fn) => { asked.push(fn); if (!awaiting) { awaiting = true; later(run); } };
+	return { ask, run };
+}
+
 export class View {
 	// `settled`, the composition's: told once a view this part set has been written and told, the scene writable again (the move 8 fold)
 	constructor({ scene, settled = () => {} }) {

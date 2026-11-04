@@ -34,7 +34,7 @@ import { attachRelations } from '../../engine/store.mjs';
 import { Changes, applyAnswer } from './changes.js';
 import { plan } from '../../planner/txn.mjs';   // the preview: the page plans its own view with the server's planner (V-d, PL-6)
 import { Renderer, openCanvasScene } from './renderer.js';
-import { View } from './view.js';   // H26.6's move 7: the viewer's view of the canvas, handed the scene
+import { View, viewFrames } from './view.js';   // H26.6's move 7: the viewer's view of the canvas, handed the scene
 import { Selection } from './selection.js';
 import { EditingStates } from './editing-states.js';   // H26.8: the editing part's states (NS13)
 import { LabelEditor } from './labeledit.js';
@@ -72,11 +72,8 @@ export function composeCanvas({ svg, scene: declared, defs, host, network = null
 	has one, else the next microtask. The move's verifier (L2): a view the view part sets -- a resize, and the verbs of moves 9 and 10 --
 	is drawn in the same frame, the view part telling `frame` to run what was asked as soon as the scene has finished telling it.
 	*/
-	const asked = [];
-	let awaiting = false;
-	const run = () => { awaiting = false; for (const fn of asked.splice(0)) fn(); };
 	const later = typeof host?.requestAnimationFrame === 'function' ? (fn) => host.requestAnimationFrame(fn) : (fn) => queueMicrotask(fn);
-	const frame = (fn) => { asked.push(fn); if (!awaiting) { awaiting = true; later(run); } };
+	const { ask: frame, run } = viewFrames(later);   // the view part's queue: each asked redraw once, alone if another throws
 	const view = new View({ scene, settled: run });
 
 	const model = new Model({ attached: { network }, kinds });   // the kinds a composition brings -- the core's when none are passed, so no links (S-e) (H17.22 N-a)
