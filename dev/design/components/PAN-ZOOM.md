@@ -847,7 +847,8 @@ At ratification the director raised the CLI's map, and settled it in the three a
 After ratification, at move 6's walkthrough on the Chromebook in the tester's pane, the director's three answers above changed PZ24 from its ratified recommendation, which revision 11 carries (8.11).\
 At the tester's `0.3.0` in the lab the director refined it in the two answers after, tiers of opacity and the grid within a grid, which revision 14 carries (8.14).\
 At the tester's `0.5.0` the director asked for every dot drawn at 3x and approved it, which revision 16 carries, a small ruling with no reading, its diff checked by the recorder.\
-Before move 8 the director fixed the size of draw's dots on screen, provisionally, until a review in the lab, which revision 17 carries, again a small ruling with no reading.
+Before move 8 the director fixed the size of draw's dots on screen, provisionally, until a review in the lab, which revision 17 carries, again a small ruling with no reading.\
+After move 10, shown that 3.7's rule hiding labels and their pills under 5 screen pixels of text, ratified with PZ12, was built by no move (appendix B, E12) -- labels on a 1,366-wide window 6.4 pixels tall at 1x, 3.2 at 2x and 2.1 at 3x, so hidden at 2x and 3x, and on a 1,920-wide window at 3x alone -- and offered the rule built as ratified (recommended), labels kept at every level, or the choice deferred to the lab, the director answered "continue as recommended": the rule is built at move 11, its 5 pixels held in one place in `view.js` beside the other values, tuned in the lab.
 
 ---
 
