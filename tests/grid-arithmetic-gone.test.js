@@ -36,9 +36,10 @@ const bodyOf = (text, name) => {
 	assert.ok(at >= 0, `app/src/snap.js has no ${name}`);
 	return text.slice(text.indexOf('{', at) + 1, text.indexOf('\n}', at)).trim();
 };
-test('H26.1 (acceptance step 3): snapNode and snapIn only ask snap-grid -- the point of the nearest position, on the grid of their extent', () => {
+// RESTATED at H26.6's move 11 (dev/design/components/PAN-ZOOM.md section 3.8, "The extents"): snapNode asks the node grid with no bounds
+test('H26.1 (acceptance step 3): snapNode and snapIn only ask snap-grid -- the point of the nearest position, on the unbounded grid (H26.6 move 11)', () => {
 	const text = code('app/src/snap.js');
-	assert.equal(bodyOf(text, 'snapNode'), 'return pointOn(NODES_WITHIN, pos);');
+	assert.equal(bodyOf(text, 'snapNode'), 'return pointOn(NODE_GRID, pos);');
 	assert.equal(bodyOf(text, 'snapIn'), 'return pointOn(place.grid, pos);');
 	// RESTATED at H26.1's verification (F6): the helper spans lines now, guarding a point that is not a number; read to its closing `};`
 	const helper = text.match(/^const pointOn = ([\s\S]*?)^\};?$/m)?.[1] ?? '';

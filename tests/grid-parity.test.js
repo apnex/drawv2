@@ -15,7 +15,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import crypto from 'node:crypto';
-import { SWEEP, QUESTIONS, REPLACEMENTS, CLASSES, answersOf, differences, classOf, enc } from './fixtures/grid-parity.mjs';
+import { SWEEP, QUESTIONS, REPLACEMENTS, CLASSES, answersOf, differences, classOf, enc, unboundedAtMove11 } from './fixtures/grid-parity.mjs';
 
 const RECORD = JSON.parse(fs.readFileSync(new URL('./fixtures/grid-parity-record.json', import.meta.url), 'utf8'));
 const pick = ({ question, index, old, new: now }) => ({ question, index, old, new: now });
@@ -32,9 +32,27 @@ test('H26.1 (acceptance step 4): the record answers the sweep as it stands -- ev
 	for (const [q, def] of Object.entries(QUESTIONS)) assert.equal(RECORD.old[q].length, def.inputs().length, `${q}: an old answer for every input`);
 });
 
-test('H26.1 (acceptance step 4): the replacements answer exactly as the old functions did, -0 told apart, but for the differences recorded with both answers', () => {
+/*
+RESTATED at H26.6's move 11 (dev/design/components/PAN-ZOOM.md 5.1 row 11): the old answers held fourteen questions to the old frame --
+the point snaps, a zone's corner drag and wrap, a device's size step and span, an anchor's and a zone's fields -- and move 11 holds none of
+them to it. So beside the differences recorded with both answers, every difference the extent's removal makes is found live and classed
+again from its input and both answers (tests/fixtures/grid-parity.mjs `unboundedAtMove11`): the unbounded lattice's exact answer where the
+old one stopped at the frame, a field accepted within PZ31's bound where it was refused past the frame. Any other difference fails, a
+recorded one gone fails, and the lists compared are of keys, never the thirteen thousand answers whole.
+*/
+const MOVE_11 = ['snapNode', 'snapIn.node', 'snapIn.zone', 'snapZone', 'zoneResize', 'zoneWrap', 'deviceSizeStep', 'deviceWithinSurface',
+	'anchor.x', 'anchor.y', 'zone.x', 'zone.y', 'zone.w', 'zone.h'];
+test('H26.1 (acceptance step 4): the replacements answer exactly as the old functions did, -0 told apart, but for the differences recorded with both answers -- and, from H26.6 move 11, the extent\'s removal', () => {
 	const found = differences(RECORD.old, answersOf(REPLACEMENTS));
-	assert.deepEqual(found.map(pick), RECORD.changed.map(pick), 'every difference is recorded, each with the old and the new answer, and no recorded one is gone');
+	const recorded = new Map(RECORD.changed.map((d) => [`${d.question}#${d.index}`, d]));
+	const live = new Set(found.map((d) => `${d.question}#${d.index}`));
+	const asRecorded = (d) => JSON.stringify(recorded.get(`${d.question}#${d.index}`)?.new) === JSON.stringify(d.new) && recorded.has(`${d.question}#${d.index}`);
+	const moved = found.filter((d) => !asRecorded(d) && unboundedAtMove11(d));
+	const unexplained = found.filter((d) => !asRecorded(d) && !unboundedAtMove11(d)).map((d) => `${d.question} #${d.index} ${JSON.stringify(d.input ?? null)}`);
+	assert.deepEqual(unexplained.slice(0, 20), [], `every difference recorded or the extent's removal (${unexplained.length} not)`);
+	assert.deepEqual(RECORD.changed.filter((d) => !live.has(`${d.question}#${d.index}`)).map((d) => `${d.question} #${d.index}`), [], 'no recorded difference is gone');
+	assert.ok(moved.length > 10000, `the extent's removal reaches the sweep's points beyond the frame: ${moved.length}`);
+	assert.deepEqual([...new Set(moved.map((d) => d.question))].sort(), [...MOVE_11].sort(), 'and each of the questions the frame held');
 });
 
 test('H26.1 (section 6.3): every recorded difference is one section 6.3 rules -- classed again from its input and both answers', () => {
@@ -86,7 +104,10 @@ test('H26.1 (acceptance step 4): the sweep covers both grids, bounded and unboun
 	assert.equal(differences({ cellOf: [0] }, { cellOf: [0] }).length, 0, 'control: equal answers are no difference');
 	// and the comparison bites: one replacement answer moved by a pitch at one input is a difference no class holds
 	const moved = answersOf({ ...REPLACEMENTS, 'snapIn.node': (p) => (p.x === 450 && p.y === 0 ? [510, 0] : REPLACEMENTS['snapIn.node'](p)) });
-	const extra = differences(RECORD.old, moved).filter((d) => !RECORD.changed.some((c) => c.question === d.question && c.index === d.index));
+	// RESTATED at H26.6's move 11: the extent's removal set aside, as the comparison above sets it aside -- and the planted answer is not it
+	const all = differences(RECORD.old, moved).filter((d) => !RECORD.changed.some((c) => c.question === d.question && c.index === d.index));
+	const extra = all.filter((d) => !unboundedAtMove11(d));
 	assert.ok(extra.length >= 1, 'control: a planted difference is found');
+	assert.ok(extra.some((d) => d.question === 'snapIn.node' && JSON.stringify(d.new) === '[510,0]'), 'control: the planted one, not the extent\'s removal');
 	assert.ok(extra.every((d) => classOf(d) === null), 'control: and no class of 6.3 holds for it');
 });

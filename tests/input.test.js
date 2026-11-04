@@ -1180,21 +1180,18 @@ test('B46: z fits a zone to the selection, and makes nothing for a link-only one
 	} finally { h.restore(); }
 });
 
-test('B46: nudgeSelection clamps at the canvas edge and yields nothing when it cannot move', () => {
+// RESTATED at H26.6's move 11 (dev/design/components/PAN-ZOOM.md section 3.8, "The extents"): the nudge holds no edge -- a node on the old
+// extent's edge nudges past it, as anything moves past the old frame; a nudge that moves nothing still yields nothing (no cell to move by)
+test('B46: nudgeSelection moves past the old canvas edge, and yields nothing when it has nothing to move -- H26.6 move 11', () => {
 	const h = makeInput();
 	try {
 		const [a] = seedNodes(h.model, [[0, 0]]);
 		const cmd = commands.nudgeSelection(h.model, [a.id], 1, 0, PLACES);
 		assert.equal(cmd.entries[0].after.x, GAP, 'one cell right');
-
-		// park it ON the node extent — note that is NODE_EXT, not CANVAS.hw: the canvas is wider than
-		// the area a node may occupy, and clamping to the wrong one reads as a passing test that
-		// proves nothing (from CANVAS.hw the clamp pulls the node BACK, a perfectly real change).
 		h.model.set('node', a.id, { x: NODE_EXT.x });
-		assert.equal(commands.nudgeSelection(h.model, [a.id], 1, 0, PLACES).entries.length, 0,
-			'clamped flat against the edge — no change, so no command');
-		assert.equal(commands.nudgeSelection(h.model, [a.id], -1, 0, PLACES).entries.length, 1,
-			'but it can still come back the other way');
+		assert.equal(commands.nudgeSelection(h.model, [a.id], 1, 0, PLACES).entries[0].after.x, NODE_EXT.x + GAP, 'past the old extent\'s edge');
+		assert.equal(commands.nudgeSelection(h.model, [a.id], -1, 0, PLACES).entries.length, 1, 'and back the other way');
+		assert.equal(commands.nudgeSelection(h.model, [], 1, 0, PLACES).entries.length, 0, 'nothing selected: no change, so no command');
 	} finally { h.restore(); }
 });
 

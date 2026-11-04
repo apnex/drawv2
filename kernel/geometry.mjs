@@ -50,31 +50,10 @@ export function anchorOn(name, grid, position) {
 }
 
 /*
-H26.11 (H26-21; B399, B400) -- A BOUNDED GRID'S OWN POSITIONS WITHIN ITS OWN BOUNDS, row by row then column: snap-grid's positions in view
-of the rectangle its bounds enclose, at a scale of one. What the agents' anchor list walks for each layout and what a positioned kind's
-cap counts, read from the grid itself -- its bounds, not an extent or a count stated beside it -- so both follow the grid when its size
-becomes configurable (H26-21). A grid with no bounds has no positions to count, and is refused.
-AMENDED at H26.11's verification: every position, however many. `inView` answers at most `max` positions, 10,000 unless asked, and
-thins past it by doubling its stride, so it is asked for exactly as many as the grid holds within its bounds -- the grid's own first and
-last positions there, its nearest to each corner, which a bounded grid answers within its bounds -- and an answer at any stride but one,
-or of any other count, is refused. A grid holding more than `inView` lists in one answer, `INVIEW_MOST`, cannot be counted by listing,
-and is refused before it is asked.
+H26.11 (H26-21; B399, B400) -- A BOUNDED GRID'S OWN POSITIONS: `positionsWithin` lived here, counting the caps and listing the agents'
+anchors. RESTATED at H26.6's move 11 (dev/design/components/PAN-ZOOM.md 5.1 row 11, PZ8): the caps are numbers (model/limits.mjs), so
+its one reader is the anchors route, and it moved there (server/rest.js), kept until move 12 replaces the whole list by an area.
 */
-const INVIEW_MOST = 4294967295;   // 2^32 - 1, snap-grid's largest `max`: the most positions `inView` lists in one answer (B176: no `**` here)
-export function positionsWithin(grid) {
-	const bounds = grid?.declaration?.bounds;
-	if (!bounds) throw new Error('positionsWithin: the grid has no bounds, so no positions within them to list or count');
-	const { min, max } = bounds;
-	const first = grid.nearest(min), last = grid.nearest(max);
-	const count = (last.col - first.col + 1) * (last.row - first.row + 1);
-	if (count > INVIEW_MOST) throw new Error(`positionsWithin: the grid holds ${count} positions within its bounds, more than snap-grid lists in one answer (${INVIEW_MOST})`);
-	const { stride, positions } = grid.inView({ region: { kind: 'rect', x: min.x, y: min.y, w: max.x - min.x, h: max.y - min.y }, scale: 1 }, { max: count });
-	if (stride !== 1 || positions.length !== count) {
-		throw new Error(`positionsWithin: snap-grid answered ${positions.length} of the grid's ${count} positions at a stride of ${stride} -- thinned, where every position was asked for`);
-	}
-	return positions.map(({ position }) => position);
-}
-
 /*
 THE GRID DOT. A waypoint does not own it -- a waypoint HIGHLIGHTS it.
 

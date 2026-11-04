@@ -1017,7 +1017,8 @@ export const UNUSED_EXPORTS = {
 				// H26.1: the grid arithmetic deleted (SNAP-GRID.md section 7.7); the drawing helpers stay
 				'rebuild-debt': ['gridDot', 'groupHull'],
 				// anchorOn (F3, H26.1's verification): an anchor's one builder, for the REST door and server/anchor.mjs, which left the planner at PL-4
-				'serves-a-server-door': ['anchorOn'],
+				// nodeGridWithin (H26.6's move 11): the planner's kinds no longer bound an anchor by the extent; the REST door's lists read it until move 12
+				'serves-a-server-door': ['anchorOn', 'nodeGridWithin'],
 			},
 			'kernel/spec.mjs': {
 				'rebuild-debt': ['BEND_R', 'L_STD'],   // BEND_R and L_STD: their consumers (`roundedPath`, the painters) are outside the planner closure

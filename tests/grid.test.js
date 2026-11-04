@@ -2,7 +2,8 @@ import { Model } from './fixtures/composed.mjs';   // WD-b2: a grid reads the di
 import { test } from 'node:test';
 // RESTATED at H26.1 (SNAP-GRID.md section 5): the kernel's grid arithmetic is deleted; the grids are snap-grid's, opened in the kernel
 // (NODE_GRID) and the layouts plugin (ZONE_GRIDS), and a span is what it runs through (plugins/devices/device-footprint.mjs spanThrough)
-import { NODE_GRID, positionsWithin, latticeGrids } from '../kernel/geometry.mjs';
+import { NODE_GRID, latticeGrids } from '../kernel/geometry.mjs';
+import { positionsWithin } from '../server/rest.js';   // H26.6's move 11: moved to its one reader, the anchors route, until move 12
 import { openGrid } from '@apnex/snap-grid';   // H26.11's verification: grids past snap-grid's default 10,000, and one past its largest answer
 import { ZONE_GRIDS, LAYOUT_TABLE } from '../plugins/layouts/layout-table.mjs';
 import { spanThrough as spanExtent } from '../plugins/devices/device-footprint.mjs';
@@ -14,7 +15,8 @@ import { PRODUCT_CANVAS } from '../product/canvas.mjs';
 // RESTATED at C-d step one (H19.32): the zone grid is the zones plugin's place, snapped through it -- snapZone left the canvas
 const snapZone = (pos) => snapIn(placesOf(PRODUCT_CANVAS).get('zone'), pos);
 import { SURFACE, NODE_EXT as DOC_NODE_EXT } from '../model/surface.mjs';
-import { ZONE_EXT as DOC_ZONE_EXT } from '../plugins/layouts/layout-table.mjs';   // CORRECTED at O-b1: the zone extent is the zones plugin's
+// RESTATED at H26.6's move 11: no longer exported; the zone layout record's extent is the table's own, until move 14
+const DOC_ZONE_EXT = LAYOUT_TABLE.find((l) => l.name === 'zone').ext;
 // RESTATED at C-e step thirteen (H19.33): the grids' points are their parts', and snap.js no longer re-exports the zone extent
 const ZONE_EXT = DOC_ZONE_EXT;
 // RESTATED at WD-b2 (H19.46): a grid's points are read from the open diagram's layout record -- here a fresh Model's. RESTATED at H26.6's
@@ -40,9 +42,12 @@ test('snapNode rounds to multiples of the gap', () => {
 	assert.deepEqual(snapNode({ x: -595, y: 242 }), { x: -600, y: 240 });
 });
 
-test('snapNode clamps to the usable extents', () => {
-	assert.deepEqual(snapNode({ x: -5000, y: -5000 }), { x: -NODE_EXT.x, y: -NODE_EXT.y });
-	assert.deepEqual(snapNode({ x: 99999, y: 99999 }), { x: NODE_EXT.x, y: NODE_EXT.y });
+// RESTATED at H26.6's move 11 (dev/design/components/PAN-ZOOM.md section 3.8, "The extents"): a snap holds no extent -- the node grid's
+// nearest position, anywhere; the extent's names stay for their readers until move 12
+test('snapNode clamps to no extent: the nearest position of the unbounded node grid -- H26.6 move 11', () => {
+	assert.deepEqual(snapNode({ x: -5000, y: -5000 }), { x: -4980, y: -4980 });
+	assert.deepEqual(snapNode({ x: 99999, y: 99999 }), { x: 100020, y: 100020 });
+	assert.deepEqual(snapNode({ x: 999_990, y: -1_000_031 }), { x: 1_000_020, y: -1_000_020 }, 'past PZ31\'s bound too: the snap places, the planner refuses');
 	assert.equal(NODE_EXT.x, 900);
 	assert.equal(NODE_EXT.y, 480);
 });
@@ -53,8 +58,8 @@ test('snapZone rounds to the half-cell-offset grid', () => {
 	assert.equal(Math.abs(snapZone({ x: 311, y: 0 }).x - 30) % GAP, 0);
 });
 
-test('snapZone clamps to zone extents', () => {
-	assert.deepEqual(snapZone({ x: -5000, y: 99999 }), { x: -ZONE_EXT.x, y: ZONE_EXT.y });
+test('snapZone clamps to no extent: the nearest corner of the unbounded zone grid -- H26.6 move 11', () => {
+	assert.deepEqual(snapZone({ x: -5000, y: 99999 }), { x: -5010, y: 99990 });
 	assert.equal(ZONE_EXT.x, 930);
 	assert.equal(ZONE_EXT.y, 510);
 });

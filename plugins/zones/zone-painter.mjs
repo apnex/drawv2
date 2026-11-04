@@ -45,7 +45,8 @@ const ZONE_PAINTER = {
 // C-c: a zone is placed on the half-offset grid, within its extent, its size its own box
 // H26.1: carrying the zone grid bounded by that extent, which it snaps to (SNAP-GRID.md section 5). H26.8's grid move (NATIVE-SHAPES.md
 // section 3.2, "A place carries its grid alone"): its extent is that grid's bounds, the `ext` it kept beside it deleted
-const ZONE_PLACE = { kind: 'zone', layout: 'zone', grid: ZONE_GRIDS.bounded, size: (zone) => ({ w: zone.w, h: zone.h }) };
+// RESTATED at H26.6's move 11 (PAN-ZOOM.md section 3.8, "The extents"): the zone lattice with no bounds, so a zone snaps and moves anywhere
+const ZONE_PLACE = { kind: 'zone', layout: 'zone', grid: ZONE_GRIDS.unbounded, size: (zone) => ({ w: zone.w, h: zone.h }) };
 
 // the zones plugin's canvas part: what it brings to the page (C-a: its painter; C-b its pick, on the painter; C-c its place;
 // C-d its press row over the shared box gesture, and its handles)

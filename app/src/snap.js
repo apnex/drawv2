@@ -10,9 +10,12 @@ bounded by the extent -- `snapNode` of the node grid within NODE_EXT (`nodeGridW
 each the point of the position nearest the pointer, `pointOf(nearest(pos))`; the snap clamps the INDEX to the bounds, which equals
 clamping the snapped coordinate because every extent sits on its lattice (section 2); the per-axis clamp and the half pitch went. What
 stays draw's is a drag's clamp and its quantisation by the declared pitch (`clampDelta`), read from NODE_GRID's declaration.
+RESTATED at H26.6's move 11 (dev/design/components/PAN-ZOOM.md section 3.8, "The extents"; 5.1 row 11): every snap is on the unbounded
+lattices -- `snapNode` the node grid, `snapIn` the grid its place carries, which no extent bounds -- and `clampDelta` holds no edge; the
+editor clamps nothing, the planner refusing what lies past PZ31's bound. The extent's names stay exported for their readers until move 12.
 */
 import { L_STD } from '../../kernel/spec.mjs';
-import { NODE_GRID, nodeGridWithin } from '../../kernel/geometry.mjs';
+import { NODE_GRID } from '../../kernel/geometry.mjs';
 // CL3: canvas surface + usable extents come from the sovereign model/ substrate (single source).
 // IMPORTED (not a bare re-export) — snapNode references NODE_EXT locally. AMENDED C-e (H19.33): the grids' points are their
 // parts'. AMENDED WD-b2 (H19.46): both grids are the layouts plugin's (plugins/layouts/layout-canvas.mjs), drawn by app/src/grids.js.
@@ -32,10 +35,9 @@ const pointOn = (grid, pos) => {
 	const at = pos && typeof pos.x === 'number' && typeof pos.y === 'number' ? grid.nearest(pos) : null, p = at && grid.pointOf(at);
 	return p ? { x: p.x, y: p.y } : { x: NaN, y: NaN };
 };
-const NODES_WITHIN = nodeGridWithin(NODE_EXT);   // the node grid within its extent: where the palette and every gesture drop a node
-
+// where the palette and every gesture drop a node: the node grid's position nearest the pointer, anywhere (H26.6's move 11)
 export function snapNode(pos) {
-	return pointOn(NODES_WITHIN, pos);
+	return pointOn(NODE_GRID, pos);
 }
 
 export function resolveBox(p1, p2) {
@@ -63,19 +65,19 @@ export function orthoDelta(delta, ortho) {
 }
 
 /*
-Clamp a delta so EVERY moved entity stays on the surface — the whole set moves together or the
-drag is refused at the edge, so a multi-select never tears apart. Clamps the FOOTPRINT, not the
-origin: a multi-cell node's far edge must stay inside the extent too, and the clamped value is
-re-quantised to the grid so the group lands on cells rather than against the wall.
+Clamp a delta so EVERY moved entity stays on the surface -- the whole set moves together or the drag is refused at the edge, so a
+multi-select never tears apart. RESTATED at H26.6's move 11 (dev/design/components/PAN-ZOOM.md section 3.8, "The extents"): there is no
+surface and no edge. A place carries an unbounded grid, so every moved entity may go anywhere and the delta is answered as it is -- a whole
+set moving together still, a base-snapped delta (`snappedDelta`) already quantised by the grid; past PZ31's bound the planner refuses the
+edit and says why. The function keeps its place in every caller -- a drag, a clone, a duplicate -- a bounded grid, should a place carry
+one again, still holding each entity's footprint inside its bounds.
 */
-// C-c: each moved entity held inside its kind's declared extent by its declared size (`places`, placesOf below). H26.8's grid move
-// (NATIVE-SHAPES.md section 3.2, 4.9): the extent is the bounds of the grid its place carries, which the place's `ext` repeated
 export function clampDelta(model, moved, delta, places) {
 	let minX = -Infinity, maxX = Infinity, minY = -Infinity, maxY = Infinity;
 	moved.forEach((m) => {
-		const place = places.get(m.kind), entity = model.get(m.kind, m.id);
-		if (!place || !entity) return;
-		const { w, h } = place.size(entity), { min, max } = place.grid.declaration.bounds;
+		const place = places.get(m.kind), entity = model.get(m.kind, m.id), bounds = place ? place.grid.declaration.bounds : null;
+		if (!place || !entity || !bounds) return;   // move 11: an unbounded grid holds no edge
+		const { w, h } = place.size(entity), { min, max } = bounds;
 		minX = Math.max(minX, min.x - m.before.x); maxX = Math.min(maxX, max.x - w - m.before.x);
 		minY = Math.max(minY, min.y - m.before.y); maxY = Math.min(maxY, max.y - h - m.before.y);
 	});
@@ -112,6 +114,8 @@ the zone's from the layouts plugin's `ZONE_GRIDS`. A place with no grid, or one 
 AMENDED H26.8's grid move (dev/design/components/NATIVE-SHAPES.md section 3.2, "A place carries its grid alone"; 4.9): a place is
 `{ kind, layout, grid, size | sizedBy }`, its extent its grid's `bounds` -- the `ext` it kept beside the grid, and the check that the two
 agreed, deleted. A place whose grid has no bounds has no extent to be held in, and is refused, naming its owner.
+RESTATED at H26.6's move 11 (dev/design/components/PAN-ZOOM.md section 3.8, "The extents"): a place carries the unbounded lattice its kind
+snaps to, so an unbounded grid is accepted; a place with no grid at all is still refused, naming its owner.
 */
 /*
 WD-b2 (H19.46; dev/design/unification/WIDE-DEVICES.md section 5.1) -- A PLACE'S SIZE COMES FROM ONE SOURCE, WHICH THE PLACE
@@ -126,7 +130,7 @@ export function placesOf(parts) {
 	const places = new Map();
 	for (const part of parts) {
 		for (const p of part.places ?? []) {
-			if (!p.grid?.declaration?.bounds) throw new Error(`place: ${part.owner}'s place for ${p.kind} carries no bounded grid -- a place snaps on the grid it carries, within its bounds`);
+			if (!p.grid?.declaration) throw new Error(`place: ${part.owner}'s place for ${p.kind} carries no grid -- a place snaps on the grid it carries`);
 			if (places.has(p.kind)) throw new Error(`place: ${p.kind} is placed by ${places.get(p.kind).owner} and by ${part.owner}`);
 			places.set(p.kind, { ...p, owner: part.owner });
 		}
@@ -155,7 +159,7 @@ export function gridsOf(parts) {
 	return parts.flatMap((p) => (p.grids ?? []).filter((g) => placed.has(g.layout)));
 }
 
-// a point on a placed kind's grid, within its extent: its place's grid, bounded by that extent
+// a point on a placed kind's grid: its place's grid, unbounded since H26.6's move 11
 export function snapIn(place, pos) {
 	return pointOn(place.grid, pos);
 }

@@ -14,7 +14,7 @@ import { makeZone } from './make-zone.mjs';
 
 // H26.1 (SNAP-GRID.md section 5): a zone's corners lie on the zone grid -- offset by half a pitch, a zone bounding cells -- within the
 // zone extent, the grid bounded by it
-const ZONE_GRID = ZONE_GRIDS.bounded;
+const ZONE_GRID = ZONE_GRIDS.unbounded;   // H26.6's move 11 (PAN-ZOOM.md section 3.8): a corner dragged anywhere, no edge
 
 /*
 The four corners of a zone, named the way the handles are. B36 — this was written out twice with the

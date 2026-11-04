@@ -11,10 +11,6 @@ rule (plugins/simulation/spawn-field.mjs) build on it.
 */
 
 import { CONTENT_VALUE_MAX, SPAN_MAX, FONT_MIN, FONT_MAX } from '../../model/limits.mjs';
-import { NODE_EXT } from '../../model/surface.mjs';   // B27: the surface a device's span stays within
-import { NODE_GRID, nodeGridWithin } from '../../kernel/geometry.mjs';
-// H26.1 (SNAP-GRID.md section 5): the places a device's cells may take -- the node lattice within the surface
-const SURFACE_PLACES = nodeGridWithin(NODE_EXT);
 
 // whether a device is composed on an anchor: it carries a type, which a bare anchor -- a waypoint -- never does
 export const hasDevice = (entity) => !!entity && !!entity.type;
@@ -60,18 +56,13 @@ B27 (H20.4) -- A DEVICE WITHIN THE SURFACE, AND ITS CONTENT WITHIN IT. Its span 
 cell must sit within the node extent -- a 64 x 64 panel at the edge reached 4680 against 900 -- and each content region must sit within
 the span, as the renderer lays it out (kernel/renderer.mjs: `at` defaults to the first cell, `cols` and `rows` to one). The browser's
 drag held the first; nothing held the second.
+RESTATED at H26.6's move 11 (dev/design/components/PAN-ZOOM.md section 3.8, "The bound"; 5.1 row 11): the span's edge check is gone with
+the extent -- a span's footprint is derived, up to 3,800 past its anchor at SPAN_MAX's 64, and bounded by nothing of its own, its anchor
+held to PZ31's bound -- and the content check is kept.
 */
-/*
-H26.1 (SNAP-GRID.md appendix B): its first cell is its anchor's position on the node lattice -- its x and y are on it, the anchor's own
-checks having passed -- its far cell the position `cols - 1` and `rows - 1` on, and where the far cell lies is `span(...).through`'s far
-corner, where it was `(cols - 1) * pitch` restated; the far cell within the surface is one of the surface's places.
-*/
-function withinSurface(n) {
+// the content within the span: each region where the renderer lays it, inside the span's cells (B27's second half, kept at move 11)
+function contentWithinSpan(n) {
 	const { cols, rows } = n.span ?? { cols: 1, rows: 1 };
-	const first = NODE_GRID.nearest(n), end = { col: first.col + cols - 1, row: first.row + rows - 1 };
-	const { through } = NODE_GRID.span(first, end);
-	const far = { x: through.x + through.w, y: through.y + through.h };
-	if (!SURFACE_PLACES.offers(end)) return `${n.id}'s ${cols}x${rows} span reaches ${far.x},${far.y}, past the surface's edge at ${NODE_EXT.x},${NODE_EXT.y}`;
 	for (const r of n.content ?? []) {
 		const [c, w, h, rw] = [(r.at ?? [0, 0])[0], r.cols ?? 1, r.rows ?? 1, (r.at ?? [0, 0])[1]];
 		if (c + w > cols || rw + h > rows) return `${n.id}'s content region at [${c},${rw}], ${w}x${h}, falls outside its ${cols}x${rows} span`;
@@ -103,7 +94,7 @@ export const DEVICE_FIELDS = {
 	*/
 	refers: (entity, access, patch, before) => {
 		if (before && hasDevice(before) !== hasDevice(entity)) return `a node's type is fixed when it is made -- a waypoint stays a waypoint, and a typed node keeps a type: ${entity.id}`;
-		if (hasDevice(entity)) return withinSurface(entity);
+		if (hasDevice(entity)) return contentWithinSpan(entity);
 		const wrong = DEVICE_ONLY.filter((f) => f in entity);
 		if (wrong.length) return `a waypoint (a node with no type) has no ${wrong.join(', ')}: ${entity.id}`;
 		return null;

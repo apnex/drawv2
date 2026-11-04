@@ -10,9 +10,9 @@ Its extent is zones/zone-extent.mjs and its factory plugins/zones/make-zone.mjs,
 entry -- loads the row alone (tools/layers.mjs L10).
 */
 
-import { NAME_MAX } from '../../model/limits.mjs';
-import { NODE_GRID, positionsWithin } from '../../kernel/geometry.mjs';
-import { ZONE_EXT, ZONE_GRIDS } from '../layouts/layout-table.mjs';   // WD-b1: the zone layout's extent, the layouts plugin's; H26.1: its grids
+import { NAME_MAX, COORD_BOUND, ZONE_CAP } from '../../model/limits.mjs';
+import { NODE_GRID } from '../../kernel/geometry.mjs';
+import { ZONE_GRIDS } from '../layouts/layout-table.mjs';   // H26.1: the zone layout's grids, the layouts plugin's
 
 const ORDER_MAX = Number.MAX_SAFE_INTEGER;
 /*
@@ -45,22 +45,26 @@ const ZONE_ROW = {
 		id: (v) => id(v, 'zone'),
 		name: (v) => str(v, NAME_MAX),
 		// the zone grid is offset by half a pitch: a zone bounds CELLS, so its edges fall between them
-		x: (v) => num(v, -ZONE_EXT.x, ZONE_EXT.x) && onZoneX(v),
-		y: (v) => num(v, -ZONE_EXT.y, ZONE_EXT.y) && onZoneY(v),
-		w: (v) => num(v, PITCH, 2 * ZONE_EXT.x) && wholeCells(v), // whole cells; minimum one -- no degenerate zones
-		h: (v) => num(v, PITCH, 2 * ZONE_EXT.y) && wholeCells(v),
+		// H26.6's move 11 (PAN-ZOOM.md section 3.4, 3.8; PZ31): a corner an integer within the bound, on the zone lattice; a side a length,
+		// whole cells from one to 2,000,000 -- the bound's span -- its far edge held to the bound by `refers`, below
+		x: (v) => int(v, -COORD_BOUND, COORD_BOUND) && onZoneX(v),
+		y: (v) => int(v, -COORD_BOUND, COORD_BOUND) && onZoneY(v),
+		w: (v) => int(v, PITCH, 2 * COORD_BOUND) && wholeCells(v), // whole cells; minimum one -- no degenerate zones
+		h: (v) => int(v, PITCH, 2 * COORD_BOUND) && wholeCells(v),
 		order: (v) => int(v, 1, ORDER_MAX),   // the drawing order (F-d)
 	},
 	// B113: one zone to an anchor cell of its extent -- a backstop against a pathological document, occupancy speaking first
 	/*
 	B27 (H20.4) -- THE BOX WITHIN THE SURFACE: each field was checked alone, so a zone at x 870, w 1800 reached 2670 against an edge of
 	930; the browser's drag held it inside (app/src/snap.js `clampDelta`), and now every door does. Judged on the zone as it would stand.
+	RESTATED at H26.6's move 11 (PAN-ZOOM.md section 3.8, "The bound"; PZ31): within the bound, 1,000,000 from the origin, where it was the
+	surface; the editor holds it no longer, every door refusing a zone whose far edge lies past it, the sentence naming where it reaches.
 	*/
-	refers: (z) => (z.x + z.w > ZONE_EXT.x || z.y + z.h > ZONE_EXT.y
-		? `${z.id} reaches ${z.x + z.w},${z.y + z.h}, past the surface's edge at ${ZONE_EXT.x},${ZONE_EXT.y}` : null),
-	// H26.11 (H26-21; B400): the zone grid's own positions within its own bounds, read from the grid, so the cap follows it when its size
-	// becomes configurable -- where it counted the node grid's form over the zone extent, 527 against the zone lattice's 576
-	cap: positionsWithin(ZONE_GRIDS.bounded).length,
+	refers: (z) => (z.x + z.w > COORD_BOUND || z.y + z.h > COORD_BOUND
+		? `${z.id} reaches ${z.x + z.w},${z.y + z.h}, past the bound of ${COORD_BOUND} from the origin` : null),
+	// H26.11 (H26-21; B400): the zone grid's own positions within its own bounds, 576 -- RESTATED at H26.6's move 11 (PZ8): that number,
+	// there being no extent to count (model/limits.mjs ZONE_CAP)
+	cap: ZONE_CAP,
 };
 
 // the zones plugin's rows, as the network's are NETWORK_ROWS (plugins/network/kinds.mjs)

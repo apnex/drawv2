@@ -2,7 +2,8 @@ import { test } from 'node:test';
 import fs from 'node:fs';
 import { LINK_ROW } from '../plugins/network/link-kind.mjs';
 import { NODE_EXT } from '../model/surface.mjs';
-import { ZONE_EXT } from '../plugins/layouts/layout-table.mjs';
+// RESTATED at H26.6's move 11 (PZ8): the caps are the numbers 527 and 576, which the old extents' positions counted to
+const ZONE_EXT = { x: 930, y: 510 };
 import { ZONE_ROWS } from '../plugins/zones/zone-kind.mjs';
 import { violations } from '../model/invariants.mjs';
 import { commit, heldLayouts } from './fixtures/composed.mjs';
@@ -249,17 +250,26 @@ test('B113: the server refuses what the editor could never have produced', () =>
 	validate allowed the SURFACE half-extent (960 x 540) while snap.js clamped a node to NODE_EXT
 	(900 x 480), so a hundred positions were legal to the server and unreachable in the editor --
 	the same shape as B110, with the agent door as the caller nobody bound.
+	RESTATED at H26.6's move 11 (dev/design/components/PAN-ZOOM.md section 3.8, "The bound"; PZ31; appendix A move 11): the two agree at
+	PZ31's bound, 1,000,000 from the origin -- the editor clamps nothing, so whatever it produces the server judges, and past the bound
+	refuses. On the grid of 60 the test points are 999,960, accepted, and 1,000,020, refused; the exact boundary at a grid of 80, move 15.
 	*/
 	const ok = { id: 'node-aa0001', name: 'n', type: 'host', x: 900, y: 480 };
-	assert.equal(put('node', ok), null, 'the client clamp itself is legal');
-	assert.match(String(put('node', { ...ok, x: 960 })), /invalid value for node\.x/,
-		'960 is on-grid and inside the surface, and the editor can never reach it');
-	assert.match(String(put('node', { ...ok, y: 540 })), /invalid value for node\.y/);
+	assert.equal(put('node', ok), null, 'the old clamp is legal still');
+	assert.equal(put('node', { ...ok, x: 960, y: 540 }), null, 'past the old frame, accepted (H26.6 move 11)');
+	for (const axis of ['x', 'y']) for (const sign of [1, -1]) {
+		assert.equal(put('node', { ...ok, [axis]: sign * 999_960 }), null, `${axis} ${sign * 999_960}: within the bound`);
+		assert.match(String(put('node', { ...ok, [axis]: sign * 1_000_020 })), new RegExp(`invalid value for node\\.${axis}`), `${axis} ${sign * 1_000_020}: past it`);
+	}
+	assert.match(String(put('node', { ...ok, x: 999_990 })), /invalid value for node\.x/, 'within the bound but off the lattice: refused as ever');
 
-	// a zone reaches further than a node, by half a cell, and that difference is preserved
+	// a zone's corner on its lattice within the bound; its far edge held to the bound by its own check
 	const z = { id: 'zone-aa0001', name: 'z', x: -930, y: -510, w: 600, h: 420 };
-	assert.equal(put('zone', z), null, 'a zone may sit where a node may not');
-	assert.match(String(put('zone', { ...z, x: -990 })), /invalid value for zone\.x/);
+	assert.equal(put('zone', z), null, 'a zone at the old edge');
+	assert.equal(put('zone', { ...z, x: -990 }), null, 'past it, accepted (H26.6 move 11)');
+	assert.equal(put('zone', { ...z, x: -999_990, y: 999_390, w: 1_999_980, h: 600 }), null, 'a corner at the bound\'s edge and a far edge at 999,990 and 999,990');
+	assert.match(String(put('zone', { ...z, x: -1_000_050 })), /invalid value for zone\.x/, 'a corner past the bound');
+	assert.match(String(put('zone', { ...z, x: 999_930, w: 120 })), /zone-aa0001 reaches 1000050,-90, past the bound of 1000000 from the origin/, 'a far edge past it, named');
 });
 
 /*

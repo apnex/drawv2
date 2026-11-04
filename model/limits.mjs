@@ -55,6 +55,20 @@ export const CAPTION_MAX = 256;
 // Both peers cap it -- `app/src/commands.js` while resizing, `planner/validate.js` on arrival -- and
 // neither had a shared source. Found while closing B86 rather than listed in it.
 export const SPAN_MAX = 64;
+/*
+H26.6's move 11 (dev/design/components/PAN-ZOOM.md section 3.8, "The bound"; PZ31) -- HOW FAR FROM THE ORIGIN A COORDINATE MAY BE: 1,000,000
+drawing units either way on each axis, measured to keep a shape drawn within a tenth of a pixel and hit within a quarter at every view
+draw takes (`coordinate-precision.mjs`). Every anchor's `x` and `y` and every zone's corner and far edge are held within it at every
+door; the editor clamps nothing, the planner refusing a move, a stamp, a paste or a duplicate past it. Where the extents were.
+*/
+export const COORD_BOUND = 1_000_000;
+/*
+H26.6's move 11 (PZ8): the per-kind caps of the anchors and the zones, the numbers they were counted to from the extents -- the device
+grid's positions within the old frame and the zone grid's -- stated as numbers now there is no extent to count; a higher cap waits on
+PZ11's measure.
+*/
+export const ANCHOR_CAP = 527;
+export const ZONE_CAP = 576;
 
 /*
 H12.5 -- the bounds on an authored spawner.

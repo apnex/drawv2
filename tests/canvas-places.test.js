@@ -22,7 +22,9 @@ import { Model } from './fixtures/composed.mjs';
 import { placesOf } from '../app/src/snap.js';
 import { nudgeSelection } from '../app/src/commands.js';
 import { PRODUCT_CANVAS } from '../product/canvas.mjs';
-import { ZONE_EXT, ZONE_GRIDS } from '../plugins/layouts/layout-table.mjs';
+import { ZONE_GRIDS } from '../plugins/layouts/layout-table.mjs';
+// H26.6's move 11: the old zone extent, no longer exported -- where a zone was held, and is held no more
+const ZONE_EXT = { x: 930, y: 510 };
 import { NODE_GRID, nodeGridWithin } from '../kernel/geometry.mjs';
 import { openGrid } from '@apnex/snap-grid';   // H26.8's grid move: a grid bounded off centre, which no product place carries
 
@@ -56,10 +58,12 @@ test('C-c: without the zones plugin a zone is not placed -- nudging it moves not
 	assert.deepEqual(moved(nudgeSelection(m, ['zone-0d0002'], 1, 0, without)), {});
 });
 
-test('C-c: a zone at the edge of its extent is held there by its own size', () => {
+// RESTATED at H26.6's move 11 (dev/design/components/PAN-ZOOM.md section 3.8, "The extents"): there is no extent to be held at -- a zone whose
+// far edge is at the old one nudges past it, as anything moves past the old frame
+test('C-c: a zone at the edge of the old extent is held there no more -- H26.6 move 11', () => {
 	const m = board();
 	m.set('zone', 'zone-0d0002', { x: ZONE_EXT.x - 120 });
-	assert.deepEqual(moved(nudgeSelection(m, ['zone-0d0002'], 1, 0, PLACES)), {}, 'its far edge is at the extent: no room');
+	assert.deepEqual(moved(nudgeSelection(m, ['zone-0d0002'], 1, 0, PLACES))['zone-0d0002'], { x: ZONE_EXT.x - 60, y: 30 }, 'its far edge past the old extent');
 });
 
 test('C-c: the canvas names no list of placed kinds', () => {
@@ -77,10 +81,12 @@ test('C-c: the canvas names no list of placed kinds', () => {
 // extent -- a place carrying none, or one bounded otherwise, is refused, naming its owner; the kernel's layout names are gone.
 // RESTATED at H26.8's grid move (NATIVE-SHAPES.md section 3.2, 4.9): a place carries its grid alone, its extent the grid's bounds -- one
 // carrying no grid, or a grid with no bounds, is refused, naming its owner; the extent beside it, and its check, are gone
+// RESTATED at H26.6's move 11 (PAN-ZOOM.md section 3.8, "The extents"): a place carries the unbounded lattice its kind snaps to, so a grid with
+// no bounds is a place's; one carrying no grid at all is still refused, naming its owner
 const grid1 = nodeGridWithin({ x: 1, y: 1 });
 test('C-c: a malformed place is refused when the places are composed, naming its owner', () => {
-	assert.throws(() => placesOf([{ owner: 'p', places: [{ kind: 'x', layout: 'nowhere', size: () => ({ w: 0, h: 0 }) }] }]), /place: p's place for x carries no bounded grid/);
-	assert.throws(() => placesOf([{ owner: 'p', places: [{ kind: 'x', layout: 'node', grid: NODE_GRID, size: () => ({ w: 0, h: 0 }) }] }]), /place: p's place for x carries no bounded grid/, 'a grid with no bounds is no place\'s');
+	assert.throws(() => placesOf([{ owner: 'p', places: [{ kind: 'x', layout: 'nowhere', size: () => ({ w: 0, h: 0 }) }] }]), /place: p's place for x carries no grid/);
+	assert.equal(placesOf([{ owner: 'p', places: [{ kind: 'x', layout: 'node', grid: NODE_GRID, size: () => ({ w: 0, h: 0 }) }] }]).get('x').owner, 'p', 'a grid with no bounds is a place\'s (H26.6 move 11)');
 	assert.equal(placesOf([{ owner: 'p', places: [{ kind: 'x', layout: 'node', grid: grid1, size: () => ({ w: 0, h: 0 }) }] }]).get('x').owner, 'p', 'control: a place carrying a bounded grid');
 	assert.throws(() => placesOf([...PRODUCT_CANVAS, { owner: 'p', places: [{ kind: 'zone', layout: 'zone', grid: grid1, size: () => ({ w: 0, h: 0 }) }] }]), /place: zone is placed by zones and by p/);
 	// RESTATED at WD-b2 (H19.46): a place declares its size's source -- its own size, or its kind's parts -- and one declaring neither is refused, naming it
@@ -102,13 +108,17 @@ test('H26.8: a place\'s extent is its grid\'s bounds -- a drag is held at each e
 	assert.deepEqual(clampDelta(m, moved, { x: -600, y: 600 }, places), { x: -60, y: 60 }, 'and at its min x and max y');
 	assert.deepEqual(clampDelta(m, moved, { x: 120, y: -60 }, places), { x: 120, y: -60 }, 'and free within them');
 	for (const [kind, p] of PLACES) assert.equal('ext' in p, false, `${kind}: its place carries no extent of its own`);
-	assert.deepEqual(PLACES.get('zone').grid.declaration.bounds, { min: { x: -ZONE_EXT.x, y: -ZONE_EXT.y }, max: { x: ZONE_EXT.x, y: ZONE_EXT.y } }, 'the zone\'s grid bounded by the zone layout\'s extent');
+	// RESTATED at H26.6's move 11: the product's places carry no bounds, so the clamp holds nothing of theirs
+	assert.equal(PLACES.get('zone').grid.declaration.bounds, undefined, 'the zone\'s grid unbounded');
+	const free = [{ kind: 'zone', id: 'zone-0d0002', before: { x: 30, y: 30 } }];
+	assert.deepEqual(clampDelta(m, free, { x: 2_000_040, y: -3_000_000 }, PLACES), { x: 2_000_040, y: -3_000_000 }, 'a product place\'s move held nowhere -- the planner refuses past the bound');
 });
 
-test('H26.1: each placed kind carries the grid its extent bounds -- the anchor the node grid\'s, the zone the zone grid\'s', () => {
-	assert.deepEqual(PLACES.get('node').grid.declaration, { shape: 'square', pitch: 60, origin: { x: 0, y: 0 }, bounds: { min: { x: -900, y: -480 }, max: { x: 900, y: 480 } } });
-	assert.deepEqual(PLACES.get('zone').grid.declaration, { shape: 'square', pitch: 60, origin: { x: 30, y: 30 }, bounds: { min: { x: -930, y: -510 }, max: { x: 930, y: 510 } } });
-	assert.equal(PLACES.get('zone').grid, ZONE_GRIDS.bounded, 'the zone\'s, opened once by the layouts plugin');
+// RESTATED at H26.6's move 11 (PAN-ZOOM.md section 3.8, "The extents"): each place carries its lattice with no bounds
+test('H26.1, restated at H26.6 move 11: each placed kind carries its lattice, unbounded -- the anchor the node grid, the zone the zone grid', () => {
+	assert.deepEqual(PLACES.get('node').grid.declaration, { shape: 'square', pitch: 60, origin: { x: 0, y: 0 } });
+	assert.deepEqual(PLACES.get('zone').grid.declaration, { shape: 'square', pitch: 60, origin: { x: 30, y: 30 } });
+	assert.equal(PLACES.get('zone').grid, ZONE_GRIDS.unbounded, 'the zone\'s, opened once by the layouts plugin');
 });
 
 test('C-c: a dragged zone snaps on its own half-offset grid, not the node grid', async () => {

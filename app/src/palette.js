@@ -153,7 +153,8 @@ export class Palette {
 	pointer is over the canvas when its screen point lies within the root's box and the topmost element there is the root or within it.
 	It replaced `inCanvas`, a test of the drawing point against the old 1920 by 1080 frame, which also told a drop from a tile click and from
 	a release over the page's chrome: now any drawing point the canvas shows takes a drop, and a release over the header or the palette
-	takes none. Where a drop lands is the hand's snapping, which holds the old frame's edge until the extents go (move 11).
+	takes none. Where a drop lands is the hand's snapping -- on the unbounded lattice since the extents went at move 11, so on the cell under
+	the release however far out.
 	*/
 	overCanvas(evt) {
 		const box = this.root.getBoundingClientRect(), x = evt.clientX, y = evt.clientY;

@@ -1430,12 +1430,13 @@ test('C-e: a tile dropped on a free cell stamps that device there, selected; dro
 H26.6's move 7 (dev/design/components/PAN-ZOOM.md section 3.8, "The palette's drop"; section 5.1 row 7; appendix A move 7) -- A DROP IS
 DECIDED IN SCREEN SPACE: a release is a drop when it lies within the canvas's root and the topmost element there is the canvas, so a release
 over the canvas beyond the old 1920 by 1080 frame -- where the letterbox was, the ground now -- stamps, landing where the hand's snapping
-puts it, the old frame's edge until move 11 unbounds it; a release over the header or the palette stamps nothing, and a press released
+puts it, the old frame's edge until move 11 unbounds it -- RESTATED at H26.6's move 11 (section 3.8, "The extents"): where it was dropped,
+the cell under the release, past the old edge; a release over the header or the palette stamps nothing, and a press released
 where it began on a tile toggles the hand, as before. Then the same after the view is panned and zoomed: a release over a free cell the
 canvas shows stamps there, and over that cell with a page element laid over it, none -- the topmost element decides. Each stamp undone,
 the K8 board being shared.
 */
-test('H26.6 move 7: a release over the canvas beyond the old frame is a drop, at the frame\'s edge; over the header or the palette none; a tile click toggles the hand -- and after a pan and a zoom', { skip: SKIP }, async () => {
+test('H26.6 move 7: a release over the canvas beyond the old frame is a drop, where it was dropped since move 11; over the header or the palette none; a tile click toggles the hand -- and after a pan and a zoom', { skip: SKIP }, async () => {
 	const t = await freshTab();
 	try {
 		const centre = (sel) => t.eval(`JSON.stringify((() => { const r = document.querySelector('${sel}').getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; })())`).then(JSON.parse);
@@ -1459,7 +1460,10 @@ test('H26.6 move 7: a release over the canvas beyond the old frame is a drop, at
 		await drop(bx, by);
 		assert.equal(await nodes(), was + 1, 'a release over the canvas beyond the old frame stamps');
 		const edge = await selected();
-		assert.deepEqual([edge[0], above ? edge[2] : edge[1]], ['host', above ? -480 : -900], 'landing at the old frame\'s edge, where the hand\'s snapping puts it until move 11');
+		const under = JSON.parse(await t.eval(`JSON.stringify(draw.scene.toDrawing({ x: ${bx}, y: ${by} }))`));
+		const cell = (v) => Math.round(v / 60) * 60;
+		assert.deepEqual([edge[0], edge[1], edge[2]], ['host', cell(under.x), cell(under.y)], 'H26.6 move 11: landing on the cell under the release');
+		assert.ok(above ? edge[2] < -480 : edge[1] < -900, `past the old frame's edge, where it landed until move 11 (${edge})`);
 		await t.eval(`draw.history.undo(), 1`);
 		await sleep(200);
 		assert.equal(await nodes(), was, 'control: undone');

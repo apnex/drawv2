@@ -379,6 +379,62 @@ export const REPLACEMENTS = {
 };
 
 /*
+H26.6's move 11 (dev/design/components/PAN-ZOOM.md 5.1 row 11; section 3.8, "The extents" and "The bound") -- WHETHER A DIFFERENCE FROM THE
+OLD ANSWERS IS THE EXTENT'S REMOVAL, judged from the input and both answers, never from a list, as `classOf` judges 6.3's. The old answers
+held each question to the old frame; move 11 holds none of them to it, so on an input beyond the frame:
+  a point snap (snapNode, snapIn, snapZone) answers the exact nearest point of the unbounded lattice, each axis, where it clamped to the edge
+  -- past snap-grid's own domain, 2^50, the lattice's last position within it, the domain's edge being the grid's;
+  a zone's corner drag (zoneResize) and its wrap (zoneWrap) answer the box the unbounded lattice makes, by the same exact arithmetic -- a
+  corner dragged onto a fixed corner at the frame's far edge now takes the next cell outward, which the bounded grid had none of;
+  a device's size step (deviceSizeStep) grows to SPAN_MAX, its content its floor, where it stopped at the edge;
+  a device's span (deviceWithinSurface) is no longer refused for reaching past the edge -- its content check alone answers;
+  an anchor's and a zone's field (anchor.*, zone.*) is accepted within PZ31's bound, where it was refused past the frame.
+Every other difference is not move 11's.
+*/
+const BOUND = 1_000_000;
+const pastFrame = (v, ext) => Number.isFinite(v) && Math.abs(v) > ext;
+const GRID_DOMAIN = 2 ** 50;   // snap-grid's domain (SG1): a lattice answers no position past it
+const unboundedPoint = (v, origin) => {
+	const pt = origin + P * exact.nearest(v, origin, P);
+	return Math.abs(pt) <= GRID_DOMAIN ? pt : origin + P * (v > 0 ? exact.floor(GRID_DOMAIN, origin, P) : exact.ceil(-GRID_DOMAIN, origin, P));
+};
+export function unboundedAtMove11(d) {
+	const def = QUESTIONS[d.question], input = def.inputs()[d.index], q = d.question, now = d.new, old = d.old;
+	if (['snapNode', 'snapIn.node', 'snapIn.zone', 'snapZone'].includes(q)) {
+		const origin = def.grid[0], ext = EXTENTS[`${origin}`];
+		if (!pastFrame(input.x, ext.x) && !pastFrame(input.y, ext.y)) return false;
+		return Array.isArray(now) && now[0] === unboundedPoint(input.x, origin) && now[1] === unboundedPoint(input.y, origin);
+	}
+	if (q === 'zoneResize') {
+		const { fixed, pos } = input, axis = (f, v) => { const fi = exact.nearest(f, HALF, P); let i = exact.nearest(v, HALF, P); if (i === fi) i = fi + 1; return [HALF + P * Math.min(i, fi), P * Math.abs(i - fi)]; };
+		if (!pastFrame(pos.x, ZONE_EXT.x) && !pastFrame(pos.y, ZONE_EXT.y) && Math.abs(fixed.x) < ZONE_EXT.x && Math.abs(fixed.y) < ZONE_EXT.y) return false;
+		const [x, w] = axis(fixed.x, pos.x), [y, h] = axis(fixed.y, pos.y);
+		return JSON.stringify(now) === JSON.stringify([x, y, w, h]);
+	}
+	if (q === 'zoneWrap') {
+		const b = input, x0 = HALF + P * exact.floor(b.x - HALF, HALF, P), y0 = HALF + P * exact.floor(b.y - HALF, HALF, P);
+		const x1 = HALF + P * exact.ceil(b.x2 + HALF, HALF, P), y1 = HALF + P * exact.ceil(b.y2 + HALF, HALF, P);
+		if (x0 >= -ZONE_EXT.x && y0 >= -ZONE_EXT.y && x1 <= ZONE_EXT.x && y1 <= ZONE_EXT.y) return false;
+		return JSON.stringify(now) === JSON.stringify([x0, y0, Math.max(x1 - x0, P), Math.max(y1 - y0, P)]);
+	}
+	if (q === 'deviceSizeStep') {
+		const { node, dx, dy } = input, cur = node.span ?? { cols: 1, rows: 1 };
+		const least = (node.content ?? []).reduce((m, r) => ({ cols: Math.max(m.cols, (r.at?.[0] ?? 0) + (r.cols ?? 1)), rows: Math.max(m.rows, (r.at?.[1] ?? 0) + (r.rows ?? 1)) }), { cols: 1, rows: 1 });
+		const cols = Math.min(Math.max(cur.cols + dx, least.cols), 64), rows = Math.min(Math.max(cur.rows + dy, least.rows), 64);
+		const want = cols === cur.cols && rows === cur.rows ? null : [cols, rows];
+		return JSON.stringify(now) === JSON.stringify(want) && JSON.stringify(old) !== JSON.stringify(want);
+	}
+	if (q === 'deviceWithinSurface') return typeof old === 'string' && old.includes("past the surface's edge") && (now === null || (typeof now === 'string' && now.includes('content region')));
+	if (q.startsWith('anchor.') || q.startsWith('zone.')) {
+		const ext = q.startsWith('anchor.') ? NODE_EXT : ZONE_EXT, axis = q.endsWith('x') || q.endsWith('w') ? 'x' : 'y';
+		const reach = q.endsWith('w') || q.endsWith('h') ? 2 * ext[axis] : ext[axis];
+		const bound = q.endsWith('w') || q.endsWith('h') ? 2 * BOUND : BOUND;
+		return old === false && now === true && Number.isInteger(input) && Math.abs(input) > reach && Math.abs(input) <= bound;
+	}
+	return false;
+}
+
+/*
 WHICH 6.3 CLASS A DIFFERENCE BELONGS TO, or null when none holds -- judged from the input and both answers, never from a list: the
 generator classes each difference it records, and the test classes each again.
 */

@@ -22,7 +22,7 @@ import { NODE_GRID, latticeGrids } from '../../kernel/geometry.mjs';
 import { NODE_EXT } from '../../model/surface.mjs';
 
 // zones reach within half a cell of the surface's edge -- the zone layout's extent
-export const ZONE_EXT = { x: 930, y: 510 };
+const ZONE_EXT = { x: 930, y: 510 };   // H26.6's move 11: the zone record's extent alone, read by the table until move 14; no other reader
 
 const { pitch: PITCH, origin: NODE_ORIGIN } = NODE_GRID.declaration;
 const ZONE_OFFSET = PITCH / 2;   // a zone bounds cells, so its edges fall between them

@@ -16,9 +16,8 @@ the grid (kernel/), and model/ and kernel/ import nothing from each other (C9). 
 */
 
 import { CORE_ROWS, composeKinds } from '../model/shape.mjs';
-import { NAME_MAX } from '../model/limits.mjs';
-import { NODE_EXT } from '../model/surface.mjs';
-import { NODE_GRID, nodeGridWithin, positionsWithin } from '../kernel/geometry.mjs';
+import { NAME_MAX, COORD_BOUND, ANCHOR_CAP } from '../model/limits.mjs';
+import { NODE_GRID } from '../kernel/geometry.mjs';
 import { ZONE_ROWS } from '../plugins/zones/zone-kind.mjs';
 import { LAYOUT_ROWS } from '../plugins/layouts/layout-kind.mjs';   // WD-b1: the layouts plugin's kind
 import { GROUP_ROWS } from '../plugins/groups/group-kind.mjs';
@@ -41,7 +40,11 @@ max |y| 480 across the estate -- so tightening costs nothing and removes the div
 Magnitudes sourced from the document substrate; the num() bound CHECKS below stay LOCAL (the trust
 boundary is never delegated).
 */
-const EXT = NODE_EXT;                          // an anchor keeps a full margin cell
+/*
+RESTATED at H26.6's move 11 (dev/design/components/PAN-ZOOM.md section 3.8, "The bound"; PZ31): no extent bounds an anchor now -- its `x`
+and `y` are integers within COORD_BOUND, 1,000,000 either way, and on the node lattice; the server and the editor still agree, the editor
+clamping nothing and the planner refusing what lies past the bound.
+*/
 
 /*
 B110 -- geometry is a RULE, enforced here, not a courtesy the browser performs.
@@ -81,15 +84,14 @@ const int = (v, lo, hi) => Number.isInteger(v) && v >= lo && v <= hi;
 // an entity id of one kind: the kind, a dash, six hex digits
 const id = (v, kind) => typeof v === 'string' && new RegExp(`^${kind}-[0-9a-f]{6}$`).test(v);
 
-// B113: one anchor to an anchor cell of the node extent. H26.11 (H26-21): the node grid's own positions within the extent that bounds it,
-// read from the grid as the zone's cap is (plugins/zones/zone-kind.mjs), where model/surface.mjs counted them by a formula of its own
-const ANCHOR_CAP = positionsWithin(nodeGridWithin(NODE_EXT)).length;
+// B113: one anchor to an anchor cell of the old node extent -- RESTATED at H26.6's move 11 (PZ8): the number it was counted to, 527
+// (model/limits.mjs ANCHOR_CAP), there being no extent to count
 
 const ANCHOR_FIELDS = {
 	id: (v) => id(v, 'node'),
 	name: (v) => str(v, NAME_MAX),
-	x: (v) => num(v, -EXT.x, EXT.x) && onNodeX(v),
-	y: (v) => num(v, -EXT.y, EXT.y) && onNodeY(v),
+	x: (v) => int(v, -COORD_BOUND, COORD_BOUND) && onNodeX(v),   // H26.6's move 11 (PZ31): an integer within the bound, on the lattice
+	y: (v) => int(v, -COORD_BOUND, COORD_BOUND) && onNodeY(v),
 	order: (v) => int(v, 1, ORDER_MAX),   // the drawing order (F-d, model/order.mjs)
 	// O-e2 (H19.21; O4): the ANCHOR's fields alone -- "The core holds only the anchor". A device's -- its type, frame,
 	// footprint and content regions -- are the devices plugin's (plugins/devices/device-fields.mjs), with the rule that a device
