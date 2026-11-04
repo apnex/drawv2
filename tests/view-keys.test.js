@@ -13,6 +13,9 @@ import path from 'node:path';
 import { makeInput, pointer, key, seedNodes, installDom, fakeEl, sceneOver } from './fixtures/client-harness.mjs';
 import { View, storedView, nearestLevel } from '../app/src/view.js';
 import { DEVICE_OUTLINES } from '../plugins/devices/device-footprint.mjs';
+import { Model } from './fixtures/composed.mjs';
+import { Selection } from '../app/src/selection.js';
+import { Sync } from '../app/src/sync.js';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const centre = (h) => ({ ...h.view.view });
@@ -304,6 +307,28 @@ test('H26.6 move 10: the lab, handing no store, remembers nothing', () => {
 		view.flush();
 		assert.equal(pending(), 0, 'nothing scheduled, nothing written');
 	});
+});
+
+// the page's hook (app/src/main.js `onLoaded`): Sync tells it each snapshot's diagram once loaded, and whether it is the template's fork the
+// server rebound this session to -- the view kept for that one (E13), every other diagram opened at its own remembered view
+test('H26.6 move 10: Sync tells the page each diagram it loads, and whether it is the fork the session was just rebound to', () => {
+	const saved = globalThis.localStorage, storage = new Map();
+	globalThis.localStorage = { getItem: (k) => storage.get(k) ?? null, setItem: (k, v) => storage.set(k, String(v)), removeItem: (k) => storage.delete(k) };
+	try {
+		const loaded = [];
+		const net = { isOpen: () => true, subscribe(fn) { this.recv = fn; }, onStatus() {}, send: () => true };
+		const model = new Model();
+		const history = { clear() {}, setCounts() {}, openWindowOps: () => [], flush() {}, state: { version: 0 } };
+		const sync = new Sync({ model, net, history, selection: new Selection(model), onLoaded: (id, { forked }) => loaded.push([id, forked, model.state.meta.id]) });
+		const snapshot = (id) => { const m = new Model(); m.state.meta.id = id; sync.onMessage({ cmd: 'snapshot', body: { doc: m.toJSON(), diagrams: [], mayWrite: true, locked: false, version: 1 } }); };
+		snapshot('template-a1');
+		sync.onMessage({ cmd: 'forked', body: { diagram: 'diagram-f1' } });
+		snapshot('diagram-f1');
+		snapshot('diagram-f1');
+		snapshot('diagram-b2');
+		assert.deepEqual(loaded, [['template-a1', false, 'template-a1'], ['diagram-f1', true, 'diagram-f1'], ['diagram-f1', false, 'diagram-f1'], ['diagram-b2', false, 'diagram-b2']],
+			'each told once its document is in; the fork\'s first snapshot marked forked, and only that one');
+	} finally { globalThis.localStorage = saved; }
 });
 
 /*
