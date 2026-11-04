@@ -336,6 +336,19 @@ of one-pixel drift that cost an evening.
 .palette-item.held .digit-badge { fill: var(--tok-accent); }
 
 #stage { flex: 1; display: flex; align-items: center; justify-content: center; min-width: 0; }
+/*
+H26.6's move 10 (dev/design/components/PAN-ZOOM.md section 3.7, PZ6): THE RETICLE, `button#view-home`, page chrome over the canvas's lower
+right beside `#container`, as the tester's sits over its pane's: a ring and a cross drawn by the button's own two boxes, in the chrome's
+tokens; its press brings the view's centre to 0,0, the level kept, as `h` does. In the chrome's sheet, never the canvas's: the export reads
+the canvas's to draw (server/svg-style.mjs), and no part of this is the drawing's.
+*/
+#stage { position: relative; }
+#view-home { position: absolute; right: 12px; bottom: 12px; width: 30px; height: 30px; padding: 0; border: 1px solid var(--tok-edge); border-radius: 4px;
+	background: var(--tok-panel); color: var(--tok-ink-muted); cursor: pointer; }
+#view-home:hover { border-color: var(--tok-accent); color: var(--tok-accent); }
+#view-home::before { content: ''; position: absolute; inset: 8px; border: 1.5px solid currentColor; border-radius: 50%; }
+#view-home::after { content: ''; position: absolute; inset: 4px;
+	background: linear-gradient(currentColor, currentColor) center / 1.5px 100% no-repeat, linear-gradient(currentColor, currentColor) center / 100% 1.5px no-repeat; }
 
 #kdefs { position: absolute; width: 0; height: 0; }
 
