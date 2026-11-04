@@ -1523,8 +1523,11 @@ export class Input {
 		this.overlayUi.datum(datum);
 	}
 
-	onDatumClear() {
-		this.#pendingDatum = null;   // move 10 (3.6): Shift+Space records nothing pending
+	// H26.6's move 10 (3.6): a repeat changes nothing -- with Space held and Shift pressed, Space's repeats carry Shift, and Shift pressed while
+	// Space is held changes nothing of the pending datum; Shift+Space's own key-down clears the datum and records nothing pending
+	onDatumClear(evt) {
+		if (evt?.repeat) return;
+		this.#pendingDatum = null;
 		this.readout.setDatum(null);
 		this.overlayUi.datum(null);
 	}

@@ -117,8 +117,10 @@ test('H26.6 move 10: Space\'s datum -- recorded where the pointer is at the key-
 		h.capture.onMove(pointer(1260, 780, { buttons: 0 }));
 		for (let i = 0; i < 3; i++) h.capture.onKeyDown(key(' ', { code: 'Space', repeat: true }));
 		h.capture.onKeyDown(key('Shift', { code: 'ShiftLeft', shiftKey: true }));
+		for (let i = 0; i < 3; i++) h.capture.onKeyDown(key(' ', { code: 'Space', repeat: true, shiftKey: true }));   // Space's repeats, now carrying Shift
 		h.capture.onKeyUp(key('Shift', { code: 'ShiftLeft' }));
 		assert.deepEqual(datums(h), [], 'nothing set while Space is held');
+		assert.equal(h.calls.filter((c) => c.name === 'readout.setDatum' && c.args[0] === null).length, 0, 'and the repeats with Shift cleared nothing');
 		h.capture.onKeyUp(key(' ', { code: 'Space', shiftKey: true }));
 		assert.deepEqual(datums(h), [[60, 60]], 'set on the release, where the key went down -- repeats, moves and Shift changing nothing');
 	} finally { h.restore(); }
@@ -154,6 +156,10 @@ test('H26.6 move 10: focus lost clears the pending datum; Shift+Space clears on 
 		h.capture.onKeyDown(key(' ', { code: 'Space', shiftKey: true }));
 		h.capture.onKeyUp(key(' ', { code: 'Space', shiftKey: true }));
 		assert.deepEqual(datums(h), [], 'Shift+Space: cleared, nothing pending');
+		h.capture.onKeyDown(key(' ', { code: 'Space' }));
+		h.capture.onKeyDown(key(' ', { code: 'Space', shiftKey: true }));   // a fresh Shift+Space key-down, as a lost release would leave it
+		h.capture.onKeyUp(key(' ', { code: 'Space' }));
+		assert.deepEqual(datums(h), [], 'Shift+Space\'s key-down drops a datum already pending: the release sets none');
 		assert.equal(h.calls.filter((c) => c.name === 'readout.setDatum' && c.args[0] === null).length >= 1, true, 'and the datum cleared on the key-down');
 		// a Space typed into a field never reaches the canvas's key-downs (app/src/capture.js), its key-up does: nothing pending, nothing set
 		h.capture.onKeyDown(key(' ', { code: 'Space', target: { tagName: 'INPUT' } }));
@@ -242,6 +248,15 @@ test('H26.6 move 10: a switch from A to B to A within the half second keeps each
 		view.open('diagram-a');
 		assert.deepEqual(view.view, { x: 600, y: -300, level: 3 }, 'the same diagram again -- a resynchronising snapshot -- keeps the view');
 	}, { store });
+	// and when the store is full, so the latest view was never written: a resynchronising snapshot still keeps the view, never the older stored one
+	const full = { read: () => ({ v: 1, x: 60, y: 60, level: 1 }), write: () => { throw new Error('quota'); } };
+	withView(({ view, advance }) => {
+		view.open('diagram-a');
+		view.set({ x: 900, y: 0, level: 2 });
+		advance(600);
+		view.open('diagram-a');
+		assert.deepEqual(view.view, { x: 900, y: 0, level: 2 }, 'the same diagram again keeps the view the viewer has');
+	}, { store: full });
 });
 
 test('H26.6 move 10: the page hiding writes a save still waiting; a template\'s fork keeps the view and is remembered under the fork', () => {
