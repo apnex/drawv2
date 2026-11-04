@@ -142,6 +142,7 @@ test('H26.6 move 12: --area, --around and --zone show a window of at most one ch
 		const out = await map('--around', 'out');
 		assert.deepEqual([out.window, out.chunk.i, out.chunk.j], [{ x0: 36, x1: 44, y0: -24, y1: -16 }, 1, -1], '--around a device at 40,-20, in chunk 1,-1');
 		assert.deepEqual((await map('--zone', 'pen')).window, { x0: 3, x1: 5, y0: -6, y1: -4 }, '--zone: its cells');
+		assert.deepEqual((await map('--zone', 'pen', '--layout', 'zone')).window, { x0: 2, x1: 5, y0: -7, y1: -4 }, '--zone on the zone layout: the corners bounding its cells, its own four corners among them (PAN-ZOOM.md appendix B, E15)');
 		const refused = async (...a) => captureExit(() => run('map', '--diagram', idOf(4), ...a));
 		assert.match(await refused('--area', '0,0,31,0'), /--area is at most 31 by 17 cells, one chunk/, '32 by 1 refused, naming the limit');
 		assert.match(await refused('--area', '5,0,3,0'), /--area runs from its lesser corner to its greater/, 'the lesser corner first');
