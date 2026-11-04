@@ -10,7 +10,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { makeInput, pointer, key, seedNodes, GROUND } from './fixtures/client-harness.mjs';
 import { VIEW_RULES } from '../app/src/recognize.js';
-import { stepZoom, normalisedDelta } from '../app/src/view.js';
+import { stepZoom, normalisedDelta, viewFrameMeter } from '../app/src/view.js';
 
 const blank = { target: null, overTarget: false, action: null, input: null, owner: null, control: false, entity: false };
 const MODS = ['shiftKey', 'ctrlKey', 'altKey', 'metaKey'];
@@ -361,3 +361,31 @@ test('H26.6 move 9: the view\'s rows, as 3.6 states them -- five, none mutating,
 	]);
 });
 
+/*
+PZ11's figure (app/src/view.js `viewFrameMeter`, the lab's footer): each view the scene tells timed to the second animation frame after it,
+a view told while one waits not timed again; the median and 90th percentile by nearest rank; reset by the page's button. On a scene and a
+host of the test's own -- a clock it sets, frames it runs.
+*/
+test('H26.6 move 9, PZ11: the frame meter times each view to the second frame after it, once per frame, its median and 90th percentile by nearest rank, reset', () => {
+	const listeners = [], queued = [], said = [];
+	let now = 0;
+	const scene = { onView: (fn) => { listeners.push(fn); return () => listeners.splice(listeners.indexOf(fn), 1); } };
+	const host = { performance: { now: () => now }, requestAnimationFrame: (fn) => queued.push(fn) };
+	const frame = (at) => { now = at; for (const fn of queued.splice(0)) fn(); };
+	const tell = (at) => { now = at; for (const fn of [...listeners]) fn(); };
+	const meter = viewFrameMeter({ scene, host, shown: (text) => said.push(text) });
+	assert.deepEqual([meter.figures(), said.at(-1)], [{ steps: 0, median: null, p90: null }, 'view frames: pan to measure']);
+	tell(100); tell(104);
+	frame(105);
+	assert.equal(meter.figures().steps, 0, 'the first frame after the view: not yet drawn');
+	frame(122);
+	assert.deepEqual(meter.figures(), { steps: 1, median: 22, p90: 22 }, 'timed to the second frame, from the first view told; the second view, told while it waited, not timed again');
+	assert.equal(said.at(-1), 'view frames: 1 step, median 22.0 ms, 90th percentile 22.0 ms (PZ11: within 50)');
+	meter.reset();
+	assert.deepEqual([meter.figures().steps, said.at(-1)], [0, 'view frames: pan to measure'], 'reset');
+	for (let i = 1; i <= 10; i++) { tell(1000 * i); frame(1000 * i + 1); frame(1000 * i + 10 * i); }
+	assert.deepEqual(meter.figures(), { steps: 10, median: 50, p90: 90 }, 'ten steps of 10 to 100 ms: the 5th and the 9th by nearest rank');
+	meter.close();
+	tell(20000); frame(20001); frame(20017);
+	assert.equal(meter.figures().steps, 10, 'closed: no longer listening');
+});

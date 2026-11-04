@@ -29,6 +29,7 @@ import { attachRelations } from '../../engine/store.mjs';
 import { applyOps } from '../../model/ops.mjs';
 import { derivedToApply, applyAnswer } from '../../app/src/changes.js';
 import { composeCanvas } from '../../app/src/compose-canvas.js';   // K8: the canvas, composed as the product composes it
+import { viewFrameMeter } from '../../app/src/view.js';   // H26.6's move 9 (PZ11): each view step's frame time, on the page
 import { commit, undo, redo } from '../../planner/txn.mjs';
 import { Log } from '../../planner/log.mjs';
 import { productKinds } from '../../product/kinds.mjs';
@@ -52,7 +53,7 @@ canvas opens appends the layers -- so the markup is checked for the root, and th
 AMENDED H26.6's move 7 (dev/design/components/PAN-ZOOM.md section 3.8, PZ25): the root is bare, its ground its CSS background, so the
 markup holds no ground to check.
 */
-const NEEDED = ['container', 'readout-bottom', 'lab-notice', 'kdefs'];
+const NEEDED = ['container', 'readout-bottom', 'lab-notice', 'kdefs', 'lab-frames', 'lab-frames-reset'];
 const missing = NEEDED.filter((id) => !document.getElementById(id));
 if (missing.length) throw new Error(`the lab page is missing: ${missing.join(', ')}`);
 
@@ -74,7 +75,7 @@ K8 -- the canvas, composed by the one function the product page composes it with
 this network. The lab holds no tools and no run mode; its drag judge is the attached network's, below, reached lazily
 because the network attaches to the parts composed here.
 */
-const { view, model, history, renderer, states, selection, input, listen } = composeCanvas({
+const { scene, view, model, history, renderer, states, selection, input, listen } = composeCanvas({
 	svg, scene: CANVAS_SCENE, defs: document.getElementById('kdefs'), host: window, network, kinds, parts: PRODUCT_CANVAS,   // C-a: the plugins' canvas parts
 	readoutEl: document.getElementById('readout-bottom'),
 	help: null, now: () => Date.now(),
@@ -85,6 +86,9 @@ const unlaid = CANVAS_LAYERS.filter((id, i) => document.getElementById(id) !== s
 if (unlaid.length) throw new Error(`the lab's canvas did not lay out: ${unlaid.join(', ')}`);
 // H26.6's move 7 (PAN-ZOOM.md section 3.7): the canvas resized is told to the view part, as the product page tells it
 new ResizeObserver(() => view.resized()).observe(svg);
+// H26.6's move 9 (dev/design/components/PAN-ZOOM.md, PZ11): the frame time of each view step, its median and 90th percentile in the footer
+const frames = viewFrameMeter({ scene, host: window, shown: (text) => { document.getElementById('lab-frames').textContent = text; } });
+document.getElementById('lab-frames-reset').addEventListener('click', () => frames.reset());
 
 /*
 The AUTHORITY model, and why there are two.
@@ -203,14 +207,27 @@ if (wanted) {
 	const board = boards[wanted];
 	if (!board) { if (Object.keys(boards).length) say(`no seed '${wanted}' -- try: ${Object.keys(boards).join(', ')}`); }
 	else {
-		// the board's pipes ride in its own commit (N-c), under the network's tenant like every edit -- the one tenant since S-b
+		/*
+		the board's pipes ride in its own commit (N-c), under the network's tenant like every edit -- the one tenant since S-b. H26.6's move 9
+		(PZ11): a board past the planner's 2,000 ops a request -- the cap board, 7,366 -- is committed in turn, 2,000 at a time, stopping at a
+		refusal, and the tab takes the planner's document whole, as a refusal takes it back (B260): applied op by op, each pipe after 2,000
+		drawn links routed them again, and the page did not open in four minutes
+		*/
 		const answer = net.seed(board.pipes, (pipeOps) => {
-			const a = commit(authority, log, { ops: [...board.ops, ...pipeOps], label: `seed ${wanted}` }, 'lab', 'lab', { kinds });
-			if (a.ok) applyOps(model, a.change?.ops ?? []);
+			const all = [...board.ops, ...pipeOps], label = `seed ${wanted}`;
+			if (all.length <= 2000) {
+				const a = commit(authority, log, { ops: all, label }, 'lab', 'lab', { kinds });
+				if (a.ok) applyOps(model, a.change?.ops ?? []);
+				return a;
+			}
+			let a = null;
+			for (let i = 0; i < all.length && (a === null || a.ok); i += 2000) a = commit(authority, log, { ops: all.slice(i, i + 2000), label }, 'lab', 'lab', { kinds });
+			model.load({ ...authority.toJSON(), selection: [] });
 			return a;
 		});
 		if (!answer.ok) say(`seed ${wanted} refused: ${answer.error}`);
 		else say(`seed ${wanted} -- ${board.ops.length} entities, ${model.all('pipe').length} pipes`);
+		if (answer.ok && board.mode) renderer.setMode(board.mode);   // H26.6's move 9: a board that opens in a mode -- the cap board in run mode
 	}
 }
 
@@ -226,4 +243,4 @@ the page showed them, so the page is what the test runs.
 The product exposes `window.draw` for the same reason (tests/browser.test.js). Nothing here is
 reachable from production: `lab/` is served only at lab.apnex.io and imported by nothing.
 */
-window.lab = { model, authority, network, history, log, input, capture, routeHook: net.judge, view };   // H26.6 move 8: the view part, a level set in tests
+window.lab = { model, authority, network, history, log, input, capture, routeHook: net.judge, view, frames };   // H26.6 move 8: the view part, a level set in tests; move 9: the frame meter

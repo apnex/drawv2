@@ -64,14 +64,15 @@ let nonce = 0;
 const theTab = createTab(() => cdp);   // the one tab (tests/fixtures/matrix-runner.mjs), on this file's Chrome
 
 // navigate the one tab to a seeded board and hand back an evaluator that runs in it
-async function open(seed, { block = [] } = {}) {
+// H26.6's move 9: `tries`, how many times readiness is asked, 150 ms apart -- the cap board's seed takes its planner some seconds
+async function open(seed, { block = [], tries = 100 } = {}) {
 	const t = await theTab();
 	t.thrown.length = 0; t.requests.clear(); t.timeline.length = 0; t.clock.t0 = Date.now();
 	await t.send('Network.setBlockedURLs', { urls: block });
 	const n = ++nonce;
 	await t.send('Page.navigate', { url: `http://127.0.0.1:${port}/?seed=${seed}&n=${n}` });
 	const isReady = `location.search.includes('n=${n}') && !!window.lab`;
-	for (let i = 0; i < 100; i++) { if (await t.run(isReady).catch(() => false)) break; await sleep(150); }
+	for (let i = 0; i < tries; i++) { if (await t.run(isReady).catch(() => false)) break; await sleep(150); }
 	const ready = !!(await t.run(isReady).catch(() => false));
 	/*
 	A page that never became ready is reported AS THAT, with its state and everything that failed while
@@ -324,6 +325,59 @@ test('H26.6 move 9: every gesture of the intent pans or zooms the lab canvas und
 		}
 	} finally {
 		await t.run(`(lab.input.renderer.setMode('view'), 1)`).catch(() => {});
+		await t.send('Emulation.clearDeviceMetricsOverride');
+	}
+});
+
+/*
+H26.6's move 9 (dev/design/components/PAN-ZOOM.md section 4, PZ11; appendix A, move 9) -- THE CAP BOARD AND THE LAB'S FRAME FIGURE: the board
+at every cap opens by name, `?seed=caps` (tools/cap-board.mjs), in run mode with every spawner armed; at 3x it is panned a step a frame
+-- by a middle drag with the zone grid hidden, by one with Shift held showing it (the root's `zonegrid` class), and by the wheel -- and the
+footer times each view step to the frame after the one that shows it (app/src/view.js `viewFrameMeter`), its median and 90th percentile,
+and its button resets it. The figures are headless Chrome's, software-rendered: comparative alone, PZ11's own figure the director's on
+the Chromebook. Each run's figures are reported as the test's diagnostic.
+*/
+test('H26.6 move 9, PZ11: the cap board opens by name in run mode, every spawner armed, and the footer times each view step of a pan at 3x, reset by its button', { skip: SKIP }, async (ctx) => {
+	const t = await theTab();
+	try {
+		await t.send('Emulation.setDeviceMetricsOverride', { width: 1366, height: 768, deviceScaleFactor: 1, mobile: false });
+		const loading = Date.now();
+		await open('caps', { tries: 800 });
+		const loaded = Date.now() - loading;
+		const board = JSON.parse(await t.run(`JSON.stringify({ mode: lab.input.renderer.mode, counts: ['node', 'zone', 'link', 'pipe', 'group'].map((k) => lab.model.all(k).length),
+			spawners: lab.model.all('node').filter((n) => n.spawn).length, text: document.getElementById('lab-frames').textContent })`));
+		assert.deepEqual(board.counts, [527, 576, 2000, 4000, 263], 'every cap the board can reach: 527 anchors, 576 zones, 2,000 links, 4,000 pipes, 263 groups');
+		assert.deepEqual([board.mode, board.spawners], ['run', 106], 'in run mode, every waypoint an armed spawner');
+		await t.run(`(lab.view.set({ x: 0, y: 0, level: 3 }), 1)`);
+		await t.run(frames(3));
+		const box = JSON.parse(await t.run(`JSON.stringify((() => { const r = document.getElementById('container').getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; })())`));
+		const p = { x: Math.round(box.x + box.w * 0.8), y: Math.round(box.y + box.h * 0.5) };
+		const measured = {}, zoneGrid = `document.getElementById('container').classList.contains('zonegrid')`;
+		for (const [name, shift] of [['a middle drag, the device grid', false], ['a middle drag, both grids with Shift held', true], ['the wheel, the device grid', null]]) {
+			const modifiers = shift ? 8 : 0;
+			const mouse = (type, x, buttons) => t.send('Input.dispatchMouseEvent', { type, x, y: p.y, button: 'middle', buttons, clickCount: type === 'mouseMoved' ? 0 : 1, modifiers });
+			if (shift) await t.send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Shift', code: 'ShiftLeft', windowsVirtualKeyCode: 16, modifiers });
+			await t.run(`(lab.frames.reset(), 1)`);
+			let shown = null;
+			if (shift === null) {
+				for (let i = 1; i <= 40; i++) { await t.send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: p.x, y: p.y, deltaX: 0, deltaY: 24 }); await t.run(frames(1)); }
+			} else {
+				await mouse('mousePressed', p.x, 4);
+				for (let i = 1; i <= 41; i++) { await mouse('mouseMoved', p.x - 12 * i, 4); await t.run(frames(1)); if (i === 20) shown = await t.run(zoneGrid); }
+				await mouse('mouseReleased', p.x - 12 * 41, 0);
+				assert.equal(shown, shift, `${name}: the zone grid ${shift ? 'shown' : 'hidden'} as it pans`);
+			}
+			await t.run(frames(3));
+			if (shift) await t.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Shift', code: 'ShiftLeft', windowsVirtualKeyCode: 16 });
+			measured[name] = JSON.parse(await t.run('JSON.stringify(lab.frames.figures())'));
+			assert.ok(measured[name].steps >= 30, `${name}: a step timed for each frame of the pan (${measured[name].steps})`);
+			assert.ok(measured[name].median > 0 && measured[name].p90 >= measured[name].median, `${name}: a median and a 90th percentile`);
+			assert.match(await t.run(`document.getElementById('lab-frames').textContent`), /^view frames: \d+ steps, median \d+\.\d ms, 90th percentile \d+\.\d ms \(PZ11: within 50\)$/, `${name}: shown in the footer`);
+		}
+		await t.run(`(document.getElementById('lab-frames-reset').click(), 1)`);
+		assert.deepEqual([JSON.parse(await t.run('JSON.stringify(lab.frames.figures())')).steps, await t.run(`document.getElementById('lab-frames').textContent`)], [0, 'view frames: pan to measure'], 'the button resets it');
+		ctx.diagnostic(`PZ11, headless and comparative alone: the cap board seeded and drawn in ${loaded} ms; a middle drag at 3x on 1366 by 768, a step a frame -- ${Object.entries(measured).map(([k, f]) => `${k}: ${f.steps} steps, median ${f.median.toFixed(1)} ms, 90th percentile ${f.p90.toFixed(1)} ms`).join('; ')}`);
+	} finally {
 		await t.send('Emulation.clearDeviceMetricsOverride');
 	}
 });
