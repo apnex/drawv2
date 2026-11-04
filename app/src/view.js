@@ -111,7 +111,7 @@ export function viewFrames(later) {
 
 export class View {
 	// `settled`, the composition's: told once a view this part set has been written and told, the scene writable again (the move 8 fold)
-	#acc = 0;   // 3.6: the pinch's held pixels, toward the next level
+	#pinchPixels = 0;   // 3.6: the pinch's held pixels, toward the next level
 
 	constructor({ scene, settled = () => {} }) {
 		this.scene = scene;
@@ -140,13 +140,13 @@ export class View {
 			this.scene.setView({ x: next.x - w / (2 * scale), y: next.y - h / (2 * scale), scale });
 		}
 		this.view = next;
-		this.#acc = acc;
+		this.#pinchPixels = acc;
 		if (laidOut) this.settled();
 	}
 
 	// the view, set on the scene again as it stands -- the first opening, a resize -- the pinch's held pixels kept
 	apply() {
-		this.#write(this.view, this.#acc);
+		this.#write(this.view, this.#pinchPixels);
 	}
 
 	// the page's root was resized: the centre and the level kept, the view set again at the new default's scale
@@ -181,7 +181,7 @@ export class View {
 		const scale = this.#scaleAt(this.view.level), page = this.size().h;
 		const dx = normalisedDelta(deltaX, deltaMode, page), dy = normalisedDelta(deltaY, deltaMode, page);
 		if (scale === null || dx === null || dy === null) return;
-		this.#write({ ...this.view, x: this.view.x + dx / scale, y: this.view.y + dy / scale }, this.#acc);
+		this.#write({ ...this.view, x: this.view.x + dx / scale, y: this.view.y + dy / scale }, this.#pinchPixels);
 	}
 
 	/*
@@ -205,8 +205,8 @@ export class View {
 	pinchZoom(screen, deltaY, deltaMode) {
 		const delta = normalisedDelta(deltaY, deltaMode, this.size().h);
 		if (delta === null) return;
-		const step = stepZoom(ZOOM_LEVELS.indexOf(this.view.level), this.#acc, delta);
-		if (step.steps === 0) { this.#acc = step.acc; return; }
+		const step = stepZoom(ZOOM_LEVELS.indexOf(this.view.level), this.#pinchPixels, delta);
+		if (step.steps === 0) { this.#pinchPixels = step.acc; return; }
 		const level = ZOOM_LEVELS[step.index], scale = this.#scaleAt(level);
 		if (scale === null) { this.#write({ ...this.view, level }, step.acc); return; }
 		const { w, h } = this.size(), at = this.scene.zoomAbout(screen, scale);
@@ -215,12 +215,12 @@ export class View {
 
 	// 3.6: the pinch's held pixels set to 0 -- focus lost, a switch of diagram
 	pinchReset() {
-		this.#acc = 0;
+		this.#pinchPixels = 0;
 	}
 
 	// the pinch's held pixels, toward the next level: read by the tests of the accumulator
 	pinchHeld() {
-		return this.#acc;
+		return this.#pinchPixels;
 	}
 
 	// the grid's values for the view's level: its tiers, the scale a dot's drawing radius is shown at, and the margin (3.7, PZ24)
