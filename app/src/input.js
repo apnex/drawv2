@@ -15,6 +15,9 @@ Input — pointer/keyboard state machine. Two-button gestures (`dev/DECISIONS.md
   Shift mid-drag    ortho lock: constrain a move/clone to its dominant axis
   Shift at release  (link mode) chain wiring: continue the run from the target
   Space             set datum at cursor (readout goes relative); Shift+Space clears
+  wheel / two-finger scroll   pan the view, in every mode (H26.6's move 9, app/src/recognize.js VIEW_RULES); never a zoom
+  pinch / Ctrl+wheel          zoom one level per 100 pixels about the pointer
+  middle-drag, right-drag on open ground, Space+left-drag   pan the view once the press travels 4 screen pixels
   1-6 / Q           stamp hand: digit arms a node type (ghost at the snapped cell,
                     click stamps, Enter stamps at the ghost); Q pipettes the type
                     under the cursor (or clears); same digit / Esc / tile click drops;
@@ -34,7 +37,7 @@ Input — pointer/keyboard state machine. Two-button gestures (`dev/DECISIONS.md
 */
 
 import { Overlay } from './overlay.js';
-import { pressRows, hitFactsOf, DOUBLE_CLICKS } from './recognize.js';
+import { pressRows, hitFactsOf, DOUBLE_CLICKS, VIEW_RULES } from './recognize.js';
 import { KEYMAP, KEY_RELEASES } from './keymap.js';
 import { openTable, openGestures } from '../../kernel/input-rules.mjs';   // H26.2: the rules part; H26.8: its tables in input-binding's own form
 import { occupiedAnyAt, picksOf, pointsOf, grabbedAt, takenIn } from './pick.js';
@@ -54,11 +57,15 @@ import { BARE_KIND, ANCHOR_KINDS } from '../../model/anchors.mjs';   // the bare
 
 const ARROW = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
 /*
-H26.2 (dev/design/components/INPUT-BINDING.md section 5) -- THE CLICK THRESHOLD, named once: canvas units a press may travel and still
-be a click, ruled 2026-09-30 (dev/design/input/GESTURE-SYSTEM.md section 13, stage 3). The gesture session decides a drag by it, exactly
+H26.2 (dev/design/components/INPUT-BINDING.md section 5) -- THE CLICK THRESHOLD, named once: how far a press may travel and still be a
+click, ruled 2026-09-30 (dev/design/input/GESTURE-SYSTEM.md section 13, stage 3). The gesture session decides a drag by it, exactly
 (input-binding IB10, D7); the link release alone reads it again, asking whether a click landed at the drag's start -- draw's policy.
+RESTATED at H26.6's move 9 (dev/design/components/PAN-ZOOM.md section 3.2; PZ17, B404): SCREEN PIXELS, where it was drawing units -- the
+session is opened `measure: 'screen'` (input-binding 0.3.0, IB16), so every point it measures is a fact's `screen`, a restart's `from` a
+screen point (`chainFrom` hands `toScreen`), and the link release's `atStart` compares screen points; a press is a drag by how far it
+travelled on the screen whatever the view's scale, so at today's fit, 0.495, one travelling 2 to 4 pixels, a drag before, is a click.
 */
-const DRAG_THRESHOLD = 4;
+const PRESS_THRESHOLD_PIXELS = 4;
 
 // A1 — the node-frame rect spanning two snapped cell-centre points: the text-box draw preview + its
 // footprint (origin cell + span counts). a click (a===b) → a 1×1 frame; a drag → the spanned frame.
@@ -145,7 +152,7 @@ const INPUT_GESTURES = {
 			const hand = i.tools.hand ?? null;
 			i.act(i.decide('link', evt, {
 				dst: !!dst, dstIsSrc: dst === ctx.src.id, srcAlive: !!srcAlive, validTarget: !!validTarget, hasVia, admitted, judged: !!i.judgeDrag,
-				click: outcome.trigger === 'click', atStart: dist(pos, ctx.start) <= DRAG_THRESHOLD,
+				click: outcome.trigger === 'click', atStart: dist(evt.screen, ctx.screenStart) <= PRESS_THRESHOLD_PIXELS,   // H26.6's move 9: on the screen
 				shift: !!evt.shiftKey, ctrl: !!evt.ctrlKey, alt: !!evt.altKey, pressShift: !!ctx.shift,
 				srcIsNode: i.handSpec?.itemOf(i.model.get('node', ctx.src.id)) != null, hand, handIsSrcType: hand !== null && hand === i.handSpec?.itemOf(ctx.src), chained: !!i.state.chained,
 				srcSelected: i.selection.has(ctx.src.id),
@@ -168,7 +175,7 @@ const INPUT_GESTURES = {
 			i.overlayUi.clearHover();
 			const sole = i.selection.list();
 			const srcKey = i.state.armed.source === src.id && sole.length === 1 && sole[0] === src.id ? 'w' : false;
-			i.ctx = i.linkDrag(src, pos, { shift: evt.shiftKey, srcKey });
+			i.ctx = i.linkDrag(src, pos, { shift: evt.shiftKey, srcKey, screen: evt.screen });
 			i.updateLinkPreview(pos);
 			return i.ctx;
 		}
@@ -202,12 +209,21 @@ const INPUT_GESTURES = {
 	},
 };
 
+/*
+H26.6's move 9 (dev/design/components/PAN-ZOOM.md section 3.6) -- THE PAN GESTURES, each under its own name with its one button (IB9): a pan
+row's press opens none (app/src/recognize.js VIEW_RULES); once the press travels the threshold the row's gesture starts, the pointer taken
+(`onPanPress`, `move`), and each move then moves the view by the pointer's travel on screen (`panStep`). A release commits nothing, a view
+being no edit, and a cancel -- the pointer lost, focus lost, Escape -- leaves the view where the pan had it.
+*/
+const pan = (button) => ({ button, update: (i, ctx, pos, evt) => i.panStep(ctx, evt) });
+const VIEW_GESTURES = { 'pan-middle': pan(1), 'pan-right': pan(2), 'pan-space': pan(0) };
+
 // H26.2: exported for tests/fixtures/binding-parity.mjs alone, the fixture of tests/input-binding-parity.test.js, which records which
 // body runs for each input before the move onto input-binding and after it (dev/design/components/INPUT-BINDING.md acceptance step 4);
 // no module reads it. H26.8's capture move: the editing gestures' slots and Input's own, one table in the declared order
 const E = EDITING_GESTURES;
 export const GESTURES = { move: E.move, clone: E.clone, pending: E.pending, 'clone-pending': E['clone-pending'], handle: E.handle, ...INPUT_GESTURES,
-	marquee: E.marquee };
+	marquee: E.marquee, ...VIEW_GESTURES };
 
 export class Input {
 	/*
@@ -226,6 +242,12 @@ export class Input {
 	*/
 	#host;
 	/*
+	H26.6's move 9: a pan row's press waiting to travel the threshold -- `{ gesture }`, the row's pan gesture -- or null. Draw's own, not the
+	session's: below the threshold no gesture is live for any guard and nothing is taken (PAN-ZOOM.md section 3.6, "engagement"); a press,
+	a release, a lost pointer, a focus loss or a document replaced drops it.
+	*/
+	#pendingPan = null;
+	/*
 	`host` is the surface that owns GLOBAL key events and receives outbound host actions — `window` in
 	the browser. Injected rather than reached for (B45): Input is the class H6 exists to decompose, and
 	a module that grabs its own collaborators cannot be composed differently or tested without a global.
@@ -233,7 +255,7 @@ export class Input {
 	owners of one node. H26.8's capture move (NATIVE-SHAPES.md section 3.2): the panel, `{ shown(), show(on) }`, which the page hands --
 	whether it shows, and show or hide it -- never the element.
 	*/
-	constructor({ svg, scene, model, history, selection, renderer, states, labels, readout, tools, host, help, snap, now, plugins = [], runRules = [], parts = [] }) {
+	constructor({ svg, scene, view = null, model, history, selection, renderer, states, labels, readout, tools, host, help, snap, now, plugins = [], runRules = [], parts = [] }) {
 		// C-c: the kinds placed on the grid, and how -- the canvas parts' (snap.js placesOf); C-d: their press rows and handles, below
 		this.parts = parts;
 		this.places = placesOf(parts);
@@ -355,6 +377,11 @@ export class Input {
 		// K5: run mode's rows come from the composition root (app/src/run-mode.js via main.js); a composition without the
 		// simulation passes none, and a run-mode press then means nothing
 		this.runRules = openTable({ owner: 'product', rows: runRules });
+		// H26.6's move 9 (PAN-ZOOM.md section 3.6): the view's rows, asked before the press table -- or run mode's -- in every mode, and
+		// for every wheel; `view`, the view part (app/src/view.js), runs their verbs, handed by the composition; none in a harness that
+		// sets no view of its own, where the rows still match and claim and move nothing
+		this.viewRules = openTable({ owner: 'product', rows: VIEW_RULES });
+		this.view = view;
 		// what each gesture MEANS when it ends, or when a press becomes a drag (stage 5, app/src/releases.js)
 		this.meaningRules = Object.fromEntries(Object.entries({ link: LINK_RELEASES, marquee: MARQUEE_RELEASES, ctrlClick: CTRL_CLICKS,
 			pressDrag: PRESS_DRAGS, cloneDrag: CLONE_DRAGS })
@@ -403,8 +430,9 @@ export class Input {
 		this.now = typeof now === 'function' ? now : () => Date.now();
 		// L1: what the input has done, as one value -- the pointer, the armed `w`, a chain (app/src/input-state.js)
 		this.state = initialInputState();
-		// H26.2: the session, from the threshold and the gestures this table declares -- each by its name, once
-		this.#session = openGestures({ threshold: DRAG_THRESHOLD,
+		// H26.2: the session, from the threshold and the gestures this table declares -- each by its name, once. H26.6's move 9 (PZ17):
+		// measured on the screen, the threshold in screen pixels
+		this.#session = openGestures({ threshold: PRESS_THRESHOLD_PIXELS, measure: 'screen',
 			gestures: Object.entries(GESTURES).map(([name, g]) => ({ name, engaged: g.engaged ?? true, button: g.button ?? null })) });
 		// H26.4 (dev/design/components/VECTOR-SCENE.md section 5.1): the canvas's scene, a value -- the gestures' previews are its items
 		this.scene = scene;
@@ -459,6 +487,8 @@ export class Input {
 			// a gesture must not survive a document swap (chain mode has no held
 			// button, so the header menu is reachable mid-gesture)
 			if (action === 'load' && this.mode) this.cancelDrag();
+			// H26.6's move 9 (3.6): a switch of diagram drops a pan row's press and the pinch's held pixels
+			if (action === 'load') { this.#pendingPan = null; this.view?.pinchReset(); }
 			// hovered/armed state must die with its entity (chord delete, undo, load)
 			if (action === 'del' || action === 'load') {
 				if (this.overlayUi.hovered && (action === 'load' || entity.id === this.overlayUi.hovered)) {
@@ -540,10 +570,19 @@ export class Input {
 		this.#markShiftOwed(evt);   // H26.5 (B413)
 		// L1 first: every press moves the pointer, hands the armed `w` over, and ends a chain (app/src/input-state.js)
 		this.state = track(this.state, evt);
+		this.#pendingPan = null;   // H26.6's move 9: a press replaces the press a pan row waited on
 		// W5 — RUN mode: the diagram ACTS as UI, and is not a gesture surface at all. A guard rather
 		// than a rule, because it is a mode of the whole surface (INPUT.md §4).
-		// The session holds its press too (H26.2), taken or not.
-		if (this.renderer.mode === 'run') { this.#session.pointerDown(evt); return this.runModePress(evt, reply); }
+		// The session holds its press too (H26.2), taken or not. H26.6's move 9 (PAN-ZOOM.md section 3.6): the view's rows asked first, in
+		// run mode too, so run mode pans as the others do; run mode's press, as before, when none matches -- a press the live gesture took
+		// among them, as before
+		const run = this.renderer.mode === 'run';
+		let viewRow = null;
+		if (run) {
+			let viewMatch = null;
+			this.#session.resolvePress(evt, { match: () => (viewMatch = this.#viewMatch(evt)) });
+			return viewMatch ? this[viewMatch.row.run](evt, reply, viewMatch.row) : this.runModePress(evt, reply);
+		}
 
 		/*
 		THE w THAT PLACED THE SOURCE -- ruled 2026-09-30: it counts as the drag's first key "if that same anchor remains
@@ -571,12 +610,16 @@ export class Input {
 			match: () => {
 				if (this.labels.isOpen()) this.labels.close(true);
 				this.tools.hideHand();
+				// H26.6's move 9: the view's rows first -- a pan row matches only with no gesture live, so it never cancels one
+				const viewMatch = this.#viewMatch(evt);
+				if (viewMatch) { viewRow = viewMatch.row; return viewMatch; }
 				const { match } = this.pressRules.matchInput(evt, this.situation(), { readOnly: this.readOnly });
 				rule = match?.row;
 				return match;   // null when no row matches (input-binding IB7)
 			},
 			cancelled: (cancel) => this.#cancelled(cancel, evt),
 		});
+		if (viewRow) return this[viewRow.run](evt, reply, viewRow);
 		// a press the live gesture took -- its match never asked, so no row -- already ended the chain (input state); and one no row means
 		if (!rule) return;
 		this.overlayUi.showGrids(evt, false);
@@ -588,6 +631,51 @@ export class Input {
 		if (outcome.phase === 'start') this.ctx = GESTURES[outcome.gesture.name].start(this.#subjectOf(outcome.gesture.name), hit, pos, evt, rule) || {};
 	}
 
+
+	/*
+	H26.6's move 9 (PAN-ZOOM.md section 3.6) -- THE VIEW'S ROWS ASKED (app/src/recognize.js VIEW_RULES): the situation they read, whether a
+	gesture is live -- engaged or not, the session's -- whether the press is on open ground, the canvas, and whether Space is held, by the
+	keys the session was told (IB14); the guards a press is asked under, and whether a gesture is in progress, which the wheel's rows run
+	through. Answers the match, or null.
+	*/
+	#viewAsked(evt) {
+		const situation = { live: this.#session.state.gesture !== null, openGround: evt.hit?.kind === 'canvas', spaceHeld: this.#session.state.keys.includes('Space') };
+		return this.viewRules.matchInput(evt, situation, { readOnly: this.readOnly, gesturing: this.isGesturing() });
+	}
+	#viewMatch(evt) {
+		return this.#viewAsked(evt).match;
+	}
+
+	// H26.6's move 9: a pan row's press -- waiting, unclaimed and untaken, until it travels the threshold (`move`), its gesture the row's
+	onPanPress(evt, reply, row) {
+		this.#pendingPan = { gesture: row.pans };
+	}
+
+	/*
+	H26.6's move 9: a pan gesture's move -- the view moved by the pointer's travel on screen since the last (app/src/view.js `dragPan`). The
+	last point is taken first, so a throw -- the scene refusing a view past its range before it moves, or a redraw failing after -- leaves
+	the next move measuring from this one, the view where the view part says it is.
+	*/
+	panStep(ctx, evt) {
+		const from = ctx.last;
+		ctx.last = evt.screen;
+		this.view?.dragPan(evt.screen.x - from.x, evt.screen.y - from.y);
+	}
+
+	/*
+	H26.6's move 9 (PAN-ZOOM.md section 3.6) -- A WHEEL, by its own entry: matched against the view's rows and claimed there, so the page
+	neither scrolls nor zooms, never through `resolvePress`, which takes presses alone; a wheel without Ctrl pans and with Ctrl zooms a level
+	about the pointer, in every mode and while a gesture is live (app/src/view.js `scrollPan`, `pinchZoom`).
+	*/
+	wheel(evt, reply) {
+		this.#markShiftOwed(evt);   // H26.5 (B413)
+		const { match, claimed } = this.#viewAsked(evt);
+		if (claimed) reply.claim();
+		if (match) this[match.row.run](evt, reply, match.row);
+	}
+
+	onScrollPan(evt) { this.view?.scrollPan(evt.deltaX, evt.deltaY, evt.deltaMode); }
+	onPinchZoom(evt) { this.view?.pinchZoom(evt.screen, evt.deltaY, evt.deltaMode); }
 
 	/*
 	H12.7 -- the situation this surface is in, as a VALUE.
@@ -827,8 +915,9 @@ export class Input {
 	is the drag as it happened: each key that acted, and the stop it made -- what a plugin reads to know how its stops
 	came to be, instead of flags set along the way. With no plugin every stop is a pin, so `route` is `via`.
 	*/
-	linkDrag(src, pos, { shift = false, srcKey = false } = {}) {
-		return { src, path: previewPath(this.scene), target: null, start: pos, shift, srcKey,
+	// H26.6's move 9: `screen`, where the drag began on the screen -- what the release's `atStart` measures from
+	linkDrag(src, pos, { shift = false, srcKey = false, screen = this.scene.toScreen(pos) } = {}) {
+		return { src, path: previewPath(this.scene), target: null, start: pos, screenStart: screen, shift, srcKey,
 			via: [], route: [], placed: [], steps: [] };
 	}
 
@@ -913,13 +1002,26 @@ export class Input {
 	One move → the live gesture's own `update`. The mode switch this replaces was eight branches
 	deep; each is now the entry that owns the rest of that gesture's lifecycle.
 	*/
-	move(evt) {
+	move(evt, reply) {
 		this.#markShiftOwed(evt);   // H26.5 (B413): Shift is the keyboard's, whichever pointer's event says it is held
 		const outcome = this.#session.pointerMove(evt);   // H26.2: the press's travel, and an update when a gesture is live
 		// H26.5 (RD18; dev/design/components/RELEASES-0.2.md section 4): another pointer's move -- one the press does not hold -- changes
 		// nothing, so nothing of draw's runs: not even the pointer tracked, which is the press's pointer's
 		if (outcome.otherPointer) return;
 		this.state = track(this.state, evt);
+		/*
+		H26.6's move 9 (PAN-ZOOM.md section 3.6, "engagement"): a pan row's press that has just travelled the threshold, 4 screen pixels,
+		becomes its pan -- the row's gesture started, the pointer taken (IC8) -- and the view follows the pointer's travel from here on
+		*/
+		if (this.#pendingPan && outcome.crossed) {
+			const { gesture } = this.#pendingPan;
+			this.#pendingPan = null;
+			if (this.#session.state.gesture === null && this.#session.startGesture({ gesture }).phase === 'start') {
+				this.ctx = { last: evt.screen };
+				reply?.takePointer();
+				return;
+			}
+		}
 		const moving = this.mode === 'move' || this.mode === 'clone';
 		this.overlayUi.showGrids(evt, moving);
 		const pos = evt.at;
@@ -1021,6 +1123,7 @@ export class Input {
 		// H26.5 (RD18): another pointer's release ends no press and commits nothing, so draw runs nothing: no dispatch, and none of the
 		// teardown -- onGestureEnd would release the remote changes queued behind a gesture still live (D12)
 		if (outcome.otherPointer) return;
+		this.#pendingPan = null;   // H26.6's move 9: a pan row's press released short of the threshold does nothing -- a click as today
 		// L2: a click or a drop, from the press the session tracked -- its outcome's `trigger`, handed to the commit, nothing written on the
 		// fact (H26.8's capture move)
 		try { this.dispatchUp(evt, outcome); } finally {
@@ -1058,7 +1161,7 @@ export class Input {
 	// H26.2 (D13): each table's rows, read off the component's table -- arrays of rows, as the overlay always took
 	bindings() {
 		const m = this.meaningRules, rows = (table) => table.rows.map((entry) => entry.row);
-		return { keys: rows(this.keyRules), presses: rows(this.pressRules), double: rows(this.doubleRules), run: rows(this.runRules),
+		return { keys: rows(this.keyRules), presses: rows(this.pressRules), double: rows(this.doubleRules), run: rows(this.runRules), view: rows(this.viewRules),
 			releases: [...rows(m.link), ...rows(m.marquee), ...rows(m.ctrlClick)], words: this.helpWords };
 	}
 
@@ -1173,7 +1276,7 @@ export class Input {
 	// H26.2: a chain is a request -- the live gesture becomes the link drag (a digit mid-drag), or none is live and it starts one (a
 	// commit that chains) -- and a press still held restarts from where the chain began; the chain's start runs on that outcome
 	chainFrom(node, pos) {
-		const chain = { gesture: 'link', from: pos };
+		const chain = { gesture: 'link', from: this.scene.toScreen(pos) };   // H26.6's move 9 (IB16): a restart's `from` is a screen point
 		const outcome = this.#session.state.gesture ? this.#session.becomeGesture(chain) : this.#session.startGesture(chain);
 		this.state = track(this.state, { type: 'chained' });   // a chain began this drag, not a press (input state)
 		if (outcome.phase !== 'start' && outcome.phase !== 'become') return;
@@ -1228,6 +1331,7 @@ export class Input {
 		let outcome;
 		if (evt && evt.type === 'cancel') {   // the browser took the pointer: no press, and the gesture ends
 			this.state = track(this.state, evt);
+			this.#pendingPan = null;   // H26.6's move 9: and no pan row's press waits
 			outcome = this.#session.pointerLost();
 		} else outcome = this.#session.cancelGesture();   // draw's own causes: Escape, a lock, a document replaced, an edit, a snapshot
 		this.#cancelled(outcome, evt);
@@ -1308,6 +1412,9 @@ export class Input {
 	*/
 	keyDown(evt, reply) {
 		this.#markShiftOwed(evt);   // H26.5 (B413)
+		// H26.6's move 9 (PAN-ZOOM.md section 3.6, PZ27): the session told each key held (IB14) -- these eligible key-downs alone, a key typed
+		// into a field never reaching here (app/src/capture.js) -- so a left press while Space is held is `pan-space`'s
+		this.#session.keyDown(evt);
 		// typing contexts (header menu, label editor) never reach here: capture keeps them (app/src/capture.js)
 		// the Rules engine finds the ONE row this key means in this situation (dev/RULES.md section 11)
 		const { match, claimed } = this.keyRules.matchInput(evt, this.situation(null, this.mode), {
@@ -1557,6 +1664,7 @@ export class Input {
 	// a key release: the ONE row it means (app/src/keymap.js KEY_RELEASES), through the same engine as a key press
 	keyUp(evt, reply) {
 		this.#markShiftOwed(evt);   // H26.5 (B413)
+		this.#session.keyUp(evt);   // H26.6's move 9 (IB14): every key-up, so a key released after typing in a field holds nothing
 		const rule = this.releaseRules.matchInput(evt, this.situation(null, this.mode), {
 			readOnly: this.readOnly, helpOpen: !!(this.help && this.help.shown()), gesturing: this.isGesturing(),
 		}).match?.row;
@@ -1572,11 +1680,18 @@ export class Input {
 	2. when not, nothing of Shift's, so zones Ctrl+A selected with no Shift held since stay selected until Shift is next released (B352);
 	3. the arming's, with the blur's event, whose modifiers are all false: an armed delete or clone affordance goes, as Alt's or
 	   Control's release would take it.
-	It cancels no gesture and ends no press: a drag continues across a focus change, draw's own policy.
+	It cancels no gesture and ends no press: a drag continues across a focus change, draw's own policy -- but for a pan.
+	H26.6's move 9 (PAN-ZOOM.md section 3.6): a focus loss cancels a live pan, the view left where the pan had it, and drops a pan row's
+	press waiting on the threshold, the keys the session holds (IB14) -- no release of Space is promised after it -- and the pinch's held
+	pixels.
 	*/
 	blur(evt) {
 		if (this.shiftOwed) this.onShiftUp();
 		this.onArmingUp(evt);
+		this.#session.keysLost();
+		this.#pendingPan = null;
+		this.view?.pinchReset();
+		if (Object.hasOwn(VIEW_GESTURES, this.mode)) this.cancelDrag(evt);
 	}
 
 	// H26.5 (B413): an event carrying Shift may have activated what Shift's release clears -- the press showing the zone grid and picking

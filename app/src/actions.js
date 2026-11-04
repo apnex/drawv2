@@ -49,6 +49,10 @@ export const ACTION_LABELS = {
 	stampClicked: 'stamp the held type there',
 	addInBox: 'add what the marquee takes to the selection',
 	// ---- run mode ----
+	// ---- the view (H26.6's move 9, app/src/recognize.js VIEW_RULES) ----
+	onScrollPan: 'pan the view, in every mode; the wheel never zooms',
+	onPinchZoom: 'zoom one level out or in about the pointer',
+	onPanPress: 'pan the view once the press travels 4 pixels; a click does nothing',
 };
 
 // the action a row names: its run, or the gesture it starts

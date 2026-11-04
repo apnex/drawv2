@@ -55,10 +55,25 @@ test('H26.2 (acceptance step 4): over every scenario of the gesture corpus, the 
 The help overlay is generated from the tables an input resolves against (D13), and moving the tables onto input-binding must not move a
 line of it: its sections, on the page's composition and the lab's, as the old code generated them -- recorded at 7c8215b, whose product
 code is 8793699's -- 37 key lines, 12 pointer lines, 7 release lines and the page's 4 run-mode lines (acceptance step 5).
+RESTATED at H26.6's move 9 (dev/design/components/PAN-ZOOM.md appendix A, move 9) -- THE RECORD'S ONE DIFFERENCE, NAMED: a section of its
+own, `the view`, after `pointer`, listing the view's five rows (app/src/recognize.js VIEW_RULES), on the page and in the lab alike; every
+other section line for line the record's. The record itself stays byte for byte as committed (the test above), its difference named here.
 */
-test('H26.2 (acceptance step 5; D13): the help overlay\'s sections are line for line those the old code generated, on the page and in the lab', () => {
+const VIEW_SECTION = { title: 'the view', lines: [
+	{ inputs: ['the wheel, or a two-finger scroll'], label: 'pan the view, in every mode; the wheel never zooms', context: null },
+	{ inputs: ['a pinch', 'Ctrl + the wheel'], label: 'zoom one level out or in about the pointer', context: null },
+	{ inputs: ['middle-drag anywhere'], label: 'pan the view once the press travels 4 pixels; a click does nothing', context: null },
+	{ inputs: ['right-drag the canvas'], label: 'pan the view once the press travels 4 pixels; a click does nothing', context: 'open ground: a zone without Shift among it' },
+	{ inputs: ['Space + left-drag anywhere'], label: 'pan the view once the press travels 4 pixels; a click does nothing', context: null },
+] };
+test('H26.2 (acceptance step 5; D13): the help overlay\'s sections are line for line those the old code generated, on the page and in the lab -- H26.6 move 9\'s view section the one difference', () => {
 	const rec = readJson(HELP_RECORD);
-	for (const [composition, opts] of COMPOSITIONS) withInput(opts, (h) => assert.deepEqual(helpSections(h.input.bindings()), rec.sections[composition], composition));
+	for (const [composition, opts] of COMPOSITIONS) withInput(opts, (h) => {
+		const now = helpSections(h.input.bindings()), at = now.findIndex((s) => s.title === 'the view');
+		assert.equal(now[at - 1].title, 'pointer', `${composition}: the view's section follows the pointer's`);
+		assert.deepEqual(now[at], VIEW_SECTION, `${composition}: the view's section, the named difference`);
+		assert.deepEqual(now.filter((s, i) => i !== at), rec.sections[composition], `${composition}: every other section the record's`);
+	});
 	assert.deepEqual(rec.sections.page.map((s) => s.lines.length), [37, 12, 7, 4]);
 	assert.deepEqual(rec.sections.lab.map((s) => s.lines.length), [37, 12, 7]);
 });

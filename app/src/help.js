@@ -13,6 +13,9 @@ THE GRAMMAR
                                         link's end), or, in run mode, region:endpoint, region:ground, region:action,
                                         region:input -- several joined by |
   double     double                     a double click
+  view       wheel | Ctrl+wheel | pinch     a wheel without Ctrl, with it, or a pinch (H26.6's move 9)
+             [mods+]left|middle|right drag on K   a mouse's press dragged past the threshold; `Space+` a key held, not a
+                                        modifier; K as a press's, or `anywhere`
 
 A release outcome that is a control of its own -- Shift on releasing a link, a click with a type held -- is described in
 words, `said`, since what reaches it is a whole gesture rather than one event.
@@ -33,9 +36,21 @@ const blank = { target: null, overTarget: false, action: null, input: null, owne
 const hitOf = (kind) => (kind === 'canvas' ? { kind, id: null } : kind === 'handle' ? { kind, id: 'se', handle: true } : kind === 'lhandle' ? { kind, id: 'src', handle: true } : kind === 'mark' ? { kind: 'plugin', id: 'plugin-000001', mark: true } : { kind, id: `${kind}-000001` });
 
 // every event an input names -- a key chord may name several (Arrows), a press one per kind. H26.8's capture move (NATIVE-SHAPES.md
-// section 3.2, Facts): a press is a fact's shape as the rows read it, what it is on and its run-mode region both in its `hit`
+// section 3.2, Facts): a press is a fact's shape as the rows read it, what it is on and its run-mode region both in its `hit`.
+// H26.6's move 9: a wheel's fact, Ctrl held for a pinch; a drag's press is a mouse's, its `Space+` the session's held key and no field
+const DRAG_BUTTONS = { left: 0, middle: 1, right: 2 };
 export function eventsFor(input) {
 	if (input === 'double') return [{ type: 'double' }];
+	if (input === 'wheel' || input === 'Ctrl+wheel' || input === 'pinch') {
+		return [{ type: 'wheel', button: 0, pointerType: null, shiftKey: false, ctrlKey: input !== 'wheel', altKey: false, metaKey: false,
+			deltaX: 0, deltaY: 100, deltaZ: 0, deltaMode: 0, hit: { kind: 'canvas', id: null, region: null } }];
+	}
+	const drag = /^(?:(.+)\+)?(left|middle|right) drag on (.+)$/.exec(input);
+	if (drag) {
+		const mods = Object.fromEntries((drag[1] ? drag[1].split('+') : []).filter((m) => MODS[m]).map((m) => [MODS[m], true]));
+		return drag[3].split('|').map((k) => ({ type: 'down', button: DRAG_BUTTONS[drag[2]], pointerType: 'mouse', shiftKey: false, ctrlKey: false, altKey: false, metaKey: false,
+			...mods, hit: k === 'anywhere' ? { kind: 'canvas', id: null, region: null } : { ...hitOf(k), region: null } }));
+	}
 	const press = /^(?:(.+)\+)?(left|right) on (.+)$/.exec(input);
 	if (press) {
 		const mods = Object.fromEntries((press[1] ? press[1].split('+') : []).map((m) => [MODS[m], true]));
@@ -54,6 +69,15 @@ const KIND_WORDS = { node: 'a node', waypoint: 'a waypoint', canvas: 'the canvas
 	'region:endpoint': 'an endpoint', 'region:ground': 'open ground', 'region:action': 'a panel button', 'region:input': 'a panel input' };
 export function shown(input, words = {}) {
 	if (input === 'double') return 'double-click';
+	if (input === 'wheel') return 'the wheel, or a two-finger scroll';
+	if (input === 'Ctrl+wheel') return 'Ctrl + the wheel';
+	if (input === 'pinch') return 'a pinch';
+	const drag = /^(?:(.+)\+)?(left|middle|right) drag on (.+)$/.exec(input);
+	if (drag) {
+		const dict = { ...KIND_WORDS, anywhere: 'anywhere', ...words };
+		const kinds = drag[3].split('|').map((k) => dict[k] ?? `a ${k}`);
+		return `${drag[1] ? `${drag[1]} + ` : ''}${drag[2]}-drag ${kinds.join(' or ')}`;
+	}
 	const press = /^(?:(.+)\+)?(left|right) on (.+)$/.exec(input);
 	if (!press) return input.replace('Arrows', 'arrow keys');
 	const dict = { ...KIND_WORDS, ...words };
@@ -72,6 +96,7 @@ export function helpSections(bindings) {
 	return [
 		{ title: 'keys', lines: documented(bindings.keys) },
 		{ title: 'pointer', lines: [...documented(bindings.presses), ...documented(bindings.double)] },
+		{ title: 'the view', lines: documented(bindings.view ?? []) },   // H26.6's move 9: the view's rows (app/src/recognize.js VIEW_RULES)
 		{ title: 'when a gesture ends', lines: documented(bindings.releases, 'said') },
 		{ title: 'run mode', lines: documented(bindings.run) },
 	].filter((s) => s.lines.length);

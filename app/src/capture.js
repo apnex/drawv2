@@ -18,9 +18,11 @@ WHAT DRAW SUPPLIES, each draw's content or policy:
 	            see; otherwise whether focus is on a button, link, field or tabbable element, where Tab must keep its meaning
 	deliver     the round trip: each fact handed to the input layers WHOLE, with its reply -- `sink[method](fact, reply)` -- which they
 	            ask at once to claim the event (preventDefault) and to take the pointer (input-capture's IC8)
-	listen      `blur` alone (H26.5, dev/design/components/RELEASES-0.2.md section 4): the host's focus loss, after which no release of
-	            a key held is promised to arrive, handed to Input's `blur` (B413). Neither the wheel, which waits for pan and zoom
-	            (H26.6), nor the context menu, which draw's own listener on the host covers beyond the surface (B75)
+	listen      `wheel` and `blur`: the wheel over the canvas -- a two-finger scroll, a pinch, Ctrl and the wheel -- handed to Input's
+	            `wheel`, which matches it against the view's rows and claims it (H26.6's move 9, dev/design/components/PAN-ZOOM.md
+	            section 3.6); and the host's focus loss, after which no release of a key held is promised to arrive, handed to Input's
+	            `blur` (H26.5, dev/design/components/RELEASES-0.2.md section 4; B413). Not the context menu, which draw's own listener on
+	            the host covers beyond the surface (B75)
 
 H26.8's capture move (dev/design/components/NATIVE-SHAPES.md section 3.2, Facts; GR5) -- THE FACT ITSELF. Until this move each fact was
 made here into draw's own INPUT EVENT, a mutable copy in the old capture's form, with `on`, `region` and `onControl` lifted out of `hit`
@@ -57,9 +59,9 @@ made the target for. The target reaches only `hit`, `focus` and the menu (GR8).
 const typing = (target) => ['INPUT', 'TEXTAREA', 'SELECT'].includes(target && target.tagName);
 
 // the input layers' method for each fact; `over` and `out` are `hover`, which reads which from the fact's type. H26.5: `blur`, the
-// host's focus loss (B413)
+// host's focus loss (B413). H26.6's move 9: `wheel`, the view's rows' own entry
 const ROUTE = { down: 'press', move: 'move', up: 'release', cancel: 'cancelDrag', over: 'hover', out: 'hover', leave: 'leave', double: 'double',
-	'key-down': 'keyDown', 'key-up': 'keyUp', blur: 'blur' };
+	'key-down': 'keyDown', 'key-up': 'keyUp', blur: 'blur', wheel: 'wheel' };
 
 /*
 The canvas's capture, opened once a root's own listeners are in (app/src/compose-canvas.js `listen`). `sink` is the input layers' side
@@ -86,7 +88,7 @@ export function captureCanvas({ svg, scene, host, sink, picks = [], drawerOf = (
 		},
 		// H26.5 (RELEASES-0.2.md section 4): the focus loss alone; its fact is of neither family, every field null and its modifiers
 		// false, and is asked neither `hit` nor `focus` (input-capture's IC5), so `hit`, `focus`, `key` and `repeat` are null
-		listen: ['blur'],
+		listen: ['wheel', 'blur'],   // H26.6's move 9: the wheel, for the view's rows
 		// H26.8's capture move: the fact and its reply handed whole (GR5); what the input layers ask of the reply is done at once (IC8), so
 		// what they asked before a throw is done, as it was
 		deliver: (event, reply) => {

@@ -34,7 +34,8 @@ const PHASE_ORDER = ['start', 'update', 'commit', 'cancel'];
 test('the editing gestures are the five generic bodies and the marquee, and Input\'s own table keeps link and box', async () => {
 	assert.deepEqual(Object.keys(EDITING_GESTURES), ['move', 'clone', 'pending', 'clone-pending', 'handle', 'marquee']);
 	const { GESTURES } = await import('../app/src/input.js');
-	assert.deepEqual(Object.keys(GESTURES), ['move', 'clone', 'pending', 'clone-pending', 'handle', 'link', 'box', 'marquee'], 'the session\'s declaration, in its order');
+	// RESTATED at H26.6's move 9 (PAN-ZOOM.md section 3.6): the three pan gestures, Input's own, declared after them
+	assert.deepEqual(Object.keys(GESTURES), ['move', 'clone', 'pending', 'clone-pending', 'handle', 'link', 'box', 'marquee', 'pan-middle', 'pan-right', 'pan-space'], 'the session\'s declaration, in its order');
 	for (const name of Object.keys(EDITING_GESTURES)) assert.equal(GESTURES[name], EDITING_GESTURES[name], `${name}: Input dispatches the editing gesture's own slot`);
 });
 

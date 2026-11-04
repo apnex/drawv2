@@ -147,18 +147,22 @@ test('H26.2 (acceptance step 3; G7, G9): a body runs only on an outcome naming i
 	assert.match(INPUT, /\n\t#session;/, 'the session is a private field');
 	assert.doesNotMatch(INPUT, /this\.session\b/, 'and no public one');
 	const asking = methods().filter((m) => /#session\b/.test(method(m))).sort();
-	assert.deepEqual(asking, ['cancelDrag', 'chainFrom', 'constructor', 'escalate', 'isGesturing', 'mode', 'move', 'press', 'release', 'startClone', 'startMove'].sort(),
+	// RESTATED at H26.6's move 9 (PAN-ZOOM.md section 3.6): `#viewAsked` reads whether a gesture is live and Space is held, for the view's
+	// rows; `keyDown`, `keyUp` and `blur` tell the session the keys held (IB14) -- no phase -- and `blur` cancels a live pan by a request
+	assert.deepEqual(asking, ['#viewAsked', 'blur', 'cancelDrag', 'chainFrom', 'constructor', 'escalate', 'isGesturing', 'keyDown', 'keyUp', 'mode', 'move', 'press', 'release', 'startClone', 'startMove'].sort(),
 		'the lifecycle\'s methods alone; a key\'s action reaches the session only through a request (chainFrom, cancelDrag)');
 	for (const k of ['onShiftDown', 'onShiftUp', 'onWaypointKey', 'addStop', 'chainThroughNode', 'onHandDigit', 'onEscape']) assert.doesNotMatch(method(k), /#session/, `${k}: working data, no phase`);
 });
 
 test('H26.2 (acceptance step 3): decided once -- input.js measures no distance but the link release\'s atStart, and names the threshold once', () => {
 	assert.doesNotMatch(INPUT, /Math\.hypot|travelled|box\.w < DRAG_THRESHOLD|dist\(pos, this\.ctx\.start\)/, 'no click measured anywhere else');
-	assert.deepEqual([...INPUT.matchAll(/\bdist\(([^)]*)\)/g)].map((m) => m[1]), ['pos, ctx.start'], 'one distance: where a link release landed against its start');
-	assert.equal([...INPUT.matchAll(/\bDRAG_THRESHOLD\b/g)].length, 3, 'declared once, read twice');
-	assert.match(INPUT, /const DRAG_THRESHOLD = 4;/, 'the threshold the director ruled, in canvas units');
-	assert.match(INPUT, /openGestures\(\{ threshold: DRAG_THRESHOLD,/, 'the session decides a drag by it');
-	assert.match(INPUT, /atStart: dist\(pos, ctx\.start\) <= DRAG_THRESHOLD/, 'and the link release alone reads it again');
+	// RESTATED at H26.6's move 9 (PAN-ZOOM.md section 3.2, PZ17): in screen pixels, the session measured on the screen and the link
+	// release comparing the release's screen point with the drag's screen start (tests/view-gestures.test.js holds the behaviour)
+	assert.deepEqual([...INPUT.matchAll(/\bdist\(([^)]*)\)/g)].map((m) => m[1]), ['evt.screen, ctx.screenStart'], 'one distance: where a link release landed against its start, on the screen');
+	assert.equal([...INPUT.matchAll(/\bPRESS_THRESHOLD_PIXELS\b/g)].length, 3, 'declared once, read twice');
+	assert.match(INPUT, /const PRESS_THRESHOLD_PIXELS = 4;/, 'the threshold the director ruled, in screen pixels since H26.6\'s move 9');
+	assert.match(INPUT, /openGestures\(\{ threshold: PRESS_THRESHOLD_PIXELS, measure: 'screen',/, 'the session decides a drag by it, on the screen');
+	assert.match(INPUT, /atStart: dist\(evt\.screen, ctx\.screenStart\) <= PRESS_THRESHOLD_PIXELS/, 'and the link release alone reads it again');
 });
 
 /*

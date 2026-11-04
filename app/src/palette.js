@@ -14,18 +14,21 @@ import { ghostNode } from './editing-visuals.js';   // H26.4: the dragged tile's
 
 
 /*
-B36 asked whether this and input.js's DRAG_THRESHOLD are one constant written twice. They are not,
+B36 asked whether this and input.js's threshold are one constant written twice. They are not,
 and the reason is worth stating rather than leaving as two bare numbers.
 
-  DRAG_THRESHOLD  4   CANVAS units -- a press becomes a drag. Measured after toDrawing(), so it is a
-                      distance in document space and survives pan/zoom: four units is four units
-                      whatever the viewport is doing.
-  CLICK_SLOP      5   SCREEN pixels — a tile press was a click, not a drag off the palette. Measured
-                      on raw clientX/clientY, because a palette tile is chrome: it lives outside the
-                      canvas transform and never moves with it.
+  PRESS_THRESHOLD_PIXELS  4   SCREEN pixels -- a press on the canvas becomes a drag past it, decided by
+                              the gesture session on each fact's `screen` point. RESTATED at H26.6's
+                              move 9 (dev/design/components/PAN-ZOOM.md section 3.2, PZ17): it was 4
+                              CANVAS units, measured after toDrawing(), and so changed on screen with the
+                              view; no drawing-unit threshold remains in draw.
+  CLICK_SLOP              5   SCREEN pixels -- a tile press was a click, not a drag off the palette.
+                              Measured on raw clientX/clientY, because a palette tile is chrome: it lives
+                              outside the canvas transform and never moves with it. Unchanged at move 9:
+                              it was in screen pixels already, as the design asks.
 
-Collapsing them would mean comparing a document-space distance with a screen-space one, which are
-equal only at 1:1 zoom. Two constants is the correct answer; two ANONYMOUS constants was not.
+Both are screen distances now; they stay two because they decide two things -- a canvas press's
+drag, inclusive of 4, and a tile's click, strictly under 5 -- and neither move changed either.
 */
 const CLICK_SLOP = 5;
 

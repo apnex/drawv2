@@ -17,13 +17,25 @@ and sets the view again at the new default's scale. A root not yet laid out, or 
 view waits for the next resize.
 
 Handed the scene as a value by the composition (app/src/compose-canvas.js); it imports nothing and reads no page of its own (GR10).
-The pan and zoom verbs and the remembered view join it at moves 9 and 10.
+The pan and zoom verbs join it at move 9 (below), the keys, home, fit and the remembered view at move 10.
 
 H26.6's move 8 (PAN-ZOOM.md section 3.7, "The levels" and "The grid at each level"; PZ12, PZ24) -- THE LEVELS AND THE GRID'S VALUES,
 held here alone, each tuned by one edit: `ZOOM_LEVELS`, the altitudes a view may take; `GRID_TIERS`, each level's tiers, coarsest first;
 `GRID_DOT_LEVEL`, the level at which a grid's dot shows its drawing radius, so it keeps that size on screen at every level -- provisional,
 the director's "fixed until we review"; and `GRID_MARGIN`, the screen pixels drawn beyond the view on each side. The grids part is handed
-them for the view's level (`gridLook`), read at each draw. Until the verbs arrive, a view at a level is set outright (`set`).
+them for the view's level (`gridLook`), read at each draw. A view at a level is also set outright (`set`).
+
+H26.6's move 9 (PAN-ZOOM.md section 3.6; PZ12, PZ17) -- THE GESTURES' VERBS, which the canvas's view rows run (app/src/recognize.js
+VIEW_RULES, app/src/input.js): `scrollPan`, a wheel without Ctrl, the centre moved by the normalised deltas over the scale, so the drawing
+moves the other way as a page scrolls -- the wheel never zooms without Ctrl (GR6); `dragPan`, a pan gesture's travel on screen, the drawing
+following the pointer; and `pinchZoom`, a pinch or Ctrl and the wheel, the normalised `deltaY` accumulated and the view stepping one level
+per `ZOOM_STEP_PIXELS` crossed about the pointer, never between levels. Deltas are normalised first by their unit (`normalisedDelta`).
+THE ACCUMULATOR is held here, since this part sees every view set: a view the wheel did not set -- `set`, a drag's pan, and the keys, home
+and fit of move 10 -- sets it to 0, as do focus lost and a switch of diagram (`pinchReset`); a resize, which keeps the view, keeps it.
+WHEN A VERB THROWS (move 8's last check): the one write (`#write`) throws either BEFORE the view moves -- a malformed argument, or the scene
+refusing a view past its supported range (vector-scene VS14), the view and the held pixels as they were -- or AFTER it moved -- a redraw a
+listener asked failing in `settled` (move 8's L1), the view and the held pixels already the new ones. So no verb, and no caller, may read a
+throw as "the view did not move": `view` is always the view the scene holds.
 */
 
 // PZ7: the frame the first opening fits, centred on 0,0 -- the old canvas's 1920 by 1080, a default zoom and never a bound
@@ -43,6 +55,37 @@ const GRID_TIERS = Object.freeze({
 });
 const GRID_DOT_LEVEL = 1;   // PZ24, the director's "fixed until we review": a dot shows its drawing radius at 1x, and that size at every level
 const GRID_MARGIN = 32;     // screen pixels drawn beyond the view on each side, so a pan within them draws nothing again
+const ZOOM_STEP_PIXELS = 100;   // PZ12, 3.6: the pinch's normalised pixels per level, calibrated in the tester the director accepted
+const LINE_PIXELS = 40;         // 3.6: a wheel's line, in pixels -- so three lines and 120 pixels zoom alike
+
+// 3.6: a wheel's delta in screen pixels by its `deltaMode` -- 0 pixels as given, 1 lines of 40, 2 pages of `pagePixels`, the canvas's
+// height -- or null where the unit is not reported or the page has no height, and the view is kept
+export function normalisedDelta(delta, deltaMode, pagePixels) {
+	if (deltaMode === 0) return delta;
+	if (deltaMode === 1) return delta * LINE_PIXELS;
+	if (deltaMode === 2 && pagePixels > 0) return delta * pagePixels;
+	return null;
+}
+
+/*
+3.6's accumulator, one fact's step: `acc` set to 0 first by a delta of the other sign; then it gains the delta, and while `|acc|` is at
+least `step` and a level lies that way the level steps once, out for a positive delta and in for a negative, `acc` losing one step and
+keeping the remainder; at the nearest or farthest level what remains that way is dropped, `acc` set to 0. Answers the level's index after,
+`acc` after and how many levels it stepped -- one fact of 250 from 0.5x steps twice, to 2x, keeping 50.
+*/
+export function stepZoom(index, acc, delta, levels = ZOOM_LEVELS, step = ZOOM_STEP_PIXELS) {
+	let held = delta !== 0 && acc !== 0 && Math.sign(delta) !== Math.sign(acc) ? 0 : acc;
+	held += delta;
+	let steps = 0;
+	while (Math.abs(held) >= step && index + Math.sign(held) >= 0 && index + Math.sign(held) < levels.length) {
+		index += Math.sign(held);
+		held -= Math.sign(held) * step;
+		steps++;
+	}
+	const way = Math.sign(held);
+	if (way !== 0 && (index + way < 0 || index + way >= levels.length)) held = 0;
+	return { index, acc: held + 0, steps };
+}
 
 /*
 THE VIEW'S FRAMES -- the move 8 verifier's folds (L2, S2, L1). What the scene's listeners ask to draw again (the grids', the crosshair's)
@@ -68,6 +111,8 @@ export function viewFrames(later) {
 
 export class View {
 	// `settled`, the composition's: told once a view this part set has been written and told, the scene writable again (the move 8 fold)
+	#acc = 0;   // 3.6: the pinch's held pixels, toward the next level
+
 	constructor({ scene, settled = () => {} }) {
 		this.scene = scene;
 		this.settled = settled;
@@ -81,13 +126,27 @@ export class View {
 		return { w: region.w * scale, h: region.h * scale };
 	}
 
-	// the view, set on the scene: its centre and level turned into the scene's top-left corner and scale
-	apply() {
+	/*
+	THE ONE WRITE: `next`, a centre and a level, turned into the scene's top-left corner and scale and set on the scene, then held with the
+	pinch's held pixels `acc`, then the composition told (`settled`). It throws BEFORE the view moves when the scene refuses it, the view
+	and `acc` as they were, or AFTER, when a redraw `settled` runs fails, the view and `acc` the new ones (the header's WHEN A VERB THROWS).
+	A root not laid out, or laid out to nothing, has no default scale: the view is held and set at the next resize.
+	*/
+	#write(next, acc) {
 		const { w, h } = this.size();
-		if (!(w > 0 && h > 0)) return;   // not laid out yet: no default scale, so nothing to set until a resize
-		const scale = defaultScale(w, h) / this.view.level;
-		this.scene.setView({ x: this.view.x - w / (2 * scale), y: this.view.y - h / (2 * scale), scale });
-		this.settled();
+		const laidOut = w > 0 && h > 0;
+		if (laidOut) {
+			const scale = defaultScale(w, h) / next.level;
+			this.scene.setView({ x: next.x - w / (2 * scale), y: next.y - h / (2 * scale), scale });
+		}
+		this.view = next;
+		this.#acc = acc;
+		if (laidOut) this.settled();
+	}
+
+	// the view, set on the scene again as it stands -- the first opening, a resize -- the pinch's held pixels kept
+	apply() {
+		this.#write(this.view, this.#acc);
 	}
 
 	// the page's root was resized: the centre and the level kept, the view set again at the new default's scale
@@ -95,12 +154,73 @@ export class View {
 		this.apply();
 	}
 
-	// a view set outright -- its centre and a level among the presets -- and applied (H26.6's move 8; the verbs of moves 9 and 10 set it so)
+	/*
+	A view set outright -- its centre and a level among the presets -- and applied (H26.6's move 8; move 10's home and fit set it so); the
+	pinch's held pixels set to 0, the view not the wheel's. THROWS BEFORE the view moves for a level not among the presets, a centre not two
+	finite numbers, or a view the scene refuses -- the view as it was -- and AFTER it moved when a redraw fails: the view set, the error the
+	redraw's. A caller reads `view`, never the throw, for where the view is.
+	*/
 	set({ x, y, level }) {
 		if (!ZOOM_LEVELS.includes(level)) throw new Error(`View: ${level} is no zoom level -- one of ${ZOOM_LEVELS.join(', ')}`);
 		if (!Number.isFinite(x) || !Number.isFinite(y)) throw new Error('View: a centre is two finite numbers');
-		this.view = { x, y, level };
-		this.apply();
+		this.#write({ x, y, level }, 0);
+	}
+
+	// the scale of a level on the root as it is now, screen pixels per drawing unit -- or null for a root not laid out
+	#scaleAt(level) {
+		const { w, h } = this.size();
+		return w > 0 && h > 0 ? defaultScale(w, h) / level : null;
+	}
+
+	/*
+	3.6's `scroll-pan`: a wheel without Ctrl, its deltas normalised by `deltaMode` and the centre moved by them over the scale, so the
+	drawing moves the other way, as a page scrolls; the level never changes (GR6), and the pinch's held pixels are kept, the view the
+	wheel's. A unit not reported, or a root not laid out, keeps the view. Throws as `#write` says.
+	*/
+	scrollPan(deltaX, deltaY, deltaMode) {
+		const scale = this.#scaleAt(this.view.level), page = this.size().h;
+		const dx = normalisedDelta(deltaX, deltaMode, page), dy = normalisedDelta(deltaY, deltaMode, page);
+		if (scale === null || dx === null || dy === null) return;
+		this.#write({ ...this.view, x: this.view.x + dx / scale, y: this.view.y + dy / scale }, this.#acc);
+	}
+
+	/*
+	3.6's pan gestures: the pointer's travel on screen since the last step, `travelX` and `travelY` screen pixels, the drawing following it
+	-- the centre moved the other way by the travel over the scale -- the level kept and the pinch's held pixels set to 0, a drag's pan
+	being a view the wheel did not set. Throws as `#write` says.
+	*/
+	dragPan(travelX, travelY) {
+		const scale = this.#scaleAt(this.view.level);
+		if (scale === null) return;
+		this.#write({ ...this.view, x: this.view.x - travelX / scale, y: this.view.y - travelY / scale }, 0);
+	}
+
+	/*
+	3.6's `pinch-zoom`: a pinch, or Ctrl and the wheel, its `deltaY` normalised and accumulated (`stepZoom`), the view stepping one level
+	per `ZOOM_STEP_PIXELS` crossed, out for a positive delta and in for a negative, about `screen`, the fact's screen point: the level's
+	scale is chosen first and handed to the scene's `zoomAbout`, so the drawing point under the pointer holds at every level and no view
+	lies between levels. A fact that crosses no step holds its pixels toward the next; a unit not reported keeps the view and the held
+	pixels. Throws as `#write` says -- `zoomAbout` refusing a view past the scene's range throws before, the held pixels as they were.
+	*/
+	pinchZoom(screen, deltaY, deltaMode) {
+		const delta = normalisedDelta(deltaY, deltaMode, this.size().h);
+		if (delta === null) return;
+		const step = stepZoom(ZOOM_LEVELS.indexOf(this.view.level), this.#acc, delta);
+		if (step.steps === 0) { this.#acc = step.acc; return; }
+		const level = ZOOM_LEVELS[step.index], scale = this.#scaleAt(level);
+		if (scale === null) { this.#write({ ...this.view, level }, step.acc); return; }
+		const { w, h } = this.size(), at = this.scene.zoomAbout(screen, scale);
+		this.#write({ x: at.x + w / (2 * scale), y: at.y + h / (2 * scale), level }, step.acc);
+	}
+
+	// 3.6: the pinch's held pixels set to 0 -- focus lost, a switch of diagram
+	pinchReset() {
+		this.#acc = 0;
+	}
+
+	// the pinch's held pixels, toward the next level: read by the tests of the accumulator
+	pinchHeld() {
+		return this.#acc;
 	}
 
 	// the grid's values for the view's level: its tiers, the scale a dot's drawing radius is shown at, and the margin (3.7, PZ24)

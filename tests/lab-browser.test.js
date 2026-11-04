@@ -266,6 +266,69 @@ test('H26.6 move 8: a view set on the scene directly is drawn whole at the next 
 });
 
 /*
+H26.6's move 9 (dev/design/components/PAN-ZOOM.md section 3.6; appendix A, move 9) -- EVERY GESTURE OF THE INTENT ON THE PAGE, under trusted
+input dispatched through the DevTools protocol at screen pixels, in view mode and in run mode: a middle drag anywhere, a right drag on open
+ground and Space with a left drag each pan once past 4 screen pixels, the drawing following the pointer; a wheel without Ctrl pans by its
+deltas over the scale and never zooms; Ctrl and the wheel, and a pinch Chrome synthesizes, step a level out about the pointer, the drawing
+point under it held; and the page itself is never scrolled or zoomed, each wheel claimed.
+*/
+test('H26.6 move 9: every gesture of the intent pans or zooms the lab canvas under trusted input, in view and in run mode, the page never scrolled or zoomed', { skip: SKIP }, async () => {
+	const t = await theTab();
+	try {
+		await t.send('Emulation.setDeviceMetricsOverride', { width: 1366, height: 768, deviceScaleFactor: 1, mobile: false });
+		await open('bend');
+		const read = async () => JSON.parse(await t.run(`JSON.stringify({ ...lab.view.view, scale: lab.input.scene.view().scale, scrolled: window.scrollY, zoomed: visualViewport.scale })`));
+		const box = JSON.parse(await t.run(`JSON.stringify((() => { const r = document.getElementById('container').getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; })())`));
+		const p = { x: Math.round(box.x + box.w * 0.9), y: Math.round(box.y + box.h * 0.85) };
+		assert.equal(await t.run(`document.elementFromPoint(${p.x}, ${p.y}).id`), 'container', 'precondition: the point pressed is open ground');
+		const BUTTON = { left: 1, right: 2, middle: 4 };
+		const mouse = (type, q, button = 'none', modifiers = 0) => t.send('Input.dispatchMouseEvent', { type, x: q.x, y: q.y, button, buttons: type === 'mouseReleased' ? 0 : BUTTON[button] ?? 0, clickCount: type === 'mouseMoved' ? 0 : 1, modifiers });
+		const drag = async (button) => {
+			await mouse('mousePressed', p, button);
+			await mouse('mouseMoved', { x: p.x + 3, y: p.y }, button);
+			const still = await read();
+			await mouse('mouseMoved', { x: p.x + 10, y: p.y }, button);
+			await mouse('mouseMoved', { x: p.x - 90, y: p.y - 60 }, button);
+			await mouse('mouseReleased', { x: p.x - 90, y: p.y - 60 }, button);
+			await sleep(30);
+			return still;
+		};
+		const space = (type) => t.send('Input.dispatchKeyEvent', { type, key: ' ', code: 'Space', windowsVirtualKeyCode: 32, ...(type === 'keyDown' ? { text: ' ' } : {}) });
+		for (const mode of ['view', 'run']) {
+			await t.run(`(lab.input.renderer.setMode('${mode}'), lab.view.set({ x: 0, y: 0, level: 1 }), 1)`);
+			for (const [name, button] of [['a middle drag', 'middle'], ['a right drag on open ground', 'right'], ['Space and a left drag', 'left']]) {
+				if (button === 'left') await space('keyDown');
+				const before = await read(), still = await drag(button), after = await read();
+				if (button === 'left') await space('keyUp');
+				assert.deepEqual([still.x, still.y], [before.x, before.y], `${mode}, ${name}: 3 pixels moved nothing`);
+				assert.ok(Math.abs(after.x - (before.x + 100 / before.scale)) < 1e-6 && Math.abs(after.y - (before.y + 60 / before.scale)) < 1e-6 && after.level === 1,
+					`${mode}, ${name}: the drawing followed the pointer's 100 by 60 pixels after it engaged (${JSON.stringify(before)} to ${JSON.stringify(after)})`);
+			}
+			const before = await read();
+			await t.send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: p.x, y: p.y, deltaX: 30, deltaY: 120 });
+			await sleep(30);
+			const panned = await read();
+			assert.ok(Math.abs(panned.x - (before.x + 30 / before.scale)) < 1e-6 && Math.abs(panned.y - (before.y + 120 / before.scale)) < 1e-6 && panned.level === 1, `${mode}: the wheel panned and never zoomed`);
+			const under = `JSON.stringify(lab.input.scene.toDrawing({ x: ${p.x}, y: ${p.y} }))`;
+			const held = JSON.parse(await t.run(under));
+			await t.send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: p.x, y: p.y, deltaX: 0, deltaY: 100, modifiers: 2 });
+			await sleep(30);
+			const zoomed = await read(), still = JSON.parse(await t.run(under));
+			assert.equal(zoomed.level, 2, `${mode}: Ctrl and the wheel, 100 pixels, one level out`);
+			assert.ok(Math.abs(still.x - held.x) < 1e-6 && Math.abs(still.y - held.y) < 1e-6, `${mode}: the drawing point under the pointer held`);
+			await t.send('Input.synthesizePinchGesture', { x: p.x, y: p.y, scaleFactor: 0.2, relativeSpeed: 1600, gestureSourceType: 'mouse' });
+			await sleep(100);
+			const pinched = await read();
+			assert.equal(pinched.level, 3, `${mode}: a pinch out stepped a level farther, to the farthest`);
+			assert.deepEqual([pinched.scrolled, pinched.zoomed], [0, 1], `${mode}: the page neither scrolled nor zoomed`);
+		}
+	} finally {
+		await t.run(`(lab.input.renderer.setMode('view'), 1)`).catch(() => {});
+		await t.send('Emulation.clearDeviceMetricsOverride');
+	}
+});
+
+/*
 The door tests prove the PLANNER's cascade and sweep reach the tab, so they clear the board's pipes
 first. Since pipes count as references, a hand pipe legitimately holds a waypoint the sweep would
 otherwise take -- a separate rule with its own test below, and mixing the two would let either one

@@ -1236,7 +1236,7 @@ test('the help overlay is generated from the bindings, in the real page', { skip
 			undo: cells.includes('Ctrl+Z'), tab: [...card.querySelectorAll('#help-rows tr')].find((tr) => tr.firstChild.textContent === 'Tab')?.lastChild.textContent ?? null,
 			seven: cells.some((c) => /\\b7\\b/.test(c)), outside: document.querySelectorAll('#help-card > table').length };
 	})()`);
-	assert.deepEqual(seen.sections, ['keys', 'pointer', 'when a gesture ends', 'run mode']);
+	assert.deepEqual(seen.sections, ['keys', 'pointer', 'the view', 'when a gesture ends', 'run mode'], 'H26.6 move 9: the view\'s rows, a section of their own');
 	assert.ok(seen.rows > 50, `every documented binding is a line: ${seen.rows}`);
 	assert.equal(seen.undo, true);
 	assert.equal(seen.tab, 'show or hide names', 'Tab says what it does now, not the deleted data view');

@@ -10,7 +10,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { KEYMAP } from '../app/src/keymap.js';
-import { DOUBLE_CLICKS } from '../app/src/recognize.js';
+import { DOUBLE_CLICKS, VIEW_RULES } from '../app/src/recognize.js';
 import { pressRows } from '../app/src/recognize.js';
 import { picksOf } from '../app/src/pick.js';
 import { placesOf } from '../app/src/snap.js';
@@ -25,7 +25,7 @@ import { eventsFor, shown, helpSections } from '../app/src/help.js';
 import { makeInput } from './fixtures/client-harness.mjs';
 
 const NETWORK_KEYS = networkInput(() => ({})).keys;
-const PERFORMED = { keys: [...KEYMAP, ...NETWORK_KEYS], presses: RECOGNIZE.filter((r) => !r.whileReadOnly), double: DOUBLE_CLICKS, run: RUN_PRESSES };
+const PERFORMED = { keys: [...KEYMAP, ...NETWORK_KEYS], presses: RECOGNIZE.filter((r) => !r.whileReadOnly), double: DOUBLE_CLICKS, run: RUN_PRESSES, view: VIEW_RULES };
 
 test('every documented input, turned back into an event, is matched by its row', () => {
 	const wrong = [];
@@ -58,6 +58,27 @@ test('every documented row has a label, and every label is an action some row na
 	const named = new Set(documented.map(actionOf).filter(Boolean));
 	assert.deepEqual(Object.keys(ACTION_LABELS).filter((a) => !named.has(a)), [], 'labels no documented row reaches');
 	for (const label of Object.values(ACTION_LABELS)) assert.match(label, /^[\x20-\x7e]*$/, 'typeable characters only');
+});
+
+// H26.6's move 9 (PAN-ZOOM.md appendix A, move 9): the view's rows documented -- each a line of the overlay's own section, read as a
+// person says it, and a documented drag turned back into a mouse's press, its `Space+` no field of the fact
+test('H26.6 move 9: the help overlay lists every view row, in a section of its own, each read as a person would say it', () => {
+	const h = makeInput();
+	try {
+		const view = helpSections(h.input.bindings()).find((s) => s.title === 'the view');
+		assert.deepEqual(view.lines.map((l) => `${l.inputs.join(' / ')} :: ${l.label}${l.context ? ` (${l.context})` : ''}`), [
+			'the wheel, or a two-finger scroll :: pan the view, in every mode; the wheel never zooms',
+			'a pinch / Ctrl + the wheel :: zoom one level out or in about the pointer',
+			'middle-drag anywhere :: pan the view once the press travels 4 pixels; a click does nothing',
+			'right-drag the canvas :: pan the view once the press travels 4 pixels; a click does nothing (open ground: a zone without Shift among it)',
+			'Space + left-drag anywhere :: pan the view once the press travels 4 pixels; a click does nothing',
+		]);
+		assert.deepEqual(VIEW_RULES.map((r) => r.id), h.input.bindings().view.map((r) => r.id), 'every view row, and only those');
+	} finally { h.restore(); }
+	assert.deepEqual(eventsFor('Space+left drag on anywhere').map((e) => [e.type, e.button, e.pointerType, e.shiftKey]), [['down', 0, 'mouse', false]]);
+	assert.deepEqual(eventsFor('middle drag on anywhere')[0].hit, { kind: 'canvas', id: null, region: null });
+	assert.deepEqual(eventsFor('pinch').map((e) => [e.type, e.ctrlKey]), [['wheel', true]]);
+	assert.deepEqual(eventsFor('wheel').map((e) => [e.type, e.ctrlKey]), [['wheel', false]]);
 });
 
 test('an input reads as a person would say it', () => {

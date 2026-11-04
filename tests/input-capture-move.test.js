@@ -90,22 +90,23 @@ test('H26.3 step 3: app/src/capture.js exports captureCanvas and emitToHost, and
 });
 
 // RESTATED at H26.5 (RELEASES-0.2.md section 4): the host's blur, which draw lists, added by the component after its ten (IC4) and before
-// the menu's, and removed first of the component's
+// the menu's, and removed first of the component's. RESTATED at H26.6's move 9 (PAN-ZOOM.md section 3.6): the wheel, which draw lists
+// too, added on the surface after the keys and before the blur, in IC4's table's order, and removed after the blur
 test('H26.3 step 3: the component adds every pointer, double-click and key listener, in today\'s order; the adapter adds the menu\'s alone, after them', () => {
 	const restore = installDom();
 	try {
 		const o = open();
 		assert.deepEqual(o.added, [
 			...['pointerleave', 'pointerdown', 'pointermove', 'pointerup', 'pointercancel', 'pointerover', 'pointerout', 'dblclick'].map((n) => [`svg:${n}`, 'component']),
-			['host:keydown', 'component'], ['host:keyup', 'component'], ['host:blur', 'component'], ['host:contextmenu', 'adapter']]);
+			['host:keydown', 'component'], ['host:keyup', 'component'], ['svg:wheel', 'component'], ['host:blur', 'component'], ['host:contextmenu', 'adapter']]);
 		// a frozen { close }, closing both: the component's listeners in reverse, then the menu's; once
 		assert.deepEqual(Object.keys(o.capture), ['close']);
 		assert.ok(Object.isFrozen(o.capture));
 		assert.equal(o.capture.close(), undefined);
-		assert.deepEqual(o.removed, ['host:blur', 'host:keyup', 'host:keydown', 'svg:dblclick', 'svg:pointerout', 'svg:pointerover', 'svg:pointercancel', 'svg:pointerup',
+		assert.deepEqual(o.removed, ['host:blur', 'svg:wheel', 'host:keyup', 'host:keydown', 'svg:dblclick', 'svg:pointerout', 'svg:pointerover', 'svg:pointercancel', 'svg:pointerup',
 			'svg:pointermove', 'svg:pointerdown', 'svg:pointerleave', 'host:contextmenu']);
 		o.capture.close();
-		assert.equal(o.removed.length, 12, 'a second close calls nothing');
+		assert.equal(o.removed.length, 13, 'a second close calls nothing');
 		// and a declaration the component refuses throws as the canvas opens, before any listener is added
 		const f = fakes();
 		delete f.svg.setPointerCapture;
@@ -120,6 +121,7 @@ it -- its addEventListener throwing, before or after adding the listener, as a m
 takes back what it added: the menu's listener, whose removal is harmless if it was never added, then the component's capture, closed,
 removing its ten in reverse; and then throws the host's error, unchanged. So no listener of a canvas that failed to open is left, as
 the component holds its own opening (IC3, lifecycle rule 3); one so left makes no fact. RESTATED at H26.5: eleven, the host's blur first.
+RESTATED at H26.6's move 9: twelve, the surface's wheel after the blur.
 */
 test('H26.3 (V4): a host that refuses the menu\'s listener leaves nothing listening -- the component closed, the error the host\'s', () => {
 	for (const after of [false, true]) {
@@ -135,8 +137,8 @@ test('H26.3 (V4): a host that refuses the menu\'s listener leaves nothing listen
 		let threw = null;
 		try { adapter.captureCanvas({ svg: f.svg, host: f.host, sink: recordingSink(got) }); } catch (e) { threw = e; }
 		assert.equal(threw, refused, `${after ? 'added, then' : ''} refused: the host's error, unchanged`);
-		assert.deepEqual(f.removed, ['host:contextmenu', 'host:blur', 'host:keyup', 'host:keydown', 'svg:dblclick', 'svg:pointerout', 'svg:pointerover', 'svg:pointercancel', 'svg:pointerup',
-			'svg:pointermove', 'svg:pointerdown', 'svg:pointerleave'], 'the menu\'s listener, then the component\'s eleven in reverse');
+		assert.deepEqual(f.removed, ['host:contextmenu', 'host:blur', 'svg:wheel', 'host:keyup', 'host:keydown', 'svg:dblclick', 'svg:pointerout', 'svg:pointerover', 'svg:pointercancel', 'svg:pointerup',
+			'svg:pointermove', 'svg:pointerdown', 'svg:pointerleave'], 'the menu\'s listener, then the component\'s twelve in reverse');
 		f.listeners.get('svg:pointerdown')({ ...POINTER });
 		f.listeners.get('host:keydown')({ ...KEY });
 		assert.deepEqual(got, [], 'a listener left by a platform that ignored a removal makes no fact: the capture is closed');
@@ -148,7 +150,7 @@ test('H26.3 (V4): a host that refuses the menu\'s listener leaves nothing listen
 	f.host.addEventListener = function (name, l) { if (name === 'contextmenu') throw refused; return add.call(this, name, l); };
 	f.host.removeEventListener = function (name) { remove.call(this, name); throw new Error(`${name} removal refused`); };
 	assert.throws(() => adapter.captureCanvas({ svg: f.svg, host: f.host, sink: recordingSink([]) }), (e) => e === refused);
-	assert.deepEqual(f.removed.filter((n) => n.startsWith('svg:')).length, 8, 'every removal attempted past the ones that threw');
+	assert.deepEqual(f.removed.filter((n) => n.startsWith('svg:')).length, 9, 'every removal attempted past the ones that threw -- the surface\'s nine, its wheel among them since H26.6\'s move 9');
 });
 
 // RESTATED at H26.8's picks move: its target the device's element the renderer drew (`drawnDevice`), set where the test draws it

@@ -38,6 +38,7 @@ import { Selection } from '../../app/src/selection.js';
 import { EditingStates } from '../../app/src/editing-states.js';   // H26.8: the editing states, Input's and its overlay's (a:F12)
 import { crosshair } from '../../app/src/editing-visuals.js';   // H26.4: the editing part's, an item of the scene
 import { Renderer, openCanvasScene } from '../../app/src/renderer.js';
+import { View } from '../../app/src/view.js';   // H26.6's move 9: the view part, handed to Input when a test asks (makeInput `view`)
 import { CANVAS_SCENE } from '../../product/canvas.mjs';
 import { GAP } from '../../app/src/snap.js';
 import { Input } from '../../app/src/input.js';
@@ -215,7 +216,10 @@ renderer is real, drawing what a test seeds so a press lands on an element the s
 (`targetOf`); its mode and labels calls are recorded, beside what it draws.
 */
 // runRules: run mode's rows, the product page's by default; the lab composes none (lab/src/root.js), which H26.2's side-by-side asks for
-export function makeInput({ readOnly = false, bare = false, host: hostOverride = null, routeHook = null, plugins = null, parts = PRODUCT_CANVAS, runRules = RUN_PRESSES } = {}) {   // parts: the canvas parts, the page's by default (C-d)
+// H26.6's move 9: `view` true hands Input the view part over the harness's scene (app/src/view.js), its first opening set at once -- centre
+// 0,0 at 1x on the root's 1920 by 1080, so screen points are no longer drawing points; absent, as every other test, the scene keeps its
+// opening view and the view's rows move nothing
+export function makeInput({ readOnly = false, bare = false, host: hostOverride = null, routeHook = null, plugins = null, parts = PRODUCT_CANVAS, runRules = RUN_PRESSES, view = false } = {}) {   // parts: the canvas parts, the page's by default (C-d)
 	const restore = installDom();
 
 	// the kinds the product page composes (S-b, G1), and its network: a Model holding links draws with one (V-e, J2) -- the
@@ -320,6 +324,7 @@ export function makeInput({ readOnly = false, bare = false, host: hostOverride =
 	// B36 — the single crosshair main.js owns, injected here the same way. Sharing it is the point:
 	// two instances on one layer is the defect, so the harness must not quietly create a second.
 	const snap = crosshair(scene, GAP);   // H26.6's move 8: across what the scene shows
+	const viewPart = view ? new View({ scene }) : null;   // H26.6's move 9: the view part, when a test asks for it
 
 	// the commit boundary — the ONLY surface these tests assert on
 	const commits = [];
@@ -331,7 +336,7 @@ export function makeInput({ readOnly = false, bare = false, host: hostOverride =
 		input = bare
 			? new Input({ svg, scene, model, history, selection, renderer, states, labels, host, help: helpPanel, snap, parts })   // places are composition, not a collaborator (C-c)
 			// run mode's rows as the production root hands them in (K5); `bare` omits them as it omits every collaborator
-			: new Input({ svg, scene, model, history, selection, renderer, states, labels, readout, tools, dataview, host, help: helpPanel, snap, runRules,
+			: new Input({ svg, scene, view: viewPart, model, history, selection, renderer, states, labels, readout, tools, dataview, host, help: helpPanel, snap, runRules,
 				/*
 				P7 X-a (H18.37) -- THE PRODUCT PAGE'S INPUT, as app/src/main.js composes it since V-b: the network's keys and its REAL
 				drag judge (plugins/network/session.mjs `judge`, what plugins/network/page.mjs attaches), judging on the board the tab holds. Before
@@ -359,7 +364,7 @@ export function makeInput({ readOnly = false, bare = false, host: hostOverride =
 	const capture = captureDispatch(opened);
 
 	const handle = {
-		input, capture, model, history, selection, svg, scene, commits, calls, restore, renderer, states, labels, tools, help, helpPanel, snap,
+		input, capture, model, history, selection, svg, scene, commits, calls, restore, renderer, states, labels, tools, help, helpPanel, snap, view: viewPart,
 		// the pointer ids each take asked of a reply, the platform refusing each (move 6's verification, should-fix 1)
 		takes,
 		// H26.8's picks move: the element the scene drew for an item, to press on (`targetOf`)
@@ -415,6 +420,8 @@ export function dispatchFor(open) {
 			// H26.5 (dev/design/components/RELEASES-0.2.md section 4): the host's focus loss -- the platform fires it whether or not anything
 			// listens, so a capture that added no blur listener hears nothing of it, as draw heard nothing before input-capture 0.2.0 (B413)
 			onBlur: (evt) => listeners.get('host:blur')?.(evt),
+			// H26.6's move 9: the wheel over the canvas, which draw lists for the view's rows; nothing when no wheel listener was added
+			onWheel: (evt) => listeners.get('svg:wheel')?.(evt),
 		};
 	};
 }

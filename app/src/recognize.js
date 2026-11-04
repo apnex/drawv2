@@ -129,3 +129,33 @@ by the engine's guard -- the handler used to check read-only itself, twice.
 export const DOUBLE_CLICKS = [
 	{ id: 'edit-label', input: ['double'], mutates: true, on: (e) => e.type === 'double', run: 'editUnderPointer' },
 ];
+
+/*
+H26.6's move 9 (dev/design/components/PAN-ZOOM.md section 3.6; PZ5, PZ12, PZ17, PZ27) -- THE VIEW'S ROWS, a table of their own in
+input-binding's form, asked in every mode, run mode among them: a `wheel` fact by its own entry (app/src/input.js `wheel`), matched here and
+claimed, never through `resolvePress`; a `down` through `resolvePress`, these rows first and the press table -- or run mode's -- after,
+reached when none matches. A view is no edit, so none mutates and a locked client pans and zooms.
+
+  scroll-pan   a wheel without Ctrl -- the wheel, a two-finger scroll: the view's centre moved by the deltas over the scale; never a zoom (GR6)
+  pinch-zoom   a wheel with Ctrl -- a pinch, or Ctrl and the wheel: the view stepping one level per 100 normalised pixels about the pointer
+  pan-middle   a mouse's press of button 1, anywhere, no gesture live
+  pan-right    a mouse's press of button 2 on open ground -- the canvas, a zone pressed without Shift passing through to it (U1) -- no
+               gesture live
+  pan-space    a mouse's press of button 0 while Space is held (input-binding IB14), no gesture live
+
+A pan row's press is a pan only once it travels the threshold, 4 screen pixels (PZ17): below it no gesture is live for any guard and
+nothing is taken, so a right click stays as today (PZ5) and a middle click the platform's -- the press is not claimed -- and from then the
+row's gesture, `pans`, is live, the pointer taken (app/src/input.js `onPanPress`). A pen's barrel button arrives as button 2 and a touch as
+a press of its own, and neither is a mouse's, so neither matches (section 1). The wheel rows run while a gesture is live as well, so a wheel
+mid-drag pans or zooms and is claimed, never handed to the page to scroll or zoom. The situation is the host's, `{ live, openGround,
+spaceHeld }`: whether a gesture is live, whether the press is on open ground, and whether Space is held.
+*/
+const mousePress = (button) => (evt) => evt.type === 'down' && evt.button === button && evt.pointerType === 'mouse';
+export const VIEW_RULES = [
+	{ id: 'scroll-pan', input: ['wheel'], mutates: false, duringGesture: true, on: (evt) => evt.type === 'wheel' && !evt.ctrlKey, run: 'onScrollPan' },
+	{ id: 'pinch-zoom', input: ['pinch', 'Ctrl+wheel'], mutates: false, duringGesture: true, on: (evt) => evt.type === 'wheel' && evt.ctrlKey, run: 'onPinchZoom' },
+	{ id: 'pan-middle', input: ['middle drag on anywhere'], mutates: false, prevent: false, on: mousePress(1), when: (s) => !s.live, run: 'onPanPress', pans: 'pan-middle' },
+	{ id: 'pan-right', input: ['right drag on canvas'], context: 'open ground: a zone without Shift among it', mutates: false, prevent: false, on: mousePress(2),
+		when: (s) => !s.live && s.openGround, run: 'onPanPress', pans: 'pan-right' },
+	{ id: 'pan-space', input: ['Space+left drag on anywhere'], mutates: false, prevent: false, on: mousePress(0), when: (s) => !s.live && s.spaceHeld, run: 'onPanPress', pans: 'pan-space' },
+];

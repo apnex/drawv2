@@ -110,7 +110,8 @@ export function composeCanvas({ svg, scene: declared, defs, host, network = null
 	// held tools' ghost. Two owners of one layer drew two crosshairs. H26.4: one item of the scene's snap layer
 	const snap = crosshair(scene, NODE_GRID.declaration.pitch, { schedule: frame });   // H26.1: a box a pitch wide, the node grid's; H26.6's move 8: across the view
 	const heldTools = tools ? new Tools({ svg, scene, snap, preview: parts.find((p) => p.hand)?.hand.preview ?? null }) : null;   // C-e: the ghost draws the hand's preview
-	const input = new Input({ svg, scene, model, history, selection, renderer, states, labels, readout: shownReadout, tools: heldTools,
+	// H26.6's move 9 (PAN-ZOOM.md section 3.6): handed the view part, whose verbs the view's rows run
+	const input = new Input({ svg, scene, view, model, history, selection, renderer, states, labels, readout: shownReadout, tools: heldTools,
 		host, help, now, snap, plugins, runRules, parts });   // C-c, C-d: the canvas parts -- places, press rows, handles
 	let capture = null;
 	// the platform's events, as input-capture's facts (dev/design/input/GESTURE-SYSTEM.md, L0; H26.3, H26.8) -- once the root's own listeners are in
