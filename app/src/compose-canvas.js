@@ -66,7 +66,18 @@ export function composeCanvas({ svg, scene: declared, defs, host, network = null
 	// (PAN-ZOOM.md sections 3.1 and 3.7): viewed, the root bare, and the view part handed it -- the first opening set at once (PZ7), and
 	// set again when the root says it was resized (`view.resized()`, the root's to call)
 	const scene = openCanvasScene(declared, svg);
-	const view = new View({ scene });
+	/*
+	H26.6's move 8 (PAN-ZOOM.md section 3.7): what the scene's listeners ask to draw again -- the grids, the crosshair -- they ask of `frame`,
+	since the scene may not be written while it tells a view (vector-scene VS17): it runs once a frame, the host's animation frame where it
+	has one, else the next microtask. The move's verifier (L2): a view the view part sets -- a resize, and the verbs of moves 9 and 10 --
+	is drawn in the same frame, the view part telling `frame` to run what was asked as soon as the scene has finished telling it.
+	*/
+	const asked = [];
+	let awaiting = false;
+	const run = () => { awaiting = false; for (const fn of asked.splice(0)) fn(); };
+	const later = typeof host?.requestAnimationFrame === 'function' ? (fn) => host.requestAnimationFrame(fn) : (fn) => queueMicrotask(fn);
+	const frame = (fn) => { asked.push(fn); if (!awaiting) { awaiting = true; later(run); } };
+	const view = new View({ scene, settled: run });
 
 	const model = new Model({ attached: { network }, kinds });   // the kinds a composition brings -- the core's when none are passed, so no links (S-e) (H17.22 N-a)
 	// R3: the maintained reverse indices, registered before any other subscriber so they see a fresh index; the node grid's
@@ -74,9 +85,7 @@ export function composeCanvas({ svg, scene: declared, defs, host, network = null
 	attachRelations(model, { nearest: NODE_GRID.nearest });
 	// WD-b2 (H19.46): each grid a part declares, drawn from the open diagram and again on every load -- the layouts plugin's two. H26.8's
 	// grid move (NATIVE-SHAPES.md section 3.2): handed the grids the places snap to, `gridsOf`, asked here. H26.6's move 8 (PAN-ZOOM.md
-	// section 3.7): drawn from the view, handed the view part's values for its level, and a redraw asked once a frame -- the host's
-	// animation frame where it has one, else the next microtask
-	const frame = typeof host?.requestAnimationFrame === 'function' ? (fn) => host.requestAnimationFrame(fn) : (fn) => queueMicrotask(fn);
+	// section 3.7): drawn from the view, handed the view part's values for its level, and a redraw asked of `frame` (above)
 	new Grids({ scene, grids: gridsOf(parts), model, look: () => view.gridLook(), schedule: frame });
 	const selection = new Selection(model);
 	/*

@@ -172,6 +172,44 @@ test('H26.6 move 8: on the page, each grid draws dots-in-view.mjs\'s rows at the
 });
 
 /*
+H26.6's move 8, the verifier's L2 (PAN-ZOOM.md section 3.7: "when the canvas is resized the page tells the view part ... and every grid
+... drawn for what is now visible") -- A RESIZE IS DRAWN IN ITS OWN FRAME. The page's ResizeObserver tells the view part after that frame's
+animation callbacks, so a redraw asked of the next animation frame left the newly shown edge bare for one frame; the view part now tells
+the composition once the scene has finished telling the view, and the grids are drawn then. Held by an observer of the canvas made after
+the page's, whose callback runs in the same rendering step, before paint: there, after each resize, the whole grid stands in view.
+*/
+test('H26.6 move 8: a resize draws the whole grid in the same frame -- read before paint by an observer after the page\'s, at 1x, 2x and 3x', { skip: SKIP }, async () => {
+	const t = await theTab();
+	try {
+		await open('bend');
+		// each widened at one height, so the canvas shows more of the drawing across, the old frame fitting by its height -- at 3x from 800 to
+		// 1,150, where every tier listed over the area drawn stays within 10,000, so every point in view is drawn
+		for (const [level, from, [width, height]] of [[1, 1100, [1700, 600]], [2, 1100, [1700, 600]], [3, 800, [1150, 600]]]) {
+			await t.send('Emulation.setDeviceMetricsOverride', { width: from, height, deviceScaleFactor: 1, mobile: false });
+			await sleep(150);
+			await t.run(`(async () => { lab.view.set({ x: 0, y: 0, level: ${level} }); for (let i = 0; i < 3; i++) await new Promise((res) => requestAnimationFrame(res));
+				const svg = document.getElementById('container'), was = svg.clientWidth; window.__whole = null;
+				const ro = new ResizeObserver(() => {
+					if (svg.clientWidth === was) return;   // the observation made as it starts observing
+					ro.disconnect();
+					const { region: r } = lab.input.scene.visible(), count = (o, lo, hi) => Math.floor((hi - o) / 60) - Math.ceil((lo - o) / 60) + 1;
+					window.__whole = JSON.stringify([['grid-nodes', 0], ['grid-zones', 30]].map(([id, o]) => { let n = 0;
+						for (const p of document.getElementById(id).children) { let x = 0, y = 0;
+							for (const [, c, a, b] of p.getAttribute('d').matchAll(/([Mm])(-?[\\d.e]+) (-?[\\d.e]+)h0/g)) { if (c === 'M') { x = +a; y = +b; } else { x += +a; y += +b; } if (x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h) n++; } }
+						return [n, count(o, r.x, r.x + r.w) * count(o, r.y, r.y + r.h)]; }));
+				});
+				ro.observe(svg); return 1; })()`);
+			await t.send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: false });
+			let got = null;
+			for (let i = 0; i < 60 && !got; i++) { await sleep(25); got = await t.run('window.__whole'); }
+			const [nodes, zones] = JSON.parse(got);
+			assert.ok(nodes[1] > 100, `control: the view shows a grid (${nodes[1]} points)`);
+			assert.deepEqual([nodes[0], zones[0]], [nodes[1], zones[1]], `${level}x, resized to ${width} by ${height}: in the same frame, every grid point in view drawn`);
+		}
+	} finally { await t.send('Emulation.clearDeviceMetricsOverride'); }
+});
+
+/*
 The door tests prove the PLANNER's cascade and sweep reach the tab, so they clear the board's pipes
 first. Since pipes count as references, a hand pipe legitimately holds a waypoint the sweep would
 otherwise take -- a separate rule with its own test below, and mixing the two would let either one

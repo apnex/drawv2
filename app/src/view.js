@@ -45,8 +45,10 @@ const GRID_DOT_LEVEL = 1;   // PZ24, the director's "fixed until we review": a d
 const GRID_MARGIN = 32;     // screen pixels drawn beyond the view on each side, so a pan within them draws nothing again
 
 export class View {
-	constructor({ scene }) {
+	// `settled`, the composition's: told once a view this part set has been written and told, the scene writable again (the move 8 fold)
+	constructor({ scene, settled = () => {} }) {
 		this.scene = scene;
+		this.settled = settled;
 		this.view = { x: 0, y: 0, level: 1 };   // PZ7: the first opening, centred on 0,0 at the 1x level
 		this.apply();
 	}
@@ -63,6 +65,7 @@ export class View {
 		if (!(w > 0 && h > 0)) return;   // not laid out yet: no default scale, so nothing to set until a resize
 		const scale = defaultScale(w, h) / this.view.level;
 		this.scene.setView({ x: this.view.x - w / (2 * scale), y: this.view.y - h / (2 * scale), scale });
+		this.settled();
 	}
 
 	// the page's root was resized: the centre and the level kept, the view set again at the new default's scale

@@ -176,7 +176,8 @@ test('H26.6 move 8: a canvas whose finest tier stands under 4 pixels apart still
 /*
 dots-in-view.mjs's overflow cases (3.7): a view at a scale of one over exactly the positions named, no margin, the level's tiers -- at 1x
 100 by 100 drawn whole and 101 by 100 at every second; at 3x 101 by 100 leaving out the 25% tier, 201 by 200 the 50% too, the full tier
-exactly 100 by 100 drawn whole and 101 by 100 at every second of it, the origin drawn in each.
+exactly 100 by 100 drawn whole and 101 by 100 at every second of it, the origin drawn in each -- and, the move's verifier's S2, at 3x the
+finest tier listing exactly 10,000, 100 by 100, drawn whole, every tier kept.
 */
 test('H26.6 move 8: past 10,000 a faded tier is left out, the finest first, and the full tier alone is thinned at the origin -- the overflow cases', () => {
 	const restore = installDom();
@@ -184,6 +185,7 @@ test('H26.6 move 8: past 10,000 a faded tier is left out, the finest first, and 
 		const tiersAt = (level) => { const p = pageOf(1366, 535); p.set({ x: 0, y: 0, level }); return p.view.gridLook().tiers; };
 		const cases = [
 			[1, 100, 100, [10000], 1], [1, 101, 100, [2550], 2],
+			[3, 100, 100, [100, 2400, 7500], 1],   // the move's verifier, S2: the finest tier listing exactly 10,000, drawn whole
 			[3, 101, 100, [110, 2440, 0], 1], [3, 201, 200, [420, 0, 0], 1], [3, 991, 991, [10000, 0, 0], 1], [3, 1001, 991, [2550, 0, 0], 2],
 		];
 		for (const [level, cols, rows, want, stride] of cases) {
@@ -221,6 +223,68 @@ test('H26.6 move 8: a pan within the margin draws nothing again; leaving it, ano
 		// views told many times before one redraw run draw once
 		p.view.set({ x: 1000, y: 0, level: 1 }); p.view.set({ x: 2000, y: 0, level: 1 }); p.view.set({ x: 3000, y: 0, level: 1 });
 		assert.equal(p.flush(), 1, 'three views told, one redraw asked');
+	} finally { restore(); }
+});
+
+/*
+The move's verifier, S1: a pan across the margin's edge, in each of the four directions, at every level -- a step within the margin, the
+grid drawn before still covering the view, then one past it, the grid drawn again -- the whole grid in view after each step: every dot
+the tiers place within visible(), and none missing at the edge the pan exposed.
+*/
+test('H26.6 move 8: a pan across the margin\'s edge, up, down, left or right, at every level, leaves the whole grid in view after each step', () => {
+	const restore = installDom();
+	try {
+		const p = pageOf(1366, 535);
+		const whole = (what) => {
+			const { tiers } = p.view.gridLook(), r = p.scene.visible().region;
+			for (const grid of ['node', 'zone']) {
+				assert.deepEqual(p.dots(grid).filter(inside(r)).map(key).sort(), listing(grid, tiers, r).map(key).sort(), `${what}: the ${grid} grid whole in view`);
+			}
+		};
+		for (const level of LEVELS) {
+			for (const [dirX, dirY, way] of [[0, -1, 'up'], [0, 1, 'down'], [-1, 0, 'left'], [1, 0, 'right']]) {
+				p.fresh({ x: 7, y: 3, level });
+				const { scale } = p.scene.visible(), { margin } = p.view.gridLook();
+				const step = (0.75 * margin) / scale;   // three quarters of the margin: one step within it, two past it
+				const item = p.svg.byId['#grid-nodes'].children[0];
+				p.set({ x: 7 + dirX * step, y: 3 + dirY * step, level });
+				assert.equal(p.svg.byId['#grid-nodes'].children[0], item, `${level}x, ${way}: within the margin, nothing drawn again`);
+				whole(`${level}x, ${way}, within the margin`);
+				p.set({ x: 7 + 2 * dirX * step, y: 3 + 2 * dirY * step, level });
+				assert.notEqual(p.svg.byId['#grid-nodes'].children[0], item, `${level}x, ${way}: past the margin, drawn again`);
+				whole(`${level}x, ${way}, past the margin`);
+			}
+		}
+	} finally { restore(); }
+});
+
+/*
+The move's verifier, L2: a view the view part sets is drawn as it is set -- the composition hands the view part `settled`, which runs what
+the scene's listeners asked as soon as the scene has finished telling the view -- so a resize's view, set in the browser after that frame's
+animation callbacks, is drawn before the frame is painted. Here `settled` runs the queue the grids asked of, as app/src/compose-canvas.js
+wires it; a view set on the scene by anything else waits for the queue.
+*/
+test('H26.6 move 8: a view the view part sets is drawn as it is set -- no frame waited for -- and one set on the scene waits', () => {
+	const restore = installDom();
+	try {
+		const root = fakeEl('svg', 'canvas');
+		root.clientWidth = 1366; root.clientHeight = 535;
+		const { svg, scene } = sceneOver(root);
+		const asked = [], run = () => { for (const fn of asked.splice(0)) fn(); };
+		const view = new View({ scene, settled: run });
+		new Grids({ scene, grids: gridsOf(PRODUCT_CANVAS), model: new Model(), look: () => view.gridLook(), schedule: (fn) => asked.push(fn) });
+		const whole = () => { const { tiers } = view.gridLook(), r = scene.visible().region; return dotsOf(svg.byId['#grid-nodes']).filter(inside(r)).map(key).sort().join() === listing('node', tiers, r).map(key).sort().join(); };
+		for (const level of LEVELS) {
+			view.set({ x: 5000, y: -3000, level });
+			assert.deepEqual([asked.length, whole()], [0, true], `${level}x: drawn as the view was set, nothing left asked`);
+		}
+		root.clientWidth = 1900; root.clientHeight = 900;   // the root resized, as the page tells the view part
+		view.resized();
+		assert.deepEqual([asked.length, whole()], [0, true], 'a resize: drawn as the view was set again');
+		scene.setView({ ...scene.view(), x: scene.view().x + 4000 });
+		assert.deepEqual([asked.length, whole()], [1, false], 'a view set on the scene alone: the redraw asked, not yet run');
+		run();
+		assert.equal(whole(), true, 'and whole once it runs');
 	} finally { restore(); }
 });
 

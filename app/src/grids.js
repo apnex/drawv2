@@ -6,7 +6,8 @@ open diagram -- a grid's lattice is opened from the Model's layout record, the l
 loaded. The canvas names no kind here; what a grid is and where its dots fall are its part's.
 
 H26.4 (dev/design/components/VECTOR-SCENE.md section 5.1): each grid is one item of the scene's layer it names, keyed by its layout, removed
-and put afresh as `replaceChildren` made its dots afresh -- a circle per point, made by the scene. It makes no element.
+and put afresh as `replaceChildren` made its dots afresh, made by the scene -- a circle per point until H26.6's move 8, one path per tier
+since (below). It makes no element.
 
 H26.8's grid move (dev/design/components/NATIVE-SHAPES.md sections 3.1 to 3.3; B415): the `grids` part, its own duty, handed the grids it
 draws -- `gridsOf(parts)`, the composition's to ask -- where it asked the canvas's places for them, so it imports nothing (GR7).
@@ -22,12 +23,16 @@ takes the first tier whose `every` divides both its indices, counted from the la
 and the zone grid's first corner half a square from it. No tier is left out by spacing; a faded tier is left out only where listing it
 over the area drawn would pass `LISTING_MOST`, the finest first, its count found before it is listed as the product of its two axes'
 -- each snap-grid's own count over a strip one row high -- and the full tier never: where it alone would pass, snap-grid doubles its
-stride, anchored at the origin. A dot is a circle, its radius in drawing units the part's radius times `dotScale` over the scene's
-scale, its opacity its tier's where that is not full -- so at 1x each dot is exactly the circle drawn before the move.
+stride, anchored at the origin. Each tier is one path of round zero-length strokes, a stroke at each point (`dotsPath`), that does not
+scale with the view (app/canvas.css): its width the dot's diameter on screen, twice the part's radius times `dotScale`, its opacity its
+tier's where that is not full -- so at 1x each dot stands the size and place the circle drawn before the move did, its anti-aliased edge
+alone rasterised otherwise. Circles whose radius followed the level were measured first and drew some twenty times slower at 3x
+(PAN-ZOOM.md appendix B, move 8).
 
 Drawn again only when what it showed would be wrong: the level's tiers, the dot's scale or the scene's scale changed, the diagram
 loaded or its grid's size changed, or the area in view left the area drawn. The scene tells its view through `onView`, while it may
-not be written (vector-scene VS17), so a redraw is asked of `schedule`, the composition's -- once a frame on a page -- and runs once
+not be written (vector-scene VS17), so a redraw is asked of `schedule`, the composition's -- once a frame on a page, or at once when the
+view part has set the view and the scene has finished telling it (app/src/compose-canvas.js, the move's verifier, L2) -- and runs once
 however many views were told before it.
 */
 const LISTING_MOST = 10000;   // PZ13, GR2: the most positions any listing of draw's holds
