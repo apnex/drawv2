@@ -3,8 +3,6 @@ import { test } from 'node:test';
 // RESTATED at H26.1 (SNAP-GRID.md section 5): the kernel's grid arithmetic is deleted; the grids are snap-grid's, opened in the kernel
 // (NODE_GRID) and the layouts plugin (ZONE_GRIDS), and a span is what it runs through (plugins/devices/device-footprint.mjs spanThrough)
 import { NODE_GRID, latticeGrids } from '../kernel/geometry.mjs';
-import { positionsWithin } from '../server/rest.js';   // H26.6's move 11: moved to its one reader, the anchors route, until move 12
-import { openGrid } from '@apnex/snap-grid';   // H26.11's verification: grids past snap-grid's default 10,000, and one past its largest answer
 import { ZONE_GRIDS, LAYOUT_TABLE } from '../plugins/layouts/layout-table.mjs';
 import { spanThrough as spanExtent } from '../plugins/devices/device-footprint.mjs';
 import { STD } from '../kernel/spec.mjs';
@@ -188,50 +186,8 @@ test('B111: a round trip through cell and back is the identity, on either grid',
 });
 
 /*
-H26.11's verification (H26-21; B399, B400) -- kernel/geometry.mjs `positionsWithin` LISTS EVERY POSITION OF A BOUNDED GRID, HOWEVER MANY.
-snap-grid's `inView` answers at most `max` positions, 10,000 unless asked, and doubles its stride beyond, so a grid of more silently lost
-positions: pitch 60 over +-6000 by +-3000 gave 5,151 of 20,301, and pitch 10 over the node extent 4,459 of 17,557. Each grid here is
-counted by brute force -- every lattice point within the bounds, walked a pitch at a time -- and its list compared position for position.
-A grid with no bounds has no positions to count, and one holding more than snap-grid lists in one answer cannot be counted by listing:
-each is refused, naming why, as is an answer thinned in spite of the ask.
+H26.11's verification (H26-21; B399, B400) held `positionsWithin` to list every position of a bounded grid, however many, against a brute
+force. RETIRED at H26.6's move 12 (dev/design/components/PAN-ZOOM.md 5.1 row 12, GR2): no grid is listed whole -- the anchors route asks an
+area of at most 10,000 positions (tests/anchors-area.test.js), placement rings outward (tests/placement-rings.test.js) -- and the function
+is deleted, held gone by tests/extent-gone.test.js.
 */
-const brute = (pitch, ox, oy, min, max) => {
-	const first = (lo, o) => Math.ceil((lo - o) / pitch), last = (hi, o) => Math.floor((hi - o) / pitch);
-	const out = [];
-	for (let row = first(min.y, oy); row <= last(max.y, oy); row++) for (let col = first(min.x, ox); col <= last(max.x, ox); col++) out.push({ col, row });
-	return out;
-};
-// the same positions in the same order -- the count first, then the first that differs, so a failure says little and quickly (an
-// assertion's diff of two lists of tens of thousands exhausts the runner)
-const sameList = (got, want, what) => {
-	assert.equal(got.length, want.length, `${what}: ${got.length} positions where the brute force counts ${want.length}`);
-	const at = want.findIndex((p, i) => got[i].col !== p.col || got[i].row !== p.row);
-	assert.equal(at, -1, `${what}: position ${at} differs`);
-};
-test('H26.11: positionsWithin lists every position of a grid past snap-grid\'s default 10,000, row then column, as a brute-force count', () => {
-	const square = (pitch, origin, min, max) => openGrid({ shape: 'square', pitch, origin, bounds: { min, max } }).grid;
-	const wide = square(60, { x: 0, y: 0 }, { x: -6000, y: -3000 }, { x: 6000, y: 3000 });
-	const want = brute(60, 0, 0, { x: -6000, y: -3000 }, { x: 6000, y: 3000 });
-	assert.equal(want.length, 201 * 101, 'control: the brute force counts 20,301');
-	sameList(positionsWithin(wide), want, 'pitch 60 over +-6000 by +-3000, where 5,151 were answered');
-	const fine = latticeGrids({ pitch: 10, offset: 0, ext: DOC_NODE_EXT }).bounded;
-	const fineWant = brute(10, 0, 0, { x: -DOC_NODE_EXT.x, y: -DOC_NODE_EXT.y }, { x: DOC_NODE_EXT.x, y: DOC_NODE_EXT.y });
-	assert.equal(fineWant.length, 17557, 'control: pitch 10 over the node extent, 17,557');
-	sameList(positionsWithin(fine), fineWant, 'pitch 10 over the node extent, where 4,459 were answered');
-	// bounds off the lattice and off centre, on a half-offset lattice: the first and last positions within them, not the bounds
-	const off = square(120, { x: 30, y: 30 }, { x: -905, y: -480 }, { x: 875, y: 600 });
-	sameList(positionsWithin(off), brute(120, 30, 30, { x: -905, y: -480 }, { x: 875, y: 600 }), 'bounds off the lattice and off centre');
-	assert.equal(positionsWithin(ZONE_GRIDS.bounded).length, 576, 'and the zone grid\'s 576, as ruled');
-});
-
-test('H26.11: positionsWithin refuses a grid with no bounds, one holding more than snap-grid lists in one answer, and a thinned answer', () => {
-	for (const [name, grid] of [['NODE_GRID', NODE_GRID], ['the zone grid with no bounds', ZONE_GRIDS.unbounded]]) {
-		assert.throws(() => positionsWithin(grid), { message: 'positionsWithin: the grid has no bounds, so no positions within them to list or count' }, `${name}: refused, not counted 0`);
-	}
-	const E = 2 ** 20;
-	const vast = openGrid({ shape: 'square', pitch: 1, origin: { x: 0, y: 0 }, bounds: { min: { x: -E, y: -E }, max: { x: E, y: E } } }).grid;
-	assert.throws(() => positionsWithin(vast), { message: `positionsWithin: the grid holds ${(2 * E + 1) ** 2} positions within its bounds, more than snap-grid lists in one answer (4294967295)` });
-	// a grid whose inView thins whatever it is asked -- snap-grid would not, so a stand-in answering as if asked for one position
-	const thinning = { declaration: ZONE_GRIDS.bounded.declaration, nearest: (p) => ZONE_GRIDS.bounded.nearest(p), inView: (view) => ZONE_GRIDS.bounded.inView(view, { max: 1 }) };
-	assert.throws(() => positionsWithin(thinning), /^Error: positionsWithin: snap-grid answered 1 of the grid's 576 positions at a stride of \d+ -- thinned, where every position was asked for$/);
-});

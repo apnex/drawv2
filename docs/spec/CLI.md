@@ -103,7 +103,7 @@ Context
   dump                                                                            the entire document as JSON -- what the server holds, not what a viewer renders
   movers [--at epoch-ms] [--spawner ref]                                          what is in flight right now -- the movers a correct client must be drawing
   show                                                                            the whole diagram: summary and every entity
-  map [--full] [--zone <ref>] [--around <ref>] [--radius n] [--layout node|zone]  look at the canvas -- occupancy as a grid, so placement is seen rather than derived
+  map [--chunk i,j | --area cx0,cy0,cx1,cy1 | --around <ref> [--radius n] | --zone <ref> | --full] [--layout node|zone]  look at the canvas a chunk at a time -- occupancy as a grid, and what lies beyond it each way
   focus [ref]                                                                     the entity the relation verbs read from, persisted; omit to see it
   links [ref]                                                                     what connects to a thing -- the other end named, routed marked
   holds [ref]                                                                     what contains a thing -- its zones and its group, upward
@@ -146,7 +146,7 @@ Placement
   place <type> near|inside|between <ref> [--link]  put a node beside, inside or between things -- on a free anchor, no coordinates
   add <type> at <cx>,<cy> [--name n] [--link ref]  put a node on a named anchor -- a cell, never a pixel
   anchor nearest <x> <y> [--layout node|zone]      the legal anchor closest to a pixel coordinate
-  anchor free [--layout node|zone]                 every anchor nothing occupies
+  anchor free [--chunk i,j | --area cx0,cy0,cx1,cy1] [--layout node|zone]  every anchor nothing occupies, in the window `draw map` would show
   types                                            the declared device types: name, map letter, routing pack and run-mode behaviour
   layouts                                          the diagram's two grids: name, id, pitch, offset and extent
 
@@ -166,6 +166,11 @@ Access
   workspace grants                          who may reach everything you own
   workspace revoke <principal>              withdraw a workspace grant
 ```
+
+AMENDED 2026-11-05 (H26.6's move 12; `dev/design/components/PAN-ZOOM.md` section 3.8, PZ33): the canvas has no edge, so `map` reads it in chunks of 31 by 17 cells, chunk 0,0 centred on cell 0,0 and the old canvas whole.\
+Plain `map` shows what is in use, inside chunk 0,0, or chunk 0,0 whole when anything lies past it; `--chunk i,j` shows a chunk; `--area`, `--around` and `--zone` show a window of at most one chunk; give one of them.\
+Beneath its key every map prints its chunk and window, then for each of the eight directions what lies beyond the window and the exact `draw map ... --chunk i,j` command that looks there -- the camera moves by naming a chunk, and nothing is remembered between commands.\
+`anchor free` lists the free positions of the window `map` would show; every cell-taking verb takes any cell within the canvas's bound, a million drawing units from the origin.
 
 ---
 

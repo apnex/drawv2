@@ -53,7 +53,7 @@ export const ROUTES = [
 	{ path: 'diagrams/:id/movers',             methods: ['GET'],            about: 'what is in flight right now along each armed spawner\'s route (B339, SD1)' },
 	{ path: 'diagrams/:id/layouts',            methods: ['GET'],            about: 'the diagram\'s two grids, as its layout records' },
 	{ path: 'diagrams/:id/layouts/:name/nearest', methods: ['GET'],         about: 'the legal anchor nearest a pixel' },
-	{ path: 'diagrams/:id/layouts/:name/anchors', methods: ['GET'],         about: 'every anchor, or every free one' },
+	{ path: 'diagrams/:id/layouts/:name/anchors', methods: ['GET'],         about: 'the anchors of an area asked, in drawing units or cells, or its free ones' },
 
 	{ path: 'diagrams/:id/nodes',              methods: ['POST'],           about: 'high-level create; `draw add` and `draw place` are preferred' },
 	{ path: 'diagrams/:id/nodes/:entity',      methods: ['PATCH', 'DELETE'], about: 'high-level patch and remove' },

@@ -11,12 +11,12 @@ import { layoutRecords } from '../plugins/layouts/layout-records.mjs';   // WD8 
 import { linksOf, linksAt, makeLink } from '../plugins/network/link-queries.mjs';   // which links meet an anchor: the network's (K13d)
 import { snapshotBody, changeBody, reversalBody } from './protocol.js';
 import { announceActivity, announceAccess, viewersFor } from './hub.js';   // B342 (H21.8): in the hub, so the hub does not import REST
-import { NODE_GRID, latticeGrids, anchorOn } from '../kernel/geometry.mjs';   // H26.1: the grids, and an anchor's one builder (F3)
+import { NODE_GRID, anchorOn } from '../kernel/geometry.mjs';   // H26.1: the grids, and an anchor's one builder (F3)
 import { LAYOUT_TABLE, ZONE_GRIDS } from '../plugins/layouts/layout-table.mjs';   // H26.1: the layouts table's names, and the zone's grids
 import { makeZone } from '../plugins/zones/make-zone.mjs';   // the zones plugin's factory (O-b1)
 import { makeGroup } from '../plugins/groups/make-group.mjs';   // the groups plugin's factory (O-c)
 import { groupOf } from '../plugins/groups/group-of.mjs';   // and its lookup (O-c)
-import { NAME_MAX } from '../model/limits.mjs';   // truncates where validate.js rejects (B86)
+import { NAME_MAX, COORD_BOUND } from '../model/limits.mjs';   // truncates where validate.js rejects (B86); H26.6's move 12: the bound an anchors area is clipped to
 import { ANCHOR_KINDS } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
 import { isBareEntity } from '../plugins/devices/device-shapes.mjs';
 import { linkReading } from '../plugins/network/read-model.mjs';   // a link's path, route, down and blockers, as one answer (R-b, H1)
@@ -29,33 +29,56 @@ import { moversReport } from '../plugins/simulation/spawners.mjs';
 import { moversAt } from '../plugins/simulation/movers.mjs';
 
 /*
-MOVED at H26.6's move 11 from kernel/geometry.mjs (dev/design/components/PAN-ZOOM.md 5.1 row 11): the anchors route is its one reader, the
-caps counted by it no longer (PZ8); move 12 replaces the whole list it walks by an area asked (PZ9) and deletes it. As it was:
+H26.6's move 12 (dev/design/components/PAN-ZOOM.md section 3.8, "The anchor lists"; PZ9) -- THE AREA AN ANCHORS REQUEST ASKS. With no
+extent there is no whole list: a request names an area, in drawing units (`x0`, `y0`, `x1`, `y1`) or in cells (`cx0`, `cy0`, `cx1`,
+`cy1`) -- the cells turned into points on the layout's own lattice here, so the CLI holds no copy of the grid's arithmetic (B111) -- and is
+answered with the lattice's positions in it, edges included, by row then column, as snap-grid's `inView` orders them (SG6):
+  malformed  400 `area-malformed`, naming the parameter: neither form whole, both forms, a value not a finite number, a cell not a whole
+             number, an area inverted (`x0` above `x1`, `y0` above `y1`)
+  clipped    to PZ31's bound, 1,000,000 either way (model/limits.mjs `COORD_BOUND`); an area wholly beyond it answers no anchors, `inView`
+             never asked a negative size; cells far past it are first held one position beyond it, so no point is asked outside the
+             lattice's domain
+  too large  422 `area-too-large`, naming the limit and the area's width and height in squares, each its clipped side over the pitch
+             rounded down: asked with no least spacing, `inView` doubles its stride exactly when the area holds more than its `max`,
+             10,000, so a stride above 1 is refused and no count is made (PZ13)
 */
-/*
-H26.11 (H26-21; B399, B400) -- A BOUNDED GRID'S OWN POSITIONS WITHIN ITS OWN BOUNDS, row by row then column: snap-grid's positions in view
-of the rectangle its bounds enclose, at a scale of one. What the agents' anchor list walks for each layout and what a positioned kind's
-cap counts, read from the grid itself -- its bounds, not an extent or a count stated beside it -- so both follow the grid when its size
-becomes configurable (H26-21). A grid with no bounds has no positions to count, and is refused.
-AMENDED at H26.11's verification: every position, however many. `inView` answers at most `max` positions, 10,000 unless asked, and
-thins past it by doubling its stride, so it is asked for exactly as many as the grid holds within its bounds -- the grid's own first and
-last positions there, its nearest to each corner, which a bounded grid answers within its bounds -- and an answer at any stride but one,
-or of any other count, is refused. A grid holding more than `inView` lists in one answer, `INVIEW_MOST`, cannot be counted by listing,
-and is refused before it is asked.
-*/
-const INVIEW_MOST = 4294967295;   // 2^32 - 1, snap-grid's largest `max`: the most positions `inView` lists in one answer (B176: no `**` here)
-export function positionsWithin(grid) {
-	const bounds = grid?.declaration?.bounds;
-	if (!bounds) throw new Error('positionsWithin: the grid has no bounds, so no positions within them to list or count');
-	const { min, max } = bounds;
-	const first = grid.nearest(min), last = grid.nearest(max);
-	const count = (last.col - first.col + 1) * (last.row - first.row + 1);
-	if (count > INVIEW_MOST) throw new Error(`positionsWithin: the grid holds ${count} positions within its bounds, more than snap-grid lists in one answer (${INVIEW_MOST})`);
-	const { stride, positions } = grid.inView({ region: { kind: 'rect', x: min.x, y: min.y, w: max.x - min.x, h: max.y - min.y }, scale: 1 }, { max: count });
-	if (stride !== 1 || positions.length !== count) {
-		throw new Error(`positionsWithin: snap-grid answered ${positions.length} of the grid's ${count} positions at a stride of ${stride} -- thinned, where every position was asked for`);
+const AREA_MOST = 10000;   // snap-grid's default `max`, the most positions one request lists
+const AREA_FORMS = [['drawing units', ['x0', 'y0', 'x1', 'y1']], ['cells', ['cx0', 'cy0', 'cx1', 'cy1']]];
+function areaAsked(params, grid) {
+	const named = AREA_FORMS.map(([unit, names]) => ({ unit, names, given: names.filter((n) => params.get(n) !== null) }));
+	const [units, cells] = named;
+	if (units.given.length && cells.given.length) {
+		return { malformed: `anchors takes one area, in drawing units (x0, y0, x1, y1) or in cells (cx0, cy0, cx1, cy1), not both: ${[...units.given, ...cells.given].join(', ')} given` };
 	}
-	return positions.map(({ position }) => position);
+	const form = cells.given.length ? cells : units;
+	if (!form.given.length) return { malformed: 'anchors requires an area: x0, y0, x1 and y1 in drawing units, or cx0, cy0, cx1 and cy1 in cells' };
+	const missing = form.names.filter((n) => !form.given.includes(n));
+	if (missing.length) return { malformed: `anchors: the area in ${form.unit} lacks ${missing.join(', ')}` };
+	const v = {};
+	for (const n of form.names) {
+		const raw = params.get(n), num = raw.trim() === '' ? NaN : Number(raw);
+		if (!Number.isFinite(num)) return { malformed: `anchors: ${n} must be a finite number, not ${JSON.stringify(raw)}` };
+		if (form === cells && !Number.isInteger(num)) return { malformed: `anchors: ${n} must be a whole number of cells, not ${JSON.stringify(raw)}` };
+		v[n] = num;
+	}
+	const [a0, b0, a1, b1] = form.names;
+	if (v[a0] > v[a1]) return { malformed: `anchors: ${a0} (${v[a0]}) is above ${a1} (${v[a1]}) -- an area runs from its lesser corner to its greater` };
+	if (v[b0] > v[b1]) return { malformed: `anchors: ${b0} (${v[b0]}) is above ${b1} (${v[b1]}) -- an area runs from its lesser corner to its greater` };
+	let x0 = v[a0], y0 = v[b0], x1 = v[a1], y1 = v[b1];
+	if (form === cells) {
+		const lo = grid.nearest({ x: -COORD_BOUND, y: -COORD_BOUND }), hi = grid.nearest({ x: COORD_BOUND, y: COORD_BOUND });
+		const at = (col, row) => grid.pointOf({ col: Math.min(Math.max(col, lo.col - 1), hi.col + 1), row: Math.min(Math.max(row, lo.row - 1), hi.row + 1) });
+		({ x: x0, y: y0 } = at(x0, y0));
+		({ x: x1, y: y1 } = at(x1, y1));
+	}
+	x0 = Math.max(x0, -COORD_BOUND); y0 = Math.max(y0, -COORD_BOUND); x1 = Math.min(x1, COORD_BOUND); y1 = Math.min(y1, COORD_BOUND);
+	if (x0 > x1 || y0 > y1) return { positions: [] };
+	const { stride, positions } = grid.inView({ region: { kind: 'rect', x: x0, y: y0, w: x1 - x0, h: y1 - y0 }, scale: 1 }, { max: AREA_MOST });
+	if (stride !== 1) {
+		const { pitch } = grid.declaration;
+		return { tooLarge: `anchors lists at most ${AREA_MOST} positions in one area; this one is ${Math.floor((x1 - x0) / pitch)} by ${Math.floor((y1 - y0) / pitch)} squares -- ask a smaller area` };
+	}
+	return { positions: positions.map(({ position }) => position) };
 }
 
 
@@ -163,11 +186,10 @@ function contextOf(model, kind, e) {
 }
 
 // H26.1 (SNAP-GRID.md section 5): each layout's grid with no bounds, by its name in the layouts table; and the nearest route's limit
-// (section 6.3). H26.11 (H26-21; B399): and each layout's grid within its own bounds, whose positions the anchors route lists -- the grid
-// its place carries: the node grid bounded by the node record's extent (plugins/layouts/layout-canvas.mjs), the zone's own (ZONE_GRIDS)
+// (section 6.3). H26.11 (H26-21; B399) listed each layout's grid within its own bounds; RESTATED at H26.6's move 12 (PAN-ZOOM.md
+// section 3.8, "The anchor lists"): the anchors route asks the unbounded grid for an area, so no bounded grid remains
 const [NODE_LAYOUT, ZONE_LAYOUT] = LAYOUT_TABLE;
 const UNBOUNDED_GRIDS = new Map([[NODE_LAYOUT.name, NODE_GRID], [ZONE_LAYOUT.name, ZONE_GRIDS.unbounded]]);
-const BOUNDED_GRIDS = new Map([[NODE_LAYOUT.name, latticeGrids(NODE_LAYOUT).bounded], [ZONE_LAYOUT.name, ZONE_GRIDS.bounded]]);
 const NEAREST_LIMIT = 2 ** 49;
 
 function occupantAt(model, anchor) {
@@ -709,13 +731,17 @@ export function handleRest(req, res, store, locks, hub, principal = null, sessio
 		}
 		if (parts[6] === 'anchors' && parts.length === 7) {
 			const wantFree = url.searchParams.get('free') === '1';
+			/*
+			H26.11 (H26-21; B399): this layout's own grid's positions within that grid's own bounds, by row then column. RESTATED at H26.6's
+			move 12 (dev/design/components/PAN-ZOOM.md section 3.8, "The anchor lists"; PZ9): the positions of the area asked, by row then
+			column, clipped to PZ31's bound -- `areaAsked` above; an area holding the old frame answers the list as it was
+			*/
+			const area = areaAsked(url.searchParams, grid);
+			if (area.malformed) return json(res, 400, { error: area.malformed, code: 'area-malformed' }), true;
+			if (area.tooLarge) return json(res, 422, { error: area.tooLarge, code: 'area-too-large' }), true;
 			const out = [];
-			// H26.11 (H26-21; B399): this layout's own grid's positions within that grid's own bounds, by row then column, read from the
-			// grid -- so the list follows it when its size becomes configurable. Both lists walked the node extent's positions until then,
-			// so the zone list lacked its lattice's first column and row; the node list is as it was
-			const within = BOUNDED_GRIDS.get(L.name);
-			for (const position of positionsWithin(within)) {
-				const a = anchorOn(L.name, within, position);
+			for (const position of area.positions) {
+				const a = anchorOn(L.name, grid, position);
 				const occupant = occupantAt(model, a);
 				if (wantFree && occupant) continue;
 				out.push(occupant ? { ...a, occupant } : a);

@@ -168,8 +168,10 @@ const RECORD = {
 	// cap counts its own grid's positions within its bounds (kernel/geometry.mjs `positionsWithin`), and the formula went
 	'plugins/simulation/spawners.mjs': { count: 1, cites: ['SNAP-GRID.md appendix B'],
 		reason: 'a route\'s length in pitches, to two places, for the readout: a length read in the declared pitch, which stays' },
-	'cli/verbs.mjs': { count: 4, cites: ['B402'],
-		reason: 'a zone\'s cell range from literal 30 and 60: out of H26.1, registered (section 5; B402)' },
+	'cli/verbs.mjs': { count: 4, cites: ['B402', 'PAN-ZOOM.md PZ15'],
+		reason: 'a zone\'s cell range, its edges half a pitch between cells: from literal 30 and 60 until H26.6\'s move 12, from the stored pitch since (PZ15; B402\'s literals gone)' },
+	'server/rest.js': { count: 2, cites: ['PAN-ZOOM.md section 3.8'],
+		reason: 'the anchors route\'s refusal of an area too large, naming its width and height in squares -- each side over the pitch rounded down, as 3.8 words it; no position is asked' },
 };
 
 test('H26.1 (acceptance step 3): a rounding over a pitch is found only where the record says, each a site appendix B keeps draw\'s', () => {

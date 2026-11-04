@@ -1651,7 +1651,7 @@ VERBS.push({
 	example: 'draw add server at 5,-2 --name web-1',
 	args: [{ name: 'type', about: `a declared device type (see \`draw types\`) -- or \`waypoint\`, a node with no type` },
 		{ name: 'at', about: "the literal word 'at'" },
-		{ name: 'cx,cy', about: 'the CELL, not pixels -- `draw anchor nearest` converts if you have pixels' }],
+		{ name: 'cx,cy', about: 'the CELL, not pixels -- any cell; `draw anchor nearest` converts if you have pixels' }],
 	flags: [{ name: '--name', about: 'what to call it' },
 		{ name: '--link', about: 'a node id or name to link it to' },
 		{ name: '--shape', about: 'the outer frame: circle or square. Independent of type' },
@@ -1679,10 +1679,9 @@ VERBS.push({
 			die(`at takes a CELL like 5,-2 -- whole numbers. Pixels would let you land off the grid, which the server refuses (B110)`);
 		}
 		const id = await activeId(ctx, ctx.flags);
-		const anchors = ok(await request(ctx, `/diagrams/${id}/layouts/node/anchors`), 'add').anchors;
-		const spot = anchors.find((a) => a.cx === cx && a.cy === cy);
-		// B133: the same sentence every cell-taking verb gives, from one place
-		if (!spot) die(noAnchor(cx, cy, anchors, 'node'));
+		// B133: the same sentence every cell-taking verb gives, from one place. H26.6's move 12 (PZ15): the one cell asked, any cell
+		// within PZ31's bound, where the old extent's whole list was read
+		const spot = await cellToPx(ctx, id, 'node', { cx, cy }, 'add');
 		if (spot.occupant) die(`cell ${cx},${cy} is taken by ${spot.occupant} -- \`draw about ${spot.occupant}\` says what it is`);
 
 		if (type === 'waypoint') {
@@ -1754,16 +1753,30 @@ VERBS.push(
 		},
 	},
 	{
-		name: 'anchor free', sub: true, group: 'Placement', usage: 'draw anchor free [--layout node|zone]',
-		route: '/diagrams/<id>/layouts/<name>/anchors', method: 'GET',
-		summary: 'every anchor nothing occupies', example: 'draw anchor free --json',
-		flags: [{ name: '--layout', about: 'node (default) or zone' }, { name: '--diagram', about: 'target by id or name' }],
+		name: 'anchor free', sub: true, group: 'Placement', usage: 'draw anchor free [--chunk i,j | --area cx0,cy0,cx1,cy1] [--layout node|zone]',
+		route: '/diagrams/<id>/layouts/<name>/anchors', method: 'GET', also: ['GET /diagrams/<id>', 'GET /diagrams/<id>/layouts'],
+		summary: 'every anchor nothing occupies, in the window `draw map` would show', example: 'draw anchor free --json',
+		flags: [{ name: '--chunk', about: 'a chunk of 31 by 17 cells, i,j' }, { name: '--area', about: 'cells cx0,cy0,cx1,cy1, at most one chunk' },
+			{ name: '--layout', about: 'node (default) or zone' }, { name: '--diagram', about: 'target by id or name' }],
+		/*
+		H26.6's move 12 (PAN-ZOOM.md section 3.8; PZ33): the map's window rules -- plain, `--chunk`, `--area` -- and the free positions of
+		that window, never more than one chunk's, where it listed the old extent's every free anchor; `--json` gains the chunk and the
+		window, and no senses
+		*/
 		async run(ctx) {
 			const layout = ctx.flags.layout || 'node';
+			if (!['node', 'zone'].includes(layout)) die(`--layout takes node or zone, not ${layout}`);
 			const id = await activeId(ctx, ctx.flags);
-			const b = ok(await request(ctx, `/diagrams/${id}/layouts/${layout}/anchors?free=1`), 'anchor free');
-			// a list of 500 cells is not a table anyone reads; the count and the corners are
-			return { json: b, text: `${b.count} free on the ${b.layout} grid` };
+			const doc = viewOf(ok(await request(ctx, `/diagrams/${id}`), 'anchor free'));
+			const asked = await windowOf(ctx, id, layout, doc, await pitchOf(ctx, id), ['area', 'chunk']);
+			const answered = await anchorsIn(ctx, id, layout, asked.ask, { what: 'anchor free' });
+			const { win } = tightIn(asked, answered.anchors);
+			const free = answered.anchors.filter((a) => !a.occupant && a.cx >= win.x0 && a.cx <= win.x1 && a.cy >= win.y0 && a.cy <= win.y1);
+			const [i, j] = windowChunk(cellsShown(layout, win));
+			const chunk = { i, j, cells: cellsOfChunk(i, j) };
+			// a list of 500 cells is not a table anyone reads; the count and the window are
+			return { json: { layout: answered.layout, count: free.length, anchors: free, chunk, window: win },
+				text: `${free.length} free on the ${answered.layout} grid, window ${win.x0}..${win.x1} by ${win.y0}..${win.y1} in chunk ${i},${j}` };
 		},
 	},
 );
@@ -1818,8 +1831,10 @@ VERBS.push(
 		async run(ctx) {
 			const id = await activeId(ctx, ctx.flags);
 			const b = ok(await request(ctx, `/diagrams/${id}/layouts`), 'layouts');
-			// WD8 (H19.45): the diagram's layout records, where the list was the kernel's names
-			return { json: b, text: table(b.layouts.map((l) => [l.name, l.id, l.pitch, l.offset, `${l.ext.x} x ${l.ext.y}`]), ['LAYOUT', 'ID', 'PITCH', 'OFFSET', 'EXTENT']) };
+			// WD8 (H19.45): the diagram's layout records, where the list was the kernel's names. H26.6's move 12 (PZ15): each record as it
+			// is served, a field it does not hold shown as a dash -- so schema 4's one record, holding no offset or extent, prints too
+			const ext = (l) => (l.ext ? `${l.ext.x} x ${l.ext.y}` : '-');
+			return { json: b, text: table(b.layouts.map((l) => [l.name, l.id, l.pitch, l.offset ?? '-', ext(l)]), ['LAYOUT', 'ID', 'PITCH', 'OFFSET', 'EXTENT']) };
 		},
 	},
 	{
@@ -1883,8 +1898,20 @@ const mint = (kind) => `${kind}-${Math.random().toString(16).slice(2, 8).padStar
 // cell -> pixel for BOTH grids, asked of the server rather than recomputed here. `add` already
 // reads the node anchors for exactly this reason; doing the arithmetic in the CLI would put a
 // second copy of `kernel/geometry.mjs` in a second language, which is the twin B111 closed.
-async function anchorsOf(ctx, id, layout) {
-	return ok(await request(ctx, `/diagrams/${id}/layouts/${layout}/anchors`), 'anchors').anchors;
+/*
+H26.6's move 12 (dev/design/components/PAN-ZOOM.md section 3.8, "The CLI"; PZ15, PZ9) -- THE ROUTE ASKED FOR AN AREA, NEVER FOR A WHOLE
+LIST. There is no extent, so the anchors route lists only an area named in cells -- the shown layout's indices, which the server turns
+into points on its lattice -- and a cell-taking verb asks for its one cell. `pitchOf` reads the diagram's pitch from its layout record
+(`layout-000001`, schema 3's node record and schema 4's one record alike), the one figure the CLI turns its own cells by: a zone's
+half-pitch edges and a node's cell for `--around` and `parity`.
+*/
+async function anchorsIn(ctx, id, layout, w, { free = false, what = 'anchors' } = {}) {
+	return ok(await request(ctx, `/diagrams/${id}/layouts/${layout}/anchors?cx0=${w.x0}&cy0=${w.y0}&cx1=${w.x1}&cy1=${w.y1}${free ? '&free=1' : ''}`), what);
+}
+async function pitchOf(ctx, id) {
+	const record = ok(await request(ctx, `/diagrams/${id}/layouts`), 'layouts').layouts.find((l) => l.id === 'layout-000001');
+	if (!record || !(record.pitch > 0)) die(`the diagram ${id} holds no layout record with a pitch -- \`draw layouts\` shows what it holds`);
+	return record.pitch;
 }
 /*
 The one refusal for "that cell does not exist", shared by every verb that takes one.
@@ -1893,19 +1920,16 @@ The one refusal for "that cell does not exist", shared by every verb that takes 
 a caller who typed a coordinate they can see on screen deserves to be told the unit is wrong rather
 than that their position is "outside". Extracted at B133 because four more verbs now need the same
 sentence, and four copies of a diagnostic is how the diagnostic stops being true in three of them.
+RESTATED at H26.6's move 12 (PAN-ZOOM.md section 3.8, "The CLI"): every cell within PZ31's bound is an anchor now, so the sentence is
+said only of a cell past the bound -- which a pixel coordinate typed as a cell is far likelier to be than a cell anyone meant.
 */
-function noAnchor(cx, cy, anchors, layout) {
-	const looksLikePixels = Math.abs(cx) > 40 || Math.abs(cy) > 40;
-	const range = anchors.length ? `cx ${anchors[0].cx}..${anchors[anchors.length - 1].cx}` : 'none';
-	return `no ${layout} anchor at cell ${cx},${cy} (${range})`
-		+ (looksLikePixels
-			? ` -- those look like pixels, and this takes a CELL; \`draw anchor nearest ${cx} ${cy}\` converts them`
-			: ` -- \`draw anchor free --layout ${layout}\` lists what is open`);
+function noAnchor(cx, cy, layout) {
+	return `no ${layout} anchor at cell ${cx},${cy} -- it lies past the canvas's bound, a million drawing units from the origin; `
+		+ `those look like pixels, and this takes a CELL; \`draw anchor nearest ${cx} ${cy}\` converts them`;
 }
 async function cellToPx(ctx, id, layout, { cx, cy }, what) {
-	const anchors = await anchorsOf(ctx, id, layout);
-	const spot = anchors.find((a) => a.cx === cx && a.cy === cy);
-	if (!spot) die(noAnchor(cx, cy, anchors, layout));
+	const [spot] = (await anchorsIn(ctx, id, layout, { x0: cx, y0: cy, x1: cx, y1: cy }, { what })).anchors;
+	if (!spot) die(noAnchor(cx, cy, layout));
 	return spot;
 }
 
@@ -2069,7 +2093,7 @@ VERBS.push(
 	{
 		name: 'zone', group: 'Writing', usage: 'draw zone <name> from <cx>,<cy> to <cx>,<cy>',
 		route: '/diagrams/<id>/commit', method: 'POST',
-		also: ['GET /diagrams', 'GET /diagrams/<id>/layouts/<layout>/anchors'],
+		also: ['GET /diagrams', 'GET /diagrams/<id>/layouts', 'GET /diagrams/<id>/layouts/<layout>/anchors'],
 		summary: 'enclose a rectangle of CELLS -- the half-pitch offset is the tool\'s problem, not yours',
 		example: 'draw zone site-a from -15,-6 to -9,4',
 		args: [{ name: 'name', about: 'what to call the zone' },
@@ -2092,8 +2116,10 @@ VERBS.push(
 			// arithmetic every caller was getting wrong by hand
 			const lo = await cellToPx(ctx, id, 'node', { cx: Math.min(A.cx, B.cx), cy: Math.min(A.cy, B.cy) }, 'zone');
 			const hi = await cellToPx(ctx, id, 'node', { cx: Math.max(A.cx, B.cx), cy: Math.max(A.cy, B.cy) }, 'zone');
+			// H26.6's move 12 (PZ15, B402): the half cell and the cell from the diagram's stored pitch, where they were 30 and 60
+			const pitch = await pitchOf(ctx, id), half = pitch / 2;
 			const zid = mint('zone');
-			const entity = { id: zid, name, x: lo.x - 30, y: lo.y - 30, w: hi.x - lo.x + 60, h: hi.y - lo.y + 60 };
+			const entity = { id: zid, name, x: lo.x - half, y: lo.y - half, w: hi.x - lo.x + pitch, h: hi.y - lo.y + pitch };
 			return submit(ctx, id, [{ op: 'put', kind: 'zone', entity }], 'zone', 'zone', (r) => ({
 				json: { id: zid, ...entity, version: r.version },
 				text: `${name} (${zid}) ${entity.w}x${entity.h} at ${entity.x},${entity.y}  v${r.version}`,
@@ -2260,24 +2286,174 @@ from what a person would want:
 
 
 // a zone's bounds in CELLS. The zone grid sits half a pitch off, so its edges fall between cells --
-// which is exactly why this is derivable rather than approximate.
-const zoneCells = (z) => ({
-	x0: Math.round((z.x + 30) / 60), y0: Math.round((z.y + 30) / 60),
-	x1: Math.round((z.x + z.w - 30) / 60), y1: Math.round((z.y + z.h - 30) / 60),
+// which is exactly why this is derivable rather than approximate. H26.6's move 12 (PZ15, B402): by the diagram's stored pitch, where it
+// was 30 and 60
+const zoneCells = (z, pitch) => ({
+	x0: Math.round((z.x + pitch / 2) / pitch), y0: Math.round((z.y + pitch / 2) / pitch),
+	x1: Math.round((z.x + z.w - pitch / 2) / pitch), y1: Math.round((z.y + z.h - pitch / 2) / pitch),
 });
 
+/*
+H26.6's move 12 (dev/design/components/PAN-ZOOM.md section 3.8, "The CLI's map, in chunks"; PZ33, the director's three answers) -- THE
+MAP ON AN INFINITE CANVAS. The CLI's cells are the device lattice's indices, a cell `cx` at `x = cx * pitch`; the zone layout's indices
+are its corners, `zx` lying between cells `zx` and `zx + 1`. The canvas is read in chunks of CHUNK, 31 by 17 cells -- each odd, so chunk
+0,0 is centred on cell 0,0 and is the old canvas whole: chunk `i,j` holds cells `31i - 15 .. 31i + 15` by `17j - 8 .. 17j + 8`, a cell's
+chunk is `floor((cx + 15) / 31)`, `floor((cy + 8) / 17)`, and on the zone layout a chunk shows the corners bounding its cells. A window is
+a rectangle of the shown layout's indices, at most one chunk, never clipped to one nor refused for crossing one; its chunk is the chunk of
+its centre cell. After its key, `zones:` and `pipes:`, the map prints its chunk and window, and for each of the eight regions about the
+window, n to nw, what lies there -- a device or a waypoint by its anchor's cell, a zone once in each region its cells reach -- and the one
+command that looks there: the window's own chunk if any of it lies there, else the region's neighbouring chunk, else the nearest chunk
+holding any of it by Chebyshev distance, the lesser `j` and then `i` winning a tie; an empty region its neighbour. No state is kept
+between commands: the camera moves by naming a chunk, the map handing the next command whole (PZ33). The rules are the drafter's
+`chunk-rules.mjs`, the oracle tests/cli-map.test.js holds these to.
+*/
+const CHUNK = Object.freeze({ w: 31, h: 17 });   // the one place a chunk's size is set
+const HALF_W = (CHUNK.w - 1) / 2, HALF_H = (CHUNK.h - 1) / 2;
+const chunkOfCell = (cx, cy) => [Math.floor((cx + HALF_W) / CHUNK.w), Math.floor((cy + HALF_H) / CHUNK.h)];
+const cellsOfChunk = (i, j) => ({ x0: CHUNK.w * i - HALF_W, x1: CHUNK.w * i + HALF_W, y0: CHUNK.h * j - HALF_H, y1: CHUNK.h * j + HALF_H });
+const cornersOfCells = (w) => ({ x0: w.x0 - 1, x1: w.x1, y0: w.y0 - 1, y1: w.y1 });   // on the zone layout, the corners bounding cells
+const cellsOfCorners = (w) => ({ x0: w.x0 + 1, x1: w.x1, y0: w.y0 + 1, y1: w.y1 });   // and the cells they bound
+const windowChunk = (w) => chunkOfCell(Math.floor((w.x0 + w.x1) / 2), Math.floor((w.y0 + w.y1) / 2));
+const SENSE_DIRS = ['n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw'];
+const SENSE_STEP = { n: [0, -1], ne: [1, -1], e: [1, 0], se: [1, 1], s: [0, 1], sw: [-1, 1], w: [-1, 0], nw: [-1, -1] };
+// the region of a cell about a window of cells: its row, north or south or neither, then its column; '' is the window itself
+const regionOf = (w, cx, cy) => (cy < w.y0 ? 'n' : cy > w.y1 ? 's' : '') + (cx < w.x0 ? 'w' : cx > w.x1 ? 'e' : '');
+// the eight senses of window `w`, in cells, over anchors `{ cx, cy, device }` and zones' cells `{ x0, x1, y0, y1 }`
+function sensesOf(w, anchors, zones) {
+	const [ci, cj] = windowChunk(w);
+	const beyond = SENSE_DIRS.map((dir) => {
+		const counts = { devices: 0, waypoints: 0, zones: 0 }, cells = [];
+		for (const a of anchors) {
+			if (regionOf(w, a.cx, a.cy) !== dir) continue;
+			counts[a.device ? 'devices' : 'waypoints']++;
+			cells.push([a.cx, a.cy]);
+		}
+		// a zone's part in the region is its cells there: each chunk that part reaches is a candidate, by the part's cell nearest its corner
+		const rx = dir.includes('w') ? [-Infinity, w.x0 - 1] : dir.includes('e') ? [w.x1 + 1, Infinity] : [w.x0, w.x1];
+		const ry = dir.startsWith('n') ? [-Infinity, w.y0 - 1] : dir.startsWith('s') ? [w.y1 + 1, Infinity] : [w.y0, w.y1];
+		for (const z of zones) {
+			const x0 = Math.max(z.x0, rx[0]), x1 = Math.min(z.x1, rx[1]), y0 = Math.max(z.y0, ry[0]), y1 = Math.min(z.y1, ry[1]);
+			if (x0 > x1 || y0 > y1) continue;
+			counts.zones++;
+			const [i0, j0] = chunkOfCell(x0, y0), [i1, j1] = chunkOfCell(x1, y1);
+			for (let i = i0; i <= i1; i++) for (let j = j0; j <= j1; j++) { const c = cellsOfChunk(i, j); cells.push([Math.max(x0, c.x0), Math.max(y0, c.y0)]); }
+		}
+		const neighbour = [ci + SENSE_STEP[dir][0], cj + SENSE_STEP[dir][1]];
+		let chunk = neighbour, via = 'neighbour';
+		if (cells.length) {
+			const held = cells.map(([cx, cy]) => chunkOfCell(cx, cy));
+			const far = (h) => Math.max(Math.abs(h[0] - ci), Math.abs(h[1] - cj));
+			if (held.some((h) => h[0] === ci && h[1] === cj)) { chunk = [ci, cj]; via = 'window-chunk'; }
+			else if (!held.some((h) => h[0] === neighbour[0] && h[1] === neighbour[1])) {
+				chunk = held.reduce((m, h) => (far(h) < far(m) || (far(h) === far(m) && (h[1] < m[1] || (h[1] === m[1] && h[0] < m[0]))) ? h : m));
+				via = 'nearest';
+			}
+		}
+		return { dir, ...counts, chunk: { i: chunk[0], j: chunk[1] }, via };
+	});
+	return { chunk: { i: ci, j: cj }, beyond };
+}
+// one sense as the map prints it, its command the map's own diagram and layout, and its host when it was given one
+function senseLine(s, command) {
+	const parts = [['devices', 'device'], ['waypoints', 'waypoint'], ['zones', 'zone']].filter(([k]) => s[k]).map(([k, one]) => `${s[k]} ${s[k] === 1 ? one : `${one}s`}`);
+	const where = !parts.length ? `chunk ${s.chunk.i},${s.chunk.j}` : s.via === 'window-chunk' ? `in this chunk, ${s.chunk.i},${s.chunk.j}`
+		: s.via === 'neighbour' ? `in chunk ${s.chunk.i},${s.chunk.j}` : `nearest in chunk ${s.chunk.i},${s.chunk.j}`;
+	return `  ${s.dir.padEnd(3)} ${`${parts.length ? parts.join(', ') : 'nothing'}, ${where}`.padEnd(42)} ${command(s.chunk)}`;
+}
+/*
+THE WINDOW, from the selector the caller named -- at most one of `--area`, `--around`, `--zone`, `--chunk` and `--full`, two refused naming
+each, where the first in that order quietly won. Answers the window in cells (`cells`), the window in the shown layout's indices (`win`),
+the area the route is asked for (`ask`, in those indices), and the scope the header names; or dies naming the parameter and its limit.
+  plain    the whole of chunk 0,0 asked; the tight view -- the shown layout's occupied positions plus one, clipped to chunk 0,0 on that
+           layout -- when every anchor and every zone's cells lie in chunk 0,0, else chunk 0,0 itself
+  --full   chunk 0,0, asked whole;  --chunk i,j  that chunk, asked whole
+  --area cx0,cy0,cx1,cy1   cells, the lesser corner first, at most one chunk;  --around <ref> [--radius r]  the node's or waypoint's cell
+           and `r` cells either side, `r` from 1 to 8, default 4;  --zone <ref>  the zone's cells, at most one chunk -- each asked for its
+           own bounds, the header counting those
+`only` limits the selectors a verb takes (`anchor free`: plain, `--chunk` and `--area`).
+*/
+// every anchor the document holds, a device or a waypoint, from the CLI's view of it (`viewOf`)
+const anchorsOfDoc = (doc) => (doc.nodes || []).concat(doc.waypoints || []);
+const SELECTORS = ['area', 'around', 'zone', 'chunk', 'full'];
+const WHOLE = /^-?\d+$/;
+async function windowOf(ctx, id, layout, doc, pitch, only = SELECTORS) {
+	const given = only.filter((k) => ctx.flags[k] !== undefined);
+	if (given.length > 1) die(`${given.map((k) => `--${k}`).join(' and ')} each choose the window -- give one of ${only.map((k) => `--${k}`).join(', ')}`);
+	const pick = given[0], value = ctx.flags[pick];
+	if (pick && pick !== 'full' && (value === true || Array.isArray(value))) die(`--${pick} takes one value`);
+	const shown = (w) => (layout === 'zone' ? cornersOfCells(w) : w);
+	const ofCells = (cells, scope, whole = false) => ({ cells, win: shown(cells), ask: shown(cells), scope, whole });
+	const tooBig = (w) => w.x1 - w.x0 + 1 > CHUNK.w || w.y1 - w.y0 + 1 > CHUNK.h;
+	if (pick === 'area') {
+		const parts = String(value).split(',');
+		if (parts.length !== 4 || !parts.every((p) => WHOLE.test(p))) die('--area takes four whole numbers, cx0,cy0,cx1,cy1');
+		const [x0, y0, x1, y1] = parts.map(Number);
+		if (x0 > x1 || y0 > y1) die('--area runs from its lesser corner to its greater: cx0 <= cx1 and cy0 <= cy1');
+		if (tooBig({ x0, x1, y0, y1 })) die(`--area is at most ${CHUNK.w} by ${CHUNK.h} cells, one chunk`);
+		return ofCells({ x0, x1, y0, y1 }, `cells ${x0},${y0} .. ${x1},${y1}`);
+	}
+	if (pick === 'around') {
+		const rid = await resolveId(ctx, id, value);
+		const e = anchorsOfDoc(doc).find((n) => n.id === rid);
+		const cx = e && e.x / pitch, cy = e && e.y / pitch;
+		if (!e || !Number.isInteger(cx) || !Number.isInteger(cy)) die(`--around names ${value}, which does not sit on an anchor`);
+		const r = Number(ctx.flags.radius ?? 4), most = (Math.min(CHUNK.w, CHUNK.h) - 1) / 2;
+		if (!Number.isInteger(r) || r < 1 || r > most) die(`--radius is a whole number from 1 to ${most}`);
+		return ofCells({ x0: cx - r, x1: cx + r, y0: cy - r, y1: cy + r }, `${r} cells around ${e.name || rid}`);
+	}
+	if (pick === 'zone') {
+		const zid = await resolveId(ctx, id, value);
+		const z = (doc.zones || []).find((q) => q.id === zid);
+		if (!z) die(`--zone names ${value}, which is not a zone here`);
+		const cells = zoneCells(z, pitch);
+		if (tooBig(cells)) die(`--zone ${z.name} spans ${cells.x1 - cells.x0 + 1} by ${cells.y1 - cells.y0 + 1} cells; a window is at most ${CHUNK.w} by ${CHUNK.h}, one chunk -- \`--area\` shows part of it`);
+		return ofCells(cells, `zone ${z.name}`);
+	}
+	if (pick === 'chunk') {
+		const parts = String(value).split(',');
+		const [i, j] = parts.map(Number);
+		if (parts.length !== 2 || !parts.every((p) => WHOLE.test(p)) || !Number.isSafeInteger(CHUNK.w * i) || !Number.isSafeInteger(CHUNK.h * j)) die('--chunk takes two whole numbers, i,j');
+		return { ...ofCells(cellsOfChunk(i, j), `chunk ${i},${j}`), whole: true };
+	}
+	const home = cellsOfChunk(0, 0);
+	if (pick === 'full') return { ...ofCells(home, 'canvas'), whole: true };
+	// plain: the tight view, once the content is known to lie in chunk 0,0 -- settled by the caller from the route's answer (`tightIn`)
+	const inHome = (cx, cy) => chunkOfCell(cx, cy).join() === '0,0';
+	const anchors = anchorsOfDoc(doc);
+	const contained = anchors.every((n) => inHome(n.x / pitch, n.y / pitch))
+		&& (doc.zones || []).every((z) => { const c = zoneCells(z, pitch); return inHome(c.x0, c.y0) && inHome(c.x1, c.y1); });
+	return { ...ofCells(home, contained ? 'canvas' : 'chunk 0,0'), whole: true, tight: contained };
+}
+// the plain map's tight view: the occupied positions the route answered plus one, clipped to the window asked (chunk 0,0, that layout)
+function tightIn(w, anchors) {
+	const used = anchors.filter((a) => a.occupant);
+	if (!w.tight || !used.length) return w;
+	const win = { x0: Math.max(Math.min(...used.map((a) => a.cx)) - 1, w.win.x0), x1: Math.min(Math.max(...used.map((a) => a.cx)) + 1, w.win.x1),
+		y0: Math.max(Math.min(...used.map((a) => a.cy)) - 1, w.win.y0), y1: Math.min(Math.max(...used.map((a) => a.cy)) + 1, w.win.y1) };
+	return { ...w, win, scope: 'in use' };
+}
+// the rules as one value, for tests/cli-map.test.js to hold to 3.8's worked cases (the CLI ships standalone, B138, so they live here)
+export const CHUNK_RULES = Object.freeze({ CHUNK, chunkOfCell, cellsOfChunk, cornersOfCells, windowChunk, sensesOf, senseLine });
+// a sense's command carries `--host` when the map was given one, and never a credential: `--host` is a global flag, read by the dispatcher
+// and declared by no verb (cli/draw.mjs GLOBAL_FLAGS)
+const givenHost = (flags) => (typeof flags.host === 'string' ? ` --host ${flags.host}` : '');
+// the window's cells, whatever layout it is shown on: the senses and the window's chunk are measured in cells on both
+const cellsShown = (layout, win) => (layout === 'zone' ? cellsOfCorners(win) : win);
+
 VERBS.push({
-	name: 'map', group: 'Context', usage: 'draw map [--full] [--zone <ref>] [--around <ref>] [--radius n] [--layout node|zone]',
+	name: 'map', group: 'Context', usage: 'draw map [--chunk i,j | --area cx0,cy0,cx1,cy1 | --around <ref> [--radius n] | --zone <ref> | --full] [--layout node|zone]',
 	// <layout> is a placeholder, not a literal: --layout picks the grid at call time, so declaring
 	// `node` would name one of the two routes this verb actually reaches
 	route: '/diagrams/<id>/layouts/<layout>/anchors', method: 'GET',
-	also: ['GET /types', 'GET /diagrams', 'GET /diagrams/<id>'],
-	summary: 'look at the canvas -- occupancy as a grid, so placement is seen rather than derived',
-	example: 'draw map --zone site-a',
-	flags: [{ name: '--full', about: 'the whole canvas, not just the part in use' },
-		{ name: '--zone', about: 'only what falls inside this zone, by id or name' },
-		{ name: '--around', about: 'centre on an entity, by id or name' },
-		{ name: '--radius', about: 'cells either side of --around; default 4' },
+	also: ['GET /types', 'GET /diagrams', 'GET /diagrams/<id>', 'GET /diagrams/<id>/layouts'],
+	summary: 'look at the canvas a chunk at a time -- occupancy as a grid, and what lies beyond it each way',
+	example: 'draw map --chunk 1,0',
+	flags: [{ name: '--chunk', about: 'a chunk of 31 by 17 cells, i,j -- chunk 0,0 is centred on cell 0,0; the map names its neighbours' },
+		{ name: '--area', about: 'cells cx0,cy0,cx1,cy1, the lesser corner first, at most one chunk' },
+		{ name: '--full', about: 'chunk 0,0 whole, not just the part in use' },
+		{ name: '--zone', about: 'only what falls inside this zone, by id or name -- at most one chunk' },
+		{ name: '--around', about: 'centre on a node or waypoint, by id or name' },
+		{ name: '--radius', about: 'cells either side of --around, 1 to 8; default 4' },
 		{ name: '--layout', about: 'node (default) or zone -- the zone grid shows legal zone corners' },
 		{ name: '--no-zones', about: 'leave the zone boxes off' },
 		{ name: '--diagram', about: 'target by id or name' }],
@@ -2286,7 +2462,11 @@ VERBS.push({
 		const layout = ctx.flags.layout && ctx.flags.layout !== true ? ctx.flags.layout : 'node';
 		if (!['node', 'zone'].includes(layout)) die(`--layout takes node or zone, not ${layout}`);
 		const doc = viewOf(ok(await request(ctx, `/diagrams/${id}`), 'map'));
-		const anchors = ok(await request(ctx, `/diagrams/${id}/layouts/${layout}/anchors`), 'map').anchors;
+		const pitch = await pitchOf(ctx, id);
+		// ---- the window, from whichever selector the caller named (H26.6's move 12, PZ33): the route asked for the chunk or the window
+		const asked = await windowOf(ctx, id, layout, doc, pitch);
+		const anchors = (await anchorsIn(ctx, id, layout, asked.ask, { what: 'map' })).anchors;
+		const { win, scope } = tightIn(asked, anchors);
 		const typeRows = ok(await request(ctx, '/types'), 'map').types;
 		const glyphMap = Object.fromEntries(typeRows.map((t) => [t.name, t.map]));
 		const legendMap = { ...Object.fromEntries(typeRows.map((t) => [t.map, t.name])), '+': 'waypoint', '#': 'panel (spans cells)', '?': 'node of an unknown type' };
@@ -2301,32 +2481,7 @@ VERBS.push({
 			return glyphMap[e.type] || '?';
 		};
 
-		// ---- the window, from whichever scope the caller named
-		const all = { x0: Math.min(...anchors.map((a) => a.cx)), x1: Math.max(...anchors.map((a) => a.cx)),
-			y0: Math.min(...anchors.map((a) => a.cy)), y1: Math.max(...anchors.map((a) => a.cy)) };
-		let win = all, scope = 'canvas';
 		const used = anchors.filter((a) => a.occupant);
-		if (ctx.flags.zone && ctx.flags.zone !== true) {
-			const zid = await resolveId(ctx, id, ctx.flags.zone);
-			const z = byId.get(zid);
-			if (!z || !zid.startsWith('zone-')) die(`--zone names ${ctx.flags.zone}, which is not a zone here`);
-			win = zoneCells(z); scope = `zone ${z.name}`;
-		} else if (ctx.flags.around && ctx.flags.around !== true) {
-			const rid = await resolveId(ctx, id, ctx.flags.around);
-			const hit = anchors.find((a) => a.occupant === rid);
-			if (!hit) die(`--around names ${ctx.flags.around}, which does not sit on an anchor`);
-			const r = Number(ctx.flags.radius ?? 4);
-			if (!Number.isInteger(r) || r < 1) die('--radius is a whole number of cells, at least 1');
-			win = { x0: hit.cx - r, x1: hit.cx + r, y0: hit.cy - r, y1: hit.cy + r };
-			scope = `${r} cells around ${byId.get(rid)?.name || rid}`;
-		} else if (!ctx.flags.full && used.length) {
-			// content plus one cell of margin: enough to see that an edge IS an edge
-			win = { x0: Math.min(...used.map((a) => a.cx)) - 1, x1: Math.max(...used.map((a) => a.cx)) + 1,
-				y0: Math.min(...used.map((a) => a.cy)) - 1, y1: Math.max(...used.map((a) => a.cy)) + 1 };
-			scope = 'in use';
-		}
-		win = { x0: Math.max(win.x0, all.x0), x1: Math.min(win.x1, all.x1),
-			y0: Math.max(win.y0, all.y0), y1: Math.min(win.y1, all.y1) };
 
 		const cell = new Map();
 		for (const a of anchors) if (a.occupant) cell.set(`${a.cx},${a.cy}`, a.occupant);
@@ -2351,7 +2506,7 @@ VERBS.push({
 		const blank = () => Array(W).fill(' ');
 		const put = (a, i, ch) => { if (i >= 0 && i < W) a[i] = ch; };
 		const boxes = ctx.flags['no-zones'] ? []
-			: (doc.zones || []).map((z) => ({ ...zoneCells(z), name: z.name }))
+			: (doc.zones || []).map((z) => ({ ...zoneCells(z, pitch), name: z.name }))
 				.filter((z) => z.x1 >= win.x0 && z.x0 <= win.x1 && z.y1 >= win.y0 && z.y0 <= win.y1);
 
 		const lines = [];
@@ -2425,7 +2580,7 @@ VERBS.push({
 			.sort((a, b) => a.cy - b.cy || a.cx - b.cx)
 			.map((a) => `  ${`${a.cx},${a.cy}`.padEnd(8)}${glyphFor(a.occupant)}  ${byId.get(a.occupant)?.name || a.occupant}`);
 		const zones = (doc.zones || []).map((z) => {
-			const c = zoneCells(z);
+			const c = zoneCells(z, pitch);
 			return `  ${z.name.padEnd(12)}cells ${c.x0},${c.y0} .. ${c.x1},${c.y1}`;
 		});
 
@@ -2433,6 +2588,18 @@ VERBS.push({
 		const inside = new Set(used.filter(inWin).map((a) => a.occupant));
 		const pipes = (await pipeRows(ctx, id, doc)).filter((r) => inside.has(r.a) || inside.has(r.b));
 		const pipeKey = pipes.map((r) => `  ${r.names.a} - ${r.names.b}  ${r.laid}${r.carries.length ? `  carries ${r.names.carries.join(',')}` : ''}`);
+		/*
+		H26.6's move 12 (PZ33): the senses, at the very end -- the chunk and the window, then each region beyond the window with the
+		one command that looks there, measured in cells on both layouts from the document the map already read
+		*/
+		const cellsWin = cellsShown(layout, win);
+		const senses = sensesOf(cellsWin, anchorsOfDoc(doc).map((n) => ({ cx: n.x / pitch, cy: n.y / pitch, device: !isWaypoint(n) })),
+			(doc.zones || []).map((z) => zoneCells(z, pitch)));
+		const home = cellsOfChunk(senses.chunk.i, senses.chunk.j);
+		const host = givenHost(ctx.flags);
+		const command = (c) => `draw map --diagram ${id} --layout ${layout} --chunk ${c.i},${c.j}${host}`;
+		const footer = [`chunk ${senses.chunk.i},${senses.chunk.j} (cells ${home.x0}..${home.x1} by ${home.y0}..${home.y1}), window ${win.x0}..${win.x1} by ${win.y0}..${win.y1}`,
+			'beyond the window:', ...senses.beyond.map((b) => senseLine(b, command))];
 		const text = [
 			`${doc.meta.name}  ${scope}  (${layout} grid, ${used.length} occupied of ${anchors.length})`,
 			'',
@@ -2442,11 +2609,15 @@ VERBS.push({
 			...(key.length ? ['', ...key] : []),
 			...(zones.length && layout === 'node' ? ['', 'zones:', ...zones] : []),
 			...(pipeKey.length && layout === 'node' ? ['', 'pipes:', ...pipeKey] : []),
+			'',
+			...footer,
 		].join('\n');
 		return { json: { diagram: id, layout, window: win, scope,
 			occupied: used.filter(inWin).map((a) => ({ cx: a.cx, cy: a.cy, id: a.occupant, name: byId.get(a.occupant)?.name })),
-			zones: (doc.zones || []).map((z) => ({ id: z.id, name: z.name, cells: zoneCells(z) })),
-			pipes: pipes.map(({ names, ...r }) => r) }, text };
+			zones: (doc.zones || []).map((z) => ({ id: z.id, name: z.name, cells: zoneCells(z, pitch) })),
+			pipes: pipes.map(({ names, ...r }) => r),
+			chunk: { ...senses.chunk, cells: home },
+			beyond: senses.beyond.map((b) => ({ ...b, command: command(b.chunk) })) }, text };
 	},
 });
 
@@ -2951,17 +3122,42 @@ export function parityOf(model, render, placed) {
 	return { rows, deltas };
 }
 
+/*
+H26.6's move 12 (dev/design/components/PAN-ZOOM.md section 3.8, "The CLI"; PZ15) -- WHAT THE MAP IS ASKED, FOR PARITY. Parity's duty is
+the whole document, and there is no whole list: it asks the bounds of every anchor and zone in use, in cells, with a margin of 2 cells --
+one request -- and when that area is over the route's limit (422 `area-too-large`), each node's and waypoint's own cell, at most the cap's
+527 requests, a chunk serving it no better. A document with nothing in use asks nothing.
+*/
+async function parityAnchors(ctx, id, doc) {
+	const pitch = await pitchOf(ctx, id);
+	const anchors = anchorsOfDoc(doc);
+	const cells = anchors.map((n) => [n.x / pitch, n.y / pitch]);   // each on the device lattice, so a whole cell
+	for (const z of doc.zones || []) { const c = zoneCells(z, pitch); cells.push([c.x0, c.y0], [c.x1, c.y1]); }
+	if (!cells.length) return [];
+	const MARGIN = 2;
+	const area = { x0: Math.min(...cells.map((c) => c[0])) - MARGIN, x1: Math.max(...cells.map((c) => c[0])) + MARGIN,
+		y0: Math.min(...cells.map((c) => c[1])) - MARGIN, y1: Math.max(...cells.map((c) => c[1])) + MARGIN };
+	const res = await request(ctx, `/diagrams/${id}/layouts/node/anchors?cx0=${area.x0}&cy0=${area.y0}&cx1=${area.x1}&cy1=${area.y1}`);
+	if (res.ok) return res.body.anchors;
+	if (res.status !== 422 || res.body?.code !== 'area-too-large') return ok(res, 'parity');
+	const each = [];
+	for (const [cx, cy] of cells.slice(0, anchors.length)) {
+		each.push(...(await anchorsIn(ctx, id, 'node', { x0: cx, y0: cy, x1: cx, y1: cy }, { what: 'parity' })).anchors);
+	}
+	return each;
+}
+
 VERBS.push({
 	name: 'parity', group: 'Context', usage: 'draw parity',
 	route: '/diagrams/<id>', method: 'GET',
-	also: ['GET /diagrams', 'GET /diagrams/<id>/layouts/<layout>/anchors', 'GET /<id>.svg'],
+	also: ['GET /diagrams', 'GET /diagrams/<id>/layouts', 'GET /diagrams/<id>/layouts/<layout>/anchors', 'GET /<id>.svg'],
 	summary: 'do the model, the render and the map agree -- A5, measured rather than assumed',
 	example: 'draw parity',
 	flags: [{ name: '--diagram', about: 'target by id or name' }],
 	async run(ctx) {
 		const id = await activeId(ctx, ctx.flags);
 		const doc = viewOf(ok(await request(ctx, `/diagrams/${id}`), 'parity'));
-		const anchors = ok(await request(ctx, `/diagrams/${id}/layouts/node/anchors`), 'parity').anchors;
+		const anchors = await parityAnchors(ctx, id, doc);
 
 		// the render is fetched raw, like `draw render` does -- the one route that is not JSON
 		const url = `${ctx.host}${ctx.code ? '/connect/svg' : ''}/${id}.svg`;

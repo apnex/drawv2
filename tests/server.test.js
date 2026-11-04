@@ -837,7 +837,7 @@ test('H26.1: the grid routes refuse an inherited layout name and a coordinate be
 	for (const name of ['constructor', 'toString', '__proto__', 'hasOwnProperty']) {
 		const r = await get(`/api/v1/diagrams/${id}/layouts/${name}/nearest?x=0&y=0`);
 		assert.deepEqual([r.status, r.body.code], [404, 'unknown-layout'], `${name} is no layout`);
-		assert.equal((await get(`/api/v1/diagrams/${id}/layouts/${name}/anchors`)).status, 404, `nor does ${name} list anchors`);
+		assert.equal((await get(`/api/v1/diagrams/${id}/layouts/${name}/anchors?cx0=0&cy0=0&cx1=0&cy1=0`)).status, 404, `nor does ${name} list anchors`);
 	}
 	for (const [x, y] of [[2 ** 49 + 1, 0], [0, -(2 ** 49) - 1], [2 ** 50, 2 ** 50], [1e300, 0]]) {
 		const r = await get(`/api/v1/diagrams/${id}/layouts/zone/nearest?x=${encodeURIComponent(x)}&y=${encodeURIComponent(y)}`);
@@ -847,7 +847,8 @@ test('H26.1: the grid routes refuse an inherited layout name and a coordinate be
 	assert.equal(edge.status, 200, 'exactly 2^49 is answered -- the control');
 	assert.deepEqual({ cx: edge.body.cx, cy: edge.body.cy, x: edge.body.x, y: edge.body.y }, { cx: 9382499223689, cy: -9382499223689, x: 562949953421340, y: -562949953421340 });
 	assert.equal((await get(`/api/v1/diagrams/${id}/layouts/node/nearest?x=Infinity&y=0`)).body.error, 'nearest requires numeric x and y', 'a coordinate that is not finite is refused as before');
-	const node = (await get(`/api/v1/diagrams/${id}/layouts/node/anchors`)).body, zone = (await get(`/api/v1/diagrams/${id}/layouts/zone/anchors`)).body;
+	// RESTATED at H26.6's move 12 (PAN-ZOOM.md section 3.8, "The anchor lists"): each asked for the old frame's area, in cells
+	const node = (await get(`/api/v1/diagrams/${id}/layouts/node/anchors?cx0=-15&cy0=-8&cx1=15&cy1=8`)).body, zone = (await get(`/api/v1/diagrams/${id}/layouts/zone/anchors?cx0=-16&cy0=-9&cx1=15&cy1=8`)).body;
 	// RESTATED at H26.11 (H26-21; B399): each layout's own grid's positions within that grid's own bounds -- the zone list its 576, where it
 	// listed the node extent's 527 and omitted its lattice's first column and row
 	assert.deepEqual([node.count, zone.count], [527, 576], 'each grid\'s own positions within its own bounds');
@@ -859,8 +860,10 @@ test('H26.1: the grid routes refuse an inherited layout name and a coordinate be
 test('B112: free anchors exclude what is occupied, and an anchor round-trips into a legal write', async () => {
 	const id = (await get('/api/v1/diagrams')).body[0].id;
 	const seeded = (await get(`/api/v1/diagrams/${id}`)).body.nodes;
-	const all = (await get(`/api/v1/diagrams/${id}/layouts/node/anchors`)).body;
-	const free = (await get(`/api/v1/diagrams/${id}/layouts/node/anchors?free=1`)).body;
+	// RESTATED at H26.6's move 12: an area, the old frame's, holding every seeded node
+	const AREA = 'x0=-900&y0=-480&x1=900&y1=480';
+	const all = (await get(`/api/v1/diagrams/${id}/layouts/node/anchors?${AREA}`)).body;
+	const free = (await get(`/api/v1/diagrams/${id}/layouts/node/anchors?free=1&${AREA}`)).body;
 
 	assert.equal(all.count - free.count, seeded.length,
 		'exactly the seeded nodes are missing from the free list');
@@ -894,7 +897,7 @@ test('B112: free anchors exclude what is occupied, and an anchor round-trips int
 		});
 		const wq = (await get(`/api/v1/diagrams/${id}/layouts/node/nearest?x=${w.x}&y=${w.y}`)).body;
 		assert.equal(wq.occupant, 'node-e11c01', 'a waypoint IS a node for placement');
-		const after = (await get(`/api/v1/diagrams/${id}/layouts/node/anchors?free=1`)).body;
+		const after = (await get(`/api/v1/diagrams/${id}/layouts/node/anchors?free=1&${AREA}`)).body;
 		assert.ok(!after.anchors.some((q) => q.x === w.x && q.y === w.y),
 			'and the anchor it holds has left the free list');
 	} finally {

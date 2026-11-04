@@ -94,7 +94,7 @@ const RECORD = {
 	'plugins/devices/make-node.mjs': [1, 'a new waypoint\'s NAME, `waypoint-<n>` -- the word people use (F4); moved with `makeWaypoint` from model/model.mjs at O-e1'],
 	'plugins/network/keys.mjs': [1, 'the situation\'s drawn word for a bare anchor (`waypoint`), F4 (B349)'],
 	'plugins/network/link-reactions.mjs': [1, 'a reaction\'s id, `waypoint-links`, which names it in the generated table'],
-	'cli/verbs.mjs': [19, 'the verbs\' words for the two shapes of node, read through the CLI\'s own view (F4)'],
+	'cli/verbs.mjs': [22, 'the verbs\' words for the two shapes of node, read through the CLI\'s own view (F4); RAISED at H26.6\'s move 12 by three: the map\'s senses count devices and waypoints apart, as 3.8\'s `--json` fields name them (PAN-ZOOM.md, PZ33)'],
 	// kernel/adapt.mjs, kernel/engine.mjs, kernel/fixtures.mjs, kernel/svg-scene.mjs and their scene helpers in
 	// kernel/geometry.mjs and plugins/network/appearance.mjs went at H25.5 (B378, D4)
 	'plugins/network/anchor-points.mjs': [1, 'the word a waypoint is picked by at a point, as its drawn pick names it -- F4; C-e step three'],

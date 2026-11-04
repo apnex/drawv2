@@ -85,9 +85,11 @@ Grid alignment stays where B110 put it, and the split is deliberate.\
 The routes an agent would use:
 ```text
 GET  /api/v1/diagrams/<id>/layouts
-GET  /api/v1/diagrams/<id>/layouts/<name>/anchors?free=1
+GET  /api/v1/diagrams/<id>/layouts/<name>/anchors?free=1&cx0=<cell>&cy0=<cell>&cx1=<cell>&cy1=<cell>
 GET  /api/v1/diagrams/<id>/layouts/<name>/nearest?x=<px>&y=<px>
 ```
+
+AMENDED 2026-11-05 (H26.6's move 12; `dev/design/components/PAN-ZOOM.md` section 3.8, PZ9): `anchors` lists an area named in drawing units (`x0`, `y0`, `x1`, `y1`) or in cells (`cx0`, `cy0`, `cx1`, `cy1`), clipped to the canvas's bound, at most 10,000 positions (`area-too-large`), a malformed area refused naming its parameter (`area-malformed`); the canvas has no extent, so there is no whole list to answer.
 
 AMENDED 2026-10-10 (WD8, H19.45): the first route answers with the diagram's two layout records, each with its id, name, pitch, offset and extent (`plugins/layouts/layout-records.mjs`); every diagram stores them (`dev/design/unification/WIDE-DEVICES.md` section 12).
 

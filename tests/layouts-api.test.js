@@ -45,26 +45,41 @@ const lattice = (layout, x0, x1, y0, y1, offset) => {
 	for (let y = y0; y <= y1; y += 60) for (let x = x0; x <= x1; x += 60) out.push({ layout, cx: (x - offset) / 60, cy: (y - offset) / 60, x, y });
 	return out;
 };
-test('H26.11: the zone list is the zone grid\'s 576 positions within its own bounds; the node list its 527, byte for byte', async () => {
+/*
+RESTATED at H26.6's move 12 (dev/design/components/PAN-ZOOM.md section 3.8, "The anchor lists"; appendix A's move 12 rows): there is no
+whole list -- each request names an area -- and an area holding the old frame answers today's list exactly, byte for byte, asked in drawing
+units and in cells alike: the zone grid's 32 by 18 corners from -930,-510 to 930,510, the node grid's 31 by 17 cells from -900,-480 to
+900,480. Run against the code before the move, which answered every request its whole list, this test passes as written: the oracle
+built here is the list as it was.
+*/
+const OLD_FRAME = {
+	zone: ['x0=-930&y0=-510&x1=930&y1=510', 'cx0=-16&cy0=-9&cx1=15&cy1=8'],
+	node: ['x0=-900&y0=-480&x1=900&y1=480', 'cx0=-15&cy0=-8&cx1=15&cy1=8'],
+};
+test('H26.11: the zone list is the zone grid\'s 576 positions within its own bounds; the node list its 527, byte for byte -- from H26.6 move 12, an area holding the old frame, in units and in cells', async () => {
 	const id = await firstId();
-	const zone = (await get(`/api/v1/diagrams/${id}/layouts/zone/anchors`)).body;
+	const [zoneUnits, zoneCells] = OLD_FRAME.zone;
+	const zone = (await get(`/api/v1/diagrams/${id}/layouts/zone/anchors?${zoneUnits}`)).body;
+	assert.deepEqual((await get(`/api/v1/diagrams/${id}/layouts/zone/anchors?${zoneCells}`)).body, zone, 'the same area in cells');
 	assert.deepEqual([zone.layout, zone.count, zone.anchors.length], ['zone', 576, 576], 'the zone grid within its bounds: 32 columns by 18 rows');
 	assert.deepEqual(zone.anchors, lattice('zone', -930, 930, -510, 510, 30), 'every position, row then column, from -930,-510 to 930,510');
 	assert.deepEqual([zone.anchors[0], zone.anchors.at(-1)], [{ layout: 'zone', cx: -16, cy: -9, x: -930, y: -510 }, { layout: 'zone', cx: 15, cy: 8, x: 930, y: 510 }], 'its first and last');
 	assert.equal(zone.anchors.filter((a) => a.x === -930).length, 18, 'the column at x -930, one to a row');
 	assert.equal(zone.anchors.filter((a) => a.y === -510).length, 32, 'the row at y -510, one to a column');
-	const free = (await get(`/api/v1/diagrams/${id}/layouts/zone/anchors?free=1`)).body;
+	const free = (await get(`/api/v1/diagrams/${id}/layouts/zone/anchors?free=1&${zoneCells}`)).body;
 	assert.deepEqual([free.count, free.anchors], [576, zone.anchors], 'free=1 as now: no node or waypoint sits on a zone position');
 	// the node list: the bytes the route answers, against the lattice built here and the board's nodes on it
 	const doc = (await get(`/api/v1/diagrams/${id}`)).body;
 	const at = new Map(doc.nodes.map((n) => [`${n.x},${n.y}`, n.id]));
 	assert.ok(at.size > 0, 'control: the board has nodes on anchors');
 	const nodes = lattice('node', -900, 900, -480, 480, 0).map((a) => (at.has(`${a.x},${a.y}`) ? { ...a, occupant: at.get(`${a.x},${a.y}`) } : a));
-	const text = await (await fetch(`${base}/api/v1/diagrams/${id}/layouts/node/anchors`)).text();
-	assert.equal(text, JSON.stringify({ layout: 'node', count: 527, anchors: nodes }, null, '\t') + '\n', 'the node list, byte for byte, as the route writes it');
-	const freeText = await (await fetch(`${base}/api/v1/diagrams/${id}/layouts/node/anchors?free=1`)).text();
 	const unoccupied = nodes.filter((a) => !a.occupant);
-	assert.equal(freeText, JSON.stringify({ layout: 'node', count: unoccupied.length, anchors: unoccupied }, null, '\t') + '\n', 'and its free anchors, byte for byte');
+	for (const area of OLD_FRAME.node) {
+		const text = await (await fetch(`${base}/api/v1/diagrams/${id}/layouts/node/anchors?${area}`)).text();
+		assert.equal(text, JSON.stringify({ layout: 'node', count: 527, anchors: nodes }, null, '\t') + '\n', `the node list, byte for byte, as the route writes it (${area})`);
+		const freeText = await (await fetch(`${base}/api/v1/diagrams/${id}/layouts/node/anchors?free=1&${area}`)).text();
+		assert.equal(freeText, JSON.stringify({ layout: 'node', count: unoccupied.length, anchors: unoccupied }, null, '\t') + '\n', `and its free anchors, byte for byte (${area})`);
+	}
 });
 
 test('WD-b1 test 11: GET /diagrams/<id>/layouts serves the diagram\'s two records, with the product\'s values', async () => {
@@ -79,12 +94,12 @@ test('WD-b1 test 11: the grid routes answer as before -- nearest on the node gri
 	const id = await firstId();
 	const n = (await get(`/api/v1/diagrams/${id}/layouts/node/nearest?x=270&y=-150`)).body;
 	assert.deepEqual({ layout: n.layout, cx: n.cx, cy: n.cy, x: n.x, y: n.y }, { layout: 'node', cx: 5, cy: -2, x: 300, y: -120 });
-	const z = (await get(`/api/v1/diagrams/${id}/layouts/zone/anchors`)).body;
+	const z = (await get(`/api/v1/diagrams/${id}/layouts/zone/anchors?${OLD_FRAME.zone[0]}`)).body;   // H26.6's move 12: an area, the old frame
 	assert.equal(z.layout, 'zone');
 	// RESTATED at H26.11 (H26-21; B399): the zone grid's own positions within its own bounds, 32 by 18, where it listed the node extent's 31 by 17
 	assert.equal(z.count, 32 * 18, 'one anchor to each position of the zone grid within its bounds');
 	assert.ok(z.anchors.every((a) => (a.x - 30) % 60 === 0 && (a.y - 30) % 60 === 0), 'on the zone lattice, half a pitch off');
-	const unknown = await get(`/api/v1/diagrams/${id}/layouts/sideways/anchors`);
+	const unknown = await get(`/api/v1/diagrams/${id}/layouts/sideways/anchors?${OLD_FRAME.zone[0]}`);
 	assert.equal(unknown.status, 404);
 	assert.equal(unknown.body.code, 'unknown-layout');
 });

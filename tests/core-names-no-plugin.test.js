@@ -90,8 +90,8 @@ const DEVICE_RECORD = {
 // U3 (H21.7): every remaining non-canvas product module (`export`, `server-only`, `serve`, `cli`, `lab`, `simulation`, `product`,
 // and cross-plugin kind/field reads across `layouts`, `devices`, `network`, `zones`, `groups`, plus `LAYER.network` outside `network/`)
 const PRODUCT_KIND_RECORD = {
-	'cli/verbs.mjs': { count: 138, cites: ['from B138'],
-		reason: 'the CLI\'s standalone verbs over every collection and kind (B138)',
+	'cli/verbs.mjs': { count: 154, cites: ['from B138', 'H26-23'],
+		reason: 'the CLI\'s standalone verbs over every collection and kind (B138); RAISED at H26.6\'s move 12: the map\'s windows and senses over nodes, waypoints and zones (PZ33)',
 		trigger: 'permanent' },
 	'engine/situation.mjs': { count: 2, cites: ['D2'],
 		reason: 'the pointer situation naming `link` for the draw-a-link gesture and a selected link (D2)',

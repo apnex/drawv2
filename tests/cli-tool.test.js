@@ -265,12 +265,20 @@ test('add places on a cell, and an occupied one names its occupant', async () =>
 	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
 });
 
-test('add refuses pixels, and says they look like pixels', async () => {
+/*
+RESTATED at H26.6's move 12 (dev/design/components/PAN-ZOOM.md section 3.8, "The CLI": `add` takes any cell): 130,60 is a cell like any
+other now, 7,800 by 3,600 -- there is no edge for a pixel coordinate to fall past -- so the pixel refusal is said only of a cell past PZ31's
+bound, where a pixel coordinate typed as a cell is far likelier than a cell anyone meant.
+*/
+test('add refuses pixels, and says they look like pixels -- from H26.6 move 12, a cell past the bound; any cell within it is taken', async () => {
 	await boot();
 	try {
 		const id = (await run('create', 'px-test')).trim();
 		await run('lock', '--diagram', id);
-		const err = await captureExit(() => run('add', 'server', 'at', '130,60', '--diagram', id));
+		const far = JSON.parse(await run('add', 'server', 'at', '130,60', '--diagram', id, '--json'));
+		assert.deepEqual([far.cell, far.at], [{ cx: 130, cy: 60 }, { x: 7800, y: 3600 }], 'a cell far past the old frame, taken (H26.6 move 12)');
+		const err = await captureExit(() => run('add', 'server', 'at', '20000,60', '--diagram', id));
+		assert.match(err, /no node anchor at cell 20000,60 -- it lies past the canvas's bound/, 'past the bound, refused, naming it');
 		assert.match(err, /look like pixels/, 'the likely mistake is named rather than left as "outside the canvas"');
 		assert.match(err, /anchor nearest/, 'and the verb that converts them is offered');
 
@@ -510,11 +518,12 @@ test('B133: a structural verb refuses a pixel where a cell belongs', async () =>
 		await run('lock');
 		// B110 ruled that the server REFUSES off-grid geometry rather than snapping it. The CLI's
 		// job is to make the mistake unrepresentable, so the refusal names the unit, not the bound.
-		// -900,-360 is a syntactically valid CELL, so the refusal cannot come from the format --
+		// -90000,-360 is a syntactically valid CELL, so the refusal cannot come from the format --
 		// it comes from the anchor lookup, and it must name the UNIT rather than the bound.
 		// `captureExit`, not assert.rejects: `die` exits the process, and a test that awaits a
 		// rejection instead silently takes the whole FILE down with every subtest still green.
-		const unit = await captureExit(() => run('zone', 'z', 'from', '-900,-360', 'to', '-540,240'));
+		// RESTATED at H26.6's move 12: -900,-360 is a cell within PZ31's bound, so a zone is made there; past the bound the refusal stands
+		const unit = await captureExit(() => run('zone', 'z', 'from', '-90000,-360', 'to', '-540,240'));
 		assert.match(unit, /look like pixels, and this takes a CELL/, 'the verb names the unit mistake, not just "outside"');
 		assert.match(unit, /anchor nearest/, 'and offers the verb that converts them');
 

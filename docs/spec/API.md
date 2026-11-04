@@ -309,7 +309,7 @@ An anchor is a grid position, and it is on-grid by construction:
 ```sh
 curl -s localhost:8080/api/v1/diagrams/<id>/layouts
 curl -s "localhost:8080/api/v1/diagrams/<id>/layouts/node/nearest?x=270&y=-150"
-curl -s "localhost:8080/api/v1/diagrams/<id>/layouts/node/anchors?free=1"
+curl -s "localhost:8080/api/v1/diagrams/<id>/layouts/node/anchors?free=1&cx0=-15&cy0=-8&cx1=15&cy1=8"
 ```
 
 AMENDED 2026-10-10 (WD8, H19.45): `layouts` answers with the diagram's two layout records -- `{layouts: [{id, name, pitch, offset, ext}, ...]}`, the `node` grid and the `zone` grid -- where it answered with their names alone; the two routes below are unchanged, and a write to a layout is refused while a diagram may not vary its grids (WD7).
@@ -322,6 +322,8 @@ A waypoint counts, because a waypoint is a node for placement.
 
 AMENDED 2026-11-01 (H26-21, H26.11): `anchors` lists each layout's own grid's positions within that grid's own bounds, row then column -- the node grid's 527 and the zone grid's 576.\
 Both lists walked the node extent's positions until then, so the zone list lacked its lattice's column at x -930 and its row at y -510, where zones sit.
+
+AMENDED 2026-11-05 (H26.6's move 12; `dev/design/components/PAN-ZOOM.md` section 3.8, PZ9): the canvas has no extent, so there is no whole list -- `anchors` lists the positions of an area you name, in drawing units (`x0`, `y0`, `x1`, `y1`) or in cells (`cx0`, `cy0`, `cx1`, `cy1`, the layout's own indices, which the server turns into points), edges included, row then column.The area is clipped to the canvas's bound, 1,000,000 drawing units either way from the origin; an area wholly beyond it answers no anchors.An area holding more than 10,000 positions answers `422` with the code `area-too-large`, naming the limit and the area's width and height in squares; a query naming neither form whole, both forms, a value not a finite number, a cell not a whole number, or an area inverted answers `400` with the code `area-malformed`, naming the parameter.The old canvas is the area `cx0=-15&cy0=-8&cx1=15&cy1=8` on the node layout and `cx0=-16&cy0=-9&cx1=15&cy1=8` on the zone layout, and each answers the list it always did.
 
 Reads, so neither takes the lock.\
 The layout name travels with an anchor because the same cell resolves to different pixels on the two grids.

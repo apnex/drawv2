@@ -269,7 +269,7 @@ Every way something outside the engine reaches it.
 | `/api/v1/diagrams/:id/movers` | GET | what is in flight right now along each armed spawner's route (B339, SD1) |
 | `/api/v1/diagrams/:id/layouts` | GET | the diagram's two grids, as its layout records |
 | `/api/v1/diagrams/:id/layouts/:name/nearest` | GET | the legal anchor nearest a pixel |
-| `/api/v1/diagrams/:id/layouts/:name/anchors` | GET | every anchor, or every free one |
+| `/api/v1/diagrams/:id/layouts/:name/anchors` | GET | the anchors of an area asked, in drawing units or cells, or its free ones |
 | `/api/v1/diagrams/:id/nodes` | POST | high-level create; `draw add` and `draw place` are preferred |
 | `/api/v1/diagrams/:id/nodes/:entity` | PATCH, DELETE | high-level patch and remove |
 | `/api/v1/diagrams/:id/links` | POST | high-level create |
