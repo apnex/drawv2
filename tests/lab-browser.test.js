@@ -438,6 +438,88 @@ test('H26.6 move 10: the keys step the levels, zoom-levels.mjs\'s scale and labe
 });
 
 /*
+H26.6's move 11 (dev/design/components/PAN-ZOOM.md 5.1 row 11, section 3.8, "The extents"; appendix A move 11; GR3) -- IN THE LAB, under
+trusted input: a device right-dragged 2,000 units and more beyond each of the old frame's four edges lands there, and Ctrl+D duplicates it
+at the remembered pitch -- the drag's own step, so further out still -- each committed through the lab's planner; the view set at 3x
+about the way, so both ends show. A clone, a wrap and a zone's resize past each edge are the next test's; each gesture past each edge
+through the same Input, tests/extents-gone.test.js's; the palette's drop -- the stamp the lab cannot make, holding no tools --
+tests/browser.test.js's.
+*/
+test('H26.6 move 11, GR3: in the lab a device dragged 2,000 units beyond each old edge lands there, and Ctrl+D duplicates it a drag\'s step further on', { skip: SKIP }, async () => {
+	const t = await theTab();
+	try {
+		await t.send('Emulation.setDeviceMetricsOverride', { width: 1366, height: 576, deviceScaleFactor: 1, mobile: false });
+		for (const [edge, tx, ty, cx, cy] of [['east', 2940, 0, 1600, 0], ['west', -2940, 0, -1300, 0], ['south', 360, 2520, 360, 1260], ['north', 360, -2520, 360, -1260]]) {
+			await open('bend');
+			await t.run(`(lab.view.set({ x: ${cx}, y: ${cy}, level: 3 }), 1)`);
+			await t.run(frames(2));
+			const b = await t.run(`lab.model.all('node').find((n) => n.name === 'B').id`);
+			const [from, to] = JSON.parse(await t.run(`JSON.stringify([lab.input.scene.toScreen({ x: 360, y: 0 }), lab.input.scene.toScreen({ x: ${tx}, y: ${ty} })])`));
+			const mouse = (type, p, buttons) => t.send('Input.dispatchMouseEvent', { type, x: p.x, y: p.y, button: 'right', buttons, clickCount: type === 'mouseMoved' ? 0 : 1 });
+			await mouse('mousePressed', from, 2);
+			await mouse('mouseMoved', { x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 }, 2);
+			await mouse('mouseMoved', to, 2);
+			await mouse('mouseReleased', to, 0);
+			await sleep(150);
+			assert.deepEqual(JSON.parse(await t.run(`JSON.stringify((({ x, y }) => [x, y])(lab.model.get('node', '${b}')))`)), [tx, ty], `${edge}: dragged past the old edge, committed`);
+			assert.deepEqual(JSON.parse(await t.run(`JSON.stringify((({ x, y }) => [x, y])(lab.authority.get('node', '${b}')))`)), [tx, ty], `${edge}: the planner holds it there`);
+			await t.run(`(lab.input.selection.set(['${b}']), 1)`);
+			for (const type of ['keyDown', 'keyUp']) await t.send('Input.dispatchKeyEvent', { type, key: 'd', code: 'KeyD', windowsVirtualKeyCode: 68, modifiers: 2 });
+			await sleep(150);
+			const copy = JSON.parse(await t.run(`JSON.stringify(lab.model.all('node').filter((n) => n.type === 'router' && n.id !== '${b}' && n.name !== 'A').map((n) => [n.x, n.y]))`));
+			assert.deepEqual(copy, [[2 * tx - 360, 2 * ty]], `${edge}: duplicated at the remembered pitch, the drag's step, further past the old edge`);
+			assert.deepEqual(JSON.parse(await t.run(`JSON.stringify(lab.authority.all('node').filter((n) => n.type === 'router' && n.id !== '${b}' && n.name !== 'A').map((n) => [n.x, n.y]))`)), copy, `${edge}: the planner holds the copy`);
+		}
+	} finally { await t.send('Emulation.clearDeviceMetricsOverride'); }
+});
+
+// and a device pasted -- cloned by Ctrl and a drag, draw having no paste -- past each old edge, wrapped there in a zone (z), and the zone
+// resized by its corner further out, the view at 1x about the corner so the handle is a press's size; the lab holds no tools, so a stamp
+// past the frame is the product page's palette drop (tests/browser.test.js)
+test('H26.6 move 11, GR3: in the lab a device cloned (Ctrl and a drag) beyond each old edge lands there, and a zone wrapped about it there is resized by its corner', { skip: SKIP }, async () => {
+	const t = await theTab();
+	try {
+		await t.send('Emulation.setDeviceMetricsOverride', { width: 1366, height: 576, deviceScaleFactor: 1, mobile: false });
+		const mouse = (type, p, button, buttons, modifiers = 0) => t.send('Input.dispatchMouseEvent', { type, x: p.x, y: p.y, button, buttons, modifiers, clickCount: type === 'mouseMoved' ? 0 : 1 });
+		const screen = async (x, y) => JSON.parse(await t.run(`JSON.stringify(lab.input.scene.toScreen({ x: ${x}, y: ${y} }))`));
+		const both = async (expr) => JSON.parse(await t.run(`JSON.stringify([lab.model, lab.authority].map((m) => (${expr})(m)))`));
+		for (const [edge, tx, ty, cx, cy] of [['east', 2940, 240, 1300, 0], ['west', -2940, 240, -1650, 0], ['south', -360, 2520, -360, 1260], ['north', -360, -2520, -360, -1260]]) {
+			await open('bend');
+			await t.run(`(lab.view.set({ x: ${cx}, y: ${cy}, level: 3 }), 1)`);
+			await t.run(frames(2));
+			const [from, to] = [await screen(-360, 0), await screen(tx, ty)];
+			await mouse('mousePressed', from, 'left', 1, 2);
+			await mouse('mouseMoved', { x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 }, 'left', 1, 2);
+			await mouse('mouseMoved', to, 'left', 1, 2);
+			await mouse('mouseReleased', to, 'left', 0, 2);
+			await sleep(150);
+			const routers = `(m) => m.all('node').filter((n) => n.type === 'router').map((n) => [n.x, n.y]).sort((a, b) => a[0] - b[0] || a[1] - b[1])`;
+			const want = [[-360, 0], [360, 0], [tx, ty]].sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+			assert.deepEqual(await both(routers), [want, want], `${edge}: the copy where it was dropped, past the old edge, A and B kept -- the tab and the planner`);
+			const copy = await t.run(`lab.model.all('node').find((n) => n.x === ${tx} && n.y === ${ty}).id`);
+			await t.run(`(lab.input.selection.set(['${copy}']), 1)`);
+			await pressKey(t, 'z', 'KeyZ', 90);
+			await sleep(150);
+			const zones = await both(`(m) => m.all('zone').map(({ x, y, w, h }) => ({ x, y, w, h }))`);
+			assert.equal(zones[0].length, 1, `${edge}: one zone wrapped`);
+			assert.deepEqual(zones[1], zones[0], `${edge}: the planner holds the zone`);
+			const z = zones[0][0];
+			assert.ok(z.x < tx && tx < z.x + z.w && z.y < ty && ty < z.y + z.h, `${edge}: the zone about the copy, past the old edge: ${JSON.stringify(z)}`);
+			await t.run(`(lab.view.set({ x: ${z.x + z.w}, y: ${z.y + z.h}, level: 1 }), 1)`);
+			await t.run(frames(2));
+			const [grab, drop] = [await screen(z.x + z.w, z.y + z.h), await screen(z.x + z.w + 300, z.y + z.h + 300)];
+			await mouse('mousePressed', grab, 'left', 1);
+			await mouse('mouseMoved', { x: (grab.x + drop.x) / 2, y: (grab.y + drop.y) / 2 }, 'left', 1);
+			await mouse('mouseMoved', drop, 'left', 1);
+			await mouse('mouseReleased', drop, 'left', 0);
+			await sleep(150);
+			const grown = { ...z, w: z.w + 300, h: z.h + 300 };
+			assert.deepEqual(await both(`(m) => m.all('zone').map(({ x, y, w, h }) => ({ x, y, w, h }))[0]`), [grown, grown], `${edge}: resized by its corner, 300 further out, its far corner kept -- the tab and the planner`);
+		}
+	} finally { await t.send('Emulation.clearDeviceMetricsOverride'); }
+});
+
+/*
 The door tests prove the PLANNER's cascade and sweep reach the tab, so they clear the board's pipes
 first. Since pipes count as references, a hand pipe legitimately holds a waypoint the sweep would
 otherwise take -- a separate rule with its own test below, and mixing the two would let either one
