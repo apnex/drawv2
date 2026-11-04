@@ -29,6 +29,24 @@ for (const s of SCENARIOS) {
 	});
 }
 
+/*
+H26.6's move 10 (dev/design/components/PAN-ZOOM.md section 5.1 row 10, its guard: "the gesture corpus but its Space scenario, its new record
+named") -- THE SPACE SCENARIO'S NEW RECORD, AND ITS DIFFERENCE. `key-view-keys` gained Space's release and the view's five keys (=, -,
+Shift+0, Shift+1, h), and the record a `datum`, each datum set by its step and point, written only when one is set, so every other scenario
+records byte for byte as it did. The scenario under the code before the move (a77dbe6), recorded with the same fixture, answered the claims
+and the datum below; under move 10 the datum is set on Space's release, a step later, and the five keys are claimed, nothing else differing.
+*/
+test('H26.6 move 10: the Space scenario\'s record differs from the code before the move only in the datum\'s step and the five view keys claimed', () => {
+	const BEFORE = { claims: [true, true, true, true, false, true, false, false, false, false, false, true, false, false], datum: [[4, 60, 60]] };
+	const now = golden['key-view-keys'];
+	assert.deepEqual(now.datum, [[5, 60, 60]], 'the datum set at step 5, Space\'s release, where the press at step 4 set it');
+	const keys = [6, 7, 8, 9, 10];   // the claims of =, -, Shift+0, Shift+1 and h -- the scenario's 'at' step makes no claim
+	assert.deepEqual(keys.map((i) => [BEFORE.claims[i], now.claims[i]]), keys.map(() => [false, true]), 'the view\'s five keys, unbound before, claimed');
+	assert.deepEqual(now.claims.filter((c, i) => !keys.includes(i)), BEFORE.claims.filter((c, i) => !keys.includes(i)), 'every other claim as before');
+	assert.deepEqual([now.commits, now.said, now.threw], [[], [], []], 'no edit, nothing said, nothing thrown');
+	assert.equal(Object.values(golden).filter((r) => 'datum' in r).length, 1, 'no other scenario sets a datum, so no other record gained one');
+});
+
 test('every key verb in the product table is exercised by the corpus', () => {
 	const verbs = [...new Set(KEYMAP.map((r) => r.run))];
 	const hit = new Set();

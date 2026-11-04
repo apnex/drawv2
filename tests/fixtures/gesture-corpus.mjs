@@ -100,8 +100,9 @@ function pointerEvent(h, ids, x, y, on, m = {}) {
 	return ev;
 }
 
+// H26.6's move 10: `m.code`, a key's place where it is not its character -- Shift+0 is `)` on Digit0
 function keyEvent(k, m = {}) {
-	const ev = { key: k, code: k, repeat: false, ...MODS(m), target: { tagName: 'BODY' }, claimed: 0, stopPropagation() {} };
+	const ev = { key: k, code: m.code ?? k, repeat: false, ...MODS(m), target: { tagName: 'BODY' }, claimed: 0, stopPropagation() {} };
 	ev.preventDefault = () => { ev.claimed++; };
 	return ev;
 }
@@ -201,7 +202,13 @@ export const SCENARIOS = [
 	{ id: 'key-duplicate', board: 'pair', steps: [['select', ['n0']], ['key', 'd', { ctrl: true }]] },
 	{ id: 'key-wrap-and-reshape', board: 'pair', steps: [['select', ['n0', 'n1']], ['key', 'z'], ['select', ['n0']], ['key', 's']] },
 	{ id: 'key-hand-stamp-pipette', board: 'pair', steps: [['at', 120, 240], ['hand', 'router'], ['key', 'Enter'], ['at', 0, 0], ['key', 'q'], ['key', '3']] },
-	{ id: 'key-view-keys', board: 'pair', steps: [['key', 'e'], ['key', 'r'], ['key', 'Tab'], ['at', 60, 60], ['key', ' '], ['key', ' ', { shift: true }], ['key', '?'], ['key', 'Escape'], ['key', 'F9']] },
+	/*
+	RE-RECORDED at H26.6's move 10 (dev/design/components/PAN-ZOOM.md section 5.1 row 10, its guard; 3.6, PZ27, PZ28) -- THE SPACE SCENARIO,
+	the corpus's one, its difference named in tests/gesture-corpus.test.js: Space's release, a step of its own, and the view's five keys --
+	`=`, `-`, Shift+0, Shift+1 and `h` -- added; the datum is set on Space's release, where it was set on its press
+	*/
+	{ id: 'key-view-keys', board: 'pair', steps: [['key', 'e'], ['key', 'r'], ['key', 'Tab'], ['at', 60, 60], ['key', ' '], ['keyup', ' '], ['key', ' ', { shift: true }],
+		['key', '='], ['key', '-'], ['key', ')', { shift: true, code: 'Digit0' }], ['key', '!', { shift: true, code: 'Digit1' }], ['key', 'h'], ['key', '?'], ['key', 'Escape'], ['key', 'F9']] },
 	{ id: 'key-select-all-with-waypoint', board: 'bent', steps: [['key', 'a', { ctrl: true }]] },
 	{ id: 'key-select-all-and-rename', board: 'straight', steps: [['key', 'a', { ctrl: true }], ['select', ['n0']], ['key', 'F2']] },
 	{ id: 'key-up-shift-alt', board: 'pair', steps: [['key', 'Shift', { shift: true }], ['keyup', 'Shift'], ['key', 'Alt', { alt: true }], ['keyup', 'Alt']] },
@@ -278,6 +285,10 @@ export function record(scenario, { withHarness = null, afterStep = null } = {}) 
 	try {
 		const ids = seed(h, scenario.board);
 		let lastLink = null;
+		// H26.6's move 10: each datum set, by the step that set it and where -- in the record only when one was, so a scenario that sets none
+		// records as it always did
+		const datum = [];
+		let callsSeen = h.calls.length;
 		scenario.steps.forEach((step, i) => {
 			const [op, ...a] = step;
 			const run = (fn) => { try { fn(); } catch (e) { out.threw.push({ step: i, message: e.message }); } };
@@ -302,8 +313,11 @@ export function record(scenario, { withHarness = null, afterStep = null } = {}) 
 			else if (op === 'mode') h.renderer.setMode(a[0]);   // H26.8's picks move: drawn, the harness's renderer real
 			else if (op === 'at') run(() => h.capture.onMove(pointerEvent(h, ids, a[0], a[1], null, { up: true })));
 			else throw new Error(`corpus: unknown step ${op}`);
+			for (const c of h.calls.slice(callsSeen)) if (c.name === 'readout.setDatum' && c.args[0]) datum.push([i, c.args[0].x, c.args[0].y]);
+			callsSeen = h.calls.length;
 			afterStep?.(h, i);
 		});
+		if (datum.length) out.datum = datum;
 		h.history.flush?.();
 		// what the gesture SENT, its intent (V-d): what the tab applied for each is the tab's own, and shows in `final`
 		out.commits = h.commits.map(({ applied, ...request }) => request);

@@ -19,7 +19,7 @@ export const ACTION_LABELS = {
 	onEditMode: 'edit mode: show the socket grid on content panels',
 	onRunMode: 'run mode: panel buttons act, and inputs edit',
 	onLabels: 'show or hide names',
-	onDatum: 'set the datum at the pointer',
+	onDatum: 'set the datum where the pointer is, on release; held with a left drag it pans instead',
 	onDatumClear: 'clear the datum',
 	onWaypointKey: 'drop a waypoint; while drawing a link, pin a bend',
 	onTextTool: 'arm the text tool: then drag a text box, or click for one cell',
@@ -53,6 +53,12 @@ export const ACTION_LABELS = {
 	onScrollPan: 'pan the view, in every mode; the wheel never zooms',
 	onPinchZoom: 'zoom one level out or in about the pointer',
 	onPanPress: 'pan the view once the press travels 4 pixels; a click does nothing',
+	// ---- the view's keys (H26.6's move 10, app/src/keymap.js) ----
+	onZoomIn: 'zoom one level in, about the centre',
+	onZoomOut: 'zoom one level out, about the centre',
+	onZoomDefault: 'back to the default zoom, 1x',
+	onFit: 'fit the whole diagram, at the nearest zoom that shows it',
+	onHome: 'home: the centre to 0, 0, the zoom kept',
 };
 
 // the action a row names: its run, or the gesture it starts

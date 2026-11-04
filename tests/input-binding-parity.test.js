@@ -58,7 +58,23 @@ code is 8793699's -- 37 key lines, 12 pointer lines, 7 release lines and the pag
 RESTATED at H26.6's move 9 (dev/design/components/PAN-ZOOM.md appendix A, move 9) -- THE RECORD'S ONE DIFFERENCE, NAMED: a section of its
 own, `the view`, after `pointer`, listing the view's five rows (app/src/recognize.js VIEW_RULES), on the page and in the lab alike; every
 other section line for line the record's. The record itself stays byte for byte as committed (the test above), its difference named here.
+RESTATED at H26.6's move 10 (PAN-ZOOM.md section 3.7, PZ28; 3.6, PZ27) -- AND THE KEYS' TWO: the view's five keys, five lines after `Tab`'s
+(app/src/keymap.js), and Space's line saying the datum is set on release; every other key line the record's, in its order.
 */
+const VIEW_KEY_LINES = [
+	{ inputs: ['=', '+'], label: 'zoom one level in, about the centre', context: null },
+	{ inputs: ['-'], label: 'zoom one level out, about the centre', context: null },
+	{ inputs: ['Shift+0'], label: 'back to the default zoom, 1x', context: null },
+	{ inputs: ['Shift+1'], label: 'fit the whole diagram, at the nearest zoom that shows it', context: null },
+	{ inputs: ['h'], label: 'home: the centre to 0, 0, the zoom kept', context: null },
+];
+const SPACE_LINE = { before: 'set the datum at the pointer', after: 'set the datum where the pointer is, on release; held with a left drag it pans instead' };
+// the record's keys section as move 10 makes it: the five view-key lines after Tab's, Space's label the new one
+const keysNow = (keys) => {
+	const lines = keys.lines.map((l) => (l.inputs[0] === 'Space' && l.label === SPACE_LINE.before ? { ...l, label: SPACE_LINE.after } : l));
+	const tab = lines.findIndex((l) => l.inputs[0] === 'Tab');
+	return { ...keys, lines: [...lines.slice(0, tab + 1), ...VIEW_KEY_LINES, ...lines.slice(tab + 1)] };
+};
 const VIEW_SECTION = { title: 'the view', lines: [
 	{ inputs: ['the wheel, or a two-finger scroll'], label: 'pan the view, in every mode; the wheel never zooms', context: null },
 	{ inputs: ['a pinch', 'Ctrl + the wheel'], label: 'zoom one level out or in about the pointer', context: null },
@@ -66,13 +82,14 @@ const VIEW_SECTION = { title: 'the view', lines: [
 	{ inputs: ['right-drag the canvas'], label: 'pan the view once the press travels 4 pixels; a click does nothing', context: 'open ground: a zone without Shift among it' },
 	{ inputs: ['Space + left-drag anywhere'], label: 'pan the view once the press travels 4 pixels; a click does nothing', context: null },
 ] };
-test('H26.2 (acceptance step 5; D13): the help overlay\'s sections are line for line those the old code generated, on the page and in the lab -- H26.6 move 9\'s view section the one difference', () => {
+test('H26.2 (acceptance step 5; D13): the help overlay\'s sections are line for line those the old code generated, on the page and in the lab -- H26.6 move 9\'s view section and move 10\'s keys the differences', () => {
 	const rec = readJson(HELP_RECORD);
 	for (const [composition, opts] of COMPOSITIONS) withInput(opts, (h) => {
 		const now = helpSections(h.input.bindings()), at = now.findIndex((s) => s.title === 'the view');
 		assert.equal(now[at - 1].title, 'pointer', `${composition}: the view's section follows the pointer's`);
 		assert.deepEqual(now[at], VIEW_SECTION, `${composition}: the view's section, the named difference`);
-		assert.deepEqual(now.filter((s, i) => i !== at), rec.sections[composition], `${composition}: every other section the record's`);
+		assert.deepEqual(now.filter((s, i) => i !== at), rec.sections[composition].map((s) => (s.title === 'keys' ? keysNow(s) : s)), `${composition}: every other section the record's, the keys' two differences aside`);
+		assert.equal(rec.sections[composition][0].lines.filter((l) => l.label === SPACE_LINE.before).length, 1, `${composition}: the record's Space line, the one restated`);
 	});
 	assert.deepEqual(rec.sections.page.map((s) => s.lines.length), [37, 12, 7, 4]);
 	assert.deepEqual(rec.sections.lab.map((s) => s.lines.length), [37, 12, 7]);

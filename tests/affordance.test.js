@@ -94,12 +94,19 @@ test('a selected zone shows four corner resize handles', () => {
 	} finally { h.restore(); }
 });
 
-test('Space places a datum marker; Shift+Space removes it', () => {
+// RESTATED at H26.6's move 10 (dev/design/components/PAN-ZOOM.md section 3.6, PZ27; appendix A move 10): the datum set on Space's
+// release, where the pointer was when it went down -- nothing drawn while Space is held
+test('Space places a datum marker on its release; Shift+Space removes it', () => {
 	const h = makeInput();
 	try {
 		h.capture.onMove(pointer(60, 60));
 		h.capture.onKeyDown(key(' '));
-		assert.equal(h.drawn('#snaplayer', 'datum').length, 1, 'the local origin is visible, not just numeric');
+		assert.equal(h.drawn('#snaplayer', 'datum').length, 0, 'held: pending, nothing drawn yet');
+		h.capture.onMove(pointer(300, 300));
+		h.capture.onKeyUp(key(' '));
+		const marks = h.drawn('#snaplayer', 'datum');
+		assert.equal(marks.length, 1, 'the local origin is visible, not just numeric');
+		assert.equal(h.calls.filter((c) => c.name === 'readout.setDatum').at(-1).args[0].x, 60, 'where the pointer was when Space went down, not where it was released');
 
 		h.capture.onKeyDown(key(' ', { shiftKey: true }));
 		assert.equal(h.drawn('#snaplayer', 'datum').length, 0, 'and clearing it removes the marker');
@@ -111,8 +118,10 @@ test('a second datum replaces the first — markers do not accumulate', () => {
 	try {
 		h.capture.onMove(pointer(60, 60));
 		h.capture.onKeyDown(key(' '));
+		h.capture.onKeyUp(key(' '));   // RESTATED at H26.6's move 10: set on release
 		h.capture.onMove(pointer(180, 180));
 		h.capture.onKeyDown(key(' '));
+		h.capture.onKeyUp(key(' '));
 		assert.equal(h.drawn('#snaplayer', 'datum').length, 1, 'one datum, wherever it was last set');
 	} finally { h.restore(); }
 });

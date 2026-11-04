@@ -383,6 +383,61 @@ test('H26.6 move 9, PZ11: the cap board opens by name in run mode, every spawner
 });
 
 /*
+H26.6's move 10 (dev/design/components/PAN-ZOOM.md section 3.7; PZ6, PZ12, PZ23, PZ28; appendix A move 10) -- ON THE LAB PAGE: the reticle
+brings the view home at its level and gives the focus back; the lab, handing the view part no store, remembers nothing; and the keys step
+the levels with `zoom-levels.mjs`'s figures reproduced from the page on canvases 1,366 by 535 and 1,920 by 847 -- each level's scale, a
+label's size on screen, 13 drawing units at that scale, and at 3x each grid's dots per tier in view (3.7's figures, move 8's rows).
+Labels are drawn at every level: 3.7's rule hiding a label under 5 screen pixels is built by no move yet (appendix B, move 10, E12).
+*/
+const pressKey = async (t, key, code, vk, modifiers = 0) => {
+	for (const type of ['keyDown', 'keyUp']) await t.send('Input.dispatchKeyEvent', { type, key, code, windowsVirtualKeyCode: vk, modifiers, ...(type === 'keyDown' ? { text: key } : {}) });
+};
+test('H26.6 move 10: in the lab the reticle brings the view home and the lab remembers nothing', { skip: SKIP }, async () => {
+	const t = await theTab();
+	try {
+		await t.send('Emulation.setDeviceMetricsOverride', { width: 1366, height: 576, deviceScaleFactor: 1, mobile: false });
+		await open('bend');
+		await t.run(`(Object.keys(localStorage).filter((k) => k.startsWith('draw:view:')).forEach((k) => localStorage.removeItem(k)), lab.view.set({ x: 900, y: -300, level: 2 }), 1)`);
+		const [bx, by] = JSON.parse(await t.run(`JSON.stringify((() => { const r = document.getElementById('view-home').getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; })())`));
+		for (const type of ['mousePressed', 'mouseReleased']) await t.send('Input.dispatchMouseEvent', { type, x: bx, y: by, button: 'left', clickCount: 1, buttons: type === 'mousePressed' ? 1 : 0 });
+		assert.deepEqual(JSON.parse(await t.run('JSON.stringify(lab.view.view)')), { x: 0, y: 0, level: 2 }, 'home, the zoom kept');
+		assert.notEqual(await t.run(`document.activeElement?.id ?? null`), 'view-home', 'the focus given back');
+		await pressKey(t, '-', 'Minus', 189);
+		assert.equal(JSON.parse(await t.run('JSON.stringify(lab.view.view)')).level, 3, 'so the next key reaches the canvas');
+		await sleep(700);
+		assert.deepEqual(JSON.parse(await t.run(`JSON.stringify(Object.keys(localStorage).filter((k) => k.startsWith('draw:view:')))`)), [], 'no view remembered');
+	} finally { await t.send('Emulation.clearDeviceMetricsOverride'); }
+});
+
+test('H26.6 move 10: the keys step the levels, zoom-levels.mjs\'s scale and label figures and 3.7\'s dots at 3x reproduced from the lab page at 1366 and 1920 wide', { skip: SKIP }, async () => {
+	const t = await theTab();
+	const FIGURES = {
+		1366: { height: 535, scale: [0.9907, 0.4954, 0.2477, 0.1651], label: [12.9, 6.4, 3.2, 2.1], dots: [[65, 1798, 5672], [65, 1798, 5589]] },
+		1920: { height: 847, scale: [1.5685, 0.7843, 0.3921, 0.2614], label: [20.4, 10.2, 5.1, 3.4], dots: [[65, 1582, 5118], [65, 1582, 4941]] },
+	};
+	try {
+		for (const [width, f] of Object.entries(FIGURES)) {
+			await t.send('Emulation.setDeviceMetricsOverride', { width: Number(width), height: f.height + 41, deviceScaleFactor: 1, mobile: false });
+			await open('bend');
+			assert.equal(await t.run(`document.getElementById('container').clientWidth + ' by ' + document.getElementById('container').clientHeight`), `${width} by ${f.height}`, 'precondition: the canvas');
+			await t.run(`(lab.view.set({ x: 0, y: 0, level: 1 }), 1)`);
+			await pressKey(t, '=', 'Equal', 187);
+			for (const [i, level] of [0.5, 1, 2, 3].entries()) {
+				if (i > 0) await pressKey(t, '-', 'Minus', 189);
+				await t.run(frames(2));
+				const seen = JSON.parse(await t.run(`JSON.stringify((() => { const label = [...document.querySelectorAll('#container .label')].find((l) => l.textContent === 'A');
+					return { view: lab.view.view, scale: lab.input.scene.view().scale, label: label.getScreenCTM().a * parseFloat(getComputedStyle(label).fontSize), shown: getComputedStyle(label).display !== 'none' && label.getBBox().width > 0 }; })())`));
+				assert.deepEqual(seen.view, { x: 0, y: 0, level }, `${width}: the keys at ${level}x, about the centre`);
+				assert.ok(Math.abs(seen.scale - f.scale[i]) < 1e-4, `${width} at ${level}x: the scale ${seen.scale}, zoom-levels.mjs's ${f.scale[i]}`);
+				assert.equal(Math.round(seen.label * 10) / 10, f.label[i], `${width} at ${level}x: a label ${seen.label.toFixed(2)} pixels on screen`);
+				assert.equal(seen.shown, true, `${width} at ${level}x: the label drawn (E12)`);
+			}
+			assert.deepEqual(JSON.parse(await t.run(GRID_READ)), f.dots, `${width} at 3x: each grid's dots per tier in view at the origin, 3.7's`);
+		}
+	} finally { await t.send('Emulation.clearDeviceMetricsOverride'); }
+});
+
+/*
 The door tests prove the PLANNER's cascade and sweep reach the tab, so they clear the board's pipes
 first. Since pipes count as references, a hand pipe legitimately holds a waypoint the sweep would
 otherwise take -- a separate rule with its own test below, and mixing the two would let either one

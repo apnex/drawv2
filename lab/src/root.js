@@ -53,7 +53,7 @@ canvas opens appends the layers -- so the markup is checked for the root, and th
 AMENDED H26.6's move 7 (dev/design/components/PAN-ZOOM.md section 3.8, PZ25): the root is bare, its ground its CSS background, so the
 markup holds no ground to check.
 */
-const NEEDED = ['container', 'readout-bottom', 'lab-notice', 'kdefs', 'lab-frames', 'lab-frames-reset'];
+const NEEDED = ['container', 'readout-bottom', 'lab-notice', 'kdefs', 'lab-frames', 'lab-frames-reset', 'view-home'];
 const missing = NEEDED.filter((id) => !document.getElementById(id));
 if (missing.length) throw new Error(`the lab page is missing: ${missing.join(', ')}`);
 
@@ -78,7 +78,7 @@ because the network attaches to the parts composed here.
 const { scene, view, model, history, renderer, states, selection, input, listen } = composeCanvas({
 	svg, scene: CANVAS_SCENE, defs: document.getElementById('kdefs'), host: window, network, kinds, parts: PRODUCT_CANVAS,   // C-a: the plugins' canvas parts
 	readoutEl: document.getElementById('readout-bottom'),
-	help: null, now: () => Date.now(),
+	help: null, now: () => Date.now(),   // H26.6's move 10: no view store, so the lab remembers no view
 	plugins: page.plugins,   // its own keys, and its judge of a drag (dev/RULES.md section 11)
 });
 // H26.4: the scene opened has appended every layer of the composition's, in order -- H26.6's move 7: from the bare root's first child
@@ -86,6 +86,7 @@ const unlaid = CANVAS_LAYERS.filter((id, i) => document.getElementById(id) !== s
 if (unlaid.length) throw new Error(`the lab's canvas did not lay out: ${unlaid.join(', ')}`);
 // H26.6's move 7 (PAN-ZOOM.md section 3.7): the canvas resized is told to the view part, as the product page tells it
 new ResizeObserver(() => view.resized()).observe(svg);
+document.getElementById('view-home').addEventListener('click', (e) => { view.home(); e.currentTarget.blur(); });   // H26.6's move 10 (PZ6): the reticle
 // H26.6's move 9 (dev/design/components/PAN-ZOOM.md, PZ11): the frame time of each view step, its median and 90th percentile in the footer
 const frames = viewFrameMeter({ scene, host: window, shown: (text) => { document.getElementById('lab-frames').textContent = text; } });
 document.getElementById('lab-frames-reset').addEventListener('click', () => frames.reset());

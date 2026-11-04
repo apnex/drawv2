@@ -180,16 +180,16 @@ test('H26.6 move 9: a pan cancelled by focus loss leaves the view where the pan 
 	} finally { h.restore(); }
 });
 
-// PZ27's interplay, as far as move 9 takes it: Space held (the session told the keys held, IB14) makes a left press pan-space's; its datum
-// still set on the key-down, as today, until move 10 moves it to the key-up
-test('H26.6 move 9: Space held and a left drag pans; the datum still set on Space\'s key-down; once Space is released a left drag is the selection box again', () => {
+// PZ27's interplay (3.6): Space held (the session told the keys held, IB14) makes a left press pan-space's; RESTATED at H26.6's move 10 --
+// the datum is recorded pending on Space's key-down and set on its key-up only when no pan engaged while it was held
+test('H26.6 move 9, restated at move 10: Space held and a left drag pans and sets no datum on release; a click with Space held does nothing; a tap sets the datum; released, a left drag is the selection box again', () => {
 	const h = makeInput({ view: true });
 	try {
 		seedNodes(h.model, [[0, 0, 'router'], [240, 0, 'router']]);
-		const v0 = centre(h);
+		const v0 = centre(h), datums = () => h.calls.filter((c) => c.name === 'readout.setDatum' && c.args[0]).length;
 		h.capture.onMove(mouse(960, 540, { buttons: 0 }));
 		h.capture.onKeyDown(key(' ', { code: 'Space' }));
-		assert.ok(h.calls.some((c) => c.name === 'readout.setDatum' && c.args[0]), 'the datum set on the key-down, as today');
+		assert.equal(datums(), 0, 'nothing set on the key-down: pending');
 		h.capture.onDown(mouse(600, 400));
 		h.capture.onMove(mouse(660, 400));
 		h.capture.onMove(mouse(700, 450));
@@ -199,8 +199,12 @@ test('H26.6 move 9: Space held and a left drag pans; the datum still set on Spac
 		h.selection.set([first.id]);
 		h.capture.onDown(mouse(600, 400));
 		h.capture.onUp(mouse(600, 400, { buttons: 0 }));
-		assert.deepEqual([h.selection.list(), h.input.isGesturing()], [[first.id], false], 'a click with Space held does nothing -- the click on open ground no longer clears the selection (3.6, PZ27; PAN-ZOOM.md appendix B, move 9, E8)');
+		assert.deepEqual([h.selection.list(), h.input.isGesturing()], [[first.id], false], 'a click with Space held does nothing -- the click on open ground no longer clears the selection (3.6, PZ27)');
 		h.capture.onKeyUp(key(' ', { code: 'Space' }));
+		assert.equal(datums(), 0, 'a pan engaged while Space was held: its release sets no datum');
+		h.capture.onKeyDown(key(' ', { code: 'Space' }));
+		h.capture.onKeyUp(key(' ', { code: 'Space' }));
+		assert.equal(datums(), 1, 'a tap -- no pan -- sets the datum on release');
 		h.capture.onDown(mouse(0, 0));
 		h.capture.onMove(mouse(1900, 1000));
 		h.capture.onUp(mouse(1900, 1000, { buttons: 0 }));

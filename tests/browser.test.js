@@ -2348,6 +2348,65 @@ test('H25.3: a drag on empty canvas draws the selection rectangle with the class
 B324 (H20.2) -- A TEST LEAVES NO TAB BEHIND. `t.ws.close()` closed the debugging socket and left the tab open and connected, so by
 the palette drop test four tabs were live editors of its diagram; each test's tab is closed now (`close`, above).
 */
+/*
+H26.6's move 10 (dev/design/components/PAN-ZOOM.md section 3.7; PZ6, PZ23, PZ28; appendix A move 10; GR5) -- ON THE PRODUCT PAGE, under
+trusted keys and a click: `-`, `=` and Shift+0 step the levels about the canvas's centre; `h` and the reticle bring the centre to 0,0 at the
+level as it is, the reticle giving the focus back; Shift+1 centres the diagram at a level; nothing a view does is sent to the server; the
+view is saved under `draw:view:<id>` half a second after it last moved and opens there after a reload; and a switch from A to B and back to A
+within the half second keeps each diagram's view under its own key. The keys it writes are removed after, so no later test opens at a view.
+*/
+test('H26.6 move 10: on the product page the view keys and the reticle, the view remembered per diagram across a reload and a switch, and never sent', { skip: SKIP }, async () => {
+	const t = await freshTab();
+	const KEY = (id) => `draw:view:${id}`;
+	try {
+		await t.eval(`(localStorage.removeItem('${KEY(K8_DIAGRAM)}'), localStorage.removeItem('${KEY(PIPE_DIAGRAM)}'), draw.view.set({ x: 0, y: 0, level: 1 }), draw.view.flush(), localStorage.removeItem('${KEY(K8_DIAGRAM)}'), 1)`);
+		const view = async () => JSON.parse(await t.eval('JSON.stringify(draw.view.view)'));
+		const press = async (key, code, vk, modifiers = 0) => {
+			for (const type of ['keyDown', 'keyUp']) await t.send('Input.dispatchKeyEvent', { type, key, code, windowsVirtualKeyCode: vk, modifiers, ...(type === 'keyDown' ? { text: key } : {}) });
+		};
+		await t.eval(`(() => { const net = draw.sync.net, send = net.send; window.viewSent = []; net.send = function (cmd, body) { window.viewSent.push([cmd, JSON.stringify(body ?? null)]); return send.apply(this, arguments); }; return 1; })()`);
+		for (const [key, code, vk, modifiers, level] of [['-', 'Minus', 189, 0, 2], ['-', 'Minus', 189, 0, 3], ['=', 'Equal', 187, 0, 2], [')', 'Digit0', 48, 8, 1], ['=', 'Equal', 187, 0, 0.5]]) {
+			await press(key, code, vk, modifiers);
+			assert.deepEqual(await view(), { x: 0, y: 0, level }, `${key}: at ${level}x, about the centre`);
+		}
+		await t.eval(`(draw.view.set({ x: 600, y: -300, level: 2 }), 1)`);
+		await press('h', 'KeyH', 72);
+		assert.deepEqual(await view(), { x: 0, y: 0, level: 2 }, 'h: home, the zoom kept');
+		await t.eval(`(draw.view.set({ x: 900, y: 120, level: 3 }), 1)`);
+		const [bx, by] = JSON.parse(await t.eval(`JSON.stringify((() => { const r = document.getElementById('view-home').getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; })())`));
+		const at = JSON.parse(await t.eval(`JSON.stringify((() => { const s = document.getElementById('stage').getBoundingClientRect(), b = document.getElementById('view-home').getBoundingClientRect(); return [s.right - b.right, s.bottom - b.bottom]; })())`));
+		assert.ok(at[0] >= 0 && at[0] < 40 && at[1] >= 0 && at[1] < 40, `the reticle sits over the canvas's lower right (${at})`);
+		for (const type of ['mousePressed', 'mouseReleased']) await t.send('Input.dispatchMouseEvent', { type, x: bx, y: by, button: 'left', clickCount: 1, buttons: type === 'mousePressed' ? 1 : 0 });
+		assert.deepEqual(await view(), { x: 0, y: 0, level: 3 }, 'the reticle: home, the zoom kept');
+		assert.notEqual(await t.eval(`document.activeElement?.id ?? null`), 'view-home', 'and it gives the focus back');
+		await press('!', 'Digit1', 49, 8);
+		const fit = JSON.parse(await t.eval(`JSON.stringify({ v: draw.view.view, b: draw.input.diagramBounds() })`));
+		assert.deepEqual([fit.v.x, fit.v.y], [(fit.b.x0 + fit.b.x1) / 2, (fit.b.y0 + fit.b.y1) / 2], 'Shift+1: the diagram centred');
+		assert.ok([0.5, 1, 2, 3].includes(fit.v.level), `at a level (${fit.v.level})`);
+		const sent = JSON.parse(await t.eval('JSON.stringify(window.viewSent)'));
+		assert.deepEqual(sent.filter(([cmd, body]) => cmd === 'commit' || /"level"|"scale"|draw:view/.test(body)), [], `GR5: nothing a view does is sent (${sent.length} other sends)`);
+		await t.eval(`(draw.view.set({ x: 600, y: -300, level: 2 }), 1)`);
+		assert.equal(await t.eval(`localStorage.getItem('${KEY(K8_DIAGRAM)}')`), null, 'not yet: the save waits half a second');
+		await sleep(700);
+		assert.deepEqual(JSON.parse(await t.eval(`localStorage.getItem('${KEY(K8_DIAGRAM)}')`)), { v: 1, x: 600, y: -300, level: 2 }, 'saved under draw:view:<id>, { v, x, y, level }');
+		await t.eval('location.reload(), 1');
+		await until(t, `window.draw && document.getElementById('node-ba0002') ? 1 : 0`, 8000);
+		assert.deepEqual(await view(), { x: 600, y: -300, level: 2 }, 'a reload opens the diagram where it was left');
+		await t.eval(`window.draw.input.setReadOnly(false), 1`);
+		await t.eval(`(draw.view.set({ x: -120, y: 60, level: 3 }), draw.sync.openDiagram('${PIPE_DIAGRAM}'), 1)`);
+		await until(t, `draw.model.state.meta.id === '${PIPE_DIAGRAM}' ? 1 : 0`, 8000);
+		assert.deepEqual(await view(), { x: 0, y: 0, level: 1 }, 'B, with nothing remembered, opens as it first does');
+		assert.deepEqual(JSON.parse(await t.eval(`localStorage.getItem('${KEY(K8_DIAGRAM)}')`)), { v: 1, x: -120, y: 60, level: 3 }, 'A\'s view written as B opened, within the half second, under A');
+		await t.eval(`(draw.view.set({ x: 240, y: 240, level: 0.5 }), draw.sync.openDiagram('${K8_DIAGRAM}'), 1)`);
+		await until(t, `draw.model.state.meta.id === '${K8_DIAGRAM}' ? 1 : 0`, 8000);
+		assert.deepEqual(await view(), { x: -120, y: 60, level: 3 }, 'back to A: where A was left');
+		assert.deepEqual(JSON.parse(await t.eval(`localStorage.getItem('${KEY(PIPE_DIAGRAM)}')`)), { v: 1, x: 240, y: 240, level: 0.5 }, 'and B\'s under B');
+	} finally {
+		await t.eval(`(draw.view.flush(), localStorage.removeItem('${KEY(K8_DIAGRAM)}'), localStorage.removeItem('${KEY(PIPE_DIAGRAM)}'), 1)`).catch(() => {});
+		await t.close();
+	}
+});
+
 test('B324: a tab a test opens is closed when the test ends -- none of this file\'s tabs is left on the diagrams it edits', { skip: SKIP }, async () => {
 	// the file's shared tab (`before`) is kept for its tests on purpose and closed with Chrome; every other tab is a test's own
 	const open = async () => (await (await fetch(`http://127.0.0.1:${cdp}/json/list`)).json()).filter((p) => p.type === 'page' && p.id !== tab.id && p.url.includes(`127.0.0.1:${port}/`));

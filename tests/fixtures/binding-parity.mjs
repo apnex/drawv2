@@ -108,6 +108,10 @@ a scenario ends with, is byte-identical (GR6), and its lifecycle, which keeps ea
 export const CORPUS_LISTED_APART = {
 	'link-right-button-release-ignored': { kind: 'chord', why: 'B427: a release naming 2 commits the link a press of 0 began',
 		after: ['link.start>link', 'link.update>link', 'link.commit>-', '>-'] },
+	// H26.6's move 10 (PAN-ZOOM.md section 5.1 row 10, its guard): the Space scenario re-recorded with six steps more -- Space's release and
+	// the view's five keys -- none of which runs a body or leaves a gesture live; its record's difference is named in tests/gesture-corpus.test.js
+	'key-view-keys': { kind: 'space', why: 'H26.6 move 10: Space released and the view\'s five keys, steps added to the scenario',
+		after: Array(15).fill('>-') },
 };
 export function lifecycleOfSteps(steps) {
 	const log = [], out = [];

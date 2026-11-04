@@ -56,10 +56,11 @@ import { Grids } from './grids.js';   // WD-b2: the grids, from the open diagram
              here (it was handed in as a chrome factory until the lab's import of it was the last layer-debt edge)
   tools      true to hold the stamp hand and text tool (the product); the lab holds none
   help, now, plugins, runRules   handed to Input as they are
+  viewStore  H26.6's move 10: the page's store of each diagram's view (app/src/main.js), handed to the view part; the lab hands none
 Returns every part, the opened scene among them, and `listen()`, which starts event capture and answers its `{ close }`
 (app/src/capture.js `captureCanvas`, H26.3).
 */
-export function composeCanvas({ svg, scene: declared, defs, host, network = null, kinds = undefined, parts = [], readoutEl = null, tools = false, help = null, now, plugins = [], runRules = [] }) {
+export function composeCanvas({ svg, scene: declared, defs, host, network = null, kinds = undefined, parts = [], readoutEl = null, tools = false, help = null, now, plugins = [], runRules = [], viewStore = null }) {
 	// the kernel's glyph and frame defs: the kernel owns the look
 	defs.innerHTML = sharedDefs(undefined, undefined, parts.map((p) => p.defs).filter(Boolean).join('\n'));
 	// H26.4: the canvas's scene, its layers appended to the root -- opened, or refused naming each problem. H26.6's move 7
@@ -74,7 +75,9 @@ export function composeCanvas({ svg, scene: declared, defs, host, network = null
 	*/
 	const later = typeof host?.requestAnimationFrame === 'function' ? (fn) => host.requestAnimationFrame(fn) : (fn) => queueMicrotask(fn);
 	const { ask: frame, run } = viewFrames(later);   // the view part's queue: each asked redraw once, alone if another throws
-	const view = new View({ scene, settled: run });
+	// H26.6's move 10 (PAN-ZOOM.md section 3.7, PZ23): the page's store, and the host's timers its half-second save waits on
+	const timers = viewStore ? { set: (fn, ms) => host.setTimeout(fn, ms), clear: (t) => host.clearTimeout(t) } : null;
+	const view = new View({ scene, settled: run, store: viewStore, timers });
 
 	const model = new Model({ attached: { network }, kinds });   // the kinds a composition brings -- the core's when none are passed, so no links (S-e) (H17.22 N-a)
 	// R3: the maintained reverse indices, registered before any other subscriber so they see a fresh index; the node grid's

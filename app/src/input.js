@@ -14,7 +14,8 @@ Input — pointer/keyboard state machine. Two-button gestures (`dev/DECISIONS.md
   drag link endpoint  re-plug: rewire that end of a selected link onto another node
   Shift mid-drag    ortho lock: constrain a move/clone to its dominant axis
   Shift at release  (link mode) chain wiring: continue the run from the target
-  Space             set datum at cursor (readout goes relative); Shift+Space clears
+  Space             set datum at cursor on release (readout goes relative), unless a pan ran while it was held; Shift+Space clears
+  = + / - / Shift+0 / Shift+1 / h   a level nearer, farther, the default, fit the diagram, home to 0,0 (H26.6's move 10)
   wheel / two-finger scroll   pan the view, in every mode (H26.6's move 9, app/src/recognize.js VIEW_RULES); never a zoom
   pinch / Ctrl+wheel          zoom one level per 100 pixels about the pointer
   middle-drag, right-drag on open ground, Space+left-drag   pan the view once the press travels 4 screen pixels
@@ -247,6 +248,11 @@ export class Input {
 	a release, a lost pointer, a focus loss or a document replaced drops it.
 	*/
 	#pendingPan = null;
+	/*
+	H26.6's move 10 (PAN-ZOOM.md section 3.6, PZ27): THE PENDING DATUM -- the snapped point an eligible Space key-down recorded, set as the
+	datum by Space's key-up, or null: a pan engaging while Space is held, Shift+Space, a focus loss and a document replaced each drop it.
+	*/
+	#pendingDatum = null;
 	/*
 	`host` is the surface that owns GLOBAL key events and receives outbound host actions — `window` in
 	the browser. Injected rather than reached for (B45): Input is the class H6 exists to decompose, and
@@ -488,7 +494,7 @@ export class Input {
 			// button, so the header menu is reachable mid-gesture)
 			if (action === 'load' && this.mode) this.cancelDrag();
 			// H26.6's move 9 (3.6): a switch of diagram drops a pan row's press and the pinch's held pixels
-			if (action === 'load') { this.#pendingPan = null; this.view?.pinchReset(); }
+			if (action === 'load') { this.#pendingPan = null; this.#pendingDatum = null; this.view?.pinchReset(); }
 			// hovered/armed state must die with its entity (chord delete, undo, load)
 			if (action === 'del' || action === 'load') {
 				if (this.overlayUi.hovered && (action === 'load' || entity.id === this.overlayUi.hovered)) {
@@ -1017,6 +1023,7 @@ export class Input {
 			const { gesture } = this.#pendingPan;
 			this.#pendingPan = null;
 			if (this.#session.state.gesture === null && this.#session.startGesture({ gesture }).phase === 'start') {
+				if (this.#session.state.keys.includes('Space')) this.#pendingDatum = null;   // move 10 (PZ27): a pan while Space is held sets no datum
 				this.ctx = { last: evt.screen };
 				reply?.takePointer();
 				return;
@@ -1500,16 +1507,59 @@ export class Input {
 		this.selection.set(this.selectAlls.flatMap((s) => s.ids(this.model)));
 	}
 
-	onDatum() {
-		if (!this.state.pointer.at) return;   // pointer off-canvas: nothing to anchor
-		const datum = snapNode(this.state.pointer.at);
+	// H26.6's move 10 (PZ27): the datum recorded pending at the pointer, snapped as it always was, for Space's key-up to set; a repeat changes
+	// nothing, and with the pointer off the canvas nothing is pending
+	onDatum(evt) {
+		if (evt.repeat) return;
+		this.#pendingDatum = this.state.pointer.at ? snapNode(this.state.pointer.at) : null;
+	}
+
+	// Space released: the pending datum set, unless a pan engaged while Space was held -- which dropped it -- or none was recorded
+	onDatumRelease() {
+		const datum = this.#pendingDatum;
+		this.#pendingDatum = null;
+		if (!datum) return;
 		this.readout.setDatum(datum);
 		this.overlayUi.datum(datum);
 	}
 
 	onDatumClear() {
+		this.#pendingDatum = null;   // move 10 (3.6): Shift+Space records nothing pending
 		this.readout.setDatum(null);
 		this.overlayUi.datum(null);
+	}
+
+	/*
+	H26.6's move 10 (PAN-ZOOM.md section 3.7; PZ6, PZ28): THE VIEW'S KEYS, each the view part's verb (app/src/view.js); in a composition
+	with no view part, nothing. Fit is handed the diagram's bounds and flashes when no level shows them whole.
+	*/
+	onZoomIn() { this.view?.zoomIn(); }
+	onZoomOut() { this.view?.zoomOut(); }
+	onZoomDefault() { this.view?.zoomDefault(); }
+	onHome() { this.view?.home(); }
+	onFit() {
+		const fitted = this.view?.fit(this.diagramBounds());
+		if (fitted?.larger) this.readout.flash(`the diagram is larger than the farthest zoom: shown at ${fitted.level}x`);
+	}
+
+	/*
+	3.7: the bounds fit shows -- every device's frame, its span included, every zone's rect and every waypoint, labels left out -- as
+	`{ x0, y0, x1, y1 }`, or null for an empty diagram: for each placed kind, an entity's outline where a part draws one about its anchor
+	(a device's frame), else its place's rect from its corner (a zone; a waypoint, which has no size, its point).
+	*/
+	diagramBounds() {
+		let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+		const take = (a, b, c, d) => { x0 = Math.min(x0, a); y0 = Math.min(y0, b); x1 = Math.max(x1, c); y1 = Math.max(y1, d); };
+		for (const [kind, place] of this.places) {
+			const outlineOf = this.parts.map((p) => p.outlines?.[kind]).find((fn) => typeof fn === 'function');
+			for (const e of this.model.all(kind)) {
+				const o = outlineOf?.(e);
+				if (o?.form === 'circle') take(e.x - o.r, e.y - o.r, e.x + o.r, e.y + o.r);
+				else if (o?.form === 'rect') take(e.x + o.x0, e.y + o.y0, e.x + o.x1, e.y + o.y1);
+				else { const { w, h } = place.size(e); take(e.x, e.y, e.x + w, e.y + h); }
+			}
+		}
+		return x0 <= x1 ? { x0, y0, x1, y1 } : null;
 	}
 
 	// 'w' drops/threads a waypoint: mid-route it adds a bend (the button is still held), idle it
@@ -1690,6 +1740,7 @@ export class Input {
 		this.onArmingUp(evt);
 		this.#session.keysLost();
 		this.#pendingPan = null;
+		this.#pendingDatum = null;   // move 10 (3.6): focus lost clears the pending datum
 		this.view?.pinchReset();
 		if (Object.hasOwn(VIEW_GESTURES, this.mode)) this.cancelDrag(evt);
 	}

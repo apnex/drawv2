@@ -284,6 +284,7 @@ test('B37: while Server-Locked, Space still sets a datum — the readout is not 
 	try {
 		h.capture.onMove(pointer(60, 60));
 		h.capture.onKeyDown(key(' '));
+		h.capture.onKeyUp(key(' '));   // RESTATED at H26.6's move 10 (PZ27): the datum set on Space's release, its row mutating nothing
 		assert.equal(h.called('readout.setDatum'), true, 'SCOPE decision 5: the readout still works while locked');
 		assert.equal(h.commits.length, 0, 'and it commits nothing, because a datum is not a change');
 	} finally { h.restore(); }
@@ -983,6 +984,13 @@ test('B48: the matched rule NAMES the verb — the table is readable as the key 
 		['y',         { ctrlKey: true },             'redo'],
 		['g',         { ctrlKey: true },             'group'],
 		['g',         { ctrlKey: true, shiftKey: true }, 'ungroup'],
+		// H26.6's move 10 (PZ28): the view's keys, Shift+0 and Shift+1 by their place on a US layout
+		['=',         {},                            'zoom-in'],
+		['+',         { shiftKey: true },            'zoom-in'],
+		['-',         {},                            'zoom-out'],
+		[')',         { shiftKey: true, code: 'Digit0' }, 'zoom-default'],
+		['!',         { shiftKey: true, code: 'Digit1' }, 'fit'],
+		['h',         {},                            'home'],
 	];
 	const ctx = { readOnly: false, helpOpen: false, gesturing: false };
 	// RESTATED at C-e step five (H19.33): Ctrl+G and Ctrl+Shift+G are the groups plugin's rows, composed with the product's
@@ -1003,9 +1011,12 @@ listing `undo-run` first. `delete` now states the chord it does not mean, and th
 because a row with a condition is disjoint from its neighbour only in the situations its condition separates.
 */
 const KEYS = [' ', 'Escape', 'Tab', 'Enter', 'Delete', 'Backspace', 'F2', '/', '?', 'Shift', 'Alt', 'Control',
-	...'abcdefghijklmnopqrstuvwxyz', ...'1234567', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'];
+	...'abcdefghijklmnopqrstuvwxyz', ...'1234567', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', '=', '+', '-'];
 const MODS = [{}, { shiftKey: true }, { ctrlKey: true }, { ctrlKey: true, shiftKey: true }, { altKey: true }, { metaKey: true }];
-const KEY_INPUTS = KEYS.flatMap((k) => MODS.map((m) => key(k, m)));
+// H26.6's move 10 (PZ28): the digit keys by their place too -- a US layout's `)` and `!` on Digit0 and Digit1, and the digits themselves
+// on them, as a layout typing digits with Shift makes them -- so Shift+0 and Shift+1 are held apart from the stamp hand's digits
+const PLACED = [['0', 'Digit0'], [')', 'Digit0'], ['1', 'Digit1'], ['!', 'Digit1']];
+const KEY_INPUTS = [...KEYS.flatMap((k) => MODS.map((m) => key(k, m))), ...PLACED.flatMap(([k, code]) => MODS.map((m) => key(k, { ...m, code })))];
 const SITUATIONS = [
 	sit(),
 	sit({ size: 1, ids: ['link-000001'], kinds: ['link'], bends: 0 }),

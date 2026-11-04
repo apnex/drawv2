@@ -61,6 +61,17 @@ AMENDED 2026-10-04 (V-b, H18.26): removed. The page composes the network as the 
 with it -- routes over pipes, down links -- and Input takes its keys and drag judge, so `g` and `x` work here.
 */
 const pageNetwork = createPageNetwork();
+/*
+H26.6's move 10 (dev/design/components/PAN-ZOOM.md section 3.7, PZ23; GR5) -- EACH DIAGRAM'S VIEW, REMEMBERED in this browser alone: the
+store the view part is handed, over `localStorage`, the key `draw:view:<diagram id>` and the value `{"v":1,"x":...,"y":...,"level":...}`.
+This is the one place the key is written (GR5): the view is never in the diagram, a commit, a sync message or an export. A read or a write
+that throws -- storage blocked or full -- throws to the view part, which ignores it; `JSON.parse` of a missing key answers null.
+*/
+const VIEW_KEY = (id) => `draw:view:${id}`;
+const viewStore = Object.freeze({
+	read: (id) => JSON.parse(localStorage.getItem(VIEW_KEY(id))),
+	write: (id, value) => localStorage.setItem(VIEW_KEY(id), JSON.stringify(value)),
+});
 const { scene, view, model, history, renderer, states, selection, labels, readout, snap, tools, input, listen } = composeCanvas({
 	svg,
 	scene: CANVAS_SCENE,   // H26.4: its layers, the pipes and the movers foreign, opened on the root
@@ -75,7 +86,13 @@ const { scene, view, model, history, renderer, states, selection, labels, readou
 	help: helpPanel,   // H26.8: the panel, never the element
 	now: () => clock.now(),
 	runRules: RUN_PRESSES,
+	viewStore,   // H26.6's move 10: each diagram's view, remembered
 });
+// H26.6's move 10 (PZ6): the reticle brings the view home, as `h` does, and gives the focus back, so the next key reaches the canvas
+document.getElementById('view-home').addEventListener('click', (e) => { view.home(); e.currentTarget.blur(); });
+// H26.6's move 10 (PZ23): a save still waiting is written when the page hides, so a view moved just before the tab goes is kept
+document.addEventListener('visibilitychange', () => { if (document.hidden) view.flush(); });
+window.addEventListener('pagehide', () => view.flush());
 /*
 THE NETWORK, ATTACHED (V-b): its pipe painter on `#pipes`, its drag judge, its transit edits and the settle after every change.
 What it says goes to the header banner (ruled J3).
@@ -637,6 +654,9 @@ const sync = new Sync({
 	onChanged: () => networkHost.redraw(),
 	// B297: the network is handed the planner's reason, as the lab hands it; the server's frame carries it as `reason`
 	onRefused: (b) => networkHost.refused({ error: b.reason ?? b.message }),
+	// H26.6's move 10 (PZ23): a diagram loaded opens at its remembered view, its document in and before its first frame -- the view of the
+	// diagram left written first; a template's fork is the same document under a new id, so the view stays and is remembered for the fork
+	onLoaded: (id, { forked }) => (forked ? view.adopt(id) : view.open(id)),
 	onState({ status, meta, diagrams, locked, mayWrite, principal, agents, error, rewound, said }) {
 		// H9.3c: read-only is tested BEFORE locked, because the locked branch offers "click to
 		// take back" and reclaim is itself a write capability (B64). A reader shown that would

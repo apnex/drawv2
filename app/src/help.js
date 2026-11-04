@@ -8,7 +8,9 @@ checks that the row really matches it, so the overlay cannot claim a key the tab
 
 THE GRAMMAR
   keys       [Ctrl+][Shift+][Alt+]key   a character, or Space, Enter, Escape, Tab, Delete, Backspace, F2, Shift, Alt,
-                                        Control; `Arrows` is the four arrow keys, `1-6` the six digits
+                                        Control; `Arrows` is the four arrow keys, `1-6` the six digits; `+` alone the plus
+                                        key; a digit names its key's place too, `Digit<d>`, and with Shift the character a
+                                        US layout makes of it -- `Shift+0` is `)` on `Digit0` (H26.6's move 10)
   presses    [mods+]left|right on K     K is node, waypoint, zone, link, canvas, handle (a zone's corner), lhandle (a
                                         link's end), or, in run mode, region:endpoint, region:ground, region:action,
                                         region:input -- several joined by |
@@ -57,11 +59,14 @@ export function eventsFor(input) {
 		return press[3].split('|').map((k) => ({ type: 'down', button: press[2] === 'left' ? 0 : 2, shiftKey: false, ctrlKey: false, altKey: false, metaKey: false, ...mods,
 			hit: k.startsWith('region:') ? { kind: 'canvas', id: null, region: { ...blank, ...REGIONS[k.slice(7)] } } : { ...hitOf(k), region: null } }));
 	}
-	const parts = input.split('+');
+	const parts = input === '+' ? ['+'] : input.split('+');
 	const key = parts.pop();
 	const mods = Object.fromEntries(parts.map((m) => [MODS[m], true]));
 	const self = { Shift: { shiftKey: true }, Alt: { altKey: true }, Control: { ctrlKey: true } }[key] ?? {};
-	return (NAMED[key] ?? [key]).map((k) => ({ type: 'key-down', key: k, shiftKey: false, ctrlKey: false, altKey: false, metaKey: false, repeat: false, ...mods, ...self }));
+	// H26.6's move 10: a digit's place, and the character Shift makes of it on a US layout
+	const typed = (k) => (mods.shiftKey && /^\d$/.test(k) ? ')!@#$%^&*('[Number(k)] : k);
+	return (NAMED[key] ?? [key]).map((k) => ({ type: 'key-down', key: typed(k), ...(/^\d$/.test(k) ? { code: `Digit${k}` } : {}),
+		shiftKey: false, ctrlKey: false, altKey: false, metaKey: false, repeat: false, ...mods, ...self }));
 }
 
 // an input as a person reads it

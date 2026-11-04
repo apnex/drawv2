@@ -81,6 +81,18 @@ export const KEYMAP = [
 	{ id: 'edit-mode', input: ['e'], mutates: false, on: (e) => is(e, 'e') && plain(e), run: 'onEditMode' },
 	{ id: 'run-mode', input: ['r'],  mutates: false, on: (e) => is(e, 'r') && plain(e), run: 'onRunMode' },
 	{ id: 'labels', input: ['Tab'],    prevent: false, mutates: false, on: (e) => e.key === 'Tab',        run: 'onLabels' },
+	/*
+	H26.6's move 10 (dev/design/components/PAN-ZOOM.md section 3.7; PZ6, PZ28): THE VIEW'S KEYS, the view part's verbs (app/src/view.js) --
+	a level nearer or farther and the default about the canvas's centre, fit and home set outright. No model change, so live while
+	Server-Locked; with Ctrl they are the browser's own zoom, left to it (PZ28's (b), not taken). Shift+0 and Shift+1 are read by the key's
+	place, `code`, since the character Shift makes of a digit is the layout's; fit refuses the digit itself, so where Shift+1 types `1`
+	the stamp hand's `1` keeps it (the digits 1 to 6 bound alone, PZ28).
+	*/
+	{ id: 'zoom-in', input: ['=', '+'], mutates: false, on: (e) => (e.key === '=' || e.key === '+') && plain(e), run: 'onZoomIn' },
+	{ id: 'zoom-out', input: ['-'], mutates: false, on: (e) => e.key === '-' && plain(e), run: 'onZoomOut' },
+	{ id: 'zoom-default', input: ['Shift+0'], mutates: false, on: (e) => e.shiftKey && e.code === 'Digit0' && plain(e), run: 'onZoomDefault' },
+	{ id: 'fit', input: ['Shift+1'], mutates: false, on: (e) => e.shiftKey && e.code === 'Digit1' && e.key !== '1' && plain(e), run: 'onFit' },
+	{ id: 'home', input: ['h'], mutates: false, on: (e) => is(e, 'h') && plain(e) && !e.shiftKey, run: 'onHome' },
 
 	// ---- inspection: SCOPE decision 5 promises these keep working while locked ----
 	// C-e: what Ctrl+A takes is each part's (`selectAll`), and so are the kinds its help names, in rank order; with none, no row
@@ -89,6 +101,8 @@ export const KEYMAP = [
 			const words = parts.filter((p) => p.selectAll).map((p) => p.selectAll).sort((a, b) => a.rank - b.rank).map((x) => x.word);
 			return words.length ? `select every ${words.length > 1 ? `${words.slice(0, -1).join(', ')} and ${words.at(-1)}` : words[0]}` : null;
 		} },
+	// H26.6's move 10 (PAN-ZOOM.md section 3.6, PZ27): Space's key-down records the datum pending, set on its key-up (KEY_RELEASES) when
+	// no pan engaged while it was held; its repeats are claimed, as every Space is, and change nothing (the handler)
 	{ id: 'datum', input: ['Space'],       mutates: false, on: (e) => e.key === ' ' && !e.shiftKey, run: 'onDatum' },
 	{ id: 'datum-clear', input: ['Shift+Space'], mutates: false, on: (e) => e.key === ' ' && e.shiftKey,  run: 'onDatumClear' },
 
@@ -142,5 +156,8 @@ only undoes what the press armed -- the zone grid Shift showed, the arming Alt o
 export const KEY_RELEASES = [
 	{ id: 'shift-up',  prevent: false, mutates: false, duringHelp: true, duringGesture: true, on: (e) => e.key === 'Shift', run: 'onShiftUp' },
 	{ id: 'arming-up', prevent: false, mutates: false, duringHelp: true, duringGesture: true, on: (e) => e.key === 'Alt' || e.key === 'Control', run: 'onArmingUp' },
+	// H26.6's move 10 (PAN-ZOOM.md section 3.6, PZ27): Space released sets the datum its key-down left pending, if no pan engaged while it was
+	// held -- while a gesture is live and while help is shown too, mutating nothing; with Shift held as well, Shift changing nothing of it
+	{ id: 'datum-release', prevent: false, mutates: false, duringHelp: true, duringGesture: true, on: (e) => e.key === ' ', run: 'onDatumRelease' },
 ];
 

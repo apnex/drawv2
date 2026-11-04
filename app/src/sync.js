@@ -89,7 +89,14 @@ export class Sync {
 	answer)` after an accepted answer to this tab's own request, `onChanged()` after another writer's change or a snapshot, and
 	`onRefused(answer)` after a refusal. The network's attach (plugins/network/host.mjs) is the page's; Sync knows nothing of it.
 	*/
-	constructor({ model, net, history, selection, onState, clock, watchdog = null, onAnswered = null, onChanged = null, onRefused = null }) {
+	constructor({ model, net, history, selection, onState, clock, watchdog = null, onAnswered = null, onChanged = null, onRefused = null, onLoaded = null }) {
+		/*
+		H26.6's move 10 (dev/design/components/PAN-ZOOM.md section 3.7, PZ23): `onLoaded(id, { forked })`, told once a snapshot's document is
+		loaded, before its first frame -- the page opens that diagram's remembered view; `forked` when the server rebound this session to
+		a template's fork, the same document under a new id, which the viewer did not open
+		*/
+		this.onLoaded = onLoaded;
+		this.forkedTo = null;
 		this.onAnswered = onAnswered;
 		this.onChanged = onChanged;
 		this.onRefused = onRefused;
@@ -490,6 +497,7 @@ export class Sync {
 		if (msg.cmd === 'forked') {
 			this.say('forked a copy -- templates are read-only');
 			this.diagramId = msg.body.diagram;
+			this.forkedTo = msg.body.diagram;   // H26.6's move 10: its snapshot is the template's document under a new id
 			this.outbox = [];            // it belonged to the template, which we are no longer editing
 			this.persistOutbox();
 			this.expectLoad = true;
@@ -770,6 +778,8 @@ export class Sync {
 			this.expectLoad = false;
 			this.resyncAsked = false;   // the snapshot asked for has come
 			this.diagramId = doc.meta.id;
+			this.onLoaded?.(doc.meta.id, { forked: this.forkedTo === doc.meta.id });   // H26.6's move 10 (PZ23)
+			this.forkedTo = null;
 			// the loaded diagram's lock state is authoritative — drop any pending dwell
 			if (this.unlockTimer) { clearTimeout(this.unlockTimer); this.unlockTimer = null; }
 			this.locked = !!msg.body.locked;

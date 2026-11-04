@@ -12,6 +12,18 @@ so the ground is its CSS background, the token the export's own ground reads; an
 `#canvas` stays for the export alone, which draws its ground as a rect of its own (server/svg.mjs), so its bytes do not change.
 */
 #container { width: 100%; height: 100%; display: block; touch-action: none; background: var(--tok-panel); }
+/*
+H26.6's move 10 (dev/design/components/PAN-ZOOM.md section 3.7, PZ6): THE RETICLE, `button#view-home`, page chrome over the canvas's lower
+right beside `#container`, as the tester's sits over its pane's: a ring and a cross drawn by the button's own two boxes, in the chrome's
+tokens; its press brings the view's centre to 0,0, the level kept, as `h` does.
+*/
+#stage { position: relative; }
+#view-home { position: absolute; right: 12px; bottom: 12px; width: 30px; height: 30px; padding: 0; border: 1px solid var(--tok-edge); border-radius: 4px;
+	background: var(--tok-panel); color: var(--tok-ink-muted); cursor: pointer; }
+#view-home:hover { border-color: var(--tok-accent); color: var(--tok-accent); }
+#view-home::before { content: ''; position: absolute; inset: 8px; border: 1.5px solid currentColor; border-radius: 50%; }
+#view-home::after { content: ''; position: absolute; inset: 4px;
+	background: linear-gradient(currentColor, currentColor) center / 1.5px 100% no-repeat, linear-gradient(currentColor, currentColor) center / 100% 1.5px no-repeat; }
 #canvas { fill: var(--tok-panel); }
 /* Tab hides names. A class rather than a re-render, so the toggle is instant on a large diagram. */
 #container.labels-off .label, #container.labels-off .label-pill { display: none; }
