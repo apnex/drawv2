@@ -1,6 +1,6 @@
 /*
 H26.6's move 9 (dev/design/components/PAN-ZOOM.md section 4, PZ11; appendix A, move 9) -- THE CAP BOARD, the board the lab serves as
-`caps` (lab/seeds.json), held equal to its generator (tools/cap-board.mjs), at every cap a document can reach on the old frame, and
+`caps` (lab/measure-boards.json, apart from the fixed boards the records hold), held equal to its generator (tools/cap-board.mjs), at every cap a document can reach on the old frame, and
 accepted by the planner as the lab commits it -- 2,000 ops a request, in turn. Its measure on the page is tests/lab-browser.test.js's.
 */
 import { test } from 'node:test';
@@ -16,11 +16,15 @@ import { NETWORK_ROWS } from '../plugins/network/kinds.mjs';
 import { createPageNetwork } from '../plugins/network/page.mjs';
 import { NODE_GRID } from '../kernel/geometry.mjs';
 
-const seeds = JSON.parse(fs.readFileSync(new URL('../lab/seeds.json', import.meta.url), 'utf8'));
+const read = (f) => JSON.parse(fs.readFileSync(new URL(`../lab/${f}`, import.meta.url), 'utf8'));
 
-test('H26.6 move 9, PZ11: the lab\'s `caps` board is the generator\'s, opening in run mode', () => {
-	assert.equal(JSON.stringify(seeds.caps), JSON.stringify(capBoard()), 'lab/seeds.json holds what tools/cap-board.mjs makes -- run node tools/cap-board.mjs --write');
-	assert.equal(seeds.caps.mode, 'run');
+test('H26.6 move 9, PZ11: the lab\'s `caps` board is the generator\'s, opening in run mode, and no fixed board -- the records\' documents stay the 18', () => {
+	const measured = read('measure-boards.json'), fixed = read('seeds.json');
+	assert.deepEqual(Object.keys(measured), ['caps'], 'the boards measured on: the cap board alone');
+	assert.equal(JSON.stringify(measured.caps), JSON.stringify(capBoard()), 'lab/measure-boards.json holds what tools/cap-board.mjs makes -- run node tools/cap-board.mjs --write');
+	assert.equal(measured.caps.mode, 'run');
+	assert.equal(Object.keys(fixed).length, 13, 'lab/seeds.json keeps its 13 boards, which the native record and the export\'s bytes hold (GR11, GR12)');
+	assert.equal(Object.keys(fixed).filter((k) => k in measured).length, 0, 'no name in both, so `?seed=` finds one board');
 });
 
 test('H26.6 move 9, PZ11: the cap board holds every cap but the groups\' -- 527 anchors on every position of the old frame, 576 zones, 2,000 links, 4,000 pipes -- and the most groups 527 anchors hold, 263', () => {

@@ -177,7 +177,8 @@ const probe = routeLink([{ a: 'A', b: 'B' }, { a: 'B', b: 'C' }], { src: 'A', ds
 say(`lab -- nothing is stored, nothing is shared -- network plugin ${probe ? 'loaded' : 'FAILED'}`);
 
 /*
-FIXED BOARDS -- `?seed=<name>`, read from lab/seeds.json.
+FIXED BOARDS -- `?seed=<name>`, read from lab/seeds.json -- and H26.6's move 9: a name it lacks from lab/measure-boards.json, the boards
+measured on, kept apart since every board in lab/seeds.json is one of the documents the native record and the export's bytes hold.
 
 A gesture question cannot be answered on whatever the author happened to draw: `w` and `g` differ only
 in particular shapes, and those take deliberate setup, so every board here is one where the gestures
@@ -202,7 +203,7 @@ if (wanted) {
 	So the failure is caught and SAID, and the lab stays usable without its board.
 	*/
 	let boards = {};
-	try { boards = await (await fetch('/seeds.json')).json(); }
+	try { boards = await (await fetch('/seeds.json')).json(); if (!boards[wanted]) boards = { ...boards, ...(await (await fetch('/measure-boards.json')).json()) }; }
 	catch (e) { say(`seed ${wanted} could not be loaded (${e.message}) -- the canvas still works; reload to try again`); }
 	const board = boards[wanted];
 	if (!board) { if (Object.keys(boards).length) say(`no seed '${wanted}' -- try: ${Object.keys(boards).join(', ')}`); }

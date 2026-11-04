@@ -61,6 +61,7 @@ function resolveFile(pathname) {
 	if (pathname === '/' || pathname === '/index.html') return path.join(ROOT, 'lab/index.html');
 	if (pathname === '/lab.css') return path.join(ROOT, 'lab/lab.css');
 	if (pathname === '/seeds.json') return path.join(ROOT, 'lab/seeds.json');   // the fixed boards (data, not code)
+	if (pathname === '/measure-boards.json') return path.join(ROOT, 'lab/measure-boards.json');   // H26.6's move 9: the boards measured on, the cap board (PZ11)
 	// H25.2 (B366): the product page's own sheets the composition names, served from app/ -- the chrome, the canvas's, the colour
 	// registry. They were a list typed here (style.css, tokens.css), and the canvas's sheet, split out at H25.2, was not on it
 	if (APP_SHEETS.has(pathname)) return path.join(ROOT, `app${pathname}`);

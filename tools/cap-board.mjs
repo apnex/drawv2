@@ -1,7 +1,9 @@
+#!/usr/bin/env node
 /*
 cap-board.mjs -- H26.6's move 9 (dev/design/components/PAN-ZOOM.md section 4, PZ11; appendix A, move 9) -- THE BOARD AT EVERY CAP, for
-the lab's pan measure: generated here, written into lab/seeds.json as the board `caps`, which the director opens by name
-(`?seed=caps`), and held equal to this generator by tests/cap-board.test.js.
+the lab's pan measure: generated here, written as the board `caps` into lab/measure-boards.json, which the lab reads for a name its fixed
+boards lack, so the director opens it by name (`?seed=caps`); held equal to this generator by tests/cap-board.test.js. Not in
+lab/seeds.json: each board there is one of the 18 documents the native record and the export's bytes hold (GR11, GR12).
 
 PZ11 asks a board "at every cap at once -- 527 anchors, 576 zones, 2,000 links, 4,000 pipes, 2,000 groups -- in run mode with its
 spawners armed", panned at 3x on the Chromebook. Built, on the old frame the editor still holds until move 11:
@@ -15,8 +17,8 @@ spawners armed", panned at 3x on the Chromebook. Built, on the old frame the edi
             (PAN-ZOOM.md appendix B, move 9, E10)
 and opens in run mode (`mode`), so the spawners emit at once.
 
-Usage: node tools/cap-board.mjs --write   the board written into lab/seeds.json as `caps`, every other board kept
-       node tools/cap-board.mjs --check   exit 1 when lab/seeds.json's `caps` is not this generator's
+Usage: node tools/cap-board.mjs --write   the board written into lab/measure-boards.json as `caps`
+       node tools/cap-board.mjs --check   exit 1 when lab/measure-boards.json's `caps` is not this generator's
 */
 import fs from 'node:fs';
 
@@ -69,20 +71,17 @@ export function capBoard() {
 	};
 }
 
-const SEEDS = new URL('../lab/seeds.json', import.meta.url);
+const BOARDS = new URL('../lab/measure-boards.json', import.meta.url);
 if (process.argv[1] && new URL(`file://${process.argv[1]}`).href === import.meta.url) {
-	const seeds = JSON.parse(fs.readFileSync(SEEDS, 'utf8'));
 	const board = capBoard();
 	if (process.argv.includes('--write')) {
-		// every other board as it was written, tab-indented; this one an entity and a row of pipes to a line, so it reads and diffs by line
-		const others = Object.fromEntries(Object.entries(seeds).filter(([k]) => k !== 'caps'));
+		// an entity and a row of pipes to a line, so the file reads and diffs by line
 		const rows = (list, per) => Array.from({ length: Math.ceil(list.length / per) }, (_, i) => `\t\t\t${list.slice(i * per, (i + 1) * per).map((x) => JSON.stringify(x)).join(', ')}`).join(',\n');
-		const caps = `{\n\t\t"about": ${JSON.stringify(board.about)},\n\t\t"mode": ${JSON.stringify(board.mode)},\n\t\t"ops": [\n${rows(board.ops, 1)}\n\t\t],\n\t\t"pipes": [\n${rows(board.pipes, 4)}\n\t\t]\n\t}`;
-		fs.writeFileSync(SEEDS, `${JSON.stringify(others, null, '\t').replace(/\n}$/, `,\n\t"caps": ${caps}\n}`)}\n`);
-		console.log(`cap-board: lab/seeds.json's caps written -- ${board.ops.length} entities, ${board.pipes.length} pipes`);
+		fs.writeFileSync(BOARDS, `{\n\t"caps": {\n\t\t"about": ${JSON.stringify(board.about)},\n\t\t"mode": ${JSON.stringify(board.mode)},\n\t\t"ops": [\n${rows(board.ops, 1)}\n\t\t],\n\t\t"pipes": [\n${rows(board.pipes, 4)}\n\t\t]\n\t}\n}\n`);
+		console.log(`cap-board: lab/measure-boards.json's caps written -- ${board.ops.length} entities, ${board.pipes.length} pipes`);
 	} else if (process.argv.includes('--check')) {
-		const same = JSON.stringify(seeds.caps) === JSON.stringify(board);
-		console.log(same ? 'cap-board: PASS -- lab/seeds.json\'s caps is the generator\'s' : 'cap-board: FAIL -- lab/seeds.json\'s caps differs; run node tools/cap-board.mjs --write');
+		const same = fs.existsSync(BOARDS) && JSON.stringify(JSON.parse(fs.readFileSync(BOARDS, 'utf8')).caps) === JSON.stringify(board);
+		console.log(same ? 'cap-board: PASS -- lab/measure-boards.json\'s caps is the generator\'s' : 'cap-board: FAIL -- lab/measure-boards.json\'s caps differs; run node tools/cap-board.mjs --write');
 		process.exitCode = same ? 0 : 1;
 	} else console.log('usage: node tools/cap-board.mjs --write | --check');
 }
