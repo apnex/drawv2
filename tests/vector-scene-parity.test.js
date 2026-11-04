@@ -45,6 +45,14 @@ earlier, at the right's -- the record's answer, and that one derived from it.
 */
 const TREES_LISTED_APART = {
 	'link-right-button-release-ignored': (was) => ({ states: was.states, steps: [...was.steps.slice(0, 3), was.steps[4], was.steps[4]] }),
+	/*
+	H26.6's move 10 (dev/design/components/PAN-ZOOM.md section 5.1 row 10, its guard): the Space scenario re-recorded -- its nine steps become
+	fifteen, Space's release and the view's five keys added; the record keeps the trees before the first step and after each. Space's press
+	now draws nothing, the trees as they were before it (the record's entry 4); its release draws the datum the press drew (entry 5);
+	Shift+Space clears it as before (entry 6); the five keys change no tree, the corpus's harness holding no view part; `?`, Escape and F9 as
+	before (entries 7 to 9).
+	*/
+	'key-view-keys': (was) => ({ states: was.states, steps: [0, 1, 2, 3, 4, 4, 5, 6, 6, 6, 6, 6, 6, 7, 8, 9].map((i) => was.steps[i]) }),
 };
 /*
 RESTATED at H26.6's move 8 (dev/design/components/PAN-ZOOM.md section 3.7; section 7, GR12, as the native record reads it): the crosshair's
