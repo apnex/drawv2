@@ -2389,6 +2389,10 @@ test('H26.6 move 10: on the product page the view keys and the reticle, the view
 		assert.equal(await t.eval(`localStorage.getItem('${KEY(K8_DIAGRAM)}')`), null, 'not yet: the save waits half a second');
 		await sleep(700);
 		assert.deepEqual(JSON.parse(await t.eval(`localStorage.getItem('${KEY(K8_DIAGRAM)}')`)), { v: 1, x: 600, y: -300, level: 2 }, 'saved under draw:view:<id>, { v, x, y, level }');
+		await t.eval(`(draw.view.set({ x: 660, y: -300, level: 2 }), window.dispatchEvent(new PageTransitionEvent('pagehide')), 1)`);
+		assert.deepEqual(JSON.parse(await t.eval(`localStorage.getItem('${KEY(K8_DIAGRAM)}')`)), { v: 1, x: 660, y: -300, level: 2 }, 'the page hiding writes the save still waiting, at once');
+		await t.eval(`(draw.view.set({ x: 600, y: -300, level: 2 }), 1)`);
+		await sleep(700);
 		await t.eval('location.reload(), 1');
 		await until(t, `window.draw && document.getElementById('node-ba0002') ? 1 : 0`, 8000);
 		assert.deepEqual(await view(), { x: 600, y: -300, level: 2 }, 'a reload opens the diagram where it was left');
