@@ -52,6 +52,7 @@ test('H26.6 move 12, 3.8\'s worked cases: the senses -- a region, its chunk, a z
 	assert.deepEqual(found(sensesOf(home, [{ cx: 124, cy: -17, device: true }, { cx: 93, cy: -51, device: true }], [])), ['ne 2/0/0 nearest 3,-3'], 'chunks 4,-1 and 3,-3: Chebyshev distance, where Manhattan would pick 4,-1');
 	assert.deepEqual(found(sensesOf(home, [{ cx: 62, cy: -17, device: true }, { cx: 31, cy: -34, device: true }], [])), ['ne 2/0/0 nearest 1,-2'], 'chunks 2,-1 and 1,-2 tie at 2: the lesser j');
 	assert.deepEqual(found(sensesOf(home, [{ cx: -62, cy: 17, device: true }, { cx: -31, cy: 34, device: false }], [])), ['sw 1/1/0 nearest -2,1'], 'the mirror, on the other signs: the lesser j, -2,1');
+	assert.deepEqual(found(sensesOf(home, [{ cx: 31, cy: 34, device: true }, { cx: 62, cy: 17, device: true }], [])), ['se 2/0/0 nearest 2,1'], 'chunks 1,2 and 2,1 tie in the south-east, where the lesser j and the lesser i part: the lesser j, 2,1');
 	const empty = sensesOf(home, [], []);
 	assert.deepEqual(empty.beyond.map((b) => [b.dir, b.chunk.i, b.chunk.j, b.via]), [['n', 0, -1, 'neighbour'], ['ne', 1, -1, 'neighbour'], ['e', 1, 0, 'neighbour'], ['se', 1, 1, 'neighbour'], ['s', 0, 1, 'neighbour'], ['sw', -1, 1, 'neighbour'], ['w', -1, 0, 'neighbour'], ['nw', -1, -1, 'neighbour']], 'an empty map\'s eight lines are its eight neighbours');
 	assert.equal(senseLine(empty.beyond[0], (c) => `draw map --chunk ${c.i},${c.j}`), '  n   nothing, chunk 0,-1                        draw map --chunk 0,-1', 'the line\'s form');
@@ -213,6 +214,57 @@ test('H26.6 move 12: parity counts every anchor past the old frame -- one area w
 		const res = await fetch(`${host}/api/v1/diagrams/${idOf(11)}/layouts/node/anchors?cx0=-122&cy0=-52&cx1=122&cy1=92`);
 		assert.deepEqual([res.status, (await res.json()).code], [422, 'area-too-large']);
 	} finally { await app.close(); }
+});
+
+/*
+B402, PZ15: the CLI's zone cells, a zone's edges and `--around`'s cell are read from the diagram's stored pitch, never 30 and 60. No
+diagram may yet store another grid (WD7 holds it at 60 until move 15), so a stand-in server answers the CLI's reads -- the CLI speaks only
+HTTP (B138) -- with a layout record of 80 and a zone and a node on that grid's lattices.
+*/
+test('H26.6 move 12, B402: the map\'s zone cells, a zone\'s edges and --around\'s cell come from the stored pitch -- a stand-in server answering a grid of 80', async () => {
+	const http = await import('node:http');
+	const id = idOf(12), pitch = 80, posted = [];
+	const doc = board(12, 'eighty', [{ id: 'node-a000d1', name: 'r', type: 'router', x: 160, y: 80 }], [{ id: 'zone-a000e1', name: 'pen', x: -40, y: -40, w: 240, h: 160 }]);
+	const answers = (url) => {
+		const u = new URL(url, 'http://x'), p = u.pathname.replace('/api/v1', '');
+		if (p === '/diagrams') return [{ id, name: 'eighty' }];
+		if (p === `/diagrams/${id}`) return doc;
+		if (p === `/diagrams/${id}/layouts`) return { layouts: [{ id: 'layout-000001', name: 'grid', pitch }] };
+		if (p === '/types') return { types: [{ name: 'router', map: 'r' }] };
+		if (p.endsWith('/anchors')) {
+			const q = (k) => Number(u.searchParams.get(k)), off = p.includes('/zone/') ? pitch / 2 : 0, anchors = [];
+			for (let cy = q('cy0'); cy <= q('cy1'); cy++) for (let cx = q('cx0'); cx <= q('cx1'); cx++) anchors.push({ layout: p.includes('/zone/') ? 'zone' : 'node', cx, cy, x: off + cx * pitch, y: off + cy * pitch });
+			return { layout: anchors[0]?.layout, count: anchors.length, anchors };
+		}
+		return null;
+	};
+	const server = http.createServer((req, res) => {
+		let body = '';
+		req.on('data', (c) => { body += c; });
+		req.on('end', () => {
+			if (req.method !== 'GET') {
+				posted.push([req.url, body]);
+				res.writeHead(200, { 'content-type': 'application/json' });
+				res.end(JSON.stringify(req.url.endsWith('/lock') ? { token: 'stand-in', diagram: id, expiresAt: Date.now() + 60000 } : { version: 2, change: { ops: [] } }));
+				return;
+			}
+			const a = answers(req.url);
+			res.writeHead(a ? 200 : 404, { 'content-type': 'application/json' }); res.end(JSON.stringify(a ?? { error: 'no' }));
+		});
+	});
+	await new Promise((r) => server.listen(0, '127.0.0.1', r));
+	home = scratchFolder('draw-cli-map-home-');
+	const at = `http://127.0.0.1:${server.address().port}`;
+	const go = async (...argv) => { const out = []; await main([...argv, '--host', at], { HOME: home }, (s) => out.push(s)); return out.join(''); };
+	try {
+		const map = JSON.parse(await go('map', '--diagram', id, '--json'));
+		assert.deepEqual(map.zones.map((z) => z.cells), [{ x0: 0, y0: 0, x1: 2, y1: 1 }], 'the zone from -40,-40, 240 by 160: cells 0..2 by 0..1 at 80, where 30 and 60 would say -0..3');
+		assert.deepEqual(JSON.parse(await go('map', '--diagram', id, '--around', 'r', '--radius', '1', '--json')).window, { x0: 1, x1: 3, y0: 0, y1: 2 }, '--around the router at 160,80: cell 2,1 at 80');
+		await go('lock', '--diagram', id);
+		await go('zone', 'z', 'from', '0,0', 'to', '2,1', '--diagram', id, '--direct');
+		const zone = JSON.parse(posted.find(([u]) => u.endsWith('/commit'))[1]).ops[0].entity;
+		assert.deepEqual([zone.x, zone.y, zone.w, zone.h], [-40, -40, 240, 160], 'draw zone: edges half a pitch of 80 out, whole squares of 80');
+	} finally { await new Promise((r) => server.close(r)); }
 });
 
 test('H26.6 move 12: every stored board\'s map, plain and --full, on both layouts, prints byte for byte as at 807eecc above the new lines, and ends in its chunk and eight senses', async () => {

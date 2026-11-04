@@ -91,8 +91,10 @@ test('H26.6 move 12: no candidate lies past PZ31\'s bound, and none is held to t
 	assert.equal(at(resolveAnchor(edge, { near: 'ref', dir: 'right' })), 'nothing free to the right of ref', 'the walk stops at the bound');
 	const frame = board([{ x: 900, y: 0 }], { ref: { x: 900, y: 0 } });
 	assert.deepEqual(at(resolveAnchor(frame, { near: 'ref', dir: 'right' })), [960, 0], 'the walk past the old frame\'s edge, where the old extent stopped it');
+	const fifteen = board([{ x: 900, y: 0 }, ...Array.from({ length: 15 }, (_, i) => ({ x: 960 + 60 * i, y: 0 }))], { ref: { x: 900, y: 0 } });
+	assert.deepEqual(at(resolveAnchor(fifteen, { near: 'ref', dir: 'right' })), [1860, 0], 'fifteen held: the sixteenth step');
 	const blocked = board([{ x: 900, y: 0 }, ...Array.from({ length: 16 }, (_, i) => ({ x: 960 + 60 * i, y: 0 }))], { ref: { x: 900, y: 0 } });
-	assert.equal(at(resolveAnchor(blocked, { near: 'ref', dir: 'right' })), 'nothing free to the right of ref', 'and at most 16 steps');
+	assert.equal(at(resolveAnchor(blocked, { near: 'ref', dir: 'right' })), 'nothing free to the right of ref', 'sixteen held: at most 16 steps');
 	const far = board([{ x: 3000, y: 0 }, { x: 3120, y: 0 }]);
 	assert.deepEqual(at(resolveAnchor(far, { between: ['n0', 'n1'] })), [3060, 0], 'between past the old frame');
 	const zone = { id: 'zone-0c0004', name: 'out', x: 2970, y: 2550, w: 180, h: 120 };
