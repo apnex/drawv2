@@ -195,6 +195,26 @@ test('H26.6 move 12: anchor free takes the map\'s window -- plain, --chunk, --ar
 	} finally { await app.close(); }
 });
 
+/*
+`parity` (PAN-ZOOM.md section 3.8, "The CLI"; PZ15): its duty is the whole document, so it asks the bounds of every anchor and zone in use,
+in cells, with a margin of 2 -- and when that area is over the route's 10,000 positions, each node's and waypoint's own cell.
+*/
+test('H26.6 move 12: parity counts every anchor past the old frame -- one area when it fits, each anchor\'s cell when it does not', async () => {
+	const pen = zone('a000c1', 'pen', 30, -3, 33, 0);
+	await boot([board(10, 'near', [device('a000b1', 'a', 20, 0), device('a000b2', 'b', 40, -5), { id: 'node-a000b3', name: 'w', x: 1800, y: 60 }], [pen]),
+		board(11, 'sparse', [device('a000b4', 'a', -120, 0), device('a000b5', 'b', 120, 90), { id: 'node-a000b6', name: 'w', x: 0, y: -3000 }])]);
+	try {
+		for (const n of [10, 11]) {
+			const p = JSON.parse(await run('parity', '--diagram', idOf(n), '--json'));
+			assert.equal(p.parity, true, `${idOf(n)}: parity holds`);
+			assert.deepEqual(p.rows.find((r) => r[0] === 'on an anchor'), ['on an anchor', 3, '-', 3], 'the map shows all three on an anchor');
+		}
+		// control: the sparse board's bounds with their margin, 245 by 145 cells, are past the route's limit -- so it asked each cell
+		const res = await fetch(`${host}/api/v1/diagrams/${idOf(11)}/layouts/node/anchors?cx0=-122&cy0=-52&cx1=122&cy1=92`);
+		assert.deepEqual([res.status, (await res.json()).code], [422, 'area-too-large']);
+	} finally { await app.close(); }
+});
+
 test('H26.6 move 12: every stored board\'s map, plain and --full, on both layouts, prints byte for byte as at 807eecc above the new lines, and ends in its chunk and eight senses', async () => {
 	const record = JSON.parse(fs.readFileSync(new URL('./fixtures/cli-map-record.json', import.meta.url), 'utf8'));
 	const docs = storedDocuments().map(([name, d], i) => ({ name, doc: { ...structuredClone(d), meta: { ...d.meta, id: `${(i + 1).toString(16).padStart(4, '0')}`.padStart(16, 'a') } } }));
