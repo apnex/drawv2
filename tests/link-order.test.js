@@ -36,7 +36,7 @@ const entities = [
 ];
 function peer(order, indexed) {
 	const m = new Model();
-	if (indexed) attachRelations(m, { nearest: NODE_GRID.nearest });
+	if (indexed) attachRelations(m, { deviceLattice: () => NODE_GRID });
 	// reversed whole: the waypoints too, or the spawners' own order is never put to the test (a surviving mutant found this)
 	const list = order === 'forward' ? entities : [...entities].reverse();
 	for (const [kind, e] of list) m.put(kind, structuredClone(e));

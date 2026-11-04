@@ -872,7 +872,7 @@ test('H17 K10: every seeded board is accepted by the real planner', async () => 
 		// sharing their hex is no pipe, which the 'compare' board did until its waypoints were renumbered
 		const kinds = productKinds(...NETWORK_ROWS);
 		const model = new Model({ kinds, attached: { network: aNetwork() }});
-		attachRelations(model, { nearest: NODE_GRID.nearest });
+		attachRelations(model, { deviceLattice: () => NODE_GRID });
 		const pipeOps = createNetworkSession().seed(boards[name].pipes ?? [], []);
 		const answer = commit(model, new Log(), { ops: [...boards[name].ops, ...pipeOps], label: `seed ${name}` }, 'lab', 'lab', { kinds, links: createNetworkSession().network.links });   // the network's tenant, as the lab seeds (S-b)
 		assert.equal(answer.ok, true, `seed '${name}' is refused by the planner: ${answer.error} -- it would fail silently in the browser`);

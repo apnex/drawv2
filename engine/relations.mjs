@@ -23,11 +23,17 @@ which no validated position is -- keys to none.
 F6 (H26.1's verification): and so does a point whose `x` or `y` is not a number, which `nearest` refuses with a TypeError where
 `cellOf` answered NaN: it is asked of no grid. A point keyed to none is in no cell -- filed under none, found by no query, its
 `atCell` undefined -- so two such points never share one.
+RESTATED at H26.6's move 12 (dev/design/components/PAN-ZOOM.md section 3.8, "The occupancy index"; PZ26): keyed by the diagram's device
+lattice, which the composition hands as `deviceLattice(model)`: asked on every change, and when it answers another lattice than the one
+the index was built on -- the diagram's grid changed -- the index is built again on it, as on a load (engine/store.mjs `stale`). The core
+names no kind for it: what the grid is, and where a diagram keeps it, are the composition's. Until the grid is stored
+(move 14) every composition answers the node lattice, NODE_GRID, so no key moves.
 */
-export function makeRelations(model, { nearest } = {}) {   // nearest injected (composition root) -- engine imports no kernel
-	if (typeof nearest !== 'function') throw new Error('makeRelations requires an injected { nearest } (a point -> its position on the node grid, NODE_GRID.nearest) -- wire it at the composition root');
+export function makeRelations(model, { deviceLattice } = {}) {   // the lattice injected (composition root) -- engine imports no kernel
+	if (typeof deviceLattice !== 'function') throw new Error('makeRelations requires an injected { deviceLattice } (the model -> its diagram\'s device lattice, a snap-grid grid) -- wire it at the composition root');
+	let lattice = null;
 
-	const cellPosition = (p) => (p && typeof p.x === 'number' && typeof p.y === 'number' ? nearest(p) : null);
+	const cellPosition = (p) => (p && typeof p.x === 'number' && typeof p.y === 'number' ? lattice.nearest(p) : null);
 	const keyOf = (p) => { const at = cellPosition(p); return at ? at.col + ',' + at.row : null; };   // null: in no cell
 	const cellsOf = (e) => { const key = keyOf(e); return key === null ? [] : [key]; };
 	const kindOfId = (id) => id.slice(0, id.indexOf('-'));
@@ -60,7 +66,10 @@ export function makeRelations(model, { nearest } = {}) {   // nearest injected (
 				else if (action === 'del') cellAnchors.del(entity.id);
 			}
 		},
+		// PZ26: whether the composition now answers another device lattice than the one this index was built on
+		stale() { return deviceLattice(model) !== lattice; },
 		rebuild() {
+			lattice = deviceLattice(model);   // PZ26: the diagram's device lattice as the composition answers it now
 			incident.clear(); member.clear(); cellAnchors.clear();
 			for (const kind of model.kinds.list) {
 				if (isRefKind(kind)) model.all(kind).forEach((e) => incident.put(e));

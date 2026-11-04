@@ -31,7 +31,7 @@ test('the node grid\'s nearest is the inverse of its pointOf, and rounds to the 
 
 function seeded() {
 	const m = new Model();
-	attachRelations(m, { nearest: NODE_GRID.nearest });                      // inject px->cell; sets m.index = the maintained relations
+	attachRelations(m, { deviceLattice: () => NODE_GRID });                      // inject px->cell; sets m.index = the maintained relations
 	const n = makeNode(m, 'router', { x: 120, y: -60 }); m.put('node', n);
 	const w = makeWaypoint(m, { x: 0, y: 180 });          m.put('node', w);
 	const l = makeLink(m, n.id, w.id);                    m.put('link', l);
@@ -74,7 +74,7 @@ test('atCell is derived, not cached: it tracks a move with no index maintenance'
 
 test('atCell normalizes signed zero (an entity on a negative half-cell yields +0, not -0)', () => {
 	const m = new Model();
-	attachRelations(m, { nearest: NODE_GRID.nearest });
+	attachRelations(m, { deviceLattice: () => NODE_GRID });
 	const n = makeNode(m, 'router', { x: -30, y: 0 });    // -30/60 = -0.5 → Math.round = -0 before normalization
 	m.put('node', n);
 	const [cx, cy] = m.index.atCell(n.id);
@@ -106,7 +106,7 @@ test('occupancy index === px-scan fallback for grid-snapped points (parity)', ()
 });
 
 test('occupancy is maintained eagerly across put / set / del', () => {
-	const m = new Model(); attachRelations(m, { nearest: NODE_GRID.nearest });
+	const m = new Model(); attachRelations(m, { deviceLattice: () => NODE_GRID });
 	const n = makeNode(m, 'router', { x: 0, y: 0 }); m.put('node', n);
 	assert.equal(occupiedAt(m, { x: 0, y: 0 }), true);
 	m.set('node', n.id, { x: 120, y: 0 });                        // move one cell over
@@ -117,7 +117,7 @@ test('occupancy is maintained eagerly across put / set / del', () => {
 });
 
 test('Set<id> buckets keep legal at-rest co-occupancy correct (no premature eviction)', () => {
-	const m = new Model(); attachRelations(m, { nearest: NODE_GRID.nearest });
+	const m = new Model(); attachRelations(m, { deviceLattice: () => NODE_GRID });
 	const a = makeNode(m, 'router', { x: 60, y: 60 }); m.put('node', a);
 	const b = makeNode(m, 'host', { x: 60, y: 60 });   m.put('node', b);   // two nodes, one cell (move/nudge don't gate)
 	assert.equal(occupiedAt(m, { x: 60, y: 60 }), true);
@@ -128,7 +128,7 @@ test('Set<id> buckets keep legal at-rest co-occupancy correct (no premature evic
 });
 
 test('occupancy rebuilds on document load with no carry-over', () => {
-	const m = new Model(); attachRelations(m, { nearest: NODE_GRID.nearest });
+	const m = new Model(); attachRelations(m, { deviceLattice: () => NODE_GRID });
 	m.put('node', makeNode(m, 'router', { x: 240, y: 120 }));
 	assert.equal(occupiedAt(m, { x: 240, y: 120 }), true);
 	m.load({ meta: { id: '' }, nodes: [{ id: 'node-ffff01', type: 'host', x: -120, y: -60 }], links: [], zones: [], groups: [] });
@@ -143,7 +143,7 @@ test('waypointAt resolves the waypoint entity at a cell (index path)', () => {
 });
 
 test('waypointAt resolves co-occupancy in collection order (parity with the old find)', () => {
-	const m = new Model(); attachRelations(m, { nearest: NODE_GRID.nearest });
+	const m = new Model(); attachRelations(m, { deviceLattice: () => NODE_GRID });
 	const w1 = makeWaypoint(m, { x: 60, y: 0 }); m.put('node', w1);
 	const w2 = makeWaypoint(m, { x: 60, y: 0 }); m.put('node', w2);   // legal stack — move/nudge don't gate
 	assert.equal(waypointAt(m, { x: 60, y: 0 })?.id, w1.id, 'first in collection order, like the old all().find');
@@ -152,7 +152,7 @@ test('waypointAt resolves co-occupancy in collection order (parity with the old 
 // H26.1 (SNAP-GRID.md section 6.2): a point the node grid cannot place -- a coordinate not finite, or beyond its domain -- has no
 // position, so it keys no cell: it never finds what holds a cell, as `cellOf`'s NaN key never did. No stored entity is such a point.
 test('a point the node grid cannot place keys no cell, so it finds no anchor', () => {
-	const m = new Model(); attachRelations(m, { nearest: NODE_GRID.nearest });
+	const m = new Model(); attachRelations(m, { deviceLattice: () => NODE_GRID });
 	const n = makeNode(m, 'router', { x: 0, y: 0 }); m.put('node', n);
 	assert.equal(m.index.occupiedAnyAt({ x: 0, y: 0 }), true, 'control: the anchor at the origin is found');
 	for (const p of [{ x: NaN, y: 0 }, { x: 0, y: Infinity }, { x: 2 ** 60, y: 0 }]) {
@@ -161,10 +161,12 @@ test('a point the node grid cannot place keys no cell, so it finds no anchor', (
 	}
 });
 
-// RESTATED at H26.1: the injected function is the node grid's `nearest`, its option named so, and its absence refused naming it
-test('makeRelations fails fast without an injected nearest', () => {
-	assert.throws(() => attachRelations(new Model()), /requires an injected \{ nearest \}/);   // mandatory since R13
-	assert.throws(() => attachRelations(new Model(), { cellOf: (v) => v }), /requires an injected \{ nearest \}/, 'the old option is no longer read');
+// RESTATED at H26.1: the injected function is the node grid's `nearest`, its option named so, and its absence refused naming it.
+// RESTATED at H26.6's move 12 (PZ26): the injected function answers the diagram's device lattice, `deviceLattice`
+test('makeRelations fails fast without an injected deviceLattice', () => {
+	assert.throws(() => attachRelations(new Model()), /requires an injected \{ deviceLattice \}/);   // mandatory since R13
+	assert.throws(() => attachRelations(new Model(), { cellOf: (v) => v }), /requires an injected \{ deviceLattice \}/, 'the old option is no longer read');
+	assert.throws(() => attachRelations(new Model(), { nearest: NODE_GRID.nearest }), /requires an injected \{ deviceLattice \}/, 'nor the H26.1 one');
 });
 
 // ---- S2 parity oracle: the two snapshot-diff hard cases NOT previously exercised THROUGH THE INDEX
@@ -174,7 +176,7 @@ test('makeRelations fails fast without an injected nearest', () => {
 
 test('incidence snapshot-diff: a link via-change reroutes linksAt (index === scan)', () => {
 	const m = new Model();
-	const { detach } = attachRelations(m, { nearest: NODE_GRID.nearest });
+	const { detach } = attachRelations(m, { deviceLattice: () => NODE_GRID });
 	const n1 = makeNode(m, 'host', { x: 0, y: 0 }); m.put('node', n1);
 	const n2 = makeNode(m, 'host', { x: 300, y: 0 }); m.put('node', n2);
 	const w1 = makeWaypoint(m, { x: 60, y: 0 }); m.put('node', w1);
@@ -192,7 +194,7 @@ test('incidence snapshot-diff: a link via-change reroutes linksAt (index === sca
 
 test('membership re-ownership: a member reassigned (add-to-B before remove-from-A) stays owned (index === scan)', () => {
 	const m = new Model();
-	const { detach } = attachRelations(m, { nearest: NODE_GRID.nearest });
+	const { detach } = attachRelations(m, { deviceLattice: () => NODE_GRID });
 	const ids = [];
 	for (let i = 0; i < 4; i++) { const n = makeNode(m, 'host', { x: i * 60, y: 0 }); m.put('node', n); ids.push(n.id); }
 	const [a, b, c, d] = ids;

@@ -28,7 +28,7 @@ const snapshot = (svg) => Object.fromEntries(['zones', 'groups', 'links', 'waypo
 function world(board, change) {
 	const { svg, scene, restore } = makeRenderer();
 	try {
-		const m = new Model(); attachRelations(m, { nearest: NODE_GRID.nearest });
+		const m = new Model(); attachRelations(m, { deviceLattice: () => NODE_GRID });
 		new Renderer(m, svg, { parts: PRODUCT_CANVAS, scene });
 		for (const [kind, e] of board) m.put(kind, structuredClone(e));
 		if (change) for (const [kind, id, patch] of change) m.set(kind, id, patch);

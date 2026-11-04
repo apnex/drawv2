@@ -273,7 +273,7 @@ function compose(c) {
 	if (c.compose !== 'network') throw new Error(`${c.id}: the only composition is the network's (S-b)`);
 	const network = true;
 	const model = new Model({ kinds: WITH_PIPES, attached: { network: createNetwork(createTransit()) }});   // V-e, J2
-	attachRelations(model, { nearest: NODE_GRID.nearest });
+	attachRelations(model, { deviceLattice: () => NODE_GRID });
 	// a case keeps its waypoints apart to describe the board; the document holds them among the nodes (F-c)
 	const { waypoints = [], ...board } = c.board;
 	model.load({ meta: { id: '0000000000000001', name: 'corpus' }, zones: [], ...board, nodes: [...(board.nodes || []), ...waypoints], ...(network ? { pipes: pipesOf(c) } : {}) });

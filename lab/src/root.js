@@ -103,7 +103,7 @@ the planner's answer is what the tab applies. The seam is identical to productio
 transport is gone.
 */
 const authority = new Model({ kinds, attached: { network } });   // a Model holding links draws with the network (V-e, J2)
-attachRelations(authority, { nearest: NODE_GRID.nearest });
+attachRelations(authority, { deviceLattice: () => NODE_GRID });   // H26.6's move 12 (PZ26): the device lattice handed, as the product's composition hands it
 const log = new Log();
 
 const notice = document.getElementById('lab-notice');

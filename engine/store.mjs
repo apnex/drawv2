@@ -9,12 +9,12 @@ scanning (the server, and the rollback path). Register it BEFORE other subscribe
 import { makeRelations } from './relations.mjs';
 
 export function attachRelations(model, deps = {}) {
-	const rel = makeRelations(model, deps);   // deps ({ nearest }, H26.1) injected through to the index -- keeps engine/ free of kernel imports
+	const rel = makeRelations(model, deps);   // deps ({ deviceLattice }, H26.6's move 12) injected through to the index -- keeps engine/ free of kernel imports
 	rel.rebuild();                  // build from current state before any event can fire
 	model.index = rel;              // the delegate seam: doc.js query methods now use the index
 	model.onChange((action, kind, entity) => {
 		if (model.index !== rel) return;       // detached → stop maintaining (rollback)
-		if (action === 'load') rel.rebuild();  // document swap → full rebuild
+		if (action === 'load' || rel.stale()) rel.rebuild();  // document swap -> full rebuild; H26.6's move 12 (PZ26): so is a grid changed
 		else rel.apply(action, kind, entity);
 	});
 	return { rel, detach() { model.index = null; } };   // detach → query methods fall back to scans

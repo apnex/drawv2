@@ -82,8 +82,10 @@ export function composeCanvas({ svg, scene: declared, defs, host, network = null
 
 	const model = new Model({ attached: { network }, kinds });   // the kinds a composition brings -- the core's when none are passed, so no links (S-e) (H17.22 N-a)
 	// R3: the maintained reverse indices, registered before any other subscriber so they see a fresh index; the node grid's
-	// `nearest` is injected here, at a composition root, so engine/ imports no kernel (H26.1: it was `cellOf`)
-	attachRelations(model, { nearest: NODE_GRID.nearest });
+	// `nearest` is injected here, at a composition root, so engine/ imports no kernel (H26.1: it was `cellOf`). RESTATED at H26.6's move 12
+	// (PAN-ZOOM.md section 3.8, PZ26): the diagram's device lattice is handed, asked again whenever the index is built -- on a load and on
+	// a change to a layout record -- the node lattice until the grid is stored (moves 13 and 14)
+	attachRelations(model, { deviceLattice: () => NODE_GRID });
 	// WD-b2 (H19.46): each grid a part declares, drawn from the open diagram and again on every load -- the layouts plugin's two. H26.8's
 	// grid move (NATIVE-SHAPES.md section 3.2): handed the grids the places snap to, `gridsOf`, asked here. H26.6's move 8 (PAN-ZOOM.md
 	// section 3.7): drawn from the view, handed the view part's values for its level, and a redraw asked of `frame` (above)

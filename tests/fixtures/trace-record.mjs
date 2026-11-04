@@ -60,7 +60,7 @@ export const lengthOf = (d) => String(d ?? '').length * 3 + 0.5;
 function labDocument(name, board) {
 	const session = createNetworkSession();
 	const authority = new Model({ kinds: COMPOSED_KINDS, attached: { network: session.network } });
-	attachRelations(authority, { nearest: NODE_GRID.nearest });
+	attachRelations(authority, { deviceLattice: () => NODE_GRID });
 	const answer = commit(authority, new Log(), { ops: [...board.ops, ...session.seed(board.pipes ?? [])], label: `seed ${name}` }, 'lab', 'lab', { kinds: COMPOSED_KINDS });
 	if (!answer.ok) throw new Error(`lab board ${name} refused: ${answer.error}`);
 	return authority.toJSON();
@@ -104,7 +104,7 @@ function pipeNode(tag, attrs = {}, parent = null) {
 function world() {
 	const net = createPageNetwork();
 	const model = new Model({ kinds: COMPOSED_KINDS, attached: { network: net.network } });
-	attachRelations(model, { nearest: NODE_GRID.nearest });
+	attachRelations(model, { deviceLattice: () => NODE_GRID });
 	const selection = new Selection(model);
 	const scene = openCanvasScene(CANVAS_SCENE);
 	// the page hands the renderer its measure and settle before the move, and the reveal its measure after it: each takes what it reads.

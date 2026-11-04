@@ -26,7 +26,7 @@ const code = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), '
 const groups = async () => ({ ...(await import('../plugins/groups/group-kind.mjs')), ...(await import('../plugins/groups/make-group.mjs')), ...(await import('../plugins/groups/group-of.mjs')) });
 const node = (hex, x) => ({ id: `node-${hex}`, name: `n${hex}`, type: 'host', shape: 'circle', x, y: 0 });
 // with the relations index attached, as the page and the lab attach it (app/src/compose-canvas.js) -- a bare Model scans
-const model = (kinds = KINDS) => { const m = new Model({ kinds, attached: { network: createNetwork(createTransit()) }}); attachRelations(m, { nearest: NODE_GRID.nearest }); return m; };
+const model = (kinds = KINDS) => { const m = new Model({ kinds, attached: { network: createNetwork(createTransit()) }}); attachRelations(m, { deviceLattice: () => NODE_GRID }); return m; };
 const without = (field) => composeKinds(KINDS.list.map((k) => KINDS.row(k)).map((r) => {
 	if (r.kind !== 'group') return r;
 	const { [field]: _, ...rest } = r;

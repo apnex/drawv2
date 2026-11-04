@@ -391,7 +391,7 @@ export function layersOf(w) {
 function applied(name, board) {
 	const session = createNetworkSession();
 	const authority = new Model({ kinds: COMPOSED_KINDS, attached: { network: session.network } });
-	attachRelations(authority, { nearest: NODE_GRID.nearest });
+	attachRelations(authority, { deviceLattice: () => NODE_GRID });
 	const answer = commit(authority, new Log(), { ops: [...board.ops, ...session.seed(board.pipes ?? [])], label: "seed" }, "lab", "lab", { kinds: COMPOSED_KINDS });
 	if (!answer.ok) throw new Error(`board ${name} refused: ${answer.error}`);
 	return authority.toJSON();

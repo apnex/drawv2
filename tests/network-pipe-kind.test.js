@@ -27,7 +27,7 @@ const A = 'node-00000a', B = 'node-00000b', W = 'node-00000c';
 
 function board() {
 	const m = new Model({ kinds: KINDS });
-	attachRelations(m, { nearest: NODE_GRID.nearest });
+	attachRelations(m, { deviceLattice: () => NODE_GRID });
 	m.put('node', { id: A, name: 'A', type: 'router', x: -240, y: 0, shape: 'circle' });
 	m.put('node', { id: B, name: 'B', type: 'router', x: 240, y: 0, shape: 'circle' });
 	m.put('node', { id: W, name: 'w', x: 0, y: -120 });

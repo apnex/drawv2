@@ -57,7 +57,7 @@ test('F6: a point snapped on a grid it cannot be placed on snaps to NaN, never a
 });
 
 test('F6: the relation index keys a point it cannot place to no cell -- not a number, not finite, beyond the domain, or a nearest answering null', () => {
-	const m = new Model(); attachRelations(m, { nearest: NODE_GRID.nearest });
+	const m = new Model(); attachRelations(m, { deviceLattice: () => NODE_GRID });
 	const anchor = { id: 'node-0f6001', name: 'a', x: 0, y: 0 }; m.put('node', anchor);
 	assert.equal(m.index.occupiedAnyAt({ x: 0, y: 0 }), true, 'control: the anchor at the origin is found');
 	UNPLACEABLE.forEach((p, i) => {
@@ -69,7 +69,7 @@ test('F6: the relation index keys a point it cannot place to no cell -- not a nu
 	});
 	assert.deepEqual(m.index.anchorsAt({ x: 0, y: 0 }), [anchor.id], 'and none of them is filed with the anchor at the origin');
 
-	const none = new Model(); attachRelations(none, { nearest: () => null });
+	const none = new Model(); attachRelations(none, { deviceLattice: () => ({ nearest: () => null }) });   // H26.6's move 12: a lattice whose nearest answers null
 	assert.doesNotThrow(() => none.put('node', { id: 'node-0f6002', name: 'b', x: 60, y: 0 }), 'a nearest answering null for every point');
 	assert.equal(none.index.atCell('node-0f6002'), undefined);
 	assert.equal(none.index.occupiedAnyAt({ x: 60, y: 0 }), false);

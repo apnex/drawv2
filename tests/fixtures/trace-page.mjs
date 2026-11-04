@@ -31,7 +31,7 @@ const scene = openCanvasScene(CANVAS_SCENE, svg);
 new View({ scene });
 const net = createPageNetwork();
 const model = new Model({ kinds: COMPOSED_KINDS, attached: { network: net.network } });
-attachRelations(model, { nearest: NODE_GRID.nearest });
+attachRelations(model, { deviceLattice: () => NODE_GRID });
 const selection = new Selection(model);
 // RESTATED H26.8's painters move (NATIVE-SHAPES.md section 3.2, NS13): the editing states, as app/src/compose-canvas.js composes them
 const states = new EditingStates({ model, parts: PRODUCT_CANVAS });

@@ -86,7 +86,7 @@ test('docToSchema/schemaToDoc round-trip span as cell counts; 1×1 stays span-fr
 // RESTATED at WD-a (H19.44; WD2 revisited, B323): a wide device occupies its anchor's cell alone -- the index keyed every
 // cell its span covers, a rule only the browser tab held; every door now holds one anchor to a point
 test('a span node occupies its anchor\'s cell alone; move/resize/del maintain the index', () => {
-	const m = new Model(); attachRelations(m, { nearest: NODE_GRID.nearest });
+	const m = new Model(); attachRelations(m, { deviceLattice: () => NODE_GRID });
 	const n = makeNode(m, 'host', { x: 2 * P, y: 0 }); n.span = { cols: 3, rows: 2 }; m.put('node', n);
 	assert.equal(occupiedAt(m, { x: 2 * P, y: 0 }), true, 'its anchor');
 	for (const [c, r] of [[3, 0], [4, 0], [2, 1], [3, 1], [4, 1]]) assert.equal(occupiedAt(m, { x: c * P, y: r * P }), false, `covered ${c},${r} free`);

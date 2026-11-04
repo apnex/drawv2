@@ -137,5 +137,5 @@ test('S-e: clone copies every nested value, so a plugin kind\'s nested field is 
 test('S-e: the relations index attaches to a model composed without links', () => {
 	const m = new CoreModel();
 	m.put('node', node('000001', 0, 0));
-	assert.doesNotThrow(() => attachRelations(m, { nearest: NODE_GRID.nearest }));
+	assert.doesNotThrow(() => attachRelations(m, { deviceLattice: () => NODE_GRID }));
 });

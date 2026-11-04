@@ -21,7 +21,7 @@ const devices = async () => ({ ...(await import('../plugins/devices/device-shape
 	...(await import('../plugins/devices/occupancy.mjs')), ...(await import('../plugins/devices/anchor-words.mjs')) });
 const board = (indexed) => {
 	const m = new Model();
-	if (indexed) attachRelations(m, { nearest: NODE_GRID.nearest });
+	if (indexed) attachRelations(m, { deviceLattice: () => NODE_GRID });
 	m.put('node', { id: 'node-0e0001', name: 'r', type: 'router', shape: 'circle', x: 0, y: 0 });
 	m.put('node', { id: 'node-0e0002', name: 'w', x: 60, y: 0 });
 	return m;

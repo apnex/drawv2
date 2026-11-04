@@ -184,7 +184,7 @@ test('H24.6: a head is deleted with its link, and stays straight after it when t
 	const { PRODUCT_CANVAS } = await import('../product/canvas.mjs');
 	const { svg, scene, restore } = makeRenderer();
 	try {
-		const m = new Model(); attachRelations(m, { nearest: NODE_GRID.nearest });
+		const m = new Model(); attachRelations(m, { deviceLattice: () => NODE_GRID });
 		new Renderer(m, svg, { parts: PRODUCT_CANVAS, scene });
 		const n = (id, x, y) => m.put('node', { id, name: id.slice(-2), type: 'host', shape: 'circle', x, y });
 		n('node-d00001', -360, 0); n('node-d00002', 0, 0); n('node-d00003', -360, 120); n('node-d00004', 0, 120);

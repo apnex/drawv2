@@ -144,7 +144,7 @@ const out = {};
   out.invariant = !violations(m).some((v) => /straight links between/.test(v)); }
 
 // the planner's strip: deleting the only bend of a routed link on a pair that holds a straight one
-{ const m = new Model({ kinds: K, attached: { network: N() }}); attachRelations(m, { nearest: NODE_GRID.nearest }); const log = new Log();
+{ const m = new Model({ kinds: K, attached: { network: N() }}); attachRelations(m, { deviceLattice: () => NODE_GRID }); const log = new Log();
   const r0 = commit(m, log, { label: 'setup', ops: [
     { op: 'put', kind: 'node', entity: { id: A, name: 'A', type: 'router', x: 0, y: 0, shape: 'circle' } },
     { op: 'put', kind: 'node', entity: { id: B, name: 'B', type: 'router', x: 6 * P, y: 0, shape: 'circle' } },

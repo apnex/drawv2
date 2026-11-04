@@ -46,7 +46,7 @@ test('H26.6 move 9, PZ11: the planner accepts the cap board as the lab commits i
 	const page = createPageNetwork(), { network } = page;
 	const kinds = productKinds(...NETWORK_ROWS);
 	const authority = new Model({ kinds, attached: { network } });
-	attachRelations(authority, { nearest: NODE_GRID.nearest });
+	attachRelations(authority, { deviceLattice: () => NODE_GRID });
 	const board = capBoard(), all = [...board.ops, ...page.session.seed(board.pipes)], log = new Log();
 	for (let i = 0; i < all.length; i += 2000) {
 		const a = commit(authority, log, { ops: all.slice(i, i + 2000), label: 'seed caps' }, 'lab', 'lab', { kinds });
