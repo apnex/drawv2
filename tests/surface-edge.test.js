@@ -48,6 +48,16 @@ test('B27, restated at H26.6 move 11: a zone reaching past PZ31\'s bound is refu
 	assert.equal(set(m, 'zone', 'zone-0b2701', { w: 240 }).ok, false, 'grown past it');
 	assert.equal(set(m, 'zone', 'zone-0b2701', { x: 999_870 }).ok, false, 'moved past it, its width kept');
 	assert.equal(set(m, 'zone', 'zone-0b2701', { x: 999_750 }).ok, true, 'moved inward -- the control');
+	// S3 (the production gate of moves 9 to 12): the far edge's y half, which no case reached -- mutant m11a, the check reading x alone, lived
+	const tall = zone({ x: -150, y: 999_870, w: 300, h: 120 });
+	assert.equal(put(new Model(), 'zone', tall).ok, true, 'reaching y 999,990, the bound -- the control');
+	const deep = put(new Model(), 'zone', { ...tall, h: 180 });
+	assert.equal(deep.ok, false, 'a zone reaching past y 1,000,000, its corner within, refused');
+	assert.match(deep.error, /zone-0b2701 reaches 150,1000050, past the bound of 1000000 from the origin/, 'naming where it reaches');
+	const n = new Model();
+	n.put('zone', tall);
+	assert.equal(set(n, 'zone', 'zone-0b2701', { h: 180 }).ok, false, 'grown down past it, set');
+	assert.equal(set(n, 'zone', 'zone-0b2701', { y: 999_930 }).ok, false, 'moved down past it, its height kept');
 });
 
 test('B27, restated at H26.6 move 11: an anchor within PZ31\'s bound is admitted, past it refused, put or set; a device\'s span reaches as far as it likes', () => {
