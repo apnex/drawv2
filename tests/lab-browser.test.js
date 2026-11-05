@@ -330,6 +330,47 @@ test('H26.6 move 9: every gesture of the intent pans or zooms the lab canvas und
 });
 
 /*
+B1 (the production gate of H26.6's moves 9 to 12; PAN-ZOOM.md section 3.6, appendix B) -- ON THE LAB PAGE, under trusted input: a right, a
+middle and a Space and left press 6 pixels inside the canvas's bottom edge, released over the page's footer -- the lab's chrome, its
+canvas reaching the window's top -- then a hover back over the canvas with no button down: the view still, in view and in run mode (the
+product page's header and run mode's towers are tests/browser.test.js's).
+*/
+test('B1: in the lab a pan press released over the footer leaves no pan waiting -- the hover keeps the view still, in view and run mode', { skip: SKIP }, async () => {
+	const t = await theTab();
+	try {
+		await t.send('Emulation.setDeviceMetricsOverride', { width: 1366, height: 768, deviceScaleFactor: 1, mobile: false });
+		await open('bend');
+		const box = JSON.parse(await t.run(`JSON.stringify((() => { const r = document.getElementById('container').getBoundingClientRect(); return { x: r.left, y: r.bottom, w: r.width }; })())`));
+		const at = { x: Math.round(box.x + box.w * 0.4), y: Math.round(box.y - 6) }, above = Math.round(box.y + 8);
+		assert.ok(await t.run(`!!document.elementFromPoint(${at.x}, ${above}).closest('#status')`), 'precondition: the page\'s footer lies below the canvas');
+		const BIT = { left: 1, middle: 4, right: 2 };
+		const mouse = (type, x, y, button = 'none', buttons = 0) => t.send('Input.dispatchMouseEvent', { type, x, y, button, buttons, clickCount: type === 'mouseMoved' ? 0 : 1 });
+		const space = (type) => t.send('Input.dispatchKeyEvent', { type, key: ' ', code: 'Space', windowsVirtualKeyCode: 32, ...(type === 'keyDown' ? { text: ' ' } : {}) });
+		const view = async () => JSON.parse(await t.run('JSON.stringify(lab.view.view)'));
+		for (const mode of ['view', 'run']) {
+			await t.run(`(lab.input.renderer.setMode('${mode}'), lab.view.set({ x: 0, y: 0, level: 1 }), 1)`);
+			for (const button of ['right', 'middle', 'left']) {
+				const before = await view();
+				await mouse('mouseMoved', at.x, at.y);
+				if (button === 'left') await space('keyDown');
+				await mouse('mousePressed', at.x, at.y, button, BIT[button]);
+				await mouse('mouseMoved', at.x, at.y + 3, button, BIT[button]);
+				await mouse('mouseMoved', at.x, above, button, BIT[button]);
+				await mouse('mouseReleased', at.x, above, button, 0);
+				if (button === 'left') await space('keyUp');
+				await mouse('mouseMoved', at.x, at.y - 60);
+				await mouse('mouseMoved', at.x + 200, at.y - 160);
+				await sleep(30);
+				assert.deepEqual([await view(), await t.run('lab.input.isGesturing()')], [before, false], `${mode}, ${button}: the hover leaves the view still, no pan live`);
+			}
+		}
+	} finally {
+		await t.run(`(lab.input.renderer.setMode('view'), 1)`).catch(() => {});
+		await t.send('Emulation.clearDeviceMetricsOverride');
+	}
+});
+
+/*
 H26.6's move 9 (dev/design/components/PAN-ZOOM.md section 4, PZ11; appendix A, move 9) -- THE CAP BOARD AND THE LAB'S FRAME FIGURE: the board
 at every cap opens by name, `?seed=caps` (tools/cap-board.mjs), in run mode with every spawner armed; at 3x it is panned a step a frame
 -- by a middle drag with the zone grid hidden, by one with Shift held showing it (the root's `zonegrid` class), and by the wheel -- and the

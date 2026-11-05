@@ -218,6 +218,8 @@ being no edit, and a cancel -- the pointer lost, focus lost, Escape -- leaves th
 */
 const pan = (button) => ({ button, update: (i, ctx, pos, evt) => i.panStep(ctx, evt) });
 const VIEW_GESTURES = { 'pan-middle': pan(1), 'pan-right': pan(2), 'pan-space': pan(0) };
+// B1: each button a pointer event's `button` names, as its bit in `buttons` -- left 1, middle 4, right 2, back 8, forward 16
+const BUTTON_BITS = Object.freeze({ 0: 1, 1: 4, 2: 2, 3: 8, 4: 16 });
 
 // H26.2: exported for tests/fixtures/binding-parity.mjs alone, the fixture of tests/input-binding-parity.test.js, which records which
 // body runs for each input before the move onto input-binding and after it (dev/design/components/INPUT-BINDING.md acceptance step 4);
@@ -248,6 +250,12 @@ export class Input {
 	a release, a lost pointer, a focus loss or a document replaced drops it.
 	*/
 	#pendingPan = null;
+	/*
+	B1 (the production gate of H26.6's moves 9 to 12): THE BUTTONS A PAN'S PRESS WAS LAST HEARD HOLDING -- its press's `buttons`, then each
+	move's while the pan waits or is live -- or 0 when none is known. A pan's press takes no pointer until it travels the threshold, so its
+	release over the page's chrome is never heard; `#panReleasedUnheard` reads the next move.
+	*/
+	#panHeld = 0;
 	/*
 	H26.6's move 10 (PAN-ZOOM.md section 3.6, PZ27): THE PENDING DATUM -- the snapped point an eligible Space key-down recorded, set as the
 	datum by Space's key-up, or null: a pan engaging while Space is held, Shift+Space, a focus loss and a document replaced each drop it.
@@ -655,6 +663,22 @@ export class Input {
 	// H26.6's move 9: a pan row's press -- waiting, unclaimed and untaken, until it travels the threshold (`move`), its gesture the row's
 	onPanPress(evt, reply, row) {
 		this.#pendingPan = { gesture: row.pans };
+		this.#panHeld = Number.isSafeInteger(evt.buttons) && evt.buttons > 0 ? evt.buttons : BUTTON_BITS[evt.button] ?? 0;   // B1
+	}
+
+	/*
+	B1 (the production gate of H26.6's moves 9 to 12; PAN-ZOOM.md section 3.6, appendix B) -- A PAN'S PRESS RELEASED WHERE THE CANVAS DOES
+	NOT HEAR IT. A pan row's press waits untaken, so pressed just inside the canvas and released over the header, its release reaches no
+	listener of the canvas's: the press and the waiting pan stayed held, and the next hover -- no button down -- travelled the threshold
+	and panned the view, in every mode, run mode's clicks placing towers while it slid. So a move of the press's own pointer holding none
+	of the buttons the press was last heard holding ends it as a lost pointer: the waiting pan dropped, the session's press ended, a live
+	pan cancelled -- the view left where it was -- as the platform taking the pointer does. A chord the canvas heard keeps the press's
+	rule (IB11): a button that joined and is still held keeps the pan, and the pan ends at the last release.
+	*/
+	#panReleasedUnheard(evt, press) {
+		if (!press || !this.#panHeld || !Number.isSafeInteger(evt.buttons)) return false;
+		if (this.#pendingPan === null && !Object.hasOwn(VIEW_GESTURES, this.mode)) return false;
+		return (evt.buttons & this.#panHeld) === 0;
 	}
 
 	/*
@@ -1010,10 +1034,19 @@ export class Input {
 	*/
 	move(evt, reply) {
 		this.#markShiftOwed(evt);   // H26.5 (B413): Shift is the keyboard's, whichever pointer's event says it is held
-		const outcome = this.#session.pointerMove(evt);   // H26.2: the press's travel, and an update when a gesture is live
+		let outcome = this.#session.pointerMove(evt);   // H26.2: the press's travel, and an update when a gesture is live
 		// H26.5 (RD18; dev/design/components/RELEASES-0.2.md section 4): another pointer's move -- one the press does not hold -- changes
 		// nothing, so nothing of draw's runs: not even the pointer tracked, which is the press's pointer's
 		if (outcome.otherPointer) return;
+		// B1: a pan's press released where the canvas did not hear it ends here, as a lost pointer -- nothing of the move it measured run --
+		// and the move is then asked again, of no press: an ordinary hover
+		if (this.#panReleasedUnheard(evt, this.#session.state.press)) {
+			this.#pendingPan = null;
+			this.#panHeld = 0;
+			const lost = this.#session.pointerLost();
+			if (lost.phase === 'cancel') this.#cancelled(lost, evt);
+			outcome = this.#session.pointerMove(evt);
+		} else if (this.#panHeld && Number.isSafeInteger(evt.buttons) && evt.buttons > 0) this.#panHeld = evt.buttons;
 		this.state = track(this.state, evt);
 		/*
 		H26.6's move 9 (PAN-ZOOM.md section 3.6, "engagement"): a pan row's press that has just travelled the threshold, 4 screen pixels,
@@ -1131,6 +1164,7 @@ export class Input {
 		// teardown -- onGestureEnd would release the remote changes queued behind a gesture still live (D12)
 		if (outcome.otherPointer) return;
 		this.#pendingPan = null;   // H26.6's move 9: a pan row's press released short of the threshold does nothing -- a click as today
+		this.#panHeld = 0;   // B1: and the press heard ending
 		// L2: a click or a drop, from the press the session tracked -- its outcome's `trigger`, handed to the commit, nothing written on the
 		// fact (H26.8's capture move)
 		try { this.dispatchUp(evt, outcome); } finally {

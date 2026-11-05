@@ -2415,6 +2415,72 @@ test('H26.6 move 10: on the product page the view keys and the reticle, the view
 	}
 });
 
+/*
+B1 (the production gate of H26.6's moves 9 to 12; PAN-ZOOM.md section 3.6, appendix B) -- A PAN'S PRESS RELEASED OVER THE HEADER, under
+trusted input on the product page: a right, a middle and a Space and left press 6 pixels inside the canvas's top edge, moved onto the
+header and released there, where the canvas hears no release; then the pointer comes back over the canvas with no button down. The hover
+leaves the view still, in edit mode; in run mode two clicks on open ground each place a tower and the view stays still. Before the fix the
+hover panned the view about 200 by 100 pixels and run mode's clicks placed towers while it slid. Each tower undone, the board shared.
+*/
+test('B1: a pan press released over the header leaves no pan waiting -- the hover keeps the view still, and run mode\'s two clicks place towers with it still -- right, middle, Space and left', { skip: SKIP }, async () => {
+	const t = await freshTab();
+	try {
+		const box = JSON.parse(await t.eval(`JSON.stringify((() => { const r = document.getElementById('container').getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; })())`));
+		const header = JSON.parse(await t.eval(`JSON.stringify((() => { const r = document.querySelector('header').getBoundingClientRect(); return { y: r.top + r.height / 2 }; })())`));
+		const at = { x: Math.round(box.x + box.w * 0.6), y: Math.round(box.y + 6) };
+		assert.ok(header.y < box.y, 'precondition: the header lies above the canvas');
+		const BIT = { left: 1, middle: 4, right: 2 };
+		const mouse = (type, x, y, button = 'none', buttons = 0) => t.send('Input.dispatchMouseEvent', { type, x, y, button, buttons, clickCount: type === 'mouseMoved' ? 0 : 1 });
+		const space = (type) => t.send('Input.dispatchKeyEvent', { type, key: ' ', code: 'Space', windowsVirtualKeyCode: 32, ...(type === 'keyDown' ? { text: ' ' } : {}) });
+		const view = async () => JSON.parse(await t.eval(`JSON.stringify(draw.view.view)`));
+		const towers = async () => JSON.parse(await t.eval(`JSON.stringify(draw.model.all('node').filter((n) => n.type === 'loadbalancer').map((n) => n.id).sort())`));
+		const releasedOverHeader = async (button) => {
+			await mouse('mouseMoved', at.x, at.y);
+			if (button === 'left') await space('keyDown');
+			await mouse('mousePressed', at.x, at.y, button, BIT[button]);
+			await mouse('mouseMoved', at.x, at.y - 3, button, BIT[button]);
+			await mouse('mouseMoved', at.x, header.y, button, BIT[button]);
+			await mouse('mouseReleased', at.x, header.y, button, 0);
+			if (button === 'left') await space('keyUp');
+			await sleep(30);
+		};
+		const free = JSON.parse(await t.eval(`JSON.stringify((() => { const out = [];
+			for (let x = ${box.x} + 120; x < ${box.x + box.w} - 120 && out.length < 2; x += 97) {
+				const y = ${box.y} + ${box.h} * 0.75, el = document.elementFromPoint(x, y);
+				if (el && el.closest('#container') && !el.closest('.node,.zone,.link,.group,.waypoint')) out.push([Math.round(x), Math.round(y)]);
+			}
+			return out; })())`));
+		assert.equal(free.length, 2, 'precondition: two points of open ground');
+		for (const mode of ['edit', 'run']) {
+			await t.eval(`(draw.renderer.setMode('${mode}'), draw.view.set({ x: 0, y: 0, level: 1 }), 1)`);
+			for (const button of ['right', 'middle', 'left']) {
+				const before = await view(), had = await towers();
+				await releasedOverHeader(button);
+				await mouse('mouseMoved', at.x, at.y + 60);
+				await mouse('mouseMoved', at.x + 200, at.y + 160);
+				await sleep(30);
+				assert.deepEqual(await view(), before, `${mode}, ${button}: the hover after the release over the header leaves the view still`);
+				assert.equal(await t.eval('draw.input.isGesturing()'), false, `${mode}, ${button}: no pan live`);
+				if (mode !== 'run') continue;
+				for (const [x, y] of free) {
+					await mouse('mouseMoved', x, y);
+					await mouse('mousePressed', x, y, 'left', 1);
+					await mouse('mouseReleased', x, y, 'left', 0);
+					await sleep(200);
+				}
+				const placed = (await towers()).filter((id) => !had.includes(id));
+				assert.deepEqual([placed.length, await view()], [2, before], `run, ${button}: two clicks, two towers, the view still`);
+				for (let i = 0; i < placed.length; i++) await t.eval('draw.history.undo(), 1');
+				await sleep(300);
+				assert.deepEqual(await towers(), had, `run, ${button}: control: the towers undone`);
+			}
+		}
+	} finally {
+		await t.eval(`(draw.renderer.setMode('edit'), 1)`).catch(() => {});
+		await t.close();
+	}
+});
+
 test('B324: a tab a test opens is closed when the test ends -- none of this file\'s tabs is left on the diagrams it edits', { skip: SKIP }, async () => {
 	// the file's shared tab (`before`) is kept for its tests on purpose and closed with Chrome; every other tab is a test's own
 	const open = async () => (await (await fetch(`http://127.0.0.1:${cdp}/json/list`)).json()).filter((p) => p.type === 'page' && p.id !== tab.id && p.url.includes(`127.0.0.1:${port}/`));
