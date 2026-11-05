@@ -297,11 +297,15 @@ test('H26.6 move 9, GR6: a wheel without Ctrl never zooms -- it pans, by its nor
 				const v0 = centre(h), ev = wheel(700, 300, dy, { deltaX: dx, deltaMode, shiftKey: dx === 57 });
 				h.capture.onWheel(ev);
 				const unit = [1, 40, 1080][deltaMode];
+				// RESTATED at the production gate of moves 9 to 12 (S2): the centre is held within PZ31's bound -- 2,000 pages of 1,080 pixels
+				// at the scale of 1 reach past it
+				const held = (v) => Math.min(Math.max(v, -1_000_000), 1_000_000);
 				assert.equal(ev.claimed, 1, 'claimed: the page neither scrolls nor zooms');
-				assert.deepEqual(centre(h), { x: v0.x + dx * unit, y: v0.y + dy * unit, level: v0.level }, `${mode}, deltaMode ${deltaMode}, ${dx}, ${dy}: panned, never zoomed`);
+				assert.deepEqual(centre(h), { x: held(v0.x + dx * unit), y: held(v0.y + dy * unit), level: v0.level }, `${mode}, deltaMode ${deltaMode}, ${dx}, ${dy}: panned, never zoomed`);
 			}
 		}
 		h.renderer.setMode('view');
+		h.view.set({ x: 0, y: 0, level: 1 });   // S2: back within the bound, which the pages above reached
 		h.capture.onDown(mouse(-300, -200));
 		h.capture.onMove(mouse(-100, -100));
 		const v0 = centre(h), ev = wheel(700, 300, 100);
