@@ -486,6 +486,30 @@ test('H26.6 move 10: in the lab the reticle brings the view home and the lab rem
 	} finally { await t.send('Emulation.clearDeviceMetricsOverride'); }
 });
 
+/*
+The production gate of moves 9 to 12 (a low): the reticle's 30 pixel square took the wheel, a pinch and run mode's clicks from the canvas
+beneath its corner. Its box passes them through and its ring alone takes a press (app/style.css): under trusted input, a wheel over the
+square's corner pans the view, and a click on its ring still brings the view home.
+*/
+test('the gate\'s low: the reticle\'s corner passes the wheel to the canvas, and its ring keeps the click', { skip: SKIP }, async () => {
+	const t = await theTab();
+	try {
+		await t.send('Emulation.setDeviceMetricsOverride', { width: 1366, height: 576, deviceScaleFactor: 1, mobile: false });
+		await open('bend');
+		const r = JSON.parse(await t.run(`JSON.stringify((() => { const b = document.getElementById('view-home').getBoundingClientRect(); return { x: b.left, y: b.top, w: b.width, h: b.height }; })())`));
+		const corner = { x: Math.round(r.x + 3), y: Math.round(r.y + 3) }, ring = { x: r.x + r.w / 2, y: r.y + 8.5 };
+		assert.deepEqual(JSON.parse(await t.run(`JSON.stringify([document.elementFromPoint(${corner.x}, ${corner.y}).closest('#container') !== null, document.elementFromPoint(${ring.x}, ${ring.y}).id])`)),
+			[true, 'view-home'], 'the square\'s corner is the canvas\'s; its ring is the button\'s');
+		await t.run(`(lab.view.set({ x: 0, y: 0, level: 1 }), 1)`);
+		await t.send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: corner.x, y: corner.y, deltaX: 0, deltaY: 120 });
+		await sleep(50);
+		const panned = JSON.parse(await t.run('JSON.stringify(lab.view.view)'));
+		assert.ok(panned.y > 0 && panned.x === 0 && panned.level === 1, `a wheel over the corner pans the view (${JSON.stringify(panned)})`);
+		for (const type of ['mousePressed', 'mouseReleased']) await t.send('Input.dispatchMouseEvent', { type, x: ring.x, y: ring.y, button: 'left', clickCount: 1, buttons: type === 'mousePressed' ? 1 : 0 });
+		assert.deepEqual(JSON.parse(await t.run('JSON.stringify(lab.view.view)')), { x: 0, y: 0, level: 1 }, 'a click on the ring brings the view home');
+	} finally { await t.send('Emulation.clearDeviceMetricsOverride'); }
+});
+
 test('H26.6 move 10: the keys step the levels, zoom-levels.mjs\'s scale and label figures and 3.7\'s dots at 3x reproduced from the lab page at 1366 and 1920 wide -- and move 11\'s labels rule', { skip: SKIP }, async () => {
 	const t = await theTab();
 	const FIGURES = {

@@ -347,6 +347,10 @@ the canvas's to draw (server/svg-style.mjs), and no part of this is the drawing'
 	background: var(--tok-panel); color: var(--tok-ink-muted); cursor: pointer; }
 #view-home:hover { border-color: var(--tok-accent); color: var(--tok-accent); }
 #view-home::before { content: ''; position: absolute; inset: 8px; border: 1.5px solid currentColor; border-radius: 50%; }
+/* the production gate of moves 9 to 12 (a low): the button's 30 pixel square took the wheel, a pinch and run mode's clicks from the canvas
+   beneath its corner; its box lets them through, and only its ring, 14 pixels across, takes a press -- its click kept, its hover too */
+#view-home { pointer-events: none; }
+#view-home::before { pointer-events: auto; }
 #view-home::after { content: ''; position: absolute; inset: 4px;
 	background: linear-gradient(currentColor, currentColor) center / 1.5px 100% no-repeat, linear-gradient(currentColor, currentColor) center / 100% 1.5px no-repeat; }
 
