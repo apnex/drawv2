@@ -71,7 +71,8 @@ const ZOOM_STEP_PIXELS = 100;   // PZ12, 3.6: the pinch's normalised pixels per 
 const LINE_PIXELS = 40;         // 3.6: a wheel's line, in pixels -- so three lines and 120 pixels zoom alike
 const FIT_PAD = 24;             // 3.7: fit's padding, screen pixels on each side of the diagram's bounds
 const SAVE_AFTER_MS = 500;      // 3.7, PZ23: a view is saved half a second after it last moved
-const VIEW_BOUND = 1_000_000;   // PZ31: a remembered centre is read only within the bound every coordinate keeps
+const VIEW_BOUND = 1_000_000;   // PZ31: a remembered centre is read only within the bound every coordinate keeps, and every centre is held within it
+const heldWithin = (v) => Math.min(Math.max(v, -VIEW_BOUND), VIEW_BOUND);   // S2 (3.8): a centre's axis, held to the bound
 /*
 H26.6's move 11 (PAN-ZOOM.md section 3.7, "At each level"; PZ12; the director's ruling after move 10, section 9): THE LABELS' FLOOR, the
 screen pixels a label's text must reach to be drawn -- under it, a label and its pill are hidden, at a level far enough out; on a canvas
@@ -180,11 +181,15 @@ export class View {
 
 	/*
 	THE ONE WRITE: `next`, a centre and a level, turned into the scene's top-left corner and scale and set on the scene, then held with the
-	pinch's held pixels `acc`, then the composition told (`settled`). It throws BEFORE the view moves when the scene refuses it, the view
+	pinch's held pixels `acc`, then the composition told (`settled`). The centre is held within PZ31's bound first, each axis to
+	+-VIEW_BOUND (3.8: "the view part holds the view's centre within the bound") -- the production gate of moves 9 to 12 (S2) found twelve
+	wheel steps at 3x taking it to 1,033,006, a view then saved that `storedView` refused at the next opening.
+	It throws BEFORE the view moves when the scene refuses it, the view
 	and `acc` as they were, or AFTER, when a redraw `settled` runs fails, the view and `acc` the new ones (the header's WHEN A VERB THROWS).
 	A root not laid out, or laid out to nothing, has no default scale: the view is held and set at the next resize.
 	*/
-	#write(next, acc, { save = true } = {}) {
+	#write(wanted, acc, { save = true } = {}) {
+		const next = { ...wanted, x: heldWithin(wanted.x), y: heldWithin(wanted.y) };   // S2: PZ31's bound
 		const { w, h } = this.size();
 		const laidOut = w > 0 && h > 0;
 		if (laidOut) {
