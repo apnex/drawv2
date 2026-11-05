@@ -330,6 +330,34 @@ test('H26.6 move 9: every gesture of the intent pans or zooms the lab canvas und
 });
 
 /*
+S1 (the production gate of H26.6's moves 9 to 12; PAN-ZOOM.md PZ11) -- THE METER READS A STEP AS PAN-COST.MJS READ ONE: a cheap pan on the
+`bend` board, a middle drag a step a frame under trusted input, timed by the footer's meter; and the same page timed as the drafter's
+pan-cost.mjs times it -- a view set in a frame's callbacks, to the second frame's after. The two medians agree within half a frame, about
+33 ms at 60 frames a second, on which PZ11's 50 was set; the meter read about 16 before, a frame short.
+*/
+test('S1: the frame meter reads a cheap pan step as pan-cost.mjs reads one -- within half a frame, a step a frame each timed', { skip: SKIP }, async (ctx) => {
+	const t = await theTab();
+	try {
+		await t.send('Emulation.setDeviceMetricsOverride', { width: 1366, height: 768, deviceScaleFactor: 1, mobile: false });
+		await open('bend');
+		await t.run('(lab.frames.reset(), 1)');
+		const mouse = (type, x, y) => t.send('Input.dispatchMouseEvent', { type, x, y, button: 'middle', buttons: type === 'mouseReleased' ? 0 : 4, clickCount: type === 'mouseMoved' ? 0 : 1 });
+		await mouse('mousePressed', 700, 400);
+		for (let i = 1; i <= 41; i++) { await mouse('mouseMoved', 700 - 6 * i, 400); await t.run(frames(1)); }
+		await mouse('mouseReleased', 700 - 6 * 41, 400);
+		await t.run(frames(4));
+		const meter = JSON.parse(await t.run('JSON.stringify(lab.frames.figures())'));
+		const panCost = JSON.parse(await t.run(`(async () => { const frame = () => new Promise((r) => requestAnimationFrame(r)); const ts = [];
+			await frame(); await frame();
+			for (let i = 0; i < 30; i++) { const t0 = performance.now(); const v = lab.input.scene.view(); lab.input.scene.setView({ ...v, x: v.x + 30 }); await frame(); await frame(); ts.push(performance.now() - t0); }
+			ts.sort((a, b) => a - b); return JSON.stringify({ median: ts[Math.ceil(0.5 * ts.length) - 1] }); })()`));
+		ctx.diagnostic(`S1: the meter's median ${meter.median.toFixed(1)} ms over ${meter.steps} steps; pan-cost.mjs's way ${panCost.median.toFixed(1)} ms`);
+		assert.ok(meter.steps >= 30, `a step a frame, each timed (${meter.steps} of 41)`);
+		assert.ok(Math.abs(meter.median - panCost.median) < 8.4, `the meter's median ${meter.median.toFixed(1)} ms within half a frame of pan-cost.mjs's ${panCost.median.toFixed(1)}`);
+	} finally { await t.send('Emulation.clearDeviceMetricsOverride'); }
+});
+
+/*
 B1 (the production gate of H26.6's moves 9 to 12; PAN-ZOOM.md section 3.6, appendix B) -- ON THE LAB PAGE, under trusted input: a right, a
 middle and a Space and left press 6 pixels inside the canvas's bottom edge, released over the page's footer -- the lab's chrome, its
 canvas reaching the window's top -- then a hover back over the canvas with no button down: the view still, in view and in run mode (the
@@ -374,7 +402,8 @@ test('B1: in the lab a pan press released over the footer leaves no pan waiting 
 H26.6's move 9 (dev/design/components/PAN-ZOOM.md section 4, PZ11; appendix A, move 9) -- THE CAP BOARD AND THE LAB'S FRAME FIGURE: the board
 at every cap opens by name, `?seed=caps` (tools/cap-board.mjs), in run mode with every spawner armed; at 3x it is panned a step a frame
 -- by a middle drag with the zone grid hidden, by one with Shift held showing it (the root's `zonegrid` class), and by the wheel -- and the
-footer times each view step to the frame after the one that shows it (app/src/view.js `viewFrameMeter`), its median and 90th percentile,
+footer times each view step to the second frame after the one that draws it, as pan-cost.mjs does (app/src/view.js `viewFrameMeter`,
+restated at the move 9 to 12 gate, S1), its median and 90th percentile,
 and its button resets it. The figures are headless Chrome's, software-rendered: comparative alone, PZ11's own figure the director's on
 the Chromebook. Each run's figures are reported as the test's diagnostic.
 */
@@ -413,7 +442,7 @@ test('H26.6 move 9, PZ11: the cap board opens by name in run mode, every spawner
 			measured[name] = JSON.parse(await t.run('JSON.stringify(lab.frames.figures())'));
 			assert.ok(measured[name].steps >= 30, `${name}: a step timed for each frame of the pan (${measured[name].steps})`);
 			assert.ok(measured[name].median > 0 && measured[name].p90 >= measured[name].median, `${name}: a median and a 90th percentile`);
-			assert.match(await t.run(`document.getElementById('lab-frames').textContent`), /^view frames: \d+ steps, median \d+\.\d ms, 90th percentile \d+\.\d ms \(PZ11: within 50\)$/, `${name}: shown in the footer`);
+			assert.match(await t.run(`document.getElementById('lab-frames').textContent`), /^view frames: \d+ steps, median \d+\.\d ms, 90th percentile \d+\.\d ms \(PZ11: within 50, as pan-cost\.mjs times a step -- to the second frame after the one drawing it\)$/, `${name}: shown in the footer`);
 		}
 		await t.run(`(document.getElementById('lab-frames-reset').click(), 1)`);
 		assert.deepEqual([JSON.parse(await t.run('JSON.stringify(lab.frames.figures())')).steps, await t.run(`document.getElementById('lab-frames').textContent`)], [0, 'view frames: pan to measure'], 'the button resets it');

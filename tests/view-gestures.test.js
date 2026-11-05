@@ -366,11 +366,12 @@ test('H26.6 move 9: the view\'s rows, as 3.6 states them -- five, none mutating,
 });
 
 /*
-PZ11's figure (app/src/view.js `viewFrameMeter`, the lab's footer): each view the scene tells timed to the second animation frame after it,
+PZ11's figure (app/src/view.js `viewFrameMeter`, the lab's footer): each view the scene tells timed to the third animation frame after it --
+RESTATED at the production gate of moves 9 to 12 (S1): the second until then, a frame short of pan-cost.mjs, on which PZ11's 50 was set --
 a view told while one waits not timed again; the median and 90th percentile by nearest rank; reset by the page's button. On a scene and a
 host of the test's own -- a clock it sets, frames it runs.
 */
-test('H26.6 move 9, PZ11: the frame meter times each view to the second frame after it, once per frame, its median and 90th percentile by nearest rank, reset', () => {
+test('H26.6 move 9, PZ11: the frame meter times each view to the third frame after it -- as pan-cost.mjs, from the move 9 to 12 gate -- once per frame, its median and 90th percentile by nearest rank, reset', () => {
 	const listeners = [], queued = [], said = [];
 	let now = 0;
 	const scene = { onView: (fn) => { listeners.push(fn); return () => listeners.splice(listeners.indexOf(fn), 1); } };
@@ -381,15 +382,21 @@ test('H26.6 move 9, PZ11: the frame meter times each view to the second frame af
 	assert.deepEqual([meter.figures(), said.at(-1)], [{ steps: 0, median: null, p90: null }, 'view frames: pan to measure']);
 	tell(100); tell(104);
 	frame(105);
-	assert.equal(meter.figures().steps, 0, 'the first frame after the view: not yet drawn');
+	assert.equal(meter.figures().steps, 0, 'the first frame after the view, the one drawing it: not timed');
 	frame(122);
-	assert.deepEqual(meter.figures(), { steps: 1, median: 22, p90: 22 }, 'timed to the second frame, from the first view told; the second view, told while it waited, not timed again');
-	assert.equal(said.at(-1), 'view frames: 1 step, median 22.0 ms, 90th percentile 22.0 ms (PZ11: within 50)');
+	assert.equal(meter.figures().steps, 0, 'the second: not yet -- the old meter stopped here, a frame short of pan-cost.mjs');
+	frame(139);
+	assert.deepEqual(meter.figures(), { steps: 1, median: 39, p90: 39 }, 'timed to the third frame, from the first view told; the second view, told while it waited for its drawing frame, not timed again');
+	assert.equal(said.at(-1), 'view frames: 1 step, median 39.0 ms, 90th percentile 39.0 ms (PZ11: within 50, as pan-cost.mjs times a step -- to the second frame after the one drawing it)');
+	// a step a frame is timed every frame: one told after the last one's drawing frame waits on its own
+	meter.reset();
+	tell(200); frame(201); tell(210); frame(218); tell(220); frame(235); frame(252); frame(269);
+	assert.deepEqual(meter.figures(), { steps: 3, median: 42, p90: 49 }, 'three steps a frame apart, each timed: 35, 42 and 49 ms');
 	meter.reset();
 	assert.deepEqual([meter.figures().steps, said.at(-1)], [0, 'view frames: pan to measure'], 'reset');
-	for (let i = 1; i <= 10; i++) { tell(1000 * i); frame(1000 * i + 1); frame(1000 * i + 10 * i); }
+	for (let i = 1; i <= 10; i++) { tell(1000 * i); frame(1000 * i + 1); frame(1000 * i + 2); frame(1000 * i + 10 * i); }
 	assert.deepEqual(meter.figures(), { steps: 10, median: 50, p90: 90 }, 'ten steps of 10 to 100 ms: the 5th and the 9th by nearest rank');
 	meter.close();
-	tell(20000); frame(20001); frame(20017);
+	tell(20000); frame(20001); frame(20017); frame(20034);
 	assert.equal(meter.figures().steps, 10, 'closed: no longer listening');
 });

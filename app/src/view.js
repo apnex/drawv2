@@ -381,11 +381,14 @@ export class View {
 
 /*
 THE VIEW'S FRAME METER -- H26.6's move 9 (PAN-ZOOM.md section 4, PZ11; appendix A, move 9): each view the scene tells -- a pan's step, a
-wheel's, a pinch's level -- timed from the moment it is told to the second animation frame after it, as the drafter's pan-cost.mjs and
-move 8's measure time a view change: the first frame's callbacks run before it draws the view, the second's once it is drawn. A view a
-person's input sets is told just before a frame's callbacks, so at 60 frames a second a step drawn in its own frame reads about 16.7
-ms, one that misses a frame 33.3, and PZ11's budget, 50, three frames. A view told while one waits for its frame is shown by that same
-frame and is not timed again. `figures()` answers the steps timed since the last `reset()`, their median and their 90th percentile, nearest rank,
+wheel's, a pinch's level -- timed from the moment it is told to the third animation frame's callbacks after it. RESTATED at the production
+gate of moves 9 to 12 (S1): it timed to the second, a frame short of the drafter's pan-cost.mjs, on whose figures PZ11's 50 was set --
+pan-cost.mjs sets a step in one frame's callbacks, which that frame draws, and times it to the second frame's after; a view a person's
+input sets is told just before a frame's callbacks, that frame drawing it, so the first callbacks here are the drawing frame's and the
+third are pan-cost.mjs's second after it. So at 60 frames a second a step drawn in its own frame reads about 33.3 ms, as pan-cost.mjs
+read a cheap step, one that misses a frame 50, and "within 50" is what PZ11 meant: no frame missed. A view told while another still
+waits for its drawing frame is shown by that same frame and is not timed again; one told after it is timed on its own, so a pan's step
+a frame is timed every frame. `figures()` answers the steps timed since the last `reset()`, their median and their 90th percentile, nearest rank,
 in milliseconds; `shown(text)` is told the figure after each step and each reset. Composed by the lab (lab/src/root.js), so the director
 pans the cap board on the Chromebook and reads PZ11's figure on the page; `host` the page's window, its clock and frames handed in.
 */
@@ -399,12 +402,16 @@ export function viewFrameMeter({ scene, host, shown = () => {} }) {
 	};
 	const say = () => {
 		const { steps, median, p90 } = figures();
-		shown(steps ? `view frames: ${steps} step${steps === 1 ? '' : 's'}, median ${median.toFixed(1)} ms, 90th percentile ${p90.toFixed(1)} ms (PZ11: within 50)` : 'view frames: pan to measure');
+		shown(steps ? `view frames: ${steps} step${steps === 1 ? '' : 's'}, median ${median.toFixed(1)} ms, 90th percentile ${p90.toFixed(1)} ms (PZ11: within 50, as pan-cost.mjs times a step -- to the second frame after the one drawing it)` : 'view frames: pan to measure');
 	};
 	const off = scene.onView(() => {
 		if (waiting !== null) return;
-		waiting = host.performance.now();
-		host.requestAnimationFrame(() => host.requestAnimationFrame(() => { times.push(host.performance.now() - waiting); waiting = null; say(); }));
+		const told = host.performance.now();
+		waiting = told;
+		host.requestAnimationFrame(() => {
+			waiting = null;   // the drawing frame: a view told from here is drawn by a later one
+			host.requestAnimationFrame(() => host.requestAnimationFrame(() => { times.push(host.performance.now() - told); say(); }));
+		});
 	});
 	say();
 	return { figures, reset: () => { times.length = 0; say(); }, close: off };
