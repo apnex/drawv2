@@ -60,8 +60,8 @@ const FIELD_RECORD = {
 		reason: 'the palette widget\'s own DOM dataset (`item.dataset.type`) and drag state (`this.drag.type`) for the tile being dragged' },
 };
 const IMPORT_RECORD = {
-	'app/src/main.js': { count: 2, cites: [], trigger: 'permanent',
-		reason: 'the page\'s composition root: it composes the network into the page, as product/ composes the kinds -- a composition root composes plugins by design' },
+	'app/src/main.js': { count: 3, cites: ['H26-23'], trigger: 'permanent',
+		reason: 'the page\'s composition root: it composes the network into the page, as product/ composes the kinds -- a composition root composes plugins by design; RAISED at H26.6\'s move 15 by one: the header\'s grid field, its sizes, its edit and its notice the layouts plugin\'s (PAN-ZOOM.md 3.5, PZ29)' },
 	'app/src/run-mode.js': { count: 2, cites: ['H17-D7'], trigger: 'permanent',
 		reason: 'the product page\'s run-mode list: the simulation\'s spawner and tower, the devices plugin\'s panel rows -- the product\'s composition' },
 };

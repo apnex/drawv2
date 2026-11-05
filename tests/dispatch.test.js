@@ -33,8 +33,11 @@ const calls = (ops) => {
 	return r.called;
 };
 
-test('TG-4: an edit that touches only a zone calls no reaction at all', () => {
-	assert.deepEqual(calls([{ op: 'set', kind: 'zone', id: 'zone-00000a', patch: { x: 30 } }]), []);
+// RESTATED at H26.6's move 15 (PAN-ZOOM.md 3.5, GR18): no reaction -- the one call is the layouts plugin's refusal judging the moved zone
+// against the result's grid, which hears every change to a zone's corner or size
+test('TG-4: an edit that touches only a zone calls no reaction at all -- from H26.6 move 15, only the result\'s grid check', () => {
+	assert.deepEqual(calls([{ op: 'set', kind: 'zone', id: 'zone-00000a', patch: { x: 30 } }]), ['on-result-grid']);
+	assert.deepEqual(calls([{ op: 'set', kind: 'zone', id: 'zone-00000a', patch: { name: 'renamed' } }]), [], 'a zone renamed calls nothing');
 });
 
 test('TG-4: a rename calls nothing, and a plane change calls only the join', () => {

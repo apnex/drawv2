@@ -52,11 +52,14 @@ test('GR7 (H26.6 move 14): a record carrying any field but id, name and pitch is
 	for (const pitch of [60, 80, 120]) assert.deepEqual(diagramLattices({ pitch }).zone.declaration.origin, { x: pitch / 2, y: pitch / 2 }, `${pitch}: the zone lattice half a square off`);
 });
 
-test('PZ20, PZ21 (H26.6 move 14): the pitch is even and held at 60 until move 15 opens 60 to 120', () => {
+// RESTATED at H26.6's move 15 (PAN-ZOOM.md 3.5; PZ21, ruled): opened -- an even size from 60 to 120, a whole number outside it refused
+// naming the range, anything that is not a whole number refused by the field
+test('PZ20, PZ21 (H26.6 moves 14 and 15): the pitch is an even size from 60 to 120 -- held at 60 until move 15 opened it', () => {
 	const m = new Model();
 	const setPitch = (pitch) => plan(m, [{ op: 'set', kind: 'layout', id: 'layout-000001', patch: { pitch } }]);
-	assert.equal(setPitch(60).ok, true, '60 -- the control');
-	for (const pitch of [61, 59, 62, 80, 120, 30, 0, -60, 60.5, '60', null]) assert.match(setPitch(pitch).error ?? '', /invalid value for layout\.pitch/, `${JSON.stringify(pitch)} refused`);
+	for (const pitch of [60, 62, 80, 100, 120]) assert.equal(setPitch(pitch).ok, true, `${pitch} accepted`);
+	for (const pitch of [61, 59, 58, 122, 30, 240]) assert.match(setPitch(pitch).error ?? '', new RegExp(`the grid size ${pitch} is refused -- a diagram's grid is an even size from 60 to 120 \\(PZ21\\)`), `${pitch} refused naming the range`);
+	for (const pitch of [0, -60, 60.5, '60', null]) assert.match(setPitch(pitch).error ?? '', /invalid value for layout\.pitch/, `${JSON.stringify(pitch)} refused by the field`);
 });
 
 test('WD-b1, restated at H26.6 move 14: the planner refuses the grid deleted, a second record, another name; WD7\'s refusal is gone', () => {

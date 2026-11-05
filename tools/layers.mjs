@@ -445,6 +445,8 @@ export const ENTRIES = {
 			'kernel/palette.mjs', 'plugins/simulation/reveal.mjs', 'model/shape.mjs',
 			'product/kinds.mjs',   // the product's composition (O-d): the anchor and the shipped plugins, with the network's rows
 			'plugins/zones/zone-kind.mjs', 'plugins/layouts/layout-kind.mjs', 'plugins/zones/make-zone.mjs',   // O-b1 (H19.19): the zones plugin -- its row, extent and factory
+			'plugins/layouts/size-change.mjs',   // H26.6's move 15: the size change, the layout row's tenant
+			'plugins/layouts/size-notice.mjs',   // H26.6's move 15: the grid field's sizes and the notice it flashes
 			'plugins/zones/zone-painter.mjs', 'product/canvas.mjs',   // C-a (H19.29): the zones plugin's painter, and the product's canvas parts
 			'plugins/zones/zone-gestures.mjs',   // C-d (H19.32): the zones plugin's press row and handles
 			'plugins/devices/device-gestures.mjs',   // C-d (H19.32): the devices plugin's text box row
@@ -513,6 +515,8 @@ export const ENTRIES = {
 			'plugins/network/link-reactions.mjs',
 			'planner/edges.mjs',   // the planner's edges (PL-4)
 			'plugins/zones/zone-kind.mjs', 'plugins/layouts/layout-kind.mjs', 'plugins/zones/make-zone.mjs',   // O-b1 (H19.19): the zones plugin -- its row, extent and factory
+			'plugins/layouts/size-change.mjs',   // H26.6's move 15: the size change, the layout row's tenant
+			'plugins/layouts/size-notice.mjs',   // H26.6's move 15: the grid field the lab's footer holds, and its notice
 			'plugins/zones/zone-painter.mjs', 'product/canvas.mjs',   // C-a (H19.29): the zones plugin's painter, and the product's canvas parts
 			'plugins/zones/zone-gestures.mjs',   // C-d (H19.32): the zones plugin's press row and handles
 			'plugins/devices/device-gestures.mjs',   // C-d (H19.32): the devices plugin's text box row
@@ -558,6 +562,7 @@ export const ENTRIES = {
 			// network's row's, handed in with the composition; model/referential.mjs and the pair capacity left its closure
 			'planner/edges.mjs',   // the planner's edges (PL-4)
 			'plugins/zones/zone-kind.mjs', 'plugins/layouts/layout-kind.mjs',   // O-b1 (H19.19): the zones plugin's row and extent, composed by productKinds; its factory is not loaded
+			'plugins/layouts/size-change.mjs',   // H26.6's move 15: the size change, the layout row's tenant
 			'plugins/groups/group-kind.mjs', 'plugins/groups/group-rules.mjs',   // O-c (H19.20): the groups plugin's row and rules; its factory and lookup are not loaded
 			'plugins/devices/device-fields.mjs', 'plugins/simulation/spawn-field.mjs',   // O-e2 (H19.21): the device's and the spawner's fields, composed onto the anchor
 		],
@@ -996,7 +1001,8 @@ export const UNUSED_EXPORTS = {
 			'plugins/network/pair-capacity.mjs',   // S-b: the pair rule's one home, split out of model/invariants.mjs
 			'plugins/zones/zone-kind.mjs', 'plugins/layouts/layout-kind.mjs',   // O-b1 (H19.19): the zones plugin's row and extent, out of the core and the planner
 			'plugins/groups/group-kind.mjs', 'plugins/groups/group-rules.mjs',   // O-c (H19.20): the groups plugin's row and rules, out of the core and the planner (planner/tenants.mjs moved here)
-			'plugins/devices/device-fields.mjs', 'plugins/simulation/spawn-field.mjs'],   // O-e2 (H19.21): the device's and the spawner's fields, out of the planner
+			'plugins/devices/device-fields.mjs', 'plugins/simulation/spawn-field.mjs',   // O-e2 (H19.21): the device's and the spawner's fields, out of the planner
+			'plugins/layouts/size-change.mjs'],   // H26.6's move 15: the size change, the layout row's tenant (PAN-ZOOM.md 3.5)
 		/*
 		Names DELETED since K0 rather than moved, by the cut and ruling that deleted them. L10 counts a baseline name its
 		module no longer exports as vacated, ready for its new home to claim -- right for a move, wrong for a deletion: a

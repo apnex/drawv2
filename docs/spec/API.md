@@ -322,6 +322,10 @@ AMENDED 2026-10-10 (WD8, H19.45): `layouts` answers with the diagram's two layou
 
 AMENDED at H26.6's move 14 (PZ14, PZ9): `layouts` answers with the diagram's one grid record -- `{layouts: [{id: "layout-000001", name: "grid", pitch: 60}]}`; the routes keep their two names, `node` the device grid and `zone` the zone grid half a square off it, each a lattice of the one grid.
 
+AMENDED at H26.6's move 15 (`dev/design/components/PAN-ZOOM.md` section 3.5; PZ21, PZ29): a diagram's grid size is set as any edit, `{"op": "set", "kind": "layout", "id": "layout-000001", "patch": {"pitch": 80}}` through `commit`, an even size from 60 to 120, any other refused naming the range.\
+The planner moves every anchor and every zone's corners by lattice index -- each keeps its square, every device its own size, the diagram scaled by the new size over the old -- in the same commit, one undo; the request must hold the size change alone, and a change that would carry anything past the bound of 1,000,000 is refused naming it.\
+The answer carries `notice`, `{size, from, factor, message}`, beside the change; `draw grid <size>` prints its message.
+
 `nearest` answers *somewhere legal near here* and returns `{layout, cx, cy, x, y, occupant}`.\
 The pixels are there so you never multiply and the cell is there so you never divide, which are the two steps that produce an off-grid entity.
 

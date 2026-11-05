@@ -21,6 +21,7 @@ import { PRODUCT_CANVAS, CANVAS_SCENE, FOREIGN_LAYERS } from '../../product/canv
 import '../../product/types.mjs';   // the plugins' canvas parts (C-a)
 import { NETWORK_ROWS } from '../../plugins/network/kinds.mjs';   // the network's kind and the field it contributes (S-a)
 import { createPageNetwork } from '../../plugins/network/page.mjs';   // the network, composed into this page as into the lab's (V-b)
+import { attachGridField } from '../../plugins/layouts/size-notice.mjs';   // H26.6's move 15: the grid field (PZ29)
 import { el, pathLengthOf } from './painter.js';   // H26.8: draw's probe, the reveal's measure
 
 const svg = document.getElementById('container');
@@ -185,6 +186,7 @@ window.addEventListener('draw:action', (e) => {
 const menu = {
 	name: document.getElementById('diagram-name'),
 	list: document.getElementById('diagram-list'),
+	grid: document.getElementById('diagram-grid'),   // H26.6's move 15 (PZ29): the grid size, as any edit
 	create: document.getElementById('diagram-new'),
 	del: document.getElementById('diagram-del'),
 	undelete: document.getElementById('diagram-undelete'),
@@ -780,6 +782,7 @@ const sync = new Sync({
 		const readOnly = !mayWrite || !!locked;
 		input.setReadOnly(readOnly);
 		menu.name.disabled = readOnly;
+		if (menu.grid) menu.grid.disabled = readOnly;
 		if (onStateLastId && onStateLastId !== meta.id) { disarmDelete(); networkSaid = null; }   // B298: a notice belongs to its diagram
 		onStateLastId = meta.id;
 		if (document.activeElement !== menu.name) menu.name.value = meta.name;
@@ -860,6 +863,12 @@ bindGestureDefer(input, sync);
 
 menu.name.addEventListener('change', () => { sync.rename(menu.name.value); menu.name.blur(); menu.name.value = model.state.meta.name; });
 menu.list.addEventListener('change', () => { sync.openDiagram(menu.list.value); menu.list.blur(); });
+/*
+H26.6's move 15 (dev/design/components/PAN-ZOOM.md 3.5; PZ29, GR8): the grid field. Its sizes are the ones the layouts plugin's row
+admits; a choice is committed as any edit -- the grid record's pitch set, the planner moving every anchor and zone by lattice index --
+so the page's ops are the agent door's, one commit and one undo, and the notice the route answers is flashed from the page's own commit.
+*/
+if (menu.grid) attachGridField(menu.grid, { model, commit: (edit) => history.commit(edit), flash: (text) => readout.flash(text, 4000) });
 menu.lock.addEventListener('click', () => { if (sync.locked && sync.mayWrite) sync.reclaim(); menu.lock.blur(); });
 menu.create.addEventListener('click', () => { sync.createDiagram(); menu.create.blur(); });
 

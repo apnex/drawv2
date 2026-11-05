@@ -119,7 +119,7 @@ The anchored core's parts, declared once in `tools/layers.mjs` `PARTS` and rende
 | `primitives` | Draw the shapes painters compose | core | `kernel/renderer.mjs` | `lattice` | -- |
 | `rules` | Declare what an input means | core | `kernel/input-rules.mjs` | -- | `@apnex/input-binding` |
 | `planner` | Make the one write every door applies | core | `planner/`, `model/invariants.mjs` | `document`, `kind-contract` | -- |
-| `layouts` | Declare a diagram's grids | plugin | `plugins/layouts/` | `lattice` | -- |
+| `layouts` | Declare a diagram's grids | plugin | `plugins/layouts/` | `document`, `kind-contract`, `lattice` | -- |
 | `devices` | Compose a device onto an anchor | plugin | `plugins/devices/` | `colours`, `document`, `kind-contract`, `lattice`, `primitives` | -- |
 | `network` | Connect anchors | plugin | `plugins/network/` | `colours`, `document`, `kind-contract`, `lattice`, `primitives`, `rules` | -- |
 | `zones` | Bound regions of cells | plugin | `plugins/zones/` | `kind-contract`, `lattice`, `layouts`, `primitives` | -- |
@@ -134,7 +134,7 @@ The anchored core's parts, declared once in `tools/layers.mjs` `PARTS` and rende
 | `editing` | Let a person select, move and resize what the canvas draws | host | `app/src/selection.js`, `app/src/overlay.js`, `app/src/editing-visuals.js`, `app/src/editing-states.js`, `app/src/editing-gestures.js` | `document` | -- |
 | `renderer` | Draw a document through the parts' painters | host | `app/src/renderer.js`, `app/src/painter.js` | `document`, `lattice`, `primitives` | `@apnex/vector-scene` |
 | `sync` | Keep a tab converged with the server | host | `app/src/sync.js`, `app/src/net.js`, `app/src/watchdog.js`, `app/src/clock.js` | `canvas`, `document`, `kind-contract` | -- |
-| `product-page` | Compose the product page | composition root | `app/src/main.js`, `app/src/palette.js`, `app/src/run-mode.js`, `app/src/spectate.js` | `canvas`, `devices`, `editing`, `help`, `network`, `product`, `renderer`, `simulation`, `sync` | -- |
+| `product-page` | Compose the product page | composition root | `app/src/main.js`, `app/src/palette.js`, `app/src/run-mode.js`, `app/src/spectate.js` | `canvas`, `devices`, `editing`, `help`, `layouts`, `network`, `product`, `renderer`, `simulation`, `sync` | -- |
 | `lab` | Compose the canvas over the real modules, without storage | composition root | `lab/` | `canvas`, `document`, `layouts`, `network`, `planner`, `product`, `relations`, `server`, `view` | -- |
 | `server` | Compose the server | composition root | `server/server.js`, `server/app.js`, `server/static.mjs` | `access`, `devices`, `export`, `hub`, `planner`, `rest`, `store` | -- |
 | `access` | Establish who a request comes from | door | `server/identity.mjs`, `server/codes.mjs`, `server/origin.mjs` | -- | -- |
@@ -194,7 +194,7 @@ What a document can hold, as the server composes it (`product/kinds.mjs`, `model
 <!-- BEGIN GENERATED: architecture-kinds. Run tools/generate-architecture.mjs; do not edit by hand. -->
 | Kind | Owner | Stored under | Opts into | Refers to | Fields other plugins contribute | Every document holds |
 |---|---|---|---|---|---|---|
-| `layout` | layouts | `layouts` | -- | -- | -- | `layout-000001` |
+| `layout` | layouts | `layouts` | a planner tenant | -- | -- | `layout-000001` |
 | `node` | the core | `nodes` | selection, names, the anchor | -- | devices: `type`, `shape`, `span`, `content`; the simulation: `spawn`; the network: `transit` | -- |
 | `zone` | zones | `zones` | selection, names | -- | -- | -- |
 | `group` | groups | `groups` | names, a planner tenant, gathering by `members` | `node` | -- | -- |
@@ -289,14 +289,14 @@ Every way something outside the engine reaches it.
 
 **The websocket** -- 11 commands a tab sends (`server/protocol.js`): `hello`, `open`, `create`, `commit`, `undo`, `redo`, `resume`, `select`, `reclaim`, `delete`, `list`.
 
-**The CLI** -- 67 verbs (`cli/verbs.mjs`):
+**The CLI** -- 68 verbs (`cli/verbs.mjs`):
 
 | Group | Verbs |
 |---|---|
 | Context | `health`, `use`, `diagrams`, `context`, `status`, `get`, `history`, `about`, `zone contents`, `link path`, `dump`, `combat`, `movers`, `show`, `map`, `focus`, `links`, `holds`, `peers`, `parity` |
 | Lifecycle | `create`, `delete`, `render`, `deleted`, `restore` |
 | Writing | `lock`, `unlock`, `lock status`, `commit`, `draft begin`, `draft show`, `draft discard`, `undo`, `redo`, `select`, `spawn`, `link`, `panel`, `zone`, `group`, `move`, `rename`, `textsize`, `pipe`, `rm`, `set`, `region` |
-| Placement | `near`, `place`, `add`, `anchor nearest`, `anchor free`, `types`, `layouts` |
+| Placement | `near`, `place`, `add`, `anchor nearest`, `anchor free`, `types`, `layouts`, `grid` |
 | Awareness | `who`, `viewers`, `sessions` |
 | Access | `access`, `grant`, `publish`, `revoke`, `workspace grant`, `code mint`, `code list`, `code revoke`, `workspace grants`, `workspace revoke` |
 <!-- END GENERATED: architecture-doors -->

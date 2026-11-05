@@ -148,7 +148,8 @@ Placement
   anchor nearest <x> <y> [--layout node|zone]      the legal anchor closest to a pixel coordinate
   anchor free [--chunk i,j | --area cx0,cy0,cx1,cy1] [--layout node|zone]  every anchor nothing occupies, in the window `draw map` would show
   types                                            the declared device types: name, map letter, routing pack and run-mode behaviour
-  layouts                                          the diagram's two grids: name, id, pitch, offset and extent
+  layouts                                          the diagram's grid record: name, id and pitch
+  grid [<size>]                                    the grid size, or set it: even, 60 to 120; every device, waypoint and zone keeps its square
 
 Awareness
   who      who else is here: agents driving, people watching

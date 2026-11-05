@@ -1826,7 +1826,7 @@ VERBS.push(
 	},
 	{
 		name: 'layouts', group: 'Placement', usage: 'draw layouts', route: '/diagrams/<id>/layouts', method: 'GET',
-		summary: 'the diagram\'s two grids: name, id, pitch, offset and extent', example: 'draw layouts',
+		summary: 'the diagram\'s grid record: name, id and pitch', example: 'draw layouts',
 		flags: [{ name: '--diagram', about: 'target by id or name' }],
 		async run(ctx) {
 			const id = await activeId(ctx, ctx.flags);
@@ -1835,6 +1835,31 @@ VERBS.push(
 			// is served, a field it does not hold shown as a dash -- so schema 4's one record, holding no offset or extent, prints too
 			const ext = (l) => (l.ext ? `${l.ext.x} x ${l.ext.y}` : '-');
 			return { json: b, text: table(b.layouts.map((l) => [l.name, l.id, l.pitch, l.offset ?? '-', ext(l)]), ['LAYOUT', 'ID', 'PITCH', 'OFFSET', 'EXTENT']) };
+		},
+	},
+	/*
+	H26.6's move 15 (dev/design/components/PAN-ZOOM.md section 3.5; PZ29, PZ21) -- THE GRID'S SIZE, as the page's grid field sets it: with
+	no size, the diagram's grid size; with one, the commit that sets it -- the server's planner moves every anchor and zone by lattice
+	index, each keeping its square, every device its own size, one commit and one undo -- and the route's notice printed. It stages into a
+	draft as every write does (B190); a size change is an edit of its own, so a draft holding it beside another op is refused whole at
+	`draft commit`, naming what else would change.
+	*/
+	{
+		name: 'grid', group: 'Placement', usage: 'draw grid [<size>]', route: '/diagrams/<id>/commit', method: 'POST', also: ['GET /diagrams/<id>/layouts'],
+		summary: 'the diagram\'s grid size, or set it -- an even size from 60 to 120; every device, waypoint and zone keeps its square', example: 'draw grid 80',
+		args: [{ name: 'size', about: 'the new grid size, an even number from 60 to 120; none prints the size' }],
+		flags: [{ name: '--diagram', about: 'target by id or name' },
+			{ name: '--draft', about: 'stage into the draft instead of applying now -- a draft holding anything else beside it is refused' },
+			{ name: '--direct', about: 'apply now, escaping an open `draft begin` session' }],
+		async run(ctx, args) {
+			const id = await activeId(ctx, ctx.flags, { write: args[0] !== undefined });   // the size alone is a read
+			const now = await pitchOf(ctx, id);
+			if (args[0] === undefined) return { json: { id, grid: now }, text: `grid ${now}` };
+			const size = Number(args[0]);
+			if (!Number.isInteger(size)) die(`draw grid takes a whole number, an even size from 60 to 120 -- not ${args[0]}`);
+			return submit(ctx, id, [{ op: 'set', kind: 'layout', id: 'layout-000001', patch: { pitch: size } }], `grid ${size}`, 'grid', (b) => (b.noop
+				? { json: { id, grid: now, version: b.version, noop: true }, text: `grid ${now}: unchanged  v${b.version}` }
+				: { json: { id, grid: size, notice: b.notice ?? null, version: b.version }, text: `${b.notice?.message ?? `grid ${size}`}  v${b.version}` }));
 		},
 	},
 	{

@@ -8,6 +8,7 @@ exactly one side writes at a time.
 */
 
 import { layoutRecords } from '../plugins/layouts/layout-records.mjs';   // WD8 (H19.45): the list the agent API serves -- H26.6's move 14: the one record
+import { sizeChangeNotice } from '../plugins/layouts/size-notice.mjs';   // H26.6's move 15: a size change's notice, answered beside the change
 import { linksOf, linksAt, makeLink } from '../plugins/network/link-queries.mjs';   // which links meet an anchor: the network's (K13d)
 import { snapshotBody, changeBody, reversalBody } from './protocol.js';
 import { announceActivity, announceAccess, viewersFor } from './hub.js';   // B342 (H21.8): in the hub, so the hub does not import REST
@@ -357,6 +358,9 @@ keep true); the high-level verbs now build ops directly, which is all the adapte
 async function commitWrite(res, store, hub, locks, id, token, ops, label, extra, expect, principal, beat) {
 	if (!locks.verify(id, token)) return json(res, 423, { error: 'lock not held (lost during the request)' });
 	if (Number.isNaN(expect)) return json(res, 400, { error: 'X-Draw-Expect must be an integer version', code: 'expect-malformed' });
+	// H26.6's move 15 (PAN-ZOOM.md 3.5, step 5): the grid record as it stood before, so a change that sets a new size is answered with its
+	// notice -- the new size, and that every anchor and zone kept its square
+	const held = store.get(id), gridBefore = held ? layoutRecords(held)[0] : null;
 	const result = store.commit(id, { ops, label, ...(beat || {}), ...(expect === undefined ? {} : { expect }) }, 'server', `rest-${token.slice(0, 8)}`, principal);
 	if (!result.ok) {
 		/*
@@ -393,7 +397,8 @@ async function commitWrite(res, store, hub, locks, id, token, ops, label, extra,
 	if (!result.change) return json(res, 200, { version: result.version, noop: true, ...forked, ...(extra || {}) });
 	const body = changeBody(result.change, store, landed);
 	if (hub) hub.broadcast(landed, 'change', body);
-	return json(res, 200, { ...body, ...forked, ...(extra || {}) });
+	const notice = gridBefore ? sizeChangeNotice({ get: (_kind, recordId) => (recordId === gridBefore.id ? gridBefore : undefined) }, result.change) : null;
+	return json(res, 200, { ...body, ...(notice ? { notice } : {}), ...forked, ...(extra || {}) });
 }
 
 // set the authoritative selection (model-state / status). Mirrors commitWrite: re-verify the token

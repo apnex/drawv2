@@ -59,7 +59,8 @@ test('O-a: the group row carries its tenant and its invariants; the planner and 
 	assert.equal(KINDS.row('group').tenant?.owner, 'groups');
 	assert.equal(typeof KINDS.row('group').invariants, 'function');
 	// RESTATED at H21.8 (B332): LINK_ROW carries its tenant too, ranked before groups
-	assert.deepEqual(KINDS.tenants.map((t) => t.owner), ['network links', 'groups'], 'the composition\'s tenants, from its rows');
+	// RESTATED at H26.6's move 15 (PAN-ZOOM.md 3.5): the layout row carries the size change's, in the rows' order
+	assert.deepEqual(KINDS.tenants.map((t) => t.owner), ['network links', 'layouts', 'groups'], 'the composition\'s tenants, from its rows');
 	const txn = code('planner/txn.mjs'), inv = code('model/invariants.mjs');
 	assert.doesNotMatch(txn, /tenants\.mjs|\bGROUPS\b|groupAfterRemoval/, 'the planner imports no tenant and no group policy');
 	assert.doesNotMatch(inv, /'group'|groupAfterRemoval/, 'the core\'s invariants name no group');

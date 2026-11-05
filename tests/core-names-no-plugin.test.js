@@ -90,8 +90,8 @@ const DEVICE_RECORD = {
 // U3 (H21.7): every remaining non-canvas product module (`export`, `server-only`, `serve`, `cli`, `lab`, `simulation`, `product`,
 // and cross-plugin kind/field reads across `layouts`, `devices`, `network`, `zones`, `groups`, plus `LAYER.network` outside `network/`)
 const PRODUCT_KIND_RECORD = {
-	'cli/verbs.mjs': { count: 154, cites: ['from B138', 'H26-23'],
-		reason: 'the CLI\'s standalone verbs over every collection and kind (B138); RAISED at H26.6\'s move 12: the map\'s windows and senses over nodes, waypoints and zones (PZ33)',
+	'cli/verbs.mjs': { count: 155, cites: ['from B138', 'H26-23'],
+		reason: 'the CLI\'s standalone verbs over every collection and kind (B138); RAISED at H26.6\'s move 12: the map\'s windows and senses over nodes, waypoints and zones (PZ33); RAISED at move 15 by one: `draw grid` sets the grid record\'s pitch (PZ29)',
 		trigger: 'permanent' },
 	'engine/situation.mjs': { count: 2, cites: ['D2'],
 		reason: 'the pointer situation naming `link` for the draw-a-link gesture and a selected link (D2)',
@@ -110,6 +110,10 @@ const PRODUCT_KIND_RECORD = {
 		trigger: 'permanent' },
 	// RESTATED at H26.6's move 14 (PAN-ZOOM.md section 3.4): the one grid record; the zone's dots are the zone lattice of it, and
 	// plugins/layouts/layout-table.mjs, whose 1 was the zone record, is deleted
+	// H26.6's move 15 (PAN-ZOOM.md section 3.5): the size change moves every zone's corners by its zone-lattice indices
+	'plugins/layouts/size-change.mjs': { count: 1, cites: ['H26-23'],
+		reason: 'the size change naming the zones plugin\'s kind, whose corners it keeps on their zone-lattice indices (3.5, step 2)',
+		trigger: 'permanent' },
 	'plugins/layouts/layout-canvas.mjs': { count: 1, cites: ['WD6', 'H26-23'],
 		reason: 'the layouts plugin\'s canvas part naming the `zone` dots, the zone lattice of the diagram\'s one grid record (3.4)',
 		trigger: 'permanent' },

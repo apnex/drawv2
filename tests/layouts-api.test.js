@@ -117,7 +117,7 @@ test('WD-b1 test 11, restated at H26.6 move 14: a write the grid record\'s row d
 	try {
 		const set = await commit([{ op: 'set', kind: 'layout', id: 'layout-000001', patch: { pitch: 30 } }]);
 		assert.notEqual(set.status, 200, 'a pitch of 30 is refused');
-		assert.match(set.body.error, /layout\.pitch/, 'naming the field');
+		assert.match(set.body.error, /the grid size 30 is refused -- a diagram's grid is an even size from 60 to 120/, 'naming the range (H26.6 move 15)');
 		const offset = await commit([{ op: 'set', kind: 'layout', id: 'layout-000001', patch: { offset: 30 } }]);
 		assert.match(offset.body.error, /unknown field layout\.offset/, 'a stored offset is refused (GR7)');
 		const second = await commit([{ op: 'put', kind: 'layout', entity: { id: 'layout-000002', name: 'grid', pitch: 60 } }]);

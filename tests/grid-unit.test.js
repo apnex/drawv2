@@ -198,7 +198,8 @@ test('GR4 (move 13): validation -- an anchor and a zone on a diagram\'s grid acc
 	assert.match(refusal(plan(moved, [{ op: 'set', kind: 'node', id: 'node-ee0001', patch: { x: 180 } }])) ?? '', /off the diagram's grid of 80/, '80: a move to x 180 refused');
 });
 
-test('GR4 (move 13): at load, an anchor is judged on its own document\'s grid -- refused at 60 off its grid, and at 80 only the grid record itself refused (its pitch held at 60 until move 15)', () => {
+// RESTATED at H26.6's move 15: a diagram stored at 80 loads clean, its anchors judged on its own grid
+test('GR4 (moves 13 and 15): at load, an anchor is judged on its own document\'s grid -- refused at 60 off its grid, and at 80 accepted on it', () => {
 	const doc = (pitch, x) => {
 		const m = sized(new Model(), pitch);
 		m.put('node', { id: 'node-ee0001', name: 'n', type: 'host', x, y: 0 });
@@ -207,9 +208,8 @@ test('GR4 (move 13): at load, an anchor is judged on its own document\'s grid --
 	const at60 = validateDoc(doc(60, 80));
 	assert.match(String(at60), /node-ee0001 lies at 80,0, off the diagram's grid of 60/, '60: an anchor at 80 refused at load');
 	assert.equal(validateDoc(doc(60, 120)), null, 'control: 60 holds 120,0');
-	const at80 = validateDoc(doc(80, 80));
-	assert.doesNotMatch(String(at80), /node-ee0001/, '80: the anchor at 80 is not what is refused');
-	assert.match(String(at80), /invalid value for layout\.pitch/, '80: the grid record is, its pitch held at 60 until move 15 (WD7\'s refusal before move 14)');
+	assert.equal(validateDoc(doc(80, 80)), null, '80: a document stored at 80, its anchor at 80, loads clean (from move 15)');
+	assert.match(String(validateDoc(doc(80, 60))), /node-ee0001 lies at 60,0, off the diagram's grid of 80/, '80: an anchor at 60 refused on it');
 });
 
 // ---- placement and the export ----

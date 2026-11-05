@@ -266,6 +266,9 @@ const SCENE_READS = {
 	// H26.8's painters move: 3.3's table names no plugin, and the simulation's marks, declared `(parts, value) -> parts` (3.2, NS5), find
 	// the tower's glyph beneath the entity's own shape -- the word of the descriptions, counted as the renderer's are (an erratum)
 	'plugins/simulation/spawn-appearance.mjs': 2,
+	// H26.6's move 15 (PAN-ZOOM.md 3.5, PZ29): the grid field's one listener, on the page's own select handed in -- the product's header,
+	// the lab's footer -- an element of the page's chrome, never one the scene made
+	'plugins/layouts/size-notice.mjs': 1,
 	'app/src/view.js': 0,             // H26.6's move 7 (GR1): the view part, handed the scene, reaches no element -- the scene writes the view
 };
 // the modules of 3.3's parts, from PARTS: the named, then every plugin

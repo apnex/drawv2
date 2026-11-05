@@ -39,6 +39,7 @@ import { routeLink } from '../../plugins/network/pipes.mjs';
 import { NETWORK_ROWS } from '../../plugins/network/kinds.mjs';   // the network's kind and the field it contributes (S-a)
 import { createPageNetwork } from '../../plugins/network/page.mjs';
 import { latticesOf } from '../../plugins/layouts/layout-records.mjs';   // H26.6's move 13: the diagram's lattices, the authority's index keyed by its device lattice
+import { attachGridField } from '../../plugins/layouts/size-notice.mjs';   // H26.6's move 15: the grid field, as the product's header holds it (PZ29)
 
 /*
 The DOM contract, asserted rather than assumed.
@@ -53,7 +54,7 @@ canvas opens appends the layers -- so the markup is checked for the root, and th
 AMENDED H26.6's move 7 (dev/design/components/PAN-ZOOM.md section 3.8, PZ25): the root is bare, its ground its CSS background, so the
 markup holds no ground to check.
 */
-const NEEDED = ['container', 'readout-bottom', 'lab-notice', 'kdefs', 'lab-frames', 'lab-frames-reset', 'view-home'];
+const NEEDED = ['container', 'readout-bottom', 'lab-notice', 'kdefs', 'lab-frames', 'lab-frames-reset', 'view-home', 'lab-grid'];
 const missing = NEEDED.filter((id) => !document.getElementById(id));
 if (missing.length) throw new Error(`the lab page is missing: ${missing.join(', ')}`);
 
@@ -106,8 +107,8 @@ const authority = new Model({ kinds, attached: { network } });   // a Model hold
 attachRelations(authority, { deviceLattice: (model) => latticesOf(model).device });   // H26.6's move 12 (PZ26): the device lattice handed; move 13: the diagram's own
 const log = new Log();
 
-const notice = document.getElementById('lab-notice');
-const say = (text) => { notice.textContent = text; };
+const say = (text) => { document.getElementById('lab-notice').textContent = text; };
+attachGridField(document.getElementById('lab-grid'), { model, commit: (edit) => history.commit(edit), flash: say });   // H26.6's move 15: a size change, its notice said
 
 
 /*
