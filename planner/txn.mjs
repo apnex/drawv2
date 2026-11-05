@@ -477,6 +477,14 @@ function planOne(model, op, place, kinds) {
 	}
 
 	if (!['put', 'set', 'del'].includes(op.op)) return { ok: false, error: `unknown op '${op.op}'` };
+	/*
+	H26.6's move 15 fix (found by batch 2's targeted check): a `set` carrying no patch -- its fields written beside `op`, or `patch: null` --
+	passed validation as `{ id }` alone and then threw in `narrow`, so the door answered 500, whatever else the request held: a grid size
+	change after it among them. Refused here, naming the entity, as every malformed op is.
+	*/
+	if (op.op === 'set' && (op.patch === null || typeof op.patch !== 'object')) {
+		return { ok: false, error: `set ${op.kind} ${op.id} carries no patch -- a set is { op: 'set', kind, id, patch: { field: value } }, what it changes in its patch` };
+	}
 	const err = validateMutation(model, asMutation(op), kinds);
 	if (err) return { ok: false, error: err };
 

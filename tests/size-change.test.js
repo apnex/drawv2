@@ -280,3 +280,61 @@ test('PZ29 (H26.6 move 15): the grid field -- its value the model\'s size, a cho
 		assert.equal(said.length, 1, 'choosing the size it has flashes nothing');
 	} finally { h.restore(); }
 });
+
+/*
+Batch 2's targeted check (H26.6 move 15 fix): a request with an edit before the size change, sent while the diagram is at 80 -- moving a
+device, then putting the grid record at 60 -- answered 500 when the move was a `set` carrying no patch (its fields beside `op`): the
+planner's phase 1 threw in `narrow` before any reaction or refusal ran, the grid op beside it or not. Every such request is refused
+with a sentence naming the entity, through the planner and the REST door, and so is its mirror, the size change first.
+*/
+const at80 = () => { const m = board(); assert.equal(commit(m, new Log(), { ops: [P(80)] }, 'server', 't').ok, true); return m; };
+const GRID_PUT_60 = { op: 'put', kind: 'layout', entity: { id: 'layout-000001', name: 'grid', pitch: 60 } };
+test('H26.6 move 15 fix: at 80, a device moved and then the grid put at 60 -- and the mirror -- are refused with a sentence naming the device, never thrown', () => {
+	const bare = { op: 'set', kind: 'node', id: 'node-5c0001', x: 160, y: 0 };   // the fields beside `op`, no patch
+	const moved = { op: 'set', kind: 'node', id: 'node-5c0001', patch: { x: 160 } };
+	const cases = [
+		[[bare, GRID_PUT_60], 0, /set node node-5c0001 carries no patch -- a set is \{ op: 'set', kind, id, patch: \{ field: value \} \}/],
+		[[GRID_PUT_60, bare], 1, /set node node-5c0001 carries no patch/],
+		[[{ ...bare, patch: null }, GRID_PUT_60], 0, /set node node-5c0001 carries no patch/],
+		[[moved, GRID_PUT_60], -1, /a grid size change is an edit of its own -- node a would change beside the grid of 60/],
+		[[GRID_PUT_60, moved], 1, /node-5c0001 lies at 160,0, off the diagram's grid of 60/],
+		[[bare], 0, /set node node-5c0001 carries no patch/],
+	];
+	for (const [ops, opIndex, said] of cases) {
+		const m = at80(), before = JSON.stringify(m.toJSON());
+		let r;
+		assert.doesNotThrow(() => { r = plan(m, ops); }, `${JSON.stringify(ops)}: answered, not thrown`);
+		assert.equal(r.ok, false, JSON.stringify(ops));
+		assert.match(r.error, said, `${JSON.stringify(ops)}: named`);
+		assert.equal(r.opIndex, opIndex, `${JSON.stringify(ops)}: at its op`);
+		assert.equal(JSON.stringify(m.toJSON()), before, 'nothing changed');
+	}
+});
+
+test('H26.6 move 15 fix: the same requests through the REST door are 422 with the sentence, the diagram left at 80', async () => {
+	const dataDir = scratchFolder('draw-size-change-fix-');
+	const app = await makeApp({ dataDir, port: 0 }), base = `http://localhost:${app.port}/api/v1`;
+	const said = [], warn = console.warn;
+	console.warn = (...a) => { said.push(a.join(' ')); };
+	try {
+		const id = (await (await fetch(`${base}/diagrams`)).json())[0].id;
+		const lock = await (await fetch(`${base}/diagrams/${id}/lock`, { method: 'POST' })).json();
+		const send = async (ops) => { const r = await fetch(`${base}/diagrams/${id}/commit`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Draw-Lock': lock.token }, body: JSON.stringify({ ops }) }); return { status: r.status, body: await r.json() }; };
+		assert.equal((await send([P(80)])).status, 200);
+		const device = (await (await fetch(`${base}/diagrams/${id}`)).json()).nodes.find((n) => n.type);
+		const bare = { op: 'set', kind: 'node', id: device.id, x: device.x + 80, y: device.y };
+		const moved = { op: 'set', kind: 'node', id: device.id, patch: { x: device.x + 80 } };
+		for (const [ops, sentence] of [
+			[[bare, GRID_PUT_60], new RegExp(`set node ${device.id} carries no patch`)],
+			[[GRID_PUT_60, bare], new RegExp(`set node ${device.id} carries no patch`)],
+			[[moved, GRID_PUT_60], new RegExp(`a grid size change is an edit of its own -- node ${device.name} would change beside the grid of 60`)],
+			[[GRID_PUT_60, moved], new RegExp(`${device.id} lies at ${device.x + 80},${device.y}, off the diagram's grid of 60`)],
+		]) {
+			const r = await send(ops);
+			assert.equal(r.status, 422, `${JSON.stringify(ops)}: ${JSON.stringify(r.body)}`);
+			assert.match(r.body.error, sentence);
+		}
+		assert.deepEqual((await (await fetch(`${base}/diagrams/${id}/layouts`)).json()).layouts, [{ id: 'layout-000001', name: 'grid', pitch: 80 }], 'the diagram left at 80');
+		assert.deepEqual(said.filter((l) => /write failed/.test(l)), [], 'and no write failed');
+	} finally { console.warn = warn; await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
+});
