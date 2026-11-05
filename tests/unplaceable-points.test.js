@@ -16,7 +16,8 @@ import { snapNode, snapIn, placesOf } from '../app/src/snap.js';
 import { PRODUCT_CANVAS } from '../product/canvas.mjs';
 import { Model } from './fixtures/composed.mjs';
 import { attachRelations } from '../engine/store.mjs';
-import { NODE_GRID } from '../kernel/geometry.mjs';
+import { diagramLattices } from '../kernel/geometry.mjs';
+const NODE_GRID = diagramLattices({ pitch: 60 }).device;   // H26.6's move 13: a diagram's device lattice at 60, NODE_GRID gone from the kernel (GR16)
 
 // not finite, beyond the domain, not a number, missing
 const UNPLACEABLE = [{ x: NaN, y: 0 }, { x: 0, y: Infinity }, { x: 1e300, y: 0 }, { x: 0, y: -(2 ** 60) }, { x: 'a', y: 0 }, { x: undefined, y: 0 }, { y: 0 }];
@@ -24,7 +25,7 @@ const allNaN = (o) => Object.values(o).every((v) => (v && typeof v === 'object' 
 const show = (p) => JSON.stringify(p, (k, v) => (typeof v === 'number' && !Number.isFinite(v) ? String(v) : v === undefined ? 'undefined' : v));
 
 test('F6: a zone corner dragged to, or from, a point the zone grid cannot place gives a box of NaN, never a throw', () => {
-	const resize = (fixedCorner, pos) => ZONE_HANDLE_SPECS[0].at({ fixedCorner }, pos);
+	const resize = (fixedCorner, pos) => ZONE_HANDLE_SPECS[0].at({ fixedCorner, lattice: diagramLattices({ pitch: 60 }).zone }, pos);   // move 13: the lattice its start resolved
 	assert.deepEqual(resize({ x: -30, y: -30 }, { x: 450, y: 450 }), { x: -30, y: -30, w: 480, h: 480 }, 'control: a corner on the grid');
 	for (const p of UNPLACEABLE) {
 		let box;
@@ -48,11 +49,12 @@ test('F6: a text box framed from a point the node grid cannot place gives a fram
 });
 
 test('F6: a point snapped on a grid it cannot be placed on snaps to NaN, never a throw -- pointOn, the guard the others follow', () => {
-	const zone = placesOf(PRODUCT_CANVAS).get('zone');
-	assert.deepEqual(snapNode({ x: 14, y: -14 }), { x: 0, y: 0 }, 'control');
+	// RESTATED at H26.6's move 13: each snap on the diagram's lattices, a model's
+	const places = placesOf(PRODUCT_CANVAS), zone = places.get('zone'), m = new Model();
+	assert.deepEqual(snapNode(places, m, { x: 14, y: -14 }), { x: 0, y: 0 }, 'control');
 	for (const p of UNPLACEABLE) {
-		assert.deepEqual(snapNode(p), { x: NaN, y: NaN }, `snapNode ${show(p)}`);
-		assert.deepEqual(snapIn(zone, p), { x: NaN, y: NaN }, `snapIn ${show(p)}`);
+		assert.deepEqual(snapNode(places, m, p), { x: NaN, y: NaN }, `snapNode ${show(p)}`);
+		assert.deepEqual(snapIn(zone, p, m), { x: NaN, y: NaN }, `snapIn ${show(p)}`);
 	}
 });
 

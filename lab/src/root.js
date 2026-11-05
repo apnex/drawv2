@@ -23,7 +23,6 @@ network: the tab model proposes, the authority model rules, exactly as productio
 */
 
 import { editOf } from '../../app/src/commands.js';   // C-e (D5): the network's edit, built by the canvas's generic builder
-import { NODE_GRID } from '../../kernel/geometry.mjs';
 import { Model } from '../../model/model.mjs';
 import { attachRelations } from '../../engine/store.mjs';
 import { applyOps } from '../../model/ops.mjs';
@@ -39,6 +38,7 @@ import { PRODUCT_CANVAS, CANVAS_LAYERS, CANVAS_SCENE } from '../../product/canva
 import { routeLink } from '../../plugins/network/pipes.mjs';
 import { NETWORK_ROWS } from '../../plugins/network/kinds.mjs';   // the network's kind and the field it contributes (S-a)
 import { createPageNetwork } from '../../plugins/network/page.mjs';
+import { latticesOf } from '../../plugins/layouts/layout-records.mjs';   // H26.6's move 13: the diagram's lattices, the authority's index keyed by its device lattice
 
 /*
 The DOM contract, asserted rather than assumed.
@@ -103,7 +103,7 @@ the planner's answer is what the tab applies. The seam is identical to productio
 transport is gone.
 */
 const authority = new Model({ kinds, attached: { network } });   // a Model holding links draws with the network (V-e, J2)
-attachRelations(authority, { deviceLattice: () => NODE_GRID });   // H26.6's move 12 (PZ26): the device lattice handed, as the product's composition hands it
+attachRelations(authority, { deviceLattice: (model) => latticesOf(model).device });   // H26.6's move 12 (PZ26): the device lattice handed; move 13: the diagram's own
 const log = new Log();
 
 const notice = document.getElementById('lab-notice');

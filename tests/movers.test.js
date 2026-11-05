@@ -89,8 +89,9 @@ test('H12.1: a sample midway round a corner is ON the corner, not at the vertex'
 
 // ---- H12.3 — the simulation ----
 
+// RESTATED at H26.6's move 13 (PZ19, 3.8): a descriptor carries the diagram's grid beside its speed -- here 60
 const spawner = (o = {}) => prepareSpawner({
-	id: 'node-aaaaaa', pts: [[0, 0], [1000, 0]], since: 0, interval: 1000, speed: CELLS(100), ...o,
+	id: 'node-aaaaaa', pts: [[0, 0], [1000, 0]], since: 0, interval: 1000, speed: CELLS(100), pitch: 60, ...o,
 });
 
 test('H12.3: a prepared spawner carries its own route and length, and stays plain data', () => {
@@ -359,11 +360,16 @@ test('B171: the presentation rebuilds a mover whose route changed, and only then
 test('B172: speed is authored in CELLS and converted to pixels exactly once', () => {
 	// the whole reason the fixtures above divide. Authored in the grid's unit (B110), computed in
 	// the unit a path is measured in, and the conversion lives at the boundary between them.
-	const s = prepareSpawner({ id: 'w', pts: [[0, 0], [600, 0]], since: 0, interval: 1000, speed: 2 });
+	// RESTATED at H26.6's move 13 (dev/design/components/PAN-ZOOM.md section 3.8, PZ19): a cell is a square of the diagram's grid, handed
+	// in the descriptor beside the speed -- the conversion still at the boundary, still once
+	const s = prepareSpawner({ id: 'w', pts: [[0, 0], [600, 0]], since: 0, interval: 1000, speed: 2, pitch: 60 });
 	assert.equal(s.speed, 2, 'the authored value survives, so a reader sees what they supplied');
-	assert.equal(s.pxSpeed, 2 * STD.pitch, 'and the computed one is pixels');
+	assert.equal(s.pxSpeed, 2 * 60, 'and the computed one is pixels -- squares of the grid it was handed');
 	// 2 cells/s over a 600px route = 120px/s, so 1s of travel is 120px
 	assert.equal(Math.round(moversAt([s], 1000)[0].travelled), 120);
+	const at80 = prepareSpawner({ id: 'w', pts: [[0, 0], [800, 0]], since: 0, interval: 1000, speed: 2, pitch: 80 });
+	assert.deepEqual([at80.pxSpeed, Math.round(moversAt([at80], 1000)[0].travelled)], [160, 160], 'on a grid of 80, 2 cells a second are 160 units');
+	assert.equal(prepareSpawner({ id: 'w', pts: [[0, 0], [600, 0]], since: 0, interval: 1000, speed: 2 }).pxSpeed, 0, 'a descriptor with no grid emits nothing, as one with no route');
 });
 
 /*

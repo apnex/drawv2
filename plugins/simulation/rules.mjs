@@ -35,12 +35,10 @@ protocol. Mutation stays with player intent. Ruled 2026-09-01.
 */
 
 import { moversAt } from './movers.mjs';
-import { spawnersOf } from './spawners.mjs';
+import { spawnersOf, gridPitchOf } from './spawners.mjs';
 import { towerFor, moverFor, tickAt, cycleOf, TICK_MS } from './kinds.mjs';
-import { NODE_GRID } from '../../kernel/geometry.mjs';   // H26.1: the node grid's declared pitch, the length a cell is
 import { typedNodes } from '../devices/device-shapes.mjs';   // whether a device is composed: the devices plugin's (O-e1)
 
-const PITCH = NODE_GRID.declaration.pitch;
 
 /*
 The board at rest: everything a rule reads, gathered once.
@@ -61,12 +59,14 @@ export function worldOf(model) {
 	// below: both are equivalent mutants and neither is killable. Survivors accepted.
 	towers.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
 	const spawners = spawnersOf(model);
-	return { towers, spawners, byId: new Map(spawners.map((s) => [s.id, s])) };
+	// H26.6's move 13 (PZ19, 3.8): and the diagram's grid, whose squares a tower's range is counted in
+	return { towers, spawners, byId: new Map(spawners.map((s) => [s.id, s])), pitch: gridPitchOf(model) };
 }
 
-// squared distance in CELLS, as integers where the grid is integral. No sqrt, no hypot: B176.
-const inRange = (tower, at) => {
-	const dx = (at[0] - tower.x) / PITCH, dy = (at[1] - tower.y) / PITCH;
+// squared distance in CELLS, as integers where the grid is integral. No sqrt, no hypot: B176. H26.6's move 13: squares of the
+// diagram's grid, the world's `pitch`
+const inRange = (pitch, tower, at) => {
+	const dx = (at[0] - tower.x) / pitch, dy = (at[1] - tower.y) / pitch;
 	return dx * dx + dy * dy <= tower.range * tower.range;
 };
 
@@ -89,7 +89,7 @@ would slowly disagree about where a tower is looking.
 export function aimAt(world, alive) {
 	const aim = new Map();
 	for (const t of world.towers) {
-		const targets = alive.filter((m) => inRange(t, m.at));
+		const targets = alive.filter((m) => inRange(world.pitch, t, m.at));
 		if (!targets.length) continue;
 		/*
 		The leading target: `progress` is distance along the route, so this is the mover furthest in

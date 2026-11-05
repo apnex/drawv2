@@ -19,8 +19,9 @@ own circle at the same radius in a brighter fill, one layer up. The zone grid's 
 lattice, and reads as bigger on purpose because it shows only while Shift is held.
 */
 
-import { gridDot, latticeGrids, NODE_GRID as NODE_LATTICE } from '../../kernel/geometry.mjs';
-import { layoutNamed } from './layout-records.mjs';
+import { gridDot } from '../../kernel/geometry.mjs';
+import { latticeGrids } from '../../kernel/lattice-grids.mjs';   // H26.6's move 13: moved from kernel/geometry.mjs (E16)
+import { layoutNamed, latticesOf } from './layout-records.mjs';
 
 /*
 H26.1 (dev/design/components/SNAP-GRID.md appendix B): every point of a layout's lattice within its extent, row by row, was what a grid
@@ -45,8 +46,9 @@ const ZONE_GRID = grid('zone', { layer: 'grid-zones', r: 5, shownWith: 'shiftKey
 // H26.1: and it carries the node grid bounded by its extent, which it snaps to (`nodeGridWithin`, SNAP-GRID.md section 5). H26.8's grid
 // move (NATIVE-SHAPES.md section 3.2, "A place carries its grid alone"): the table's extent bounds the grid, and the place keeps no `ext`
 // RESTATED at H26.6's move 11 (PAN-ZOOM.md section 3.8, "The extents"): the node lattice with no bounds, so an anchor snaps and moves anywhere.
-// RESTATED at H26.6's move 12 (GR3): the kernel's node lattice itself, where it opened the layout table's node record -- the table is held
-// to the layout row and records; move 13 hands each place its lattice from the diagram's record
-const ANCHOR_PLACE = { kind: 'node', layout: 'node', grid: NODE_LATTICE, sizedBy: 'parts' };
+// RESTATED at H26.6's move 12 (GR3): the kernel's node lattice itself, where it opened the layout table's node record. RESTATED at move 13
+// (PAN-ZOOM.md section 3.9; appendix A): the place holds no grid -- its layout's name, and the diagram's device lattice resolved from the
+// model's record at each call (`latticesOf`)
+const ANCHOR_PLACE = { kind: 'node', layout: 'node', lattice: (model) => latticesOf(model).device, sizedBy: 'parts' };
 
 export const LAYOUTS_CANVAS = { owner: 'layouts', stylesheets: ['plugins/layouts/layouts.css'], places: [ANCHOR_PLACE], grids: [NODE_GRID, ZONE_GRID] };

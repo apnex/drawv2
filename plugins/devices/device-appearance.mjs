@@ -18,7 +18,6 @@ import { makeWaypoint } from './make-node.mjs';
 import { waypointAt } from './occupancy.mjs';
 import { STD, L_STD } from '../../kernel/spec.mjs';
 import { selBox, hexColor, showsSockets, nameLabel } from '../../kernel/renderer.mjs';
-import { NODE_GRID } from '../../kernel/geometry.mjs';   // H26.1: the node grid's declared pitch, a socket's step
 import { TOKENS } from '../../kernel/theme.mjs';
 import { GLYPH_BB, DEFAULT_GLYPH_BB, GLYPH_DEFS, isPanel, frameRadius, frameWidth, contentLayout } from './device-types.mjs';
 import { hasDevice } from './device-fields.mjs';
@@ -31,7 +30,7 @@ import { DEVICE_DESCRIBE, DEVICE_SELECT_ALL } from './device-facts.mjs';
 import { DEVICE_LABELS } from './device-labels.mjs';
 
 const FE = L_STD.frame.ext;            // the frame's half-extent (20)
-const PITCH = NODE_GRID.declaration.pitch;   // a socket's step in a device's own frame (stays draw's: positions in that frame)
+const PITCH = STD.pitch;   // a socket's step in a device's own frame (stays draw's: positions in that frame) -- H26.6's move 13 (3.9, PZ18): the unit, never the grid
 const SOCKET = STD.socket;             // the glyph box (26)
 const NODE_LABEL_Y = FE + STD.labelDy; // the label baseline below the frame -- B236, the spec owns the offset
 const SELECT_BOX = selBox(L_STD);      // the kernel's selection brackets (+-23)

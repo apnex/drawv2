@@ -13,7 +13,8 @@ import { Model, KINDS, plan } from './fixtures/composed.mjs';
 import { composeKinds } from '../model/shape.mjs';
 import { LAYOUT_TABLE } from '../plugins/layouts/layout-table.mjs';
 import { STD } from '../kernel/spec.mjs';
-import { NODE_GRID } from '../kernel/geometry.mjs';   // H26.1: the node lattice's declaration (the kernel's LAYOUTS is deleted)
+import { diagramLattices } from '../kernel/geometry.mjs';
+const NODE_GRID = diagramLattices({ pitch: 60 }).device;   // H26.6's move 13: a diagram's device lattice at 60, NODE_GRID gone from the kernel (GR16)
 
 const layouts = (m) => m.all('layout').map((l) => [l.id, l.name, l.pitch, l.offset, l.ext.x, l.ext.y]);
 const WANT = [['layout-000001', 'node', 60, 0, 900, 480], ['layout-000002', 'zone', 60, 30, 930, 510]];

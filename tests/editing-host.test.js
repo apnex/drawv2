@@ -212,12 +212,12 @@ test('the host\'s showBox, cellName and retarget reach the readout, the snapped 
 		h.capture.onDown(endHandle(h, 'src', 360, 360));
 		h.reset();
 		h.capture.onMove(pointer(-300, 200));
-		assert.deepEqual(h.stateCalls('readout.setLink'), [[n1.name, snapNode({ x: -300, y: 200 })]], 'over open ground: the fixed end\'s name and the snapped cell');
+		assert.deepEqual(h.stateCalls('readout.setLink'), [[n1.name, h.input.snapNode({ x: -300, y: 200 })]], 'over open ground: the fixed end\'s name and the snapped cell');
 		h.reset();
 		h.capture.onMove(pointer(360, 0, { target: h.at(n1.id) }));
 		assert.equal(h.states.classesOf(n1.id).includes('hover'), false, 'over the fixed end: never hovered, the id excluded');
 		assert.deepEqual(h.stateCalls('states.setState').filter(([id]) => id === n1.id), [], 'and no state set on it');
-		assert.deepEqual(h.stateCalls('readout.setLink'), [[n1.name, snapNode({ x: 360, y: 0 })]], 'its cell named, as over ground');
+		assert.deepEqual(h.stateCalls('readout.setLink'), [[n1.name, h.input.snapNode({ x: 360, y: 0 })]], 'its cell named, as over ground');
 		h.capture.onMove(pointer(0, 0, { target: h.at(n0.id) }));
 		assert.deepEqual(h.states.classesOf(n0.id), ['hover'], 'control: over another device, hovered');
 		h.capture.onKeyDown(key('Escape'));

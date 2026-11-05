@@ -15,7 +15,7 @@ import { nameLabel } from '../../kernel/renderer.mjs';   // H25.1: a name's labe
 
 // B338 (H21.8, N1): the zones plugin's colour roles over the core palette
 export const ZONE_COLOURS = { zoneFill: 'blueGrey300', zoneStroke: 'blueGrey200' };
-import { ZONE_GRIDS } from '../layouts/layout-table.mjs';   // H26.1: the zone layout's grids, the layouts plugin's; H26.8: its extent their bounds
+import { latticesOf } from '../layouts/layout-records.mjs';   // H26.6's move 13: the diagram's lattices, the layouts plugin's
 import { ZONE_PRESSES, ZONE_HANDLE_SPECS } from './zone-gestures.mjs';
 import { ZONE_KEYS, ZONE_SIZE_STEP } from './zone-keys.mjs';
 import { ZONE_DESCRIBE, ZONE_SELECT_ALL } from './zone-facts.mjs';
@@ -46,7 +46,8 @@ const ZONE_PAINTER = {
 // H26.1: carrying the zone grid bounded by that extent, which it snaps to (SNAP-GRID.md section 5). H26.8's grid move (NATIVE-SHAPES.md
 // section 3.2, "A place carries its grid alone"): its extent is that grid's bounds, the `ext` it kept beside it deleted
 // RESTATED at H26.6's move 11 (PAN-ZOOM.md section 3.8, "The extents"): the zone lattice with no bounds, so a zone snaps and moves anywhere
-const ZONE_PLACE = { kind: 'zone', layout: 'zone', grid: ZONE_GRIDS.unbounded, size: (zone) => ({ w: zone.w, h: zone.h }) };
+// RESTATED at H26.6's move 13 (PAN-ZOOM.md section 3.9): no grid held -- the diagram's zone lattice resolved from the model at each call
+const ZONE_PLACE = { kind: 'zone', layout: 'zone', lattice: (model) => latticesOf(model).zone, size: (zone) => ({ w: zone.w, h: zone.h }) };
 
 // the zones plugin's canvas part: what it brings to the page (C-a: its painter; C-b its pick, on the painter; C-c its place;
 // C-d its press row over the shared box gesture, and its handles)

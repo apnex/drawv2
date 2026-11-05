@@ -11,12 +11,12 @@ Shift+arrow on a lone zone grows it a cell, its NW corner fixed, at least a cell
 size-step row reads this (`sizeStep`), since a device answers the same key. It was `resizeZoneStep`.
 */
 
-import { ZONE_GRIDS } from '../layouts/layout-table.mjs';   // H26.1: the zone layout's grids, the layouts plugin's
+import { latticesOf } from '../layouts/layout-records.mjs';   // H26.6's move 13: the diagram's lattices, the layouts plugin's
 import { makeZone } from './make-zone.mjs';
 
 // H26.1 (SNAP-GRID.md section 5): the zone grid within the zone extent, and its declared pitch -- a zone's length step
-// H26.6's move 11 (PAN-ZOOM.md section 3.8): the unbounded zone lattice -- a wrap enclosing anything, a size step with no edge
-const ZONE_GRID = ZONE_GRIDS.unbounded, GAP = ZONE_GRID.declaration.pitch, HALF = GAP / 2;
+// H26.6's move 11 (PAN-ZOOM.md section 3.8): the unbounded zone lattice -- a wrap enclosing anything, a size step with no edge.
+// RESTATED at move 13 (section 3.9, "the wrap and a zone's size step"): the diagram's zone lattice and its pitch, asked of the model
 
 const meta = (e) => e.ctrlKey || e.metaKey;
 
@@ -26,6 +26,7 @@ const WRAP = {
 	run: (host) => {
 		const b = host.selectionBounds();
 		if (!b) return;   // empty, or links alone
+		const ZONE_GRID = host.ask((model) => latticesOf(model).zone), GAP = ZONE_GRID.declaration.pitch, HALF = GAP / 2;
 		// H26.1 (SNAP-GRID.md appendix B, D10): rounded out to the zone grid, snap-grid's `enclosing` (clamped to its extent until move 11) -- the
 		// smallest block of the zone grid's positions whose span runs through the bounds grown by half a cell; the growth and the
 		// one-cell minimum stay draw's. A selection's bounds are whole numbers -- its entities sit on the lattices, sized in whole
@@ -42,7 +43,8 @@ export const ZONE_KEYS = [WRAP];
 
 export const ZONE_SIZE_STEP = {
 	kind: 'zone', label: 'resize', doc: 'resize the selected zone',
-	step: (zone, dx, dy) => {
+	step: (zone, dx, dy, model) => {
+		const GAP = latticesOf(model).zone.declaration.pitch;   // move 13: a square of the diagram's grid
 		const w = Math.max(zone.w + dx * GAP, GAP), h = Math.max(zone.h + dy * GAP, GAP);   // move 11: a cell at least, no edge
 		return w === zone.w && h === zone.h ? null : { x: zone.x, y: zone.y, w, h };
 	},

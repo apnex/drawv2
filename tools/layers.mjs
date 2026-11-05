@@ -80,7 +80,7 @@ export const KIND_MAY_CONSUME = {
 export const NOT_PARTS = {};
 export const PARTS = {
 	lattice: { duty: 'Compute geometry on the grid', kind: 'core', by: ['O1'],
-		modules: ['kernel/geometry.mjs', 'kernel/spec.mjs', 'kernel/router.mjs'], consumes: [] },   // H26.6's move 12: model/surface.mjs deleted
+		modules: ['kernel/geometry.mjs', 'kernel/lattice-grids.mjs', 'kernel/spec.mjs', 'kernel/router.mjs'], consumes: [] },   // H26.6's move 12: model/surface.mjs deleted; move 13: kernel/lattice-grids.mjs (E16)
 	'kind-contract': { duty: 'Compose kinds from the rows plugins declare', kind: 'core', by: ['N1', 'G3', 'WD6'],
 		modules: ['model/shape.mjs', 'model/limits.mjs'], consumes: [] },
 	document: { duty: 'Hold one document\'s entities', kind: 'core', by: ['O1', 'O4', 'Q1'],
@@ -348,6 +348,7 @@ export const LAYER = {
 		'kernel/router.mjs',     // path geometry on the grid (rounded turns, pathGeometry, pathLength, pointAtDistance)
 		'kernel/input-rules.mjs', // the Rules engine: draw's declaration for input-binding -- its guards, claim and gesture field -- and the tables and session it opens (H26.2, H26.8); names no tenant
 		'kernel/geometry.mjs',   // the grid and cell arithmetic; its link roles and appearance left for the network layer at K13a
+		'kernel/lattice-grids.mjs',   // H26.6's move 13 (E16): a lattice from a layout record's form, and the device's unit -- out of the planner's entry
 		'kernel/renderer.mjs',   // frame and selection primitives the canvas draws with; the SVG scene half left at K11
 		'model/model.mjs',       // the document store; its link methods moved to the network at K13d (H19.25, Q-a)
 		'model/anchors.mjs',     // the bare anchor: how it is stored, asked in one place (F-b, H18.4; F-c, H18.5)
@@ -432,6 +433,7 @@ export const ENTRIES = {
 			'plugins/simulation/kinds.mjs', 'plugins/simulation/movers.mjs', 'engine/relations.mjs', 'plugins/simulation/rules.mjs',
 			'engine/situation.mjs', 'plugins/simulation/spawners.mjs', 'engine/store.mjs', 
 			'kernel/geometry.mjs', 'plugins/network/roles.mjs', 'plugins/network/appearance.mjs', 'kernel/input-rules.mjs', 'kernel/renderer.mjs', 'kernel/router.mjs',
+			'kernel/lattice-grids.mjs',   // H26.6's move 13 (E16): the unit and the dots' lattices
 			'kernel/spec.mjs', 'kernel/theme.mjs', 'plugins/network/link-rules.mjs', 'plugins/network/pair-capacity.mjs', 'model/limits.mjs',
 			'model/model.mjs', 'model/anchors.mjs', 'model/ops.mjs', 'model/order.mjs', 'model/stacking.mjs',
 			'plugins/network/kinds.mjs', 'plugins/network/pipe-kind.mjs',   // S-b (H18.12, G1): the network's rows
@@ -503,6 +505,7 @@ export const ENTRIES = {
 			'engine/ivm.mjs', 'engine/relations.mjs',
 			'engine/situation.mjs', 'engine/store.mjs', 
 			'kernel/geometry.mjs', 'plugins/network/roles.mjs', 'plugins/network/appearance.mjs', 'kernel/input-rules.mjs', 'kernel/renderer.mjs',
+			'kernel/lattice-grids.mjs',   // H26.6's move 13 (E16): the unit and the dots' lattices
 			'kernel/router.mjs', 'kernel/spec.mjs', 'kernel/theme.mjs', 'model/invariants.mjs', 'plugins/network/link-rules.mjs', 'plugins/network/pair-capacity.mjs',
 			'model/limits.mjs', 'model/model.mjs', 'model/anchors.mjs', 'model/ops.mjs', 'model/order.mjs', 'model/stacking.mjs', 'kernel/palette.mjs', 'model/shape.mjs',
 			'plugins/network/link-kind.mjs', 'plugins/network/link-references.mjs', 'plugins/network/transit-offers.mjs',   // S-e (H18.15, G5): the network's link row and its references; H19.10 what each type offers

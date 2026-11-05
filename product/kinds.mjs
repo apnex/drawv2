@@ -17,7 +17,7 @@ the grid (kernel/), and model/ and kernel/ import nothing from each other (C9). 
 
 import { CORE_ROWS, composeKinds } from '../model/shape.mjs';
 import { NAME_MAX, COORD_BOUND, ANCHOR_CAP } from '../model/limits.mjs';
-import { NODE_GRID } from '../kernel/geometry.mjs';
+import { diagramLattices } from '../kernel/geometry.mjs';   // H26.6's move 13: the diagram's lattices, for the anchor's `refers`
 import { ZONE_ROWS } from '../plugins/zones/zone-kind.mjs';
 import { LAYOUT_ROWS } from '../plugins/layouts/layout-kind.mjs';   // WD-b1: the layouts plugin's kind
 import { GROUP_ROWS } from '../plugins/groups/group-kind.mjs';
@@ -70,12 +70,21 @@ trust boundary is never delegated to the module that supplies the magnitude.
 // B111: the LAYOUT is sourced, the CHECK stays local -- the same split the surface extents use.
 // This file restated the half-pitch offset when B110 landed, which made the kernel's silence about
 // the zone grid into a second implementation of it rather than a gap.
-// H26.1 (SNAP-GRID.md section 5, appendix B): ON the node lattice is snap-grid's exact question, `positionAt` on NODE_GRID, one axis
-// at a time with the other held at the origin; the extent check stays first, so it is asked only of a finite number within the
-// extent. Exact where `v % pitch` was too: on the node lattice's origin of 0 the remainder never rounded.
-const { origin: NODE_ORIGIN } = NODE_GRID.declaration;
-const onNodeX = (v) => NODE_GRID.positionAt({ x: v, y: NODE_ORIGIN.y }) !== null;
-const onNodeY = (v) => NODE_GRID.positionAt({ x: NODE_ORIGIN.x, y: v }) !== null;
+// H26.1 (SNAP-GRID.md section 5, appendix B): ON the node lattice is snap-grid's exact question, `positionAt`, both axes at once; the
+// bound's check stays first, in the field predicate, so it is asked only of whole numbers within the bound. RESTATED at H26.6's move 13
+// (dev/design/components/PAN-ZOOM.md sections 3.4 and 3.9): a field predicate is handed the value alone and can ask nothing of the
+// diagram, so it keeps what holds in every diagram -- an integer within PZ31's bound -- and whether the anchor lies on THIS diagram's
+// device lattice is the anchor's `refers`, handed the document's access: its one grid record (`layout-000001`), opened by
+// `diagramLattices`. With no record it answers nothing, `validateDoc` then refusing the document for the record it lacks (`always`).
+// It is judged on a requested op, on every entity a reaction wrote (B302) and on a whole document at load.
+function anchorOnGrid(a, access) {
+	const record = access.get('layout', 'layout-000001');
+	if (!record) return null;
+	// each axis that holds a whole number, the other held at the origin -- a `set` of `x` alone is judged on its `x`
+	const { device } = diagramLattices(record), on = (x, y) => device.positionAt({ x, y }) !== null;
+	const off = (Number.isInteger(a.x) && !on(a.x, 0)) || (Number.isInteger(a.y) && !on(0, a.y));
+	return off ? `${a.id} lies at ${a.x},${a.y}, off the diagram's grid of ${record.pitch} -- an anchor sits on a multiple of ${record.pitch}` : null;
+}
 
 // the checks are LOCAL: the trust boundary is never delegated (B110) -- each plugin's row restates these for its own fields
 const str = (v, max) => typeof v === 'string' && v.length <= max;
@@ -90,8 +99,8 @@ const id = (v, kind) => typeof v === 'string' && new RegExp(`^${kind}-[0-9a-f]{6
 const ANCHOR_FIELDS = {
 	id: (v) => id(v, 'node'),
 	name: (v) => str(v, NAME_MAX),
-	x: (v) => int(v, -COORD_BOUND, COORD_BOUND) && onNodeX(v),   // H26.6's move 11 (PZ31): an integer within the bound, on the lattice
-	y: (v) => int(v, -COORD_BOUND, COORD_BOUND) && onNodeY(v),
+	x: (v) => int(v, -COORD_BOUND, COORD_BOUND),   // H26.6's move 11 (PZ31): an integer within the bound; move 13: on the lattice in `refers`
+	y: (v) => int(v, -COORD_BOUND, COORD_BOUND),
 	order: (v) => int(v, 1, ORDER_MAX),   // the drawing order (F-d, model/order.mjs)
 	// O-e2 (H19.21; O4): the ANCHOR's fields alone -- "The core holds only the anchor". A device's -- its type, frame,
 	// footprint and content regions -- are the devices plugin's (plugins/devices/device-fields.mjs), with the rule that a device
@@ -100,7 +109,8 @@ const ANCHOR_FIELDS = {
 };
 
 // the anchor's row, checked: the core's storage facts with its checks and its cap
-const ANCHOR_ROWS = CORE_ROWS.map((row) => ({ ...row, fields: ANCHOR_FIELDS, cap: ANCHOR_CAP }));
+const ANCHOR_ROWS = CORE_ROWS.map((row) => ({ ...row, fields: ANCHOR_FIELDS, cap: ANCHOR_CAP,
+	refers: (a, access, ...rest) => anchorOnGrid(a, access) ?? row.refers?.(a, access, ...rest) ?? null }));   // H26.6's move 13
 
 // the shipped kinds and fields, in the order a document lists its collections, then a plugin's rows
 // WD-b1: the layouts first -- a document lists its grids before what sits on them

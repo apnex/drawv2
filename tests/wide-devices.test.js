@@ -100,7 +100,7 @@ test('WD-a: a click with a type held on a covered cell lands on the device -- a 
 
 test('WD-a: the index keys an anchor by its own cell -- a covered cell is free, and the index and the scan agree', async () => {
 	const { attachRelations } = await import('../engine/store.mjs');
-	const { NODE_GRID } = await import('../kernel/geometry.mjs');
+	const NODE_GRID = (await import('../kernel/geometry.mjs')).diagramLattices({ pitch: 60 }).device;   // H26.6's move 13: a diagram's device lattice at 60
 	const { occupiedAt } = await import('../plugins/devices/occupancy.mjs');
 	const withIndex = new Model(); attachRelations(withIndex, { deviceLattice: () => NODE_GRID });
 	const scan = new Model();

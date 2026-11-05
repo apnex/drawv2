@@ -5,7 +5,8 @@ import { Model, heldLayouts } from './fixtures/composed.mjs';   // the network's
 import { attachRelations } from '../engine/store.mjs';
 import { selBox, showsSockets } from '../kernel/renderer.mjs';
 import { isPanel, frameRadius } from '../plugins/devices/device-types.mjs';
-import { NODE_GRID } from '../kernel/geometry.mjs';   // H26.1: the relation index is injected the node grid's nearest (it was cellOf)
+import { diagramLattices } from '../kernel/geometry.mjs';
+const NODE_GRID = diagramLattices({ pitch: 60 }).device;   // H26.6's move 13: a diagram's device lattice at 60, NODE_GRID gone from the kernel (GR16)
 import { spanThrough } from '../plugins/devices/device-footprint.mjs';   // H26.1: what a span runs through, snap-grid's span on the node grid (it was spanExtent)
 import { STD, L_STD } from '../kernel/spec.mjs';
 import { svgDocument } from '../server/svg.mjs';   // H25.5 (B378, D4): the real export renderer

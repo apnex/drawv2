@@ -14,7 +14,8 @@ import { Log } from '../planner/log.mjs';
 import { productKinds } from '../product/kinds.mjs';
 import { NETWORK_ROWS } from '../plugins/network/kinds.mjs';
 import { createPageNetwork } from '../plugins/network/page.mjs';
-import { NODE_GRID } from '../kernel/geometry.mjs';
+import { diagramLattices } from '../kernel/geometry.mjs';
+const NODE_GRID = diagramLattices({ pitch: 60 }).device;   // H26.6's move 13: a diagram's device lattice at 60, NODE_GRID gone from the kernel (GR16)
 
 const read = (f) => JSON.parse(fs.readFileSync(new URL(`../lab/${f}`, import.meta.url), 'utf8'));
 

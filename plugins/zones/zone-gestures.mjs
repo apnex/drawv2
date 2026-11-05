@@ -9,12 +9,11 @@ the arithmetic were the canvas's (app/src/recognize.js `zone-draw`, app/src/rele
 now, and the canvas runs the shared gestures they name. Nothing a user sees changes: the gesture corpus holds that.
 */
 
-import { ZONE_GRIDS } from '../layouts/layout-table.mjs';   // H26.1: the zone layout's grids, the layouts plugin's
+import { latticesOf } from '../layouts/layout-records.mjs';   // H26.6's move 13: the diagram's lattices, the layouts plugin's
 import { makeZone } from './make-zone.mjs';
 
-// H26.1 (SNAP-GRID.md section 5): a zone's corners lie on the zone grid -- offset by half a pitch, a zone bounding cells -- within the
-// zone extent, the grid bounded by it
-const ZONE_GRID = ZONE_GRIDS.unbounded;   // H26.6's move 11 (PAN-ZOOM.md section 3.8): a corner dragged anywhere, no edge
+// H26.1 (SNAP-GRID.md section 5): a zone's corners lie on the zone grid -- offset by half a pitch, a zone bounding cells. H26.6's move 11:
+// with no edge. RESTATED at move 13 (PAN-ZOOM.md section 3.9): the diagram's zone lattice, resolved when a corner is grabbed (`start`)
 
 /*
 The four corners of a zone, named the way the handles are. B36 — this was written out twice with the
@@ -46,7 +45,7 @@ F6 (H26.1's verification): a corner the zone grid cannot place -- a coordinate n
 no pointer and no stored zone is -- gives a box of NaN, as the old arithmetic's NaN did, where asking the grid would throw.
 */
 const positionOn = (grid, p) => (p && typeof p.x === 'number' && typeof p.y === 'number' ? grid.nearest(p) : null);
-function resizeBox(pos, fixedCorner) {
+function resizeBox(ZONE_GRID, pos, fixedCorner) {
 	const dragged = positionOn(ZONE_GRID, pos), fixed = positionOn(ZONE_GRID, fixedCorner);
 	if (!dragged || !fixed) return { x: NaN, y: NaN, w: NaN, h: NaN };
 	const corner = {
@@ -82,8 +81,9 @@ const ZONE_HANDLES = {
 	points: (zone) => zoneCorners(zone),
 	preview: 'reshape',
 	// the corner diagonally across from the grabbed one stays put
-	start: (zone, handle) => ({ fixedCorner: zoneCorners(zone)[OPPOSITE_CORNER[handle]], before: { x: zone.x, y: zone.y, w: zone.w, h: zone.h } }),
-	at: (ctx, pos) => resizeBox(pos, ctx.fixedCorner),
+	// and the diagram's zone lattice the drag snaps to (H26.6's move 13), the model handed by the shared handle gesture
+	start: (zone, handle, model) => ({ fixedCorner: zoneCorners(zone)[OPPOSITE_CORNER[handle]], before: { x: zone.x, y: zone.y, w: zone.w, h: zone.h }, lattice: latticesOf(model).zone }),
+	at: (ctx, pos) => resizeBox(ctx.lattice, pos, ctx.fixedCorner),
 	// what the release found: whether the box changed, and the box
 	released: (ctx, after) => ({ changed: Object.keys(after).some((k) => after[k] !== ctx.before[k]), after }),
 	releases: [{ id: 'resize', mutates: true, on: (e) => e.type === 'up', when: (r) => r.changed, run: (host, d) => host.set('resize', 'zone', d.id, d.after) }],

@@ -12,7 +12,8 @@ import assert from 'node:assert/strict';
 import { composeKinds } from '../model/shape.mjs';
 import { Model } from './fixtures/composed.mjs';   // the composition production runs (S-b)
 import { attachRelations } from '../engine/store.mjs';
-import { NODE_GRID } from '../kernel/geometry.mjs';   // H26.1: the relation index is injected the node grid's nearest (it was cellOf)
+import { diagramLattices } from '../kernel/geometry.mjs';
+const NODE_GRID = diagramLattices({ pitch: 60 }).device;   // H26.6's move 13: a diagram's device lattice at 60, NODE_GRID gone from the kernel (GR16)
 import { applyOps } from '../model/ops.mjs';
 import { productKinds } from '../product/kinds.mjs';
 const PRODUCT_KINDS = productKinds();   // the product's own kinds; the export went at S-f with the defaults it served

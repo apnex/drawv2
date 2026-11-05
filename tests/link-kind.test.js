@@ -15,7 +15,8 @@ import { productKinds } from '../product/kinds.mjs';
 const PRODUCT_KINDS = productKinds();   // the product's own kinds; the export went at S-f with the defaults it served
 import { validateEntity as productValidateEntity } from '../planner/validate.js';
 import { attachRelations } from '../engine/store.mjs';
-import { NODE_GRID } from '../kernel/geometry.mjs';   // H26.1: the relation index is injected the node grid's nearest (it was cellOf)
+import { diagramLattices } from '../kernel/geometry.mjs';
+const NODE_GRID = diagramLattices({ pitch: 60 }).device;   // H26.6's move 13: a diagram's device lattice at 60, NODE_GRID gone from the kernel (GR16)
 import { LINK_ROW } from '../plugins/network/link-kind.mjs';
 import { NETWORK_ROWS } from '../plugins/network/kinds.mjs';
 import { Model, KINDS, plan, validateDoc, heldLayouts } from './fixtures/composed.mjs';

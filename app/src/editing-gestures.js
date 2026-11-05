@@ -158,7 +158,7 @@ export const EDITING_GESTURES = {
 			const id = spec && host.selection.list().find((x) => kindOf(x) === spec.kind);
 			const entity = id && host.model.get(spec.kind, id);
 			if (!entity) return null;
-			const ctx = { kind: spec.kind, id, spec, ...spec.start(entity, hit.id) };
+			const ctx = { kind: spec.kind, id, spec, ...spec.start(entity, hit.id, host.model) };   // H26.6's move 13: the model, whose grid a handle may snap to
 			if (spec.preview === 'retarget') {
 				ctx.fixed = host.model.endpointOf(ctx.fixedId);   // an anchor is a node OR a waypoint (B29)
 				if (!ctx.fixed) return null;

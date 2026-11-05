@@ -6,7 +6,8 @@ import { makeZone } from '../plugins/zones/make-zone.mjs';   // O-b1: the zones 
 import assert from 'node:assert/strict';
 import { Model } from './fixtures/composed.mjs';   // the network's kinds, the link among them (S-e)
 import { attachRelations } from '../engine/store.mjs';
-import { NODE_GRID } from '../kernel/geometry.mjs';   // H26.1: the relation index is injected the node grid's nearest (it was cellOf)
+import { diagramLattices } from '../kernel/geometry.mjs';
+const NODE_GRID = diagramLattices({ pitch: 60 }).device;   // H26.6's move 13: a diagram's device lattice at 60, NODE_GRID gone from the kernel (GR16)
 import { STD } from '../kernel/spec.mjs';
 import { makeNode, makeWaypoint } from '../plugins/devices/make-node.mjs';   // O-e1: the devices plugin's factories
 import { occupiedAt, waypointAt } from '../plugins/devices/occupancy.mjs';   // O-e1: which device or waypoint is on a cell

@@ -23,9 +23,12 @@ const keyOf = (kind) => `${kind}/${++serial}`;
 // H26.6's move 8 (dev/design/components/PAN-ZOOM.md sections 3.7 and 3.8): the lines span what the canvas shows, `visible()`'s region, where
 // they spanned the old 1920 by 1080 surface -- the region kept from each view the scene tells, so a pointer's move reads no layout, and a
 // crosshair shown put again for a new view, asked of `schedule` since the scene is not written while it tells (vector-scene VS17)
+// H26.6's move 13 (3.9, "the crosshair's box, a square wide"): `gap` a number, or a function answering the diagram's square at each put
 export function crosshair(scene, gap, { schedule = (fn) => queueMicrotask(fn) } = {}) {
 	let at = null, pending = false, region = scene.visible().region;
+	const square = typeof gap === 'function' ? gap : () => gap;
 	const put = () => {
+		const gap = square();
 		scene.put('snaplayer', 'crosshair', [
 			{ tag: 'line', attrs: { class: 'gridline', x1: at.x, y1: region.y, x2: at.x, y2: region.y + region.h } },
 			{ tag: 'line', attrs: { class: 'gridline', x1: region.x, y1: at.y, x2: region.x + region.w, y2: at.y } },

@@ -22,7 +22,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Model } from './fixtures/composed.mjs';   // the composition production runs (S-b)
 import { attachRelations } from '../engine/store.mjs';
-import { NODE_GRID } from '../kernel/geometry.mjs';   // H26.1: the relation index is injected the node grid's nearest (it was cellOf)
+import { diagramLattices } from '../kernel/geometry.mjs';
+const NODE_GRID = diagramLattices({ pitch: 60 }).device;   // H26.6's move 13: a diagram's device lattice at 60, NODE_GRID gone from the kernel (GR16)
 import { commit, undo } from './fixtures/composed.mjs';
 import { Log } from '../planner/log.mjs';
 import { linkTenant } from '../plugins/network/link-reactions.mjs';

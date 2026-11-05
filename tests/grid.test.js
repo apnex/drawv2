@@ -2,14 +2,19 @@ import { Model } from './fixtures/composed.mjs';   // WD-b2: a grid reads the di
 import { test } from 'node:test';
 // RESTATED at H26.1 (SNAP-GRID.md section 5): the kernel's grid arithmetic is deleted; the grids are snap-grid's, opened in the kernel
 // (NODE_GRID) and the layouts plugin (ZONE_GRIDS), and a span is what it runs through (plugins/devices/device-footprint.mjs spanThrough)
-import { NODE_GRID, latticeGrids } from '../kernel/geometry.mjs';
-import { ZONE_GRIDS, LAYOUT_TABLE } from '../plugins/layouts/layout-table.mjs';
+import { diagramLattices } from '../kernel/geometry.mjs';
+import { latticeGrids } from '../kernel/lattice-grids.mjs';
+const NODE_GRID = diagramLattices({ pitch: 60 }).device;   // H26.6's move 13: a diagram's device lattice at 60, NODE_GRID gone from the kernel (GR16)
+import { LAYOUT_TABLE } from '../plugins/layouts/layout-table.mjs';
+const ZONE_GRIDS = { unbounded: diagramLattices({ pitch: 60 }).zone };   // H26.6's move 13: the zone lattice of a diagram at 60, ZONE_GRIDS gone
 import { spanThrough as spanExtent } from '../plugins/devices/device-footprint.mjs';
 import { STD } from '../kernel/spec.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import * as snap from '../app/src/snap.js';
-import { GAP, snapNode, resolveBox, dist, snapIn, placesOf } from '../app/src/snap.js';
+import { snapNode as snapNodeOn, resolveBox, dist, snapIn as snapInOn, placesOf } from '../app/src/snap.js';
+// H26.6's move 13: every snap asks the diagram's lattices, from a model -- here a fresh one's, on the grid of 60
+const GAP = 60, AT_60 = new Model(), snapNode = (p) => snapNodeOn(placesOf(PRODUCT_CANVAS), AT_60, p), snapIn = (place, p) => snapInOn(place, p, AT_60);
 import { PRODUCT_CANVAS } from '../product/canvas.mjs';
 // RESTATED at C-d step one (H19.32): the zone grid is the zones plugin's place, snapped through it -- snapZone left the canvas
 const snapZone = (pos) => snapIn(placesOf(PRODUCT_CANVAS).get('zone'), pos);

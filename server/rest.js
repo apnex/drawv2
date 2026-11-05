@@ -11,8 +11,8 @@ import { layoutRecords } from '../plugins/layouts/layout-records.mjs';   // WD8 
 import { linksOf, linksAt, makeLink } from '../plugins/network/link-queries.mjs';   // which links meet an anchor: the network's (K13d)
 import { snapshotBody, changeBody, reversalBody } from './protocol.js';
 import { announceActivity, announceAccess, viewersFor } from './hub.js';   // B342 (H21.8): in the hub, so the hub does not import REST
-import { NODE_GRID, anchorOn } from '../kernel/geometry.mjs';   // H26.1: the grids, and an anchor's one builder (F3)
-import { ZONE_GRIDS } from '../plugins/layouts/layout-table.mjs';   // H26.1: the zone's grids
+import { anchorOn } from '../kernel/geometry.mjs';   // H26.1: an anchor's one builder (F3)
+import { latticesOf } from '../plugins/layouts/layout-records.mjs';   // H26.6's move 13: the diagram's two lattices
 import { makeZone } from '../plugins/zones/make-zone.mjs';   // the zones plugin's factory (O-b1)
 import { makeGroup } from '../plugins/groups/make-group.mjs';   // the groups plugin's factory (O-c)
 import { groupOf } from '../plugins/groups/group-of.mjs';   // and its lookup (O-c)
@@ -189,8 +189,9 @@ function contextOf(model, kind, e) {
 // (section 6.3). H26.11 (H26-21; B399) listed each layout's grid within its own bounds; RESTATED at H26.6's move 12 (PAN-ZOOM.md
 // section 3.8, "The anchor lists"; 3.4, "the routes by name keep node and zone"; GR3): the anchors route asks the unbounded grid for an
 // area, so no bounded grid remains, and the two names are the routes' own, each its lattice -- the layout table is held to the layout row
-// and records. A Map, so a name an object inherits is no layout (B401)
-const UNBOUNDED_GRIDS = new Map([['node', NODE_GRID], ['zone', ZONE_GRIDS.unbounded]]);
+// and records. A Map, so a name an object inherits is no layout (B401). RESTATED at H26.6's move 13 (section 3.4, "The agents' answers":
+// each route "now a lattice of the one grid"): each name answers which of the diagram's two lattices it asks, read from its record
+const ROUTE_LATTICES = new Map([['node', (lattices) => lattices.device], ['zone', (lattices) => lattices.zone]]);
 const NEAREST_LIMIT = 2 ** 49;
 
 function occupantAt(model, anchor) {
@@ -707,13 +708,15 @@ export function handleRest(req, res, store, locks, hub, principal = null, sessio
 	H26.1 (dev/design/components/SNAP-GRID.md section 5, section 6.3, appendix B): the name is looked up in the layouts plugin's table,
 	so a name an object inherits -- `constructor`, `toString` -- is unknown, 404, where it answered 200 with nulls (B401); and each
 	route asks that name's grid with no bounds, NODE_GRID or the zone's, as it asked the kernel's, reading no record. RESTATED at H26.6's
-	move 12: looked up among the routes' own two names (`UNBOUNDED_GRIDS`, a Map), the table held to the layout row and records.
+	move 12: looked up among the routes' own two names (`ROUTE_LATTICES`, a Map), the table held to the layout row and records; move 13:
+	each the diagram's own lattice, from its record.
 	*/
 	if (parts[4] === 'layouts' && parts.length >= 6) {
-		const name = parts[5], grid = UNBOUNDED_GRIDS.get(name);
-		if (!grid) return json(res, 404, { error: `unknown layout: ${parts[5]}`, code: 'unknown-layout' }), true;
+		const name = parts[5], which = ROUTE_LATTICES.get(name);
+		if (!which) return json(res, 404, { error: `unknown layout: ${parts[5]}`, code: 'unknown-layout' }), true;
 		const model = store.get(parts[3]);
 		if (!model) return json(res, 404, { error: `unknown diagram: ${parts[3]}` }), true;
+		const grid = which(latticesOf(model));
 
 		if (parts[6] === 'nearest' && parts.length === 7) {
 			const x = Number(url.searchParams.get('x')), y = Number(url.searchParams.get('y'));

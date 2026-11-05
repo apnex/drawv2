@@ -23,9 +23,14 @@ const code = (file) => fs.readFileSync(path.join(root, file), 'utf8').replace(/\
 
 const DELETED = ['px', 'cellOf', 'LAYOUTS', 'onLayout', 'snapLayout', 'cellOn', 'pxOn', 'nearestAnchor', 'anchorAt', 'spanExtent'];
 
-test('H26.1 (acceptance step 3): the kernel exports none of its grid arithmetic, snap.js holds no clamp or half pitch, the zones plugin no snapZone', () => {
+test('H26.1 (acceptance step 3): the kernel exports none of its grid arithmetic, snap.js holds no clamp or half pitch, the zones plugin no snapZone', async () => {
 	for (const name of DELETED) assert.equal(name in geometry, false, `kernel/geometry.mjs still exports ${name}`);
-	assert.deepEqual(['NODE_GRID', 'latticeGrids'].filter((n) => !(n in geometry)), [], 'control: what replaced them is exported');
+	// RESTATED at H26.6's move 13 (appendix B, E16): `diagramLattices` here, the planner's; `latticeGrids` and NODE_GRID, renamed UNIT_GRID,
+	// in kernel/lattice-grids.mjs, which the planner's entry does not load
+	const opened = await import('../kernel/lattice-grids.mjs');
+	assert.deepEqual(['diagramLattices'].filter((n) => !(n in geometry)), [], 'control: what replaced them is exported');
+	assert.deepEqual(['UNIT_GRID', 'latticeGrids'].filter((n) => !(n in opened)), [], 'control: and the unit and the record opener beside it');
+	assert.deepEqual(['NODE_GRID', 'UNIT_GRID', 'latticeGrids'].filter((n) => n in geometry), [], 'H26.6 move 13 (GR16): NODE_GRID named nowhere, nor the others here');
 	assert.equal('nodeGridWithin' in geometry, false, 'H26.6 move 12 (GR2): the node grid within an extent is gone');
 	assert.doesNotMatch(code('app/src/snap.js'), /\b(clamped|HALF)\b/, 'app/src/snap.js holds `clamped` or `HALF`');
 	assert.doesNotMatch(code('plugins/zones/zone-gestures.mjs'), /\bsnapZone\b/, 'plugins/zones/zone-gestures.mjs holds `snapZone`');
@@ -40,8 +45,9 @@ const bodyOf = (text, name) => {
 // RESTATED at H26.6's move 11 (dev/design/components/PAN-ZOOM.md section 3.8, "The extents"): snapNode asks the node grid with no bounds
 test('H26.1 (acceptance step 3): snapNode and snapIn only ask snap-grid -- the point of the nearest position, on the unbounded grid (H26.6 move 11)', () => {
 	const text = code('app/src/snap.js');
-	assert.equal(bodyOf(text, 'snapNode'), 'return pointOn(NODE_GRID, pos);');
-	assert.equal(bodyOf(text, 'snapIn'), 'return pointOn(place.grid, pos);');
+	// RESTATED at H26.6's move 13 (PAN-ZOOM.md section 3.9): each on the diagram's lattice, the place's resolved from the model
+	assert.equal(bodyOf(text, 'snapNode'), 'return snapIn(places.get(BARE_KIND), pos, model);');
+	assert.equal(bodyOf(text, 'snapIn'), 'return pointOn(place.lattice(model), pos);');
 	// RESTATED at H26.1's verification (F6): the helper spans lines now, guarding a point that is not a number; read to its closing `};`
 	const helper = text.match(/^const pointOn = ([\s\S]*?)^\};?$/m)?.[1] ?? '';
 	assert.match(helper, /grid\.nearest\(pos\)/, 'the helper asks the grid its nearest position');
@@ -170,6 +176,9 @@ const RECORD = {
 		reason: 'a route\'s length in pitches, to two places, for the readout: a length read in the declared pitch, which stays' },
 	'cli/verbs.mjs': { count: 4, cites: ['B402', 'PAN-ZOOM.md PZ15'],
 		reason: 'a zone\'s cell range, its edges half a pitch between cells: from literal 30 and 60 until H26.6\'s move 12, from the stored pitch since (PZ15; B402\'s literals gone)' },
+	// H26.6's move 13 (PAN-ZOOM.md section 3.8, "The text tool"; PZ32): the text box's counts in the unit, `1 + round(d / 60)`
+	'plugins/devices/device-gestures.mjs': { count: 2, cites: ['PAN-ZOOM.md PZ32'],
+		reason: 'a text box\'s span counts, `1 + round(d / 60)` from its snapped corners on each axis, its size in the unit (PZ32)' },
 	'server/rest.js': { count: 2, cites: ['PAN-ZOOM.md section 3.8'],
 		reason: 'the anchors route\'s refusal of an area too large, naming its width and height in squares -- each side over the pitch rounded down, as 3.8 words it; no position is asked' },
 };

@@ -215,10 +215,14 @@ test('H26.1: a component a part\'s modules import today is rendered in the curre
 		const before = fs.readFileSync(path.join(dir, 'docs/ARCHITECTURE.md'), 'utf8');
 		assert.match(before, /\| `lattice` \| [^\n]* \| `@apnex\/snap-grid` \|\n/, 'the lattice imports it today');
 		assert.match(before, /\| `document` \| [^\n]* \| -- \|\n/, 'and no other part does');
-		const geometry = path.join(dir, 'kernel/geometry.mjs'), src = fs.readFileSync(geometry, 'utf8');
+		// RESTATED at H26.6's move 13 (PAN-ZOOM.md appendix B, E16): the lattice's two modules import it, kernel/lattice-grids.mjs beside
+		// kernel/geometry.mjs, so the plant takes both imports away
 		const line = /^import \{ openGrid \} from '@apnex\/snap-grid';.*\n/m;
-		assert.equal(src.split('\n').filter((l) => line.test(`${l}\n`)).length, 1, 'the plant is INVALID: the kernel\'s import of the component no longer reads as it did');
-		fs.writeFileSync(geometry, src.replace(line, "const { openGrid } = await import(['@apnex', 'snap-grid'].join('/'));\n"));
+		for (const file of ['kernel/geometry.mjs', 'kernel/lattice-grids.mjs']) {
+			const at = path.join(dir, file), src = fs.readFileSync(at, 'utf8');
+			assert.equal(src.split('\n').filter((l) => line.test(`${l}\n`)).length, 1, `the plant is INVALID: ${file}'s import of the component no longer reads as it did`);
+			fs.writeFileSync(at, src.replace(line, "const { openGrid } = await import(['@apnex', 'snap-grid'].join('/'));\n"));
+		}
 		const r = spawnSync(process.execPath, [tool, '--check'], { encoding: 'utf8' });
 		assert.equal(r.status, 1);
 		assert.match(r.stdout, /docs\/ARCHITECTURE\.md parts/, 'the current document no longer says what the code imports');

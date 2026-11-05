@@ -8,7 +8,6 @@ app/src/tools.js, the canvas layer, where the gesture machine reads them; a tile
 digit does, and the tiles light up for whatever the tools hold.
 */
 
-import { snapNode } from './snap.js';
 import { buildPreview } from './painter.js';   // each tile, a standalone <svg> in the sidebar outside the canvas (H26.4: it stays)
 import { ghostNode } from './editing-visuals.js';   // H26.4: the dragged tile's ghost, an item of the canvas's scene
 
@@ -37,8 +36,10 @@ export class Palette {
 	// H26.4 (dev/design/components/VECTOR-SCENE.md section 5.1): `scene`, the canvas's -- its ghost is put there, and a pointer's place
 	// in the drawing is its `toDrawing`, the arithmetic `toCanvas` did
 	// H26.6's move 7 (dev/design/components/PAN-ZOOM.md section 3.8): `root`, the canvas's root element, which a drop is decided over
-	constructor({ container, root, scene, snap, tools, hand = null, stamp = () => false }) {
+	// H26.6's move 13: `cell(pos)`, where a drop lands -- the canvas's snap to the diagram's device lattice, which the palette cannot ask
+	constructor({ container, root, scene, snap, tools, hand = null, stamp = () => false, cell = (pos) => pos }) {
 		this.root = root;
+		this.cell = cell;
 		this.scene = scene;
 		this.snap = snap;   // B36 — the one crosshair, shared with Overlay; see overlay.js
 		this.drag = null;
@@ -172,7 +173,7 @@ export class Palette {
 		}
 		if (!this.drag.ghost) this.drag.ghost = ghostNode(this.scene, this.preview(this.drag.type));   // the hand's preview (B318)
 		this.drag.ghost.moveTo(pos);
-		this.snap.show(snapNode(pos));
+		this.snap.show(this.cell(pos));
 	}
 
 	onUp(evt) {

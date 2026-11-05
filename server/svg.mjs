@@ -11,7 +11,7 @@ declaration with no root, as the page opens it on its root (product/canvas.mjs C
 `document` went with it, and what was serialised from that tree is serialised from the scene's descriptions, byte for byte.
 */
 import { L_STD } from '../kernel/spec.mjs';
-import { NODE_GRID } from '../kernel/geometry.mjs';
+import { UNIT_GRID } from '../kernel/lattice-grids.mjs';   // H26.6's move 13 (PAN-ZOOM.md 3.9, PZ18, GR16): the export's span bounds, in the unit
 import { sharedDefs } from '../kernel/renderer.mjs';
 import { Renderer, openCanvasScene } from '../app/src/renderer.js';
 import { PRODUCT_CANVAS, CANVAS_LAYERS, CANVAS_SCENE } from '../product/canvas.mjs';
@@ -98,7 +98,7 @@ function boundsOf(layers, L = L_STD) {
 				const cx = Number(tr[1]), cy = Number(tr[2]), e = L.frame.ext;
 				const sp = el.attrs['data-span']?.split('x').map(Number);
 				// H26.1 (SNAP-GRID.md appendix B): what the span runs through beyond its first cell, `span(...).through` on the node grid
-				const { w: sw, h: sh } = sp ? NODE_GRID.span({ col: 0, row: 0 }, { col: sp[0] - 1, row: sp[1] - 1 }).through : { w: 0, h: 0 };
+				const { w: sw, h: sh } = sp ? UNIT_GRID.span({ col: 0, row: 0 }, { col: sp[0] - 1, row: sp[1] - 1 }).through : { w: 0, h: 0 };   // move 13: the unit's
 				ext(cx - e, cy - e); ext(cx + e + sw, cy + e + sh);
 			}
 			for (const c of el.children ?? []) {

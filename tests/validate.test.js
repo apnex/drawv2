@@ -91,12 +91,16 @@ in the R13 occupancy index while looking distinct on screen.
 */
 const put = (kind, entity) => validateMutation(M, { action: 'put', kind, entity });
 const set = (kind, entity) => validateMutation(M, { action: 'set', kind, entity });
+// RESTATED at H26.6's move 13 (dev/design/components/PAN-ZOOM.md section 3.4): whether a position lies on the lattice left the field
+// predicates for each kind's `refers`, which reads the diagram's grid record -- so an off-grid anchor or zone is refused in a sentence
+// naming the grid, where it was `invalid value for <kind>.<field>`; the bound stays the field's (B113, below)
+const OFF_NODE = /off the diagram's grid of 60/, OFF_ZONE = /off the diagram's zone grid/, NOT_SQUARES = /not whole squares of the diagram's grid of 60/;
 
 test('B110: a node off the pitch is refused, on the pitch is accepted', () => {
 	const ok = { id: 'node-aa0001', name: 'n', type: 'host', x: 240, y: -120 };
 	assert.equal(put('node', ok), null);
 	for (const [x, y] of [[270, -120], [240, -150], [1, 0], [-30, 0]]) {
-		assert.match(String(put('node', { ...ok, x, y })), /invalid value for node\.[xy]/,
+		assert.match(String(put('node', { ...ok, x, y })), OFF_NODE,
 			`(${x},${y}) must be refused`);
 	}
 });
@@ -104,13 +108,13 @@ test('B110: a node off the pitch is refused, on the pitch is accepted', () => {
 test('B110: the refusal covers `set`, which is how a node MOVES', () => {
 	// a put landing on-grid and a set walking it off would leave the rule half-enforced
 	assert.equal(set('node', { id: 'node-aa0001', x: 300 }), null);
-	assert.match(String(set('node', { id: 'node-aa0001', x: 301 })), /invalid value for node\.x/);
+	assert.match(String(set('node', { id: 'node-aa0001', x: 301 })), OFF_NODE);
 });
 
 test('B110: a waypoint shares the NODE grid', () => {
 	assert.equal(put('node', { id: 'node-ea0001', name: 'node-ea0001', x: -120, y: 60 }), null);
 	assert.match(String(put('node', { id: 'node-ea0001', name: 'node-ea0001', x: -90, y: 60 })),
-		/invalid value for node\.x/,   // a waypoint is a node with no type (F-c)
+		OFF_NODE,   // a waypoint is a node with no type (F-c)
 		'the exact value the agent wrote live, and that the browser then snapped to -120');
 });
 
@@ -118,14 +122,16 @@ test('B110: a zone sits on the HALF-pitch grid, because it bounds cells rather t
 	const ok = { id: 'zone-aa0001', name: 'z', x: -750, y: -390, w: 600, h: 420 };
 	assert.equal(put('zone', ok), null);
 	// -780 is ON the node grid and OFF the zone grid: the rule its author did not know existed
-	assert.match(String(put('zone', { ...ok, x: -780 })), /invalid value for zone\.x/);
-	assert.match(String(put('zone', { ...ok, w: 630 })), /invalid value for zone\.w/);
+	assert.match(String(put('zone', { ...ok, x: -780 })), OFF_ZONE);
+	assert.match(String(put('zone', { ...ok, w: 630 })), NOT_SQUARES);
 });
 
-test('B110: the pitch is SOURCED from the kernel, so the grid cannot fork', () => {
-	const off = STD.pitch / 2;
+// RESTATED at H26.6's move 13: the grid is the diagram's, read from its record -- 60 here -- so the grid still cannot fork from the one
+// the canvas snaps to (both ask `diagramLattices` of the record)
+test('B110: the pitch is SOURCED from the kernel, so the grid cannot fork -- from H26.6 move 13, the diagram\'s own record', () => {
+	const off = M.get('layout', 'layout-000001').pitch / 2;
 	assert.match(String(put('node', { id: 'node-aa0001', name: 'n', type: 'host', x: off, y: 0 })),
-		/invalid value for node\.x/, `half a pitch (${off}) must never be a legal node position`);
+		OFF_NODE, `half a pitch (${off}) must never be a legal node position`);
 });
 
 /*
@@ -261,7 +267,7 @@ test('B113: the server refuses what the editor could never have produced', () =>
 		assert.equal(put('node', { ...ok, [axis]: sign * 999_960 }), null, `${axis} ${sign * 999_960}: within the bound`);
 		assert.match(String(put('node', { ...ok, [axis]: sign * 1_000_020 })), new RegExp(`invalid value for node\\.${axis}`), `${axis} ${sign * 1_000_020}: past it`);
 	}
-	assert.match(String(put('node', { ...ok, x: 999_990 })), /invalid value for node\.x/, 'within the bound but off the lattice: refused as ever');
+	assert.match(String(put('node', { ...ok, x: 999_990 })), OFF_NODE, 'within the bound but off the lattice: refused as ever -- by the anchor\'s refers, from H26.6 move 13');
 
 	// a zone's corner on its lattice within the bound; its far edge held to the bound by its own check
 	const z = { id: 'zone-aa0001', name: 'z', x: -930, y: -510, w: 600, h: 420 };
@@ -389,16 +395,14 @@ at exactly one pitch, so if the kernel's pitch moved and the server kept a hardc
 would start refusing the smallest zone the client can draw -- and this fails.
 */
 test('B86: the smallest legal zone is one grid cell, wherever the pitch is set', async () => {
-	const { STD } = await import('../kernel/spec.mjs');
-	const { validateEntity } = await import('./fixtures/composed.mjs');
-	const off = STD.pitch / 2;                                    // the zone grid's half-pitch offset
-	const zone = (w) => ({ id: 'zone-aa0001', x: off, y: off, w, h: STD.pitch, name: 'z' });
+	// RESTATED at H26.6's move 13: the cell is the diagram's square, read from its record, and judged in the zone's `refers` -- so asked
+	// through the planner's mutation path, which runs it
+	const pitch = M.get('layout', 'layout-000001').pitch, off = pitch / 2;   // the zone grid's half-pitch offset
+	const zone = (w) => ({ id: 'zone-aa0001', x: off, y: off, w, h: pitch, name: 'z' });
 
-	assert.equal(validateEntity('zone', zone(STD.pitch), { full: false }), null,
-		'one cell is legal — the client can draw it, so the server must accept it');
-	assert.match(validateEntity('zone', zone(STD.pitch / 2), { full: false }) || '', /zone\.w/,
-		'half a cell is not');
-	assert.match(validateEntity('zone', zone(0), { full: false }) || '', /zone\.w/, 'nor is nothing');
+	assert.equal(put('zone', zone(pitch)), null, 'one cell is legal -- the client can draw it, so the server must accept it');
+	assert.match(String(put('zone', zone(pitch / 2))), NOT_SQUARES, 'half a cell is not');
+	assert.match(String(put('zone', zone(0))), /zone\.w/, 'nor is nothing -- a side is a positive length, its field says'); 
 });
 
 /*

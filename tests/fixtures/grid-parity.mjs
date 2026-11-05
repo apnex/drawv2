@@ -309,8 +309,10 @@ Where a site's question sits inside a route or an index rather than a function, 
 index's key (`cellOf` was injected; NODE_GRID's `nearest` is), the REST nearest and anchors routes (their bytes are compared whole
 by tools/probe/rest-sweep.mjs), and the routes' layout lookup.
 */
-import { NODE_GRID } from '../../kernel/geometry.mjs';
-import { LAYOUT_TABLE, ZONE_GRIDS } from '../../plugins/layouts/layout-table.mjs';
+import { diagramLattices } from '../../kernel/geometry.mjs';
+const NODE_GRID = diagramLattices({ pitch: 60 }).device;   // H26.6's move 13: a diagram's device lattice at 60, NODE_GRID gone from the kernel (GR16)
+import { LAYOUT_TABLE } from '../../plugins/layouts/layout-table.mjs';
+const ZONE_GRIDS = { unbounded: diagramLattices({ pitch: 60 }).zone };   // H26.6's move 13: ZONE_GRIDS gone, a diagram's zone lattice at 60
 import { snapNode, snapIn, placesOf } from '../../app/src/snap.js';
 import { PRODUCT_CANVAS } from '../../product/canvas.mjs';
 import { productKinds } from '../../product/kinds.mjs';
@@ -325,6 +327,16 @@ import { resolveAnchor } from '../../server/anchor.mjs';
 
 const ZONE = ZONE_GRIDS.unbounded;
 const K = productKinds(), anchorField = K.row('node').fields, zoneField = K.row('zone').fields;
+/*
+RESTATED at H26.6's move 13 (PAN-ZOOM.md section 3.4): whether a value lies on the lattice left the field predicates for each kind's
+`refers`, handed the diagram's grid record through the document's access -- so an anchor's or a zone's field is asked as the planner asks
+it, its predicate and then its kind's `refers` on a diagram at 60, the field set and the rest of the entity on the grid.
+*/
+const RECORD_60 = { id: 'layout-000001', name: 'node', pitch: 60, offset: 0, ext: { x: 900, y: 480 } };
+const access60 = { has: () => false, get: (kind) => (kind === 'layout' ? RECORD_60 : undefined), all: () => [] };
+const model60 = { get: (kind) => (kind === 'layout' ? RECORD_60 : undefined) };
+const anchorOn60 = (field, v) => anchorField[field](v) && K.row('node').refers({ id: 'node-000001', x: 0, y: 0, [field]: v }, access60) === null;
+const zoneOn60 = (field, v) => zoneField[field](v) && K.row('zone').refers({ id: 'zone-000001', x: -30, y: -30, w: 60, h: 60, [field]: v }, access60) === null;
 const places = placesOf(PRODUCT_CANVAS);
 const pointOn = (grid, p) => grid.pointOf(grid.nearest(p));
 const LIMIT = 2 ** 49;   // the REST nearest route's refusal (section 6.3, D1; server/rest.js)
@@ -334,7 +346,7 @@ const restNearest = (grid, p) => {
 	return [n.col, n.row, at.x, at.y];
 };
 const STUB = { freshId: () => 'zone-000001', nextName: () => 'z', nextOrder: () => 1 };   // what the zone factory asks of a Model
-const boardModel = (b) => ({ all: (kind) => (kind === 'node' ? b.nodes : kind === 'zone' ? b.zones : []) });
+const boardModel = (b) => ({ all: (kind) => (kind === 'node' ? b.nodes : kind === 'zone' ? b.zones : []), get: model60.get });   // move 13: and its grid, 60
 const fakeModel = (record) => ({ get: (kind, id) => (kind === 'layout' ? { id, ...record } : undefined) });
 const xy = (p) => [p.x, p.y];
 
@@ -346,32 +358,34 @@ export const REPLACEMENTS = {
 	'cellOn.zone': (v) => ZONE.nearest({ x: v, y: HALF }).col,
 	'pxOn.node': (c) => NODE_GRID.pointOf({ col: c, row: 0 }).x,
 	'pxOn.zone': (c) => ZONE.pointOf({ col: c, row: 0 }).x,
-	'anchor.x': (v) => anchorField.x(v),
-	'anchor.y': (v) => anchorField.y(v),
-	'zone.x': (v) => zoneField.x(v),
-	'zone.y': (v) => zoneField.y(v),
-	'zone.w': (v) => zoneField.w(v),
-	'zone.h': (v) => zoneField.h(v),
+	'anchor.x': (v) => anchorOn60('x', v),
+	'anchor.y': (v) => anchorOn60('y', v),
+	'zone.x': (v) => zoneOn60('x', v),
+	'zone.y': (v) => zoneOn60('y', v),
+	'zone.w': (v) => zoneOn60('w', v),
+	'zone.h': (v) => zoneOn60('h', v),
 	'nearestAnchor.node': (p) => restNearest(NODE_GRID, p),
 	'nearestAnchor.zone': (p) => restNearest(ZONE, p),
 	'anchorAt.node': ({ cx, cy }) => { const at = NODE_GRID.pointOf({ col: cx, row: cy }); return ['node', cx, cy, at.x, at.y]; },
 	'anchorAt.zone': ({ cx, cy }) => { const at = ZONE.pointOf({ col: cx, row: cy }); return ['zone', cx, cy, at.x, at.y]; },
 	'spanExtent': (span) => ((e) => [e.sw, e.sh])(spanThrough(span)),
-	'snapNode': (p) => xy(snapNode(p)),
-	'snapIn.node': (p) => xy(snapIn(places.get('node'), p)),
-	'snapIn.zone': (p) => xy(snapIn(places.get('zone'), p)),
-	'snapZone': (p) => xy(snapIn(places.get('zone'), p)),   // the zone drag's own snap is its place's, since snapZone went
-	'zoneResize': ({ fixed, pos }) => ((b) => [b.x, b.y, b.w, b.h])(ZONE_HANDLE_SPECS[0].at({ fixedCorner: fixed }, pos)),
+	'snapNode': (p) => xy(snapNode(places, model60, p)),   // move 13: on the diagram's lattices, a model's at 60
+	'snapIn.node': (p) => xy(snapIn(places.get('node'), p, model60)),
+	'snapIn.zone': (p) => xy(snapIn(places.get('zone'), p, model60)),
+	'snapZone': (p) => xy(snapIn(places.get('zone'), p, model60)),   // the zone drag's own snap is its place's, since snapZone went
+	'zoneResize': ({ fixed, pos }) => ((b) => [b.x, b.y, b.w, b.h])(ZONE_HANDLE_SPECS[0].at({ fixedCorner: fixed, lattice: ZONE }, pos)),
 	'zoneWrap': (b) => {
 		let box = null;
-		ZONE_KEYS.find((k) => k.id === 'wrap').run({ selectionBounds: () => b, create: (kind, make) => { box = make(STUB); }, flash: () => {}, dims: () => '' });
+		ZONE_KEYS.find((k) => k.id === 'wrap').run({ selectionBounds: () => b, create: (kind, make) => { box = make(STUB); }, flash: () => {}, dims: () => '', ask: (q) => q(model60) });
 		return box && [box.x, box.y, box.w, box.h];
 	},
 	// RESTATED at H26.6's move 8 (PAN-ZOOM.md section 3.7): a grid answers its lattice, drawn from the view; its points within the record's
 	// extent, as `latticePoints` listed them until the move deleted it, are that lattice's in view of the extent
 	'latticePoints': (record) => LAYOUTS_CANVAS.grids.find((g) => g.layout === record.name).lattice(fakeModel(record))
 		.inView({ region: { kind: 'rect', x: -record.ext.x, y: -record.ext.y, w: 2 * record.ext.x, h: 2 * record.ext.y }, scale: 1 }).positions.flatMap(({ point }) => [point.x, point.y]),
-	'frameSpan': ([a, b]) => ((f) => [f.x, f.y, f.w, f.h, f.origin.x, f.origin.y, f.cols, f.rows])(DEVICE_PRESSES.find((r) => r.id === 'tool').box.frame(a, b)),
+	// RESTATED at H26.6's move 13 (PZ32): the corners arrive snapped -- the shared box gesture snaps them on the anchor's place -- and the
+	// frame is split, its anchor on the grid and its counts in the unit; asked as the gesture asks it, each corner snapped first
+	'frameSpan': ([a, b]) => ((f) => [f.x, f.y, f.w, f.h, f.origin.x, f.origin.y, f.cols, f.rows])(DEVICE_PRESSES.find((r) => r.id === 'tool').box.frame(...[a, b].map((q) => (q && typeof q.x === 'number' && typeof q.y === 'number' && Number.isFinite(q.x) && Number.isFinite(q.y) ? snapNode(places, model60, q) : q)))),
 	'deviceSizeStep': ({ node, dx, dy }) => ((s) => (s ? [s.span.cols, s.span.rows] : null))(DEVICE_SIZE_STEP.step(node, dx, dy)),
 	'deviceWithinSurface': (n) => DEVICE_FIELDS.refers(n, null, n, null),
 	'resolveAnchor': ({ board, at }) => ((r) => (r.ok ? [r.layout, r.cx, r.cy, r.x, r.y] : r.error))(resolveAnchor(boardModel(SWEEP.boards[board]), at)),

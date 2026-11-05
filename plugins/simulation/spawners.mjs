@@ -23,7 +23,6 @@ import { pathOf, isLinkDown } from '../network/network-queries.mjs';   // the ne
 import { linksAt } from '../network/link-queries.mjs';   // which links meet an anchor: the network's (K13d)
 import { prepareSpawner } from './movers.mjs';
 import { BEND_R } from '../../kernel/spec.mjs';
-import { NODE_GRID } from '../../kernel/geometry.mjs';   // H26.1: the node grid's declared pitch -- a route's length in cells
 import { byId } from '../../model/order.mjs';   // B246: the one derivation order
 import { bareAnchors } from '../devices/device-shapes.mjs';   // whether a device is composed: the devices plugin's (O-e1)
 
@@ -32,8 +31,15 @@ import { bareAnchors } from '../devices/device-shapes.mjs';   // whether a devic
 Model, or a Model built from a stored document on the server. Passing the shape rather than the
 class is what lets both peers call this without either becoming the other.
 */
+/*
+H26.6's move 13 (dev/design/components/PAN-ZOOM.md section 3.8, "The unit and the simulation"; PZ19): the diagram's grid, from its one
+layout record -- the document the simulation part consumes, nothing of the layouts plugin imported -- whose squares the simulation's
+speeds, ranges and reported lengths are counted in. Its numbers keep their stored values and their word, cells (WD8).
+*/
+export const gridPitchOf = (model) => model.get('layout', 'layout-000001')?.pitch;
+
 export function spawnersOf(model) {
-	const out = [];
+	const out = [], pitch = gridPitchOf(model);
 	// B246: in id order, and from `linksAt`, which answers in id order -- so every peer arms the same link, in one order
 	for (const wp of [...bareAnchors(model)].sort(byId)) {
 		if (!wp.spawn) continue;
@@ -53,8 +59,9 @@ export function spawnersOf(model) {
 			link: link.id,
 			pts: link.src === wp.id ? pts : [...pts].reverse(),
 			closed: false,
-			radius: BEND_R,
+			radius: BEND_R,   // a bend keeps its radius, a waypoint's own size, in drawing units (PZ19)
 			...wp.spawn,
+			pitch,   // move 13: the square its speed is counted in
 		}));
 	}
 	return out;
@@ -63,13 +70,14 @@ export function spawnersOf(model) {
 // B339 (H21.8, SD1): the movers report REST serves at GET /api/v1/diagrams/:id/movers (`draw movers`)
 export function moversReport(model, at, spawner = null, moversAtFn) {
 	let prepared = spawnersOf(model);
+	const pitch = gridPitchOf(model);
 	if (spawner) prepared = prepared.filter((s) => s.id === spawner);
 	const live = moversAtFn(prepared, at);
 	const rows = prepared.map((s) => {
 		const mine = live.filter((m) => m.spawnerId === s.id);
 		return {
 			spawner: s.id, link: s.link,
-			cells: Math.round((s.length / NODE_GRID.declaration.pitch) * 100) / 100,
+			cells: Math.round((s.length / pitch) * 100) / 100,   // move 13: the route's length in the diagram's squares
 			speed: s.speed, interval: s.interval,
 			transit: Math.round((s.length / s.pxSpeed) * 10) / 10,
 			inFlight: mine.length,

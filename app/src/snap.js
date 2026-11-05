@@ -14,13 +14,15 @@ RESTATED at H26.6's move 11 (dev/design/components/PAN-ZOOM.md section 3.8, "The
 lattices -- `snapNode` the node grid, `snapIn` the grid its place carries, which no extent bounds -- and `clampDelta` holds no edge; the
 editor clamps nothing, the planner refusing what lies past PZ31's bound. RESTATED at H26.6's move 12 (5.1 row 12, GR3): the extent's
 names -- `CANVAS`, the old 1920 by 1080 surface, and `NODE_EXT` -- are deleted with model/surface.mjs; no reader remained.
+RESTATED at H26.6's move 13 (PAN-ZOOM.md sections 3.4 and 3.9; PZ18): every snap and every step asks THE DIAGRAM'S lattices, resolved
+from the model at the call -- a place holds no grid, only its layout's name and the plugin's `lattice(model)` -- so `snapIn` and
+`snapNode` take the model, and `GAP`, the node grid's pitch read once, went: a nudge, Ctrl+D's offset, the readout's cells and a move's
+cells count in the diagram's squares (`pitchOf`). Nothing here asks the unit, which is a device's size alone.
 */
 import { L_STD } from '../../kernel/spec.mjs';
-import { NODE_GRID } from '../../kernel/geometry.mjs';
 // AMENDED C-e (H19.33): the grids' points are their parts'. AMENDED WD-b2 (H19.46): both grids are the layouts plugin's
 // (plugins/layouts/layout-canvas.mjs), drawn by app/src/grids.js.
-import { ANCHOR_KINDS } from '../../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
-export const GAP = NODE_GRID.declaration.pitch;   // 60 -- the node grid's declared pitch: a length a drag, a nudge and a readout step by
+import { ANCHOR_KINDS, BARE_KIND } from '../../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
 export const NODE_R = L_STD.frame.ext;            // node frame half-extent — from the kernel spec (20)
 
 // the point a grid places a pointer at: the position nearest it, as a fresh plain point a caller may keep or change, as it was. A
@@ -31,10 +33,13 @@ const pointOn = (grid, pos) => {
 	const at = pos && typeof pos.x === 'number' && typeof pos.y === 'number' ? grid.nearest(pos) : null, p = at && grid.pointOf(at);
 	return p ? { x: p.x, y: p.y } : { x: NaN, y: NaN };
 };
-// where the palette and every gesture drop a node: the node grid's position nearest the pointer, anywhere (H26.6's move 11)
-export function snapNode(pos) {
-	return pointOn(NODE_GRID, pos);
+// where the palette and every gesture drop a node: the node grid's position nearest the pointer, anywhere (H26.6's move 11) -- the
+// diagram's device lattice, the anchor's place's, resolved from the model (move 13)
+export function snapNode(places, model, pos) {
+	return snapIn(places.get(BARE_KIND), pos, model);
 }
+// H26.6's move 13: the diagram's square -- the step a nudge, Ctrl+D's offset, the readout's cells and a move's cells count in
+export const pitchOf = (places, model) => places.get(BARE_KIND).lattice(model).declaration.pitch;
 
 export function resolveBox(p1, p2) {
 	return { x: Math.min(p1.x, p2.x), y: Math.min(p1.y, p2.y), w: Math.abs(p2.x - p1.x), h: Math.abs(p2.y - p1.y) };
@@ -71,15 +76,16 @@ one again, still holding each entity's footprint inside its bounds.
 export function clampDelta(model, moved, delta, places) {
 	let minX = -Infinity, maxX = Infinity, minY = -Infinity, maxY = Infinity;
 	moved.forEach((m) => {
-		const place = places.get(m.kind), entity = model.get(m.kind, m.id), bounds = place ? place.grid.declaration.bounds : null;
+		const place = places.get(m.kind), entity = model.get(m.kind, m.id), bounds = place ? place.lattice(model).declaration.bounds : null;
 		if (!place || !entity || !bounds) return;   // move 11: an unbounded grid holds no edge
 		const { w, h } = place.size(entity), { min, max } = bounds;
 		minX = Math.max(minX, min.x - m.before.x); maxX = Math.min(maxX, max.x - w - m.before.x);
 		minY = Math.max(minY, min.y - m.before.y); maxY = Math.min(maxY, max.y - h - m.before.y);
 	});
+	const pitch = () => pitchOf(places, model);   // move 13: the diagram's square, the quantum a held delta is snapped back by
 	const clampAxis = (v, lo, hi) => {
-		if (v < lo) return Math.ceil(lo / GAP) * GAP;
-		if (v > hi) return Math.floor(hi / GAP) * GAP;
+		if (v < lo) return Math.ceil(lo / pitch()) * pitch();
+		if (v > hi) return Math.floor(hi / pitch()) * pitch();
 		return v;
 	};
 	return { x: clampAxis(delta.x, minX, maxX), y: clampAxis(delta.y, minY, maxY) };
@@ -94,7 +100,7 @@ export function snappedDelta(model, ctx, pos, ortho, places) {
 	const base = ctx.moved.find((m) => m.id === ctx.baseId) || ctx.moved[0];
 	const rawDelta = orthoDelta({ x: pos.x - ctx.start.x, y: pos.y - ctx.start.y }, ortho);
 	const baseRaw = { x: base.before.x + rawDelta.x, y: base.before.y + rawDelta.y };
-	const baseSnapped = snapIn(places.get(base.kind), baseRaw);   // C-c: on the base's own grid, within its own extent
+	const baseSnapped = snapIn(places.get(base.kind), baseRaw, model);   // C-c: on the base's own grid -- the diagram's, move 13
 	return clampDelta(model, ctx.moved, { x: baseSnapped.x - base.before.x, y: baseSnapped.y - base.before.y }, places);
 }
 
@@ -126,7 +132,7 @@ export function placesOf(parts) {
 	const places = new Map();
 	for (const part of parts) {
 		for (const p of part.places ?? []) {
-			if (!p.grid?.declaration) throw new Error(`place: ${part.owner}'s place for ${p.kind} carries no grid -- a place snaps on the grid it carries`);
+			if (typeof p.lattice !== 'function') throw new Error(`place: ${part.owner}'s place for ${p.kind} resolves no lattice -- a place snaps on the diagram's lattice it resolves from the model`);
 			if (places.has(p.kind)) throw new Error(`place: ${p.kind} is placed by ${places.get(p.kind).owner} and by ${part.owner}`);
 			places.set(p.kind, { ...p, owner: part.owner });
 		}
@@ -156,6 +162,6 @@ export function gridsOf(parts) {
 }
 
 // a point on a placed kind's grid: its place's grid, unbounded since H26.6's move 11
-export function snapIn(place, pos) {
-	return pointOn(place.grid, pos);
+export function snapIn(place, pos, model) {
+	return pointOn(place.lattice(model), pos);
 }

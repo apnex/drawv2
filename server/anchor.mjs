@@ -4,8 +4,8 @@ Anchor resolution -- turning a RELATIONSHIP into a position, server-side.
   resolveAnchor(model, at)   PURE. Reads a model, returns an anchor or a refusal.
 
 Sovereign duty: choosing WHICH free anchor satisfies a relationship, and nothing else. The grid
-itself belongs to `kernel/geometry.mjs` (`NODE_GRID`; snap-grid answers where its positions lie,
-H26.1), occupancy belongs to the model, and this composes the two rather than
+itself belongs to `kernel/geometry.mjs` (`diagramLattices`, the diagram's own since H26.6's move 13;
+snap-grid answers where its positions lie, H26.1), occupancy belongs to the model, and this composes the two rather than
 restating either.
 
 B189 -- why this exists at all.
@@ -27,7 +27,7 @@ Placed in `server/` rather than `model/` deliberately: this needs `kernel/` for 
 `model/` is a sovereign sibling of `kernel/` that imports it nowhere (`model/limits.mjs`).
 */
 
-import { NODE_GRID, anchorOn } from '../kernel/geometry.mjs';   // H26.1: the grid, and an anchor's one builder (F3)
+import { diagramLattices, anchorOn } from '../kernel/geometry.mjs';   // H26.1: an anchor's one builder (F3); H26.6's move 13: the diagram's lattices
 import { COORD_BOUND } from '../model/limits.mjs';   // H26.6's move 12: PZ31's bound, which every candidate is kept within
 import { ANCHOR_KINDS } from '../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
 import { typedNodes } from '../plugins/devices/device-shapes.mjs';
@@ -69,7 +69,6 @@ list was walked in, so a placement whose answer lies inside the old frame answer
 `placement-rings.mjs` measured the worst cases with 527 anchors packed nearest the reference: 13 rings in the open, 21 at the bound's
 corner, 264 in a zone one square wide, and a full zone refused (tests/placement-rings.test.js).
 */
-const PITCH = NODE_GRID.declaration.pitch;
 const BOUND = { left: (x) => x < -COORD_BOUND, right: (x) => x > COORD_BOUND, above: (y) => y < -COORD_BOUND, below: (y) => y > COORD_BOUND };
 // a zone's interior, strictly, kept within the bound
 const interiorOf = (z) => ({
@@ -79,19 +78,19 @@ const interiorOf = (z) => ({
 const admits = (domain, p) => !domain.left(p.x) && !domain.right(p.x) && !domain.above(p.y) && !domain.below(p.y);
 const d2 = (p, x, y) => (p.x - x) * (p.x - x) + (p.y - y) * (p.y - y);
 
-function nearestFree(ref, domain, taken) {
-	const at = NODE_GRID.nearest(ref);
+function nearestFree(lattice, ref, domain, taken) {
+	const PITCH = lattice.declaration.pitch, at = lattice.nearest(ref);
 	let best = null;
 	for (let ring = 0; ; ring++) {
 		const reach = (2 * ring - 1) * PITCH;
 		if (best && 4 * best.d2 < reach * reach) return best.position;
-		const lo = NODE_GRID.pointOf({ col: at.col - ring, row: at.row - ring }), hi = NODE_GRID.pointOf({ col: at.col + ring, row: at.row + ring });
+		const lo = lattice.pointOf({ col: at.col - ring, row: at.row - ring }), hi = lattice.pointOf({ col: at.col + ring, row: at.row + ring });
 		if (domain.left(lo.x) && domain.right(hi.x) && domain.above(lo.y) && domain.below(hi.y)) return best ? best.position : null;
 		for (let row = at.row - ring; row <= at.row + ring; row++) {
 			// the ring's own positions: its first and last rows whole, every other row its two ends
 			const whole = ring === 0 || row === at.row - ring || row === at.row + ring;
 			for (let col = at.col - ring; col <= at.col + ring; col += whole ? 1 : 2 * ring) {
-				const position = { col, row }, p = NODE_GRID.pointOf(position);
+				const position = { col, row }, p = lattice.pointOf(position);
 				if (!admits(domain, p) || taken.has(`${p.x},${p.y}`)) continue;
 				const d = d2(p, ref.x, ref.y);
 				if (!best || d < best.d2 || (d === best.d2 && (p.y < best.p.y || (p.y === best.p.y && p.x < best.p.x)))) best = { position, p, d2: d };
@@ -101,7 +100,10 @@ function nearestFree(ref, domain, taken) {
 }
 // the placement part consumes the lattice alone (SNAP-GRID.md appendix B), so the name of the layout its anchors are on is stated here
 const NODE_LAYOUT = 'node';
-const anchorAt = (position) => ({ ok: true, ...anchorOn(NODE_LAYOUT, NODE_GRID, position) });
+const anchorAt = (lattice, position) => ({ ok: true, ...anchorOn(NODE_LAYOUT, lattice, position) });
+// H26.6's move 13 (PAN-ZOOM.md section 3.9, "placement's positions"): the diagram's device lattice, from its one grid record -- read
+// here, since the placement part consumes the lattice and not the layouts plugin (tools/layers.mjs PARTS.placement)
+const deviceLatticeOf = (model) => diagramLattices(model.get('layout', 'layout-000001')).device;
 
 // A named reference resolves against nodes by name or id. `resolveId`'s refusal of an ambiguous
 // name is the model's job at the trust boundary; here a miss is simply a refusal that names what
@@ -123,13 +125,13 @@ the old extent's list was walked. Returns `{ ok: true, layout, cx, cy, x, y }` o
 reference: a refusal is data, because this runs inside `plan()` where a throw would be a planner bug rather than a rejected request.
 */
 export function resolveAnchor(model, at = {}) {
-	const taken = takenSet(model);
+	const taken = takenSet(model), lattice = deviceLatticeOf(model);
 
 	if (at.inside !== undefined) {
 		const zone = model.all('zone').find((z) => z.name === at.inside || z.id === at.inside);
 		if (!zone) return fail(`${at.inside} is not a zone`);
-		const hit = nearestFree({ x: zone.x + zone.w / 2, y: zone.y + zone.h / 2 }, interiorOf(zone), taken);
-		return hit ? anchorAt(hit) : fail(`zone ${at.inside} has no free anchor`);
+		const hit = nearestFree(lattice, { x: zone.x + zone.w / 2, y: zone.y + zone.h / 2 }, interiorOf(zone), taken);
+		return hit ? anchorAt(lattice, hit) : fail(`zone ${at.inside} has no free anchor`);
 	}
 
 	if (at.between !== undefined) {
@@ -138,8 +140,8 @@ export function resolveAnchor(model, at = {}) {
 		const b = nodeNamed(model, refB);
 		if (!a) return fail(`${refA} is not a node`);
 		if (!b) return fail(`${refB} is not a node`);
-		const hit = nearestFree({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }, BOUND, taken);
-		return hit ? anchorAt(hit) : fail(`nothing free between ${refA} and ${refB}`);
+		const hit = nearestFree(lattice, { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }, BOUND, taken);
+		return hit ? anchorAt(lattice, hit) : fail(`nothing free between ${refA} and ${refB}`);
 	}
 
 	if (at.near !== undefined) {
@@ -156,17 +158,17 @@ export function resolveAnchor(model, at = {}) {
 			RESTATED at H26.6's move 12: a step is free when nothing stands on it and it lies within PZ31's bound, where it was a member of
 			the old extent's free list.
 			*/
-			let p = NODE_GRID.positionAt(ref);
+			let p = lattice.positionAt(ref);
 			for (let n = 1; p && n <= DIR_STEPS; n++) {
-				p = NODE_GRID.next(p, step);
-				const point = p && NODE_GRID.pointOf(p);
-				if (point && admits(BOUND, point) && !taken.has(`${point.x},${point.y}`)) return anchorAt(p);
+				p = lattice.next(p, step);
+				const point = p && lattice.pointOf(p);
+				if (point && admits(BOUND, point) && !taken.has(`${point.x},${point.y}`)) return anchorAt(lattice, p);
 			}
 			return fail(`nothing free to the ${at.dir} of ${at.near}`);
 		}
 
-		const hit = nearestFree(ref, BOUND, taken);
-		return hit ? anchorAt(hit) : fail(`nothing free near ${at.near}`);
+		const hit = nearestFree(lattice, ref, BOUND, taken);
+		return hit ? anchorAt(lattice, hit) : fail(`nothing free near ${at.near}`);
 	}
 
 	return fail('an anchor relationship needs one of near, between or inside');

@@ -7,8 +7,8 @@ the tool (one panel per arm) and opens the editor on its text. The row, the fram
 (app/src/recognize.js `tool`, app/src/input.js `GESTURES.textbox`, `frameSpan`); nothing a user sees changes.
 */
 
-import { L_STD } from '../../kernel/spec.mjs';
-import { NODE_GRID } from '../../kernel/geometry.mjs';
+import { STD, L_STD } from '../../kernel/spec.mjs';
+import { UNIT_GRID } from '../../kernel/lattice-grids.mjs';   // H26.6's move 13 (PZ32, GR16): the unit, asked for a span from cell 0,0
 import { makeTextBox } from './make-node.mjs';
 
 const NODE_R = L_STD.frame.ext;   // a device frame's half-extent (20)
@@ -17,16 +17,23 @@ const NODE_R = L_STD.frame.ext;   // a device frame's half-extent (20)
 The frame two snapped points span -- a margin of a frame's half-extent around the cells -- with its origin and span counts.
 H26.1 (SNAP-GRID.md appendix B): the two snapped corners are positions on the node grid; the origin is the least corner's point and
 the counts the index differences plus one, and the frame is the block's `span(...).through` grown by the frame's margin, which stays.
+RESTATED at H26.6's move 13 (dev/design/components/PAN-ZOOM.md section 3.8, "The text tool"; PZ32) -- SPLIT: the two corners arrive
+snapped to the diagram's device lattice (the shared box gesture snaps them on the anchor's place), so the anchor, the lesser corner, lies
+on the grid; the span counts are `1 + round(d / 60)` on each axis, `d` the distance between them, a half toward the greater, and the frame
+is a span of that many squares of the unit from cell 0,0, so a text box's size is in the unit, a device's, whatever the grid -- identical
+to the old frame at 60 over 21,609 corner pairs (`textbox-frame.mjs`).
 */
-// F6 (H26.1's verification): a point the node grid cannot place -- not a number, not finite or beyond its domain, which no snapped
-// pointer is -- gives a frame of NaN, as the old arithmetic's NaN did, where asking the grid would throw
-const positionOn = (p) => (p && typeof p.x === 'number' && typeof p.y === 'number' ? NODE_GRID.nearest(p) : null);
+// F6 (H26.1's verification): a point not a finite number, or past snap-grid's domain -- which no snapped pointer is -- gives a frame of
+// NaN, as the old arithmetic's NaN did
+const DOMAIN = 2 ** 50;   // 2^50, snap-grid's domain (SG1): a lattice places no position past it
+const finite = (p) => !!p && Number.isFinite(p.x) && Number.isFinite(p.y) && Math.abs(p.x) <= DOMAIN && Math.abs(p.y) <= DOMAIN;
+const UNIT = STD.pitch;   // a device's unit, 60 (PZ18)
 const frameSpan = (a, b) => {
-	const p = positionOn(a), q = positionOn(b);
-	if (!p || !q) return { x: NaN, y: NaN, w: NaN, h: NaN, origin: { x: NaN, y: NaN }, cols: NaN, rows: NaN };
-	const { through } = NODE_GRID.span(p, q);
-	return { x: through.x - NODE_R, y: through.y - NODE_R, w: through.w + 2 * NODE_R, h: through.h + 2 * NODE_R,
-		origin: { x: through.x, y: through.y }, cols: Math.abs(q.col - p.col) + 1, rows: Math.abs(q.row - p.row) + 1 };
+	if (!finite(a) || !finite(b)) return { x: NaN, y: NaN, w: NaN, h: NaN, origin: { x: NaN, y: NaN }, cols: NaN, rows: NaN };
+	const origin = { x: Math.min(a.x, b.x), y: Math.min(a.y, b.y) };
+	const cols = 1 + Math.round(Math.abs(b.x - a.x) / UNIT), rows = 1 + Math.round(Math.abs(b.y - a.y) / UNIT);
+	const { w, h } = UNIT_GRID.span({ col: 0, row: 0 }, { col: cols - 1, row: rows - 1 }).through;
+	return { x: origin.x - NODE_R, y: origin.y - NODE_R, w: w + 2 * NODE_R, h: h + 2 * NODE_R, origin, cols, rows };
 };
 
 const TEXT_TOOL = {

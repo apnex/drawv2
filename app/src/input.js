@@ -42,7 +42,7 @@ import { pressRows, hitFactsOf, DOUBLE_CLICKS, VIEW_RULES } from './recognize.js
 import { KEYMAP, KEY_RELEASES } from './keymap.js';
 import { openTable, openGestures } from '../../kernel/input-rules.mjs';   // H26.2: the rules part; H26.8: its tables in input-binding's own form
 import { occupiedAnyAt, picksOf, pointsOf, grabbedAt, takenIn } from './pick.js';
-import { GAP, orthoDelta, snappedDelta, clampDelta, snapNode, snapIn, placesOf, gridsOf, resolveBox, dist, nearOrigin } from './snap.js';
+import { orthoDelta, snappedDelta, clampDelta, snapNode, snapIn, pitchOf, placesOf, gridsOf, resolveBox, dist, nearOrigin } from './snap.js';
 import { previewRect, previewPath } from './editing-visuals.js';   // H26.4: the box's and the link drag's previews, items of the scene (section 5.3)
 import { EDITING_GESTURES } from './editing-gestures.js';   // H26.8: the editing gestures' bodies, the editing duty's, behind the host
 import { emitToHost } from './capture.js';
@@ -168,7 +168,7 @@ const INPUT_GESTURES = {
 			const target = i.anchorAt(pos);
 			i.updateLinkPreview(pos);
 			i.retarget(target, ctx.src.id);
-			i.readout.setLink(ctx.src.name || '?', (target && target.id !== ctx.src.id) ? (target.name || '?') : snapNode(pos));
+			i.readout.setLink(ctx.src.name || '?', (target && target.id !== ctx.src.id) ? (target.name || '?') : i.snapNode(pos));
 		},
 		start: (i, hit, pos, evt) => {
 			const src = i.model.get(kindOf(hit.id), hit.id);   // a hit names what is drawn; the id names how it is stored (F-c)
@@ -189,12 +189,12 @@ const INPUT_GESTURES = {
 	box: {
 		commit: (i, ctx, pos, evt) => {
 			ctx.rect.remove();
-			const box = ctx.shape(ctx.p1, snapIn(ctx.place, pos));
+			const box = ctx.shape(ctx.p1, snapIn(ctx.place, pos, i.model));
 			i.act(i.decide(ctx.releases, evt, { area: box.w > 0 && box.h > 0 }), box);
 		},
 		cancel: (i, ctx) => ctx.rect.remove(),
 		update: (i, ctx, pos) => {
-			const box = ctx.shape(ctx.p1, snapIn(ctx.place, pos));
+			const box = ctx.shape(ctx.p1, snapIn(ctx.place, pos, i.model));
 			ctx.rect.update(box);
 			i.readout.setBox(box);
 		},
@@ -202,7 +202,7 @@ const INPUT_GESTURES = {
 		// frame (a text box's: the cells it spans, with a frame's margin)
 		start: (i, hit, pos, evt, rule) => {
 			const place = i.places.get(rule.box.place);
-			const p1 = snapIn(place, pos);
+			const p1 = snapIn(place, pos, i.model);
 			const ctx = { p1, place, shape: rule.box.frame ?? resolveBox, releases: rule.id, rect: previewRect(i.scene, rule.box.preview) };
 			if (rule.box.previewOnPress !== false) ctx.rect.update(ctx.shape(p1, p1));
 			return ctx;
@@ -349,7 +349,7 @@ export class Input {
 			setAll: (label, sets) => this.history.commit(commands.setFieldsAll(label, sets)),
 			// C-e: the agreed instant; a point snapped to a place's grid; an entity made and committed, the selection untouched
 			now: () => this.now(),
-			snap: (place, pos) => snapIn(this.places.get(place), pos),
+			snap: (place, pos) => snapIn(this.places.get(place), pos, this.model),
 			add: (kind, make) => { const e = make(this.model); this.history.commit(commands.createEntity(kind, e, this.places.wordOf(kind, e))); },
 			// C-e: an event handed to the host page (a panel button, W5), and the inline editor opened on an entity's region
 			emit: (type, detail) => emitToHost(this.host, type, detail),
@@ -476,12 +476,12 @@ export class Input {
 			endRetarget: (ctx) => this.endRetarget(ctx),
 			commitMove: (ctx, pos, ortho) => this.commitMove(ctx, pos, ortho),
 			commitClone: (ctx, pos, ortho) => this.commitClone(ctx, pos, ortho),
-			cellName: (pos) => snapNode(pos),
+			cellName: (pos) => this.snapNode(pos),
 			boxOf: (p1, p2) => resolveBox(p1, p2),
 		});
 
 
-		this.lastDelta = { x: GAP, y: 0 }; // remembered pitch for Ctrl+D duplicate
+		this.lastDelta = null; // remembered pitch for Ctrl+D duplicate -- none yet: one square right, the diagram's (H26.6's move 13)
 		this.readOnly = false; // Server-Locked: inspect + select only, no mutations
 		// D12 — fires when an in-flight gesture ends, however it ends. Sync listens so inbound changes
 		// deferred during the gesture replay at exactly the moment the preview stops moving (B19).
@@ -836,8 +836,9 @@ export class Input {
 			const e = this.model.get(kind, id);
 			return { kind, id, before: { x: e.x, y: e.y } };
 		});
+		this.lastDelta ??= { x: this.pitch(), y: 0 };   // move 13: none remembered -- one square right, of the diagram's grid
 		const delta = clampDelta(this.model, refs, { ...this.lastDelta }, this.places);
-		const cells = (v) => this.readout.signed(v / GAP);
+		const cells = (v) => this.readout.signed(v / this.pitch());
 		if (delta.x === 0 && delta.y === 0) {
 			this.readout.flash(`✗ no room Δ[${cells(this.lastDelta.x)}, ${cells(this.lastDelta.y)}]`);
 			return;
@@ -867,6 +868,14 @@ export class Input {
 	}
 
 	// the bounds of the selected placed entities -- a zone's box, a device's span (C-c places' `size`) -- or null with none (C-e)
+	/*
+	H26.6's move 13 (dev/design/components/PAN-ZOOM.md section 3.9; PZ18): the diagram's device lattice's nearest point to `pos` -- where a
+	node is dropped, a chain's next hop, the readout's cursor, the datum -- and the diagram's square, the step a nudge, Ctrl+D's first
+	offset, the readout's cells and a move's cells count in; each read from the model's grid at the call, never a constant
+	*/
+	snapNode(pos) { return snapNode(this.places, this.model, pos); }
+	pitch() { return pitchOf(this.places, this.model); }
+
 	selectionBounds() {
 		let x = Infinity, y = Infinity, x2 = -Infinity, y2 = -Infinity, boxed = 0;
 		for (const id of this.selection.list()) {
@@ -886,7 +895,7 @@ export class Input {
 	stampAt(pos, item = this.tools.hand) {   // the held item -- or a palette tile's, dropped (C-e)
 		const spec = this.handSpec;
 		if (!item || !spec) return false;
-		const cell = snapIn(this.places.get(spec.place), pos);
+		const cell = snapIn(this.places.get(spec.place), pos, this.model);
 		if (this.placeRefused(pos, cell)) return false;   // WD5: not under an item; one anchor to a point
 		const { kind, entity } = spec.stamp(this.model, item, cell);
 		this.history.commit(commands.createEntity(kind, entity, this.places.wordOf(kind, entity)));
@@ -904,7 +913,7 @@ export class Input {
 	// the held item cannot stamp on this cell -- the hand's own rule (a device stands there)
 	handBlocked(pos) {
 		if (!this.tools.hand || !this.handSpec) return false;
-		return this.placeRefused(pos, snapNode(pos));
+		return this.placeRefused(pos, this.snapNode(pos));
 	}
 
 	/*
@@ -924,7 +933,7 @@ export class Input {
 	// 'w' when idle: drop a standalone waypoint at the snapped cursor cell (empty cells only)
 	placeWaypoint() {
 		if (!this.state.pointer.at) return false;
-		const snapped = snapNode(this.state.pointer.at);
+		const snapped = this.snapNode(this.state.pointer.at);
 		if (this.placeRefused(this.state.pointer.at, snapped)) return false;   // WD5
 		// a waypoint with no link: the sweep takes only what an edit orphaned, so it stays until deleted (`pinned`, B162, is
 		// retired -- S-d, H18.14)
@@ -967,7 +976,7 @@ export class Input {
 	addStop({ key, pin, nodes = false }) {
 		if (!this.state.pointer.at) return;
 		const ctx = this.ctx;
-		const snapped = snapNode(this.state.pointer.at);
+		const snapped = this.snapNode(this.state.pointer.at);
 		const existing = this.bare?.at(this.model, snapped) ?? (nodes ? this.anchorAt(this.state.pointer.at) : null);   // occupancy index (R13)
 		if (existing && pin) {
 			if (existing.id === ctx.src.id) return;        // don't thread the source itself
@@ -997,7 +1006,7 @@ export class Input {
 	// the live route preview: a rounded polyline through src → threaded waypoints → cursor/target
 	updateLinkPreview(pos) {
 		const target = this.anchorAt(pos);
-		const end = target ? { x: target.x, y: target.y } : snapNode(pos);
+		const end = target ? { x: target.x, y: target.y } : this.snapNode(pos);
 		// the cursor is a free ANCHOR — pathOf resolves the rest of the route around it
 		// through every stop drawn so far, guides included, so the author sees the route they are drawing
 		const path = this.linkKit?.pathOf(this.model, { src: this.ctx.src, via: this.ctx.route ?? this.ctx.via, dst: end }) ?? null;
@@ -1068,7 +1077,7 @@ export class Input {
 
 		if (outcome.phase === 'update') return GESTURES[outcome.gesture.name].update?.(this.#subjectOf(outcome.gesture.name), this.ctx, pos, evt);
 		// idle: the stamp ghost rides the snapped cell and the readout states the landing
-		const snapped = snapNode(pos);
+		const snapped = this.snapNode(pos);
 		const blocked = this.handBlocked(pos);
 		this.tools.trackHand(snapped, blocked);
 		this.readout.setCursor(snapped, this.tools.hand, blocked);
@@ -1126,11 +1135,11 @@ export class Input {
 		});
 		const base = this.ctx.moved.find((m) => m.id === this.ctx.baseId) || this.ctx.moved[0];
 		const raw = { x: base.before.x + delta.x, y: base.before.y + delta.y };
-		const target = snapIn(this.places.get(base.kind), raw);   // C-c: on the base's own grid
+		const target = snapIn(this.places.get(base.kind), raw, this.model);   // C-c: on the base's own grid -- the diagram's (move 13)
 		this.overlayUi.crosshair.show(target);
 		this.readout.setDrag(target, {
-			x: (target.x - base.before.x) / GAP,
-			y: (target.y - base.before.y) / GAP
+			x: (target.x - base.before.x) / this.pitch(),
+			y: (target.y - base.before.y) / this.pitch()
 		});
 	}
 
@@ -1323,7 +1332,7 @@ export class Input {
 		if (outcome.phase !== 'start' && outcome.phase !== 'become') return;
 		this.ctx = this.linkDrag(node, pos);   // B261: the same drag context as any other
 		this.updateLinkPreview(pos);
-		this.readout.setLink(node.name || '?', snapNode(pos));
+		this.readout.setLink(node.name || '?', this.snapNode(pos));
 	}
 
 	commitMove(ctx, pos, ortho) {
@@ -1401,7 +1410,7 @@ export class Input {
 	// after a hand change at idle: ghost and readout reflect it immediately
 	refreshHand() {
 		if (this.mode || !this.state.pointer.at) return;
-		const snapped = snapNode(this.state.pointer.at);
+		const snapped = this.snapNode(this.state.pointer.at);
 		const blocked = this.handBlocked(this.state.pointer.at);
 		if (this.tools.hand) this.tools.trackHand(snapped, blocked);
 		this.readout.setCursor(snapped, this.tools.hand, blocked);
@@ -1481,7 +1490,7 @@ export class Input {
 	*/
 	stepUnderPointer() {
 		if (!this.state.pointer.at) return null;
-		if (this.bare?.at(this.model, snapNode(this.state.pointer.at))) return 'waypoint';
+		if (this.bare?.at(this.model, this.snapNode(this.state.pointer.at))) return 'waypoint';
 		return this.anchorAt(this.state.pointer.at) ? 'node' : 'ground';   // no waypoint on the cell, above: a device's
 	}
 
@@ -1527,7 +1536,7 @@ export class Input {
 		else if (this.tools.textTool) this.tools.setTextTool(false);
 		else if (this.tools.hand) {
 			this.tools.setHand(null);
-			this.readout.setCursor(this.state.pointer.at ? snapNode(this.state.pointer.at) : null);
+			this.readout.setCursor(this.state.pointer.at ? this.snapNode(this.state.pointer.at) : null);
 		} else this.selection.clear();
 	}
 
@@ -1545,7 +1554,7 @@ export class Input {
 	// nothing, and with the pointer off the canvas nothing is pending
 	onDatum(evt) {
 		if (evt.repeat) return;
-		this.#pendingDatum = this.state.pointer.at ? snapNode(this.state.pointer.at) : null;
+		this.#pendingDatum = this.state.pointer.at ? this.snapNode(this.state.pointer.at) : null;
 	}
 
 	// Space released: the pending datum set, unless a pan engaged while Space was held -- which dropped it -- or none was recorded
@@ -1641,7 +1650,7 @@ export class Input {
 	*/
 	chainThroughNode(type) {
 		if (!this.state.pointer.at) return;
-		const snapped = snapNode(this.state.pointer.at);
+		const snapped = this.snapNode(this.state.pointer.at);
 		// WD5: not under an item, and one anchor to a point -- the same as any gesture placing at the pointer
 		if (!this.handSpec || this.placeRefused(this.state.pointer.at, snapped)) return;
 		// the source can die mid-gesture (a peer deleting it), and committing onto a corpse would
@@ -1712,7 +1721,7 @@ export class Input {
 		const ids = this.selection.list();
 		if (!dir || ids.length !== 1) return;
 		const kind = kindOf(ids[0]), spec = this.sizeSteps.get(kind), e = spec && this.model.get(kind, ids[0]);
-		const after = e && spec.step(e, dir[0], dir[1]);
+		const after = e && spec.step(e, dir[0], dir[1], this.model);   // H26.6's move 13: the model, whose grid a step may count in
 		if (after) this.history.amend(commands.setFields(spec.label, kind, ids[0], after));
 	}
 

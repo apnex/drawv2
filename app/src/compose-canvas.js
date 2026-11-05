@@ -26,10 +26,10 @@ measure and settle it was handed for the live shadow (D12) went with it; the edi
 and handed to the renderer, Input, the overlay and the network's settle, the selection reflected into them.
 */
 import { sharedDefs } from '../../kernel/renderer.mjs';
-import { NODE_GRID } from '../../kernel/geometry.mjs';
 import { STD } from '../../kernel/spec.mjs';   // H26.6's move 11: a label's text, 13 units, which the labels' floor is judged against
 import { crosshair } from './editing-visuals.js';   // H26.4: the editing part's, an item of the scene
-import { gridsOf } from './snap.js';
+import { gridsOf, placesOf, pitchOf } from './snap.js';
+import { BARE_KIND } from '../../model/anchors.mjs';   // H26.6's move 13: the anchor's place, whose lattice the occupancy index keys by
 import { Model } from '../../model/model.mjs';
 import { attachRelations } from '../../engine/store.mjs';
 import { Changes, applyAnswer } from './changes.js';
@@ -85,7 +85,10 @@ export function composeCanvas({ svg, scene: declared, defs, host, network = null
 	// `nearest` is injected here, at a composition root, so engine/ imports no kernel (H26.1: it was `cellOf`). RESTATED at H26.6's move 12
 	// (PAN-ZOOM.md section 3.8, PZ26): the diagram's device lattice is handed, asked again whenever the index is built -- on a load and on
 	// a change to a layout record -- the node lattice until the grid is stored (moves 13 and 14)
-	attachRelations(model, { deviceLattice: () => NODE_GRID });
+	// RESTATED at H26.6's move 13 (3.9, "the occupancy index's cell"): the diagram's device lattice itself, the anchor's place's resolved from
+	// the model's grid record -- another lattice when the grid changes, which builds the index again
+	const places = placesOf(parts), anchorPlace = places.get(BARE_KIND);
+	attachRelations(model, { deviceLattice: (m) => anchorPlace.lattice(m) });
 	// WD-b2 (H19.46): each grid a part declares, drawn from the open diagram and again on every load -- the layouts plugin's two. H26.8's
 	// grid move (NATIVE-SHAPES.md section 3.2): handed the grids the places snap to, `gridsOf`, asked here. H26.6's move 8 (PAN-ZOOM.md
 	// section 3.7): drawn from the view, handed the view part's values for its level, and a redraw asked of `frame` (above)
@@ -120,7 +123,7 @@ export function composeCanvas({ svg, scene: declared, defs, host, network = null
 	const shownReadout = readoutEl ? new Readout({ model, selection, elements: [readoutEl], parts }) : null;   // C-e: each kind's words, from its part
 	// B36 -- one crosshair on #snaplayer, owned here and shared by everything that draws it: Overlay inside Input, and the
 	// held tools' ghost. Two owners of one layer drew two crosshairs. H26.4: one item of the scene's snap layer
-	const snap = crosshair(scene, NODE_GRID.declaration.pitch, { schedule: frame });   // H26.1: a box a pitch wide, the node grid's; H26.6's move 8: across the view
+	const snap = crosshair(scene, () => pitchOf(places, model), { schedule: frame });   // H26.6's move 13: a square of the diagram's grid wide   // H26.1: a box a pitch wide, the node grid's; H26.6's move 8: across the view
 	const heldTools = tools ? new Tools({ svg, scene, snap, preview: parts.find((p) => p.hand)?.hand.preview ?? null }) : null;   // C-e: the ghost draws the hand's preview
 	// H26.6's move 9 (PAN-ZOOM.md section 3.6): handed the view part, whose verbs the view's rows run
 	const input = new Input({ svg, scene, view, model, history, selection, renderer, states, labels, readout: shownReadout, tools: heldTools,

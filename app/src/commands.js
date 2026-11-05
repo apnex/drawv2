@@ -21,7 +21,7 @@ disconnected browser previews with it as well, so it still never builds a docume
 
 import { clone } from '../../model/ops.mjs';
 import { kindOf, projection } from '../../model/model.mjs';
-import { GAP, clampDelta } from './snap.js';
+import { pitchOf, clampDelta } from './snap.js';
 import { BARE_KIND } from '../../model/anchors.mjs';
 
 // entities are cloned at every command boundary: the live store object must never
@@ -238,6 +238,7 @@ export function nudgeSelection(model, ids, dx, dy, places) {   // C-c: `places`,
 		if (e) moved.push({ kind, id, before: { x: e.x, y: e.y } });
 	});
 	if (moved.length === 0) return { label: 'move', entries: [] };
+	const GAP = pitchOf(places, model);   // H26.6's move 13 (PAN-ZOOM.md 3.9): a square of the diagram's grid, where it was the node grid's 60
 	const delta = clampDelta(model, moved, { x: dx * GAP, y: dy * GAP }, places);
 	if (delta.x === 0 && delta.y === 0) return { label: 'move', entries: [] };
 	return moveEntities(moved.map((m) => ({

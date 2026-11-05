@@ -75,8 +75,8 @@ const RECORD = {
 	// RESTATED at H25.5 (B378, D4): the declarative scene helpers `zone`, `group` and `bboxOf` retired with the old scene renderer
 	// H26.1 (SNAP-GRID.md section 7.7, appendix B): kernel/geometry.mjs's 4 fell -- the zone lattice's offset left for the layouts table,
 	// with `LAYOUTS`, `anchorAt` and `nearestAnchor`. RESTATED at H26.1's verification (F3): to 1, the anchor's one builder, beside the grids
-	'kernel/geometry.mjs': { count: 1, cites: ['B325'],
-		reason: 'the `layout:` an anchor carries, in `anchorOn`, the one place the agent door and placement build an anchor (B325)',
+	'kernel/geometry.mjs': { count: 2, cites: ['B325', 'H26-23'],
+		reason: 'the `layout:` an anchor carries, in `anchorOn`, the one place the agent door and placement build an anchor (B325); RAISED at H26.6\'s move 13 by one: `diagramLattices` answers a diagram\'s `{ device, zone }`, its two lattices, as 3.4 names them',
 		trigger: 'a diagram varies its grids (B325)' },
 	'kernel/spec.mjs': { count: 2, cites: ['B325'],
 		reason: 'the `group:` and `zone:` layout constants in `STD`',
@@ -96,8 +96,12 @@ const PRODUCT_KIND_RECORD = {
 	'engine/situation.mjs': { count: 2, cites: ['D2'],
 		reason: 'the pointer situation naming `link` for the draw-a-link gesture and a selected link (D2)',
 		trigger: 'permanent' },
-	'plugins/simulation/spawners.mjs': { count: 2, cites: ['SD11b'],
-		reason: 'a spawner record and its movers report naming the `link` its movers ride along (SD11b)',
+	// H26.6's move 13 (PAN-ZOOM.md section 3.4): the zone kind's `refers` reads the diagram's grid record, `layout-000001`, through access
+	'plugins/zones/zone-kind.mjs': { count: 1, cites: ['H26-23'],
+		reason: 'the zone\'s `refers` asking the diagram\'s one `layout` record whether its corner and sides lie on the grid (3.4)',
+		trigger: 'permanent' },
+	'plugins/simulation/spawners.mjs': { count: 3, cites: ['SD11b', 'H26-23'],
+		reason: 'a spawner record and its movers report naming the `link` its movers ride along (SD11b); RAISED at H26.6\'s move 13 by one: the diagram\'s grid read from its one `layout` record, as 3.8 prescribes, nothing of the layouts plugin imported',
 		trigger: 'permanent' },
 	// H26.7: lab/server.mjs's 3 went -- it mounts /plugins/ once, where it mounted /layouts/, /zones/ and /groups/ apart
 	// RESTATED at H25.4 (B376): the layer ids went to product/canvas.mjs CANVAS_LAYERS, which the lab spreads into `NEEDED`
@@ -113,9 +117,13 @@ const PRODUCT_KIND_RECORD = {
 	'product/canvas.mjs': { count: 4, cites: ['H25.4'],
 		reason: 'the canvas\'s layers back to front (`CANVAS_LAYERS`): the composition names the layer each plugin draws into -- moved from the lab\'s `NEEDED` and the two pages (H25.4)',
 		trigger: 'each canvas part declares where its own layer stacks, so the composition names none' },
+	// H26.6's move 13 (PAN-ZOOM.md section 3.4): the anchor kind's `refers` reads the diagram's grid record, `layout-000001`, through access
+	'product/kinds.mjs': { count: 1, cites: ['H26-23'],
+		reason: 'the anchor\'s `refers` asking the diagram\'s one `layout` record whether it lies on the grid (3.4)',
+		trigger: 'permanent' },
 	// H26.1's verification (F3): back to 1 -- raised at H26.1 for the `layout:` its anchors carried, which kernel/geometry.mjs's `anchorOn` states now
-	'server/anchor.mjs': { count: 1, cites: ['SD1'],
-		reason: 'server-side placement resolving `at.inside` against the diagram\'s zones (SD1)',
+	'server/anchor.mjs': { count: 2, cites: ['SD1', 'H26-23'],
+		reason: 'server-side placement resolving `at.inside` against the diagram\'s zones (SD1); RAISED at H26.6\'s move 13 by one: placement\'s positions on the diagram\'s device lattice, read from its one `layout` record -- the part consumes the lattice, not the layouts plugin (3.9)',
 		trigger: 'permanent' },
 	// H26.7: server/app.js's 3 went -- it mounts /plugins once, where it mounted /layouts, /zones and /groups apart
 	'server/rest.js': { count: 24, cites: ['SD1', 'H26-23'],

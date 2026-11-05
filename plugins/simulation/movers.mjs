@@ -36,7 +36,6 @@ index into whatever array happened to be built this frame.
 */
 
 import { pathGeometry, pathLength, pointAtDistance } from '../../kernel/router.mjs';
-import { NODE_GRID } from '../../kernel/geometry.mjs';   // H26.1: the node grid's declared pitch, the length a cell is
 
 /*
 B172 -- `speed` is authored in CELLS per second and the geometry is in pixels, so the conversion
@@ -45,8 +44,11 @@ happens ONCE, here, at the boundary between the two. Everything below this line 
 Cells is the authored unit because the grid is this system's unit of distance (B110), so a stored
 speed keeps its meaning if the pitch ever changes. Pixels is the computed unit because that is what
 a path is measured in. Converting at the edge is what keeps both true at the same time.
+RESTATED at H26.6's move 13 (dev/design/components/PAN-ZOOM.md section 3.8, "The unit and the simulation"; PZ19, its claim narrowed): a
+cell is a square of the DIAGRAM'S grid, so the descriptor carries the diagram's `pitch` beside `speed` -- `spawnersOf` reads it from the
+model it already takes -- and this stays a function of plain data, reaching into no model (A3); a descriptor without a positive pitch
+emits nothing, as one with no route does. B172's note stands as written: a stored speed keeps its meaning when the pitch changes.
 */
-const PITCH = NODE_GRID.declaration.pitch;
 
 /*
 A runtime bound, not a document limit -- so it is here rather than in `model/limits.mjs`, whose
@@ -67,14 +69,16 @@ handing over a description; that adapter is somebody else's one concern.
 
   since     epoch ms -- when this spawner was armed. Shared, so every peer agrees on the phase.
   interval  ms between departures
-  speed     px per second
+  speed     cells per second -- squares of the diagram's grid
+  pitch     the diagram's grid, drawing units a square (H26.6's move 13)
 */
 export function prepareSpawner(spawner) {
 	const { pts, closed = false, radius = 20 } = spawner || {};
 	const geo = pathGeometry(pts, radius, closed);
 	// `pxSpeed` is the only speed anything below uses; `speed` stays as authored so a caller
 	// reading a prepared spawner back sees the number it supplied rather than a derived one.
-	const pxSpeed = typeof spawner?.speed === 'number' ? spawner.speed * PITCH : 0;
+	const pitch = spawner?.pitch, square = typeof pitch === 'number' && pitch > 0 ? pitch : 0;   // move 13: no grid, no speed -- it emits nothing
+	const pxSpeed = typeof spawner?.speed === 'number' ? spawner.speed * square : 0;
 	return { ...spawner, geo, length: pathLength(geo), pxSpeed };
 }
 

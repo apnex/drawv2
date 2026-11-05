@@ -3,38 +3,38 @@
 // H25.5 (B378, D4): the old scene renderer's element helpers (node, zone, group, bboxOf, cellPx) retired with it.
 // H26.1 (SNAP-GRID.md section 7.7): the grid's own arithmetic -- px, cellOf, LAYOUTS, onLayout, snapLayout, cellOn, pxOn,
 // nearestAnchor, anchorAt and spanExtent -- deleted, its answers snap-grid's, asked of the grids opened below.
-import { STD } from './spec.mjs';
 import { openGrid } from '@apnex/snap-grid';   // H26.1: the lattice part alone composes the component (tools/layers.mjs COMPONENTS)
 
 /*
 H26.1 (dev/design/components/SNAP-GRID.md section 5) -- THE GRIDS, OPENED FROM DECLARATIONS, AND THE ONE PLACE DRAW OPENS ONE.
 
 Where a position lies and which position lies nearest a point are snap-grid's to answer (H26-1, H26-4); what a grid is for --
-what is drawn at a position, what may sit there, how a drag is held -- stays draw's. Every grid draw asks is NODE_GRID or is
-opened through one of the two functions below, so two parts asking one grid ask one declaration (guardrail G7).
+what is drawn at a position, what may sit there, how a drag is held -- stays draw's. Every grid draw asks is opened through one of the
+functions below, so two parts asking one grid ask one declaration (guardrail G7).
 
-  latticeGrids(record)  a record of the layouts plugin's form, { pitch, offset, ext? }, opened into { bounded, unbounded }: the
-                        grid bounded by the extent -- each axis from -ext to ext -- and the grid with no bounds; `bounded` is
-                        null for a record with no extent. A record snap-grid refuses throws, naming every problem, so a bad
-                        lattice fails where it is opened rather than answering wrongly later
-  NODE_GRID             the node lattice with no bounds: the kernel's locked pitch, origin 0 -- the relation index, field
-                        validation of positions and lengths, spans, steps and the REST routes ask it
+  diagramLattices(record)  H26.6's move 13 (dev/design/components/PAN-ZOOM.md sections 3.4 and 3.9; PZ18): a diagram's two unbounded
+                        lattices from its layout record -- its `pitch` alone -- a frozen `{ device, zone }`, the device lattice's origin
+                        0 and the zone's half the pitch, always (Q2), one answer kept per pitch; schema 3's node record and schema 4's
+                        one record are read alike. Every reader asking where a position lies asks these, from its diagram's record
+`latticeGrids` and `NODE_GRID`, renamed `UNIT_GRID`, moved at H26.6's move 13 to kernel/lattice-grids.mjs, in this part, which the
+planner's entry does not load: this module is the planner's (the anchor's and the zone's `refers` ask `diagramLattices`), and the
+others' readers are the canvas's, the devices plugin's and the export's alone (PAN-ZOOM.md appendix B, move 13, E16).
 `nodeGridWithin(ext)`, the node lattice bounded by an extent, went at H26.6's move 12 (dev/design/components/PAN-ZOOM.md 5.1 row 12,
 GR2): placement rings outward within PZ31's bound where it walked the extent's positions, so no reader asks a bounded node grid.
 */
-export function latticeGrids({ pitch, offset, ext } = {}) {
-	const lattice = { shape: 'square', pitch, origin: { x: offset, y: offset } };
-	const open = (declaration) => {
-		const opened = openGrid(declaration);
-		if (!opened.ok) throw new Error(`latticeGrids: the lattice of pitch ${pitch}, offset ${offset}${ext ? `, extent ${ext.x} x ${ext.y}` : ''} is refused -- ${opened.problems.map((p) => `${p.problem} at ${p.pointer || '/'}`).join(', ')}`);
-		return opened.grid;
-	};
-	return {
-		bounded: ext === undefined ? null : open({ ...lattice, bounds: { min: { x: -ext?.x, y: -ext?.y }, max: { x: ext?.x, y: ext?.y } } }),
-		unbounded: open(lattice),
-	};
+// a lattice of the square shape, opened once -- a declaration snap-grid refuses throws, naming every problem
+function openSquare(pitch, origin) {
+	const opened = openGrid({ shape: 'square', pitch, origin: { x: origin, y: origin } });
+	if (!opened.ok) throw new Error(`diagramLattices: the lattice of pitch ${pitch}, origin ${origin} is refused -- ${opened.problems.map((p) => `${p.problem} at ${p.pointer || '/'}`).join(', ')}`);
+	return opened.grid;
 }
-export const NODE_GRID = latticeGrids({ pitch: STD.pitch, offset: 0 }).unbounded;
+const LATTICES = new Map();   // pitch -> { device, zone }, opened once each
+export function diagramLattices(record) {
+	const pitch = record?.pitch;
+	if (!Number.isSafeInteger(pitch) || pitch <= 0 || pitch % 2 !== 0) throw new Error(`diagramLattices: a layout record's pitch is a positive even whole number, not ${JSON.stringify(pitch)}`);
+	if (!LATTICES.has(pitch)) LATTICES.set(pitch, Object.freeze({ device: openSquare(pitch, 0), zone: openSquare(pitch, pitch / 2) }));
+	return LATTICES.get(pitch);
+}
 
 /*
 H26.1 (SNAP-GRID.md appendix B; F3, H26.1's verification) -- AN ANCHOR, AS THE AGENT DOOR AND PLACEMENT ANSWER IT: a position on a

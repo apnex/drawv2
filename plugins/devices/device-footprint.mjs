@@ -8,7 +8,7 @@ little more), what keeps a hover after a gesture (the frame), what a marquee box
 */
 
 import { L_STD } from '../../kernel/spec.mjs';
-import { NODE_GRID } from '../../kernel/geometry.mjs';
+import { UNIT_GRID } from '../../kernel/lattice-grids.mjs';   // H26.6's move 13 (PAN-ZOOM.md 3.9, PZ18, GR16): the unit, asked for a span from cell 0,0
 import { typedNodes } from './device-shapes.mjs';
 import { hasDevice } from './device-fields.mjs';
 import { isPanel } from './device-types.mjs';   // H24.6: a panel draws a rectangle, as a wide device does
@@ -17,7 +17,7 @@ const NODE_R = L_STD.frame.ext;   // a device frame's half-extent (20)
 
 // H26.1 (SNAP-GRID.md appendix B): what a device's span runs through beyond its first cell -- `span(...).through` on the node grid,
 // from its first cell to its last -- which draw pads by its own margins below, and the appearance draws its frame around
-export const spanThrough = (span) => { if (!span) return { sw: 0, sh: 0 }; const { w, h } = NODE_GRID.span({ col: 0, row: 0 }, { col: span.cols - 1, row: span.rows - 1 }).through; return { sw: w, sh: h }; };
+export const spanThrough = (span) => { if (!span) return { sw: 0, sh: 0 }; const { w, h } = UNIT_GRID.span({ col: 0, row: 0 }, { col: span.cols - 1, row: span.rows - 1 }).through; return { sw: w, sh: h }; };
 
 // is `pos` inside this device's footprint, padded by `pad`?
 export const inFootprint = (n, pos, pad = 0) => {

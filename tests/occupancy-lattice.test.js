@@ -10,7 +10,9 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { Model } from './fixtures/composed.mjs';
 import { attachRelations } from '../engine/store.mjs';
-import { NODE_GRID, latticeGrids } from '../kernel/geometry.mjs';
+import { diagramLattices } from '../kernel/geometry.mjs';
+import { latticeGrids } from '../kernel/lattice-grids.mjs';
+const NODE_GRID = diagramLattices({ pitch: 60 }).device;   // H26.6's move 13: a diagram's device lattice at 60, NODE_GRID gone from the kernel (GR16)
 
 const AT_80 = latticeGrids({ pitch: 80, offset: 0 }).unbounded;
 const node = (id, x, y) => ({ id, name: id, type: 'host', x, y });
@@ -43,9 +45,14 @@ test('H26.6 move 12, PZ26: the index is built again when the composition hands a
 	assert.doesNotMatch(fs.readFileSync(new URL('../engine/store.mjs', import.meta.url), 'utf8'), /'layout'/, 'engine/store.mjs names no layout kind');
 });
 
-test('H26.6 move 12, PZ26: each composition hands the device lattice -- the product\'s and the lab\'s -- and the engine imports no grid', () => {
+// RESTATED at H26.6's move 13 (PAN-ZOOM.md section 3.9, "the occupancy index"): each composition hands the diagram's device lattice,
+// resolved from the model it is asked with -- the product's through the anchor's place, the lab's through the layouts plugin -- and
+// neither names the unit
+test('H26.6 moves 12 and 13, PZ26: each composition hands the diagram\'s device lattice -- the product\'s and the lab\'s -- and the engine imports no grid', () => {
 	for (const f of ['app/src/compose-canvas.js', 'lab/src/root.js']) {
-		assert.match(fs.readFileSync(new URL(`../${f}`, import.meta.url), 'utf8'), /attachRelations\(\w+, \{ deviceLattice: \(\) => NODE_GRID \}\)/, `${f} hands the device lattice`);
+		const text = fs.readFileSync(new URL(`../${f}`, import.meta.url), 'utf8');
+		assert.match(text, /attachRelations\(\w+, \{ deviceLattice: \((\w+)\) => (?:anchorPlace\.lattice\(\1\)|latticesOf\(\1\)\.device) \}\)/, `${f} hands the diagram's device lattice`);
+		assert.doesNotMatch(text, /\b(?:NODE_GRID|UNIT_GRID)\b/, `${f} names no fixed lattice`);
 	}
 	for (const f of ['engine/relations.mjs', 'engine/store.mjs']) {
 		assert.doesNotMatch(fs.readFileSync(new URL(`../${f}`, import.meta.url), 'utf8'), /from '\.\.\/kernel\//, `${f} imports no kernel module`);

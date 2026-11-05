@@ -121,10 +121,10 @@ test('invalid mutations are rejected and not applied', async () => {
 	let err = await c.expect('error');
 	assert.match(err.body.message, /invalid id/);
 
-	// off-canvas coordinates
+	// off-canvas coordinates -- RESTATED at H26.6's move 13: -2000 is off the grid of 60, refused by the anchor's `refers` naming it
 	c.send('commit', { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-bbbb01', name: 'x', type: 'host', x: -2000, y: 60 } }] });
 	err = await c.expect('error');
-	assert.match(err.body.message, /invalid value/);
+	assert.match(err.body.message, /off the diagram's grid of 60/);
 
 	// unknown field
 	c.send('commit', { ops: [{ op: 'put', kind: 'node', entity: { id: 'node-bbbb02', name: 'x', type: 'host', x: 60, y: 60, evil: 1 } }] });

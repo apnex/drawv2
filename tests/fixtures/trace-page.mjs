@@ -18,7 +18,8 @@ import { Reveal } from '../../plugins/simulation/reveal-painter.mjs';
 import { traceOf } from '../../plugins/simulation/reveal.mjs';
 import { Model } from '../../model/model.mjs';
 import { attachRelations } from '../../engine/store.mjs';
-import { NODE_GRID } from '../../kernel/geometry.mjs';
+import { diagramLattices } from '../../kernel/geometry.mjs';
+const NODE_GRID = diagramLattices({ pitch: 60 }).device;   // H26.6's move 13: a diagram's device lattice at 60, NODE_GRID gone from the kernel (GR16)
 import { Selection } from '../../app/src/selection.js';
 import { EditingStates } from '../../app/src/editing-states.js';
 import { createPageNetwork } from '../../plugins/network/page.mjs';

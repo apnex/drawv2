@@ -29,7 +29,8 @@ leaving it to memory.
 
 import { Model } from '../../model/model.mjs';
 import { attachRelations } from '../../engine/store.mjs';
-import { NODE_GRID } from '../../kernel/geometry.mjs';   // H26.1: the relation index is injected the node grid's nearest (it was cellOf)
+import { diagramLattices } from '../../kernel/geometry.mjs';
+const NODE_GRID = diagramLattices({ pitch: 60 }).device;   // H26.6's move 13: a diagram's device lattice at 60, NODE_GRID gone from the kernel (GR16)
 import { Changes, applyAnswer } from '../../app/src/changes.js';
 import { plan } from '../../planner/txn.mjs';
 import { LabelEditor } from '../../app/src/labeledit.js';
@@ -40,7 +41,7 @@ import { crosshair } from '../../app/src/editing-visuals.js';   // H26.4: the ed
 import { Renderer, openCanvasScene } from '../../app/src/renderer.js';
 import { View } from '../../app/src/view.js';   // H26.6's move 9: the view part, handed to Input when a test asks (makeInput `view`)
 import { CANVAS_SCENE } from '../../product/canvas.mjs';
-import { GAP } from '../../app/src/snap.js';
+const GAP = 60;   // H26.6's move 13: a square of a diagram's grid at 60 -- snap.js's GAP went, each step asking the diagram's grid
 import { Input } from '../../app/src/input.js';
 import { RUN_PRESSES } from '../../app/src/run-mode.js';
 import { captureCanvas } from '../../app/src/capture.js';

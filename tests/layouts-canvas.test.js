@@ -101,7 +101,10 @@ test('WD-b2 test 4: the layouts plugin holds the anchor\'s place and both grids;
 		'the anchor\'s place, on the node layout, keeping no extent beside its grid, carrying no size of its own: its kind\'s parts size it');
 	// RESTATED at H26.1 (SNAP-GRID.md section 5): and the node grid bounded by that extent, which it snaps to -- the table's. RESTATED at
 	// H26.6's move 11 (PAN-ZOOM.md section 3.8, "The extents"): the node grid with no bounds, the table's record's lattice unbounded
-	assert.deepEqual(LAYOUTS_CANVAS.places[0].grid.declaration, { shape: 'square', pitch: 60, origin: { x: 0, y: 0 } }, 'the node lattice, no bounds');
+	// RESTATED at H26.6's move 13 (PAN-ZOOM.md section 3.9; appendix A): the place holds no grid, resolving the diagram's device lattice from
+	// the model at each call
+	assert.equal('grid' in LAYOUTS_CANVAS.places[0], false, 'no grid held');
+	assert.deepEqual(LAYOUTS_CANVAS.places[0].lattice(new Model()).declaration, { shape: 'square', pitch: 60, origin: { x: 0, y: 0 } }, 'the diagram\'s device lattice, no bounds');
 	assert.deepEqual(LAYOUTS_CANVAS.grids.map((g) => g.layout), ['node', 'zone']);
 	const product = PRODUCT_CANVAS.find((p) => p.owner === 'the product');
 	assert.deepEqual(Object.keys(product).sort(), ['deleteRanks', 'orders', 'owner'], 'the anchor\'s drawing order and its rank in a delete -- composition');

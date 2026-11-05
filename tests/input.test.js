@@ -44,7 +44,7 @@ import { networkInput } from '../plugins/network/keys.mjs';
 const PRODUCT_KEYS = openTable({ owner: 'product', rows: KEYMAP });
 const sit = (selection = { size: 0, ids: [], kinds: [], bends: null }, gesture = null, step = null) => ({ selection, gesture, step });
 const resolveKey = (e, guards, s = sit()) => rowOf(PRODUCT_KEYS, e, s, guards);
-import { GAP } from '../app/src/snap.js';
+const GAP = 60;   // H26.6's move 13: a square of a diagram's grid at 60 -- snap.js's GAP went, each step asking the diagram's grid
 const NODE_EXT = { x: 900, y: 480 };   // H26.6's move 12: the old frame's edge, snap.js re-exporting no extent
 import { Tools } from '../app/src/tools.js';
 import { fakeEl } from './fixtures/client-harness.mjs';
@@ -727,7 +727,7 @@ test('B44: no builder emits a `before` — the wire drops it and the server deri
 
 		const built = [
 			// RESTATED at C-e step four (D5): a size step sets through the one builder, with what the zones and devices plugins make of it
-			commands.setFields('resize', 'zone', z.id, ZONE_SIZE_STEP.step(z, 1, 0)),
+			commands.setFields('resize', 'zone', z.id, ZONE_SIZE_STEP.step(z, 1, 0, h.model)),
 			commands.setFields('resize', 'node', a.id, DEVICE_SIZE_STEP.step({ ...a, span: { cols: 1, rows: 2 } }, 1, 1)),
 			commands.setFields('replug', 'link', link.id, { src: a.id, dst: b.id }),   // RESTATED at C-d: a re-plug sets through the one builder
 			commands.setFields('retype', 'node', a.id, { type: 'host' }),   // RESTATED at C-e: the hand's retype sets through the one builder
@@ -1205,7 +1205,7 @@ test('B46: a Shift+arrow step is the lone selected entity\'s kind\'s, so exactly
 		const [n] = seedNodes(h.model, [[0, 0]]);
 		const z = makeZone(h.model, { x: 0, y: 0, w: 300, h: 300 });
 		h.model.put('zone', z);
-		assert.deepEqual(ZONE_SIZE_STEP.step(z, 1, 0), { x: 0, y: 0, w: 360, h: 300 }, 'the zone grows a cell');
+		assert.deepEqual(ZONE_SIZE_STEP.step(z, 1, 0, h.model), { x: 0, y: 0, w: 360, h: 300 }, 'the zone grows a cell');
 		assert.equal(DEVICE_SIZE_STEP.step(n, 1, 0).span.cols, 2, 'the device grows its span');
 		assert.equal(DEVICE_SIZE_STEP.step(n, -1, 0), null, 'a step to nothing is none');
 

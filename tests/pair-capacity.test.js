@@ -117,7 +117,8 @@ import { makeInput, pointer, seedNodes } from './tests/fixtures/client-harness.m
 import { Model } from './model/model.mjs';
 import { violations } from './model/invariants.mjs';
 import { attachRelations } from './engine/store.mjs';
-import { NODE_GRID } from './kernel/geometry.mjs';
+import { diagramLattices } from './kernel/geometry.mjs';
+const NODE_GRID = diagramLattices({ pitch: 60 }).device;   // H26.6's move 13: a diagram's device lattice at 60, NODE_GRID gone from the kernel (GR16)
 import { commit } from './planner/txn.mjs';
 import { linkTenant } from './plugins/network/link-reactions.mjs';
 import { productKinds } from './product/kinds.mjs';

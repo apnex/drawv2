@@ -178,7 +178,7 @@ stylesheet colours a head from the element just before it, so a head that drifte
 test('H24.6: a head is deleted with its link, and stays straight after it when the links are restacked', async () => {
 	const { Model } = await import('./fixtures/composed.mjs');
 	const { attachRelations } = await import('../engine/store.mjs');
-	const { NODE_GRID } = await import('../kernel/geometry.mjs');
+	const NODE_GRID = (await import('../kernel/geometry.mjs')).diagramLattices({ pitch: 60 }).device;   // H26.6's move 13: a diagram's device lattice at 60
 	const { Renderer } = await import('../app/src/renderer.js');
 	const { makeRenderer } = await import('./fixtures/client-harness.mjs');
 	const { PRODUCT_CANVAS } = await import('../product/canvas.mjs');

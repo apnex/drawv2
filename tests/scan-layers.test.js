@@ -855,7 +855,7 @@ push that broke it rather than the next time somebody opens the page.
 test('H17 K10: every seeded board is accepted by the real planner', async () => {
 	const { Model } = await import('../model/model.mjs');
 	const { attachRelations } = await import('../engine/store.mjs');
-	const { NODE_GRID } = await import('../kernel/geometry.mjs');
+	const NODE_GRID = (await import('../kernel/geometry.mjs')).diagramLattices({ pitch: 60 }).device;   // H26.6's move 13: a diagram's device lattice at 60
 	const { commit } = await import('../planner/txn.mjs');
 	const { Log } = await import('../planner/log.mjs');
 	const { productKinds } = await import('../product/kinds.mjs');
