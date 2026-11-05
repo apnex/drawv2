@@ -709,7 +709,7 @@ export function handleRest(req, res, store, locks, hub, principal = null, sessio
 	so a name an object inherits -- `constructor`, `toString` -- is unknown, 404, where it answered 200 with nulls (B401); and each
 	route asks that name's grid with no bounds, NODE_GRID or the zone's, as it asked the kernel's, reading no record. RESTATED at H26.6's
 	move 12: looked up among the routes' own two names (`ROUTE_LATTICES`, a Map), the table held to the layout row and records; move 13:
-	each the diagram's own lattice, from its record.
+	each the diagram's own lattice, from its record (`latticesOf`), NODE_GRID gone (GR16).
 	*/
 	if (parts[4] === 'layouts' && parts.length >= 6) {
 		const name = parts[5], which = ROUTE_LATTICES.get(name);

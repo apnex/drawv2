@@ -27,7 +27,8 @@ RESTATED at H26.6's move 12 (dev/design/components/PAN-ZOOM.md section 3.8, "The
 lattice, which the composition hands as `deviceLattice(model)`: asked on every change, and when it answers another lattice than the one
 the index was built on -- the diagram's grid changed -- the index is built again on it, as on a load (engine/store.mjs `stale`). The core
 names no kind for it: what the grid is, and where a diagram keeps it, are the composition's. Until the grid is stored
-(move 14) every composition answers the node lattice, NODE_GRID, so no key moves.
+(move 14) every composition answers the node lattice, NODE_GRID, so no key moves. RESTATED at H26.6's move 13 (3.9): each composition
+answers the diagram's device lattice from its record (plugins/layouts/layout-records.mjs `latticesOf`), NODE_GRID gone (GR16).
 */
 export function makeRelations(model, { deviceLattice } = {}) {   // the lattice injected (composition root) -- engine imports no kernel
 	if (typeof deviceLattice !== 'function') throw new Error('makeRelations requires an injected { deviceLattice } (the model -> its diagram\'s device lattice, a snap-grid grid) -- wire it at the composition root');

@@ -6,7 +6,7 @@ lattice from the origin, and its extent. This is the one table of their values, 
 infinite canvas lets a diagram vary them (WD7: "We will chase full programmability of layouts when we go after infinite canvas
 and scrolling"). It is built from what the kernel keeps where it can be -- the node lattice's pitch and offset (`kernel/geometry.mjs`
 `NODE_GRID`'s declaration) -- and holds each record's extent as the value stored, the zone's once the zones plugin's
-(`zones/zone-extent.mjs`, O-b1).
+(`zones/zone-extent.mjs`, O-b1). RESTATED at H26.6's move 13: NODE_GRID is gone (GR16); the pitch is the record's own 60 (below).
 
 The ids are fixed: ids are a document's own, and a fixed id keeps the migration that adds these records pure.
 

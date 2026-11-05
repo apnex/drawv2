@@ -39,8 +39,11 @@ function latticeOf(record, every) {
 }
 
 const grid = (layout, shown) => ({ layout, lattice: (model, every = 1) => latticeOf(layoutNamed(model, layout), every), ...shown });
-const NODE_GRID = grid('node', { layer: 'grid-nodes', r: gridDot().radius });
-const ZONE_GRID = grid('zone', { layer: 'grid-zones', r: 5, shownWith: 'shiftKey', cls: 'zonegrid' });
+// H26.6's move 13 (GR16): the dots' grids, named for what they draw -- NODE_GRID is named nowhere. The device dots read the diagram's
+// grid record, layout-000001; the zone dots the zone record, layout-000002, equal to the diagram's zone lattice while WD7 holds both
+// records to the table, until move 14 makes the record one and opens the zone lattice from its pitch (appendix A; appendix B, move 13)
+const DEVICE_DOTS = grid('node', { layer: 'grid-nodes', r: gridDot().radius });
+const ZONE_DOTS = grid('zone', { layer: 'grid-zones', r: 5, shownWith: 'shiftKey', cls: 'zonegrid' });
 
 // its kind's parts size it -- the devices plugin a device, by its span; with no part answering, one cell (app/src/snap.js `placesOf`)
 // H26.1: and it carries the node grid bounded by its extent, which it snaps to (`nodeGridWithin`, SNAP-GRID.md section 5). H26.8's grid
@@ -51,4 +54,4 @@ const ZONE_GRID = grid('zone', { layer: 'grid-zones', r: 5, shownWith: 'shiftKey
 // model's record at each call (`latticesOf`)
 const ANCHOR_PLACE = { kind: 'node', layout: 'node', lattice: (model) => latticesOf(model).device, sizedBy: 'parts' };
 
-export const LAYOUTS_CANVAS = { owner: 'layouts', stylesheets: ['plugins/layouts/layouts.css'], places: [ANCHOR_PLACE], grids: [NODE_GRID, ZONE_GRID] };
+export const LAYOUTS_CANVAS = { owner: 'layouts', stylesheets: ['plugins/layouts/layouts.css'], places: [ANCHOR_PLACE], grids: [DEVICE_DOTS, ZONE_DOTS] };

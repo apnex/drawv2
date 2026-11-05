@@ -29,8 +29,7 @@ leaving it to memory.
 
 import { Model } from '../../model/model.mjs';
 import { attachRelations } from '../../engine/store.mjs';
-import { diagramLattices } from '../../kernel/geometry.mjs';
-const NODE_GRID = diagramLattices({ pitch: 60 }).device;   // H26.6's move 13: a diagram's device lattice at 60, NODE_GRID gone from the kernel (GR16)
+import { latticesOf } from '../../plugins/layouts/layout-records.mjs';   // H26.6's move 13: the diagram's lattices, as the page composes them
 import { Changes, applyAnswer } from '../../app/src/changes.js';
 import { plan } from '../../planner/txn.mjs';
 import { LabelEditor } from '../../app/src/labeledit.js';
@@ -228,7 +227,7 @@ export function makeInput({ readOnly = false, bare = false, host: hostOverride =
 	const session = createNetworkSession();
 	const pageNetwork = session.network;
 	const model = new Model({ kinds: PAGE_KINDS, attached: { network: pageNetwork }});
-	attachRelations(model, { deviceLattice: () => NODE_GRID });
+	attachRelations(model, { deviceLattice: (m) => latticesOf(m).device });   // move 13: the diagram's device lattice, as each composition hands it
 	const selection = new Selection(model);
 	// V-d (H18.28; PL-6): the commit boundary previews with the planner, composed as the product page composes it
 	const tenant = pageNetwork.links;
