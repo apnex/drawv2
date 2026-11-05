@@ -122,6 +122,14 @@ test('H26.6 move 15 (PZ31): a size change landing anything past the bound is ref
 	assert.match(plan(z, [P(100)]).error ?? '', /would put wide at 1000050,-50|would put wide at 1000050,50/, 'a zone\'s far edge, past the bound, named');
 });
 
+test('H26.6 move 15: an anchor off the old lattice -- which no validated document holds -- is left where it stood, and the result refuses it there', () => {
+	const m = board();
+	m.put('node', { id: 'node-5c0007', name: 'stray', type: 'host', x: 70, y: 0 });   // straight onto the Model, which validates nothing
+	const r = plan(m, [P(80)]);
+	assert.equal(r.ok, false);
+	assert.match(r.error, /stray at 70,0 would be left off the diagram's grid of 80/, 'named where it stood: the change moves by index, and invents no point for what has none');
+});
+
 test('GR18 (H26.6 move 15): layout-roundtrip.mjs\'s cases -- an edit judged against a grid the request restores is refused', () => {
 	const at = () => { const m = new Model(); m.put('node', { id: 'node-5c0005', name: 'a', type: 'host', x: 60, y: 0 }); m.put('zone', { id: 'zone-5c0005', name: 'z', x: 30, y: -30, w: 60, h: 60 }); return m; };
 	const off = /would be left off the diagram's grid of 60 -- an edit is judged on the grid it is made on, and this request changes the grid around it \(GR18\)/;
