@@ -209,7 +209,7 @@ before(async () => {
 	fs.writeFileSync(path.join(dir, `${NET_DIAGRAM}.json`), JSON.stringify(networkBoard()));
 	fs.writeFileSync(path.join(dir, `${PARITY_DIAGRAM}.json`), JSON.stringify(parityBoard()));
 	fs.writeFileSync(path.join(dir, `${PIPE_DIAGRAM}.json`), JSON.stringify(pipeBoard()));
-	port = 8200 + (process.pid % 300);
+	port = 8200 + (process.pid % 200);   // the gate of moves 9 to 12 (a low): 8200 to 8399, apart from the lab's 8400 to 8599 and the matrix's 8600 to 8799 -- it ran to 8499, a flake when both drew one port
 
 	// H26.4 (the verifier's V2-2): a group of its own, so a test process stopped before its `after` stops it too -- tethered, so even by SIGKILL
 	srv = spawnTethered('node', ['server/server.js'], {
