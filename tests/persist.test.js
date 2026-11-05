@@ -1,7 +1,7 @@
 // CS2 — the log is durable. Undo survives a process restart, the file round-trips exactly, a
 // corrupt log costs history but never the diagram, and a failed write retries and is observable.
 
-import { heldLayouts } from './fixtures/composed.mjs';   // WD-b1: the two layouts a schema 3 document holds
+import { heldLayouts } from './fixtures/composed.mjs';   // WD-b1: the layouts a document holds -- H26.6's move 14: schema 4's one grid record
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -509,7 +509,7 @@ test('B83: a document with a cross-entity violation LOADS, and is counted', asyn
 	const dir = scratchFolder('draw-inv-');
 	const doc = {
 		// RESTATED at WD-b1 (H19.45): schema 3 -- a document holds its two layouts (tests/fixtures/composed.mjs `heldLayouts`)
-		meta: { id: '0000000000ee0001', name: 'broken', version: 0, schema: 3, owner: '', grants: {} }, layouts: heldLayouts(),
+		meta: { id: '0000000000ee0001', name: 'broken', version: 0, schema: 4, owner: '', grants: {} }, layouts: heldLayouts(),
 		nodes: [0, 1].map((i) => ({ id: `node-ee000${i}`, name: `n${i}`, type: 'host', shape: 'circle', x: i * 60, y: 0 })),
 		pipes: [], zones: [], groups: [], selection: [],
 		// two straight links on one pair: writable before the rule existed, uncreatable now
@@ -542,7 +542,7 @@ RESTATED (H24.11, B380): the key is named for what it is, not for the feature it
 test('the schema refuses a meta key it does not know', async () => {
 	const { validateDoc } = await import('./fixtures/composed.mjs');
 	// RESTATED at WD-b1 (H19.45): schema 3 -- a document holds its two layouts (tests/fixtures/composed.mjs `heldLayouts`)
-	const doc = { meta: { id: '000000000051de52', name: 'legacy', version: 0, schema: 3, owner: '', grants: {},
+	const doc = { meta: { id: '000000000051de52', name: 'legacy', version: 0, schema: 4, owner: '', grants: {},
 		retired: { url: 'https://example.com/x' } },
 		nodes: [], pipes: [], links: [], zones: [], groups: [], selection: [] };
 	assert.match(validateDoc(doc), /unknown meta key: retired/, 'a key the schema does not name is refused, not carried');

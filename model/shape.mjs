@@ -42,8 +42,11 @@ validator, which accepts this generation alone. Was four literals that nothing f
 2 is promotion's format batch (dev/design/unification/FORMAT-BATCH.md; ruled 2026-10-03). Every stored document became 2 at
 the cutover and the migration was deleted (B291), so a schema 1 document is refused at every door, saying so.
 */
-export const SCHEMA = 3;
+export const SCHEMA = 4;
 // WD-b1 (H19.45): schema 3 -- every document holds its two layouts (plugins/layouts/layout-kind.mjs); production's were migrated once at the deploy, and no migration is kept (WD9)
+// H26.6's move 14 (dev/design/components/PAN-ZOOM.md section 3.4; PZ14; GR13): schema 4 -- every document holds its ONE grid record,
+// `{ id: 'layout-000001', name: 'grid', pitch }`; production's are migrated once in a freeze, as WD9 ran schema 3's, and the deployed
+// version reads schema 4 alone, keeping no migration (the run's own tool is tools/migrate-schema-4.mjs, which the image does not carry)
 
 // the core's kind; a plugin's are composed after it -- the zones plugin's (O-b1), the groups plugin's (O-c), the network's
 // (S-e) -- in the order a document lists its collections

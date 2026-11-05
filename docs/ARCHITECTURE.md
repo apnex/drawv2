@@ -194,7 +194,7 @@ What a document can hold, as the server composes it (`product/kinds.mjs`, `model
 <!-- BEGIN GENERATED: architecture-kinds. Run tools/generate-architecture.mjs; do not edit by hand. -->
 | Kind | Owner | Stored under | Opts into | Refers to | Fields other plugins contribute | Every document holds |
 |---|---|---|---|---|---|---|
-| `layout` | layouts | `layouts` | -- | -- | -- | `layout-000001`, `layout-000002` |
+| `layout` | layouts | `layouts` | -- | -- | -- | `layout-000001` |
 | `node` | the core | `nodes` | selection, names, the anchor | -- | devices: `type`, `shape`, `span`, `content`; the simulation: `spawn`; the network: `transit` | -- |
 | `zone` | zones | `zones` | selection, names | -- | -- | -- |
 | `group` | groups | `groups` | names, a planner tenant, gathering by `members` | `node` | -- | -- |
@@ -370,7 +370,7 @@ Each step cites the test that proves it.
 
 - **An edit, at any door:** the door states intent as ops; the planner checks each op against its kind's row and the contributed rows, runs the network's link tenant and every tenant the rows bring, checks every invariant, and answers with the one write; the store applies it, logs its inverse and broadcasts it; every tab applies the answer (`tests/txn.test.js`, `tests/planner-corpus.test.js`).
 - **In a tab, before the answer:** the tab plans the same edit with the same planner and shows it at once, then takes the server's answer and replays its own unanswered edits over it (`tests/sync.test.js`, `tests/sync-fuzz.test.js`).
-- **Loading a document:** the store reads it, completes the entities every document holds, refuses one in a format it does not read, validates it, and reports any invariant it breaks (`tests/schema-3.test.js`, `tests/store-atomicity.test.js`).
+- **Loading a document:** the store reads it, completes the entities every document holds, refuses one in a format it does not read, validates it, and reports any invariant it breaks (`tests/schema-4.test.js`, `tests/store-atomicity.test.js`).
 - **Reading:** a route, an anchor's role, whether a link is down, and derived combat and movers are answered on demand by the server, and the CLI asks the server for them (`tests/read-model.test.js`, `tests/consumer-parity.test.js`, `tests/cli-tool.test.js`).
 - **Downloading:** a document is drawn to SVG by the export door, a renderer of its own that shares run mode's choice of what is shown (`tests/svgexport.test.js`).
 - **A new revision:** a tab detects it, says why, and reloads onto it (`tests/watchdog.test.js`).

@@ -22,7 +22,7 @@ transit is off (t). Links have their pipes, so each is up and drawn along its st
 */
 // RESTATED at WD-b1 (H19.45): schema 3 -- a document holds its two layouts (tests/fixtures/composed.mjs `heldLayouts`)
 const doc = () => ({
-	meta: { id: '0000000000000001', name: 'd', version: 0, schema: 3 }, layouts: heldLayouts(),
+	meta: { id: '0000000000000001', name: 'd', version: 0, schema: 4 }, layouts: heldLayouts(),
 	nodes: [
 		{ id: 'node-0000a1', name: 'a', type: 'host', shape: 'square', x: -360, y: 0 },
 		{ id: 'node-0000a2', name: 'c', type: 'host', shape: 'square', x: 360, y: 0 },

@@ -76,7 +76,7 @@ test('H26.7: the lab serves every plugin from /plugins/, and nothing else there 
 		req.on('error', reject); req.end();
 	});
 	try {
-		for (const p of ['/plugins/layouts/layout-table.mjs', '/plugins/devices/device-types.mjs', '/plugins/network/link-head.mjs',
+		for (const p of ['/plugins/layouts/layout-kind.mjs', '/plugins/devices/device-types.mjs', '/plugins/network/link-head.mjs',
 			'/plugins/zones/zone-painter.mjs', '/plugins/groups/group-kind.mjs', '/plugins/simulation/kinds.mjs']) {
 			const r = await ask(p);
 			assert.equal(r.status, 200, p);
@@ -84,7 +84,7 @@ test('H26.7: the lab serves every plugin from /plugins/, and nothing else there 
 		}
 		assert.equal((await ask('/plugins/simulation/simulation.css')).status, 200, 'and a plugin\'s stylesheet');
 		assert.equal((await ask('/plugins/nowhere/x.mjs')).status, 404, 'a plugin folder that is not there');
-		for (const p of ['/layouts/layout-table.mjs', '/devices/device-types.mjs', '/network/link-head.mjs', '/zones/zone-painter.mjs', '/groups/group-kind.mjs',
+		for (const p of ['/layouts/layout-kind.mjs', '/devices/device-types.mjs', '/network/link-head.mjs', '/zones/zone-painter.mjs', '/groups/group-kind.mjs',
 			'/engine/kinds.mjs', '/engine/simulation.css', '/model/reveal.mjs']) assert.equal((await ask(p)).status, 404, `${p}, an old root address`);
 		for (const p of ['/plugins/../server/store.js', '/plugins/%2e%2e/server/store.js', '/plugins/..%2fserver%2fstore.js', '/plugins/..%2Fpackage.json',
 			'/plugins/network/../../server/store.js', '/plugins/network/%2e%2e/%2e%2e/package.json', '/plugins/network/..%2f..%2fpackage.json',

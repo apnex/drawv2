@@ -108,12 +108,11 @@ const PRODUCT_KIND_RECORD = {
 	'lab/src/root.js': { count: 2, cites: ['H17-D1'],
 		reason: 'the lab composition root seeding its board\'s pipes (`board.pipes`) and counting them (`model.all(\'pipe\')`)',
 		trigger: 'permanent' },
-	'plugins/layouts/layout-canvas.mjs': { count: 1, cites: ['WD6', 'B325'],
-		reason: 'the layouts plugin\'s canvas part naming the `zone` grid record (`layout-000002`, WD6)',
-		trigger: 'a diagram varies its grids (B325)' },
-	'plugins/layouts/layout-table.mjs': { count: 1, cites: ['WD6', 'B325'],
-		reason: 'the default `zone` layout record (`layout-000002`) every diagram holds (WD6)',
-		trigger: 'a diagram varies its grids (B325)' },
+	// RESTATED at H26.6's move 14 (PAN-ZOOM.md section 3.4): the one grid record; the zone's dots are the zone lattice of it, and
+	// plugins/layouts/layout-table.mjs, whose 1 was the zone record, is deleted
+	'plugins/layouts/layout-canvas.mjs': { count: 1, cites: ['WD6', 'H26-23'],
+		reason: 'the layouts plugin\'s canvas part naming the `zone` dots, the zone lattice of the diagram\'s one grid record (3.4)',
+		trigger: 'permanent' },
 	'product/canvas.mjs': { count: 4, cites: ['H25.4'],
 		reason: 'the canvas\'s layers back to front (`CANVAS_LAYERS`): the composition names the layer each plugin draws into -- moved from the lab\'s `NEEDED` and the two pages (H25.4)',
 		trigger: 'each canvas part declares where its own layer stacks, so the composition names none' },

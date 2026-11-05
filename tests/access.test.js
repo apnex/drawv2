@@ -156,7 +156,7 @@ test('H9.1: a client cannot grant itself access through a meta patch', () => {
 test('H9.1: the document validator refuses a malformed principal or level', () => {
 	// RESTATED at WD-b1 (H19.45): schema 3 -- a document holds its two layouts (tests/fixtures/composed.mjs `heldLayouts`)
 	const doc = (meta) => ({
-		meta: { id: '0000000000aa0001', name: 't', version: 0, schema: 3, ...meta },
+		meta: { id: '0000000000aa0001', name: 't', version: 0, schema: 4, ...meta },
 		nodes: [], links: [], zones: [], groups: [], layouts: heldLayouts(),
 	});
 	assert.equal(validateDoc(doc({})), null, 'legacy documents carry neither key and still load');
@@ -941,7 +941,7 @@ and will not accept as an identity, and narrowing a grammar later is the change 
 */
 // RESTATED at WD-b1 (H19.45): schema 3 -- a document holds its two layouts (tests/fixtures/composed.mjs `heldLayouts`)
 const principalDoc = (owner) => ({
-	meta: { id: '0000000000aa0001', name: 't', version: 0, schema: 3, owner },
+	meta: { id: '0000000000aa0001', name: 't', version: 0, schema: 4, owner },
 	nodes: [], links: [], zones: [], groups: [], layouts: heldLayouts(),
 });
 const acceptsPrincipal = (p) => validateDoc(principalDoc(p)) === null;

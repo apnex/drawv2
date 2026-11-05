@@ -36,6 +36,7 @@ import os from 'node:os';
 import path from 'node:path';
 import zlib from 'node:zlib';
 import { PARITY_DIAGRAM, parityBoard } from './boards.mjs';
+import { migrateText, SCHEMA_3_LAYOUTS } from '../migrate-schema-4.mjs';   // H26.6's move 14: the move's own function, in memory
 import { ownDependencies, sideProblems } from './sides.mjs';   // H26.1 (G8): each side on its own dependencies, shown before measuring
 import { startProbeScaffold } from './probe-scaffold.mjs';   // H26-19: what the probe starts ends with it, even killed; what it makes goes
 
@@ -82,6 +83,23 @@ for (const [f, h] of Object.entries(pinned)) if (sha256(fs.readFileSync(path.joi
 const docFiles = Object.keys(pinned).sort();
 if (!docFiles.length) die(`no pinned documents in ${DOCS}`);
 const docs = docFiles.map((f) => JSON.parse(fs.readFileSync(path.join(DOCS, f), 'utf8'))).concat([parityBoard()]);
+/*
+H26.6's move 14 (dev/design/components/PAN-ZOOM.md appendix A, the third move 14 row): each side is handed the documents in the schema its
+tree reads. The pinned copies stay read-only at schema 3 and are migrated in memory, by the move's own function, for a side reading 4;
+this tree's parity board, at schema 4, is handed to a side reading 3 with schema 3's two layouts, as such a side's own board held them.
+*/
+const schemaOf = (root) => Number(/^export const SCHEMA = (\d+);/m.exec(fs.readFileSync(path.join(root, 'model/shape.mjs'), 'utf8'))?.[1]);
+function docsFor(schema) {
+	return docs.map((d, i) => {
+		if (schema === 4 && d.meta.schema === 3 && i < docFiles.length) {
+			const r = migrateText(fs.readFileSync(path.join(DOCS, docFiles[i]), 'utf8'));
+			if (!r.ok) die(`${docFiles[i]} cannot be migrated to schema 4: ${r.error}`);
+			return JSON.parse(r.text);
+		}
+		if (schema === 3 && d.meta.schema === 4) return { ...d, meta: { ...d.meta, schema: 3 }, layouts: structuredClone(SCHEMA_3_LAYOUTS) };
+		return d;
+	});
+}
 const seeds = Object.keys(JSON.parse(fs.readFileSync(path.join(ROOT, 'lab/seeds.json'), 'utf8')));
 
 const freePort = () => new Promise((resolve) => { const s = net.createServer(); s.listen(0, '127.0.0.1', () => { const { port } = s.address(); s.close(() => resolve(port)); }); });
@@ -104,7 +122,7 @@ async function serve(name, commit) {
 	}
 	const data = path.join(OUT, `data-${name}`);
 	fs.mkdirSync(data, { recursive: true });
-	for (const d of docs) fs.writeFileSync(path.join(data, `${d.meta.id}.json`), JSON.stringify(d));
+	for (const d of docsFor(schemaOf(root))) fs.writeFileSync(path.join(data, `${d.meta.id}.json`), JSON.stringify(d));
 	const port = await freePort(), labPort = await freePort();
 	// a minimal environment: no identity source, so the server runs open as on a laptop, and every diagram's SVG is served
 	const env = { PATH: process.env.PATH, HOME: process.env.HOME };

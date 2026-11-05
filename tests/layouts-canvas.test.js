@@ -25,13 +25,13 @@ import { LAYOUTS_CANVAS } from '../plugins/layouts/layout-canvas.mjs';
 import { Grids } from '../app/src/grids.js';
 import { placesOf, gridsOf } from '../app/src/snap.js';
 import { gridDot } from '../kernel/geometry.mjs';
-import { LAYOUT_TABLE } from '../plugins/layouts/layout-table.mjs';
 
 const code = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
 // RESTATED at H26.4 (dev/design/components/VECTOR-SCENE.md appendix B): the canvas's scene over a fake root, its layers found by id --
 // each grid one item of its layer -- where the page's two grid layers were made here
 const page = () => sceneOver(fakeEl('svg', 'canvas'));
-const docWith = (node) => ({ meta: { id: '00000000000e0101', name: 'd' }, layouts: [node, structuredClone(LAYOUT_TABLE[1])], nodes: [] });
+// RESTATED at H26.6's move 14 (PAN-ZOOM.md section 3.4): the diagram's one grid record
+const docWith = (pitch) => ({ meta: { id: '00000000000e0101', name: 'd' }, layouts: [{ id: 'layout-000001', name: 'grid', pitch }], nodes: [] });
 
 /*
 RESTATED at H26.6's move 8 (dev/design/components/PAN-ZOOM.md section 3.7, PZ24): a grid is drawn from the view -- every lattice point the
@@ -70,11 +70,12 @@ test('WD-b2 test 9: a load redraws the grids from the loaded records; an edit do
 		const first = svg.byId['#grid-nodes'].children[0];
 		model.put('node', { id: 'node-0e0101', name: 'a', x: 0, y: 0 });
 		assert.equal(svg.byId['#grid-nodes'].children[0], first, 'an edit leaves the dots as they were');
-		// a record no door admits while WD7 holds, loaded straight into the Model: the drawing reads the record, not a constant
-		model.load(docWith({ ...structuredClone(LAYOUT_TABLE[0]), pitch: 120 }));
+		// a record no door admits until move 15, loaded straight into the Model: the drawing reads the record, not a constant -- RESTATED at
+		// H26.6's move 14: both grids from the one record, the zone grid half a square of 120 off (appendix B, move 13's remainder)
+		model.load(docWith(120));
 		assert.deepEqual(dotsOf(svg.byId['#grid-nodes']).map(xy), brute(120, 0, -32, -32, 1952, 1112), 'redrawn at the loaded pitch');
-		assert.equal(dotsOf(svg.byId['#grid-zones']).length, 34 * 20, 'the zone grid from its own record, unchanged');
-		model.load(docWith(structuredClone(LAYOUT_TABLE[0])));
+		assert.deepEqual(dotsOf(svg.byId['#grid-zones']).map(xy), brute(120, 60, -32, -32, 1952, 1112), 'and the zone grid with it, half a square of 120 off');
+		model.load(docWith(60));
 		assert.equal(dotsOf(svg.byId['#grid-nodes']).length, 33 * 19, 'and back, on the next load');
 	} finally { restore(); }
 });
@@ -83,7 +84,7 @@ test('WD-b2: a diagram lacking a layout record is an error naming it; a page wit
 	const restore = installDom();
 	try {
 		const lacking = { get: () => undefined, onChange() {} };
-		assert.throws(() => new Grids({ scene: page().scene, grids: gridsOf(PRODUCT_CANVAS), model: lacking, look: LOOK }), /the node layout \(layout-000001\) is missing/);
+		assert.throws(() => new Grids({ scene: page().scene, grids: gridsOf(PRODUCT_CANVAS), model: lacking, look: LOOK }), /the diagram's grid \(layout-000001\) is missing/);
 		const { svg, scene } = page();
 		const noZones = PRODUCT_CANVAS.filter((p) => p.owner !== 'zones');
 		new Grids({ scene, grids: gridsOf(noZones), model: new Model(), look: LOOK });

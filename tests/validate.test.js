@@ -62,7 +62,7 @@ test('B95: a Model is not a doc, and toJSON is the boundary between them', () =>
 	const model = new Model();
 	model.load({
 		// RESTATED at WD-b1 (H19.45): schema 3 -- a document holds its two layouts (tests/fixtures/composed.mjs `heldLayouts`)
-		meta: { id: '0000000000aa0001', name: 't', version: 0, schema: 3 }, layouts: heldLayouts(),
+		meta: { id: '0000000000aa0001', name: 't', version: 0, schema: 4 }, layouts: heldLayouts(),
 		nodes: [], links: [], zones: [], groups: [],
 	});
 

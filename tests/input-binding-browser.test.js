@@ -28,7 +28,7 @@ const root = path.resolve(import.meta.dirname, '..');
 const free = () => new Promise((resolve) => { const s = net.createServer().listen(0, '127.0.0.1', () => { const p = s.address().port; s.close(() => resolve(p)); }); });
 const DIAGRAM = '00000000006e0b09';
 const doc = {
-	meta: { id: DIAGRAM, name: 'two pointers', version: 1, schema: 3 }, layouts: structuredClone(productKinds().always.layout),
+	meta: { id: DIAGRAM, name: 'two pointers', version: 1, schema: 4 }, layouts: structuredClone(productKinds().always.layout),
 	nodes: [{ id: 'node-6e0b01', name: 'a', type: 'host', shape: 'square', x: -360, y: -120, order: 1 },
 		{ id: 'node-6e0b02', name: 'b', type: 'host', shape: 'square', x: 360, y: -120, order: 2 }],
 	links: [], pipes: [], zones: [], groups: [], selection: [],

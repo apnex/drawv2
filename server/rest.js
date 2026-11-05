@@ -7,7 +7,7 @@ browsers viewing that diagram. The browser path (websocket) is refused while a d
 exactly one side writes at a time.
 */
 
-import { layoutRecords } from '../plugins/layouts/layout-records.mjs';   // WD8 (H19.45): the list the agent API serves
+import { layoutRecords } from '../plugins/layouts/layout-records.mjs';   // WD8 (H19.45): the list the agent API serves -- H26.6's move 14: the one record
 import { linksOf, linksAt, makeLink } from '../plugins/network/link-queries.mjs';   // which links meet an anchor: the network's (K13d)
 import { snapshotBody, changeBody, reversalBody } from './protocol.js';
 import { announceActivity, announceAccess, viewersFor } from './hub.js';   // B342 (H21.8): in the hub, so the hub does not import REST

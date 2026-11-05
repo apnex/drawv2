@@ -101,6 +101,7 @@ const ALLOW = {
 	'*:server/txn.mjs': 'moved to planner/txn.mjs at K4 (H17-D5); a record written while it lived here cites it here',
 	// B291 (H19.3): the migrations and their tests, deleted once every stored document was schema 2; records written while they lived cite them
 	'*:server/migrate.mjs': 'the schema 2 migration, deleted at H19.3 (B291) once every stored document was schema 2; records written while it lived cite it',
+	'*:tests/schema-3.test.js': 'schema 3\'s tests, renamed tests/schema-4.test.js and restated at H26.6\'s move 14 (PAN-ZOOM.md appendix B); records written while it lived cite it',
 	'*:server/migrate-schema-3.mjs': 'the schema 3 migration -- built at WD-b1 (H19.45), run once from history at its deploy and never carried (WD9); records written while it lived cite it',
 	'*:tools/migrate-down-to-schema-2.mjs': 'the way back from schema 3 -- built at WD-b1 (H19.45) and deleted before its deploy, the director ruling a full-forward deploy (WD9); records written while it lived cite it',
 	'*:zones/zone-grid.mjs': 'the zone grid, moved at WD-b2 (H19.46) to the layouts plugin\'s canvas part, layouts/layout-canvas.mjs; records written while it lived cite it',
@@ -122,6 +123,8 @@ const ALLOW = {
 	'*:tests/fixtures/capture-parity-edges.json': 'the side-by-side\'s record of section 6.3\'s edges, deleted with it at H26.5; records written while it lived cite it',
 	'*:tests/fixtures/pre-capture/painter.js': 'a shim of the verbatim old capture, deleted with its copy at H26.5 when the parity mode was retired; records written while it lived cite it',
 	'dev/design/components/INPUT-BINDING.md:tests/triggers.test.js': 'the triggers\' tests, deleted with the module at H26.2 -- the press\'s to input-binding\'s own, the "decided once" test restated in tests/input-binding-move.test.js; the design names it as it stood',
+	'*:plugins/layouts/layout-table.mjs': 'the layouts table, deleted at H26.6\'s move 14 with the second record (PAN-ZOOM.md appendix A); records written while it lived cite it',
+	'*:layouts/layout-table.mjs': 'the layouts table, deleted at H26.6\'s move 14 with the second record (PAN-ZOOM.md appendix A); records written while it lived cite it',
 	'*:zones/zone-extent.mjs': 'the zone extent, moved at WD-b1 (H19.45) to the layouts plugin\'s table, layouts/layout-table.mjs; records written while it lived cite it',
 	// H26.6's move 12 (dev/design/components/PAN-ZOOM.md 5.1 row 12, GR3): the old extents' module, deleted with the last of the extent
 	'*:model/surface.mjs': 'the old 1920 by 1080 surface and the node extent (`SURFACE`, `NODE_EXT`), deleted at H26.6\'s move 12 when the canvas had no extent left to hold (PAN-ZOOM.md 5.1 row 12, GR3); records written while it lived cite it',
@@ -234,6 +237,9 @@ const ALLOW = {
 	half, that `near` is a proximity rule and a record is not evidence for anything visual, is in
 	the sentence itself.
 	*/
+	// H26.6's move 14: the schema 4 freeze runbook is DEPLOY.md's, under the gitignored `deploy/`, its one copy (H26-20); the design's
+	// appendix names where it is
+	'dev/design/components/PAN-ZOOM.md:deploy/DEPLOY.md': 'gitignored: the deployment record, where move 14\'s freeze runbook is written; the citation says where it lives',
 	'docs/spec/WRITES.md:deploy/demo/spine-leaf.sh': 'gitignored: targets one deployment, and the citation is to where the check lives rather than to something to read',
 	/*
 	`SCOPE.md` was split and removed on 2026-09-03: the wire contract, vocabulary and entity model to

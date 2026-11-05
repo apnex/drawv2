@@ -3,7 +3,7 @@
 		"id": "template-3acaca",
 		"name": "arrow",
 		"version": 0,
-		"schema": 3
+		"schema": 4
 	},
 	"nodes": [
 		{
@@ -258,23 +258,8 @@
 	"layouts": [
 		{
 			"id": "layout-000001",
-			"name": "node",
-			"pitch": 60,
-			"offset": 0,
-			"ext": {
-				"x": 900,
-				"y": 480
-			}
-		},
-		{
-			"id": "layout-000002",
-			"name": "zone",
-			"pitch": 60,
-			"offset": 30,
-			"ext": {
-				"x": 930,
-				"y": 510
-			}
+			"name": "grid",
+			"pitch": 60
 		}
 	]
 }

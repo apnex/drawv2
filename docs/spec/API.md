@@ -33,6 +33,11 @@ AMENDED 2026-10-10 (WD-b1, H19.45): the current format is schema 3 -- schema 2 w
 A document handed to `create` without its layouts -- or with no `meta.schema` -- is given them; one in an older schema, 2 or 1, is refused with a sentence that says so.\
 Production's documents were migrated once, at the deploy, and no migration is kept (`dev/DECISIONS.md` WD9).
 
+AMENDED at H26.6's move 14 (`dev/design/components/PAN-ZOOM.md` section 3.4; PZ14): the current format is schema 4 -- schema 3 with the diagram's one grid record, `{ "id": "layout-000001", "name": "grid", "pitch": 60 }`, in place of its two layouts.\
+A document handed to `create` without it -- or with no `meta.schema` -- is given it; one in an older schema, 3, 2 or 1, is refused with the same sentence.\
+A record carrying any field but `id`, `name` and `pitch` is refused, and `pitch` is an even size held at 60 until a diagram may change its grid's size; the zone grid lies half a square off the device grid, always, and is not stored.\
+Production's documents are migrated once, in a freeze, and no migration is kept (WD9's form).
+
 An agent's work belongs to whoever authorised the agent (ruled 2026-08-23, **B100**).\
 A diagram created by `agent:planner` is owned by the principal that claimed that agent name, and the agent is left an ordinary `write` grant on it.\
 This document previously said the caller owns what it creates, which was true of a human and produced work nobody could reach when an agent did it: owned by `agent:<name>` with no grants, invisible to the person who authorised the agent, on their own deployment.
@@ -107,7 +112,7 @@ Read it with this amendment in hand: its `beat` is this document's unnamed story
 
 ```json
 {
-  "meta":   { "id": "00000000007bc886", "name": "demo", "version": 12, "schema": 3,
+  "meta":   { "id": "00000000007bc886", "name": "demo", "version": 12, "schema": 4,
               "owner": "user:someone@example.com",
               "grants": { "user:other@example.com": "read", "agent:planner": "write" },
               "public": false,
@@ -120,8 +125,7 @@ Read it with this amendment in hand: its `beat` is this document's unnamed story
                 "via": ["node-5e5e5e"], "closed": false, "direction": "forward" } ],
   "zones":  [ { "id": "zone-77bb01", "name": "dmz", "x": 480, "y": 240, "w": 240, "h": 180 } ],
   "groups": [ { "id": "group-3c3c3c", "name": "web-tier", "members": ["node-a1b2c3"] } ],
-  "layouts": [ { "id": "layout-000001", "name": "node", "pitch": 60, "offset": 0,  "ext": { "x": 900, "y": 480 } },
-               { "id": "layout-000002", "name": "zone", "pitch": 60, "offset": 30, "ext": { "x": 930, "y": 510 } } ]
+  "layouts": [ { "id": "layout-000001", "name": "grid", "pitch": 60 } ]
 }
 ```
 
@@ -165,6 +169,8 @@ AMENDED 2026-10-03, by promotion's format batch (`dev/design/unification/FORMAT-
 Every document entering the store is migrated first, so a schema 1 document is accepted and stored as schema 2.
 
 AMENDED 2026-10-10 (WD-b1, H19.45): `meta.schema` is 3, which adds the diagram's two layouts; the store keeps no migration, so a schema 2 or schema 1 document entering it is refused (B291, WD9).
+
+AMENDED at H26.6's move 14: `meta.schema` is 4, the two layouts become the one grid record; a schema 3 document entering the store is refused as schema 2's is.
 
 ---
 
@@ -313,6 +319,8 @@ curl -s "localhost:8080/api/v1/diagrams/<id>/layouts/node/anchors?free=1&cx0=-15
 ```
 
 AMENDED 2026-10-10 (WD8, H19.45): `layouts` answers with the diagram's two layout records -- `{layouts: [{id, name, pitch, offset, ext}, ...]}`, the `node` grid and the `zone` grid -- where it answered with their names alone; the two routes below are unchanged, and a write to a layout is refused while a diagram may not vary its grids (WD7).
+
+AMENDED at H26.6's move 14 (PZ14, PZ9): `layouts` answers with the diagram's one grid record -- `{layouts: [{id: "layout-000001", name: "grid", pitch: 60}]}`; the routes keep their two names, `node` the device grid and `zone` the zone grid half a square off it, each a lattice of the one grid.
 
 `nearest` answers *somewhere legal near here* and returns `{layout, cx, cy, x, y, occupant}`.\
 The pixels are there so you never multiply and the cell is there so you never divide, which are the two steps that produce an off-grid entity.

@@ -45,7 +45,7 @@ const VIEW = { width: 1993, height: 1221 };   // the canvas drawn at one CSS pix
 
 // ---- the board: three devices and a zone on its grid, one copy per gesture ----
 const board = (n) => ({
-	meta: { id: `00000000006e${String(n).padStart(4, '0')}`, name: `sample ${n}`, version: 1, schema: 3 }, layouts: structuredClone(productKinds().always.layout),
+	meta: { id: `00000000006e${String(n).padStart(4, '0')}`, name: `sample ${n}`, version: 1, schema: 4 }, layouts: structuredClone(productKinds().always.layout),
 	nodes: [
 		{ id: 'node-6e00a1', name: 'a', type: 'host', shape: 'square', x: -360, y: -120, order: 1 },
 		{ id: 'node-6e00a2', name: 'b', type: 'host', shape: 'square', x: 360, y: -120, order: 2 },

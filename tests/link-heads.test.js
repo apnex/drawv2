@@ -130,7 +130,7 @@ const BOARD = {
 };
 function exported() {
 	const links = BOARD.links.map((l, i) => ({ ...l, order: i + 1 }));
-	const doc = { meta: { id: '0000000000c10001', name: 'heads', version: 1, schema: 3 }, layouts: heldLayouts(),
+	const doc = { meta: { id: '0000000000c10001', name: 'heads', version: 1, schema: 4 }, layouts: heldLayouts(),
 		nodes: BOARD.nodes.map((n, i) => ({ ...n, order: i + 1 })), links,
 		pipes: links.filter((l) => l.name !== 'down').map((l) => pipeEntity(l.src, l.dst, 'link')), zones: [], groups: [], selection: [] };
 	return svgDocument(doc);

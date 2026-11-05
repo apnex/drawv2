@@ -1,7 +1,8 @@
 /*
 THE LAYOUTS PLUGIN'S CANVAS PART (WD-b2, H19.46; dev/design/unification/WIDE-DEVICES.md sections 5.1 and 12.4).
 
-The two grids, drawn from the open diagram's layout records, and the anchor's place on the node layout. A record holds a grid's
+The two grids, drawn from the open diagram's layout records, and the anchor's place on the node layout (H26.6's move 14: the two
+grids of the diagram's one grid record, its device lattice and its zone lattice). A record holds a grid's
 geometry -- its pitch, the offset of its lattice and its extent -- so a grid's dots are read from it, lattice point by lattice
 point within the extent (`points`, handed the Model; plugins/layouts/layout-records.mjs reads loudly) -- H26.6's move 8: its lattice
 since, which the grids part lists in view (`lattice`). How a grid is shown is this
@@ -20,28 +21,25 @@ lattice, and reads as bigger on purpose because it shows only while Shift is hel
 */
 
 import { gridDot } from '../../kernel/geometry.mjs';
-import { latticeGrids } from '../../kernel/lattice-grids.mjs';   // H26.6's move 13: moved from kernel/geometry.mjs (E16)
-import { layoutNamed, latticesOf } from './layout-records.mjs';
+import { coarserLattice } from '../../kernel/lattice-grids.mjs';   // H26.6's move 14: a tier's lattice, through the diagram's own origin
+import { latticesOf } from './layout-records.mjs';
 
 /*
 H26.1 (dev/design/components/SNAP-GRID.md appendix B): every point of a layout's lattice within its extent, row by row, was what a grid
 drew. H26.6's move 8 (dev/design/components/PAN-ZOOM.md section 3.7, PZ24): a grid is drawn from the view, so it answers its lattice --
-the grid with no bounds the diagram's record opens (`latticeGrids`, which refuses a record it cannot open, naming its problems), or one of
-`every` times its pitch through the same origin, a tier's, holding the points whose indices are both multiples of `every` -- and the grids
-part lists what the canvas shows of it (app/src/grids.js). Each is opened once for its pitch and origin, as the record's grid is read
-for every draw.
+the grid with no bounds the diagram's record opens, or one of `every` times its pitch through the same origin, a tier's, holding the
+points whose indices are both multiples of `every` -- and the grids part lists what the canvas shows of it (app/src/grids.js).
+RESTATED at H26.6's move 14 (PAN-ZOOM.md section 3.4; appendix B, move 13's remainder): both dots from the diagram's one grid record --
+the device lattice's and the zone lattice's, half a square off (`latticesOf`) -- where each read its own record of two; a tier's lattice
+is opened once for its pitch and origin (`coarserLattice`).
 */
-const lattices = new Map();
-function latticeOf(record, every) {
-	const key = `${record.pitch}|${record.offset}|${every}`;
-	if (!lattices.has(key)) lattices.set(key, latticeGrids({ pitch: record.pitch * every, offset: record.offset }).unbounded);
-	return lattices.get(key);
+function latticeOf(model, layout, every) {
+	const lattices = latticesOf(model), lattice = layout === 'node' ? lattices.device : lattices.zone;
+	return every === 1 ? lattice : coarserLattice(lattice, every);
 }
 
-const grid = (layout, shown) => ({ layout, lattice: (model, every = 1) => latticeOf(layoutNamed(model, layout), every), ...shown });
-// H26.6's move 13 (GR16): the dots' grids, named for what they draw -- NODE_GRID is named nowhere. The device dots read the diagram's
-// grid record, layout-000001; the zone dots the zone record, layout-000002, equal to the diagram's zone lattice while WD7 holds both
-// records to the table, until move 14 makes the record one and opens the zone lattice from its pitch (appendix A; appendix B, move 13)
+const grid = (layout, shown) => ({ layout, lattice: (model, every = 1) => latticeOf(model, layout, every), ...shown });
+// H26.6's move 13 (GR16): the dots' grids, named for what they draw -- NODE_GRID is named nowhere; move 14: both from the one record
 const DEVICE_DOTS = grid('node', { layer: 'grid-nodes', r: gridDot().radius });
 const ZONE_DOTS = grid('zone', { layer: 'grid-zones', r: 5, shownWith: 'shiftKey', cls: 'zonegrid' });
 

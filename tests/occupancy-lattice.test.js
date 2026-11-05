@@ -11,10 +11,9 @@ import fs from 'node:fs';
 import { Model } from './fixtures/composed.mjs';
 import { attachRelations } from '../engine/store.mjs';
 import { diagramLattices } from '../kernel/geometry.mjs';
-import { latticeGrids } from '../kernel/lattice-grids.mjs';
 const NODE_GRID = diagramLattices({ pitch: 60 }).device;   // H26.6's move 13: a diagram's device lattice at 60, NODE_GRID gone from the kernel (GR16)
 
-const AT_80 = latticeGrids({ pitch: 80, offset: 0 }).unbounded;
+const AT_80 = diagramLattices({ pitch: 80 }).device;   // H26.6's move 14: latticeGrids deleted
 const node = (id, x, y) => ({ id, name: id, type: 'host', x, y });
 
 test('H26.6 move 12, PZ26: the index keys each anchor by the lattice the composition hands -- at 60 the node lattice, at 80 that one\'s squares', () => {
@@ -32,14 +31,14 @@ test('H26.6 move 12, PZ26: the index keys each anchor by the lattice the composi
 
 test('H26.6 move 12, PZ26: the index is built again when the composition hands another lattice -- the grid changed -- and on a load', () => {
 	const m = new Model();
-	m.load({ nodes: [node('node-0b0001', 120, 0)], links: [], zones: [], groups: [], layouts: [{ id: 'layout-000001', name: 'node', pitch: 60, offset: 0, ext: { x: 900, y: 480 } }] });
+	m.load({ nodes: [node('node-0b0001', 120, 0)], links: [], zones: [], groups: [], layouts: [{ id: 'layout-000001', name: 'grid', pitch: 60 }] });
 	attachRelations(m, { deviceLattice: (model) => (model.get('layout', 'layout-000001')?.pitch === 80 ? AT_80 : NODE_GRID) });
 	assert.deepEqual(m.index.anchorsAt({ x: 160, y: 0 }), [], 'built at 60: 160,0 is an empty cell');
 	m.put('node', node('node-0b0002', 600, 600));
 	assert.deepEqual(m.index.anchorsAt({ x: 600, y: 600 }), ['node-0b0002'], 'an anchor\'s change applied, on the lattice it was built on');
 	m.set('layout', 'layout-000001', { pitch: 80 });
 	assert.deepEqual([m.index.anchorsAt({ x: 160, y: 0 }), m.index.anchorsAt({ x: 640, y: 640 })], [['node-0b0001'], ['node-0b0002']], 'the grid changed: built again, every anchor keyed by its square of 80');
-	m.load({ nodes: [node('node-0b0003', 0, 0)], links: [], zones: [], groups: [], layouts: [{ id: 'layout-000001', name: 'node', pitch: 60, offset: 0, ext: { x: 900, y: 480 } }] });
+	m.load({ nodes: [node('node-0b0003', 0, 0)], links: [], zones: [], groups: [], layouts: [{ id: 'layout-000001', name: 'grid', pitch: 60 }] });
 	assert.deepEqual([m.index.anchorsAt({ x: 20, y: 0 }), m.index.anchorsAt({ x: 40, y: 0 })], [['node-0b0003'], []], 'a load builds it again, back on the node lattice');
 	// and the engine names no kind for it: the composition decides what a grid is
 	assert.doesNotMatch(fs.readFileSync(new URL('../engine/store.mjs', import.meta.url), 'utf8'), /'layout'/, 'engine/store.mjs names no layout kind');

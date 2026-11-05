@@ -2,7 +2,7 @@
 H26.6's move 13 (dev/design/components/PAN-ZOOM.md section 3.9, GR4, GR16; 5.1 row 13; appendix A's move 13 rows) -- EVERY READER OF
 THE PITCH, AT GRIDS OF 80 AND 120. At 60 the diagram's grid and a device's unit answer alike, so a reader taking one for the other shows
 only on a grid of another size. Until move 15 no diagram can be stored at another size -- the layout row's WD7 `refers` refuses any pitch
-but 60 at `validateDoc` -- so each diagram here has its record set straight on the Model, which `model.set` does not validate, and is
+but 60 at `validateDoc`; from move 14 its pitch field, held at 60 until move 15 -- so each diagram here has its record set straight on the Model, which `model.set` does not validate, and is
 then asked through the planner every door shares and through the composition the page builds (tests/fixtures/client-harness.mjs): two
 diagrams at once, each answering on its own grid.
 
@@ -28,7 +28,7 @@ import { ZONE_SIZE_STEP } from '../plugins/zones/zone-keys.mjs';
 import { makeZone } from '../plugins/zones/make-zone.mjs';
 import { crosshair } from '../app/src/editing-visuals.js';
 import { placesOf, clampDelta } from '../app/src/snap.js';
-import { latticeGrids } from '../kernel/lattice-grids.mjs';
+import { openGrid } from '@apnex/snap-grid';   // H26.6's move 14: a bounded lattice opened here, latticeGrids deleted
 import { DEVICES_CANVAS } from '../plugins/devices/device-appearance.mjs';
 import { contentLayout } from '../plugins/devices/device-types.mjs';
 import { L_STD } from '../kernel/spec.mjs';
@@ -121,13 +121,15 @@ test('GR4, PZ32 (move 13): the text tool -- a box begun at 160,160 on a diagram 
 
 // ---- the dots, a zone's corner drag, its size step and the wrap, the crosshair ----
 
-// the zone's dots read the zone record, layout-000002, until move 14 makes the record one (appendix B, move 13): the device's here
-test('GR4 (move 13): the dots -- the device lattice\'s, and a tier\'s, from the diagram\'s grid record', () => {
-	const [dots] = LAYOUTS_CANVAS.grids;
+// RESTATED at H26.6's move 14 (appendix B, move 13's remainder): the zone's dots from the one record too
+test('GR4 (moves 13 and 14): the dots -- the device lattice\'s and the zone lattice\'s, half a square off, and a tier\'s, each from the diagram\'s grid record', () => {
+	const [dots, zoneDots] = LAYOUTS_CANVAS.grids;
 	for (const p of [60, ...GRIDS]) {
 		const m = sized(new Model(), p), decl = (g, every) => { const { pitch, origin } = g.lattice(m, every).declaration; return [pitch, origin.x, origin.y]; };
 		assert.deepEqual(decl(dots), [p, 0, 0], `${p}: the device lattice's dots`);
+		assert.deepEqual(decl(zoneDots), [p, p / 2, p / 2], `${p}: the zone lattice's, half a square off`);
 		assert.deepEqual(decl(dots, 5), [5 * p, 0, 0], `${p}: a tier of five squares`);
+		assert.deepEqual(decl(zoneDots, 5), [5 * p, p / 2, p / 2], `${p}: and the zone's, through the same origin`);
 	}
 });
 
@@ -196,18 +198,18 @@ test('GR4 (move 13): validation -- an anchor and a zone on a diagram\'s grid acc
 	assert.match(refusal(plan(moved, [{ op: 'set', kind: 'node', id: 'node-ee0001', patch: { x: 180 } }])) ?? '', /off the diagram's grid of 80/, '80: a move to x 180 refused');
 });
 
-test('GR4 (move 13): at load, an anchor is judged on its own document\'s grid -- refused at 60 off its grid, and at 80 only the grid record itself refused (WD7, until move 15)', () => {
+test('GR4 (move 13): at load, an anchor is judged on its own document\'s grid -- refused at 60 off its grid, and at 80 only the grid record itself refused (its pitch held at 60 until move 15)', () => {
 	const doc = (pitch, x) => {
 		const m = sized(new Model(), pitch);
 		m.put('node', { id: 'node-ee0001', name: 'n', type: 'host', x, y: 0 });
-		return { ...m.toJSON(), meta: { id: 'template-ee0001', name: 'g', schema: 3 } };
+		return { ...m.toJSON(), meta: { id: 'template-ee0001', name: 'g', schema: 4 } };
 	};
 	const at60 = validateDoc(doc(60, 80));
 	assert.match(String(at60), /node-ee0001 lies at 80,0, off the diagram's grid of 60/, '60: an anchor at 80 refused at load');
 	assert.equal(validateDoc(doc(60, 120)), null, 'control: 60 holds 120,0');
 	const at80 = validateDoc(doc(80, 80));
 	assert.doesNotMatch(String(at80), /node-ee0001/, '80: the anchor at 80 is not what is refused');
-	assert.match(String(at80), /layout/, '80: the grid record is, WD7 holding every diagram at 60 until move 15');
+	assert.match(String(at80), /invalid value for layout\.pitch/, '80: the grid record is, its pitch held at 60 until move 15 (WD7\'s refusal before move 14)');
 });
 
 // ---- placement and the export ----
@@ -228,7 +230,7 @@ test('GR4 (move 13): the export -- a 3 by 2 panel\'s frame, sockets, content cel
 		const m = sized(new Model(), p);
 		m.put('node', PANEL);
 		m.put('node', { id: 'node-ee0003', name: 'h', type: 'host', x: 0, y: 0 });
-		return svgDocument({ ...m.toJSON(), meta: { id: 'template-ee0001', name: 'g', schema: 3 } });
+		return svgDocument({ ...m.toJSON(), meta: { id: 'template-ee0001', name: 'g', schema: 4 } });
 	};
 	const at60 = svgAt(60);
 	assert.match(at60, /viewBox="/, 'control: an svg');
@@ -254,7 +256,7 @@ test('GR4 (move 13): a 3 by 2 panel\'s sockets and content cells a unit apart in
 test('GR4 (move 13): a move\'s quantum -- a drag held at a bounded place\'s edge snaps back by the diagram\'s square', () => {
 	for (const p of GRIDS) {
 		// a footprint a unit wide, so the far edge leaves room for a whole number of the diagram's squares and no multiple of the unit
-		const bounded = latticeGrids({ pitch: p, offset: 0, ext: { x: 5 * p, y: 5 * p } }).bounded;
+		const bounded = openGrid({ shape: 'square', pitch: p, origin: { x: 0, y: 0 }, bounds: { min: { x: -5 * p, y: -5 * p }, max: { x: 5 * p, y: 5 * p } } }).grid;
 		const places = placesOf([{ owner: 'p', places: [{ kind: 'node', layout: 'node', lattice: () => bounded, size: () => ({ w: 60, h: 60 }) }] }]);
 		const m = sized(new Model(), p);
 		m.put('node', { id: 'node-ee0001', name: 'n', type: 'host', x: 0, y: 0 });

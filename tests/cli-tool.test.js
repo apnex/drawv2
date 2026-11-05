@@ -396,16 +396,17 @@ test('anchor nearest converts a pixel to the cell add will accept', async () => 
 });
 
 // WD-b1 (H19.45; WD8): `draw layouts` lists the diagram's two layout records, where it listed the kernel's names
-test('WD-b1: draw layouts lists the diagram\'s two grids -- name, id, pitch, offset and extent', async () => {
+// RESTATED at H26.6's move 14 (PAN-ZOOM.md section 3.4): the one grid record, as served -- the columns kept, a field it does not hold a dash
+test('WD-b1, restated at H26.6 move 14: draw layouts lists the diagram\'s one grid record -- name, id and pitch, no offset or extent', async () => {
 	await boot();
 	try {
 		const id = (await run('create', 'layouts-test')).trim();
 		const text = await run('layouts', '--diagram', id);
 		assert.match(text, /LAYOUT\s+ID\s+PITCH\s+OFFSET\s+EXTENT/, 'the columns');
-		assert.match(text, /node\s+layout-000001\s+60\s+0\s+900 x 480/, 'the node grid');
-		assert.match(text, /zone\s+layout-000002\s+60\s+30\s+930 x 510/, 'the zone grid');
+		assert.match(text, /grid\s+layout-000001\s+60\s+-\s+-/, 'the one grid, holding no offset or extent');
+		assert.doesNotMatch(text, /layout-000002/, 'and no second record');
 		const json = JSON.parse(await run('layouts', '--diagram', id, '--json'));
-		assert.deepEqual(json.layouts.map((l) => [l.id, l.name]), [['layout-000001', 'node'], ['layout-000002', 'zone']], 'and the records, as the API serves them');
+		assert.deepEqual(json.layouts, [{ id: 'layout-000001', name: 'grid', pitch: 60 }], 'and the record, as the API serves it');
 	} finally { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); }
 });
 

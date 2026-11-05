@@ -8,7 +8,7 @@ plugin's kind the same way. GR8: a document that cannot be told apart from a val
 SD12 rules for a document needing a plugin a peer lacks, held by the composition itself; SD12's stored plugin list stays
 deferred (B248).
 */
-import { heldLayouts } from './fixtures/composed.mjs';   // WD-b1: the two layouts a schema 3 document holds
+import { heldLayouts } from './fixtures/composed.mjs';   // WD-b1: the layouts a document holds -- H26.6's move 14: schema 4's one grid record
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { validateDoc } from '../planner/validate.js';
@@ -20,7 +20,7 @@ import { scratchFolder } from '@apnex/clean-runner';   // H26-19 as amended: rem
 
 const PAGE = productKinds(...NETWORK_ROWS), CORE = productKinds();
 // RESTATED at WD-b1 (H19.45): schema 3 -- a document holds its two layouts (tests/fixtures/composed.mjs `heldLayouts`)
-const doc = (extra = {}) => ({ meta: { id: '00000000000e0001', name: 'd', version: 0, schema: 3 }, layouts: heldLayouts(),
+const doc = (extra = {}) => ({ meta: { id: '00000000000e0001', name: 'd', version: 0, schema: 4 }, layouts: heldLayouts(),
 	nodes: [{ id: 'node-0e0001', name: 'a', x: 0, y: 0 }], links: [], pipes: [], zones: [], groups: [], selection: [], ...extra });
 
 test('B307: every collection the composition holds, the selection and a reveal are a valid document', () => {

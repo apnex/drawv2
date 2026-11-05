@@ -15,7 +15,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import crypto from 'node:crypto';
-import { SWEEP, QUESTIONS, REPLACEMENTS, CLASSES, answersOf, differences, classOf, enc, unboundedAtMove11, unboundedAtMove12 } from './fixtures/grid-parity.mjs';
+import { SWEEP, QUESTIONS, REPLACEMENTS, CLASSES, answersOf, differences, classOf, enc, unboundedAtMove11, unboundedAtMove12, oneRecordAtMove14 } from './fixtures/grid-parity.mjs';
 
 const RECORD = JSON.parse(fs.readFileSync(new URL('./fixtures/grid-parity-record.json', import.meta.url), 'utf8'));
 const pick = ({ question, index, old, new: now }) => ({ question, index, old, new: now });
@@ -51,7 +51,10 @@ test('H26.1 (acceptance step 4): the replacements answer exactly as the old func
 	const asRecorded = (d) => JSON.stringify(recorded.get(`${d.question}#${d.index}`)?.new) === JSON.stringify(d.new) && recorded.has(`${d.question}#${d.index}`);
 	const moved = found.filter((d) => !asRecorded(d) && unboundedAtMove11(d));
 	const placed = found.filter((d) => !asRecorded(d) && unboundedAtMove12(d));
-	const unexplained = found.filter((d) => !asRecorded(d) && !unboundedAtMove11(d) && !unboundedAtMove12(d)).map((d) => `${d.question} #${d.index} ${JSON.stringify(d.input ?? null)}`);
+	// H26.6's move 14: a sweep record of an odd pitch, which no diagram's one grid record can hold, refused (PZ20)
+	const oneRecord = found.filter((d) => !asRecorded(d) && oneRecordAtMove14(d));
+	assert.deepEqual(oneRecord.map((d) => QUESTIONS.latticePoints.inputs()[d.index].pitch), [25, 7], 'move 14: the two sweep records of an odd pitch, and no other');
+	const unexplained = found.filter((d) => !asRecorded(d) && !unboundedAtMove11(d) && !unboundedAtMove12(d) && !oneRecordAtMove14(d)).map((d) => `${d.question} #${d.index} ${JSON.stringify(d.input ?? null)}`);
 	assert.deepEqual(unexplained.slice(0, 20), [], `every difference recorded or the extent's removal (${unexplained.length} not)`);
 	assert.deepEqual(RECORD.changed.filter((d) => !live.has(`${d.question}#${d.index}`)).map((d) => `${d.question} #${d.index}`), [], 'no recorded difference is gone');
 	assert.ok(moved.length > 10000, `the extent's removal reaches the sweep's points beyond the frame: ${moved.length}`);

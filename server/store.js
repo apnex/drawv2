@@ -134,6 +134,9 @@ AMENDED 2026-10-10 (WD-b1, H19.45; WD9): schema 3 adds the layouts. Production's
 deploy's freeze, by the migration as tested at 9643c99, and no migration is carried (the director: "Lets do a full-forward
 deploy - no legacy carried"), so this refuses schema 2 as it refuses schema 1 -- and says so without naming the cutover, which a schema 2 document
 did not predate.
+AMENDED at H26.6's move 14 (dev/design/components/PAN-ZOOM.md section 3.4; PZ14; WD9's form): schema 4 holds one grid record where schema
+3 held two layouts. Production's documents are migrated once, in a freeze, by tools/migrate-schema-4.mjs run from the tree being
+deployed, and nothing here migrates, so a schema 3 document is refused as schema 2's is.
 */
 /*
 WD-b1 (H19.45) -- A WHOLE DOCUMENT IS COMPLETED WITH THE ENTITIES EVERY DOCUMENT HOLDS BEFORE IT IS JUDGED, on every door (`init`,

@@ -339,7 +339,7 @@ test('H26.6 move 8: a grid that cannot be drawn throws from the view it fails, a
 		snap.show({ x: 120, y: -60 });
 		const record = model.get('layout', 'layout-000001');
 		model.del('layout', 'layout-000001');
-		assert.throws(() => view.set({ x: 2000, y: 0, level: 2 }), /the node layout \(layout-000001\) is missing/, 'the grid\'s failure surfaces from the view set');
+		assert.throws(() => view.set({ x: 2000, y: 0, level: 2 }), /the diagram's grid \(layout-000001\) is missing/, 'the grid\'s failure surfaces from the view set -- the one record\'s sentence from H26.6 move 14');
 		assert.equal(ends()[0], scene.visible().region.y, 'the crosshair asked beside it followed that view all the same');
 		model.put('layout', record);
 		view.set({ x: -3000, y: 900, level: 3 });

@@ -38,7 +38,7 @@ and a hand pipe c - d no link runs over.
 */
 // RESTATED at WD-b1 (H19.45): schema 3 -- a document holds its two layouts (tests/fixtures/composed.mjs `heldLayouts`)
 const board = () => ({
-	meta: { id: ID, name: 'parity', version: 0, schema: 3 }, layouts: heldLayouts(),
+	meta: { id: ID, name: 'parity', version: 0, schema: 4 }, layouts: heldLayouts(),
 	nodes: [
 		{ id: 'node-0c00a1', name: 'a', type: 'host', shape: 'square', x: -360, y: 0, order: 1 },
 		{ id: 'node-0c00a2', name: 'c', type: 'host', shape: 'square', x: 360, y: 0, order: 2 },

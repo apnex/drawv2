@@ -6,17 +6,19 @@ RECORDS.
 answered with the kernel's two names; `/layouts/<name>/nearest` and `/layouts/<name>/anchors` keep their answers; a write to
 a layout through the commit door is refused while WD7 holds, naming the layout. The records are read loudly: a diagram
 lacking one is an error naming it, never the kernel's names put in its place.
+RESTATED at H26.6's move 14 (dev/design/components/PAN-ZOOM.md section 3.4, "The agents' answers"; PZ14, PZ9): `layouts` answers the one
+grid record, `{ id, name, pitch }`; the routes keep their two names, each a lattice of the one grid; WD7's refusal is gone, and a write
+the record's own row does not admit -- a second record, any field but the three, a pitch other than 60 until move 15 -- is refused.
 */
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { makeApp } from './fixtures/app.mjs';
 import { Model } from './fixtures/composed.mjs';
-import { LAYOUT_TABLE } from '../plugins/layouts/layout-table.mjs';
 import { layoutRecords } from '../plugins/layouts/layout-records.mjs';
 import { scratchFolder } from '@apnex/clean-runner';   // H26-19 as amended: removed when this file ends, however it ends
 
-const RECORDS = structuredClone(LAYOUT_TABLE).map((l) => ({ ...l, ext: { ...l.ext } }));
+const RECORDS = [{ id: 'layout-000001', name: 'grid', pitch: 60 }];   // H26.6's move 14: the one record
 let app, base, dataDir;
 before(async () => {
 	dataDir = scratchFolder('draw-layouts-api-');
@@ -82,12 +84,12 @@ test('H26.11: the zone list is the zone grid\'s 576 positions within its own bou
 	}
 });
 
-test('WD-b1 test 11: GET /diagrams/<id>/layouts serves the diagram\'s two records, with the product\'s values', async () => {
+test('WD-b1 test 11, restated at H26.6 move 14: GET /diagrams/<id>/layouts serves the diagram\'s one grid record', async () => {
 	const id = await firstId();
 	const r = await get(`/api/v1/diagrams/${id}/layouts`);
 	assert.equal(r.status, 200);
-	assert.deepEqual(r.body, { layouts: RECORDS }, 'exactly the two records: id, name, pitch, offset and extent');
-	assert.deepEqual(r.body.layouts.map((l) => l.name), ['node', 'zone'], 'named as the grid routes name them');
+	assert.deepEqual(r.body, { layouts: RECORDS }, 'exactly the one record: id, name and pitch (H26.6 move 14)');
+	assert.deepEqual(Object.keys(r.body.layouts[0]), ['id', 'name', 'pitch'], 'no offset and no extent: the zone grid is half a square off, never stored (GR7)');
 });
 
 test('WD-b1 test 11: the grid routes answer as before -- nearest on the node grid, every anchor of the zone grid', async () => {
@@ -104,7 +106,7 @@ test('WD-b1 test 11: the grid routes answer as before -- nearest on the node gri
 	assert.equal(unknown.body.code, 'unknown-layout');
 });
 
-test('WD-b1 test 11: a write to a layout is refused while WD7 holds, naming it; the records are unchanged', async () => {
+test('WD-b1 test 11, restated at H26.6 move 14: a write the grid record\'s row does not admit is refused, naming it; the record is unchanged', async () => {
 	const id = await firstId();
 	const lock = await (await fetch(`${base}/api/v1/diagrams/${id}/lock`, { method: 'POST' })).json();
 	const commit = async (ops) => {
@@ -113,10 +115,13 @@ test('WD-b1 test 11: a write to a layout is refused while WD7 holds, naming it; 
 		return { status: r.status, body: await r.json().catch(() => null) };
 	};
 	try {
-		const set = await commit([{ op: 'set', kind: 'layout', id: 'layout-000002', patch: { pitch: 30 } }]);
-		assert.notEqual(set.status, 200, 'a changed pitch is refused');
-		assert.match(set.body.error, /layout-000002/, 'naming the layout');
-		assert.match(set.body.error, /WD7/);
+		const set = await commit([{ op: 'set', kind: 'layout', id: 'layout-000001', patch: { pitch: 30 } }]);
+		assert.notEqual(set.status, 200, 'a pitch of 30 is refused');
+		assert.match(set.body.error, /layout\.pitch/, 'naming the field');
+		const offset = await commit([{ op: 'set', kind: 'layout', id: 'layout-000001', patch: { offset: 30 } }]);
+		assert.match(offset.body.error, /unknown field layout\.offset/, 'a stored offset is refused (GR7)');
+		const second = await commit([{ op: 'put', kind: 'layout', entity: { id: 'layout-000002', name: 'grid', pitch: 60 } }]);
+		assert.match(second.body.error, /layout-000002: a diagram holds one grid, layout-000001/, 'and a second record');
 		const del = await commit([{ op: 'del', kind: 'layout', id: 'layout-000001' }]);
 		assert.notEqual(del.status, 200, 'a deleted layout is refused');
 		assert.match(del.body.error, /layout-000001/, 'naming the layout');
@@ -130,7 +135,8 @@ test('WD-b1 test 11: a write to a layout is refused while WD7 holds, naming it; 
 
 test('WD-b1: the records are read loudly -- a diagram lacking one is an error naming it, not the kernel\'s names', () => {
 	const m = new Model();
-	assert.deepEqual(layoutRecords(m), RECORDS, 'in the table\'s order, each a plain copy');
-	const lacking = { all: (k) => (k === 'layout' ? [m.get('layout', 'layout-000002')] : []), get: (k, id) => (id === 'layout-000002' ? m.get(k, id) : undefined) };
-	assert.throws(() => layoutRecords(lacking), /the node layout \(layout-000001\) is missing -- every diagram holds its two layouts/);
+	assert.deepEqual(layoutRecords(m), RECORDS, 'the one record, a plain copy');
+	assert.notEqual(layoutRecords(m)[0], m.get('layout', 'layout-000001'), 'not the Model\'s own object');
+	const lacking = { all: () => [], get: () => undefined };
+	assert.throws(() => layoutRecords(lacking), /the diagram's grid \(layout-000001\) is missing -- every diagram holds it/);
 });

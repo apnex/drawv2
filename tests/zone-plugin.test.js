@@ -55,7 +55,7 @@ test('O-b1: makeZone is the plugin\'s, and mints a zone as the Model did -- a fr
 test('O-b1: a composition without the zones plugin refuses a zone by name -- validator, planner and Model', () => {
 	const kinds = composeKinds(KINDS.list.filter((k) => k !== 'zone').map((k) => KINDS.row(k)), 'no zones');
 	// RESTATED at WD-b1 (H19.45): schema 3 -- a document holds its two layouts (tests/fixtures/composed.mjs `heldLayouts`)
-	const doc = { meta: { id: '00000000000e0001', name: 'd', version: 0, schema: 3 }, layouts: heldLayouts(), nodes: [], groups: [], links: [], pipes: [], selection: [] };
+	const doc = { meta: { id: '00000000000e0001', name: 'd', version: 0, schema: 4 }, layouts: heldLayouts(), nodes: [], groups: [], links: [], pipes: [], selection: [] };
 	assert.equal(validateDoc(doc, { kinds }), null, 'the rest holds');
 	assert.match(validateDoc({ ...doc, zones: [] }, { kinds }), /unknown collection: zones/);
 	const m = new Model({ kinds, attached: { network: createNetwork(createTransit()) }});

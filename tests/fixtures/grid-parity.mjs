@@ -311,7 +311,9 @@ by tools/probe/rest-sweep.mjs), and the routes' layout lookup.
 */
 import { diagramLattices } from '../../kernel/geometry.mjs';
 const NODE_GRID = diagramLattices({ pitch: 60 }).device;   // H26.6's move 13: a diagram's device lattice at 60, NODE_GRID gone from the kernel (GR16)
-import { LAYOUT_TABLE } from '../../plugins/layouts/layout-table.mjs';
+// H26.6's move 14: the layouts table deleted with the second record -- the routes' layout lookup is their own two names (server/rest.js
+// `ROUTE_LATTICES`, a Map, so an inherited name is none), which the table's names were
+const LAYOUT_TABLE = [{ name: 'node' }, { name: 'zone' }];
 const ZONE_GRIDS = { unbounded: diagramLattices({ pitch: 60 }).zone };   // H26.6's move 13: ZONE_GRIDS gone, a diagram's zone lattice at 60
 import { snapNode, snapIn, placesOf } from '../../app/src/snap.js';
 import { PRODUCT_CANVAS } from '../../product/canvas.mjs';
@@ -381,8 +383,10 @@ export const REPLACEMENTS = {
 	},
 	// RESTATED at H26.6's move 8 (PAN-ZOOM.md section 3.7): a grid answers its lattice, drawn from the view; its points within the record's
 	// extent, as `latticePoints` listed them until the move deleted it, are that lattice's in view of the extent
-	'latticePoints': (record) => LAYOUTS_CANVAS.grids.find((g) => g.layout === record.name).lattice(fakeModel(record))
-		.inView({ region: { kind: 'rect', x: -record.ext.x, y: -record.ext.y, w: 2 * record.ext.x, h: 2 * record.ext.y }, scale: 1 }).positions.flatMap(({ point }) => [point.x, point.y]),
+	// RESTATED at H26.6's move 14 (PAN-ZOOM.md section 3.4): the grid is the one record's -- its pitch alone, the zone lattice half of it --
+	// so a record of an odd pitch, which no diagram can hold (PZ20), is refused (`oneRecordAtMove14`)
+	'latticePoints': (record) => { try { return LAYOUTS_CANVAS.grids.find((g) => g.layout === record.name).lattice(fakeModel(record))
+		.inView({ region: { kind: 'rect', x: -record.ext.x, y: -record.ext.y, w: 2 * record.ext.x, h: 2 * record.ext.y }, scale: 1 }).positions.flatMap(({ point }) => [point.x, point.y]); } catch { return 'refused'; } },
 	// RESTATED at H26.6's move 13 (PZ32): the corners arrive snapped -- the shared box gesture snaps them on the anchor's place -- and the
 	// frame is split, its anchor on the grid and its counts in the unit; asked as the gesture asks it, each corner snapped first
 	'frameSpan': ([a, b]) => ((f) => [f.x, f.y, f.w, f.h, f.origin.x, f.origin.y, f.cols, f.rows])(DEVICE_PRESSES.find((r) => r.id === 'tool').box.frame(...[a, b].map((q) => (q && typeof q.x === 'number' && typeof q.y === 'number' && Number.isFinite(q.x) && Number.isFinite(q.y) ? snapNode(places, model60, q) : q)))),
@@ -492,6 +496,16 @@ function placedByOracle(board, at) {
 		return `nothing free to the ${at.dir} of ${at.near}`;
 	}
 	return 'an anchor relationship needs one of near, between or inside';
+}
+/*
+H26.6's move 14 (PAN-ZOOM.md section 3.4; PZ20): the drawn grid reads the diagram's one record, its pitch alone, the zone lattice's origin
+half of it -- so a sweep record of an odd pitch, which no diagram can hold, is refused, where the old grid drew a lattice of it. A record
+of an even pitch whose offset is the one its lattice implies answers as before; no sweep record holds another.
+*/
+export function oneRecordAtMove14(d) {
+	if (d.question !== 'latticePoints' || d.new !== 'refused') return false;
+	const record = QUESTIONS.latticePoints.inputs()[d.index];
+	return record.pitch % 2 !== 0;
 }
 export function unboundedAtMove12(d) {
 	if (d.question !== 'resolveAnchor') return false;

@@ -6,8 +6,10 @@ Every stored document became schema 2 at the cutover (P9), so the migration that
 in the data directory, a document posted to `create`, a deleted diagram's older generation brought back by `restore` --
 is refused with one sentence naming the cutover, rather than the validator's bare "unsupported meta.schema".
 
+AMENDED at H26.6's move 14 (PAN-ZOOM.md section 3.4): schema 4 is current, its one grid record, and no migration is kept, so schema 3 is
+refused as schema 2 and 1 are.
 AMENDED 2026-10-10 (WD-b1, H19.45; WD9): schema 3 is current and no migration is kept, so schema 2 is refused the same way, by a
-sentence naming the older format rather than the cutover (tests/schema-3.test.js).
+sentence naming the older format rather than the cutover (tests/schema-4.test.js).
 */
 import { test } from 'node:test';
 import { KINDS } from './fixtures/composed.mjs';   // O-b1: a reader is handed its caller's kinds
@@ -22,10 +24,10 @@ const older = (id) => ({ meta: { id, name: 'before the cutover', version: 3, sch
 	nodes: [{ id: 'node-0d0001', name: 'a', type: 'host', shape: 'circle', x: 0, y: 0 }],
 	waypoints: [{ id: 'waypoint-0d0002', name: 'w', x: 120, y: 0 }], links: [], zones: [], groups: [], selection: [] });
 // RESTATED at WD-b1 (H19.45; WD9): the current format is schema 3, and the store completes the layouts a document lacks
-const current = (id) => ({ meta: { id, name: 'after the cutover', version: 0, schema: 3, owner: '', grants: {} },
+const current = (id) => ({ meta: { id, name: 'after the cutover', version: 0, schema: 4, owner: '', grants: {} },
 	nodes: [], links: [], pipes: [], zones: [], groups: [], selection: [] });
 // RESTATED at WD-b1 (H19.45; WD9): no migration is kept, and the sentence names no cutover -- a schema 2 document is refused by it too
-const SAID = /written in schema 1, an older format: this version reads schema 3 only and keeps no migration/;
+const SAID = /written in schema 1, an older format: this version reads schema 4 only and keeps no migration/;
 
 test('B291: a stored file from before the cutover is skipped at boot, with the reason said; the rest load', async () => {
 	const dir = scratchFolder('draw-older-');

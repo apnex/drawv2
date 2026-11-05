@@ -1,4 +1,4 @@
-import { heldLayouts } from './fixtures/composed.mjs';   // WD-b1: the two layouts a schema 3 document holds
+import { heldLayouts } from './fixtures/composed.mjs';   // WD-b1: the layouts a document holds -- H26.6's move 14: schema 4's one grid record
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -808,7 +808,8 @@ test('B111/B112: an agent asks for an anchor instead of computing one', async ()
 	const id = (await get('/api/v1/diagrams')).body[0].id;
 
 	// RESTATED at WD-b1 (H19.45; WD8): the list is the diagram's layout records, named as the grid routes name them (tests/layouts-api.test.js)
-	assert.deepEqual((await get(`/api/v1/diagrams/${id}/layouts`)).body.layouts.map((l) => l.name), ['node', 'zone']);
+	// RESTATED at H26.6's move 14 (PAN-ZOOM.md section 3.4): the one grid record; the routes keep their two names, each a lattice of it
+	assert.deepEqual((await get(`/api/v1/diagrams/${id}/layouts`)).body.layouts, [{ id: 'layout-000001', name: 'grid', pitch: 60 }]);
 
 	// the exact off-grid coordinate the agent wrote live, answered with a legal one
 	const n = (await get(`/api/v1/diagrams/${id}/layouts/node/nearest?x=270&y=-150`)).body;
@@ -1163,7 +1164,7 @@ test('corrupt and invalid files in the data dir are skipped at boot', async () =
 	fs.writeFileSync(path.join(dir, '0000000000bad002.json'), JSON.stringify({ meta: { id: '0000000000bad002', name: 'x' }, nodes: [{ id: 'node-zz', evil: true }] }));
 	const good = {
 		// RESTATED at WD-b1 (H19.45): schema 3 -- a document holds its two layouts (tests/fixtures/composed.mjs `heldLayouts`)
-		meta: { id: '0000000000aaaa11', name: 'good', version: 0, schema: 3 },
+		meta: { id: '0000000000aaaa11', name: 'good', version: 0, schema: 4 },
 		nodes: [], links: [], pipes: [], zones: [], groups: [], layouts: heldLayouts()
 	};
 	fs.writeFileSync(path.join(dir, '0000000000aaaa11.json'), JSON.stringify(good));
@@ -1440,9 +1441,9 @@ H26.7 (H26-7; the verifier's V9) -- the plugins are served from one mount, `/plu
 bound (server/static.mjs fileWithin). A module of each of the six plugins is served; a plugin folder that is not there, an old root
 address, and a request that walks out of plugins/ -- sent raw, since `fetch` resolves dot segments -- are each a 404.
 */
-const PLUGIN_MODULES = ['/plugins/layouts/layout-table.mjs', '/plugins/devices/device-types.mjs', '/plugins/network/link-head.mjs',
+const PLUGIN_MODULES = ['/plugins/layouts/layout-kind.mjs', '/plugins/devices/device-types.mjs', '/plugins/network/link-head.mjs',
 	'/plugins/zones/zone-painter.mjs', '/plugins/groups/group-kind.mjs', '/plugins/simulation/kinds.mjs'];
-const OLD_ROOTS = ['/layouts/layout-table.mjs', '/devices/device-types.mjs', '/network/link-head.mjs', '/zones/zone-painter.mjs', '/groups/group-kind.mjs',
+const OLD_ROOTS = ['/layouts/layout-kind.mjs', '/devices/device-types.mjs', '/network/link-head.mjs', '/zones/zone-painter.mjs', '/groups/group-kind.mjs',
 	'/engine/kinds.mjs', '/engine/simulation.css', '/model/reveal.mjs'];
 const OUT_OF_PLUGINS = ['/plugins/../server/store.js', '/plugins/%2e%2e/server/store.js', '/plugins/..%2fserver%2fstore.js', '/plugins/..%2Fpackage.json',
 	'/plugins/network/../../server/store.js', '/plugins/network/%2e%2e/%2e%2e/package.json', '/plugins/network/..%2f..%2fpackage.json',

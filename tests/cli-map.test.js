@@ -77,8 +77,8 @@ async function captureExit(fn) {
 	return errs.join('');
 }
 const idOf = (n) => `${n.toString(16)}`.padStart(16, 'b');   // a document id, made here rather than written out
-const LAYOUTS = [{ id: 'layout-000001', name: 'node', pitch: 60, offset: 0, ext: { x: 900, y: 480 } }, { id: 'layout-000002', name: 'zone', pitch: 60, offset: 30, ext: { x: 930, y: 510 } }];
-const board = (n, name, nodes, zones = []) => ({ meta: { id: idOf(n), name, version: 1, schema: 3 }, layouts: LAYOUTS, nodes, zones, links: [], pipes: [], groups: [] });
+const LAYOUTS = [{ id: 'layout-000001', name: 'grid', pitch: 60 }];   // H26.6's move 14: schema 4's one grid record
+const board = (n, name, nodes, zones = []) => ({ meta: { id: idOf(n), name, version: 1, schema: 4 }, layouts: LAYOUTS, nodes, zones, links: [], pipes: [], groups: [] });
 const device = (hex, name, cx, cy) => ({ id: `node-${hex}`, name, type: 'router', x: cx * 60, y: cy * 60 });
 const zone = (hex, name, x0, y0, x1, y1) => ({ id: `zone-${hex}`, name, x: x0 * 60 - 30, y: y0 * 60 - 30, w: (x1 - x0 + 1) * 60, h: (y1 - y0 + 1) * 60 });
 const senses = (text) => text.slice(text.indexOf('\n\nchunk ') + 2).split('\n').filter(Boolean);

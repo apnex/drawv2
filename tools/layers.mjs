@@ -444,7 +444,7 @@ export const ENTRIES = {
 			'planner/txn.mjs', 'planner/validate.js', 'planner/edges.mjs', 'model/invariants.mjs',
 			'kernel/palette.mjs', 'plugins/simulation/reveal.mjs', 'model/shape.mjs',
 			'product/kinds.mjs',   // the product's composition (O-d): the anchor and the shipped plugins, with the network's rows
-			'plugins/zones/zone-kind.mjs', 'plugins/layouts/layout-table.mjs', 'plugins/layouts/layout-kind.mjs', 'plugins/zones/make-zone.mjs',   // O-b1 (H19.19): the zones plugin -- its row, extent and factory
+			'plugins/zones/zone-kind.mjs', 'plugins/layouts/layout-kind.mjs', 'plugins/zones/make-zone.mjs',   // O-b1 (H19.19): the zones plugin -- its row, extent and factory
 			'plugins/zones/zone-painter.mjs', 'product/canvas.mjs',   // C-a (H19.29): the zones plugin's painter, and the product's canvas parts
 			'plugins/zones/zone-gestures.mjs',   // C-d (H19.32): the zones plugin's press row and handles
 			'plugins/devices/device-gestures.mjs',   // C-d (H19.32): the devices plugin's text box row
@@ -512,7 +512,7 @@ export const ENTRIES = {
 			'product/kinds.mjs', 'planner/log.mjs', 'planner/txn.mjs', 'planner/validate.js',
 			'plugins/network/link-reactions.mjs',
 			'planner/edges.mjs',   // the planner's edges (PL-4)
-			'plugins/zones/zone-kind.mjs', 'plugins/layouts/layout-table.mjs', 'plugins/layouts/layout-kind.mjs', 'plugins/zones/make-zone.mjs',   // O-b1 (H19.19): the zones plugin -- its row, extent and factory
+			'plugins/zones/zone-kind.mjs', 'plugins/layouts/layout-kind.mjs', 'plugins/zones/make-zone.mjs',   // O-b1 (H19.19): the zones plugin -- its row, extent and factory
 			'plugins/zones/zone-painter.mjs', 'product/canvas.mjs',   // C-a (H19.29): the zones plugin's painter, and the product's canvas parts
 			'plugins/zones/zone-gestures.mjs',   // C-d (H19.32): the zones plugin's press row and handles
 			'plugins/devices/device-gestures.mjs',   // C-d (H19.32): the devices plugin's text box row
@@ -557,7 +557,7 @@ export const ENTRIES = {
 			// S-e (H18.15): the planner loads no network module -- the link's references and its straight-pair invariant are the
 			// network's row's, handed in with the composition; model/referential.mjs and the pair capacity left its closure
 			'planner/edges.mjs',   // the planner's edges (PL-4)
-			'plugins/zones/zone-kind.mjs', 'plugins/layouts/layout-table.mjs', 'plugins/layouts/layout-kind.mjs',   // O-b1 (H19.19): the zones plugin's row and extent, composed by productKinds; its factory is not loaded
+			'plugins/zones/zone-kind.mjs', 'plugins/layouts/layout-kind.mjs',   // O-b1 (H19.19): the zones plugin's row and extent, composed by productKinds; its factory is not loaded
 			'plugins/groups/group-kind.mjs', 'plugins/groups/group-rules.mjs',   // O-c (H19.20): the groups plugin's row and rules; its factory and lookup are not loaded
 			'plugins/devices/device-fields.mjs', 'plugins/simulation/spawn-field.mjs',   // O-e2 (H19.21): the device's and the spawner's fields, composed onto the anchor
 		],
@@ -994,7 +994,7 @@ export const UNUSED_EXPORTS = {
 		arrived: ['plugins/network/link-reactions.mjs', 'product/kinds.mjs', 'planner/edges.mjs', 'model/order.mjs', 'planner/txn.mjs', 'planner/log.mjs', 'planner/validate.js',
 			'model/anchors.mjs',   // H18.4 F-b: the bare anchor, asked in one place
 			'plugins/network/pair-capacity.mjs',   // S-b: the pair rule's one home, split out of model/invariants.mjs
-			'plugins/zones/zone-kind.mjs', 'plugins/layouts/layout-table.mjs', 'plugins/layouts/layout-kind.mjs',   // O-b1 (H19.19): the zones plugin's row and extent, out of the core and the planner
+			'plugins/zones/zone-kind.mjs', 'plugins/layouts/layout-kind.mjs',   // O-b1 (H19.19): the zones plugin's row and extent, out of the core and the planner
 			'plugins/groups/group-kind.mjs', 'plugins/groups/group-rules.mjs',   // O-c (H19.20): the groups plugin's row and rules, out of the core and the planner (planner/tenants.mjs moved here)
 			'plugins/devices/device-fields.mjs', 'plugins/simulation/spawn-field.mjs'],   // O-e2 (H19.21): the device's and the spawner's fields, out of the planner
 		/*

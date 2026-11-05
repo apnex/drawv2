@@ -29,8 +29,9 @@ test('H26.1 (acceptance step 3): the kernel exports none of its grid arithmetic,
 	// in kernel/lattice-grids.mjs, which the planner's entry does not load
 	const opened = await import('../kernel/lattice-grids.mjs');
 	assert.deepEqual(['diagramLattices'].filter((n) => !(n in geometry)), [], 'control: what replaced them is exported');
-	assert.deepEqual(['UNIT_GRID', 'latticeGrids'].filter((n) => !(n in opened)), [], 'control: and the unit and the record opener beside it');
+	assert.deepEqual(['UNIT_GRID', 'coarserLattice'].filter((n) => !(n in opened)), [], 'control: and the unit and a tier\'s lattice beside it');
 	assert.deepEqual(['NODE_GRID', 'UNIT_GRID', 'latticeGrids'].filter((n) => n in geometry), [], 'H26.6 move 13 (GR16): NODE_GRID named nowhere, nor the others here');
+	assert.equal('latticeGrids' in opened, false, 'H26.6 move 14: latticeGrids deleted with the layouts table (appendix A)');
 	assert.equal('nodeGridWithin' in geometry, false, 'H26.6 move 12 (GR2): the node grid within an extent is gone');
 	assert.doesNotMatch(code('app/src/snap.js'), /\b(clamped|HALF)\b/, 'app/src/snap.js holds `clamped` or `HALF`');
 	assert.doesNotMatch(code('plugins/zones/zone-gestures.mjs'), /\bsnapZone\b/, 'plugins/zones/zone-gestures.mjs holds `snapZone`');

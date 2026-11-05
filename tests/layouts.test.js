@@ -6,64 +6,82 @@ The layouts plugin's row declares the two layouts every document holds (`always`
 made and completes a document loaded without them; each holds the product's values for its name (WD7), so the planner refuses
 an edit that changes one, adds a second of a name, or deletes one. Not selectable, not named, and not an author's work: a fresh
 tab counts none of it as work drawn offline.
+RESTATED at H26.6's move 14 (dev/design/components/PAN-ZOOM.md section 3.4; PZ14, PZ20, PZ21; GR7) -- ONE STORED GRID: the row of one
+entity, `{ id: 'layout-000001', name: 'grid', pitch }`, any other field refused, `pitch` even and held at 60 until move 15; the zone
+lattice's origin half the stored pitch, never stored; WD7's refusal and the second record gone.
 */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { Model, KINDS, plan } from './fixtures/composed.mjs';
+import { Model, KINDS, plan, validateDoc } from './fixtures/composed.mjs';
 import { composeKinds } from '../model/shape.mjs';
-import { LAYOUT_TABLE } from '../plugins/layouts/layout-table.mjs';
-import { STD } from '../kernel/spec.mjs';
 import { diagramLattices } from '../kernel/geometry.mjs';
-const NODE_GRID = diagramLattices({ pitch: 60 }).device;   // H26.6's move 13: a diagram's device lattice at 60, NODE_GRID gone from the kernel (GR16)
+import { LAYOUT_ROWS } from '../plugins/layouts/layout-kind.mjs';
+const GRID_RECORD = LAYOUT_ROWS[0].always[0];   // the row's own record
 
-const layouts = (m) => m.all('layout').map((l) => [l.id, l.name, l.pitch, l.offset, l.ext.x, l.ext.y]);
-const WANT = [['layout-000001', 'node', 60, 0, 900, 480], ['layout-000002', 'zone', 60, 30, 930, 510]];
+const layouts = (m) => m.all('layout').map((l) => JSON.stringify(l));
+const WANT = [JSON.stringify({ id: 'layout-000001', name: 'grid', pitch: 60 })];
 
-test('WD-b1: a fresh Model holds the two layouts, each its own copy', () => {
+test('WD-b1, restated at H26.6 move 14: a fresh Model holds the one grid record, its own copy', () => {
 	const a = new Model(), b = new Model();
 	assert.deepEqual(layouts(a), WANT);
-	assert.notEqual(a.get('layout', 'layout-000001'), LAYOUT_TABLE[0], 'not the table\'s object');
-	a.get('layout', 'layout-000001').ext.x = 1;
-	assert.equal(b.get('layout', 'layout-000001').ext.x, 900, 'one Model\'s copy is its own');
-	assert.equal(LAYOUT_TABLE[0].ext.x, 900, 'and the table unchanged');
+	assert.notEqual(a.get('layout', 'layout-000001'), GRID_RECORD, 'not the row\'s object');
+	a.get('layout', 'layout-000001').pitch = 1;
+	assert.equal(b.get('layout', 'layout-000001').pitch, 60, 'one Model\'s copy is its own');
+	assert.equal(GRID_RECORD.pitch, 60, 'and the row\'s unchanged');
 });
 
-test('WD-b1: a document loaded without its layouts is completed; one loaded with them keeps its own', () => {
+test('WD-b1, restated at H26.6 move 14: a document loaded without its grid is completed; one loaded with it keeps its own', () => {
 	const m = new Model();
 	m.load({ meta: { id: '00000000000c1201', name: 'x' }, nodes: [{ id: 'node-0c1201', name: 'a', x: 0, y: 0 }] });
 	assert.deepEqual(layouts(m), WANT);
 	assert.equal(m.all('node').length, 1);
-	const doc = m.toJSON();
-	assert.deepEqual(doc.layouts.map((l) => l.id), ['layout-000001', 'layout-000002'], 'and saved with it');
+	assert.deepEqual(m.toJSON().layouts, [{ id: 'layout-000001', name: 'grid', pitch: 60 }], 'and saved with it');
 });
 
-test('WD-b1: the planner refuses a layout deleted, a second of a name added, or a value changed', () => {
+test('GR7 (H26.6 move 14): a record carrying any field but id, name and pitch is refused -- the zone lattice\'s origin is never stored', () => {
+	const m = new Model();
+	const put = (entity) => plan(m, [{ op: 'put', kind: 'layout', entity }]);
+	for (const [field, value] of [['offset', 30], ['offset', 0], ['ext', { x: 900, y: 480 }], ['origin', { x: 0, y: 0 }], ['zone', 30]]) {
+		const r = put({ id: 'layout-000001', name: 'grid', pitch: 60, [field]: value });
+		assert.equal(r.ok, false, `a record carrying ${field}`);
+		assert.match(r.error, new RegExp(`unknown field layout\\.${field}`), `refused naming ${field}`);
+	}
+	assert.equal(put({ id: 'layout-000001', name: 'grid', pitch: 60 }).ok, true, 'the record as it is -- the control');
+	assert.match(plan(m, [{ op: 'set', kind: 'layout', id: 'layout-000001', patch: { offset: 30 } }]).error, /unknown field layout\.offset/, 'set as well as put');
+	// the zone lattice is half the stored pitch, always: opened from the pitch alone
+	for (const pitch of [60, 80, 120]) assert.deepEqual(diagramLattices({ pitch }).zone.declaration.origin, { x: pitch / 2, y: pitch / 2 }, `${pitch}: the zone lattice half a square off`);
+});
+
+test('PZ20, PZ21 (H26.6 move 14): the pitch is even and held at 60 until move 15 opens 60 to 120', () => {
+	const m = new Model();
+	const setPitch = (pitch) => plan(m, [{ op: 'set', kind: 'layout', id: 'layout-000001', patch: { pitch } }]);
+	assert.equal(setPitch(60).ok, true, '60 -- the control');
+	for (const pitch of [61, 59, 62, 80, 120, 30, 0, -60, 60.5, '60', null]) assert.match(setPitch(pitch).error ?? '', /invalid value for layout\.pitch/, `${JSON.stringify(pitch)} refused`);
+});
+
+test('WD-b1, restated at H26.6 move 14: the planner refuses the grid deleted, a second record, another name; WD7\'s refusal is gone', () => {
 	const m = new Model();
 	const del = plan(m, [{ op: 'del', kind: 'layout', id: 'layout-000001' }]);
-	assert.equal(del.ok, false, 'deleting the node layout');
-	assert.match(del.error, /node layout \(layout-000001\) is missing/);
-	const second = plan(m, [{ op: 'put', kind: 'layout', entity: { ...structuredClone(LAYOUT_TABLE[0]), id: 'layout-0c1203' } }]);
-	assert.equal(second.ok, false, 'a second node layout');
-	const changed = plan(m, [{ op: 'set', kind: 'layout', id: 'layout-000002', patch: { pitch: 30 } }]);
-	assert.equal(changed.ok, false, 'a changed pitch');
-	assert.match(changed.error, /may not vary its grids yet \(WD7\)/);
-	const same = plan(m, [{ op: 'put', kind: 'layout', entity: structuredClone(LAYOUT_TABLE[1]) }]);
-	assert.equal(same.ok, true, 'putting a layout as it is -- the control');
+	assert.equal(del.ok, false, 'deleting the grid');
+	assert.match(del.error, /the diagram's grid \(layout-000001\) is missing -- every diagram holds it/);
+	for (const id of ['layout-000002', 'layout-0c1203']) assert.match(plan(m, [{ op: 'put', kind: 'layout', entity: { id, name: 'grid', pitch: 60 } }]).error ?? '', new RegExp(`${id}: a diagram holds one grid, layout-000001 -- no other layout`), `a second record, ${id}`);
+	for (const name of ['node', 'zone', 'Grid']) assert.match(plan(m, [{ op: 'set', kind: 'layout', id: 'layout-000001', patch: { name } }]).error ?? '', /invalid value for layout\.name/, `named ${name}`);
+	assert.doesNotMatch(String(plan(m, [{ op: 'set', kind: 'layout', id: 'layout-000001', patch: { pitch: 80 } }]).error), /WD7/, 'no sentence of WD7\'s is left');
+	// a whole document holding schema 3's two layouts is refused at load
+	const two = { meta: { id: '00000000000c1204', name: 'x', version: 0, schema: 4 }, layouts: [{ id: 'layout-000001', name: 'node', pitch: 60, offset: 0, ext: { x: 900, y: 480 } }, { id: 'layout-000002', name: 'zone', pitch: 60, offset: 30, ext: { x: 930, y: 510 } }], nodes: [] };
+	assert.match(String(validateDoc(two)), /layout/, 'schema 3\'s two records in a document are refused');
 });
 
-test('WD-b1: a layout is neither selectable nor named; the table is the constants the core and the kernel keep', () => {
+test('WD-b1: a layout is neither selectable nor named', () => {
 	assert.equal(KINDS.selectable.includes('layout'), false);
 	assert.equal(KINDS.named.includes('layout'), false);
-	// RESTATED at H26.1 (SNAP-GRID.md section 5): the node's pitch and offset read from NODE_GRID's declaration; the zone's offset, half a
-	// pitch, the table's own, where the kernel's LAYOUTS held it
-	assert.deepEqual(LAYOUT_TABLE.map((l) => [l.pitch, l.offset]), [[STD.pitch, NODE_GRID.declaration.origin.x], [STD.pitch, STD.pitch / 2]]);
-	assert.deepEqual(LAYOUT_TABLE.map((l) => ({ ...l.ext })), [{ x: 900, y: 480 }, { x: 930, y: 510 }], 'the old extents, stored data until move 14 -- model/surface.mjs deleted at H26.6\'s move 12');
+	assert.equal(KINDS.cap?.layout ?? 1, 1, 'and one at most');
 });
 
 test('WD-b1: a fresh tab counts nothing as work drawn offline -- the layouts are no author\'s', async () => {
 	const { Sync } = await import('../app/src/sync.js');
 	const m = new Model();
-	assert.equal(Sync.prototype.localEntityCount.call({ model: m }), 0, 'a fresh Model holds its two layouts and no work');
+	assert.equal(Sync.prototype.localEntityCount.call({ model: m }), 0, 'a fresh Model holds its grid and no work');
 	m.put('node', { id: 'node-0c1202', name: 'a', x: 0, y: 0 });
 	assert.equal(Sync.prototype.localEntityCount.call({ model: m }), 1, 'a node is work -- the control');
 });

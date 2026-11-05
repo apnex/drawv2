@@ -24,7 +24,7 @@ export function parityBoard() {
 	const piped = [['node-fa00a1', 'node-fa00a2'], ['node-fa00a4', 'node-fa00b1'], ['node-fa00a2', 'node-fa00b1'], ['node-fa00b1', 'node-fa00a1'], ['node-fa00a1', 'node-fa00a4'], ['node-fa00b2', 'node-fa00a2'], ['node-fa00b3', 'node-fa00a4']];
 	return {
 		// the two layouts every schema 3 document holds -- the layouts plugin's, so the network is not composed here (tests/read-model.test.js R-a)
-		meta: { id: PARITY_DIAGRAM, name: 'parity', version: 1, schema: 3 }, layouts: structuredClone(productKinds().always.layout),
+		meta: { id: PARITY_DIAGRAM, name: 'parity', version: 1, schema: 4 }, layouts: structuredClone(productKinds().always.layout),
 		nodes: [
 			device('node-fa00a1', 'alpha', 'router', -360, 0, 1),
 			device('node-fa00a2', 'bravo', 'host', 360, 0, 2),

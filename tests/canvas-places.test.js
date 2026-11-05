@@ -25,7 +25,6 @@ import { PRODUCT_CANVAS } from '../product/canvas.mjs';
 // H26.6's move 11: the old zone extent, no longer exported -- where a zone was held, and is held no more
 const ZONE_EXT = { x: 930, y: 510 };
 import { diagramLattices } from '../kernel/geometry.mjs';
-import { latticeGrids } from '../kernel/lattice-grids.mjs';
 const NODE_GRID = diagramLattices({ pitch: 60 }).device;   // H26.6's move 13: a diagram's device lattice at 60, NODE_GRID gone from the kernel (GR16)
 import { openGrid } from '@apnex/snap-grid';   // H26.8's grid move: a grid bounded off centre, which no product place carries
 
@@ -86,7 +85,7 @@ test('C-c: the canvas names no list of placed kinds', () => {
 // no bounds is a place's; one carrying no grid at all is still refused, naming its owner
 // RESTATED at H26.6's move 13 (PAN-ZOOM.md section 3.9; appendix A): a place holds no grid -- its layout's name and `lattice(model)`, the
 // diagram's lattice resolved at each call -- so one resolving none is refused, naming its owner
-const grid1 = latticeGrids({ pitch: 60, offset: 0, ext: { x: 1, y: 1 } }).bounded;   // H26.6's move 12: nodeGridWithin gone
+const grid1 = openGrid({ shape: 'square', pitch: 60, origin: { x: 0, y: 0 }, bounds: { min: { x: -1, y: -1 }, max: { x: 1, y: 1 } } }).grid;   // H26.6's move 12: nodeGridWithin gone; move 14: latticeGrids
 const on1 = () => grid1, onNode = () => NODE_GRID;
 test('C-c: a malformed place is refused when the places are composed, naming its owner', () => {
 	assert.throws(() => placesOf([{ owner: 'p', places: [{ kind: 'x', layout: 'nowhere', size: () => ({ w: 0, h: 0 }) }] }]), /place: p's place for x resolves no lattice/);

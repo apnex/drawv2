@@ -70,7 +70,7 @@ recorded here, which is where it would have to say it bounds nothing.
 const FRAME_NUMBERS = /(?<![\w.#$-])(900|480|930|510|960|540|1920|1080)(?![\w.])/g;
 const FRAME_RECORD = {
 	'app/src/view.js': [['1920', '1080'], 'the old frame whole, the default level fits in the canvas (PZ7) -- a zoom, not a bound'],
-	'plugins/layouts/layout-table.mjs': [['900', '480', '930', '510'], 'the two schema 3 records\' stored `ext`, data every diagram holds until move 14 makes the record one'],
+	// plugins/layouts/layout-table.mjs held the two schema 3 records' stored `ext` until H26.6's move 14 made the record one and deleted it
 	'plugins/simulation/spawn-runs.mjs': [['900'], 'a spawner\'s default interval, 900 milliseconds'],
 	'cli/verbs.mjs': [['900', '900'], '`draw spawn`\'s default interval, 900 milliseconds, in its flag\'s help and its default'],
 	'server/seed.js': [['540'], 'the seed board\'s web-tier zone, 540 units tall'],
@@ -80,7 +80,6 @@ test('H26.6 move 12, GR3: the old frame\'s numbers appear as no bound -- each pl
 	for (const f of MODULES) { const found = [...code(f).matchAll(FRAME_NUMBERS)].map((m) => m[1]); if (found.length) seen[f] = found; }
 	assert.deepEqual(Object.fromEntries(Object.entries(seen).sort()), Object.fromEntries(Object.entries(FRAME_RECORD).map(([f, [n]]) => [f, n]).sort()), 'only where recorded, and each as often');
 	assert.match(code('app/src/view.js'), /const FIRST_FRAME = \{ w: 1920, h: 1080 \};/, 'view.js: the default level\'s frame');
-	assert.equal(code('plugins/layouts/layout-table.mjs').match(/ext: Object\.freeze\(\{ x: \d+, y: \d+ \}\)/g).length, 2, 'the table: two records\' extents');
 	// the numeric limits kept, each where it is held
 	const limits = code('model/limits.mjs');
 	assert.match(limits, /export const COORD_BOUND = 1_000_000;/, 'PZ31\'s bound');
@@ -88,6 +87,11 @@ test('H26.6 move 12, GR3: the old frame\'s numbers appear as no bound -- each pl
 	assert.match(limits, /export const ZONE_CAP = 576;/, 'the zone cap');
 });
 
-test('H26.6 move 12, GR3: LAYOUT_TABLE is held to the layout row and its records -- the routes and the canvas ask their lattices', () => {
-	assert.deepEqual(named(/\bLAYOUT_TABLE\b/), ['plugins/layouts/layout-kind.mjs', 'plugins/layouts/layout-records.mjs', 'plugins/layouts/layout-table.mjs'], 'its own module, the row, the records');
+// RESTATED at H26.6's move 14 (PAN-ZOOM.md appendix A, the third move 14 row; GR3's LAYOUT_TABLE check from this move): the table is deleted
+// with the second record, so it is named nowhere and its module is gone
+test('H26.6 moves 12 and 14, GR3: LAYOUT_TABLE is named nowhere in product code, and plugins/layouts/layout-table.mjs is gone', () => {
+	assert.deepEqual(named(/\bLAYOUT_TABLE\b/), [], 'no product module\'s code names it');
+	assert.equal(fs.existsSync(path.join(root, 'plugins/layouts/layout-table.mjs')), false, 'its module deleted');
+	assert.deepEqual(named(/layout-table\.mjs/), [], 'and nothing imports it');
+	assert.deepEqual(named(/\blatticeGrids\b/), [], 'nor latticeGrids, which opened its records');
 });

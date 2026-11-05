@@ -22,7 +22,7 @@ a particular place at a particular instant. Those belong to `tests/movers.test.j
 them with arithmetic and no browser. What only a browser can answer is whether the DOM ends up in
 the shape the design claims, and that is all this asks.
 */
-import { heldLayouts } from './fixtures/composed.mjs';   // WD-b1: the two layouts a schema 3 document holds
+import { heldLayouts } from './fixtures/composed.mjs';   // WD-b1: the layouts a document holds -- H26.6's move 14: schema 4's one grid record
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -45,7 +45,7 @@ function networkBoard() {
 	const host = (id, x, y) => ({ id, name: id.slice(-2), type: 'host', shape: 'square', x, y });
 	return {
 		// RESTATED at WD-b1 (H19.45): schema 3 -- a document holds its two layouts (tests/fixtures/composed.mjs `heldLayouts`)
-		meta: { id: NET_DIAGRAM, name: 'network', version: 1, schema: 3 }, layouts: heldLayouts(),
+		meta: { id: NET_DIAGRAM, name: 'network', version: 1, schema: 4 }, layouts: heldLayouts(),
 		nodes: [host('node-ab00a1', -360, 0), host('node-ab00a2', 360, 0), { id: 'node-ab00f1', name: 'f', x: 0, y: -240 },
 			host('node-ab00c1', -360, 240), host('node-ab00c2', 360, 240)],
 		links: [
@@ -66,7 +66,7 @@ const PIPE_DIAGRAM = '0000000000f50001';
 const FREE_PIPE = pipeEntity('node-f50001', 'node-f50002', 'hand');
 function pipeBoard() {
 	const host = (id, x, y) => ({ id, name: id.slice(-2), type: 'host', shape: 'square', x, y });
-	return { meta: { id: PIPE_DIAGRAM, name: 'pipe', version: 1, schema: 3 }, layouts: heldLayouts(),
+	return { meta: { id: PIPE_DIAGRAM, name: 'pipe', version: 1, schema: 4 }, layouts: heldLayouts(),
 		nodes: [host('node-f50001', -240, 0), host('node-f50002', 240, 0)], links: [], pipes: [FREE_PIPE], zones: [], groups: [], selection: [] };
 }
 /*
@@ -92,7 +92,7 @@ function fixture() {
 	const wp = (id, x, y, spawn) => ({ id, name: id, x, y, ...(spawn ? { spawn } : {}) });   // a waypoint: a node with no type, named (B187)
 	return {
 		// RESTATED at WD-b1 (H19.45): schema 3 -- a document holds its two layouts (tests/fixtures/composed.mjs `heldLayouts`)
-		meta: { id: DIAGRAM, name: 'harness', version: 1, schema: 3 }, layouts: heldLayouts(),
+		meta: { id: DIAGRAM, name: 'harness', version: 1, schema: 4 }, layouts: heldLayouts(),
 		/*
 		The tower sits BESIDE the route, two cells off, not on it.
 

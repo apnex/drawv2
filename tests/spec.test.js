@@ -98,7 +98,7 @@ test('GR10: the entity block carries the schema the server actually validates', 
 	*/
 	const entities = section('Entities (five)');   // four since the format batch (F-c); five since WD-b1 (H19.45), the layouts
 	assert.equal(entities.includes('"rev"'), false, 'meta.rev died at CS5');
-	assert.equal(entities.includes('"grid"'), false, 'meta.grid died at CS5');
+	assert.equal(/"grid"\s*:/.test(entities), false, 'meta.grid died at CS5');   // RESTATED at H26.6's move 14: a key; the grid record's name is "grid"
 	assert.match(entities, /"version"/);
 	assert.match(entities, /"schema"/);
 

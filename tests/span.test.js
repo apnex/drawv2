@@ -1068,7 +1068,7 @@ test('H15.6: the arrowhead follows the declaration, from one source', async () =
 	const { pipeEntity } = await import('../plugins/network/pipe-kind.mjs');
 	const exportOf = (direction) => {
 		const doc = mk(direction);
-		return svgDocument({ meta: { id: '0000000000aa0001', name: 'h', version: 1, schema: 3 }, layouts: heldLayouts(), selection: [],
+		return svgDocument({ meta: { id: '0000000000aa0001', name: 'h', version: 1, schema: 4 }, layouts: heldLayouts(), selection: [],
 			nodes: doc.nodes.map((n, i) => ({ ...n, order: i + 1 })), links: doc.links.map((l) => ({ ...l, order: 1 })),
 			pipes: [pipeEntity('node-aa0001', 'node-aa0002', 'link')], zones: [], groups: [] });
 	};

@@ -139,7 +139,7 @@ test('H24.9 (B362): a device the graph makes a junction draws no junction mark -
 	} finally { restore(); }
 	// and the export, which draws what view mode draws (H24.8)
 	const exported = svgDocument({
-		meta: { id: '0000000000000e30', name: 'h24-9', version: 0, schema: 3 }, layouts: heldLayouts(), nodes: NODES, links: LINKS,
+		meta: { id: '0000000000000e30', name: 'h24-9', version: 0, schema: 4 }, layouts: heldLayouts(), nodes: NODES, links: LINKS,
 		pipes: LINKS.flatMap((l) => { const s = [l.src, ...(l.via ?? []), l.dst]; return s.slice(1).map((b, i) => pipeEntity(s[i], b, 'link')); }),
 		zones: [], groups: [], selection: [],
 	});

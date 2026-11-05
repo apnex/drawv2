@@ -3,9 +3,7 @@ import { test } from 'node:test';
 // RESTATED at H26.1 (SNAP-GRID.md section 5): the kernel's grid arithmetic is deleted; the grids are snap-grid's, opened in the kernel
 // (NODE_GRID) and the layouts plugin (ZONE_GRIDS), and a span is what it runs through (plugins/devices/device-footprint.mjs spanThrough)
 import { diagramLattices } from '../kernel/geometry.mjs';
-import { latticeGrids } from '../kernel/lattice-grids.mjs';
 const NODE_GRID = diagramLattices({ pitch: 60 }).device;   // H26.6's move 13: a diagram's device lattice at 60, NODE_GRID gone from the kernel (GR16)
-import { LAYOUT_TABLE } from '../plugins/layouts/layout-table.mjs';
 const ZONE_GRIDS = { unbounded: diagramLattices({ pitch: 60 }).zone };   // H26.6's move 13: the zone lattice of a diagram at 60, ZONE_GRIDS gone
 import { spanThrough as spanExtent } from '../plugins/devices/device-footprint.mjs';
 import { STD } from '../kernel/spec.mjs';
@@ -20,7 +18,8 @@ import { PRODUCT_CANVAS } from '../product/canvas.mjs';
 const snapZone = (pos) => snapIn(placesOf(PRODUCT_CANVAS).get('zone'), pos);
 // RESTATED at H26.6's move 12 (PAN-ZOOM.md 5.1 row 12, GR3): model/surface.mjs and the extents' names are deleted; the old frame here is
 // the layout records' stored extents, data until move 14
-const NODE_EXT = LAYOUT_TABLE.find((l) => l.name === 'node').ext, ZONE_EXT = LAYOUT_TABLE.find((l) => l.name === 'zone').ext;
+// RESTATED at H26.6's move 14: the records hold no extent (one grid record, schema 4), so the old frame is held here, as data
+const NODE_EXT = { x: 900, y: 480 }, ZONE_EXT = { x: 930, y: 510 };
 // RESTATED at WD-b2 (H19.46): a grid's points are read from the open diagram's layout record -- here a fresh Model's. RESTATED at H26.6's
 // move 8 (PAN-ZOOM.md section 3.7): a grid answers its lattice, drawn from the view; its points within the node extent, as it drew them
 const nodePoints = () => PRODUCT_CANVAS.flatMap((p) => p.grids ?? []).find((g) => g.layer === 'grid-nodes').lattice(new Model())
@@ -143,7 +142,8 @@ const anchorOn = (grid, x, y) => { const at = grid.nearest({ x, y }), p = grid.p
 test('B111: the two grids, each declared once, differ only by the offset', () => {
 	assert.equal(NODE_GRID.declaration.origin.x, 0);
 	assert.equal(ZONE_GRID.declaration.origin.x, STD.pitch / 2, 'a zone bounds cells, so its edges fall between them');
-	assert.deepEqual(LAYOUT_TABLE.map((l) => l.offset), [0, STD.pitch / 2], 'and the layouts table states the same');
+	// RESTATED at H26.6's move 14 (GR7): the table is gone, the zone lattice's origin half the stored pitch, never stored
+	assert.deepEqual(Object.keys(new Model().get('layout', 'layout-000001')), ['id', 'name', 'pitch'], 'and the grid record stores no offset');
 });
 
 test('B111: being on a grid separates the two grids rather than conflating them', () => {
