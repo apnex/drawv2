@@ -33,6 +33,22 @@ test('H26.6 move 11: a label shows at a level only where its 13 units reach 5 sc
 	assert.deepEqual(shownAt(View, 0, 0), [true, true, true, true], 'a root not laid out has no scale: its labels show');
 });
 
+// the production gate of moves 9 to 12 (a low): 3.7 hides a label "under 5 screen pixels", so one exactly at the floor shows -- 10 units at a
+// scale of a half is 5 pixels, exact in binary64; a hair under, hidden
+test('H26.6 move 11, the gate\'s low: a label exactly at the 5 pixel floor shows, and one a hair under it is hidden', () => {
+	const restore = installDom();
+	try {
+		const root = fakeEl('svg', 'canvas');
+		root.clientWidth = 1366; root.clientHeight = 535;
+		const { scene } = sceneOver(root);
+		const view = new View({ scene });
+		assert.equal(10 * 0.5, 5, 'control: exactly 5 pixels');
+		assert.equal(view.labelsShown(10, 0.5), true, 'at the floor: shown');
+		assert.equal(view.labelsShown(10, 0.5 - 2 ** -40), false, 'a hair under: hidden');
+		assert.equal(view.labelsShown(13, 5 / 13 + 2 ** -40), true, 'and 13 units at a hair over 5 pixels: shown');
+	} finally { restore(); }
+});
+
 test('H26.6 move 11: LABEL_FLOOR planted at other values moves the rule with it -- the one edit tunes it', () => {
 	assert.deepEqual(shownAt(planted(7), 1366, 535), [true, false, false, false], 'at 7, 1x\'s 6.4 pixels hidden too');
 	assert.deepEqual(shownAt(planted(3), 1366, 535), [true, true, true, false], 'at 3, 2x\'s 3.2 shown');
