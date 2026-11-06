@@ -174,7 +174,7 @@ test('H26.1: each part\'s components are rendered beside its consumes -- the lat
 	assert.match(target, /\| Part \| Duty \| Kind \| Fixed by \| Consumes \| Composes \|/);
 	assert.match(target, /\| `lattice` \| Compute geometry on the grid \| core \| O1 \| -- \| `@apnex\/snap-grid` \|/, 'the lattice, and no other part, composes it');
 	assert.match(target, /\| `document` \| [^\n]* \| `kind-contract`, `lattice` \| -- \|/);
-	assert.match(target, /\| `lattice` \| `snap-grid` \| snap-grid: proposed in drawv2[^|]*\|/, 'and the register aligns the lattice to it');
+	assert.match(target, /\| `lattice` \| `snap-grid` \| snap-grid: registered in mission-kit, C11[^|]*\|/, 'and the register aligns the lattice to it, admitted at H26.12');
 	assert.doesNotMatch(target, /The anchored core composes no mission-kit component/, 'A-0\'s finding, no longer true, is gone from the authored text');
 	const current = fs.readFileSync(path.join(ROOT, 'docs/ARCHITECTURE.md'), 'utf8');
 	assert.match(current, /\| Part \| Duty \| Kind \| Made of \| Imports today \| Composes today \|/);
