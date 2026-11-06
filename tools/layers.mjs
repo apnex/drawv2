@@ -223,15 +223,16 @@ candidate it takes or would take (dev/design/unification/MISSION-KIT-ALIGNMENT.m
 composing it would change). AMENDED by H26.1: the anchored core composes its first component, `snap-grid`, through the lattice
 (COMPONENTS above); AMENDED by H26.2: and its second, `input-binding`, through the rules part; AMENDED by H26.3: and its third,
 `input-capture`, through the canvas part; AMENDED by H26.4: and its fourth, `vector-scene`, through the renderer part, the export and
-the primitives drawing through it; every other mapping is still a candidate's.
+the primitives drawing through it; AMENDED by H26.12: the four admitted to mission-kit's component registry, C11 to C14; every other
+mapping is still a candidate's.
 MISSION_KIT holds each component's or candidate's standing as read on MISSION_KIT_READ -- standings move, and are read again before
 a design that composes one is asked. tools/generate-architecture.mjs renders the register into the target's section 9.3 and fails
 on a part that is no part, a name MISSION_KIT does not hold, or an entry of MISSION_KIT no part aligns to.
 */
-export const MISSION_KIT_READ = '2026-10-23';
+export const MISSION_KIT_READ = '2026-11-06';
 export const MISSION_KIT = {
 	agp: 'registered in mission-kit, C1',
-	'snap-grid': 'proposed in drawv2, released from its own repository, composed (H26-4)',
+	'snap-grid': 'registered in mission-kit, C11; released from its own repository, composed (H26-4)',
 	'shape-check': 'proposed in zorg, certified',
 	'entity-store': 'proposed in zorg, certified',
 	'caller-identity': 'proposed in zorg, certified',
@@ -239,9 +240,9 @@ export const MISSION_KIT = {
 	'operation-command': 'proposed in zorg, certified',
 	'credential-issuer': 'proposed in zorg, no code',
 	'change-planner': 'candidate, zorg D32, steered in D35',
-	'input-binding': 'proposed in drawv2, released from its own repository, composed (H26-6)',
-	'input-capture': 'proposed in drawv2, released from its own repository, composed (H26-8)',
-	'vector-scene': 'proposed in drawv2, released from its own repository, composed (H26-11); a candidate in zorg D32, steered in D35',
+	'input-binding': 'registered in mission-kit, C12; released from its own repository, composed (H26-6)',
+	'input-capture': 'registered in mission-kit, C13; released from its own repository, composed (H26-8)',
+	'vector-scene': 'registered in mission-kit, C14; released from its own repository, composed (H26-11); a candidate in zorg D32, steered in D35',
 	// H26.4 (VECTOR-SCENE.md section 5.3): the editing duty, declared inside draw as the `editing` part, extracted when a second app needs it
 	'canvas-editing': 'a drawv2 candidate by H26-10, B389',
 	'entity-view': 'candidate, zorg D32',
