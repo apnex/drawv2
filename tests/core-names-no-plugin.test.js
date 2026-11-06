@@ -75,12 +75,12 @@ const RECORD = {
 	// RESTATED at H25.5 (B378, D4): the declarative scene helpers `zone`, `group` and `bboxOf` retired with the old scene renderer
 	// H26.1 (SNAP-GRID.md section 7.7, appendix B): kernel/geometry.mjs's 4 fell -- the zone lattice's offset left for the layouts table,
 	// with `LAYOUTS`, `anchorAt` and `nearestAnchor`. RESTATED at H26.1's verification (F3): to 1, the anchor's one builder, beside the grids
-	'kernel/geometry.mjs': { count: 2, cites: ['B325', 'H26-23'],
-		reason: 'the `layout:` an anchor carries, in `anchorOn`, the one place the agent door and placement build an anchor (B325); RAISED at H26.6\'s move 13 by one: `diagramLattices` answers a diagram\'s `{ device, zone }`, its two lattices, as 3.4 names them',
-		trigger: 'a diagram varies its grids (B325)' },
-	'kernel/spec.mjs': { count: 2, cites: ['B325'],
-		reason: 'the `group:` and `zone:` layout constants in `STD`',
-		trigger: 'a diagram varies its grids (B325)' },
+	'kernel/geometry.mjs': { count: 2, cites: ['from B325', 'H26-23'],
+		reason: 'the `layout:` an anchor carries, in `anchorOn`, the one place the agent door and placement build an anchor (from B325); RAISED at H26.6\'s move 13 by one: `diagramLattices` answers a diagram\'s `{ device, zone }`, its two lattices, as 3.4 names them; RESTATED at H26.6\'s close: B325 closed with each diagram varying its grid, and both names kept, the zone lattice derived from the one stored grid (PZ14)',
+		trigger: 'a lattice is added beside the device and zone pair, or an anchor names its lattice other than by the kind it holds (H26-23)' },
+	'kernel/spec.mjs': { count: 2, cites: ['from B325', 'H26-23'],
+		reason: 'the `group:` and `zone:` layout constants in `STD`; RESTATED at H26.6\'s close: B325 closed with each diagram varying its grid, and these kept, a frame measured in the device\'s unit, which stays 60 whatever the grid (PZ18)',
+		trigger: 'the zones or groups plugin next changes its frame\'s size, taking it with the unit it is measured in' },
 };
 // and the plugin fields a core or planner module reads, the same way
 // H25.5 (B378, D4): empty -- kernel/geometry.mjs's `node()` retired with the old scene renderer

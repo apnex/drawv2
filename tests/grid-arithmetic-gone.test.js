@@ -175,7 +175,7 @@ const RECORD = {
 	// cap counts its own grid's positions within its bounds (kernel/geometry.mjs `positionsWithin`), and the formula went
 	'plugins/simulation/spawners.mjs': { count: 1, cites: ['SNAP-GRID.md appendix B'],
 		reason: 'a route\'s length in pitches, to two places, for the readout: a length read in the declared pitch, which stays' },
-	'cli/verbs.mjs': { count: 4, cites: ['B402', 'PAN-ZOOM.md PZ15'],
+	'cli/verbs.mjs': { count: 4, cites: ['from B402', 'PAN-ZOOM.md PZ15'],
 		reason: 'a zone\'s cell range, its edges half a pitch between cells: from literal 30 and 60 until H26.6\'s move 12, from the stored pitch since (PZ15; B402\'s literals gone)' },
 	// H26.6's move 13 (PAN-ZOOM.md section 3.8, "The text tool"; PZ32): the text box's counts in the unit, `1 + round(d / 60)`
 	'plugins/devices/device-gestures.mjs': { count: 2, cites: ['PAN-ZOOM.md PZ32'],
