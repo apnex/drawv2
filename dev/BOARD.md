@@ -1655,6 +1655,7 @@ Scored so the comparison is a judgement, not an omission.\
 | **B407** | S5 | The palette's tile drag outside `input-binding` (H26-6) | the palette's drag gesture is rewritten, or a second application needs input from outside its surface. |
 | **B408** | S5 | A live gesture's state seen by more than the editor (H26-6) | an actor other than the editor -- an agent, a debug view, the lab's inspection -- needs to perceive a live gesture. |
 | **B409** | S4 | A second pointer replaces the first pointer's press (H26-6) | a person reports a gesture replaced by a second finger or a pen. |
+| **B415** | S5 | Drawing a grid as a shared piece: each application keeps its own (H27-2) | a third application draws a grid, or the tier values are changed in one application and not the other. |
 | **B416** | S5 | The inline text editor as a component (H26-10) | a second application needs a drawn text edited in place. |
 | **B417** | S5 | The help overlay from the bindings as a component (H26-10) | a second application shows a static help of the inputs its bindings declare. |
 | **B418** | S4 | What a person sees, readable by an agent (H26-10) | an agent needs to perceive what a person sees on the canvas. |
@@ -1722,11 +1723,10 @@ The deployment that fired its trigger is also the one that answered it: object s
 ## Decisions required
 
 B163, the last entry, was ratified and closed on 2026-10-01: the standing goals framework is `VISION.md`.\
-B399 and B400 were ruled on 2026-11-01 (H26-21) and left this table.
+B399 and B400 were ruled on 2026-11-01 (H26-21) and left this table; B415 was ruled on 2026-11-07 (H27-2) and left it; none is owed now.
 
 | Row | Decision owed | Why it cannot be settled without you |
 |---|---|---|
-| **B415** | Drawing a grid: one shared drawer for draw and the gesture tester, or each its own | A shared piece is a new component boundary (H26-10), and the two drawers hold about 30 common lines (H26.6 closed) |
 
 **R13 reads this table in both directions**, which is what `Held` has had since B123 and this section never did.\
 A row recording `RULING-OWED` must appear here, so a decision cannot wait unseen; an entry here must still be `RULING-OWED`, so a ruling that has landed cannot keep asserting itself.\
