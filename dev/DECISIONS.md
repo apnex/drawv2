@@ -2409,6 +2409,8 @@ Shown: dev/BOARD.md@d760138\
 Affects: dev/BOARD.md\
 Recorder: shown the board re-triaged after H26 closed -- CI red four times since 2026-11-02 on Chrome's start alone and re-run past each time (B448, firing B333), a handle press that throws on a touch screen whose trigger fired unseen at H26.6's move 13 (B410), and the gesture tester's stuck pan with its production still on `0.1.0` (B447) -- and offered H27 as listed (recommended), the tester first, or a held item instead. So H27 runs as listed: the gate first, then the handle press, then the tester; each still goes to production on the director's approval (H26-24).
 
+AMENDED 2026-11-07 by the director, H27: "continue" -- shown the batch in both labs and passed by its targeted check, three minor edges held (B449), and offered both releases to production (recommended), a try of the labs first, or draw alone. So draw went live as `draw-00248-n7t` at `ea75b43` and the gesture tester's `0.7.0` to `input.apnex.io`, and H27 closed.
+
 **H27-1 -- the wheel and a touchpad's two-finger scroll zoom the view, as a pinch does, one level per step about the pointer; nothing scrolls the view, which pans by the three drags alone -- 2026-11-07 (amends H26-22's AG-2 and H26-23's GR6).**\
 Director: "also - lets change moude/tcouhpad scroll behavior to "zoom" rather than pan"\
 Shown: dev/BOARD.md@d760138\

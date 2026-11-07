@@ -22,8 +22,9 @@ How it counts:
 | 2026-11-01 | f012dda | 1,404 | 3,222 | 73 | 9,269 | 0 | 13,968 | 3,910 | 21.9% | 517 | 1,225 | 12,226 | 12.5% | 37,229 | 5,735 | 2,215 | 1,290 | 819 | 238 | 48,296 | 73,766 | 8,456 | 31,901 | 3,313 |
 | 2026-11-05 | bc3cd28 | 1,406 | 3,208 | 69 | 9,924 | 0 | 14,607 | 4,141 | 22.1% | 544 | 1,241 | 12,822 | 12.2% | 40,256 | 5,799 | 2,215 | 1,290 | 846 | 238 | 51,947 | 73,856 | 8,560 | 33,057 | 3,326 |
 | 2026-11-06 | bdc0bc4 | 1,421 | 3,346 | 74 | 9,958 | 0 | 14,799 | 4,141 | 21.9% | 543 | 1,314 | 12,942 | 12.5% | 40,998 | 5,942 | 2,155 | 1,290 | 846 | 241 | 52,839 | 73,857 | 8,750 | 33,120 | 3,335 |
+| 2026-11-07 | ea75b43 | 1,421 | 3,346 | 74 | 9,958 | 0 | 14,799 | 4,141 | 21.9% | 542 | 1,313 | 12,944 | 12.5% | 41,159 | 5,942 | 2,155 | 1,290 | 846 | 241 | 53,040 | 73,857 | 8,751 | 33,205 | 3,335 |
 
-The first row is draw before H26 (`561a2df`); the second, draw on all four components, live in production (`c6e8358`, H26.4); the third, draw on the three `0.2.0` releases, live in production (`ca492da`, H26.5), the baseline of H26.8; the fourth, H26.8 closed, live in production (`f012dda`); the fifth, H26.6's batch 1, the infinite canvas at grid size 60, live in production (`bc3cd28`); the sixth, H26.6 closed by batch 2, one grid per diagram sized 60 to 120 and schema 4, live in production (`bdc0bc4`).
+The first row is draw before H26 (`561a2df`); the second, draw on all four components, live in production (`c6e8358`, H26.4); the third, draw on the three `0.2.0` releases, live in production (`ca492da`, H26.5), the baseline of H26.8; the fourth, H26.8 closed, live in production (`f012dda`); the fifth, H26.6's batch 1, the infinite canvas at grid size 60, live in production (`bc3cd28`); the sixth, H26.6 closed by batch 2, one grid per diagram sized 60 to 120 and schema 4, live in production (`bdc0bc4`); the seventh, H27's batch, every wheel a zoom and two press fixes, live in production (`ea75b43`), draw running unchanged in lines.
 
 ---
 
