@@ -32,7 +32,8 @@ test('C-e: Shift shows the zone grid and letting go hides it; during a move Shif
 		const [d] = seedNodes(h.model, [[0, 0]]);
 		h.capture.onDown(onDevice(h, d.id, 0, 0, { button: 2, buttons: 2 }));
 		h.capture.onMove(onDevice(h, d.id, 120, 0, { button: 2, buttons: 2 }));
-		assert.equal(h.model.get('node', d.id).x, 120, 'a move under way -- its live preview writes the model (B7)');
+		// RESTATED at H28.5 (B7): the move's frames are drawn from its preview, the live Model left as stored
+		assert.deepEqual([h.at(d.id).getAttribute('transform'), h.model.get('node', d.id).x], ['translate(120,0)', 0], 'a move under way -- drawn moved');
 		shift(h, true);
 		assert.equal(h.svg.classList.contains('zonegrid'), false, 'Shift locks the axis mid-move; it raises no grid');
 		h.capture.onMove(onDevice(h, d.id, 180, 0, { button: 2, buttons: 2, shiftKey: true }));

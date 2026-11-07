@@ -38,13 +38,16 @@ const gridOf = (layer) => ({ dots: layer.children.length, sha256: sha256(JSON.st
 A handle's place, as its offset from the point its part's spec answers for it now -- `point.x-6`, the overlay's half a handle short of the
 point, when it is exactly there -- so the record holds where the overlay put it against its point, and not the point, which the network
 computes by Math.hypot. Its point: the lone selected entity's spec (Overlay `handleSpecs`), its name the handle's data attribute.
+RESTATED at H28.5 (B7): of the entity as the overlay reads it -- a live move's or clone's preview, what it shows selected, while one is
+drawn (Overlay `preview`), the live Model otherwise -- since a moved zone's corners ride its preview, the live Model left as stored.
 */
 const HALF_HANDLE = 6;   // app/src/overlay.js HANDLE / 2
 function handlePlaces(h) {
-	const ids = h.selection.list();
+	const preview = h.input.overlayUi.preview(), model = preview?.model ?? h.model;
+	const ids = preview?.selected ?? h.selection.list();
 	const spec = ids.length === 1 ? h.input.overlayUi.handleSpecs().get(kindOf(ids[0])) : null;
-	const entity = spec && h.model.get(kindOf(ids[0]), ids[0]);
-	const points = (entity && spec.points(entity, h.model)) || {};
+	const entity = spec && model.get(kindOf(ids[0]), ids[0]);
+	const points = (entity && spec.points(entity, model)) || {};
 	const attr = spec ? `data-${spec.key.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`)}` : null;
 	return (n, k, v) => {
 		if (!attr || (k !== 'x' && k !== 'y') || !(n.attrs?.class ?? '').split(' ').includes('handle')) return null;

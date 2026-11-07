@@ -14,7 +14,7 @@ Oracles (all computed from the harness's OWN bookkeeping, never from Sync.pendin
   server SENT that message. The oracle reads the planner -- the edits' specification -- never Sync or
   Changes, the code under test.
 - REGRESSION: every field its own unanswered ops set shows the value the latest of them set.
-- SNAPBACK: during a drag, each dragged entity shows the drag preview after every inbound message.
+- SNAPBACK, retired at H28.5 (B7): a drag writes its own preview, never the live Model, so nothing can put a dragged entity back.
 - DIVERGE: at quiescence each tab equals the server.
 - INVALID (U-a): at quiescence the server's document is valid.
 - ROUTE (U-a): at quiescence each tab draws every link along the route the server's document gives it, and
@@ -188,23 +188,21 @@ export async function makeWorld(code, { seed, tabs = 2, gestureCancelOnLoad = tr
 		});
 		t.sync.deferInbound = () => !!t.drag;
 		// mirror bindGestureDefer's third wire (sync.cancelGesture ->
-		// input.cancelDrag when a gesture is live): restore the drag-start values, end, release
+		// input.cancelDrag when a gesture is live): end, release -- RESTATED at H28.5 (B7): nothing to rewind, the drag's frames
+		// written to its preview, never the live Model
 		t.sync.cancelGesture = () => {
 			if (!t.drag) return;
 			const d = t.drag;
 			t.drag = null;
-			for (const m of d.moved) t.model.set(m.kind, m.id, { x: m.before.x, y: m.before.y });
 			log.push(`  [tab${i}] snapshot ended the drag of ${d.moved.map((m) => m.id).join(',')} before the load`);
 			t.sync.releaseDeferred();
 		};
-		// Input's model 'load' handler cancels a live gesture (app/src/input.js:438), and the move
-		// gesture's cancel writes each moved entity back to its drag-start position (input.js:83).
+		// Input's model 'load' handler cancels a live gesture (app/src/input.js `model.onChange`), its preview dropped (H28.5)
 		t.model.onChange((action) => {
 			if (action !== 'load' || !t.drag || !gestureCancelOnLoad) return;
 			const d = t.drag;
 			t.drag = null;
-			for (const m of d.moved) t.model.set(m.kind, m.id, { x: m.before.x, y: m.before.y });
-			log.push(`  [tab${i}] load cancelled the drag of ${d.moved.map((m) => m.id).join(',')} (restored before)`);
+			log.push(`  [tab${i}] load cancelled the drag of ${d.moved.map((m) => m.id).join(',')}`);
 			t.sync.releaseDeferred();
 		});
 		t.receive = (m) => receive(m);
@@ -266,26 +264,16 @@ export function attach(world) {
 	world.evals = {};
 	world.check = (t, cause, step) => {
 		if (!t.sync.hydrated || t.lastServer === null) return;
-		const dragged = new Set(t.drag ? t.drag.moved.map((m) => m.id) : []);
-		// SNAPBACK
-		if (t.drag) {
-			for (const m of t.drag.moved) {
-				const e = t.model.get(m.kind, m.id);
-				if (!e) continue;
-				if (e.x !== m.pos.x || e.y !== m.pos.y) {
-					const pend = [...world.pendingFields(t).keys()].some((k) => k.endsWith('\u0000' + m.id));
-					violations.push({ kind: pend ? 'SNAPBACK-own-pending' : 'SNAPBACK', tab: t.i, step, cause,
-						detail: `${m.id} shows (${e.x},${e.y}) during a drag at (${m.pos.x},${m.pos.y})` });
-					m.pos = { x: e.x, y: e.y };   // report once per excursion
-				}
-			}
-		}
+		/*
+		RETIRED at H28.5 (B7): SNAPBACK -- a dragged entity shown in the live Model elsewhere than the drag held it. The drag writes its
+		preview now, which nothing but the drag writes, and the live Model holds a dragged entity as stored: there is no snapback to
+		find, and a dragged field is held to REGRESSION and SHADOW as any other.
+		*/
 		if (t.awaitResync) return;
-		// REGRESSION (own pending field not showing), ignoring dragged fields
+		// REGRESSION (own pending field not showing)
 		const regressionOnly = t.awaitResume;
 		for (const [key, fields] of world.pendingFields(t)) {
 			const [kind, id] = key.split('\u0000');
-			if (dragged.has(id)) continue;
 			const e = t.model.get(kind, id);
 			if (fields === null) { if (e) violations.push({ kind: 'REGRESSION', tab: t.i, step, cause, detail: `${id} present though own pending op deleted it` }); continue; }
 			if (!e) continue;   // gone: a foreign or derived delete; the server will refuse the set
@@ -355,14 +343,13 @@ export function attach(world) {
 		return m;
 	};
 
-	// Input's commitMove: drop the gone, restore the drag-start values, commit the move, then D12 release
+	// Input's commitMove: drop the gone, commit the move, then D12 release -- H28.5 (B7): nothing to restore, the live Model never written
 	world.endDrag = (t, step) => {
 		enter(t);
 		const d = t.drag;
 		if (!d) return;
 		t.drag = null;
 		const moved = d.moved.filter((m) => t.model.get(m.kind, m.id));
-		for (const m of moved) t.model.set(m.kind, m.id, { x: m.before.x, y: m.before.y });
 		const moves = moved.filter((m) => m.pos.x !== m.before.x || m.pos.y !== m.before.y)
 			.map((m) => ({ kind: m.kind, id: m.id, after: { x: m.pos.x, y: m.pos.y } }));
 		if (moves.length) t.changes.commit(code.commands.moveEntities(moves));

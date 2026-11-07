@@ -52,10 +52,8 @@ export const EDITING_GESTURES = {
 			// changed state since, with the pointer stationary
 			host.commitMove(ctx, pos, ctx.orthoActive);
 		},
-		cancel: (host, ctx) => {
-			ctx.moved.forEach((m) => host.model.set(m.kind, m.id, { x: m.before.x, y: m.before.y }));
-			host.hideCrosshair();
-		}
+		// H28.5 (B7): nothing to rewind -- the frames wrote the gesture's preview, which Input drops however the gesture ends
+		cancel: (host) => host.hideCrosshair()
 	},
 
 	clone: {
@@ -64,8 +62,9 @@ export const EDITING_GESTURES = {
 			host.hideCrosshair();
 			host.commitClone(ctx, pos, ctx.orthoActive);
 		},
-		cancel: (host, ctx) => {
-			[...ctx.clones].reverse().forEach((c) => host.model.del(c.kind, c.entity.id));   // uncommitted clones vanish entirely
+		cancel: (host) => {
+			// H28.5 (B7): the copies were the preview's alone, and vanish with it when Input drops it; the selection ends empty, as it did
+			// when it held them
 			host.selection.clear();
 			host.hideCrosshair();
 		}

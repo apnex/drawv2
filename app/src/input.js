@@ -50,7 +50,7 @@ import { initialInputState, track } from './input-state.js';
 import { LINK_RELEASES, MARQUEE_RELEASES, CTRL_CLICKS, PRESS_DRAGS, CLONE_DRAGS } from './releases.js';
 import { roundedPath } from '../../kernel/router.mjs';
 import { BEND_R } from '../../kernel/spec.mjs';
-import { newId, kindOf } from '../../model/model.mjs';
+import { newId, kindOf, projection } from '../../model/model.mjs';   // H28.5: a move's and a clone's preview, a projection of the live Model
 import * as commands from './commands.js';
 import { situationOf } from '../../engine/situation.mjs';
 import { BARE_KIND, ANCHOR_KINDS } from '../../model/anchors.mjs';   // the bare anchor, asked in one place (F-b)
@@ -244,6 +244,14 @@ export class Input {
 	collaborators are in, each call read when it is made.
 	*/
 	#host;
+	/*
+	H28.5 (B7, the move and the clone; dev/DECISIONS.md H28-1) -- THE PREVIEW a live move or clone writes, or null: `model`, a throwaway
+	projection of the live Model made at the gesture's start, which the renderer draws from and the overlay's handles read until the
+	gesture ends; and `selected`, the ids shown selected meanwhile -- a clone's copies, which the live selection, reconciled against the
+	live Model, cannot hold before they are stored. The live Model stays as stored until the commit applies the edit through the planner,
+	as every edit is applied, so a remote change landing meanwhile is not written over by a frame.
+	*/
+	#preview = null;
 	/*
 	H26.6's move 9: a pan row's press waiting to travel the threshold -- `{ gesture }`, the row's pan gesture -- or null. Draw's own, not the
 	session's: below the threshold no gesture is live for any guard and nothing is taken (PAN-ZOOM.md section 3.6, "engagement"); a press,
@@ -454,7 +462,7 @@ export class Input {
 		// crosshair moved with it. Input keeps only what a GESTURE needs (mode, ctx, and the input state).
 		// H26.4 (section 5.3): handed the scene, and draw's policy for keeping a hover -- near an entity's origin, within NODE_R (snap.js)
 		this.overlayUi = new Overlay({ svg, scene, near: nearOrigin, model, selection, states, snap, handles: () => this.handles, hitFacts: () => this.hitFacts, points: () => this.points,
-			grids: () => this.shownGrids });   // C-e: the grids a modifier shows   // C-d: the kinds' handles; D4: what each hit is
+			grids: () => this.shownGrids, preview: () => this.#preview });   // C-e: the grids a modifier shows   // C-d: the kinds' handles; D4: what each hit is; H28.5: the preview
 		this.ctx = {};   // the live gesture's working data: its bodies' (B389)
 		this.#host = Object.freeze({
 			model: this.model, selection: this.selection, scene: this.scene,
@@ -807,7 +815,29 @@ export class Input {
 		if (moved.length === 0) { this.#session.cancelGesture(); return; }   // nothing to move: the press ends, no body to run (H26.2)
 		const base = this.ctx.hit;
 		this.#session.becomeGesture({ gesture: 'move' });
+		this.#beginPreview();   // H28.5: the frames write the preview, the live Model left as stored (B7)
 		this.ctx = { ...this.ctx, moved, baseKind: base.kind, baseId: base.id };
+	}
+
+	// H28.5 (B7): a move's or a clone's preview begun -- the live Model projected, and drawn from -- answering the projection
+	#beginPreview() {
+		this.#preview = { model: projection(this.model), selected: null };
+		this.renderer.drawPreview(this.#preview.model);
+		return this.#preview.model;
+	}
+
+	/*
+	H28.5 (B7): the preview ended, however the gesture ended -- the renderer drawing from the live Model again, and the selection's look
+	and the handles shown from it -- answering the projection it ended, or null when none was begun.
+	*/
+	#endPreview() {
+		const preview = this.#preview;
+		if (!preview) return null;
+		this.#preview = null;
+		this.renderer.drawLive();
+		if (preview.selected) this.states.reflect(this.selection.list());
+		this.overlayUi.handles();
+		return preview.model;
 	}
 
 
@@ -828,18 +858,24 @@ export class Input {
 		if (!result) { this.#session.cancelGesture(); this.ctx = {}; return; }
 		const { clones, idMap } = result;
 
-		// the clones come back inert. A drag has to SHOW them, so they go into the live model here —
-		// I-IN5, live preview writes the shared Model. Ctrl+D never materialises them at all.
-		clones.forEach((c) => this.model.put(c.kind, c.entity));
+		/*
+		The clones come back inert. A drag has to SHOW them, so they go into the gesture's preview here, never the live Model (H28.5, B7;
+		I-IN5): the commit puts them through the planner, as Ctrl+D does, which never materialises them at all.
+		*/
+		this.#session.becomeGesture({ gesture: 'clone' });
+		const preview = this.#beginPreview();
+		clones.forEach((c) => preview.put(c.kind, c.entity));
 
 		// B311: every positioned copy moves with the drag -- a copied bend with its link -- as Ctrl+D moves them
 		const moved = clones
 			.filter((c) => this.places.has(c.kind))
 			.map((c) => ({ kind: c.kind, id: c.entity.id, before: { x: c.entity.x, y: c.entity.y } }));
 		const picked = this.selection.list().filter((id) => this.places.has(kindOf(id))).map((id) => idMap.get(id)).filter(Boolean);
-		this.#session.becomeGesture({ gesture: 'clone' });
-		this.ctx = { ...this.ctx, clones, moved, baseKind: hit.kind, baseId: idMap.get(hit.id) };
-		this.selection.set(picked);   // the copies of what was selected
+		this.ctx = { ...this.ctx, clones, moved, picked, baseKind: hit.kind, baseId: idMap.get(hit.id) };
+		// the copies of what was selected, shown selected; the live selection takes them once they are stored (`commitClone`)
+		this.#preview.selected = picked;
+		this.states.reflect(picked);
+		this.overlayUi.handles();
 	}
 
 	/*
@@ -1145,17 +1181,21 @@ export class Input {
 		this.ctx.orthoActive = ortho;
 		const rawDelta = orthoDelta(
 			{ x: pos.x - this.ctx.start.x, y: pos.y - this.ctx.start.y }, ortho);
-		// clamp live: out-of-bounds coordinates must never reach the model
-		const delta = clampDelta(this.model, this.ctx.moved, rawDelta, this.places);
+		// clamp live: out-of-bounds coordinates must never reach the model. H28.5 (B7): each frame is written to the gesture's preview,
+		// and read from it -- a clone's copies are there alone -- the live Model left as stored
+		const preview = this.#preview.model;
+		const delta = clampDelta(preview, this.ctx.moved, rawDelta, this.places);
 		this.ctx.moved.forEach((m) => {
-			this.model.set(m.kind, m.id, {
+			preview.set(m.kind, m.id, {
 				x: m.before.x + delta.x,
 				y: m.before.y + delta.y
 			});
 		});
+		// the handles ride what moves -- a lone zone's corners -- which no change of the live Model tells them now
+		if (this.ctx.moved.some((m) => this.handles.has(m.kind))) this.overlayUi.handles();
 		const base = this.ctx.moved.find((m) => m.id === this.ctx.baseId) || this.ctx.moved[0];
 		const raw = { x: base.before.x + delta.x, y: base.before.y + delta.y };
-		const target = snapIn(this.places.get(base.kind), raw, this.model);   // C-c: on the base's own grid -- the diagram's (move 13)
+		const target = snapIn(this.places.get(base.kind), raw, preview);   // C-c: on the base's own grid -- the diagram's (move 13)
 		this.overlayUi.crosshair.show(target);
 		this.readout.setDrag(target, {
 			x: (target.x - base.before.x) / this.pitch(),
@@ -1197,6 +1237,9 @@ export class Input {
 		// L2: a click or a drop, from the press the session tracked -- its outcome's `trigger`, handed to the commit, nothing written on the
 		// fact (H26.8's capture move)
 		try { this.dispatchUp(evt, outcome); } finally {
+			// H28.5 (B7): a move's or a clone's preview never outlives its gesture -- its commit ends it, and a commit that throws is not
+			// left drawing a document nobody stores
+			if (!this.isGesturing()) this.#endPreview();
 			if (wasGesturing) this.onGestureEnd();
 			this.afterShiftUpPress(evt);   // H24.3
 		}
@@ -1355,34 +1398,39 @@ export class Input {
 		this.readout.setLink(node.name || '?', this.snapNode(pos));
 	}
 
+	/*
+	RESTATED at H28.5 (B7): the preview ended first, the renderer drawing from the live Model again, which the frames never wrote -- so the
+	edit is planned on the document as stored, an exact transition with nothing to rewind. What moves is what the live Model still holds
+	(an entity deleted meanwhile is not moved), by the delta the preview's last frame showed.
+	*/
 	commitMove(ctx, pos, ortho) {
+		const preview = this.#endPreview();
 		ctx.moved = ctx.moved.filter((m) => this.model.get(m.kind, m.id));
 		if (ctx.moved.length === 0) return;
-		const delta = snappedDelta(this.model, ctx, pos, ortho, this.places);
-		const moves = ctx.moved.map((m) => ({
-			kind: m.kind, id: m.id,
-			before: m.before,
-			after: { x: m.before.x + delta.x, y: m.before.y + delta.y }
-		}));
-		// restore originals first so the command transition is exact (live drag mutated state)
-		moves.forEach((m) => this.model.set(m.kind, m.id, { x: m.before.x, y: m.before.y }));
+		const delta = snappedDelta(preview, ctx, pos, ortho, this.places);
 		if (delta.x === 0 && delta.y === 0) return;
-		this.history.commit(commands.moveEntities(moves));
+		this.history.commit(commands.moveEntities(ctx.moved.map((m) => ({ kind: m.kind, id: m.id, after: { x: m.before.x + delta.x, y: m.before.y + delta.y } }))));
 		this.lastDelta = delta; // the demonstrated pitch feeds Ctrl+D
 	}
 
+	/*
+	RESTATED at H28.5 (B7): the copies at their final places in the preview, which is then dropped -- they were never in the live Model, so
+	the edit puts them through the planner on the document as stored, as Ctrl+D does, and the live selection takes those stored.
+	*/
 	commitClone(ctx, pos, ortho) {
-		ctx.moved = ctx.moved.filter((m) => this.model.get(m.kind, m.id));
-		const delta = ctx.moved.length ? snappedDelta(this.model, ctx, pos, ortho, this.places) : { x: 0, y: 0 };
+		const preview = this.#endPreview();
+		ctx.moved = ctx.moved.filter((m) => preview.get(m.kind, m.id));
+		const delta = ctx.moved.length ? snappedDelta(preview, ctx, pos, ortho, this.places) : { x: 0, y: 0 };
 		ctx.moved.forEach((m) => {
-			this.model.set(m.kind, m.id, { x: m.before.x + delta.x, y: m.before.y + delta.y });
+			preview.set(m.kind, m.id, { x: m.before.x + delta.x, y: m.before.y + delta.y });
 		});
 		if (delta.x !== 0 || delta.y !== 0) this.lastDelta = delta; // pitch for Ctrl+D
-		// entities now carry final positions; the command snapshots them as puts
-		const clones = ctx.clones.filter((c) => this.model.get(c.kind, c.entity.id))
-			.map((c) => ({ kind: c.kind, entity: { ...this.model.get(c.kind, c.entity.id) } }));
+		// the copies now carry final positions; the command snapshots them as puts
+		const clones = ctx.clones.filter((c) => preview.get(c.kind, c.entity.id))
+			.map((c) => ({ kind: c.kind, entity: { ...preview.get(c.kind, c.entity.id) } }));
 		this.history.commit(commands.cloneEntities(clones));
-		// the commit re-puts the clones, rebuilding their DOM: re-apply selection visuals
+		this.selection.set(ctx.picked);   // the copies stored -- a refused edit stores none, and none is selected
+		// the commit puts the clones, drawing them afresh: re-apply selection visuals
 		this.afterHistory();
 	}
 
@@ -1411,6 +1459,7 @@ export class Input {
 	#cancelled(outcome, evt) {
 		const ctx = this.ctx;
 		try { if (outcome.phase === 'cancel') GESTURES[outcome.gesture.name].cancel?.(this.#subjectOf(outcome.gesture.name), ctx); } finally {
+			this.#endPreview();   // H28.5: a move's or a clone's preview dropped, the live Model drawn again (B7)
 			this.ctx = {};
 			this.readout.clearTransient();
 			this.overlayUi.refreshHover(null);

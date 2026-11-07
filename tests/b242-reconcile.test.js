@@ -232,6 +232,9 @@ no request, so no rule can replay it. What protects it is that the answer to the
 re-applied. The real nudge sends `{x, y}` and the planner narrows it to the one field that changed
 (planner/txn.mjs narrow), so the echo is not byte-identical to what was sent: read literally, "identical"
 would re-apply it and pull the node back to where the nudge left it.
+RESTATED at H28.5 (B7): a move's and a clone's frames write the gesture's preview now, never the tab's Model; what writes it directly in
+no request is a zone corner's reshape and a link drag's placed waypoint (B7's remainder). The direct write below stands for any such
+write, so these hold Sync to it.
 */
 test('C4 live drag: the answer to the tab\'s own nudge does not pull back a drag already moving that node', async () => {
 	const w = await world(LONE);

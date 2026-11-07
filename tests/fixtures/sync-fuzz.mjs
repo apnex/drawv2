@@ -211,10 +211,8 @@ async function runSeeded(seed, trace) {
 			}
 			case 'dragMove': {
 				const dx = (int(5) - 2) * 60, dy = (int(5) - 2) * 60;
-				for (const mv of t.drag.moved) {
-					mv.pos = { x: Math.max(-900, Math.min(900, mv.before.x + dx)), y: Math.max(-480, Math.min(480, mv.before.y + dy)) };
-					if (m.get(mv.kind, mv.id)) m.set(mv.kind, mv.id, { ...mv.pos });   // Input.updateMove writes the model directly
-				}
+				// H28.5 (B7): Input.updateMove writes the gesture's preview, never the live Model -- the frame is where the drag is, alone
+				for (const mv of t.drag.moved) mv.pos = { x: Math.max(-900, Math.min(900, mv.before.x + dx)), y: Math.max(-480, Math.min(480, mv.before.y + dy)) };
 				note = `${dx},${dy}`; break;
 			}
 			case 'dragEnd': L.push(`#${step} tab${t.i} dragEnd`); w.endDrag(t, step); return;

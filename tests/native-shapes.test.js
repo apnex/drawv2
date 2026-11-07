@@ -29,6 +29,7 @@ import { makeRenderer } from './fixtures/client-harness.mjs';
 import { NATIVE_RECORD, IDS, scenarios, runScenario, layersAt, layersOf, ownOf, classOf, world, recordBoard, storedDocuments, coverageDocuments,
 	load, edit, E, hover, arm, frame, H, PIPES } from './fixtures/native-record.mjs';
 import { Renderer } from '../app/src/renderer.js';
+import { projection } from '../model/model.mjs';   // H28.5: a move's preview, which the renderer draws from
 import { EditingStates } from '../app/src/editing-states.js';
 import { PRODUCT_CANVAS } from '../product/canvas.mjs';
 import { SIMULATION_CANVAS } from '../plugins/simulation/spawn-appearance.mjs';
@@ -142,7 +143,7 @@ Every member of the renderer, and how it is called over a drawn board -- for eac
 tower. A member this table does not name fails the test, so a new one is classed before it lands; the deleted members stay deleted.
 setLabelsFar (H26.6's move 11, PAN-ZOOM.md 3.7) toggles a class on the root beside toggleLabels, and answers nothing.
 */
-const RENDERER_MEMBERS = ['constructor', 'toggleLabels', 'setLabelsFar', 'renderOpts', 'setMode', 'watchMode', 'handle', 'invalidatedBy', 'syncAll', 'render', 'stackOf',
+const RENDERER_MEMBERS = ['constructor', 'toggleLabels', 'setLabelsFar', 'renderOpts', 'setMode', 'watchMode', 'drawPreview', 'drawLive', 'heard', 'handle', 'invalidatedBy', 'syncAll', 'render', 'stackOf',
 	'refFor', 'place', 'draws', 'update', 'kit', 'sharedOf', 'compose', 'describe', 'applied', 'putPart', 'putFresh', 'patch', 'reput', 'restate', 'mark',
 	'markOf', 'ownShapeOf', 'drawerOf', 'redrawAfter', 'refreshGatherer', 'unput', 'remove'];
 const RETIRED_MEMBERS = ['byId', 'glyphOf', 'setState', 'clearState', 'reflectSelection', 'elementOf', 'layerOf'];
@@ -176,6 +177,9 @@ test('GR8: the renderer answers data alone -- every member called over a drawn b
 			ask('redrawAfter', kind, e); ask('refreshGatherer', id);
 		}
 		ask('mark', IDS.tower, 'aim', 30); ask('markOf', IDS.tower, 'aim');
+		// H28.5 (B7): a preview drawn, a change of it heard, and the live Model drawn again
+		const preview = projection(w.model);
+		ask('drawPreview', preview); ask('heard', preview, 'set', 'node', preview.get('node', IDS.device)); ask('drawLive');
 		// the pipes move: a pipe, drawn by the renderer outside run mode, and rule P's schedule
 		ask('setMode', 'view');
 		const pipe = w.model.get('pipe', H);

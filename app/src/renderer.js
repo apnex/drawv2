@@ -159,6 +159,8 @@ const ownerOfKey = (key) => key.split('/')[0];
 // a mark's value as held: a copy, frozen, so neither its owner's later writes nor a reader's reach it
 const heldValue = (v) => (v !== null && typeof v === 'object' ? Object.freeze(structuredClone(v)) : v);
 const sameValue = (a, b) => (a === b) || (a !== null && b !== null && typeof a === 'object' && typeof b === 'object' && JSON.stringify(a) === JSON.stringify(b));
+// H28.5: what a preview's end owes when the live Model loaded a document while the preview was drawn -- the whole board, not an id
+const LOADED_UNDER_PREVIEW = Symbol('loaded under a preview');
 
 export class Renderer {
 	/*
@@ -181,12 +183,14 @@ export class Renderer {
 		this.marks = new Map();
 		this.sharedNow = new Map();   // H26.8 (rule P): painted kind -> what its painter shares, as last asked
 		this.stackedAt = new Map();   // id -> the drawing order it was stacked by (F-d)
-		this.model = model;
+		this.model = model;   // what it draws from: the live Model, or a move's or a clone's preview while one is drawn (H28.5, `drawPreview`)
+		this.liveModel = model;
+		this.owedLive = null;   // H28.5: while a preview is drawn, id -> kind of what either model changed, drawn from the live Model at its end
 		this.svg = svg;
 		this.labels = true;             // node and zone names, Tab-toggled; visible by default
 		this.modeWatchers = [];         // who hears a mode change (watchMode)
 		this.mode = 'view';             // W4/W5 -- view | edit | run (client/session, ephemeral). edit shows the
-		model.onChange((action, kind, entity) => this.handle(action, kind, entity));   // socket grid; run makes clickable regions act
+		model.onChange((action, kind, entity) => this.heard(model, action, kind, entity));   // socket grid; run makes clickable regions act
 		states?.onChange((id) => this.restate(id));
 	}
 
@@ -242,6 +246,45 @@ export class Renderer {
 
 	// hear every mode change -- `fn(mode)` (R-c: the movers do; the network's painter did until H26.8's pipes move)
 	watchMode(fn) { this.modeWatchers.push(fn); }
+
+	/*
+	H28.5 (B7, the move and the clone; dev/DECISIONS.md H28-1) -- A PREVIEW DRAWN, the live Model left as stored. A move or a clone
+	writes a throwaway projection of the live Model made at its start (model/model.mjs `projection`), and the renderer draws from it until
+	the gesture ends: the same painters and appearances, handed it as their model, so each link and pipe at what moves, and the outline
+	gathering it, follow it as they follow a commit. It holds what the live Model held when it was made, so nothing is drawn afresh here.
+	*/
+	drawPreview(preview) {
+		this.drawLive();
+		this.model = preview;
+		this.owedLive = new Map();
+		preview.onChange((action, kind, entity) => this.heard(preview, action, kind, entity));
+	}
+
+	/*
+	H28.5: the preview ended, committed or cancelled -- drawn from the live Model again. Each id either model changed meanwhile is described
+	from it, or removed when it holds none (a clone the preview alone held); a document the live Model loaded meanwhile is drawn whole.
+	Nothing when no preview is drawn.
+	*/
+	drawLive() {
+		const preview = this.model, owed = this.owedLive;
+		if (preview === this.liveModel) return;
+		this.model = this.liveModel;
+		this.owedLive = null;
+		if (owed.has(LOADED_UNDER_PREVIEW)) { this.syncAll(); return; }
+		for (const [id, kind] of owed) {
+			const entity = this.model.get(kind, id);
+			if (entity) this.handle('set', kind, entity);
+			else if (preview.get(kind, id)) this.handle('del', kind, preview.get(kind, id));
+		}
+	}
+
+	// H28.5: a change heard from the live Model or the preview -- drawn when it is the model drawn from, and owed to the preview's end when
+	// a preview is drawn; a preview no longer drawn is not heard
+	heard(from, action, kind, entity) {
+		if (this.owedLive && from !== this.model && from !== this.liveModel) return;
+		if (this.owedLive) this.owedLive.set(action === 'load' ? LOADED_UNDER_PREVIEW : entity.id, kind);
+		if (from === this.model) this.handle(action, kind, entity);
+	}
 
 	handle(action, kind, entity) {
 		if (action === 'load') return this.syncAll();

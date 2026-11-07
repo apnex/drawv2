@@ -292,6 +292,8 @@ The replay corpus (every stage); `overlapsIn` over composed tables with the trig
 
 - **Double click against click.** A click must not wait for a possible double click, or every click gains latency. Today the browser's `dblclick` decides; stage 3 keeps that until a binding needs otherwise.
 - **The live preview writes the shared model** (I-IN5, B7). Continuous actions keep that, and G5 bounds it: the preview is restored exactly on cancel.
+  Restated at H28.5 (B7's narrow form, `dev/DECISIONS.md` H28-1): a move and a clone no longer do - each writes a projection of the live Model that the renderer draws from until the gesture ends, and dropping it is the cancel.
+  A zone corner's reshape and a link drag's placed waypoint still write the shared model, restored on cancel as G5 says.
 - **Sync defers inbound changes while a gesture is live** (`app/src/sync.js:72-82`, `isGesturing` and `onGestureEnd`). The gesture layer must keep exposing both, with the same meaning; the corpus covers the chain case, where `onGestureEnd` fires while a chained drag begins.
 
 ---

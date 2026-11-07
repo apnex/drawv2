@@ -31,7 +31,8 @@ import { kindOf } from '../../model/model.mjs';
 const HANDLE = 12;
 
 export class Overlay {
-	constructor({ svg, scene, near, model, selection, states, snap, handles = () => new Map(), hitFacts = () => new Map(), points = () => [], grids = () => [] }) {
+	constructor({ svg, scene, near, model, selection, states, snap, handles = () => new Map(), hitFacts = () => new Map(), points = () => [], grids = () => [], preview = () => null }) {
+		this.preview = preview;   // H28.5: a live move's or clone's preview, `{ model, selected }`, or null (by Input) -- what the handles ride
 		this.grids = grids;   // C-e: the grids shown by a modifier -- the zones plugin's, by Shift (by Input)
 		this.points = points;       // C-e: what each part's items cover (by Input)
 		this.hitFacts = hitFacts;   // D4: what each hit word is, from the canvas parts (by Input)
@@ -147,18 +148,21 @@ export class Overlay {
 	Cleared first, every time. That clear is load-bearing: without it handles accumulate on every
 	selection change, and the affordance test that proves it could not fail until the harness's
 	`querySelectorAll` stopped returning [] (H2.6).
+	H28.5 (B7): while a move or a clone is previewed, of what the preview shows selected, as the preview holds it -- a zone's corners ride
+	the zone moved, or its copy, as they rode the live Model's frames.
 	*/
 	handles() {
 		this.scene.remove('overlay', 'handles');
-		const ids = this.selection.list();
+		const preview = this.preview(), model = preview?.model ?? this.model;
+		const ids = preview?.selected ?? this.selection.list();
 		if (ids.length !== 1) return;
 		const id = ids[0];
 
 		// C-d: a kind whose part declares handles -- a zone's corners, the zones plugin's; a link's ends, on the route's own first
 		// and last segments, the network's (B29)
 		const spec = this.handleSpecs().get(kindOf(id));
-		const entity = spec && this.model.get(kindOf(id), id);
-		const points = entity && spec.points(entity, this.model);
+		const entity = spec && model.get(kindOf(id), id);
+		const points = entity && spec.points(entity, model);
 		if (!points) return;
 		this.#place(points, spec.rx, spec.key);
 	}

@@ -115,12 +115,13 @@ const structuredCloneish = (ctx) => Object.fromEntries(Object.entries(ctx).map((
 
 const moving = () => ({ hit: { kind: 'node', id: 'node-000001' }, start: { x: 0, y: 0 }, orthoActive: false, moved: [{ kind: 'node', id: 'node-000001', before: { x: 0, y: 0 } }] });
 
+// RESTATED at H28.5 (B7): a move's and a clone's cancel write no model -- the frames wrote the gesture's preview, which Input drops
 test('GR13: every phase of every editing body runs with a host alone, each verb on the context its phase holds', () => {
 	assert.deepEqual(runPhases('move', { ctx: moving() }), {
-		update: ['drag:1'], commit: ['hideCrosshair', 'commitMove'], cancel: ['model.set', 'hideCrosshair'],
+		update: ['drag:1'], commit: ['hideCrosshair', 'commitMove'], cancel: ['hideCrosshair'],
 	});
 	assert.deepEqual(runPhases('clone', { ctx: { ...moving(), clones: [{ kind: 'node', entity: { id: 'node-000009' } }] } }), {
-		update: ['drag:1'], commit: ['hideCrosshair', 'commitClone'], cancel: ['model.del', 'selection.clear', 'hideCrosshair'],
+		update: ['drag:1'], commit: ['hideCrosshair', 'commitClone'], cancel: ['selection.clear', 'hideCrosshair'],
 	});
 	assert.deepEqual(runPhases('pending', { hit: { kind: 'node', id: 'node-000001' } }), {
 		start: ['press'], update: ['factsOf', 'factsOf', 'factsOf', 'escalate:pressDrag:node'],   // Shift not held: no fact asked at the press

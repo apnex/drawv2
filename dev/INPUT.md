@@ -268,11 +268,17 @@ It runs before the common teardown, which is why it cannot just be the first lin
   chaining commit's next chain keeps holding it (B450); only the person's own open, create or
   delete of a diagram, and a lock, end a gesture at once.
 - **I-IN3** the committed value is the **last rendered frame**, never a re-sample: ortho commits on
-  `ctx.orthoActive`, and move/resize restore the pre-drag state before committing so the change is
-  an exact transition.
+  `ctx.orthoActive`, and a zone corner's resize restores the pre-drag state before committing so the
+  change is an exact transition.
+  A move and a clone have nothing to restore: their frames never reached the live Model (I-IN5).
 - **I-IN4** a burst never spans a selection change (`Changes.flush()` on the selection subscriber).
-- **I-IN5** live preview writes into the shared Model (**B7**, open) - inbound changes therefore
-  defer while `isGesturing()` (**D12**).
+- **I-IN5** a move's and a clone's preview is drawn off the shared Model (**B7**'s narrow form, H28.5):
+  each writes a throwaway projection of the live Model made at its start (`model/model.mjs`
+  `projection`), which the renderer draws from and the handles read until the gesture ends.
+  The live Model holds what is stored until the commit applies the edit through the planner, and a
+  clone's copies are never in it before then.
+  A zone corner's reshape and a link drag's placed waypoint still write the shared Model (B7's
+  remainder), so inbound changes still defer while `isGesturing()` (**D12**).
 
 ---
 
