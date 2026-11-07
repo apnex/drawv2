@@ -24,6 +24,6 @@
 	},
 	"devDependencies": {
 		"@apnex/clean-runner": "https://github.com/apnex/clean-runner/releases/download/v0.2.0/apnex-clean-runner-0.2.0.tgz",
-		"@apnex/headless-chromium": "https://github.com/apnex/headless-chromium/releases/download/v0.1.0/apnex-headless-chromium-0.1.0.tgz"
+		"@apnex/headless-chromium": "https://github.com/apnex/headless-chromium/releases/download/v0.2.0/apnex-headless-chromium-0.2.0.tgz"
 	}
 }
