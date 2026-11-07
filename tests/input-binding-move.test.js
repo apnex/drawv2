@@ -9,14 +9,12 @@ chain's start, only on an outcome naming that phase, the session private to it. 
 `atStart`, and names the click threshold once -- the "decided once" test of tests/triggers.test.js, restated here as that file went
 with its module.
 
-THE EMPTY HANDLE, both answers (acceptance step 4; section 6.3). A handle press whose start finds no entity leaves the handle
-gesture live with an empty context -- kept, B410 -- and it is reachable with two pointers: a zone selected, its corner pressed with
-Shift held, Shift released with the pointer still down, and the still-drawn handle pressed by a second pointer. That press cancels the
-live handle gesture first, whose teardown drops the zone from the selection (H24.3), so the new start finds no zone. What a pointer
-cancel then does is the one behaviour, beside the exact threshold, that H26.2 changes: before the move the cancel body throws on the
-empty context while the slot still names the gesture, so the gesture stays live, the teardown and onGestureEnd never run, and the
-next move throws too; after it, the session has ended the gesture before the body runs and the rest runs in a finally, so the
-exception still propagates, the gesture has ended, the teardown and onGestureEnd have run, and the next move follows the idle path.
+THE EMPTY HANDLE (acceptance step 4; section 6.3). A handle press whose start finds no entity left the handle gesture live with an
+empty context -- kept, B410 -- reachable with two pointers: a zone selected, its corner pressed with Shift held, Shift released with the
+pointer still down, and the still-drawn handle pressed by a second pointer. That press cancels the live handle gesture first, whose
+teardown drops the zone from the selection (H24.3), so the new start finds no zone. H26.2 changed only what a pointer cancel of that
+empty gesture did, both answers stated here until H27.3 (B410) ended the gesture at the start instead, so no empty gesture is left for
+a cancel to meet; the test of that ending replaces them, below.
 */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -30,50 +28,51 @@ import { liveGesture } from './fixtures/binding-parity.mjs';
 import { PRODUCT_CANVAS } from '../product/canvas.mjs';
 import { FOLDERS } from '../tools/layers.mjs';   // H26.8: the product's folders, read for the retired translation
 
-// the two answers; the code answers the one NOW names
-const ANSWERS = {
-	// read from app/src/input.js at 8793699, before the move (tests/fixtures/binding-parity.mjs READ_AT)
-	before: {
-		started: 'handle',
-		cancel: { threw: "Cannot read properties of undefined (reading 'preview')", live: 'handle', teardown: 0, gestureEnd: 0 },
-		move: { threw: "Cannot read properties of undefined (reading 'preview')", live: 'handle', idle: false },
-	},
-	// section 6.3: the cancel outcome first, the body on it, the teardown, onGestureEnd and afterShiftUpPress in a finally
-	after: {
-		started: 'handle',
-		cancel: { threw: "Cannot read properties of undefined (reading 'preview')", live: null, teardown: 1, gestureEnd: 1 },
-		move: { threw: null, live: null, idle: true },
-	},
-};
-const NOW = 'after';
-
 // RESTATED at H26.8's picks move: the selected zone's corner handle the overlay drew (`h.at`), picked by item -- `h` the test's harness
 const corner = (h, x, y, m = {}) => pointer(x, y, { ...m, target: h.at({ key: 'handles', where: { 'data-corner': 'se' } }) });
 const thrown = (fn) => { try { fn(); return null; } catch (e) { return e.message; } };
 
-test(`H26.2 (section 6.3; B410 kept): a pointer cancel over the empty handle gesture -- the ${NOW === 'before' ? 'old' : 'new'} answer, both stated`, () => {
+/*
+H27.3 (B410): A HANDLE PRESS THAT FINDS NO ENTITY ENDS AT ONCE. The two-pointer reproduction above, through the capture -- a zone's corner
+pressed with Shift held, Shift released with the pointer down, the still-drawn handle pressed by a second pointer, whose start finds no
+selected zone -- and a re-plugged link's fixed end gone, its end handle still drawn: each press ends its gesture at once, so no move and
+no release throws, nothing is committed, no gesture is left live, and the next press is the idle path's.
+*/
+test('H27.3 (B410): a handle press that finds no entity ends at once -- no move or release throws, nothing is committed, no gesture left live', async () => {
+	const { seedNodes } = await import('./fixtures/client-harness.mjs');
+	const { makeLink } = await import('../plugins/network/link-queries.mjs');
 	const h = makeInput();
 	try {
 		const z = makeZone(h.model, { x: -150, y: -150, w: 300, h: 300 });
 		h.model.put('zone', z);
 		h.selection.set([z.id]);
-		let ends = 0;
-		h.input.onGestureEnd = () => { ends++; };
-		h.capture.onDown(corner(h, 150, 150, { shiftKey: true }));   // the corner pressed with Shift held: the handle gesture, its zone selected
-		h.capture.onKeyUp(key('Shift'));                            // Shift released, the pointer still down: the zone goes when the press ends
-		h.capture.onDown(corner(h, 150, 150));                       // a second pointer on the still-drawn handle
-		assert.deepEqual(h.selection.list(), [], 'the cancel of the live handle gesture dropped the zone (H24.3), before the new start ran');
-		const got = { started: liveGesture(h) };
-		const torn = () => h.calls.filter((c) => c.name === 'readout.clearTransient').length;
-		const before = { teardown: torn(), ends };
-		const cancel = thrown(() => h.capture.onCancel(pointer(150, 150, { buttons: 0 })));
-		got.cancel = { threw: cancel, live: liveGesture(h), teardown: torn() - before.teardown, gestureEnd: ends - before.ends };
-		const idleBefore = h.calls.filter((c) => c.name === 'tools.trackHand').length;
-		const move = thrown(() => h.capture.onMove(pointer(200, 200)));
-		got.move = { threw: move, live: liveGesture(h), idle: h.calls.filter((c) => c.name === 'tools.trackHand').length > idleBefore };
-		assert.deepEqual(got, ANSWERS[NOW]);
-		assert.notDeepEqual(ANSWERS.before, ANSWERS.after, 'the two answers differ, as section 6.3 says they do');
+		h.capture.onDown(corner(h, 150, 150, { shiftKey: true }));
+		h.capture.onKeyUp(key('Shift'));
+		const second = thrown(() => h.capture.onDown(corner(h, 150, 150)));   // the second pointer on the still-drawn handle
+		assert.deepEqual([second, h.selection.list()], [null, []], 'the press answered, the zone dropped before the start ran (H24.3)');
+		assert.equal(liveGesture(h), null, 'the start found no zone: its gesture ended at once, none left live');
+		h.reset();
+		assert.equal(thrown(() => h.capture.onMove(pointer(200, 200))), null, 'a move does not throw');
+		assert.equal(thrown(() => h.capture.onUp(pointer(200, 200, { buttons: 0 }))), null, 'nor the release');
+		assert.deepEqual([h.commits.length, liveGesture(h)], [0, null], 'nothing committed, nothing live');
+		assert.deepEqual(['x', 'y', 'w', 'h'].map((k) => h.model.get('zone', z.id)[k]), [-150, -150, 300, 300], 'the zone as it was');
 	} finally { h.restore(); }
+	const g = makeInput();
+	try {
+		const [a, b] = seedNodes(g.model, [[0, 0], [240, 0]]);
+		const link = makeLink(g.model, a.id, b.id);
+		g.model.put('link', link);
+		g.selection.set([link.id]);
+		const end = g.at({ key: 'handles', where: { 'data-end': 'src' } });
+		assert.ok(end, 'control: the link\'s end handle is drawn');
+		g.model.del('node', b.id);   // its fixed end gone, straight from the Model, the handle still drawn
+		const press = thrown(() => g.capture.onDown(pointer(20, 0, { target: end })));
+		assert.deepEqual([press, liveGesture(g)], [null, null], 'a re-plug whose fixed end is gone ends at once');
+		g.reset();
+		assert.equal(thrown(() => g.capture.onMove(pointer(120, 60))), null, 'a move does not throw');
+		assert.equal(thrown(() => g.capture.onUp(pointer(120, 60, { buttons: 0 }))), null, 'nor the release');
+		assert.equal(g.commits.length, 0, 'nothing committed');
+	} finally { g.restore(); }
 });
 
 // ---- acceptance step 3 ----

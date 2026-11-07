@@ -640,9 +640,14 @@ export class Input {
 		reply.takePointer();   // the pointer taken at once (IC8); false when the platform refuses it, as for a synthetic event
 
 		if (rule.run) return this[rule.run](hit, evt, pos);
-		// C-d: the row too -- a shared gesture reads what its row declares. KEPT (B410): a start answering null leaves its gesture live with
-		// an empty context -- a handle press that finds no entity -- as it always did
-		if (outcome.phase === 'start') this.ctx = GESTURES[outcome.gesture.name].start(this.#subjectOf(outcome.gesture.name), hit, pos, evt, rule) || {};
+		// C-d: the row too -- a shared gesture reads what its row declares. H27.3 (B410): a start answering null -- a handle press that finds
+		// no entity, no selected entity of the handle's kind or a re-plugged link's fixed end gone -- ends its gesture at once, as a move with
+		// nothing to move does: no body runs, so no move or release throws and nothing is committed, and the press does nothing more, as a
+		// press no row means; it left the gesture live with an empty context, each move and the release throwing, until the release ended it
+		if (outcome.phase !== 'start') return;
+		const ctx = GESTURES[outcome.gesture.name].start(this.#subjectOf(outcome.gesture.name), hit, pos, evt, rule);
+		if (!ctx) { this.#session.cancelGesture(); this.ctx = {}; return; }
+		this.ctx = ctx;
 	}
 
 
