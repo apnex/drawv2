@@ -1615,9 +1615,9 @@ AMENDED 2026-11-07: every clause holds -- every CI gate green with no re-run sin
 
 ---
 
-## H28 -- after H27: the highest-severity held defect weighed again, and agents measured on the infinite canvas - `TODO`
+## H28 -- after H27: the highest-severity held defect weighed again, and agents measured on the infinite canvas - `WIP`
 
-Proposed 2026-11-07 by the re-triage after H27 closed, at the director's "return"; the order below is the director's to select (H28.1).\
+Proposed 2026-11-07 by the re-triage after H27 closed, at the director's "return"; selected as listed the same day (`dev/DECISIONS.md` H28).\
 The order, by the board's rule (the higher of impact and principle breach): first B7, the only `S2` among the held rows -- a drag's preview writing the shared Model -- whose trigger fired by its letter at H26.4 and whose reason for waiting, a geometry pipeline duplicated across four files, H26.4 and H26.8 may have removed: measured before it is built; then the agents' map, the agent surface H26.6 rebuilt in chunks of 31 by 17 that no agent has yet used -- A5's Measured Parity unmet, a signal breach ranking with `S4`, and the director's own condition on the size, "multiple rounds of testing and agentic evals".\
 Found by the re-triage: production's log since 2026-10-25 holds no server error, no 429, no unhandled rejection and no line that fires a trigger, its 404s the deploys' own probes; B7's trigger fired unseen at H26.4; no other fired, `scan-triggers` finding none of its six dated triggers due.\
 Owed by the director and held: the zoom step's feel on the Chromebook (H27-1), PZ11's speed reading (B446), the dot size fixed "until we review" (`dev/design/components/PAN-ZOOM.md` PZ24).\
@@ -1625,7 +1625,7 @@ Not legal until the director opens them, each held: paths and flows (B327), the 
 
 | # | Item | Cites | Sev | State |
 |---|---|---|---|---|
-| H28.1 | Re-triage the board after H27, the order selected by the director and recorded here | feature | S3 | `WIP` |
+| H28.1 | Re-triage the board after H27, the order selected by the director and recorded here (H28) | feature | S3 | `DONE` |
 | H28.2 | B7 weighed again: what drawing a move's and a handle's preview as items of the scene, off the shared Model, costs now that the box's and the link drag's previews are scene items (H26.4) and every painter answers shapes (H26.8) -- a short measured sizing, put to the director before any build | **B7** | S2 | `TODO` |
 | H28.3 | Agents measured on the infinite canvas: a context-lab evaluation of agents finding, reading and editing things across a diagram larger than one map chunk by the CLI's chunks and senses, at the director's starting size of 31 by 17; the chunk or the senses changed only where an agent is measured failing, on the light path to production | **B440** | S4 | `TODO` |
 
