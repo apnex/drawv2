@@ -443,6 +443,11 @@ test('H27.4 (B447): in the lab a pan press released over the footer, the same bu
 		}
 		await t.run(`(lab.input.renderer.setMode('view'), lab.view.set({ x: 0, y: 0, level: 1 }), 1)`);
 		const before = await view(), ground = { x: Math.round(box.x + box.w * 0.9), y: Math.round(box.y - 200) };
+		// a device under the box the drag would draw, on the grid point nearest its middle, put through the lab's door
+		const placed = JSON.parse(await t.run(`JSON.stringify((() => { const p = lab.input.snapNode(lab.input.scene.toDrawing({ x: ${ground.x - 45}, y: ${ground.y - 30} }));
+			lab.history.commit({ label: 'put', entries: [{ op: 'put', kind: 'node', entity: { id: 'node-4470aa', name: 'boxed', type: 'host', shape: 'circle', x: p.x, y: p.y } }] });
+			lab.input.selection.set([]); return { at: p, there: !!lab.model.get('node', 'node-4470aa') }; })())`));
+		assert.ok(placed.there, `control: the device put at ${JSON.stringify(placed.at)}`);
 		await mouse('mouseMoved', ground.x, ground.y);
 		await space('keyDown');
 		await mouse('mouseMoved', ground.x, below);
@@ -450,11 +455,11 @@ test('H27.4 (B447): in the lab a pan press released over the footer, the same bu
 		await mouse('mousePressed', ground.x, ground.y, 'left', 1);
 		await mouse('mouseMoved', ground.x - 40, ground.y - 30, 'left', 1);
 		await mouse('mouseMoved', ground.x - 90, ground.y - 60, 'left', 1);
-		await sleep(30);
-		const boxed = await t.run('lab.input.mode');
 		await mouse('mouseReleased', ground.x - 90, ground.y - 60, 'left', 0);
 		await space('keyUp');
-		assert.deepEqual([await view(), boxed], [before, 'marquee'], 'a Space seen before the pointer left: the left drag is the selection box, the view still');
+		await sleep(30);
+		assert.deepEqual([await view(), JSON.parse(await t.run('JSON.stringify(lab.input.selection.list())'))], [before, ['node-4470aa']],
+			'a Space seen before the pointer left: the left drag is the selection box, the device under it selected, the view still');
 	} finally {
 		await t.run(`(lab.input.renderer.setMode('view'), 1)`).catch(() => {});
 		await t.send('Emulation.clearDeviceMetricsOverride');

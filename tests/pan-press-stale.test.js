@@ -11,7 +11,7 @@ crosses the canvas's edge, nothing at all for a press or a release over the head
 */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { makeInput, pointer, key } from './fixtures/client-harness.mjs';
+import { makeInput, pointer, key, seedNodes } from './fixtures/client-harness.mjs';
 
 const mouse = (x, y, mod = {}) => pointer(x, y, { pointerType: 'mouse', ...mod });
 const centre = (h) => ({ x: h.view.view.x, y: h.view.view.y, level: h.view.view.level });
@@ -61,6 +61,9 @@ test('H27.4 (B447 case 2): Space pressed over the canvas and released unheard wh
 	const h = makeInput({ view: true });
 	try {
 		const v0 = centre(h);
+		// a device under the box the drag would draw, on the grid point nearest the screen's 650,350
+		const under = h.input.snapNode(h.scene.toDrawing({ x: 650, y: 350 }));
+		const [device] = seedNodes(h.model, [[under.x, under.y]]);
 		h.capture.onMove(mouse(600, 300, { button: -1, buttons: 0 }));
 		h.capture.onKeyDown(SPACE());                                     // Space pressed over the canvas, heard
 		h.capture.onLeave(mouse(600, -2, { button: -1, buttons: 0 }));    // the pointer off over the page's chrome; Space released there, unheard
@@ -70,9 +73,8 @@ test('H27.4 (B447 case 2): Space pressed over the canvas and released unheard wh
 		h.capture.onMove(mouse(620, 320, { button: -1, buttons: 1 }));
 		h.capture.onMove(mouse(700, 400, { button: -1, buttons: 1 }));
 		assert.deepEqual([centre(h), h.takes.length > 0], [v0, true], 'the view still: the press is the selection box\'s, the pointer taken for it');
-		assert.equal(h.input.mode, 'marquee', 'the left drag on open ground is the selection box, as production made it');
 		h.capture.onUp(mouse(700, 400, { button: 0, buttons: 0 }));
-		assert.deepEqual([centre(h), h.input.isGesturing()], [v0, false]);
+		assert.deepEqual([centre(h), h.input.isGesturing(), h.selection.list()], [v0, false, [device.id]], 'the left drag on open ground was the selection box, as production made it: the device under it selected');
 	} finally { h.restore(); }
 });
 
