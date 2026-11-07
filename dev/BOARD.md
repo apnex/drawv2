@@ -1590,6 +1590,25 @@ AMENDED 2026-11-06: H26.12 done -- the four admitted to mission-kit as `C11` to 
 
 ---
 
+## H27 -- after H26: the gate binary on every runner, the triggers that fired unseen, and the tester's production - `TODO`
+
+Proposed 2026-11-06 by the re-triage after H26 closed, at the director's "refresh the board"; the order below is the director's to select (H27.1).\
+The order, by the board's rule (the higher of impact and principle breach): first CI's gate, red four times since 2026-11-02 on Chrome's start alone and each time re-run past -- `S4` by impact, but A8's mandate ("There is no 'mostly verified' state"), as H20.2 placed the same kind first; then the defect whose trigger fired unseen, B410, a gesture that throws; then the gesture tester's stuck pan and its production, which still serves `0.1.0` while the lab serves the release the director accepted.\
+Found by the re-triage and corrected first: four triggers fired unseen during H26.6 -- B310 at move 12, B407 at move 7 and B410 at move 13, and B444 by its letter with `input-binding`'s admission -- and B310, B407 and B444 are held again with their triggers restated, B410 planned; B346's remainder, the installed CLI's half, was in neither the board nor Held, and is held; the Chrome start failures had no row, and are B448, which fires B333.\
+Owed by the director and held, each with its trigger: whether draw and the tester share a grid drawer (B415, under Decisions required); PZ11's speed reading on the Chromebook (B446); the tester's input-method test (B433, the tester's B2); the dot size, fixed "until we review" (`dev/design/components/PAN-ZOOM.md` PZ24).\
+Not legal until the director opens them, each held: unloading off-screen elements (B289), paths and flows (B327), the context panel (B265), more components (B343, B389, B416, B417), what a person sees readable by an agent (B418), and the diagram in mission-kit's entity-store (B344, B345).
+
+| # | Item | Cites | Sev | State |
+|---|---|---|---|---|
+| H27.1 | Re-triage the board after H26, the order selected by the director and recorded here | feature | S3 | `WIP` |
+| H27.2 | CI's gate binary on GitHub's runner: why Chrome's start passes 20 seconds there, fixed where the cause lives -- `headless-chromium` if it is the launcher's (B439's trigger), each adopter's gate if a test holds the machine -- every adopter's CI green on the fix with no re-run; B333 judged on the cause | **B448**, **B333** | S4 | `TODO` |
+| H27.3 | A handle press that finds no entity ends its gesture without a throw (B410), its trigger fired at H26.6's move 13 | **B410** | S4 | `TODO` |
+| H27.4 | The gesture tester: a stale pan press panning for one drag fixed (B447), on the light path to its lab, then its accepted release promoted to `input.apnex.io` on the director's approval | **B447** | S4 | `TODO` |
+
+**Exit:** no CI gate of the eight repositories red on anything but what it tests; no trigger fired and left neither planned nor held again; the gesture tester in production at the release the director accepted.
+
+---
+
 ## Held -- on the record, not on the board
 
 Open `BACKLOG` rows whose trigger has not fired.\
@@ -1608,12 +1627,12 @@ Scored so the comparison is a judgement, not an omission.\
 | **B327** | S3 | Paths and flows: a flow declared once along a path and seen end to end (H15's exit), propagation along a run of bends, links side by side over one pipe (with B256) | the director reopens paths and flows; or an author or agent needs a direction declared across more than one link; or B256's own trigger fires. |
 | **B126** | S4 | Straight-link capacity as a per-kind property (H10.11 built its seam; the capacity stays one) | parallel links are designed (B256), or an operator must configure a capacity. |
 | **B88** | S3 | Prose can say finished work is blocked, and no rule reads a sentence | an item on the board is marked `BLOCKED`. |
-| **B333** | S4 | No ledger records a flaky test; naming a flake on a row before a retry is a practice | a second unresolved flake is filed after H20.2. |
 | **B334** | S4 | No tool reads the cloud configuration a record asserts; reading before asserting is a practice | an infrastructure claim in the records is found false again after H23, or the agent door's throttle or the public SVG route is next changed. |
 | **B335** | S4 | The other allow lists' reasons (scan-dead, scan-cli, rebuild-debt) cite nothing a check reads | a reason in one of those lists is found citing finished work. |
 | **B336** | S4 | Four specifications' status banners below their titles are unchecked | one of those specifications' status lines is found false. |
 | **B337** | S5 | The Held table's severity is typed on the board, not read from the register (AR3) | the triage scale is next changed, or a Held severity is found disagreeing with its row's finding. |
 | **B343** | S3 | Which of drawv2's parts become mission-kit components, reasoned with agp's and zorg's own | the director starts it for a part other than the canvas and the input system. |
+| **B346** | S5 | The installed CLI takes no component; it asks the server (H26-2) | the installed CLI needs an answer a component gives that the server does not serve. |
 | **B387** | S4 | A bundler for draw's pages (H26-2) | TypeScript is wanted in draw's own code, or the page's load time is shown to be a problem with B386's compression in place. |
 | **B388** | S5 | The components on the npm registry (H26-2) | an app outside this organisation's repositories, or one that needs a version range rather than an exact file, depends on a component. |
 | **B389** | S4 | A fifth component, the editing duty: marquee, resize handles, drag-to-move with a preview, their visuals and the selection (H26-1, H26-10) | a second app needs marquee selection, resize handles or drag-to-move with a preview. |
@@ -1627,10 +1646,9 @@ Scored so the comparison is a judgement, not an omission.\
 | **B403** | S4 | A page loading across a deploy mixes two revisions, or 404s a component (H26.0) | a page is seen failing to start, or running two revisions' code, across a deploy. |
 | **B405** | S5 | A timed trigger in `input-binding`: a hold, or a double click decided by time (H26-6) | an application needs a hold, or a double click decided by time. |
 | **B406** | S5 | Held keys and several pointers told apart by `input-binding` (H26-6) | an application's row needs a second pointer's press kept. |
-| **B407** | S5 | The palette's tile drag outside `input-binding` (H26-6) | the palette's drag is next changed, or a second application needs input from outside its surface. |
+| **B407** | S5 | The palette's tile drag outside `input-binding` (H26-6) | the palette's drag gesture is rewritten, or a second application needs input from outside its surface. |
 | **B408** | S5 | A live gesture's state seen by more than the editor (H26-6) | an actor other than the editor -- an agent, a debug view, the lab's inspection -- needs to perceive a live gesture. |
 | **B409** | S4 | A second pointer replaces the first pointer's press (H26-6) | a person reports a gesture replaced by a second finger or a pen. |
-| **B410** | S4 | A handle press that finds no entity leaves a broken gesture until release (H26-6) | a person reports a handle gesture that throws on a touch screen, or a handle's start, the deferred drop of a zone from the selection, or the handles' redraw is next changed. |
 | **B416** | S5 | The inline text editor as a component (H26-10) | a second application needs a drawn text edited in place. |
 | **B417** | S5 | The help overlay from the bindings as a component (H26-10) | a second application shows a static help of the inputs its bindings declare. |
 | **B418** | S4 | What a person sees, readable by an agent (H26-10) | an agent needs to perceive what a person sees on the canvas. |
@@ -1651,17 +1669,16 @@ Scored so the comparison is a judgement, not an omission.\
 | **B441** | S5 | The anchor and zone caps raised (H26-23) | a diagram nears either cap, or PZ11's budget is measured passing at a higher count. |
 | **B442** | S5 | An odd grid size (H26-23) | a diagram needs an odd grid size. |
 | **B443** | S5 | `snap-grid`'s kit and reader past V8's collection limits (H26-23) | a consumer judges a shape over a case past one of these limits, a second conformance kit is written, or `snap-grid`'s next release is cut. |
-| **B444** | S5 | `input-binding`'s committed copy of its `0.1.0` release (H26-23) | `input-binding`'s next change, which replaces the copy by its pinned release file or retires the comparison. |
+| **B444** | S5 | `input-binding`'s committed copy of its `0.1.0` release (H26-23) | `input-binding`'s next release. |
 | **B445** | S4 | Run mode slows with armed spawners, from the route lookup (H26-23) | a diagram passes about 100 links with 20 armed spawners, or a person finds run mode slow. |
 | **B446** | S4 | PZ11's Chromebook reading owed; the meter on heavy steps (H26-24) | the director pans `lab.apnex.io/?seed=caps` at 3x on the Chromebook, or a person finds panning slow. |
-| **B447** | S4 | A stale pan press's two edge cases; the tester's stuck pan (H26-24) | the tester's next change, or a person meets a pan they did not start. |
 | **B344** | S4 | OD-1: a diagram kept in mission-kit's entity-store | the director selects it, or entity-store's record rules the adjustments it needs -- an asynchronous durable storage port, and names optional per kind. |
 | **B345** | S4 | OD-2: clients reaching the server over agp | OD-1 is ruled, entity-api is certified, and its follows are unparked (zorg's D15). |
 | **B347** | S4 | The towerless-combat timing test failed once under machine load | it fails a second time, or B333's flake ledger is built. |
 | **B282** | S3 | Anchors along a wide device, and which one a link ends at (WD1; the pack half closed at H21.3) | a wide device needs links at more than one point (WD1). |
 | **B79** | S3 | The connection walk's apparatus is outside the repository; the false record is corrected, the rest held with B127 | B127 revives, or another decision is taken on the walk's findings. |
 | **B108** | S3 | Detecting a test wired to a copy of its subject: undecidable as stated; mutation is the technique that works | mutation testing is automated in the gate, or a test wired to a copy of its subject is found again. |
-| **B310** | S4 | the REST API's "anchor" means a grid point, the word the core's entity owns since O4 | an agent misreading the word, or the next change to `/layouts/<name>/anchors` or `/layouts/<name>/nearest`. |
+| **B310** | S4 | the REST API's "anchor" means a grid point, the word the core's entity owns since O4 | an agent misreading the word, or the next change to a REST route that alters what an agent calls. |
 | **B253** | S4 | Two same-origin tabs share one outbox key; no divergence in 600 two-tab runs since the re-fetch (H19.16) | two-tab divergence is reported, or the outbox's storage is next changed |
 | **B254** | S4 | The answer to the tab's own undo can land mid-drag; 6 runs in 600 undo-heavy (H19.16) | a user reports a node jumping during a drag |
 | **B256** | S4 | Pipes carry one link each, and a link may not run a pipe twice (hairpins) | concurrent links on one pipe are designed -- a parallel renderer or sub-anchors -- at which point `pipeCapacity` rises above one and a hairpin becomes two runs a pipe can carry. |
