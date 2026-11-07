@@ -2403,13 +2403,13 @@ AMENDED 2026-11-04 by the director, H26-24: "You've been trying to deploy it to 
 
 AMENDED again 2026-11-05 by the director, H26-24: "This can't continue. We cant spend 8 hours validating a feature for deployment. Targeted. I want this live and correctly checked in under 30 mins" -- shown batch 1's independent check finding one blocking defect, fixed, and offered a targeted check of the fix (recommended), a full re-review as H26-15 asks after a blocking finding, or a pause. So the fix was checked by a targeted check, scoped to it and its neighbours within twenty minutes, without a second full gate beside the push's own; and batch 1 went to production on the director's approval before the director's PZ11 reading on the Chromebook, which is owed after (B446). A feature's batch is now checked once, in proportion, and a blocking fix by a check of the fix.
 
-**H27 -- after H26: CI's gate made binary on GitHub's runner, the handle press that throws fixed, the gesture tester's stuck pan fixed and its accepted release in production, in that order -- 2026-11-06 (B333, B410, B447, B448).**\
+**H27 -- after H26: CI's gate made binary on GitHub's runner, the handle press that throws fixed, the gesture tester's stuck pan fixed and its accepted release in production, in that order -- 2026-11-07 (B333, B410, B447, B448).**\
 Director: "Agree with the 3 recommendations above."\
 Shown: dev/BOARD.md@d760138\
 Affects: dev/BOARD.md\
 Recorder: shown the board re-triaged after H26 closed -- CI red four times since 2026-11-02 on Chrome's start alone and re-run past each time (B448, firing B333), a handle press that throws on a touch screen whose trigger fired unseen at H26.6's move 13 (B410), and the gesture tester's stuck pan with its production still on `0.1.0` (B447) -- and offered H27 as listed (recommended), the tester first, or a held item instead. So H27 runs as listed: the gate first, then the handle press, then the tester; each still goes to production on the director's approval (H26-24).
 
-**H27-1 -- the wheel and a touchpad's two-finger scroll zoom the view, as a pinch does, one level per step about the pointer; nothing scrolls the view, which pans by the three drags alone -- 2026-11-06 (amends H26-22's AG-2 and H26-23's GR6).**\
+**H27-1 -- the wheel and a touchpad's two-finger scroll zoom the view, as a pinch does, one level per step about the pointer; nothing scrolls the view, which pans by the three drags alone -- 2026-11-07 (amends H26-22's AG-2 and H26-23's GR6).**\
 Director: "also - lets change moude/tcouhpad scroll behavior to "zoom" rather than pan"\
 Shown: dev/BOARD.md@d760138\
 Affects: app/src/recognize.js, app/src/input.js, app/src/view.js, dev/design/components/PAN-ZOOM.md, dev/design/components/PAN-ZOOM-INTENT.md, dev/BOARD.md\

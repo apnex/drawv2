@@ -171,7 +171,7 @@ It is built component first -- `vector-scene`'s view, the gesture tester on the 
 | AG | Description | Composes-with target |
 |---|---|---|
 | AG-1 | A view stored in the diagram or shared between viewers | a shared "home" view, if the director later asks for one |
-| AG-2 | The wheel zooming without Ctrl, or a drag on open ground panning -- AMENDED: the wheel's half overturned by `H27-1`, 2026-11-06, every wheel zooming as a pinch does; the drag's half stands | none; the selection box keeps that drag |
+| AG-2 | The wheel zooming without Ctrl, or a drag on open ground panning -- AMENDED: the wheel's half overturned by `H27-1`, 2026-11-07, every wheel zooming as a pinch does; the drag's half stands | none; the selection box keeps that drag |
 | AG-3 | One grid size for every diagram, or the two grids sized apart | none (Q2, Q3) |
 | AG-4 | A device scaling with the grid | none; a device keeps its own size (Q3) |
 | AG-5 | Draw first, the components shaped after | none (Q6, H26-3) |
