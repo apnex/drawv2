@@ -1626,10 +1626,12 @@ Not legal until the director opens them, each held: paths and flows (B327), the 
 | # | Item | Cites | Sev | State |
 |---|---|---|---|---|
 | H28.1 | Re-triage the board after H27, the order selected by the director and recorded here (H28) | feature | S3 | `DONE` |
-| H28.2 | B7 weighed again: what drawing a move's and a handle's preview as items of the scene, off the shared Model, costs now that the box's and the link drag's previews are scene items (H26.4) and every painter answers shapes (H26.8) -- a short measured sizing, put to the director before any build; sized 2026-11-07 -- N7's duplicate pipeline gone, the exposure unreachable while the defer holds, the fix 2 to 6 days for nothing a person sees today; the sizing found B450, a drag or chain ending on its own -- both under Decisions required | **B7**, **B450** | S2 | `WIP` |
+| H28.2 | B7 weighed again: what drawing a move's and a handle's preview as items of the scene, off the shared Model, costs now that the box's and the link drag's previews are scene items (H26.4) and every painter answers shapes (H26.8) -- a short measured sizing, put to the director before any build; sized 2026-11-07 -- N7's duplicate pipeline gone, the exposure unreachable while the defer holds, the fix 2 to 6 days for nothing a person sees today; the sizing found B450, a drag or chain ending on its own; both ruled by the director to be built (H28-1), as H28.4 and H28.5 | feature | S2 | `DONE` |
 | H28.3 | Agents measured on the infinite canvas: a context-lab evaluation of agents finding, reading and editing things across a diagram larger than one map chunk by the CLI's chunks and senses, at the director's starting size of 31 by 17; the chunk or the senses changed only where an agent is measured failing, on the light path to production | **B440** | S4 | `TODO` |
+| H28.4 | The hold on inbound changes hardened: a snapshot the tab asks for -- after a refusal, an `access` message, an ack mismatch, a template's fork -- and the release of what was held wait until the gesture ends, so a drag or a link chain no longer ends on its own (H28-1) | **B450** | S3 | `TODO` |
+| H28.5 | A move's and a clone's preview drawn from a throwaway projection, the originals left as stored until the commit, so a drag's preview no longer writes the shared Model (H28-1; B7's narrow form, its remainder held) | **B7** | S2 | `TODO` |
 
-**Exit:** B7 either built or held again on a measured cost the director ruled; agents shown to find their way across a diagram by its chunks, or the map changed until they do.
+**Exit:** B7 either built or held again on a measured cost the director ruled -- ruled built in part, with B450 (H28-1); agents shown to find their way across a diagram by its chunks, or the map changed until they do.
 
 ---
 
@@ -1739,12 +1741,10 @@ The deployment that fired its trigger is also the one that answered it: object s
 ## Decisions required
 
 B163, the last entry, was ratified and closed on 2026-10-01: the standing goals framework is `VISION.md`.\
-B399 and B400 were ruled on 2026-11-01 (H26-21) and left this table; B415 was ruled on 2026-11-07 (H27-2) and left it.
+B399 and B400 were ruled on 2026-11-01 (H26-21) and left this table; B415 was ruled on 2026-11-07 (H27-2) and left it; B7 and B450 were ruled the same day (H28-1) and left it; none is owed now.
 
 | Row | Decision owed | Why it cannot be settled without you |
 |---|---|---|
-| **B7** | A drag's preview off the shared Model: build it, the move and clone alone, or hold it while inbound changes stay held during a drag | Either build changes nothing a person sees today; whether remote changes are ever shown live mid-drag is the product's call (H28.2's sizing) |
-| **B450** | Hold the snapshots the tab asks for until a gesture ends, so a drag or a chain no longer ends on its own | It changes what a refused or forked drag does mid-gesture, a behaviour a person sees (H28.2's sizing) |
 
 **R13 reads this table in both directions**, which is what `Held` has had since B123 and this section never did.\
 A row recording `RULING-OWED` must appear here, so a decision cannot wait unseen; an entry here must still be `RULING-OWED`, so a ruling that has landed cannot keep asserting itself.\

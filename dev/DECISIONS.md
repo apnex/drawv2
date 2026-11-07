@@ -2428,3 +2428,9 @@ Director: "continue"\
 Shown: dev/BOARD.md@f08f446\
 Affects: dev/BOARD.md\
 Recorder: shown the board re-triaged after H27 closed -- production's log since 2026-10-25 clean; B7, the one `S2` held, its trigger fired by its letter at H26.4 and its reason for waiting perhaps gone; the agents' map rebuilt in chunks by H26.6 and used by no agent yet (B440) -- and offered H28 as listed (recommended), the agents first, or a held feature instead. So H28 runs as listed: B7 sized and its cost put to the director before anything is built, then the agents' evaluation, each change to production on the director's approval (H26-24).
+
+**H28-1 -- the hold on inbound changes during a gesture hardened, so a drag or a link chain no longer ends on its own; and a move's and a clone's preview drawn off the shared Model, the zone handle's and the link drag's left as they are -- 2026-11-07 (B7, B450).**\
+Director: "explore"\
+Shown: dev/BACKLOG.md@f2a675c\
+Affects: dev/BACKLOG.md, dev/BOARD.md\
+Recorder: shown H28.2's sizing -- N7's duplicated geometry pipeline no longer needed, a throwaway projection costing a few milliseconds and drawn by the same painters; B7's fight unreachable while inbound changes are held during a gesture; the hold passed by the snapshots the tab asks for, which end a drag or a chain on their own (B450) -- and offered hardening the hold and holding B7 (recommended), hardening it and building B7's fix for the move and the clone, 2 to 3 days for nothing a person sees today, or neither. So both are built: the requested resyncs, `access` and a template's reopen held until the gesture ends and the release of what was held not running into a gesture live again (B450); and the move's and the clone's preview drawn from a throwaway projection while the originals stay as stored (B7, its narrow form); a zone handle's reshape and a link drag's placed waypoints, which nothing derived reads, keep writing the live Model, B7's remainder held.
