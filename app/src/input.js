@@ -524,11 +524,27 @@ export class Input {
 		this.host = host;
 	}
 
-	// the pointer left the canvas: keys must never act on a stale off-canvas position
+	/*
+	The pointer left the canvas: keys must never act on a stale off-canvas position.
+	H27.4 (B447, draw's half; PAN-ZOOM.md section 3.6, appendix B) -- AND THE CANVAS STOPS VOUCHING FOR WHAT IT CAN NO LONGER HEAR. A pan
+	row's press waiting on the threshold has not taken the pointer (3.6), so once the pointer is off the canvas its release lands unheard, and
+	a press of the same button begun out there and dragged back in holds that button on every move the canvas hears -- B1's test of the
+	buttons (`#panReleasedUnheard`) cannot tell the two presses apart, and the old one carried on as the pan. So the waiting press ends here,
+	as a lost pointer: a press the canvas did not hear begin never continues a pan. A live pan took the pointer when it engaged, so its
+	release is heard wherever it lands and nothing of it changes here. And the keys the session holds (IB14) are dropped: off the canvas a key
+	may be released where it is not heard, so a Space the canvas last saw pressed makes no left press a pan until it is seen held again --
+	pressed, or its repeat heard -- the left drag on open ground the selection box, as before H26.6.
+	*/
 	leave() {
 		this.readout.setCursor(null);
 		this.tools.hideHand();
 		this.state = track(this.state, { type: 'leave' });
+		if (this.#pendingPan !== null) {
+			this.#pendingPan = null;
+			this.#panHeld = 0;
+			this.#session.pointerLost();
+		}
+		this.#session.keysLost();
 	}
 
 	// ---- hit helpers ----

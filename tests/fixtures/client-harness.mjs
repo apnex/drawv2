@@ -416,6 +416,8 @@ export function dispatchFor(open) {
 		return {
 			onDown: call('svg:pointerdown'), onMove: call('svg:pointermove'), onUp: call('svg:pointerup'), onCancel: call('svg:pointercancel'),
 			onHover: (evt, entering) => listeners.get(entering ? 'svg:pointerover' : 'svg:pointerout')(evt),
+			// H27.4 (B447): the pointer leaving the canvas, which the platform fires as it crosses the canvas's edge, a button held or not
+			onLeave: call('svg:pointerleave'),
 			onDblClick: call('svg:dblclick'), onKeyDown: call('host:keydown'), onKeyUp: call('host:keyup'), onContextMenu: call('host:contextmenu'),
 			// H26.5 (dev/design/components/RELEASES-0.2.md section 4): the host's focus loss -- the platform fires it whether or not anything
 			// listens, so a capture that added no blur listener hears nothing of it, as draw heard nothing before input-capture 0.2.0 (B413)
