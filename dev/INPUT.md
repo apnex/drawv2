@@ -263,6 +263,10 @@ It runs before the common teardown, which is why it cannot just be the first lin
   handler may re-enter (chain wiring re-arms `link` with no held button).
 - **I-IN2** a gesture ends exactly once, however it ends, and `onGestureEnd` fires in a `finally` -
   a throwing commit must not strand D12's deferred queue (B19).
+  The queue holds every snapshot the tab asked for itself too - a refusal's resync, an `access`
+  message's, a template's fork reopened - and is released only once no gesture is live, so a
+  chaining commit's next chain keeps holding it (B450); only the person's own open, create or
+  delete of a diagram, and a lock, end a gesture at once.
 - **I-IN3** the committed value is the **last rendered frame**, never a re-sample: ortho commits on
   `ctx.orthoActive`, and move/resize restore the pre-drag state before committing so the change is
   an exact transition.

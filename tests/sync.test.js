@@ -136,7 +136,8 @@ function deferrable() {
 	const net = { status: 'open', subscribe(fn) { recv = fn; }, onStatus() {}, isOpen: () => true,
 		send: (cmd, body) => { sent.push({ cmd, body }); return true; } };
 	const model = new Model();
-	const sync = new Sync({ model, net, history: { clear() {}, setCounts() {}, state: { version: 0 } },
+	// `openWindowOps`: a snapshot of the same diagram replays the burst window still open (H28.4's resync)
+	const sync = new Sync({ model, net, history: { clear() {}, setCounts() {}, openWindowOps: () => [], state: { version: 0 } },
 		selection: new Selection(model) });
 	let gesturing = false;
 	sync.deferInbound = () => gesturing;
@@ -181,14 +182,31 @@ test('B71: a held snapshot supersedes held changes, because it is whole state', 
 	assert.equal(t.sync.deferred.length, 0, 'and the older deltas were dropped, not replayed onto it');
 });
 
+// RESTATED at H28.4 (B450; dev/DECISIONS.md H28-1): the person's own open loads at once; a snapshot the tab asked for itself is held
 test('B71: a snapshot the user ASKED for is not held — that would feel stuck, not safe', () => {
 	const t = deferrable();
 	t.recv(snap('0000000000aaa001', 1));
 	t.gesture(true);
-	t.sync.expectLoad = true;             // set by openDiagram / createDiagram
+	t.sync.openDiagram('0000000000ddd004');   // the header's picker
+	assert.deepEqual(t.sent.at(-1), { cmd: 'open', body: { id: '0000000000ddd004' } });
 	t.recv(snap('0000000000ddd004', 3));
 	assert.equal(t.sync.diagramId, '0000000000ddd004', 'a deliberate open lands immediately');
 	assert.equal(t.sync.deferred.length, 0, 'nothing was held');
+});
+
+test('H28.4 (B450): a snapshot the tab asked for itself -- a resync -- is held behind a live gesture, and the release keeps holding while one is live again', () => {
+	const t = deferrable();
+	t.recv(snap('0000000000aaa001', 1));
+	t.gesture(true);
+	t.sync.requestResync();                   // a refusal's, an access message's, an answer's mismatch
+	assert.deepEqual([t.sent.at(-1).cmd, t.sync.expectLoad], ['open', true]);
+	t.recv(snap('0000000000aaa001', 4));
+	assert.deepEqual([t.sync.deferred.map((m) => m.cmd), t.sync.appliedVersion], [['snapshot'], 1], 'held, the document as it was');
+	t.sync.releaseDeferred();                 // a chaining commit's end, the next chain live
+	assert.deepEqual([t.sync.deferred.length, t.sync.appliedVersion], [1, 1], 'still held: a gesture is live again');
+	t.gesture(false);
+	t.sync.releaseDeferred();
+	assert.deepEqual([t.sync.deferred.length, t.sync.appliedVersion, t.sync.expectLoad], [0, 4, false], 'loaded once the gesture ends');
 });
 
 test('B76: the client holds its own principal and hands it to the UI', () => {

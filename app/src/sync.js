@@ -152,7 +152,10 @@ export class Sync {
 		*/
 		this.agents = [];
 		this.loading = false;
-		this.expectLoad = false; // a snapshot we asked for (open/create) always loads
+		this.expectLoad = false; // a snapshot this tab asked for: opening, creating or deleting a diagram, a resync, a fork reopened
+		// H28.4 (B450): one the PERSON asked for -- opening, creating or deleting a diagram from the header -- which loads at once, a
+		// gesture live or not; every other snapshot waits behind a live gesture
+		this.switchAsked = false;
 		this.locked = false;     // Server-Locked: a server-side controller owns writes
 		// H9.3c: whether this principal may write this diagram at all. Distinct from `locked`:
 		// Server-Locked is temporary and reclaimable, this is not reclaimable by definition.
@@ -450,8 +453,13 @@ export class Sync {
 			Only UNSOLICITED snapshots are held. One the user asked for carries `expectLoad` -- opening
 			a diagram, creating one -- and a gesture on the diagram they are leaving is moot; holding
 			that would make the app feel stuck rather than safe.
+			RESTATED at H28.4 (B450; dev/DECISIONS.md H28-1): held too is every snapshot the tab asked for ITSELF -- a refusal's resync,
+			an `access` message's, an answer's mismatch or a lost answer, a template's fork reopened -- each of which passed the hold and
+			ended the live drag or chain on its own, rewinding it. It is owed until the gesture ends, committed or cancelled, and loads
+			then; the refused step stays shown until then, as it stayed shown until the snapshot. Only the person's own act loads at once:
+			opening, creating or deleting a diagram from the header (`switchAsked`), and a lock, which ends the gesture as it always did.
 			*/
-			if (!this.expectLoad && this.deferInbound && this.deferInbound()) {
+			if (!this.switchAsked && this.deferInbound && this.deferInbound()) {
 				this.deferred.push(msg);    // releaseDeferred applies the last one held, in its place
 				return;
 			}
@@ -776,6 +784,7 @@ export class Sync {
 			const switched = this.hydrated && this.diagramId !== doc.meta.id;
 			this.hydrated = true;
 			this.expectLoad = false;
+			this.switchAsked = false;
 			this.resyncAsked = false;   // the snapshot asked for has come
 			this.diagramId = doc.meta.id;
 			this.onLoaded?.(doc.meta.id, { forked: this.forkedTo === doc.meta.id });   // H26.6's move 10 (PZ23)
@@ -876,8 +885,11 @@ export class Sync {
 	sent after them: an older change is dropped, and an older answer to this tab's own request is taken
 	before the load (applySnapshot). What was held AFTER the last snapshot is newer than it and is
 	applied on top, in order. Arrival order is what establishes "older": the queue keeps it.
+	H28.4 (B450): and nothing is released into a gesture live again. A commit that chains starts the next chain before the gesture's end
+	is told (app/src/input.js `release`, `chainFrom`), so what was held stays held until that chain ends in its turn.
 	*/
 	releaseDeferred() {
+		if (this.deferInbound?.()) return;
 		const held = this.deferred.splice(0);
 		const last = held.findLastIndex((m) => m.cmd === 'snapshot');
 		if (last >= 0) this.applySnapshot(held[last], held.slice(0, last));
@@ -993,6 +1005,7 @@ export class Sync {
 		this.flush(); // don't lose the current pulse window's edits
 		this.hydrated = false;
 		this.expectLoad = true;
+		this.switchAsked = true;   // H28.4: the person's own act, which loads under a live gesture
 		this.outbox = [];
 		this.persistOutbox();
 		this.requestSentAt = Date.now();   // B177 -- switching diagrams answers with a snapshot too
@@ -1005,6 +1018,7 @@ export class Sync {
 		this.flush();
 		this.hydrated = false;
 		this.expectLoad = true;
+		this.switchAsked = true;   // H28.4: the person's own act, which loads under a live gesture
 		this.outbox = [];
 		this.persistOutbox();
 		this.net.send('create', {});
@@ -1015,6 +1029,7 @@ export class Sync {
 		if (!this.net.isOpen() || !this.hydrated) return this.emitState({});
 		this.hydrated = false;
 		this.expectLoad = true;
+		this.switchAsked = true;   // H28.4: the person's own act, which loads under a live gesture
 		this.outbox = [];
 		this.persistOutbox();
 		this.net.send('delete', { id: this.model.state.meta.id });

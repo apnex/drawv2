@@ -36,7 +36,7 @@ import { Changes } from '../app/src/changes.js';
 import { Sync, bindGestureDefer } from '../app/src/sync.js';
 import { deleteSelection, renameEntity, nudgeSelection, moveEntities } from '../app/src/commands.js';
 import { Session } from '../server/protocol.js';
-import { Hub } from '../server/hub.js';
+import { Hub, announceAccess } from '../server/hub.js';
 import { OWNER, openStore } from './fixtures/app.mjs';
 import { makeInput, pointer } from './fixtures/client-harness.mjs';
 import { productKinds } from '../product/kinds.mjs';
@@ -63,17 +63,29 @@ const cmds = (msgs) => msgs.filter((m) => DOC.has(m.cmd)).map((m) => m.cmd);
 
 // ---- the world: one tab, the server, and another writer ----
 
-async function world(seed, { tab: given = null, disk: kept = true } = {}) {
+// H28.4 (B450): `template` -- the seed is a template the tab opens, which its first write forks (H9.9), where it is a diagram of its own
+async function world(seed, { tab: given = null, disk: kept = true, template = false } = {}) {
 	disk.clear();
 	diskOn = kept;
 	const dir = scratchFolder('draw-b242-paths-');
-	let store = await openStore(dir);
-	const made = store.create('b242-paths', null, OWNER);
-	assert.equal(made.ok, true, made.error);
-	const id = made.model.state.meta.id;
-	const seeded = store.commit(id, { label: 'seed', ops: seed.map(([kind, entity]) => ({ op: 'put', kind, entity })) },
-		'server', 'seed', OWNER);
-	assert.equal(seeded.ok, true, seeded.error);
+	let store, id;
+	if (template) {
+		id = 'template-0b4501';
+		const templates = fs.mkdtempSync(`${dir}/templates-`);
+		const doc = { meta: { id, name: 'b450-template', version: 0, schema: 4 }, nodes: [], links: [], pipes: [], zones: [], groups: [] };
+		for (const [kind, entity] of seed) doc[`${kind}s`].push(entity);
+		fs.writeFileSync(`${templates}/${id}.json`, JSON.stringify(doc));
+		store = await openStore(fs.mkdtempSync(`${dir}/data-`), { templatesDir: templates });
+		assert.ok(store.templates.has(id), 'the template loaded');
+	} else {
+		store = await openStore(dir);
+		const made = store.create('b242-paths', null, OWNER);
+		assert.equal(made.ok, true, made.error);
+		id = made.model.state.meta.id;
+		const seeded = store.commit(id, { label: 'seed', ops: seed.map(([kind, entity]) => ({ op: 'put', kind, entity })) },
+			'server', 'seed', OWNER);
+		assert.equal(seeded.ok, true, seeded.error);
+	}
 	await store.flushAll();                     // the seed is on disk; nothing after it is, unless a test flushes
 	let hub = new Hub();
 
@@ -117,7 +129,9 @@ async function world(seed, { tab: given = null, disk: kept = true } = {}) {
 			w.deliverAll();
 			assert.equal(w.sync.hydrated, true, 'the page loaded the seeded diagram');
 		},
-		server: () => store.get(id),
+		server: (on = id) => store.get(on),
+		// H28.4 (B450): an access change, announced to every session as the server announces a grant or a revoke (server/hub.js)
+		announceAccess: () => announceAccess(hub),
 		version: () => store.log(id).version,
 		// the server takes everything the tab has sent, in order
 		serve() { for (const m of up.splice(0)) server.take(m.cmd, m.body); },
@@ -151,7 +165,7 @@ async function world(seed, { tab: given = null, disk: kept = true } = {}) {
 			connectOther();
 			w.reconnect();
 		},
-		diff: () => diffDocs(w.tab, store.get(id)),
+		diff: () => diffDocs(w.tab, store.get(w.sync?.diagramId || id)),   // H28.4: the fork, once the tab is moved onto one
 		close() { w.changes.flush(); fs.rmSync(dir, { recursive: true, force: true }); },
 	};
 	w.mount(given);
@@ -179,7 +193,7 @@ function diffDocs(a, b) {
 const CONVERGED = 'CONVERGENCE: the tab\'s document equals the server\'s once every answer is in';
 
 const A = 'node-00000a', B = 'node-00000b', X = 'node-00000c', C = 'node-00000d';
-const W = 'node-0000f1', G = 'group-0000e1';
+const W = 'node-0000f1', G = 'group-0000e1', Y = 'node-0000b9';
 const LONE = [
 	['node', { id: A, name: 'a', type: 'host', x: 0, y: 0 }],
 	['node', { id: B, name: 'b', type: 'host', x: 240, y: 240 }],
@@ -513,12 +527,15 @@ test('C4 live drag: the answer to an earlier request does not snap back a dragge
 });
 
 /*
-Through the REAL Input and the real binding. A snapshot the tab asked for loads at once, even under a
+Through the REAL Input and the real binding. A snapshot the tab asked for loaded at once, even under a
 live drag (B71), and a gesture does not survive a document swap. Ended AFTER the swap -- by Input's own
 load handler -- a cancelled move writes its drag-start position into the document just loaded. Here the
 drag starts on the tab's own refused move, so that position is one the server never had.
+RESTATED at H28.4 (B450): the resync a refusal asks for is held until the drag ends, so the drag is not
+ended by it; the drag cancelled, the snapshot loads after the gesture, and the start position the cancel
+rewinds to is still not written into the document loaded.
 */
-test('a snapshot the tab asked for, arriving mid-drag, ends the drag first: its start position is not written into the new document', async () => {
+test('a snapshot the tab asked for after a refusal, arriving mid-drag, waits for the drag to end -- H28.4 -- and its start position is not written into the new document', async () => {
 	const h = makeInput();
 	try {
 		const w = await world([
@@ -536,12 +553,131 @@ test('a snapshot the tab asked for, arriving mid-drag, ends the drag first: its 
 			assert.equal(h.input.isGesturing(), true, 'a drag is live -- the case under test');
 			w.deliverTo('error');                              // the refusal: the tab asks for a snapshot
 			w.serve();
-			w.deliverTo('snapshot');                           // asked for, so it loads at once
+			w.deliverTo('snapshot');                           // H28.4 (B450): asked for by the tab, not the person -- held behind the drag
+			assert.deepEqual([h.input.isGesturing(), w.sync.deferred.length], [true, 1], 'the drag goes on, the snapshot held');
+			h.input.cancelDrag();                              // Escape: the drag rewound, then the snapshot loads
 			assert.equal(h.input.isGesturing(), false, 'the drag ended');
 			assert.equal(w.tab.get('node', A).x, 0, 'the tab shows where the server has a, not where the drag began');
 			assert.deepEqual(w.diff(), [], CONVERGED);
 		} finally { w.close(); }
 	} finally { h.restore(); }
+});
+
+/*
+H28.4 (B450; dev/DECISIONS.md H28-1) -- A DRAG OR A CHAIN NO LONGER ENDS ON ITS OWN. A snapshot the tab asks for itself -- a refusal's
+resync, an `access` message's, a template's fork reopened -- passed the hold and ended the live gesture first, rewinding it; and a commit
+that chains released what was held while the next chain was already live, so a held snapshot ended the chain just begun. Each is owed
+until the gesture ends, committed or cancelled, then runs; the refused step stays shown until then, as it stayed shown until the snapshot.
+Opening, creating or deleting a diagram, and a lock, still end a gesture at once: the person's own act. Through the real Input, capture,
+binding and Sync against a real server, as above.
+*/
+const on = (h, id, x, y, m = {}) => pointer(x, y, { ...m, target: h.at(id) });
+// a link drag from `from` released on `to` with Shift: the link committed and a chain on from `to`, live (H6.4)
+const chainTo = (h, from, [fx, fy], to, [tx, ty]) => {
+	h.capture.onDown(on(h, from, fx, fy));
+	h.capture.onMove(on(h, to, tx, ty));
+	h.capture.onUp(on(h, to, tx, ty, { shiftKey: true, buttons: 0 }));
+};
+// the chain's next hop: a press and a release on `to`, Shift up -- the segment committed and the chain ended
+const hopTo = (h, to, [x, y]) => {
+	h.capture.onMove(on(h, to, x, y, { buttons: 0 }));
+	h.capture.onDown(on(h, to, x, y));
+	h.capture.onUp(on(h, to, x, y, { buttons: 0 }));
+};
+const linkPairs = (model) => model.all('link').map((l) => [l.src, l.dst]).sort((a, b) => (a.join() < b.join() ? -1 : 1));
+const CHAIN = [
+	['node', { id: A, name: 'a', type: 'host', x: 0, y: 0 }],
+	['node', { id: B, name: 'b', type: 'host', x: 240, y: 0 }],
+	['node', { id: C, name: 'c', type: 'host', x: 240, y: 240 }],
+	['node', { id: X, name: 'x', type: 'host', x: -240, y: -240 }],
+	['node', { id: W, name: 'w', type: 'host', x: -480, y: 240 }],
+];
+const throughInput = async (seed, opts, fn) => {
+	const h = makeInput();
+	try {
+		const w = await world(seed, { ...opts, tab: { model: h.model, changes: h.history, selection: h.selection } });
+		try { bindGestureDefer(h.input, w.sync); await fn(h, w); } finally { w.close(); }
+	} finally { h.restore(); }
+};
+
+test('H28.4 (B450): a refusal mid-chain -- its resync waits for the chain, which goes on; the refused move stays shown until the chain ends, then the tab converges', async () => {
+	await throughInput(CHAIN, {}, async (h, w) => {
+		w.changes.commit(move(X, -720, 240));                 // an empty cell, as the tab sees it
+		w.other([{ op: 'put', kind: 'node', entity: { id: Y, name: 'y', type: 'host', shape: 'circle', x: -720, y: 240 } }]);   // another writer takes it first
+		w.serve();                                            // so the server refuses the move; its change and the refusal wait
+		chainTo(h, A, [0, 0], B, [240, 0]);
+		assert.deepEqual([h.input.isGesturing(), w.tab.get('node', X).x], [true, -720], 'precondition: the chain is live from b, the move shown');
+		w.deliverAll();                                       // the other writer's change, held; the refusal: the tab asks for a snapshot
+		w.serve();                                            // the server takes the link and the resync
+		w.deliverAll();                                       // the link's answer, then the snapshot
+		assert.equal(h.input.isGesturing(), true, 'the chain goes on: the snapshot the tab asked for did not end it');
+		assert.deepEqual([w.sync.deferred.map((m) => m.cmd), w.tab.get('node', X).x], [['change', 'ack', 'snapshot'], -720], 'the snapshot held behind the chain, the refused move still shown');
+		hopTo(h, C, [240, 240]);                              // the chain's next hop: committed, the chain ended
+		assert.equal(h.input.isGesturing(), false, 'the chain ended by the person');
+		assert.deepEqual([w.sync.deferred.length, w.tab.get('node', X).x, !!w.tab.get('node', Y)], [0, -240, true], 'and then the snapshot loaded: x back where the server has it, y there');
+		w.pump();
+		assert.deepEqual(linkPairs(w.server()), [[A, B], [B, C]], 'both hops landed');
+		assert.deepEqual(w.diff(), [], CONVERGED);
+	});
+});
+
+test('H28.4 (B450): an access message mid-drag -- its resync waits for the drag, which commits; then the snapshot loads and the tab converges', async () => {
+	await throughInput(CHAIN, {}, async (h, w) => {
+		h.capture.onDown(on(h, A, 0, 0, { button: 2 }));
+		h.capture.onMove(on(h, A, 120, 0, { button: 2 }));
+		h.capture.onMove(on(h, A, 480, -240, { button: 2 }));
+		assert.equal(h.input.isGesturing(), true, 'precondition: a move is live');
+		w.announceAccess();                                   // a grant changed somewhere: every session is told to ask again
+		w.deliverAll();
+		w.serve();                                            // the tab's resync
+		w.deliverAll();
+		assert.deepEqual([h.input.isGesturing(), w.sync.deferred.map((m) => m.cmd)], [true, ['snapshot']], 'the drag goes on, the snapshot held');
+		h.capture.onUp(on(h, A, 480, -240, { button: 2, buttons: 0 }));
+		assert.deepEqual([h.input.isGesturing(), w.sync.deferred.length], [false, 0], 'the drag committed, then the snapshot loaded');
+		w.pump();
+		assert.deepEqual([w.server().get('node', A).x, w.server().get('node', A).y], [480, -240], 'the drag landed');
+		assert.deepEqual(w.diff(), [], CONVERGED);
+	});
+});
+
+test('H28.4 (B450): a template\'s fork mid-chain -- the chain on a template goes on past its first segment, every hop on the fork', async () => {
+	await throughInput(CHAIN, { template: true }, async (h, w) => {
+		assert.equal(w.sync.diagramId, w.id, 'precondition: the tab is on the template');
+		chainTo(h, A, [0, 0], B, [240, 0]);                  // the first write, which forks the template
+		w.serve();
+		w.deliverAll();                                       // `forked`, then its answer
+		w.serve();                                            // the tab reopens the fork
+		w.deliverAll();
+		const fork = w.sync.diagramId;
+		assert.notEqual(fork, w.id, 'the tab follows the fork');
+		assert.deepEqual([h.input.isGesturing(), w.sync.deferred.map((m) => m.cmd)], [true, ['snapshot']], 'the chain goes on, the fork\'s snapshot held');
+		hopTo(h, C, [240, 240]);
+		assert.deepEqual([h.input.isGesturing(), w.sync.deferred.length], [false, 0], 'the chain ended by the person, then the fork loaded');
+		w.pump();
+		assert.deepEqual(linkPairs(w.server(fork)), [[A, B], [B, C]], 'both hops landed on the fork');
+		assert.equal(w.server(w.id).all('link').length, 0, 'and the template is as it was');
+		assert.deepEqual(w.diff(), [], CONVERGED);
+	});
+});
+
+test('H28.4 (B450): a chaining commit with a snapshot held -- the release keeps holding while the next chain is live, and the snapshot loads when it ends', async () => {
+	await throughInput(CHAIN, {}, async (h, w) => {
+		h.capture.onDown(on(h, A, 0, 0));
+		h.capture.onMove(on(h, B, 240, 0));
+		assert.equal(h.input.isGesturing(), true, 'precondition: a link drag is live');
+		w.other(set('node', X, { name: 'renamed-by-other' }));   // its broadcast is lost with the socket
+		w.reconnect();                                        // the tab resumes behind the server: an unasked snapshot
+		w.serve();
+		w.deliverAll();
+		assert.deepEqual(w.sync.deferred.map((m) => m.cmd), ['snapshot'], 'precondition: the snapshot held behind the drag');
+		h.capture.onUp(on(h, B, 240, 0, { shiftKey: true, buttons: 0 }));   // the link committed, and a chain on from b
+		assert.deepEqual([h.input.isGesturing(), w.sync.deferred.map((m) => m.cmd)], [true, ['snapshot']], 'the next chain live, the snapshot still held');
+		hopTo(h, C, [240, 240]);
+		assert.deepEqual([h.input.isGesturing(), w.sync.deferred.length, w.tab.get('node', X).name], [false, 0, 'renamed-by-other'], 'the chain ended, then the snapshot loaded');
+		w.pump();
+		assert.deepEqual(linkPairs(w.server()), [[A, B], [B, C]], 'both hops landed');
+		assert.deepEqual(w.diff(), [], CONVERGED);
+	});
 });
 
 /*
