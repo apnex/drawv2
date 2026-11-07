@@ -1723,6 +1723,10 @@ VERBS.push({
 	},
 });
 
+// H28.3: the map's chunk (section 3.8 and PZ33, described with the map below), defined here because `anchor free`'s help names it
+// before the map's rules are reached -- so the help states the size from CHUNK, held once
+const CHUNK = Object.freeze({ w: 31, h: 17 });   // the one place a chunk's size is set
+
 /*
 `anchor` -- the bridge from a coordinate to a legal position.
 
@@ -1756,7 +1760,7 @@ VERBS.push(
 		name: 'anchor free', sub: true, group: 'Placement', usage: 'draw anchor free [--chunk i,j | --area cx0,cy0,cx1,cy1] [--layout node|zone]',
 		route: '/diagrams/<id>/layouts/<name>/anchors', method: 'GET', also: ['GET /diagrams/<id>', 'GET /diagrams/<id>/layouts'],
 		summary: 'every anchor nothing occupies, in the window `draw map` would show', example: 'draw anchor free --json',
-		flags: [{ name: '--chunk', about: 'a chunk of 31 by 17 cells, i,j' }, { name: '--area', about: 'cells cx0,cy0,cx1,cy1, at most one chunk' },
+		flags: [{ name: '--chunk', about: `a chunk of ${CHUNK.w} by ${CHUNK.h} cells, i,j` }, { name: '--area', about: 'cells cx0,cy0,cx1,cy1, at most one chunk' },
 			{ name: '--layout', about: 'node (default) or zone' }, { name: '--diagram', about: 'target by id or name' }],
 		/*
 		H26.6's move 12 (PAN-ZOOM.md section 3.8; PZ33): the map's window rules -- plain, `--chunk`, `--area` -- and the free positions of
@@ -2332,7 +2336,6 @@ holding any of it by Chebyshev distance, the lesser `j` and then `i` winning a t
 between commands: the camera moves by naming a chunk, the map handing the next command whole (PZ33). The rules are the drafter's
 `chunk-rules.mjs`, the oracle tests/cli-map.test.js holds these to.
 */
-const CHUNK = Object.freeze({ w: 31, h: 17 });   // the one place a chunk's size is set
 const HALF_W = (CHUNK.w - 1) / 2, HALF_H = (CHUNK.h - 1) / 2;
 const chunkOfCell = (cx, cy) => [Math.floor((cx + HALF_W) / CHUNK.w), Math.floor((cy + HALF_H) / CHUNK.h)];
 const cellsOfChunk = (i, j) => ({ x0: CHUNK.w * i - HALF_W, x1: CHUNK.w * i + HALF_W, y0: CHUNK.h * j - HALF_H, y1: CHUNK.h * j + HALF_H });
@@ -2473,7 +2476,7 @@ VERBS.push({
 	also: ['GET /types', 'GET /diagrams', 'GET /diagrams/<id>', 'GET /diagrams/<id>/layouts'],
 	summary: 'look at the canvas a chunk at a time -- occupancy as a grid, and what lies beyond it each way',
 	example: 'draw map --chunk 1,0',
-	flags: [{ name: '--chunk', about: 'a chunk of 31 by 17 cells, i,j -- chunk 0,0 is centred on cell 0,0; the map names its neighbours' },
+	flags: [{ name: '--chunk', about: `a chunk of ${CHUNK.w} by ${CHUNK.h} cells, i,j -- chunk 0,0 is centred on cell 0,0; the map names its neighbours` },
 		{ name: '--area', about: 'cells cx0,cy0,cx1,cy1, the lesser corner first, at most one chunk' },
 		{ name: '--full', about: 'chunk 0,0 whole, not just the part in use' },
 		{ name: '--zone', about: 'only what falls inside this zone, by id or name -- at most one chunk' },
