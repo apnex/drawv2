@@ -1615,6 +1615,24 @@ AMENDED 2026-11-07: every clause holds -- every CI gate green with no re-run sin
 
 ---
 
+## H28 -- after H27: the highest-severity held defect weighed again, and agents measured on the infinite canvas - `TODO`
+
+Proposed 2026-11-07 by the re-triage after H27 closed, at the director's "return"; the order below is the director's to select (H28.1).\
+The order, by the board's rule (the higher of impact and principle breach): first B7, the only `S2` among the held rows -- a drag's preview writing the shared Model -- whose trigger fired by its letter at H26.4 and whose reason for waiting, a geometry pipeline duplicated across four files, H26.4 and H26.8 may have removed: measured before it is built; then the agents' map, the agent surface H26.6 rebuilt in chunks of 31 by 17 that no agent has yet used -- A5's Measured Parity unmet, a signal breach ranking with `S4`, and the director's own condition on the size, "multiple rounds of testing and agentic evals".\
+Found by the re-triage: production's log since 2026-10-25 holds no server error, no 429, no unhandled rejection and no line that fires a trigger, its 404s the deploys' own probes; B7's trigger fired unseen at H26.4; no other fired, `scan-triggers` finding none of its six dated triggers due.\
+Owed by the director and held: the zoom step's feel on the Chromebook (H27-1), PZ11's speed reading (B446), the dot size fixed "until we review" (`dev/design/components/PAN-ZOOM.md` PZ24).\
+Not legal until the director opens them, each held: paths and flows (B327), the context panel (B265), unloading off-screen elements (B289), more components (B343, B389, B416, B417), what a person sees readable by an agent (B418), the diagram in mission-kit's entity-store (B344, B345), a second human writer on one diagram (B33).
+
+| # | Item | Cites | Sev | State |
+|---|---|---|---|---|
+| H28.1 | Re-triage the board after H27, the order selected by the director and recorded here | feature | S3 | `WIP` |
+| H28.2 | B7 weighed again: what drawing a move's and a handle's preview as items of the scene, off the shared Model, costs now that the box's and the link drag's previews are scene items (H26.4) and every painter answers shapes (H26.8) -- a short measured sizing, put to the director before any build | **B7** | S2 | `TODO` |
+| H28.3 | Agents measured on the infinite canvas: a context-lab evaluation of agents finding, reading and editing things across a diagram larger than one map chunk by the CLI's chunks and senses, at the director's starting size of 31 by 17; the chunk or the senses changed only where an agent is measured failing, on the light path to production | **B440** | S4 | `TODO` |
+
+**Exit:** B7 either built or held again on a measured cost the director ruled; agents shown to find their way across a diagram by its chunks, or the map changed until they do.
+
+---
+
 ## Held -- on the record, not on the board
 
 Open `BACKLOG` rows whose trigger has not fired.\
@@ -1623,7 +1641,6 @@ Scored so the comparison is a judgement, not an omission.\
 
 | Row | Sev | Held item | Revival trigger |
 |---|---|---|---|
-| **B7** | **S2** | Preview writes to the shared Model (the *fix*; the *mitigation* is H3.2, inbound changes deferred during a gesture) | a remote change is seen fighting a drag, or the next change to how a drag previews. |
 | **B33** | S3 | The residue after H9.28: authentication and read-gating exist, the row's remaining half does not | any requirement for a second human writer on one diagram. |
 | **B178** | S3 | Authority at N instances -- the IDLE case, where nobody writes so no conflict proves who owns a diagram. The collision half shipped (H13.11) | deliberately scaling past one instance -- the director's ruling of 2026-09-04. |
 | **B289** | S4 | Unload what is out of view on an infinite canvas: elements leave the page off-screen and return on-screen, the model untouched | PZ11's budget fails on the director's Chromebook, a cap is raised past 750 (B441), or a person finds panning slow. |
@@ -1672,7 +1689,6 @@ Scored so the comparison is a judgement, not an omission.\
 | **B437** | S5 | The label editor reads five positions from the page (H26-17) | the label editor is extracted (B416). |
 | **B438** | S5 | `clean-runner`'s next release: three candidates (H26-19) | an adopter needs a change from `clean-runner`, or one of these three bites a run. |
 | **B439** | S5 | `headless-chromium`'s next release: two candidates (H26-19) | an adopter needs `serveStatic` on a port the system gives or a default window size, or `input-tester` replaces its fixed-port relay (its B17). |
-| **B440** | S5 | The CLI's map chunk tuned by agent evaluations (H26-23) | H26.6's move 12 is live and an agent evaluation of map navigation is run, or an agent is seen failing to find its way by chunks. |
 | **B441** | S5 | The anchor and zone caps raised (H26-23) | a diagram nears either cap, or PZ11's budget is measured passing at a higher count. |
 | **B442** | S5 | An odd grid size (H26-23) | a diagram needs an odd grid size. |
 | **B443** | S5 | `snap-grid`'s kit and reader past V8's collection limits (H26-23) | a consumer judges a shape over a case past one of these limits, a second conformance kit is written, or `snap-grid`'s next release is cut. |
