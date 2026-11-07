@@ -18,9 +18,9 @@ WHAT DRAW SUPPLIES, each draw's content or policy:
 	            see; otherwise whether focus is on a button, link, field or tabbable element, where Tab must keep its meaning
 	deliver     the round trip: each fact handed to the input layers WHOLE, with its reply -- `sink[method](fact, reply)` -- which they
 	            ask at once to claim the event (preventDefault) and to take the pointer (input-capture's IC8)
-	listen      `wheel` and `blur`: the wheel over the canvas -- a two-finger scroll, a pinch, Ctrl and the wheel -- handed to Input's
-	            `wheel`, which matches it against the view's rows and claims it (H26.6's move 9, dev/design/components/PAN-ZOOM.md
-	            section 3.6); and the host's focus loss, after which no release of a key held is promised to arrive, handed to Input's
+	listen      `wheel` and `blur`: the wheel over the canvas -- the wheel, a two-finger scroll, a pinch, Ctrl and the wheel, each a zoom
+	            (H27-1) -- handed to Input's `wheel`, which matches it against the view's rows and claims it (H26.6's move 9,
+	            dev/design/components/PAN-ZOOM.md section 3.6); and the host's focus loss, after which no release of a key held is promised to arrive, handed to Input's
 	            `blur` (H26.5, dev/design/components/RELEASES-0.2.md section 4; B413). Not the context menu, which draw's own listener on
 	            the host covers beyond the surface (B75)
 

@@ -272,6 +272,8 @@ input dispatched through the DevTools protocol at screen pixels, in view mode an
 ground and Space with a left drag each pan once past 4 screen pixels, the drawing following the pointer; a wheel without Ctrl pans by its
 deltas over the scale and never zooms; Ctrl and the wheel, and a pinch Chrome synthesizes, step a level out about the pointer, the drawing
 point under it held; and the page itself is never scrolled or zoomed, each wheel claimed.
+RESTATED at H27.5 (dev/DECISIONS.md H27-1): the wheel without Ctrl steps a level out about the pointer as Ctrl and the wheel do, and a
+sideways scroll moves no view.
 */
 test('H26.6 move 9: every gesture of the intent pans or zooms the lab canvas under trusted input, in view and in run mode, the page never scrolled or zoomed', { skip: SKIP }, async () => {
 	const t = await theTab();
@@ -306,17 +308,20 @@ test('H26.6 move 9: every gesture of the intent pans or zooms the lab canvas und
 					`${mode}, ${name}: the drawing followed the pointer's 100 by 60 pixels after it engaged (${JSON.stringify(before)} to ${JSON.stringify(after)})`);
 			}
 			const before = await read();
-			await t.send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: p.x, y: p.y, deltaX: 30, deltaY: 120 });
+			await t.send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: p.x, y: p.y, deltaX: 30, deltaY: 0 });
 			await sleep(30);
-			const panned = await read();
-			assert.ok(Math.abs(panned.x - (before.x + 30 / before.scale)) < 1e-6 && Math.abs(panned.y - (before.y + 120 / before.scale)) < 1e-6 && panned.level === 1, `${mode}: the wheel panned and never zoomed`);
+			const sideways = await read();
+			assert.deepEqual([sideways.x, sideways.y, sideways.level, sideways.scrolled], [before.x, before.y, 1, 0], `${mode}: a sideways scroll moved no view, the page not scrolled`);
 			const under = `JSON.stringify(lab.input.scene.toDrawing({ x: ${p.x}, y: ${p.y} }))`;
-			const held = JSON.parse(await t.run(under));
-			await t.send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: p.x, y: p.y, deltaX: 0, deltaY: 100, modifiers: 2 });
-			await sleep(30);
-			const zoomed = await read(), still = JSON.parse(await t.run(under));
-			assert.equal(zoomed.level, 2, `${mode}: Ctrl and the wheel, 100 pixels, one level out`);
-			assert.ok(Math.abs(still.x - held.x) < 1e-6 && Math.abs(still.y - held.y) < 1e-6, `${mode}: the drawing point under the pointer held`);
+			for (const [name, modifiers] of [['the wheel', 0], ['Ctrl and the wheel', 2]]) {
+				await t.run(`(lab.view.set({ x: 0, y: 0, level: 1 }), 1)`);
+				const held = JSON.parse(await t.run(under));
+				await t.send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: p.x, y: p.y, deltaX: 0, deltaY: 100, modifiers });
+				await sleep(30);
+				const zoomed = await read(), still = JSON.parse(await t.run(under));
+				assert.equal(zoomed.level, 2, `${mode}: ${name}, 100 pixels, one level out`);
+				assert.ok(Math.abs(still.x - held.x) < 1e-6 && Math.abs(still.y - held.y) < 1e-6, `${mode}: ${name}: the drawing point under the pointer held`);
+			}
 			await t.send('Input.synthesizePinchGesture', { x: p.x, y: p.y, scaleFactor: 0.2, relativeSpeed: 1600, gestureSourceType: 'mouse' });
 			await sleep(100);
 			const pinched = await read();
@@ -401,11 +406,12 @@ test('B1: in the lab a pan press released over the footer leaves no pan waiting 
 /*
 H26.6's move 9 (dev/design/components/PAN-ZOOM.md section 4, PZ11; appendix A, move 9) -- THE CAP BOARD AND THE LAB'S FRAME FIGURE: the board
 at every cap opens by name, `?seed=caps` (tools/cap-board.mjs), in run mode with every spawner armed; at 3x it is panned a step a frame
--- by a middle drag with the zone grid hidden, by one with Shift held showing it (the root's `zonegrid` class), and by the wheel -- and the
+-- by a middle drag with the zone grid hidden, and by one with Shift held showing it (the root's `zonegrid` class) -- and the
 footer times each view step to the second frame after the one that draws it, as pan-cost.mjs does (app/src/view.js `viewFrameMeter`,
 restated at the move 9 to 12 gate, S1), its median and 90th percentile,
 and its button resets it. The figures are headless Chrome's, software-rendered: comparative alone, PZ11's own figure the director's on
 the Chromebook. Each run's figures are reported as the test's diagnostic.
+RESTATED at H27.5 (dev/DECISIONS.md H27-1): the wheel pans no more, so its pan is not timed; the two drags are.
 */
 test('H26.6 move 9, PZ11: the cap board opens by name in run mode, every spawner armed, and the footer times each view step of a pan at 3x, reset by its button', { skip: SKIP }, async (ctx) => {
 	const t = await theTab();
@@ -423,20 +429,16 @@ test('H26.6 move 9, PZ11: the cap board opens by name in run mode, every spawner
 		const box = JSON.parse(await t.run(`JSON.stringify((() => { const r = document.getElementById('container').getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; })())`));
 		const p = { x: Math.round(box.x + box.w * 0.8), y: Math.round(box.y + box.h * 0.5) };
 		const measured = {}, zoneGrid = `document.getElementById('container').classList.contains('zonegrid')`;
-		for (const [name, shift] of [['a middle drag, the device grid', false], ['a middle drag, both grids with Shift held', true], ['the wheel, the device grid', null]]) {
+		for (const [name, shift] of [['a middle drag, the device grid', false], ['a middle drag, both grids with Shift held', true]]) {
 			const modifiers = shift ? 8 : 0;
 			const mouse = (type, x, buttons) => t.send('Input.dispatchMouseEvent', { type, x, y: p.y, button: 'middle', buttons, clickCount: type === 'mouseMoved' ? 0 : 1, modifiers });
 			if (shift) await t.send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Shift', code: 'ShiftLeft', windowsVirtualKeyCode: 16, modifiers });
 			await t.run(`(lab.frames.reset(), 1)`);
 			let shown = null;
-			if (shift === null) {
-				for (let i = 1; i <= 40; i++) { await t.send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: p.x, y: p.y, deltaX: 0, deltaY: 24 }); await t.run(frames(1)); }
-			} else {
-				await mouse('mousePressed', p.x, 4);
-				for (let i = 1; i <= 41; i++) { await mouse('mouseMoved', p.x - 12 * i, 4); await t.run(frames(1)); if (i === 20) shown = await t.run(zoneGrid); }
-				await mouse('mouseReleased', p.x - 12 * 41, 0);
-				assert.equal(shown, shift, `${name}: the zone grid ${shift ? 'shown' : 'hidden'} as it pans`);
-			}
+			await mouse('mousePressed', p.x, 4);
+			for (let i = 1; i <= 41; i++) { await mouse('mouseMoved', p.x - 12 * i, 4); await t.run(frames(1)); if (i === 20) shown = await t.run(zoneGrid); }
+			await mouse('mouseReleased', p.x - 12 * 41, 0);
+			assert.equal(shown, shift, `${name}: the zone grid ${shift ? 'shown' : 'hidden'} as it pans`);
 			await t.run(frames(3));
 			if (shift) await t.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Shift', code: 'ShiftLeft', windowsVirtualKeyCode: 16 });
 			measured[name] = JSON.parse(await t.run('JSON.stringify(lab.frames.figures())'));
@@ -489,7 +491,7 @@ test('H26.6 move 10: in the lab the reticle brings the view home and the lab rem
 /*
 The production gate of moves 9 to 12 (a low): the reticle's 30 pixel square took the wheel, a pinch and run mode's clicks from the canvas
 beneath its corner. Its box passes them through and its ring alone takes a press (app/style.css): under trusted input, a wheel over the
-square's corner pans the view, and a click on its ring still brings the view home.
+square's corner pans the view, and a click on its ring still brings the view home. RESTATED at H27.5 (H27-1): the wheel there zooms the view.
 */
 test('the gate\'s low: the reticle\'s corner passes the wheel to the canvas, and its ring keeps the click', { skip: SKIP }, async () => {
 	const t = await theTab();
@@ -503,10 +505,10 @@ test('the gate\'s low: the reticle\'s corner passes the wheel to the canvas, and
 		await t.run(`(lab.view.set({ x: 0, y: 0, level: 1 }), 1)`);
 		await t.send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: corner.x, y: corner.y, deltaX: 0, deltaY: 120 });
 		await sleep(50);
-		const panned = JSON.parse(await t.run('JSON.stringify(lab.view.view)'));
-		assert.ok(panned.y > 0 && panned.x === 0 && panned.level === 1, `a wheel over the corner pans the view (${JSON.stringify(panned)})`);
+		const zoomed = JSON.parse(await t.run('JSON.stringify(lab.view.view)'));
+		assert.ok(zoomed.level === 2, `a wheel over the corner reaches the canvas, which zooms the view (${JSON.stringify(zoomed)})`);
 		for (const type of ['mousePressed', 'mouseReleased']) await t.send('Input.dispatchMouseEvent', { type, x: ring.x, y: ring.y, button: 'left', clickCount: 1, buttons: type === 'mousePressed' ? 1 : 0 });
-		assert.deepEqual(JSON.parse(await t.run('JSON.stringify(lab.view.view)')), { x: 0, y: 0, level: 1 }, 'a click on the ring brings the view home');
+		assert.deepEqual(JSON.parse(await t.run('JSON.stringify(lab.view.view)')), { x: 0, y: 0, level: 2 }, 'a click on the ring brings the view home, its level kept (PZ6)');
 	} finally { await t.send('Emulation.clearDeviceMetricsOverride'); }
 });
 

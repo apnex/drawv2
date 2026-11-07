@@ -76,8 +76,8 @@ const keysNow = (keys) => {
 	return { ...keys, lines: [...lines.slice(0, tab + 1), ...VIEW_KEY_LINES, ...lines.slice(tab + 1)] };
 };
 const VIEW_SECTION = { title: 'the view', lines: [
-	{ inputs: ['the wheel, or a two-finger scroll'], label: 'pan the view, in every mode; the wheel never zooms', context: null },
-	{ inputs: ['a pinch', 'Ctrl + the wheel'], label: 'zoom one level out or in about the pointer', context: null },
+	// RESTATED at H27.5 (dev/DECISIONS.md H27-1): every wheel zooms, in one row, and no line pans by a scroll
+	{ inputs: ['the wheel, or a two-finger scroll', 'Ctrl + the wheel', 'a pinch'], label: 'zoom one level out or in about the pointer, in every mode; a sideways scroll does nothing', context: null },
 	{ inputs: ['middle-drag anywhere'], label: 'pan the view once the press travels 4 pixels; a click does nothing', context: null },
 	{ inputs: ['right-drag the canvas'], label: 'pan the view once the press travels 4 pixels; a click does nothing', context: 'open ground: a zone without Shift among it' },
 	{ inputs: ['Space + left-drag anywhere'], label: 'pan the view once the press travels 4 pixels; a click does nothing', context: null },

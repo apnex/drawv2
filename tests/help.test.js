@@ -67,13 +67,14 @@ test('H26.6 move 9: the help overlay lists every view row, in a section of its o
 	try {
 		const view = helpSections(h.input.bindings()).find((s) => s.title === 'the view');
 		assert.deepEqual(view.lines.map((l) => `${l.inputs.join(' / ')} :: ${l.label}${l.context ? ` (${l.context})` : ''}`), [
-			'the wheel, or a two-finger scroll :: pan the view, in every mode; the wheel never zooms',
-			'a pinch / Ctrl + the wheel :: zoom one level out or in about the pointer',
+			// RESTATED at H27.5 (H27-1): every wheel zooms, in one row; nothing pans by a scroll
+			'the wheel, or a two-finger scroll / Ctrl + the wheel / a pinch :: zoom one level out or in about the pointer, in every mode; a sideways scroll does nothing',
 			'middle-drag anywhere :: pan the view once the press travels 4 pixels; a click does nothing',
 			'right-drag the canvas :: pan the view once the press travels 4 pixels; a click does nothing (open ground: a zone without Shift among it)',
 			'Space + left-drag anywhere :: pan the view once the press travels 4 pixels; a click does nothing',
 		]);
 		assert.deepEqual(VIEW_RULES.map((r) => r.id), h.input.bindings().view.map((r) => r.id), 'every view row, and only those');
+		assert.doesNotMatch(JSON.stringify(helpSections(h.input.bindings())), /pan the view, in every mode|scroll pan|never zooms/, 'H27.5: no line says a wheel or a scroll pans');
 	} finally { h.restore(); }
 	assert.deepEqual(eventsFor('Space+left drag on anywhere').map((e) => [e.type, e.button, e.pointerType, e.shiftKey]), [['down', 0, 'mouse', false]]);
 	assert.deepEqual(eventsFor('middle drag on anywhere')[0].hit, { kind: 'canvas', id: null, region: null });

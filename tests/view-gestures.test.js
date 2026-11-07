@@ -4,6 +4,8 @@ GESTURES AS ROWS, through draw's own composed tables and, live, through the real
 the page's composition): the view's rows asked before the press table in every mode; the pan rows a mouse's press alone, a pan only past
 4 screen pixels, the pointer taken then; the session measured on the screen; the wheel's two rows, the pinch stepping a level per 100
 normalised pixels about the pointer and a wheel without Ctrl never zooming. The page's own trusted input is tests/lab-browser.test.js's.
+RESTATED at H27.5 (dev/DECISIONS.md H27-1): the wheel's one row, every wheel -- with Ctrl or without -- stepping a level per 100 normalised
+pixels of `deltaY` about the pointer as the pinch did, and panning nothing.
 */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -285,35 +287,54 @@ test('H26.6 move 9: no drawing-unit threshold is left in draw -- the session mea
 });
 
 /*
-GR6 (AG-2) through the capture: a wheel without Ctrl never zooms -- deltas of every unit and sign, horizontal and vertical, in every mode and
-mid-gesture -- and is claimed, the page never scrolled; the left drag on open ground stays the selection box (above, and the live box).
+GR6 (AG-2) through the capture -- RESTATED at H27.5 (dev/DECISIONS.md H27-1, which overturned its wheel half): every wheel zooms as a pinch
+does, with Ctrl or without -- a level per 100 normalised pixels of `deltaY`, each unit, about the pointer, the drawing point under it held --
+and pans nothing: a sideways scroll moves no view and a wheel's `deltaX` is not read; in every mode and mid-gesture, each wheel claimed,
+the page never scrolled. The drag half stands: the left drag on open ground stays the selection box (above, and the live box).
 */
-test('H26.6 move 9, GR6: a wheel without Ctrl never zooms -- it pans, by its normalised deltas over the scale, and is claimed', () => {
+test('H27.5, GR6 as amended by H27-1: every wheel zooms as a pinch does -- one level per 100 normalised pixels of deltaY about the pointer -- pans nothing, and is claimed', () => {
 	const h = makeInput({ view: true });
 	try {
+		const at = { x: 700, y: 300 }, under = () => h.scene.toDrawing(at);
 		for (const mode of ['view', 'edit', 'run']) {
 			h.renderer.setMode(mode);
-			for (const deltaMode of [0, 1, 2]) for (const [dx, dy] of [[0, 120], [0, -3], [57, 0], [-1, 1], [0, 2000]]) {
-				const v0 = centre(h), ev = wheel(700, 300, dy, { deltaX: dx, deltaMode, shiftKey: dx === 57 });
+			// 100 pixels; 3 lines of 40, 120; a tenth of a page of 1,080, 108 -- each one step, its remainder held
+			for (const [deltaMode, d] of [[0, 100], [1, 3], [2, 0.1]]) {
+				h.view.set({ x: 0, y: 0, level: 1 });
+				const p0 = under(), out = wheel(at.x, at.y, d, { deltaMode });
+				h.capture.onWheel(out);
+				const p = under();
+				assert.equal(out.claimed, 1, `${mode}, deltaMode ${deltaMode}: claimed, the page neither scrolls nor zooms`);
+				assert.equal(h.view.view.level, 2, `${mode}, deltaMode ${deltaMode}: a wheel without Ctrl steps one level out`);
+				assert.ok(near(p.x, p0.x) && near(p.y, p0.y), `${mode}, deltaMode ${deltaMode}: about the pointer, the drawing point under it held`);
+				h.capture.onWheel(wheel(at.x, at.y, -d, { deltaMode }));
+				assert.equal(h.view.view.level, 1, `${mode}, deltaMode ${deltaMode}: and back in`);
+			}
+			// a sideways scroll, Shift held as a mouse's sideways wheel is, and a wheel's deltaX beside a deltaY under a step: no view moves
+			h.view.set({ x: 0, y: 0, level: 1 });
+			// a deltaY under a step in each unit: 1 pixel, 1 line of 40, a twentieth of a page of 1,080
+			for (const deltaMode of [0, 1, 2]) for (const [dx, dy, held] of [[57, 0, 0], [-4000, 0, 0], [-1, [1, 1, 0.05][deltaMode], [1, 40, 54][deltaMode]]]) {
+				h.view.wheelReset();
+				const v0 = centre(h), ev = wheel(at.x, at.y, dy, { deltaX: dx, deltaMode, shiftKey: dx === 57 });
 				h.capture.onWheel(ev);
-				const unit = [1, 40, 1080][deltaMode];
-				// RESTATED at the production gate of moves 9 to 12 (S2): the centre is held within PZ31's bound -- 2,000 pages of 1,080 pixels
-				// at the scale of 1 reach past it
-				const held = (v) => Math.min(Math.max(v, -1_000_000), 1_000_000);
-				assert.equal(ev.claimed, 1, 'claimed: the page neither scrolls nor zooms');
-				assert.deepEqual(centre(h), { x: held(v0.x + dx * unit), y: held(v0.y + dy * unit), level: v0.level }, `${mode}, deltaMode ${deltaMode}, ${dx}, ${dy}: panned, never zoomed`);
+				assert.deepEqual([ev.claimed, centre(h)], [1, v0], `${mode}, deltaMode ${deltaMode}, ${dx}, ${dy}: claimed, and no view moved -- deltaX is not read`);
+				assert.equal(h.view.wheelHeld(), held, `${mode}, deltaMode ${deltaMode}: deltaY alone held toward a step`);
 			}
 		}
+		// Ctrl and the wheel answer as the wheel: the same fact, from the same view, lands on the same view
+		const landed = (ctrlKey) => { h.view.set({ x: 120, y: -60, level: 1 }); h.capture.onWheel(wheel(at.x, at.y, 250, { ctrlKey })); return [centre(h), h.view.wheelHeld()]; };
+		assert.deepEqual(landed(false), landed(true), 'with Ctrl or without, one answer');
 		h.renderer.setMode('view');
-		h.view.set({ x: 0, y: 0, level: 1 });   // S2: back within the bound, which the pages above reached
+		h.view.set({ x: 0, y: 0, level: 1 });
 		h.capture.onDown(mouse(-300, -200));
 		h.capture.onMove(mouse(-100, -100));
-		const v0 = centre(h), ev = wheel(700, 300, 100);
+		const ev = wheel(700, 300, 100);
 		h.capture.onWheel(ev);
-		assert.deepEqual([h.input.isGesturing(), ev.claimed, centre(h)], [true, 1, { ...v0, y: v0.y + 100 }], 'mid-gesture too: the box stays live, the wheel pans');
-		const unknown = wheel(700, 300, 100, { deltaMode: 7 });
+		assert.deepEqual([h.input.isGesturing(), ev.claimed, h.view.view.level], [true, 1, 2], 'mid-gesture too: the box stays live, the wheel zooms');
+		const v0 = centre(h), unknown = wheel(700, 300, 100, { deltaMode: 7 });
 		h.capture.onWheel(unknown);
-		assert.deepEqual([unknown.claimed, centre(h)], [1, { ...v0, y: v0.y + 100 }], 'a unit not reported: claimed, the view kept');
+		assert.deepEqual([unknown.claimed, centre(h)], [1, v0], 'a unit not reported: claimed, the view kept');
+		assert.equal(typeof h.view.scrollPan, 'undefined', 'the scroll\'s pan is gone from the view part (H27-1)');
 	} finally { h.restore(); }
 });
 
@@ -343,7 +364,7 @@ test('H26.6 move 9: a slow pinch and a fast one each step one level per 100 pixe
 			for (const d of facts) {
 				h.capture.onWheel(wheel(at.x, at.y, d, { ctrlKey: true, deltaMode: name === 'lines' ? 1 : 0 }));
 				levels.push(h.view.view.level);
-				held.push(h.view.pinchHeld());
+				held.push(h.view.wheelHeld());
 				const p = under();
 				assert.ok(near(p.x, p0.x) && near(p.y, p0.y), `${name}: the drawing point under the pointer held (${JSON.stringify(p)} against ${JSON.stringify(p0)})`);
 				assert.ok([0.5, 1, 2, 3].includes(h.view.view.level) && near(h.scene.view().scale, (1 / h.view.view.level)), `${name}: at a level, never between`);
@@ -353,18 +374,19 @@ test('H26.6 move 9: a slow pinch and a fast one each step one level per 100 pixe
 			if (name === 'slow') assert.equal(levels.indexOf(2), 19, 'slow: the step at the twentieth fact of 5, its 100th pixel');
 			h.capture.onWheel(wheel(at.x, at.y, -250, { ctrlKey: true }));
 			assert.equal(h.view.view.level, 1, `${name}: back in, two levels for 250, 50 held`);
-			assert.equal(h.view.pinchHeld(), -50);
+			assert.equal(h.view.wheelHeld(), -50);
 			h.capture.onDown(mouse(600, 400, { button: 1, buttons: 4 }));
 			h.capture.onMove(mouse(620, 400, { button: -1, buttons: 4 }));
 			h.capture.onMove(mouse(640, 400, { button: -1, buttons: 4 }));
-			assert.equal(h.view.pinchHeld(), 0, `${name}: a drag's pan, a view the wheel did not set, sets the held pixels to 0`);
+			assert.equal(h.view.wheelHeld(), 0, `${name}: a drag's pan, a view the wheel did not set, sets the held pixels to 0`);
 		} finally { h.restore(); }
 	}
 });
 
-test('H26.6 move 9: the view\'s rows, as 3.6 states them -- five, none mutating, the pan rows a mouse\'s press alone and unclaimed, the wheel\'s claimed and live mid-gesture', () => {
+// RESTATED at H27.5 (H27-1): four rows, the wheel's one, matching every wheel
+test('H26.6 move 9, restated at H27.5: the view\'s rows, as 3.6 states them -- four, none mutating, the pan rows a mouse\'s press alone and unclaimed, the wheel\'s claimed and live mid-gesture', () => {
 	assert.deepEqual(VIEW_RULES.map((r) => [r.id, r.mutates, r.prevent ?? true, r.duringGesture ?? false, r.pans ?? null]), [
-		['scroll-pan', false, true, true, null], ['pinch-zoom', false, true, true, null],
+		['wheel-zoom', false, true, true, null],
 		['pan-middle', false, false, false, 'pan-middle'], ['pan-right', false, false, false, 'pan-right'], ['pan-space', false, false, false, 'pan-space'],
 	]);
 });

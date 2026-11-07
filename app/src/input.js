@@ -16,8 +16,8 @@ Input — pointer/keyboard state machine. Two-button gestures (`dev/DECISIONS.md
   Shift at release  (link mode) chain wiring: continue the run from the target
   Space             set datum at cursor on release (readout goes relative), unless a pan ran while it was held; Shift+Space clears
   = + / - / Shift+0 / Shift+1 / h   a level nearer, farther, the default, fit the diagram, home to 0,0 (H26.6's move 10)
-  wheel / two-finger scroll   pan the view, in every mode (H26.6's move 9, app/src/recognize.js VIEW_RULES); never a zoom
-  pinch / Ctrl+wheel          zoom one level per 100 pixels about the pointer
+  wheel / two-finger scroll / Ctrl+wheel / pinch   zoom one level per 100 pixels about the pointer, in every mode (H26.6's move 9,
+                    app/src/recognize.js VIEW_RULES; H27-1: every wheel zooms, a sideways scroll does nothing)
   middle-drag, right-drag on open ground, Space+left-drag   pan the view once the press travels 4 screen pixels
   1-6 / Q           stamp hand: digit arms a node type (ghost at the snapped cell,
                     click stamps, Enter stamps at the ghost); Q pipettes the type
@@ -501,8 +501,8 @@ export class Input {
 			// a gesture must not survive a document swap (chain mode has no held
 			// button, so the header menu is reachable mid-gesture)
 			if (action === 'load' && this.mode) this.cancelDrag();
-			// H26.6's move 9 (3.6): a switch of diagram drops a pan row's press and the pinch's held pixels
-			if (action === 'load') { this.#pendingPan = null; this.#pendingDatum = null; this.view?.pinchReset(); }
+			// H26.6's move 9 (3.6): a switch of diagram drops a pan row's press and the wheel's held pixels
+			if (action === 'load') { this.#pendingPan = null; this.#pendingDatum = null; this.view?.wheelReset(); }
 			// hovered/armed state must die with its entity (chord delete, undo, load)
 			if (action === 'del' || action === 'load') {
 				if (this.overlayUi.hovered && (action === 'load' || entity.id === this.overlayUi.hovered)) {
@@ -649,7 +649,7 @@ export class Input {
 	/*
 	H26.6's move 9 (PAN-ZOOM.md section 3.6) -- THE VIEW'S ROWS ASKED (app/src/recognize.js VIEW_RULES): the situation they read, whether a
 	gesture is live -- engaged or not, the session's -- whether the press is on open ground, the canvas, and whether Space is held, by the
-	keys the session was told (IB14); the guards a press is asked under, and whether a gesture is in progress, which the wheel's rows run
+	keys the session was told (IB14); the guards a press is asked under, and whether a gesture is in progress, which the wheel's row runs
 	through. Answers the match, or null.
 	*/
 	#viewAsked(evt) {
@@ -694,8 +694,8 @@ export class Input {
 
 	/*
 	H26.6's move 9 (PAN-ZOOM.md section 3.6) -- A WHEEL, by its own entry: matched against the view's rows and claimed there, so the page
-	neither scrolls nor zooms, never through `resolvePress`, which takes presses alone; a wheel without Ctrl pans and with Ctrl zooms a level
-	about the pointer, in every mode and while a gesture is live (app/src/view.js `scrollPan`, `pinchZoom`).
+	neither scrolls nor zooms, never through `resolvePress`, which takes presses alone; every wheel, with Ctrl or without, zooms a level about
+	the pointer, in every mode and while a gesture is live (app/src/view.js `wheelZoom`; H27-1, which deleted the scroll's pan).
 	*/
 	wheel(evt, reply) {
 		this.#markShiftOwed(evt);   // H26.5 (B413)
@@ -704,8 +704,7 @@ export class Input {
 		if (match) this[match.row.run](evt, reply, match.row);
 	}
 
-	onScrollPan(evt) { this.view?.scrollPan(evt.deltaX, evt.deltaY, evt.deltaMode); }
-	onPinchZoom(evt) { this.view?.pinchZoom(evt.screen, evt.deltaY, evt.deltaMode); }
+	onWheelZoom(evt) { this.view?.wheelZoom(evt.screen, evt.deltaY, evt.deltaMode); }
 
 	/*
 	H12.7 -- the situation this surface is in, as a VALUE.
@@ -1778,7 +1777,7 @@ export class Input {
 	   Control's release would take it.
 	It cancels no gesture and ends no press: a drag continues across a focus change, draw's own policy -- but for a pan.
 	H26.6's move 9 (PAN-ZOOM.md section 3.6): a focus loss cancels a live pan, the view left where the pan had it, and drops a pan row's
-	press waiting on the threshold, the keys the session holds (IB14) -- no release of Space is promised after it -- and the pinch's held
+	press waiting on the threshold, the keys the session holds (IB14) -- no release of Space is promised after it -- and the wheel's held
 	pixels.
 	*/
 	blur(evt) {
@@ -1787,7 +1786,7 @@ export class Input {
 		this.#session.keysLost();
 		this.#pendingPan = null;
 		this.#pendingDatum = null;   // move 10 (3.6): focus lost clears the pending datum
-		this.view?.pinchReset();
+		this.view?.wheelReset();
 		if (Object.hasOwn(VIEW_GESTURES, this.mode)) this.cancelDrag(evt);
 	}
 

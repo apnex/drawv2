@@ -15,7 +15,7 @@ THE GRAMMAR
                                         link's end), or, in run mode, region:endpoint, region:ground, region:action,
                                         region:input -- several joined by |
   double     double                     a double click
-  view       wheel | Ctrl+wheel | pinch     a wheel without Ctrl, with it, or a pinch (H26.6's move 9)
+  view       wheel | Ctrl+wheel | pinch     a wheel without Ctrl, with it, or a pinch (H26.6's move 9) -- each zooms (H27-1)
              [mods+]left|middle|right drag on K   a mouse's press dragged past the threshold; `Space+` a key held, not a
                                         modifier; K as a press's, or `anywhere`
 

@@ -4,6 +4,8 @@ view's centre within the bound") -- THE VIEW'S CENTRE HELD WITHIN PZ31'S BOUND. 
 at 3x took the centre to 1,033,006; the view saved there was refused on reload (`storedView`), and the viewer reopened silently at 0,0.
 Now the view part's one write holds each axis of the centre to +-1,000,000 -- a wheel, a drag, a pinch, a key and a view set outright --
 so a view saved at the bound is the view reopened. On the view part over a scene, a store and timers of the test's own.
+RESTATED at H27.5 (dev/DECISIONS.md H27-1): the wheel pans no more, its pan deleted, so the reproduction's twelve steps are a drag's, the
+way the view now travels; a wheel zooms, held as a pinch was.
 */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -28,12 +30,12 @@ const memory = () => {
 // the centre the scene shows, from its top-left corner and scale
 const shown = (scene) => { const { region } = scene.visible(); return { x: region.x + region.w / 2, y: region.y + region.h / 2 }; };
 
-test('S2: twelve wheel steps from x 999,000 at 3x stop at the bound, and the view saved there reopens there, not at 0,0', () => {
+test('S2: twelve drag steps from x 999,000 at 3x stop at the bound, and the view saved there reopens there, not at 0,0', () => {
 	const store = memory();
 	withView(({ view, scene, settle }) => {
 		view.open('diagram-a');
 		view.set({ x: 999_000, y: 0, level: 3 });
-		for (let i = 0; i < 12; i++) view.scrollPan(1000, 0, 0);
+		for (let i = 0; i < 12; i++) view.dragPan(-1000, 0);
 		assert.deepEqual(view.view, { x: 1_000_000, y: 0, level: 3 }, 'the centre held at 1,000,000, where it went to 1,033,006');
 		assert.ok(Math.abs(shown(scene).x - 1_000_000) < 1e-6, 'and the scene shows that centre');
 		settle();
@@ -46,7 +48,7 @@ test('S2: twelve wheel steps from x 999,000 at 3x stop at the bound, and the vie
 	}, store);
 });
 
-test('S2: every way the view moves holds its centre within the bound, on both axes and both signs -- a drag, a pinch, a key, a view set outright', () => {
+test('S2: every way the view moves holds its centre within the bound, on both axes and both signs -- a drag, a wheel, a key, a view set outright', () => {
 	withView(({ view }) => {
 		view.set({ x: -999_990, y: 999_990, level: 3 });
 		view.dragPan(4000, -4000);
@@ -54,8 +56,8 @@ test('S2: every way the view moves holds its centre within the bound, on both ax
 		view.set({ x: 2_000_000, y: -5e9, level: 1 });
 		assert.deepEqual(view.view, { x: 1_000_000, y: -1_000_000, level: 1 }, 'a view set past the bound, held');
 		view.set({ x: 999_999, y: 0, level: 1 });
-		view.pinchZoom({ x: 1300, y: 260 }, -100, 0);
-		assert.ok(view.view.level === 0.5 && view.view.x <= 1_000_000, `a pinch about a point near the edge keeps the centre within (${view.view.x})`);
+		view.wheelZoom({ x: 1300, y: 260 }, -100, 0);
+		assert.ok(view.view.level === 0.5 && view.view.x <= 1_000_000, `a wheel about a point near the edge keeps the centre within (${view.view.x})`);
 		view.set({ x: 1_000_000, y: 0, level: 0.5 });
 		view.zoomOut();
 		assert.deepEqual(view.view, { x: 1_000_000, y: 0, level: 1 }, 'a key about the centre at the bound');

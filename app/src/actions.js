@@ -50,8 +50,7 @@ export const ACTION_LABELS = {
 	addInBox: 'add what the marquee takes to the selection',
 	// ---- run mode ----
 	// ---- the view (H26.6's move 9, app/src/recognize.js VIEW_RULES) ----
-	onScrollPan: 'pan the view, in every mode; the wheel never zooms',
-	onPinchZoom: 'zoom one level out or in about the pointer',
+	onWheelZoom: 'zoom one level out or in about the pointer, in every mode; a sideways scroll does nothing',
 	onPanPress: 'pan the view once the press travels 4 pixels; a click does nothing',
 	// ---- the view's keys (H26.6's move 10, app/src/keymap.js) ----
 	onZoomIn: 'zoom one level in, about the centre',
