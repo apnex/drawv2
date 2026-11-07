@@ -1590,9 +1590,9 @@ AMENDED 2026-11-06: H26.12 done -- the four admitted to mission-kit as `C11` to 
 
 ---
 
-## H27 -- after H26: the gate binary on every runner, the triggers that fired unseen, and the tester's production - `TODO`
+## H27 -- after H26: the gate binary on every runner, the triggers that fired unseen, and the tester's production - `WIP`
 
-Proposed 2026-11-06 by the re-triage after H26 closed, at the director's "refresh the board"; the order below is the director's to select (H27.1).\
+Proposed 2026-11-06 by the re-triage after H26 closed, at the director's "refresh the board"; selected as listed the same day (`dev/DECISIONS.md` H27), with the wheel made a zoom (H27-1, H27.5).\
 The order, by the board's rule (the higher of impact and principle breach): first CI's gate, red four times since 2026-11-02 on Chrome's start alone and each time re-run past -- `S4` by impact, but A8's mandate ("There is no 'mostly verified' state"), as H20.2 placed the same kind first; then the defect whose trigger fired unseen, B410, a gesture that throws; then the gesture tester's stuck pan and its production, which still serves `0.1.0` while the lab serves the release the director accepted.\
 Found by the re-triage and corrected first: four triggers fired unseen during H26.6 -- B310 at move 12, B407 at move 7 and B410 at move 13, and B444 by its letter with `input-binding`'s admission -- and B310, B407 and B444 are held again with their triggers restated, B410 planned; B346's remainder, the installed CLI's half, was in neither the board nor Held, and is held; the Chrome start failures had no row, and are B448, which fires B333.\
 Owed by the director and held, each with its trigger: whether draw and the tester share a grid drawer (B415, under Decisions required); PZ11's speed reading on the Chromebook (B446); the tester's input-method test (B433, the tester's B2); the dot size, fixed "until we review" (`dev/design/components/PAN-ZOOM.md` PZ24).\
@@ -1600,10 +1600,11 @@ Not legal until the director opens them, each held: unloading off-screen element
 
 | # | Item | Cites | Sev | State |
 |---|---|---|---|---|
-| H27.1 | Re-triage the board after H26, the order selected by the director and recorded here | feature | S3 | `WIP` |
+| H27.1 | Re-triage the board after H26, the order selected by the director and recorded here (H27) | feature | S3 | `DONE` |
 | H27.2 | CI's gate binary on GitHub's runner: why Chrome's start passes 20 seconds there, fixed where the cause lives -- `headless-chromium` if it is the launcher's (B439's trigger), each adopter's gate if a test holds the machine -- every adopter's CI green on the fix with no re-run; B333 judged on the cause | **B448**, **B333** | S4 | `TODO` |
 | H27.3 | A handle press that finds no entity ends its gesture without a throw (B410), its trigger fired at H26.6's move 13 | **B410** | S4 | `TODO` |
-| H27.4 | The gesture tester: a stale pan press panning for one drag fixed (B447), on the light path to its lab, then its accepted release promoted to `input.apnex.io` on the director's approval | **B447** | S4 | `TODO` |
+| H27.4 | The gesture tester: a stale pan press panning for one drag fixed (B447) and the wheel made a zoom as draw's (H27-1), on the light path to its lab, then its accepted release promoted to `input.apnex.io` on the director's approval | **B447** | S4 | `TODO` |
+| H27.5 | The wheel and a two-finger scroll zoom the view as a pinch does, one level per 100 pixels about the pointer, and pan nothing; the view pans by the three drags (H27-1); `PAN-ZOOM.md`'s AG-2 and GR6 amended; built beside H27.2, which needs no gate of this machine, and to the lab on its builder's gate | feature | S4 | `TODO` |
 
 **Exit:** no CI gate of the eight repositories red on anything but what it tests; no trigger fired and left neither planned nor held again; the gesture tester in production at the release the director accepted.
 
