@@ -99,10 +99,13 @@ test('R-e: REST and the CLI answer every link as the lab\'s tab does', async () 
 	const run = async (...argv) => { const out = []; await main([...argv, '--host', `http://127.0.0.1:${app.port}`], { HOME: home }, (s) => out.push(s)); return out.join(''); };
 	try {
 		const tab = lab();
+		// RESTATED at H29.1 (B453): the CLI's answer gains `pathCells`, the route's points in cells by the diagram's pitch, beside REST's fields
+		const pitch = JSON.parse(await run('layouts', '--diagram', ID, '--json')).layouts[0].pitch;
 		for (const id of LINKS) {
 			const answer = JSON.parse(await run('link', 'path', id, '--diagram', ID, '--json'));
-			const { link, src, dst, via, ...said } = answer;
+			const { link, src, dst, via, pathCells, ...said } = answer;
 			assert.deepEqual(said, tabSays(tab, id), `${id} through REST`);
+			assert.deepEqual(pathCells, said.path.map(([x, y]) => [x / pitch, y / pitch]), `${id}: its route in cells`);
 			const about = JSON.parse(await run('about', id, '--diagram', ID, '--json'));
 			assert.deepEqual([about.path, about.route, about.down, about.blockers], [said.path, said.route, said.down, said.blockers], `${id} through context`);
 		}

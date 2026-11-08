@@ -526,8 +526,8 @@ export const VERBS = [
 		},
 	},
 	{
-		name: 'get', group: 'Context', usage: 'draw get <kind> [id|name]', route: '/diagrams/<id>', method: 'GET',
-		summary: 'interrogate nodes, links, zones, groups, waypoints, pipes', example: 'draw get nodes',
+		name: 'get', group: 'Context', usage: 'draw get <kind> [id|name]', route: '/diagrams/<id>', method: 'GET', also: ['GET /diagrams/<id>/layouts'],
+		summary: 'interrogate nodes, links, zones, groups, waypoints, pipes -- each position in pixels (px) with its cell beside it, the unit add, move and map take', example: 'draw get nodes',
 		args: [{ name: 'kind', about: 'nodes | links | zones | groups | waypoints | pipes (singular accepted)' },
 			{ name: 'id|name', about: 'one entity; omit for all of that kind -- for pipes, a pipe id or an anchor, every pipe at it' }],
 		flags: [{ name: '--diagram', about: 'target by id or name' }],
@@ -562,9 +562,11 @@ export const VERBS = [
 				for (const e of doc[kk] || []) named.set(e.id, e.name || e.id);
 			}
 			const show = (v) => (Array.isArray(v) ? v.map((x) => named.get(x) || x).join(',') : (named.get(v) || v));
-			const cols = columnsFor(k, list);
-			const rows = list.map((e) => cols.map((c) => (e[c] === undefined ? '' : show(e[c]))));
-			return { json: list, text: table(rows, cols.map((c) => c.toUpperCase())) };
+			// H29.1 (B453): the pixel columns headed px, the cell beside them, and `--json` gaining `cell` or `cells`
+			const pitch = await pitchOf(ctx, id);
+			const cols = unitColumns(columnsFor(k, list));
+			const rows = list.map((e) => cols.map((c) => unitValue(e, c, pitch) ?? (e[c] === undefined ? '' : show(e[c]))));
+			return { json: list.map((e) => withCells(e, pitch)), text: table(rows, cols.map(unitHeader)) };
 		},
 	},
 	{
@@ -1004,8 +1006,8 @@ asked for, which is the twin problem this codebase keeps finding.
 */
 VERBS.push(
 	{
-		name: 'about', group: 'Context', usage: 'draw about <entity-id>', route: '/diagrams/<id>/context/<entity>', method: 'GET', also: ['GET /diagrams', 'GET /diagrams/<id>'],
-		summary: 'what surrounds an entity: links, neighbours, group, enclosing zones',
+		name: 'about', group: 'Context', usage: 'draw about <entity-id>', route: '/diagrams/<id>/context/<entity>', method: 'GET', also: ['GET /diagrams', 'GET /diagrams/<id>', 'GET /diagrams/<id>/layouts'],
+		summary: 'what surrounds an entity: links, neighbours, group, enclosing zones -- its position in pixels (px) and its cell',
 		example: 'draw about node-aa0001',
 		args: [{ name: 'entity', about: 'any node, waypoint, link, zone or group, by id or name -- the kind is worked out for you' }],
 		flags: [{ name: '--diagram', about: 'target by id or name' }],
@@ -1032,7 +1034,9 @@ VERBS.push(
 			*/
 			const nm = naming(doc);
 			const rows = [];
-			if (b.at) rows.push(['at', `${b.at.x},${b.at.y}`]);
+			// H29.1 (B453): the position in px and its cell, and a route's points both ways
+			const pitch = b.at || b.path ? await pitchOf(ctx, id) : null;
+			if (b.at) rows.push(['at', pxAndCell(b.at.x, b.at.y, pitch)]);
 			if (b.role) rows.push(['role', b.role]);
 			if (b.group) rows.push(['group', nm(b.group)]);
 			if (b.zones?.length) rows.push(['zones', b.zones.map(nm).join(' ')]);
@@ -1046,18 +1050,19 @@ VERBS.push(
 			}
 			if (b.contents?.length) rows.push(['contents', b.contents.map((c) => nm(c.id)).join(' ')]);
 			// B292: a path's points are [x, y] pairs -- this read p.x and p.y, and printed every link's path as undefined
-			if (b.path) rows.push(['path', b.path.map((p) => p.join(',')).join(' -> ')]);
+			if (b.path) rows.push(['path', `${b.path.map((p) => p.join(',')).join(' -> ')} px`], ['path cells', b.path.map(([x, y]) => `${x / pitch},${y / pitch}`).join(' -> ')]);
 			// R-b (H1): the anchors its route runs through, or that it is down and what holds its way
 			if (b.route) rows.push(['route', b.route.map(nm).join(' -> ')]);
 			if (b.down) rows.push(['down', b.blockers?.length ? `held by ${b.blockers.map(nm).join(' ')}` : 'no way over its pipes -- it heals when one is laid']);
-			return { json: b, text: `${b.kind} ${b.id}${b.name ? `  ${b.name}` : ''}\n${table(rows, ['FIELD', 'VALUE'])}` };
+			const json = { ...b, ...(b.at ? { cell: cellAt(b.at.x, b.at.y, pitch) } : {}), ...(b.path ? { pathCells: b.path.map(([x, y]) => [x / pitch, y / pitch]) } : {}) };
+			return { json, text: `${b.kind} ${b.id}${b.name ? `  ${b.name}` : ''}\n${table(rows, ['FIELD', 'VALUE'])}` };
 		},
 	},
 	{
-		name: 'near', group: 'Placement', usage: 'draw near <x> <y> [--within px]', route: '/diagrams/<id>/near', method: 'GET',
-		summary: 'what is already around a point, so you do not draw on top of it',
+		name: 'near', group: 'Placement', usage: 'draw near <x> <y> [--within px]', route: '/diagrams/<id>/near', method: 'GET', also: ['GET /diagrams/<id>/layouts'],
+		summary: 'what is already around a point given in pixels (px) -- each thing at its px and its cell -- so you do not draw on top of it',
 		example: 'draw near 120 60 --within 180',
-		args: [{ name: 'x', about: 'canvas x' }, { name: 'y', about: 'canvas y' }],
+		args: [{ name: 'x', about: 'x in pixels (px), the drawing\'s units -- not a cell' }, { name: 'y', about: 'y in pixels (px) -- not a cell' }],
 		flags: [{ name: '--within', about: 'radius in px (default 120)' }, { name: '--diagram', about: 'target by id or name' }],
 		async run(ctx, args) {
 			const [x, y] = args.map(Number);
@@ -1065,13 +1070,15 @@ VERBS.push(
 			const id = await activeId(ctx, ctx.flags);
 			const q = `x=${x}&y=${y}${ctx.flags.within ? `&within=${ctx.flags.within}` : ''}`;
 			const b = ok(await request(ctx, `/diagrams/${id}/near?${q}`), 'near');
-			const rows = b.occupants.map((o) => [o.kind, o.id, o.name ?? '', `${o.x},${o.y}`, o.distance]);
-			return { json: b, text: `${table(rows, ['KIND', 'ID', 'NAME', 'AT', 'DIST'])}${b.zones.length ? `\nwithin zones: ${b.zones.map((z) => z.id).join(' ')}` : ''}` };
+			const pitch = await pitchOf(ctx, id);
+			const rows = b.occupants.map((o) => [o.kind, o.id, o.name ?? '', `${o.x},${o.y}`, `${o.x / pitch},${o.y / pitch}`, o.distance]);
+			const json = { ...b, occupants: b.occupants.map((o) => ({ ...o, cell: cellAt(o.x, o.y, pitch) })) };
+			return { json, text: `${table(rows, ['KIND', 'ID', 'NAME', 'AT PX', 'CELL', 'DIST PX'])}${b.zones.length ? `\nwithin zones: ${b.zones.map((z) => z.id).join(' ')}` : ''}` };
 		},
 	},
 	{
-		name: 'zone contents', sub: true, group: 'Context', usage: 'draw zone contents <zone>', route: '/diagrams/<id>/zones/<zone>/contents', method: 'GET',
-		summary: 'what falls inside a zone', example: 'draw zone contents site-a',
+		name: 'zone contents', sub: true, group: 'Context', usage: 'draw zone contents <zone>', route: '/diagrams/<id>/zones/<zone>/contents', method: 'GET', also: ['GET /diagrams/<id>/layouts'],
+		summary: 'what falls inside a zone, each at its pixels (px) and its cell', example: 'draw zone contents site-a',
 		args: [{ name: 'zone', about: 'the zone to look inside, by id or name' }],
 		flags: [{ name: '--diagram', about: 'target by id or name' }],
 		async run(ctx, args) {
@@ -1082,12 +1089,14 @@ VERBS.push(
 			const zid = await resolveId(ctx, id, args[0]);
 			if (!zid.startsWith('zone-')) die(`${args[0]} is a ${zid.split('-')[0]}, not a zone -- \`draw about ${args[0]}\` describes it`);
 			const b = ok(await request(ctx, `/diagrams/${id}/zones/${zid}/contents`), 'zone contents');
-			return { json: b, text: table(b.contents.map((c) => [c.kind, c.id, c.name ?? '', `${c.x},${c.y}`]), ['KIND', 'ID', 'NAME', 'AT']) };
+			const pitch = await pitchOf(ctx, id);
+			const json = { ...b, contents: b.contents.map((c) => ({ ...c, cell: cellAt(c.x, c.y, pitch) })) };
+			return { json, text: table(b.contents.map((c) => [c.kind, c.id, c.name ?? '', `${c.x},${c.y}`, `${c.x / pitch},${c.y / pitch}`]), ['KIND', 'ID', 'NAME', 'AT PX', 'CELL']) };
 		},
 	},
 	{
-		name: 'link path', sub: true, group: 'Context', usage: 'draw link path <link>', route: '/diagrams/<id>/links/<link>/path', method: 'GET',
-		summary: 'the resolved route -- what the renderer would draw, and whether the link is down', example: 'draw link path link-aa00ff',
+		name: 'link path', sub: true, group: 'Context', usage: 'draw link path <link>', route: '/diagrams/<id>/links/<link>/path', method: 'GET', also: ['GET /diagrams/<id>/layouts'],
+		summary: 'the resolved route in pixels (px) and in cells -- what the renderer would draw, and whether the link is down', example: 'draw link path link-aa00ff',
 		args: [{ name: 'link', about: 'the link to resolve, by id or name' }],
 		flags: [{ name: '--diagram', about: 'target by id or name' }],
 		async run(ctx, args) {
@@ -1101,7 +1110,9 @@ VERBS.push(
 			if (!b.path) die(`link ${b.link} does not resolve -- a dangling endpoint or a missing bend`);
 			// R-b (H1): a down link says so, and what holds its way; an up one, the anchors its route runs through
 			const state = b.down ? `down${b.blockers?.length ? ` -- held by ${b.blockers.join(' ')}` : ' -- no way over its pipes'}` : `route ${(b.route ?? []).join(' -> ')}`;
-			return { json: b, text: `${b.src} -> ${b.dst}${b.via.length ? ` via ${b.via.join(' ')}` : ''}\n${b.path.map((p) => p.join(',')).join('  ')}\n${state}` };
+			const pitch = await pitchOf(ctx, id);
+			const pathCells = b.path.map(([x, y]) => [x / pitch, y / pitch]);
+			return { json: { ...b, pathCells }, text: `${b.src} -> ${b.dst}${b.via.length ? ` via ${b.via.join(' ')}` : ''}\npx     ${b.path.map((p) => p.join(',')).join('  ')}\ncells  ${pathCells.map((p) => p.join(',')).join('  ')}\n${state}` };
 		},
 	},
 );
@@ -1259,7 +1270,7 @@ VERBS.push({
 			const cell = ok(await request(ctx, `/diagrams/${id}/layouts/node/nearest?x=${put.x}&y=${put.y}`), 'place');
 			return {
 				json: { id: nid, at: { x: put.x, y: put.y }, cell: { cx: cell.cx, cy: cell.cy }, linked: !!ctx.flags.link, version: b.version },
-				text: `${ctx.flags.name || nid} (${nid}) at ${put.x},${put.y}${ctx.flags.link ? ` linked to ${anchorNode.name || anchorNode.id}` : ''}  v${b.version}`,
+				text: `${ctx.flags.name || nid} (${nid}) at ${put.x},${put.y} px (cell ${cell.cx},${cell.cy})${ctx.flags.link ? ` linked to ${anchorNode.name || anchorNode.id}` : ''}  v${b.version}`,
 			};
 		});
 	},
@@ -1437,7 +1448,7 @@ VERBS.push({
 	*/
 	name: 'dump', group: 'Context', usage: 'draw dump [--diagram ref]',
 	route: '/diagrams/<id>', method: 'GET',
-	summary: 'the entire document as JSON -- what the server holds, not what a viewer renders',
+	summary: 'the entire document as JSON -- what the server holds, positions in pixels (px), not what a viewer renders; `get` shows each one\'s cell',
 	example: 'draw dump --diagram mover',
 	args: [],
 	flags: [{ name: '--diagram', about: 'target by id or name' }],
@@ -1526,8 +1537,8 @@ VERBS.push({
 	this disagreed with a tab, one of them would be wrong, and the parity claim says neither can be.
 	*/
 	name: 'combat', group: 'Context', usage: 'draw combat [--at epoch-ms] [--diagram ref]',
-	route: '/diagrams/<id>/combat', method: 'GET', also: ['GET /diagrams'],
-	summary: 'towers, what each is burning, and which movers are alive or dead at an instant',
+	route: '/diagrams/<id>/combat', method: 'GET', also: ['GET /diagrams', 'GET /diagrams/<id>/layouts'],
+	summary: 'towers -- each at its pixels (px) and its cell -- what each is burning, and which movers are alive or dead at an instant',
 	example: 'draw combat --at 1788256200000',
 	args: [],
 	flags: [{ name: '--at', about: 'the instant to report, epoch ms. Default now -- pass one to make a reading reproducible' },
@@ -1539,11 +1550,12 @@ VERBS.push({
 		const b = ok(await request(ctx, `/diagrams/${id}/combat?at=${at}`), 'combat');
 		if (b.tick === undefined) return { json: b, text: 'no towers and no armed spawners' };
 		const summary = `tick ${b.tick}   alive ${b.alive}   destroyed ${b.destroyed}   beams this tick ${b.beams}`;
+		const pitch = await pitchOf(ctx, id);
 		return {
-			json: b,
-			text: `${table(b.towers.map((t) => [t.id, `${t.x},${t.y}`, `${t.range} cells`,
+			json: { ...b, towers: b.towers.map((t) => ({ ...t, cell: cellAt(t.x, t.y, pitch) })) },
+			text: `${table(b.towers.map((t) => [t.id, `${t.x},${t.y}`, `${t.x / pitch},${t.y / pitch}`, `${t.range} cells`,
 				`${t.beam}/${t.cooldown} ticks`, String(t.damage), t.burning || '-']),
-			['TOWER', 'AT', 'RANGE', 'BEAM/COOL', 'DMG', 'BURNING'])}\n\n${summary}`,
+			['TOWER', 'AT PX', 'CELL', 'RANGE', 'BEAM/COOL', 'DMG', 'BURNING'])}\n\n${summary}`,
 		};
 	},
 }, {
@@ -1644,10 +1656,12 @@ VERBS.push({
 	},
 });
 
+// H29.1 (B453): the override of a far-off write's refusal, on every write that takes a cell (`refuseFar` holds the rule)
+const FAR_FLAG = { name: '--far', about: 'write a cell however far outside the diagram it lies -- without it such a cell is refused as likelier pixels' };
 VERBS.push({
 	name: 'add', group: 'Placement', usage: 'draw add <type> at <cx>,<cy> [--name n] [--link ref]',
-	route: '/diagrams/<id>/commit', method: 'POST', also: ['GET /types', 'GET /diagrams', 'GET /diagrams/<id>', 'GET /diagrams/<id>/layouts/<layout>/anchors'],
-	summary: 'put a node on a named anchor -- a cell, never a pixel',
+	route: '/diagrams/<id>/commit', method: 'POST', also: ['GET /types', 'GET /diagrams', 'GET /diagrams/<id>', 'GET /diagrams/<id>/layouts', 'GET /diagrams/<id>/layouts/<layout>/anchors'],
+	summary: 'put a node on a named anchor -- a cell, never a pixel; it answers the cell and its pixels (px)',
 	example: 'draw add server at 5,-2 --name web-1',
 	args: [{ name: 'type', about: `a declared device type (see \`draw types\`) -- or \`waypoint\`, a node with no type` },
 		{ name: 'at', about: "the literal word 'at'" },
@@ -1657,7 +1671,7 @@ VERBS.push({
 		{ name: '--shape', about: 'the outer frame: circle or square. Independent of type' },
 		{ name: '--diagram', about: 'target by id or name' },
 			{ name: '--draft', about: 'stage into the draft instead of applying now' },
-			{ name: '--direct', about: 'apply now, escaping an open `draft begin` session' }],
+			{ name: '--direct', about: 'apply now, escaping an open `draft begin` session' }, FAR_FLAG],
 	async run(ctx, args) {
 		const [type, at, cell] = args;
 		if (!type || at !== 'at' || !cell) die('usage: draw add <type> at <cx>,<cy>');
@@ -1679,6 +1693,7 @@ VERBS.push({
 			die(`at takes a CELL like 5,-2 -- whole numbers. Pixels would let you land off the grid, which the server refuses (B110)`);
 		}
 		const id = await activeId(ctx, ctx.flags);
+		await refuseFar(ctx, id, [{ cx, cy }]);   // H29.1 (B453): a cell far outside the diagram, refused before anything is sent
 		// B133: the same sentence every cell-taking verb gives, from one place. H26.6's move 12 (PZ15): the one cell asked, any cell
 		// within PZ31's bound, where the old extent's whole list was read
 		const spot = await cellToPx(ctx, id, 'node', { cx, cy }, 'add');
@@ -1691,7 +1706,7 @@ VERBS.push({
 			const wops = [{ op: 'put', kind: 'node', entity: { id: wid, name: ctx.flags.name || wid, x: spot.x, y: spot.y } }];
 			return submit(ctx, id, wops, 'add waypoint', 'add', (wb) => ({
 				json: { id: wid, kind: 'waypoint', cell: { cx, cy }, at: { x: spot.x, y: spot.y }, version: wb.version },
-				text: `${wid} at cell ${cx},${cy} = ${spot.x},${spot.y}  v${wb.version}`,
+				text: `${wid} at cell ${cx},${cy} = ${spot.x},${spot.y} px  v${wb.version}`,
 			}));
 		}
 		const types = ok(await request(ctx, '/types'), 'add').types.map((t) => t.name);
@@ -1718,7 +1733,7 @@ VERBS.push({
 		}
 		return submit(ctx, id, ops, `add ${type}`, 'add', (b) => ({
 			json: { id: nid, cell: { cx, cy }, at: { x: spot.x, y: spot.y }, version: b.version },
-			text: `${ctx.flags.name || nid} (${nid}) at cell ${cx},${cy} = ${spot.x},${spot.y}  v${b.version}`,
+			text: `${ctx.flags.name || nid} (${nid}) at cell ${cx},${cy} = ${spot.x},${spot.y} px  v${b.version}`,
 		}));
 	},
 });
@@ -1742,9 +1757,9 @@ VERBS.push(
 	{
 		name: 'anchor nearest', sub: true, group: 'Placement', usage: 'draw anchor nearest <x> <y> [--layout node|zone]',
 		route: '/diagrams/<id>/layouts/<name>/nearest', method: 'GET',
-		summary: 'the legal anchor closest to a pixel coordinate',
+		summary: 'the legal anchor closest to a position in pixels (px): its cell, and its own px',
 		example: 'draw anchor nearest 130 60',
-		args: [{ name: 'x', about: 'pixel x' }, { name: 'y', about: 'pixel y' }],
+		args: [{ name: 'x', about: 'x in pixels (px) -- not a cell' }, { name: 'y', about: 'y in pixels (px) -- not a cell' }],
 		flags: [{ name: '--layout', about: 'node (default) or zone -- zones sit on a half-offset grid' },
 			{ name: '--diagram', about: 'target by id or name' }],
 		async run(ctx, args) {
@@ -1753,13 +1768,13 @@ VERBS.push(
 			const layout = ctx.flags.layout || 'node';
 			const id = await activeId(ctx, ctx.flags);
 			const a = ok(await request(ctx, `/diagrams/${id}/layouts/${layout}/nearest?x=${x}&y=${y}`), 'anchor nearest');
-			return { json: a, text: `cell ${a.cx},${a.cy} = ${a.x},${a.y}${a.occupant ? `  (taken by ${a.occupant})` : '  free'}` };
+			return { json: a, text: `cell ${a.cx},${a.cy} = ${a.x},${a.y} px${a.occupant ? `  (taken by ${a.occupant})` : '  free'}` };
 		},
 	},
 	{
 		name: 'anchor free', sub: true, group: 'Placement', usage: 'draw anchor free [--chunk i,j | --area cx0,cy0,cx1,cy1] [--layout node|zone]',
 		route: '/diagrams/<id>/layouts/<name>/anchors', method: 'GET', also: ['GET /diagrams/<id>', 'GET /diagrams/<id>/layouts'],
-		summary: 'every anchor nothing occupies, in the window `draw map` would show', example: 'draw anchor free --json',
+		summary: 'every anchor nothing occupies, in the window `draw map` would show -- in cells', example: 'draw anchor free --json',
 		flags: [{ name: '--chunk', about: `a chunk of ${CHUNK.w} by ${CHUNK.h} cells, i,j` }, { name: '--area', about: 'cells cx0,cy0,cx1,cy1, at most one chunk' },
 			{ name: '--layout', about: 'node (default) or zone' }, { name: '--diagram', about: 'target by id or name' }],
 		/*
@@ -1793,18 +1808,20 @@ when an agent is orienting rather than four. That is the same argument as the co
 fewer round trips, fewer chances to assemble a picture wrongly.
 */
 VERBS.push({
-	name: 'show', group: 'Context', usage: 'draw show', route: '/diagrams/<id>', method: 'GET',
-	summary: 'the whole diagram: summary and every entity', example: 'draw show --diagram a1-demo',
+	name: 'show', group: 'Context', usage: 'draw show', route: '/diagrams/<id>', method: 'GET', also: ['GET /diagrams/<id>/layouts'],
+	summary: 'the whole diagram: summary and every entity, each position in pixels (px) with its cell beside it', example: 'draw show --diagram a1-demo',
 	flags: [{ name: '--diagram', about: 'target by id or name' }],
 	async run(ctx) {
 		const id = await activeId(ctx, ctx.flags);
 		const d = viewOf(ok(await request(ctx, `/diagrams/${id}`), 'show'));
+		const pitch = await pitchOf(ctx, id);
 		const out = [`${d.meta.name}  ${d.meta.id}  v${d.meta.version}`];
 		for (const k of ['nodes', 'waypoints', 'links', 'zones', 'groups']) {
 			const list = d[k] || [];
 			if (!list.length) continue;
-			const c = columnsFor(k, list);
-			out.push('', k.toUpperCase(), table(list.map((e) => c.map((f) => (Array.isArray(e[f]) ? e[f].join(',') : e[f] ?? ''))), c.map((f) => f.toUpperCase())));
+			const c = unitColumns(columnsFor(k, list));
+			out.push('', k.toUpperCase(), table(list.map((e) => c.map((f) => unitValue(e, f, pitch) ?? (Array.isArray(e[f]) ? e[f].join(',') : e[f] ?? ''))), c.map(unitHeader)));
+			d[k] = list.map((e) => withCells(e, pitch));   // H29.1: `--json` gains the cells as the text shows them
 		}
 		// W-c (H18.33): the pipes, ends by name and the links each carries
 		if ((d.pipes || []).length) out.push('', 'PIPES', pipeTable(await pipeRows(ctx, id, d)));
@@ -1830,7 +1847,7 @@ VERBS.push(
 	},
 	{
 		name: 'layouts', group: 'Placement', usage: 'draw layouts', route: '/diagrams/<id>/layouts', method: 'GET',
-		summary: 'the diagram\'s grid record: name, id and pitch', example: 'draw layouts',
+		summary: 'the diagram\'s grid record: name, id and pitch -- the pitch in pixels per cell, what turns a cell into px', example: 'draw layouts',
 		flags: [{ name: '--diagram', about: 'target by id or name' }],
 		async run(ctx) {
 			const id = await activeId(ctx, ctx.flags);
@@ -1943,6 +1960,77 @@ async function pitchOf(ctx, id) {
 	return record.pitch;
 }
 /*
+H29.1 (dev/DECISIONS.md H29; B453) -- THE TWO UNITS, NAMED. The document holds positions in drawing units, pixels at scale 1 (`px`);
+every verb that takes a position takes a CELL, the device lattice's index (`add`, `move`, `link --via`, `zone`, `panel`, `map`). H28.3's
+evaluation found agents reading `get`'s unnamed pixels as cells -- `vault-7` answered as `4080,960` -- and typing them into the write
+verbs, 36 of its 57 failures. So a shown position is the pixels and the cell, each named, the cell by the diagram's stored pitch
+(`pitchOf`), never a literal; and `--json` keeps every field it had and gains the cell beside it: `cell` ({ cx, cy }, as `add` already
+answers) for anything at an x and a y, `cells` ({ x0, y0, x1, y1 }, as `map` answers) for a zone, `pathCells` beside a route's `path`.
+A position off the lattice keeps its fraction rather than being rounded into a cell it is not.
+*/
+const cellAt = (x, y, pitch) => ({ cx: x / pitch, cy: y / pitch });
+const pxAndCell = (x, y, pitch) => `${x},${y} px (cell ${x / pitch},${y / pitch})`;
+const cellsText = (c) => `${c.x0},${c.y0} .. ${c.x1},${c.y1}`;
+// an entity with its cell beside its position, read from its shape: one with an extent (`w`, `h`: a zone) gains `cells`, one at an x and a
+// y gains `cell`, any other is as it was
+const hasExtent = (e) => Number.isFinite(e.w) && Number.isFinite(e.h);
+function withCells(e, pitch) {
+	if (hasExtent(e)) return { ...e, cells: zoneCells(e, pitch) };
+	if (Number.isFinite(e.x) && Number.isFinite(e.y)) return { ...e, cell: cellAt(e.x, e.y, pitch) };
+	return e;
+}
+// a `get` or `show` table's columns: `cells` after an extent's `h`, else `cell` after a `y`, and each pixel column headed with its unit
+function unitColumns(cols) {
+	const after = cols.includes('h') ? ['h', 'cells'] : ['y', 'cell'];
+	if (!cols.includes(after[0])) return cols;
+	const i = cols.indexOf(after[0]) + 1;
+	return [...cols.slice(0, i), after[1], ...cols.slice(i)];
+}
+const UNIT_HEADER = { x: 'X PX', y: 'Y PX', w: 'W PX', h: 'H PX', cell: 'CELL', cells: 'CELLS' };
+const unitHeader = (c) => UNIT_HEADER[c] ?? c.toUpperCase();
+// the text of a `cell` or `cells` column, or undefined for any other column
+function unitValue(e, col, pitch) {
+	if (col === 'cell') { const c = cellAt(e.x, e.y, pitch); return `${c.cx},${c.cy}`; }
+	if (col === 'cells') return cellsText(zoneCells(e, pitch));
+	return undefined;
+}
+/*
+H29.1 (B453) -- A FAR-OFF WRITE, REFUSED. A pixel position typed as a cell lands the pitch's times as far out as the cell meant --
+`add server at -3000,-1080` placed a server 3,000 cells away and exited 0, the only guard the canvas's bound a million drawing units out.
+So a write whose cell lies far outside the diagram is refused before it is sent. FAR: further from the diagram's extent in cells (every
+anchor's cell and every zone's; cell 0,0 for an empty diagram, where the canvas opens) than the larger of the extent's own width and height
+and one chunk's width -- a diagram grows beside what it holds, and a cell more than its whole size from everything is likelier a number in
+the wrong unit than a placement, while one chunk keeps a small or empty diagram's first moves free. When the numbers look like pixels --
+each a multiple of the pitch, and divided by it landing within that reach -- the refusal names the cell they would be; `--far` writes it.
+*/
+const FAR_FLOOR = CHUNK.w;
+function extentOf(doc, pitch) {
+	const cells = (doc.nodes || []).filter((n) => Number.isFinite(n.x) && Number.isFinite(n.y)).map((n) => [n.x / pitch, n.y / pitch]);
+	for (const z of doc.zones || []) { const c = zoneCells(z, pitch); cells.push([c.x0, c.y0], [c.x1, c.y1]); }
+	if (!cells.length) return null;
+	const xs = cells.map((c) => c[0]), ys = cells.map((c) => c[1]);
+	return { x0: Math.min(...xs), x1: Math.max(...xs), y0: Math.min(...ys), y1: Math.max(...ys) };
+}
+// refuses the first of `asked` ({ cx, cy, word }) lying far outside the diagram, unless --far; reads the document and its pitch, writes nothing
+async function refuseFar(ctx, id, asked) {
+	if (ctx.flags.far) return;
+	const pitch = await pitchOf(ctx, id);
+	const box = extentOf(ok(await request(ctx, `/diagrams/${id}`), ctx.verb?.name ?? 'write'), pitch);
+	const b = box ?? { x0: 0, x1: 0, y0: 0, y1: 0 };
+	const reach = Math.max(FAR_FLOOR, b.x1 - b.x0 + 1, b.y1 - b.y0 + 1);
+	const outside = (cx, cy) => Math.max(b.x0 - cx, cx - b.x1, b.y0 - cy, cy - b.y1, 0);
+	for (const { cx, cy, word } of asked) {
+		const d = outside(cx, cy);
+		if (d <= reach) continue;
+		const dir = [cy < b.y0 ? 'north' : cy > b.y1 ? 'south' : '', cx < b.x0 ? 'west' : cx > b.x1 ? 'east' : ''].filter(Boolean).join('-');
+		const where = box ? `(cells ${b.x0}..${b.x1}, ${b.y0}..${b.y1})` : '(empty, so measured from cell 0,0)';
+		const pixels = Number.isInteger(cx / pitch) && Number.isInteger(cy / pitch) && outside(cx / pitch, cy / pitch) <= reach;
+		die(`refused: ${word ? `${word} ` : ''}cell ${cx},${cy} lies ${d.toLocaleString('en-US')} cells ${dir} of the diagram ${where}`
+			+ (pixels ? `; as pixels it is cell ${cx / pitch},${cy / pitch} -- pass cells, or --far to place it there`
+				: ` -- pass a cell within ${reach} cells of it, or --far to place it there`));
+	}
+}
+/*
 The one refusal for "that cell does not exist", shared by every verb that takes one.
 
 `add` grew this first and kept it inline: the likely mistake is PIXELS, cells are small numbers, and
@@ -1966,19 +2054,19 @@ VERBS.push(
 	{
 		name: 'link', group: 'Writing', usage: 'draw link <src> [<dst>] [--via <cx>,<cy>...] [--closed] [--direction forward|reverse] [--control] [--lay]',
 		route: '/diagrams/<id>/commit', method: 'POST',
-		also: ['GET /diagrams', 'GET /diagrams/<id>', 'GET /diagrams/<id>/layouts/<layout>/anchors'],
+		also: ['GET /diagrams', 'GET /diagrams/<id>', 'GET /diagrams/<id>/layouts', 'GET /diagrams/<id>/layouts/<layout>/anchors'],
 		summary: 'join two things that already exist, bending the route through cells you name',
 		example: 'draw link a-edge core-1 --via -8,-7',
 		args: [{ name: 'src', about: 'a node id or name' },
 			{ name: 'dst', about: 'a node id or name. Omit it with --closed to loop back to src' }],
-		flags: [{ name: '--via', about: 'a cell to bend through; repeat for more. Waypoints are minted for you' },
+		flags: [{ name: '--via', about: 'a bend\'s CELL, not pixels; repeat for more. Waypoints are minted for you' },
 			{ name: '--closed', about: 'a ring: the route returns to src. Give --via bends and no dst' },
 			{ name: '--direction', about: 'declare a direction: forward (the default if bare) or reverse' },
 			{ name: '--control', about: 'the control plane -- drawn dashed and thinner' },
 			{ name: '--lay', about: 'lay the link\'s own pipes with it, on each leg that has none -- they go when no link is on them. Without it a plain link lays none, and runs over the pipes already there' },
 			{ name: '--diagram', about: 'target by id or name' },
 			{ name: '--draft', about: 'stage into the draft instead of applying now' },
-			{ name: '--direct', about: 'apply now, escaping an open `draft begin` session' }],
+			{ name: '--direct', about: 'apply now, escaping an open `draft begin` session' }, FAR_FLAG],
 		async run(ctx, args) {
 			const [src, dst] = args;
 			if (!src) die('usage: draw link <src> <dst> [--via <cx>,<cy>...]');
@@ -1999,6 +2087,7 @@ VERBS.push(
 
 			const raw = ctx.flags.via === undefined ? [] : [].concat(ctx.flags.via);
 			if (ring && raw.length < 2) die('a ring needs at least two --via bends; with one it would draw a line back over itself');
+			await refuseFar(ctx, id, raw.map((v) => ({ ...cell(v, '--via'), word: '--via' })));   // H29.1 (B453)
 			const ops = [];
 			const via = [];
 			for (const v of raw) {
@@ -2067,18 +2156,18 @@ VERBS.push(
 	{
 		name: 'panel', group: 'Writing', usage: 'draw panel <name> at <cx>,<cy> --cols n --rows n [--content f.json]',
 		route: '/diagrams/<id>/commit', method: 'POST',
-		also: ['GET /types', 'GET /diagrams', 'GET /diagrams/<id>/layouts/<layout>/anchors'],
-		summary: 'a node that spans cells and can carry content regions',
+		also: ['GET /types', 'GET /diagrams', 'GET /diagrams/<id>', 'GET /diagrams/<id>/layouts', 'GET /diagrams/<id>/layouts/<layout>/anchors'],
+		summary: 'a node that spans cells and can carry content regions, placed by the CELL of its corner',
 		example: 'draw panel key at -15,-8 --cols 7 --rows 2 --content legend.json',
 		args: [{ name: 'name', about: 'what to call it' },
 			{ name: 'at', about: "the literal word 'at'" },
-			{ name: 'cx,cy', about: 'the CELL of its top-left corner' }],
+			{ name: 'cx,cy', about: 'the CELL, not pixels, of its top-left corner' }],
 		flags: [{ name: '--cols', about: 'width in cells' }, { name: '--rows', about: 'height in cells' },
 			{ name: '--content', about: 'a JSON file of content regions -- see API.md' },
 			{ name: '--type', about: 'the glyph type behind the content; default host' },
 			{ name: '--diagram', about: 'target by id or name' },
 			{ name: '--draft', about: 'stage into the draft instead of applying now' },
-			{ name: '--direct', about: 'apply now, escaping an open `draft begin` session' }],
+			{ name: '--direct', about: 'apply now, escaping an open `draft begin` session' }, FAR_FLAG],
 		/*
 		The split here is deliberate and is the answer to "why is there no --text flag".
 
@@ -2097,6 +2186,7 @@ VERBS.push(
 				die('--cols and --rows are whole numbers of CELLS, at least 1 each');
 			}
 			const id = await activeId(ctx, ctx.flags);
+			await refuseFar(ctx, id, [cell(c, 'at')]);   // H29.1 (B453)
 			const spot = await cellToPx(ctx, id, 'node', cell(c, 'at'), 'panel');
 			if (spot.occupant) die(`cell ${c} is taken by ${spot.occupant} -- \`draw anchor free\` lists what is open`);
 			const defaultType = ctx.flags.type || ok(await request(ctx, '/types'), 'panel').types[0].name;
@@ -2122,17 +2212,17 @@ VERBS.push(
 	{
 		name: 'zone', group: 'Writing', usage: 'draw zone <name> from <cx>,<cy> to <cx>,<cy>',
 		route: '/diagrams/<id>/commit', method: 'POST',
-		also: ['GET /diagrams', 'GET /diagrams/<id>/layouts', 'GET /diagrams/<id>/layouts/<layout>/anchors'],
-		summary: 'enclose a rectangle of CELLS -- the half-pitch offset is the tool\'s problem, not yours',
+		also: ['GET /diagrams', 'GET /diagrams/<id>', 'GET /diagrams/<id>/layouts', 'GET /diagrams/<id>/layouts/<layout>/anchors'],
+		summary: 'enclose a rectangle of CELLS -- the half-pitch offset is the tool\'s problem, not yours; it answers the zone in pixels (px) and cells',
 		example: 'draw zone site-a from -15,-6 to -9,4',
 		args: [{ name: 'name', about: 'what to call the zone' },
 			{ name: 'from', about: "the literal word 'from'" },
-			{ name: 'cx,cy', about: 'the first corner CELL, inclusive' },
+			{ name: 'cx,cy', about: 'the first corner CELL, not pixels, inclusive' },
 			{ name: 'to', about: "the literal word 'to'" },
-			{ name: 'cx,cy', about: 'the opposite corner CELL, inclusive' }],
+			{ name: 'cx,cy', about: 'the opposite corner CELL, not pixels, inclusive' }],
 		flags: [{ name: '--diagram', about: 'target by id or name' },
 			{ name: '--draft', about: 'stage into the draft instead of applying now' },
-			{ name: '--direct', about: 'apply now, escaping an open `draft begin` session' }],
+			{ name: '--direct', about: 'apply now, escaping an open `draft begin` session' }, FAR_FLAG],
 		async run(ctx, args) {
 			const [name, from, c0, to, c1] = args;
 			if (!name || from !== 'from' || to !== 'to' || !c0 || !c1) {
@@ -2140,6 +2230,7 @@ VERBS.push(
 			}
 			const A = cell(c0, 'from'), B = cell(c1, 'to');
 			const id = await activeId(ctx, ctx.flags);
+			await refuseFar(ctx, id, [A, B]);   // H29.1 (B453)
 			// resolve both corners on the NODE grid, then let the server's zone grid own the offset:
 			// a zone bounds cells, so its edges fall BETWEEN them, and that half pitch is exactly the
 			// arithmetic every caller was getting wrong by hand
@@ -2149,9 +2240,10 @@ VERBS.push(
 			const pitch = await pitchOf(ctx, id), half = pitch / 2;
 			const zid = mint('zone');
 			const entity = { id: zid, name, x: lo.x - half, y: lo.y - half, w: hi.x - lo.x + pitch, h: hi.y - lo.y + pitch };
+			const cells = { x0: Math.min(A.cx, B.cx), y0: Math.min(A.cy, B.cy), x1: Math.max(A.cx, B.cx), y1: Math.max(A.cy, B.cy) };
 			return submit(ctx, id, [{ op: 'put', kind: 'zone', entity }], 'zone', 'zone', (r) => ({
-				json: { id: zid, ...entity, version: r.version },
-				text: `${name} (${zid}) ${entity.w}x${entity.h} at ${entity.x},${entity.y}  v${r.version}`,
+				json: { id: zid, ...entity, cells, version: r.version },
+				text: `${name} (${zid}) ${entity.w}x${entity.h} px at ${entity.x},${entity.y} px (cells ${cellsText(cells)})  v${r.version}`,
 			}));
 		},
 	},
@@ -2182,15 +2274,15 @@ VERBS.push(
 	{
 		name: 'move', group: 'Writing', usage: 'draw move <ref> to <cx>,<cy>',
 		route: '/diagrams/<id>/commit', method: 'POST',
-		also: ['GET /diagrams', 'GET /diagrams/<id>', 'GET /diagrams/<id>/layouts/<layout>/anchors'],
-		summary: 'put an existing node or waypoint on a different anchor',
+		also: ['GET /diagrams', 'GET /diagrams/<id>', 'GET /diagrams/<id>/layouts', 'GET /diagrams/<id>/layouts/<layout>/anchors'],
+		summary: 'put an existing node or waypoint on a different anchor, named by its CELL; it answers the cell and its pixels (px)',
 		example: 'draw move a-web-1 to -14,1',
 		args: [{ name: 'ref', about: 'a node or waypoint, by id or name' },
 			{ name: 'to', about: "the literal word 'to'" },
-			{ name: 'cx,cy', about: 'the destination CELL' }],
+			{ name: 'cx,cy', about: 'the destination CELL, not pixels' }],
 		flags: [{ name: '--diagram', about: 'target by id or name' },
 			{ name: '--draft', about: 'stage into the draft instead of applying now' },
-			{ name: '--direct', about: 'apply now, escaping an open `draft begin` session' }],
+			{ name: '--direct', about: 'apply now, escaping an open `draft begin` session' }, FAR_FLAG],
 		async run(ctx, args) {
 			const [ref, to, c] = args;
 			if (!ref || to !== 'to' || !c) die('usage: draw move <ref> to <cx>,<cy>');
@@ -2198,13 +2290,14 @@ VERBS.push(
 			const eid = await resolveId(ctx, id, ref);
 			const kind = eid.split('-')[0];
 			if (kind !== 'node') die(`${ref} is a ${kind}; only a node or a waypoint sits on an anchor`);
+			await refuseFar(ctx, id, [cell(c, 'to')]);   // H29.1 (B453)
 			const spot = await cellToPx(ctx, id, 'node', cell(c, 'to'), 'move');
 			if (spot.occupant && spot.occupant !== eid) {
 				die(`cell ${c} is taken by ${spot.occupant} -- \`draw anchor free\` lists what is open`);
 			}
 			return submit(ctx, id, [{ op: 'set', kind, id: eid, patch: { x: spot.x, y: spot.y } }], 'move', 'move', (r) => ({
-				json: { id: eid, at: { x: spot.x, y: spot.y }, version: r.version },
-				text: `${eid} -> cell ${c} = ${spot.x},${spot.y}  v${r.version}`,
+				json: { id: eid, at: { x: spot.x, y: spot.y }, cell: cell(c, 'to'), version: r.version },
+				text: `${eid} -> cell ${c} = ${spot.x},${spot.y} px  v${r.version}`,
 			}));
 		},
 	},

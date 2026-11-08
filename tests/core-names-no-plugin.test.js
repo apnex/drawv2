@@ -90,8 +90,8 @@ const DEVICE_RECORD = {
 // U3 (H21.7): every remaining non-canvas product module (`export`, `server-only`, `serve`, `cli`, `lab`, `simulation`, `product`,
 // and cross-plugin kind/field reads across `layouts`, `devices`, `network`, `zones`, `groups`, plus `LAYER.network` outside `network/`)
 const PRODUCT_KIND_RECORD = {
-	'cli/verbs.mjs': { count: 155, cites: ['from B138', 'H26-23'],
-		reason: 'the CLI\'s standalone verbs over every collection and kind (B138); RAISED at H26.6\'s move 12: the map\'s windows and senses over nodes, waypoints and zones (PZ33); RAISED at move 15 by one: `draw grid` sets the grid record\'s pitch (PZ29)',
+	'cli/verbs.mjs': { count: 156, cites: ['from B138', 'H26-23'],
+		reason: 'the CLI\'s standalone verbs over every collection and kind (B138); RAISED at H26.6\'s move 12: the map\'s windows and senses over nodes, waypoints and zones (PZ33); RAISED at move 15 by one: `draw grid` sets the grid record\'s pitch (PZ29); RAISED at H29.1 by one: a far-off write\'s refusal measures the diagram\'s extent over its zones as well as its anchors (B453)',
 		trigger: 'permanent' },
 	'engine/situation.mjs': { count: 2, cites: ['D2'],
 		reason: 'the pointer situation naming `link` for the draw-a-link gesture and a selected link (D2)',

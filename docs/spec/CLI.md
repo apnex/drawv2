@@ -93,16 +93,16 @@ Context
   context [id|name]                                                               the default target, persisted
   use [ref]                                                                       choose the diagram other verbs act on, per host; omit to report the current one
   status                                                                          the active diagram in summary
-  get <kind> [id|name]                                                            interrogate nodes, links, zones, groups, waypoints, pipes
+  get <kind> [id|name]                                                            interrogate nodes, links, zones, groups, waypoints, pipes -- each position in pixels (px) with its cell beside it, the unit add, move and map take
   history [--limit n]                                                             the change log
-  about <entity-id>                                                               what surrounds an entity: links, neighbours, group, enclosing zones
-  zone contents <zone>                                                            what falls inside a zone
-  link path <link>                                                                the resolved route -- what the renderer would draw
+  about <entity-id>                                                               what surrounds an entity: links, neighbours, group, enclosing zones -- its position in pixels (px) and its cell
+  zone contents <zone>                                                            what falls inside a zone, each at its pixels (px) and its cell
+  link path <link>                                                                the resolved route in pixels (px) and in cells -- what the renderer would draw, and whether the link is down
   sessions [--diagram ref] [--hot n] [--events actor]                             what each client did -- commits, refusals, reconnects, and how fast
-  combat [--at epoch-ms]                                                          towers, what each is burning, and which movers are alive or dead at an instant
-  dump                                                                            the entire document as JSON -- what the server holds, not what a viewer renders
+  combat [--at epoch-ms]                                                          towers -- each at its pixels (px) and its cell -- what each is burning, and which movers are alive or dead at an instant
+  dump                                                                            the entire document as JSON -- what the server holds, positions in pixels (px), not what a viewer renders; `get` shows each one's cell
   movers [--at epoch-ms] [--spawner ref]                                          what is in flight right now -- the movers a correct client must be drawing
-  show                                                                            the whole diagram: summary and every entity
+  show                                                                            the whole diagram: summary and every entity, each position in pixels (px) with its cell beside it
   map [--chunk i,j | --area cx0,cy0,cx1,cy1 | --around <ref> [--radius n] | --zone <ref> | --full] [--layout node|zone]  look at the canvas a chunk at a time -- occupancy as a grid, and what lies beyond it each way
   focus [ref]                                                                     the entity the relation verbs read from, persisted; omit to see it
   links [ref]                                                                     what connects to a thing -- the other end named, routed marked
@@ -131,10 +131,10 @@ Writing
   link <src> [<dst>] [--via <cx>,<cy>...] [--closed] [--lay]              join two things that already exist, bending the route through cells you name
   spawn <waypoint> [--interval ms] [--speed px] [--colour #hex] [--off] arm an endpoint waypoint to emit movers along its path, or stop it
   pipe <a> <b> [--off]                                            lay a pipe by hand between two anchors, as g does -- or take it away with --off
-  panel <name> at <cx>,<cy> --cols n --rows n [--content f.json]  a node that spans cells and can carry content regions
-  zone <name> from <cx>,<cy> to <cx>,<cy>                         enclose a rectangle of CELLS -- the half-pitch offset is the tool's problem, not yours
+  panel <name> at <cx>,<cy> --cols n --rows n [--content f.json]  a node that spans cells and can carry content regions, placed by the CELL of its corner
+  zone <name> from <cx>,<cy> to <cx>,<cy>                         enclose a rectangle of CELLS -- the half-pitch offset is the tool's problem, not yours; it answers the zone in pixels (px) and cells
   group <name> <ref> <ref> [ref...]                               name a set of nodes as one thing
-  move <ref> to <cx>,<cy>                                         put an existing node or waypoint on a different anchor
+  move <ref> to <cx>,<cy>                                         put an existing node or waypoint on a different anchor, named by its CELL; it answers the cell and its pixels (px)
   rename <ref> <name>                                             change what something is called
   rm <ref> [ref...]                                               remove entities, and say what the cascade took with them
   set <ref> <field> <value>                                       change one property of one entity
@@ -142,13 +142,13 @@ Writing
   region <panel> at <col>,<row> [--text s | --glyph g] [flags]    add one content region to a panel, in place
 
 Placement
-  near <x> <y> [--within px]                       what is already around a point, so you do not draw on top of it
+  near <x> <y> [--within px]                       what is already around a point given in pixels (px) -- each thing at its px and its cell -- so you do not draw on top of it
   place <type> near|inside|between <ref> [--link]  put a node beside, inside or between things -- on a free anchor, no coordinates
-  add <type> at <cx>,<cy> [--name n] [--link ref]  put a node on a named anchor -- a cell, never a pixel
-  anchor nearest <x> <y> [--layout node|zone]      the legal anchor closest to a pixel coordinate
-  anchor free [--chunk i,j | --area cx0,cy0,cx1,cy1] [--layout node|zone]  every anchor nothing occupies, in the window `draw map` would show
+  add <type> at <cx>,<cy> [--name n] [--link ref]  put a node on a named anchor -- a cell, never a pixel; it answers the cell and its pixels (px)
+  anchor nearest <x> <y> [--layout node|zone]      the legal anchor closest to a position in pixels (px): its cell, and its own px
+  anchor free [--chunk i,j | --area cx0,cy0,cx1,cy1] [--layout node|zone]  every anchor nothing occupies, in the window `draw map` would show -- in cells
   types                                            the declared device types: name, map letter, routing pack and run-mode behaviour
-  layouts                                          the diagram's grid record: name, id and pitch
+  layouts                                          the diagram's grid record: name, id and pitch -- the pitch in pixels per cell, what turns a cell into px
   grid [<size>]                                    the grid size, or set it: even, 60 to 120; every device, waypoint and zone keeps its square
 
 Awareness
@@ -172,6 +172,11 @@ AMENDED 2026-11-05 (H26.6's move 12; `dev/design/components/PAN-ZOOM.md` section
 Plain `map` shows what is in use, inside chunk 0,0, or chunk 0,0 whole when anything lies past it; `--chunk i,j` shows a chunk; `--area`, `--around` and `--zone` show a window of at most one chunk; give one of them.\
 Beneath its key every map prints its chunk and window, then for each of the eight directions what lies beyond the window and the exact `draw map ... --chunk i,j` command that looks there -- the camera moves by naming a chunk, and nothing is remembered between commands.\
 `anchor free` lists the free positions of the window `map` would show; every cell-taking verb takes any cell within the canvas's bound, a million drawing units from the origin.
+
+AMENDED 2026-11-08 (H29.1; `dev/DECISIONS.md` H29, B453): the CLI names its two units.\
+The document holds positions in pixels (`px`), and every verb that takes a position takes a cell, so every verb that shows one shows the cell beside the pixels, each named -- `120,60 px (cell 2,1)` in text, `X PX`, `Y PX` and `CELL` as columns -- and its `--json` keeps its fields and gains `cell`, a zone's `cells` or a route's `pathCells` beside them.\
+Each verb's help names the unit it prints and the unit it takes.\
+A write whose cell lies further outside the diagram than the diagram's own width or height, or one chunk's width when that is more, is refused before it is sent, naming the cell the numbers would be as pixels when they look like pixels; `--far` writes it.
 
 ---
 

@@ -269,15 +269,18 @@ test('add places on a cell, and an occupied one names its occupant', async () =>
 RESTATED at H26.6's move 12 (dev/design/components/PAN-ZOOM.md section 3.8, "The CLI": `add` takes any cell): 130,60 is a cell like any
 other now, 7,800 by 3,600 -- there is no edge for a pixel coordinate to fall past -- so the pixel refusal is said only of a cell past PZ31's
 bound, where a pixel coordinate typed as a cell is far likelier than a cell anyone meant.
+RESTATED at H29.1 (B453): a cell far outside the diagram is refused before anything is sent -- 130,60 lies 130 cells from an empty
+diagram's cell 0,0, past one chunk's reach -- and `--far` writes it; the bound's refusal is reached past it (tests/cli-units.test.js).
 */
-test('add refuses pixels, and says they look like pixels -- from H26.6 move 12, a cell past the bound; any cell within it is taken', async () => {
+test('add refuses pixels, and says they look like pixels -- from H26.6 move 12, a cell past the bound; from H29.1 a far cell needs --far', async () => {
 	await boot();
 	try {
 		const id = (await run('create', 'px-test')).trim();
 		await run('lock', '--diagram', id);
-		const far = JSON.parse(await run('add', 'server', 'at', '130,60', '--diagram', id, '--json'));
-		assert.deepEqual([far.cell, far.at], [{ cx: 130, cy: 60 }, { x: 7800, y: 3600 }], 'a cell far past the old frame, taken (H26.6 move 12)');
-		const err = await captureExit(() => run('add', 'server', 'at', '20000,60', '--diagram', id));
+		assert.match(await captureExit(() => run('add', 'server', 'at', '130,60', '--diagram', id)), /refused: cell 130,60 lies 130 cells south-east of the diagram \(empty, so measured from cell 0,0\)/, 'far from the diagram, refused (H29.1)');
+		const far = JSON.parse(await run('add', 'server', 'at', '130,60', '--far', '--diagram', id, '--json'));
+		assert.deepEqual([far.cell, far.at], [{ cx: 130, cy: 60 }, { x: 7800, y: 3600 }], 'a cell far past the old frame, taken with --far (H26.6 move 12, H29.1)');
+		const err = await captureExit(() => run('add', 'server', 'at', '20000,60', '--far', '--diagram', id));
 		assert.match(err, /no node anchor at cell 20000,60 -- it lies past the canvas's bound/, 'past the bound, refused, naming it');
 		assert.match(err, /look like pixels/, 'the likely mistake is named rather than left as "outside the canvas"');
 		assert.match(err, /anchor nearest/, 'and the verb that converts them is offered');
@@ -524,7 +527,9 @@ test('B133: a structural verb refuses a pixel where a cell belongs', async () =>
 		// `captureExit`, not assert.rejects: `die` exits the process, and a test that awaits a
 		// rejection instead silently takes the whole FILE down with every subtest still green.
 		// RESTATED at H26.6's move 12: -900,-360 is a cell within PZ31's bound, so a zone is made there; past the bound the refusal stands
-		const unit = await captureExit(() => run('zone', 'z', 'from', '-90000,-360', 'to', '-540,240'));
+		// RESTATED at H29.1 (B453): a cell far outside the diagram is refused first, before anything is sent; --far reaches the bound
+		assert.match(await captureExit(() => run('zone', 'z', 'from', '-90000,-360', 'to', '-540,240')), /refused: cell -90000,-360 lies 90,000 cells north-west of the diagram/, 'far, refused (H29.1)');
+		const unit = await captureExit(() => run('zone', 'z', 'from', '-90000,-360', 'to', '-540,240', '--far'));
 		assert.match(unit, /look like pixels, and this takes a CELL/, 'the verb names the unit mistake, not just "outside"');
 		assert.match(unit, /anchor nearest/, 'and offers the verb that converts them');
 
