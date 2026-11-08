@@ -1,0 +1,42 @@
+{
+	"id": "map-supplement-x",
+	"declaredStatus": "result",
+	"scenarios": [
+		"scenarios/t1-find.json",
+		"scenarios/t2-trace.json",
+		"scenarios/t3-place.json",
+		"scenarios/t4-wire.json",
+		"scenarios/t5-hunt.json",
+		"scenarios/t6-count.json"
+	],
+	"factors": {
+		"arms": [
+			"a"
+		],
+		"population": [
+			"x"
+		]
+	},
+	"runsPerCell": 3,
+	"phases": [
+		{
+			"id": "work",
+			"session": "new"
+		}
+	],
+	"instructions": "You are working in a folder that holds draw, a diagramming tool on an unbounded grid, and one diagram, `estate`. Drive it only through its command-line tool, `./draw`: `./draw help` lists its verbs and `./draw help <verb>` explains one. Where draw prints a command beginning `draw `, run it as `./draw `. Positions on the grid are cells, written `cx,cy`; x grows to the east and y to the south. Do not read, search or change the files under `.draw/`: they are the tool's own, and reading them is not part of the task. Work alone without asking questions, and stop when the task is done.",
+	"maxAttemptsPerCell": 2,
+	"limits": {
+		"readerTimeLimitSeconds": 900,
+		"probeTimeLimitSeconds": 300
+	},
+	"judging": {
+		"judges": []
+	},
+	"variation": {
+		"difference": 0.25,
+		"scope": "property"
+	},
+	"default": "no change to the map's chunk or its senses indicated",
+	"notes": "A supplement to map-eval, identical but for its factors: grok's arm-a cells, which map-eval's run 2026-11-08-023018 lacks: its canary probe in arm a answered NONE though it passed in a2, b and c. Pooled with that run by tools/report.mjs. pack digest 2c78697abc333aae15f4d204b68ef8c144041ce0d83fabea8ed4b541836aed3c."
+}
