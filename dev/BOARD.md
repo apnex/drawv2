@@ -1650,6 +1650,24 @@ Opened 2026-11-08 by the director (`dev/DECISIONS.md` H29), on H28.3's one measu
 **Exit:** no agent in the re-run answers or writes in pixels where a cell is asked, or the change revised until none does.\
 AMENDED 2026-11-08: holds -- no failed answer and no write in pixels in the re-run's 72 cells, success 0.83 to 0.93; the change pushed to the agents at the director's "continue" (H29 closed).
 
+
+---
+
+## H30 -- after H29: an edit lost across a template's fork, made likelier by H28.4 - `TODO`
+
+Proposed 2026-11-09 by the re-triage after H29 closed, at the director's "Lets refresh the board"; the order below is the director's to select (H30.1).\
+The order, by the board's rule (the higher of impact and principle breach): B396 alone -- the page's `forked` handler empties its outbox, so a commit queued behind a template's forking write reaches neither the server nor the tab; held at `S4` since 2026-10-18 as a rare first-moments edge, it is by impact an accepted edit silently discarded, and H28.4 widened it by letting a chain run on across the fork, its hops queued behind the forking write while the person draws; measured first, then fixed.\
+Found by the re-triage: production's log since 2026-11-07 holds no server error, no 429 and no unhandled rejection, its only 404 and 403 answers the deploys' own probes; B396's trigger fired in substance at H28.4, unseen; B7's restated trigger had been written before its row's history, so the scanner read the old one -- restated last; no other trigger fired, `scan-triggers` finding none of its six dated triggers due; every live row on the board or held.\
+Owed by the director and held: the zoom step's feel on the Chromebook (H27-1), PZ11's speed reading (B446), the dot size fixed "until we review" (`dev/design/components/PAN-ZOOM.md` PZ24). Due on 2026-11-14: gpt's 72 cells of H28.3's evaluation (B454), from a worktree at `7eca56d`.\
+Not legal until the director opens them, each held: paths and flows (B327), the context panel (B265), unloading off-screen elements (B289), more components (B343, B389, B416, B417), what a person sees readable by an agent (B418), the diagram in mission-kit's entity-store (B344, B345), a second human writer on one diagram (B33); and B395, the same class as B396 -- a read-only snapshot under an open coalescing window keeping an edit the server never got -- whose trigger has not fired.
+
+| # | Item | Cites | Sev | State |
+|---|---|---|---|---|
+| H30.1 | Re-triage the board after H29, the order selected by the director and recorded here | feature | S3 | `WIP` |
+| H30.2 | B396 reproduced -- a link chain started on a template, each hop's arrival on the fork counted against the hops drawn -- then fixed so a commit queued behind the forking write reaches the fork, with a test failing first; to the lab on its builder's gate, one targeted check, production on the director's approval | **B396** | S1 | `TODO` |
+
+**Exit:** no edit drawn on a template in its first moments, a chain's among them, is lost; or B396 shown unreachable by a measurement and held again.
+
 ---
 
 ## Held -- on the record, not on the board
@@ -1682,7 +1700,6 @@ Scored so the comparison is a judgement, not an omission.\
 | **B391** | S4 | Draw on Node 24 (H26-2) | a component draw consumes needs Node 24, or Node 22 reaches the end of its maintenance, April 2027. |
 | **B394** | S4 | The page's answer to `access-lost` (H24.15) | the image ships no template, or `Store#first` stops falling back to one. |
 | **B395** | S4 | A read-only snapshot under an open coalescing window keeps an unsent edit (H24.18) | a person reports an edit that vanished on reload after a lock or a change of access, or the next change to how a snapshot replays the outbox. |
-| **B396** | S4 | `forked` drops an undo and a commit queued behind the forking write (H24.18) | a person reports an edit lost in the first moments on a template, or the next change to the `forked` handler. |
 | **B397** | S4 | An unreadable request target gets no answer, its handler's error unhandled (H24.13) | a hung request or an unhandled rejection from the request handler is seen in production's log, or the next change to how the request handler reads its URL. |
 | **B398** | S4 | The browser keeps draw's files only under versioned addresses (H24.16-1) | H26's import map gives each module a versioned address, or the page's load time is shown to be a problem with compression in place. |
 | **B403** | S4 | A page loading across a deploy mixes two revisions, or 404s a component (H26.0) | a page is seen failing to start, or running two revisions' code, across a deploy. |
@@ -1719,7 +1736,7 @@ Scored so the comparison is a judgement, not an omission.\
 | **B333** | S4 | No ledger records a flaky test; naming a flake on a row before a retry is a practice | a third unresolved flake is filed after H20.2, or a Chrome start passes `headless-chromium`'s 60 s bound. |
 | **B449** | S5 | Three small edges after H27: Space's datum after a pan across a leave, the reticle's ring as a leave, Shift and the wheel (H27) | the director meets one, a person reports a datum set after a pan or a wheel that would not zoom with Shift held, or the next change to `Input.leave` or the wheel's row. |
 | **B451** | S5 | Five small edges after H28: refused hops drawn until a chain ends, a switch's flags on an error, a painter's throw at a commit (H28) | a person reports a chain that kept drawing refused hops, a drag that stuck or a snapshot that loaded mid-drag, or the next change to the hold or to the preview's projection. |
-| **B7** | **S2** | A drag's preview writes the shared Model: the zone handle's reshape and a link drag's placed waypoints, the remainder after H28.5 | a remote change is seen fighting a drag, or the next change to how a drag previews. |
+| **B7** | **S2** | A drag's preview writes the shared Model: the zone handle's reshape and a link drag's placed waypoints, the remainder after H28.5 | the director wants remote changes shown live during a drag, or something derived comes to read a zone's size or a placed waypoint mid-gesture. |
 | **B452** | S5 | The frame meter's test fails under machine load, two wall-clock medians compared to half a frame (H28) | S1 fails on a machine running nothing else or in CI, or the next change to the frame meter. |
 | **B454** | S5 | gpt's 72 cells of H28.3's evaluation, owed while its quota is out (H28) | gpt's codex quota returns (2026-11-14 or later), or a change to the CLI's map or units is measured again. |
 | **B455** | S5 | A `get --json` entity put back through `commit --ops` refused for its `cell` field (H29) | an agent or a person is refused for a `cell` field it copied from `get`, or the next change to `get`'s `--json` or to `commit --ops`. |
