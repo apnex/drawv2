@@ -24,7 +24,7 @@
 				"verbs.mjs"
 			],
 			"transform": "arm-cli",
-			"revision": "8f29b519cd8c2881adbf96eda90bf60c5a56865b"
+			"revision": "c4f99164900895a84509493e63f9ba0391a78e8a"
 		},
 		{
 			"id": "cli-b",
@@ -36,7 +36,7 @@
 				"verbs.mjs"
 			],
 			"transform": "arm-cli",
-			"revision": "8f29b519cd8c2881adbf96eda90bf60c5a56865b"
+			"revision": "c4f99164900895a84509493e63f9ba0391a78e8a"
 		},
 		{
 			"id": "cli-c",
@@ -48,7 +48,7 @@
 				"verbs.mjs"
 			],
 			"transform": "arm-cli",
-			"revision": "8f29b519cd8c2881adbf96eda90bf60c5a56865b"
+			"revision": "c4f99164900895a84509493e63f9ba0391a78e8a"
 		}
 	],
 	"arms": [
@@ -171,7 +171,8 @@
 		"experiments/map-pilot.json",
 		"experiments/map-smoke.json",
 		"experiments/map-supplement-x.json",
-		"experiments/map-supplement-o.json"
+		"experiments/map-supplement-o.json",
+		"experiments/map-units.json"
 	],
 	"suites": [
 		{

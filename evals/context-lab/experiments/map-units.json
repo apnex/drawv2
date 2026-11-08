@@ -1,0 +1,45 @@
+{
+	"id": "map-units",
+	"declaredStatus": "result",
+	"scenarios": [
+		"scenarios/t1-find.json",
+		"scenarios/t2-trace.json",
+		"scenarios/t3-place.json",
+		"scenarios/t4-wire.json",
+		"scenarios/t5-hunt.json",
+		"scenarios/t6-count.json"
+	],
+	"factors": {
+		"arms": [
+			"a"
+		],
+		"population": [
+			"c",
+			"a",
+			"f",
+			"x"
+		]
+	},
+	"runsPerCell": 3,
+	"phases": [
+		{
+			"id": "work",
+			"session": "new"
+		}
+	],
+	"instructions": "You are working in a folder that holds draw, a diagramming tool on an unbounded grid, and one diagram, `estate`. Drive it only through its command-line tool, `./draw`: `./draw help` lists its verbs and `./draw help <verb>` explains one. Where draw prints a command beginning `draw `, run it as `./draw `. Positions on the grid are cells, written `cx,cy`; x grows to the east and y to the south. Do not read, search or change the files under `.draw/`: they are the tool's own, and reading them is not part of the task. Work alone without asking questions, and stop when the task is done.",
+	"maxAttemptsPerCell": 2,
+	"limits": {
+		"readerTimeLimitSeconds": 900,
+		"probeTimeLimitSeconds": 300
+	},
+	"judging": {
+		"judges": []
+	},
+	"variation": {
+		"difference": 0.25,
+		"scope": "property"
+	},
+	"default": "no change to the map's chunk or its senses indicated",
+	"notes": "draw's H29.2 (B453, H29): map-eval's arm a run again on H29.1's CLI -- the cell beside every shown pixel position, each unit named, a far-off write refused -- over the same six tasks, four models (gpt out of quota, B454) and three runs; compared with map-eval's arm a (run 2026-11-08-023018, with map-supplement-x's grok cells) by tools/report.mjs. pack digest 2c78697abc333aae15f4d204b68ef8c144041ce0d83fabea8ed4b541836aed3c."
+}

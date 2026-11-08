@@ -1,7 +1,7 @@
 # The map evaluation -- draw's context-lab pack
 
-Agents measured finding, reading and editing things on a diagram larger than one of the CLI's map chunks, by its chunks and its senses (draw's H28.3, B440; the director's ruling H28-2).
-Four arms, six tasks, every model context-lab offers, three runs.
+Agents measured finding, reading and editing things on a diagram larger than one of the CLI's map chunks, by its chunks and its senses (draw's H28.3, B440; the director's ruling H28-2).\
+Four arms, six tasks, every model context-lab offers, three runs.\
 The chunk or the senses change afterwards only where an agent is measured failing, and only on the director's ruling.
 
 ---
@@ -11,13 +11,11 @@ The chunk or the senses change afterwards only where an agent is measured failin
 Prerequisites: a built context-lab checkout at `~/taceng/context-lab`, Node.js 24 for it, `bwrap`, authenticated `opencode` and `codex`, and draw's `node_modules` installed.
 
 Build the fixtures once, and again whenever the pinned revision, the diagram, a policy or the shim changes:
-
 ```sh
 node evals/context-lab/tools/build-fixture.mjs
 ```
 
 Check the pack, preview a run, then run it:
-
 ```sh
 CL="node $HOME/taceng/context-lab/packages/core/dist/src/cli.js"
 $CL check evals/context-lab
@@ -26,31 +24,36 @@ $CL run evals/context-lab pilot --parallel 6 --work $HOME/.cache/h28-me-work
 ```
 
 The full run is the suite `full` (the experiment `map-eval`), recorded first so it carries status `result`:
-
 ```sh
 $CL record evals/context-lab map-eval
 $CL run evals/context-lab full --parallel 6 --work $HOME/.cache/h28-me-work
 ```
 
-Resume a run that stopped:
+H29.2's re-run is the experiment `map-units`: `map-eval`'s arm `a` on H29.1's CLI, which names its units (B453), over four models and three runs, 72 cells:
+```sh
+flock $HOME/taceng/drawv2-eval-runs/gate.lock $CL run evals/context-lab map-units --parallel 6 --work $HOME/.cache/h28-me-work
+```
 
+The pack pins H29.1's revision since H29.2, so `map-eval` and its supplements, recorded at H28.3's revision, now read `changed after it was recorded`: their variants' revision and their fixtures' `cli/verbs.mjs` moved, nothing else.\
+Their runs' records are unchanged, and `report.mjs` reads them.\
+To run one of them as recorded -- `map-supplement-o`, gpt's owed cells (B454) -- run it from a worktree at `7eca56d`, the pack as H28.3 left it, after building its fixtures there.
+
+Resume a run that stopped:
 ```sh
 $CL resume evals/context-lab <run-dir> --parallel 6 --work $HOME/.cache/h28-me-work
 ```
 
 Report a run, per arm, model and task:
-
 ```sh
 node evals/context-lab/tools/report.mjs <run-dir>
 ```
 
 Run the pack's own tests:
-
 ```sh
 node --test evals/context-lab/test/*.test.mjs
 ```
 
-Runs are written outside the repository, to `~/taceng/drawv2-eval-runs/h28/map-eval/` (`records.path`).
+Runs are written outside the repository, to `~/taceng/drawv2-eval-runs/h28/map-eval/` (`records.path`).\
 The work folder must not sit under a folder holding `AGENTS.md` or `CLAUDE.md`, which context-lab refuses.
 
 ---
@@ -79,8 +82,8 @@ The tasks, on one diagram some fifteen chunks of 31 by 17 wide, each scored by c
 
 `t5-hunt` and `t6-count` separate the arms; in the other four an agent may read positions without the map, which `other-reads` counts.
 
-Beside each task's `success` (and `found` and `placed` for `t5-hunt`), the hook records from the shim's log: `draw-calls`, `map-calls`, `wrong-reads` (map reads before every target was shown that showed none and came no nearer), `reads-to-target`, `target-reads`, `saw-targets`, `senses-followed` (reads of a chunk an earlier map printed as a sense command), `followed-content`, `other-reads`, `refused` and `intact`.
-context-lab records tool calls, tokens and seconds.
+Beside each task's `success` (and `found` and `placed` for `t5-hunt`), the hook records from the shim's log: `draw-calls`, `map-calls`, `wrong-reads` (map reads before every target was shown that showed none and came no nearer), `reads-to-target`, `target-reads`, `saw-targets`, `senses-followed` (reads of a chunk an earlier map printed as a sense command), `followed-content`, `other-reads`, `refused` and `intact`.\
+Tool calls, tokens and seconds are recorded by context-lab itself.
 
 ---
 

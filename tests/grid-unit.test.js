@@ -294,7 +294,8 @@ test('GR4, PZ19 (move 13): the simulation -- on a diagram scaled square for squa
 // ---- GR16: no reader asks a fixed lattice where a position lies ----
 
 test('GR16 (move 13): NODE_GRID is named nowhere, and UNIT_GRID is asked only for a span from cell 0,0', () => {
-	const files = fs.readdirSync('.', { recursive: true }).filter((f) => /\.(mjs|js)$/.test(f) && !/^(node_modules|dev|tests|\.git)\//.test(f) && !f.includes('/node_modules/'));
+	// H29.2: evals/ left out as tools/layers.mjs UNSCANNED leaves it -- its fixtures hold gitignored copies of draw's tree at a pinned revision
+	const files = fs.readdirSync('.', { recursive: true }).filter((f) => /\.(mjs|js)$/.test(f) && !/^(node_modules|dev|tests|evals|\.git)\//.test(f) && !f.includes('/node_modules/'));
 	const strip = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
 	const asks = [];
 	for (const f of files) {
