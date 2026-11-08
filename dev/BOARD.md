@@ -1723,6 +1723,7 @@ Scored so the comparison is a judgement, not an omission.\
 | **B452** | S5 | The frame meter's test fails under machine load, two wall-clock medians compared to half a frame (H28) | S1 fails on a machine running nothing else or in CI, or the next change to the frame meter. |
 | **B454** | S5 | gpt's 72 cells of H28.3's evaluation, owed while its quota is out (H28) | gpt's codex quota returns (2026-11-14 or later), or a change to the CLI's map or units is measured again. |
 | **B455** | S5 | A `get --json` entity put back through `commit --ops` refused for its `cell` field (H29) | an agent or a person is refused for a `cell` field it copied from `get`, or the next change to `get`'s `--json` or to `commit --ops`. |
+| **B456** | S5 | CI's image job failed on GitHub answering a release download with 504 (H29) | a release download fails CI again, when the image build retries `npm ci` or caches the release files; or B388's trigger fires, the components moving to the npm registry. |
 | **B347** | S4 | The towerless-combat timing test failed once under machine load | it fails a second time, or B333's flake ledger is built. |
 | **B282** | S3 | Anchors along a wide device, and which one a link ends at (WD1; the pack half closed at H21.3) | a wide device needs links at more than one point (WD1). |
 | **B79** | S3 | The connection walk's apparatus is outside the repository; the false record is corrected, the rest held with B127 | B127 revives, or another decision is taken on the walk's findings. |
