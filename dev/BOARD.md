@@ -1653,9 +1653,9 @@ AMENDED 2026-11-08: holds -- no failed answer and no write in pixels in the re-r
 
 ---
 
-## H30 -- after H29: an edit lost across a template's fork, made likelier by H28.4 - `TODO`
+## H30 -- after H29: an edit lost across a template's fork, made likelier by H28.4 - `WIP`
 
-Proposed 2026-11-09 by the re-triage after H29 closed, at the director's "Lets refresh the board"; the order below is the director's to select (H30.1).\
+Proposed 2026-11-09 by the re-triage after H29 closed, at the director's "Lets refresh the board"; selected as proposed the same day (`dev/DECISIONS.md` H30).\
 The order, by the board's rule (the higher of impact and principle breach): B396 alone -- the page's `forked` handler empties its outbox, so a commit queued behind a template's forking write reaches neither the server nor the tab; held at `S4` since 2026-10-18 as a rare first-moments edge, it is by impact an accepted edit silently discarded, and H28.4 widened it by letting a chain run on across the fork, its hops queued behind the forking write while the person draws; measured first, then fixed.\
 Found by the re-triage: production's log since 2026-11-07 holds no server error, no 429 and no unhandled rejection, its only 404 and 403 answers the deploys' own probes; B396's trigger fired in substance at H28.4, unseen; B7's restated trigger had been written before its row's history, so the scanner read the old one -- restated last; no other trigger fired, `scan-triggers` finding none of its six dated triggers due; every live row on the board or held.\
 Owed by the director and held: the zoom step's feel on the Chromebook (H27-1), PZ11's speed reading (B446), the dot size fixed "until we review" (`dev/design/components/PAN-ZOOM.md` PZ24). Due on 2026-11-14: gpt's 72 cells of H28.3's evaluation (B454), from a worktree at `7eca56d`.\
@@ -1663,7 +1663,7 @@ Not legal until the director opens them, each held: paths and flows (B327), the 
 
 | # | Item | Cites | Sev | State |
 |---|---|---|---|---|
-| H30.1 | Re-triage the board after H29, the order selected by the director and recorded here | feature | S3 | `WIP` |
+| H30.1 | Re-triage the board after H29, the order selected by the director and recorded here (H30) | feature | S3 | `DONE` |
 | H30.2 | B396 reproduced -- a link chain started on a template, each hop's arrival on the fork counted against the hops drawn -- then fixed so a commit queued behind the forking write reaches the fork, with a test failing first; to the lab on its builder's gate, one targeted check, production on the director's approval | **B396** | S1 | `TODO` |
 
 **Exit:** no edit drawn on a template in its first moments, a chain's among them, is lost; or B396 shown unreachable by a measurement and held again.
