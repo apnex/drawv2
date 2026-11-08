@@ -1638,16 +1638,17 @@ AMENDED 2026-11-08: every clause holds -- B7 built in part and live with B450 (H
 
 ---
 
-## H29 -- the CLI names its units, measured again - `WIP`
+## H29 -- the CLI names its units, measured again - `DONE`
 
 Opened 2026-11-08 by the director (`dev/DECISIONS.md` H29), on H28.3's one measured failure: the CLI shows positions in pixels and takes cells, naming neither (B453).
 
 | # | Item | Cites | Sev | State |
 |---|---|---|---|---|
-| H29.1 | Every CLI verb that shows a position shows its cell beside its pixels, each named, in text and `--json`, and its help says so; a write whose cell lies far outside the diagram is refused, naming the likely mix-up, with a flag to place it there anyway; built (`c4f9916`, `cef7d67`) and passed by one targeted check, three of its minor findings fixed in `cef7d67` and one held (B455); to the agents when pushed, on the director's approval | **B453** | S4 | `WIP` |
+| H29.1 | Every CLI verb that shows a position shows its cell beside its pixels, each named, in text and `--json`, and its help says so; a write whose cell lies far outside the diagram is refused, naming the likely mix-up, with a flag to place it there anyway; built (`c4f9916`, `cef7d67`) and passed by one targeted check, three of its minor findings fixed in `cef7d67` and one held (B455); pushed to the agents 2026-11-08 on the director's approval | **B453** | S4 | `DONE` |
 | H29.2 | H28.3's arm A run again on H29.1's change, the same four models and three runs, its pixel failures compared with the full run's; the change pushed to the agents only on the director's approval; run 2026-11-08 (`map-units`, 72 cells, every probe passing): success 0.83 to 0.93, failed answers holding pixels 17 to 0, every failure left grok's and none in pixels (`~/taceng/drawv2-eval-runs/h28/MAP-EVAL-RESULT.md` section 5) | feature | S4 | `DONE` |
 
-**Exit:** no agent in the re-run answers or writes in pixels where a cell is asked, or the change revised until none does.
+**Exit:** no agent in the re-run answers or writes in pixels where a cell is asked, or the change revised until none does.\
+AMENDED 2026-11-08: holds -- no failed answer and no write in pixels in the re-run's 72 cells, success 0.83 to 0.93; the change pushed to the agents at the director's "continue" (H29 closed).
 
 ---
 
