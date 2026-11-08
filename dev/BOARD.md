@@ -1615,7 +1615,7 @@ AMENDED 2026-11-07: every clause holds -- every CI gate green with no re-run sin
 
 ---
 
-## H28 -- after H27: the highest-severity held defect weighed again, and agents measured on the infinite canvas - `WIP`
+## H28 -- after H27: the highest-severity held defect weighed again, and agents measured on the infinite canvas - `DONE`
 
 Proposed 2026-11-07 by the re-triage after H27 closed, at the director's "return"; selected as listed the same day (`dev/DECISIONS.md` H28).\
 The order, by the board's rule (the higher of impact and principle breach): first B7, the only `S2` among the held rows -- a drag's preview writing the shared Model -- whose trigger fired by its letter at H26.4 and whose reason for waiting, a geometry pipeline duplicated across four files, H26.4 and H26.8 may have removed: measured before it is built; then the agents' map, the agent surface H26.6 rebuilt in chunks of 31 by 17 that no agent has yet used -- A5's Measured Parity unmet, a signal breach ranking with `S4`, and the director's own condition on the size, "multiple rounds of testing and agentic evals".\
@@ -1627,13 +1627,14 @@ Not legal until the director opens them, each held: paths and flows (B327), the 
 |---|---|---|---|---|
 | H28.1 | Re-triage the board after H27, the order selected by the director and recorded here (H28) | feature | S3 | `DONE` |
 | H28.2 | B7 weighed again: what drawing a move's and a handle's preview as items of the scene, off the shared Model, costs now that the box's and the link drag's previews are scene items (H26.4) and every painter answers shapes (H26.8) -- a short measured sizing, put to the director before any build; sized 2026-11-07 -- N7's duplicate pipeline gone, the exposure unreachable while the defer holds, the fix 2 to 6 days for nothing a person sees today; the sizing found B450, a drag or chain ending on its own; both ruled by the director to be built (H28-1), as H28.4 and H28.5 | feature | S2 | `DONE` |
-| H28.3 | Agents measured on the infinite canvas: a context-lab evaluation of agents finding, reading and editing things across a diagram larger than one map chunk by the CLI's chunks and senses, at the director's starting size of 31 by 17; the chunk or the senses changed only where an agent is measured failing, on the light path to production; run in full at the director's ruling (H28-2) -- arms 31 by 17, 17 by 17, 31 by 17 without the senses and a second 31 by 17 for the noise, every model context-lab offers, three runs, after a pilot | **B440** | S4 | `WIP` |
+| H28.3 | Agents measured on the infinite canvas: a context-lab evaluation of agents finding, reading and editing things across a diagram larger than one map chunk by the CLI's chunks and senses, at the director's starting size of 31 by 17; the chunk or the senses changed only where an agent is measured failing, on the light path to production; run in full at the director's ruling (H28-2) -- arms 31 by 17, 17 by 17, 31 by 17 without the senses and a second 31 by 17 for the noise, every model context-lab offers, three runs, after a pilot; done 2026-11-08 -- 288 cells, agents finding their way by the chunks, neither 17 by 17 nor removing the senses raising success, so the map stays as it is; the measured failure, the CLI's two unnamed units, under Decisions required (B453); gpt's cells owed (B454) | **B440** | S4 | `DONE` |
 | H28.4 | The hold on inbound changes hardened: a snapshot the tab asks for -- after a refusal, an `access` message, an ack mismatch, a template's fork -- and the release of what was held wait until the gesture ends, so a drag or a link chain no longer ends on its own (H28-1); built (`1a35844`) and in the lab (`draw-lab-00226-d72`) 2026-11-07, the push's gate passing 2,871 of 2,871; live in production (`draw-00249-fxf`, `8e6a8b5`) 2026-11-08 | **B450** | S3 | `DONE` |
 | H28.5 | A move's and a clone's preview drawn from a throwaway projection, the originals left as stored until the commit, so a drag's preview no longer writes the shared Model (H28-1; B7's narrow form, its remainder held); built (`8e6a8b5`) -- the renderer drawing the projection for the gesture and the live Model again at its end, a refused copy no longer left in the tab -- and in the lab (`draw-lab-00226-d72`) 2026-11-07; live in production (`draw-00249-fxf`, `8e6a8b5`) 2026-11-08, B7 part-closed, its remainder held | **B7** | S2 | `DONE` |
 
 AMENDED 2026-11-07: H28.4 and H28.5 in the lab on their builder's gate and passed by one targeted check -- a fork's chain driven in Chrome holding its snapshot until the chain ended and then loading the fork -- five minor edges held as B451; live in production at the director's "continue" (`draw-00249-fxf`, `8e6a8b5`), its boot clean on 36 diagrams and the published SVG and favicons byte-identical before and after.
 
 **Exit:** B7 either built or held again on a measured cost the director ruled -- ruled built in part, with B450 (H28-1); agents shown to find their way across a diagram by its chunks, or the map changed until they do.
+AMENDED 2026-11-08: every clause holds -- B7 built in part and live with B450 (H28-1); agents shown to find their way by the chunks in a full evaluation, the map left as it is; its one measured failure, the CLI's units, put to the director (B453) (H28 closed).
 
 ---
 
@@ -1706,6 +1707,7 @@ Scored so the comparison is a judgement, not an omission.\
 | **B451** | S5 | Five small edges after H28: refused hops drawn until a chain ends, a switch's flags on an error, a painter's throw at a commit (H28) | a person reports a chain that kept drawing refused hops, a drag that stuck or a snapshot that loaded mid-drag, or the next change to the hold or to the preview's projection. |
 | **B7** | **S2** | A drag's preview writes the shared Model: the zone handle's reshape and a link drag's placed waypoints, the remainder after H28.5 | a remote change is seen fighting a drag, or the next change to how a drag previews. |
 | **B452** | S5 | The frame meter's test fails under machine load, two wall-clock medians compared to half a frame (H28) | S1 fails on a machine running nothing else or in CI, or the next change to the frame meter. |
+| **B454** | S5 | gpt's 72 cells of H28.3's evaluation, owed while its quota is out (H28) | gpt's codex quota returns (2026-11-14 or later), when `map-supplement-o` is run and its cells pooled with the full run's, or a change to the CLI's map or units is measured again. |
 | **B347** | S4 | The towerless-combat timing test failed once under machine load | it fails a second time, or B333's flake ledger is built. |
 | **B282** | S3 | Anchors along a wide device, and which one a link ends at (WD1; the pack half closed at H21.3) | a wide device needs links at more than one point (WD1). |
 | **B79** | S3 | The connection walk's apparatus is outside the repository; the false record is corrected, the rest held with B127 | B127 revives, or another decision is taken on the walk's findings. |
@@ -1746,10 +1748,11 @@ The deployment that fired its trigger is also the one that answered it: object s
 ## Decisions required
 
 B163, the last entry, was ratified and closed on 2026-10-01: the standing goals framework is `VISION.md`.\
-B399 and B400 were ruled on 2026-11-01 (H26-21) and left this table; B415 was ruled on 2026-11-07 (H27-2) and left it; B7 and B450 were ruled the same day (H28-1) and left it; none is owed now.
+B399 and B400 were ruled on 2026-11-01 (H26-21) and left this table; B415 was ruled on 2026-11-07 (H27-2) and left it; B7 and B450 were ruled the same day (H28-1) and left it.
 
 | Row | Decision owed | Why it cannot be settled without you |
 |---|---|---|
+| **B453** | The CLI's units: every verb in cells, or each naming its unit, and a far-off write refused or warned | It changes what every agent reads and writes at the CLI (H28.3's measure) |
 
 **R13 reads this table in both directions**, which is what `Held` has had since B123 and this section never did.\
 A row recording `RULING-OWED` must appear here, so a decision cannot wait unseen; an entry here must still be `RULING-OWED`, so a ruling that has landed cannot keep asserting itself.\
