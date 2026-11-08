@@ -2435,9 +2435,9 @@ Shown: dev/BACKLOG.md@f2a675c\
 Affects: dev/BACKLOG.md, dev/BOARD.md\
 Recorder: shown H28.2's sizing -- N7's duplicated geometry pipeline no longer needed, a throwaway projection costing a few milliseconds and drawn by the same painters; B7's fight unreachable while inbound changes are held during a gesture; the hold passed by the snapshots the tab asks for, which end a drag or a chain on their own (B450) -- and offered hardening the hold and holding B7 (recommended), hardening it and building B7's fix for the move and the clone, 2 to 3 days for nothing a person sees today, or neither. So both are built: the requested resyncs, `access` and a template's reopen held until the gesture ends and the release of what was held not running into a gesture live again (B450); and the move's and the clone's preview drawn from a throwaway projection while the originals stay as stored (B7, its narrow form); a zone handle's reshape and a link drag's placed waypoints, which nothing derived reads, keep writing the live Model, B7's remainder held.
 
-AMENDED 2026-11-07 by the director, H28-1: "continue" -- shown both changes in the lab and passed by their targeted check, five minor edges held (B451), and offered production (recommended), a try of the lab first, or holding it. So draw went live as `draw-00249-fxf` at `8e6a8b5`; B450 closed and B7 part-closed.
+AMENDED 2026-11-08 by the director, H28-1: "continue" -- shown both changes in the lab and passed by their targeted check, five minor edges held (B451), and offered production (recommended), a try of the lab first, or holding it. So draw went live as `draw-00249-fxf` at `8e6a8b5`; B450 closed and B7 part-closed.
 
-**H28-2 -- the agents' map evaluation run in full: today's chunk of 31 by 17, the square 17 by 17, 31 by 17 without the senses, and a second 31 by 17 arm to measure the noise, across every model family context-lab offers, run to completion -- 2026-11-07 (B440).**\
+**H28-2 -- the agents' map evaluation run in full: today's chunk of 31 by 17, the square 17 by 17, 31 by 17 without the senses, and a second 31 by 17 arm to measure the noise, across every model family context-lab offers, run to completion -- 2026-11-08 (B440).**\
 Director: "I want full. complete."\
 Shown: dev/BOARD.md@b2d5120\
 Affects: dev/BOARD.md, dev/BACKLOG.md\
