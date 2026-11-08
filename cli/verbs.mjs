@@ -1035,8 +1035,10 @@ VERBS.push(
 			const nm = naming(doc);
 			const rows = [];
 			// H29.1 (B453): the position in px and its cell, and a route's points both ways
-			const pitch = b.at || b.path ? await pitchOf(ctx, id) : null;
+			const pitch = b.at || b.path || b.bounds ? await pitchOf(ctx, id) : null;
 			if (b.at) rows.push(['at', pxAndCell(b.at.x, b.at.y, pitch)]);
+			// a zone's corner and size in px and the cells it bounds, where `w` and `h` printed bare among its fields (the targeted check)
+			if (b.bounds) rows.push(['bounds', `${b.bounds.x},${b.bounds.y} ${b.bounds.w}x${b.bounds.h} px (cells ${cellsText(zoneCells(b.bounds, pitch))})`]);
 			if (b.role) rows.push(['role', b.role]);
 			if (b.group) rows.push(['group', nm(b.group)]);
 			if (b.zones?.length) rows.push(['zones', b.zones.map(nm).join(' ')]);
@@ -1045,6 +1047,7 @@ VERBS.push(
 			if (b.members?.length) rows.push(['members', b.members.map(nm).join(' ')]);
 			// B169 -- whatever the entity itself carries, so a new optional field needs no change here
 			for (const [k, v] of Object.entries(b.fields || {})) {
+				if (b.bounds && (k === 'w' || k === 'h')) continue;   // shown, named, in `bounds`
 				rows.push([k, typeof v === 'object' && v !== null
 					? Object.entries(v).map(([kk, vv]) => `${kk}=${vv}`).join(' ') : String(v)]);
 			}
@@ -1054,7 +1057,8 @@ VERBS.push(
 			// R-b (H1): the anchors its route runs through, or that it is down and what holds its way
 			if (b.route) rows.push(['route', b.route.map(nm).join(' -> ')]);
 			if (b.down) rows.push(['down', b.blockers?.length ? `held by ${b.blockers.map(nm).join(' ')}` : 'no way over its pipes -- it heals when one is laid']);
-			const json = { ...b, ...(b.at ? { cell: cellAt(b.at.x, b.at.y, pitch) } : {}), ...(b.path ? { pathCells: b.path.map(([x, y]) => [x / pitch, y / pitch]) } : {}) };
+			const json = { ...b, ...(b.at ? { cell: cellAt(b.at.x, b.at.y, pitch) } : {}), ...(b.path ? { pathCells: b.path.map(([x, y]) => [x / pitch, y / pitch]) } : {}),
+				...(b.bounds ? { cells: zoneCells(b.bounds, pitch) } : {}) };
 			return { json, text: `${b.kind} ${b.id}${b.name ? `  ${b.name}` : ''}\n${table(rows, ['FIELD', 'VALUE'])}` };
 		},
 	},
@@ -2004,20 +2008,50 @@ the wrong unit than a placement, while one chunk keeps a small or empty diagram'
 each a multiple of the pitch, and divided by it landing within that reach -- the refusal names the cell they would be; `--far` writes it.
 */
 const FAR_FLOOR = CHUNK.w;
-function extentOf(doc, pitch) {
-	const cells = (doc.nodes || []).filter((n) => Number.isFinite(n.x) && Number.isFinite(n.y)).map((n) => [n.x / pitch, n.y / pitch]);
-	for (const z of doc.zones || []) { const c = zoneCells(z, pitch); cells.push([c.x0, c.y0], [c.x1, c.y1]); }
+// every entity the document positions -- anything at an x and a y, in whichever collection holds it: anchors, and zones by their extent
+const positionedIn = (doc) => Object.values(doc).filter(Array.isArray).flat().filter((e) => e && Number.isFinite(e.x) && Number.isFinite(e.y));
+function extentOf(entities, pitch) {
+	const cells = entities.flatMap((e) => { if (!hasExtent(e)) return [[e.x / pitch, e.y / pitch]]; const c = zoneCells(e, pitch); return [[c.x0, c.y0], [c.x1, c.y1]]; });
 	if (!cells.length) return null;
 	const xs = cells.map((c) => c[0]), ys = cells.map((c) => c[1]);
 	return { x0: Math.min(...xs), x1: Math.max(...xs), y0: Math.min(...ys), y1: Math.max(...ys) };
 }
-// refuses the first of `asked` ({ cx, cy, word }) lying far outside the diagram, unless --far; reads the document and its pitch, writes nothing
+/*
+H29.1 (the targeted check's finding) -- INSIDE A DRAFT, THE DIAGRAM IS WHAT THE DRAFT HAS STAGED: the committed document with the draft's
+ops applied, so a diagram built outward step by step inside a draft is measured as the same writes made directly would be, where it was
+measured from the committed document alone and refused once it passed one reach from it. Only positioned entities bear on the extent,
+so the ops are applied to those, by id: a put, a set's patch, a del. A staged `place` is an intent the server resolves at commit (B189):
+it is counted at what it is placed by -- near, inside or between -- and widens the reach by the one cell its anchor may lie beside that.
+*/
+function withStaged(entities, ops) {
+	const list = [...entities];
+	const byRef = (ref) => list.find((e) => e.id === ref || e.name === ref);
+	let places = 0;
+	for (const op of ops || []) {
+		const at = list.findIndex((e) => e.id === (op.entity?.id ?? op.id));
+		if (op.op === 'put' && Number.isFinite(op.entity?.x)) { if (at >= 0) list[at] = op.entity; else list.push(op.entity); }
+		else if (op.op === 'set' && at >= 0) list[at] = { ...list[at], ...op.patch };
+		else if (op.op === 'del' && at >= 0) list.splice(at, 1);
+		else if (op.op === 'place') {
+			places++;
+			for (const r of [op.at?.near, op.at?.inside, ...(op.at?.between ?? [])].filter(Boolean).map(byRef).filter(Boolean)) {
+				list.push({ ...op.entity, x: hasExtent(r) ? r.x + r.w / 2 : r.x, y: hasExtent(r) ? r.y + r.h / 2 : r.y });
+			}
+		}
+	}
+	return { entities: list, places };
+}
+// refuses the first of `asked` ({ cx, cy, word }) lying far outside the diagram -- as a draft has staged it, when the write is staged -- unless
+// --far; reads the document, its pitch and the draft, writes nothing
 async function refuseFar(ctx, id, asked) {
 	if (ctx.flags.far) return;
 	const pitch = await pitchOf(ctx, id);
-	const box = extentOf(ok(await request(ctx, `/diagrams/${id}`), ctx.verb?.name ?? 'write'), pitch);
+	const committed = ok(await request(ctx, `/diagrams/${id}`), ctx.verb?.name ?? 'write');
+	const draft = (await staging(ctx)) ? await readDraft(ctx) : null;
+	const { entities, places } = draft?.diagram === id ? withStaged(positionedIn(committed), draft.ops) : { entities: positionedIn(committed), places: 0 };
+	const box = extentOf(entities, pitch);
 	const b = box ?? { x0: 0, x1: 0, y0: 0, y1: 0 };
-	const reach = Math.max(FAR_FLOOR, b.x1 - b.x0 + 1, b.y1 - b.y0 + 1);
+	const reach = Math.max(FAR_FLOOR, b.x1 - b.x0 + 1, b.y1 - b.y0 + 1) + places;
 	const outside = (cx, cy) => Math.max(b.x0 - cx, cx - b.x1, b.y0 - cy, cy - b.y1, 0);
 	for (const { cx, cy, word } of asked) {
 		const d = outside(cx, cy);

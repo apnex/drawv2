@@ -176,7 +176,7 @@ Beneath its key every map prints its chunk and window, then for each of the eigh
 AMENDED 2026-11-08 (H29.1; `dev/DECISIONS.md` H29, B453): the CLI names its two units.\
 The document holds positions in pixels (`px`), and every verb that takes a position takes a cell, so every verb that shows one shows the cell beside the pixels, each named -- `120,60 px (cell 2,1)` in text, `X PX`, `Y PX` and `CELL` as columns -- and its `--json` keeps its fields and gains `cell`, a zone's `cells` or a route's `pathCells` beside them.\
 Each verb's help names the unit it prints and the unit it takes.\
-A write whose cell lies further outside the diagram than the diagram's own width or height, or one chunk's width when that is more, is refused before it is sent, naming the cell the numbers would be as pixels when they look like pixels; `--far` writes it.
+A write whose cell lies further outside the diagram -- as a draft has staged it, when the write is staged -- than the diagram's own width or height, or one chunk's width when that is more, is refused before it is sent, naming the cell the numbers would be as pixels when they look like pixels; `--far` writes it.
 
 ---
 

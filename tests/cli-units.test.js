@@ -17,9 +17,9 @@ import { makeApp } from './fixtures/app.mjs';
 import { main } from '../cli/draw.mjs';
 
 const ID = 'c0ffee00c0ffee01';   // a document id, made for this file
-const P = 60;                    // the board's pitch, its stored grid record's
-// cells: edge 2,1  web 5,1  db -4,3  bend (a waypoint) 3,4; the zone site over cells -5..-3 by 2..4 -- the board's extent -5..5 by 1..4
-const BOARD = {
+// cells: edge 2,1  web 5,1  db -4,3  bend (a waypoint) 3,4; the zone site over cells -5..-3 by 2..4 -- the board's extent -5..5 by 1..4,
+// its positions in drawing units by its own pitch, the stored grid record's: 60 unless a test says otherwise
+const boardAt = (P) => ({
 	meta: { id: ID, name: 'units', version: 1, schema: 4 },
 	layouts: [{ id: 'layout-000001', name: 'grid', pitch: P }],
 	nodes: [
@@ -31,12 +31,12 @@ const BOARD = {
 	zones: [{ id: 'zone-a00001', name: 'site', x: -5 * P - P / 2, y: 2 * P - P / 2, w: 3 * P, h: 3 * P }],
 	links: [{ id: 'link-a00001', name: 'wire', src: 'node-a00001', dst: 'node-a00002', via: [] }],
 	pipes: [], groups: [],
-};
+});
 
-async function withBoard(fn) {
+async function withBoard(fn, pitch = 60) {
 	const dataDir = scratchFolder('draw-cli-units-');
 	const home = scratchFolder('draw-cli-units-home-');
-	fs.writeFileSync(path.join(dataDir, `${ID}.json`), JSON.stringify(BOARD));
+	fs.writeFileSync(path.join(dataDir, `${ID}.json`), JSON.stringify(boardAt(pitch)));
 	const app = await makeApp({ dataDir, port: 0 });
 	const host = `http://127.0.0.1:${app.port}`;
 	const run = async (...argv) => { const out = []; await main([...argv, '--host', host, '--diagram', ID], { HOME: home }, (s) => out.push(s)); return out.join(''); };
@@ -133,3 +133,38 @@ test('H29.1: an empty diagram refuses a cell more than one chunk from the origin
 	assert.match(await refused('add', 'host', 'at', '32,0'), /refused: cell 32,0 lies 32 cells east of the diagram \(empty, so measured from cell 0,0\)/);
 	assert.match(await run('add', 'host', 'at', '31,0', '--name', 'edge-of-reach'), /at cell 31,0 = 1860,0 px/);
 }));
+
+test('H29.1 (the targeted check): about a zone names its extent px and shows its cells; --json keeps bounds and adds cells', () => withBoard(async ({ run }) => {
+	const text = await run('about', 'site');
+	assert.match(text, /bounds\s+-330,90 180x180 px \(cells -5,2 \.\. -3,4\)/, 'the zone\'s corner and size in px, and its cells');
+	assert.doesNotMatch(text, /^[wh]\s+180$/m, 'no bare w or h');
+	const json = JSON.parse(await run('about', 'site', '--json'));
+	assert.deepEqual([json.bounds, json.cells], [{ x: -330, y: 90, w: 180, h: 180 }, { x0: -5, y0: 2, x1: -3, y1: 4 }]);
+}));
+
+test('H29.1 (the targeted check): inside a draft the far rule measures what the draft has staged, so a draft built outward is refused only where direct writes would be', () => withBoard(async ({ run, refused, stored }) => {
+	await run('lock');
+	await run('draft', 'begin');
+	// committed extent -5..5 by 1..4, reach 31: 30,1 is 25 cells out; staged, the extent is -5..30 and its reach 36, so 60,1 (30 out) is
+	// taken, and each step after it, 30 cells beyond the last -- every one where the same writes made directly would have been taken
+	assert.match(await run('add', 'host', 'at', '30,1', '--name', 'step-1'), /draft \+1/);
+	assert.match(await run('add', 'host', 'at', '60,1', '--name', 'step-2'), /draft \+1/, 'measured from the staged step-1, not the committed board');
+	assert.match(await run('move', 'db', 'to', '90,1'), /draft \+1/, 'a staged move, measured from the staged step-2');
+	assert.match(await run('link', 'edge', 'web', '--via', '120,1'), /draft \+/, 'a bend, measured from the staged move');
+	assert.match(await run('zone', 'outer', 'from', '150,1', 'to', '151,2'), /draft \+1/, 'a zone, measured from the staged bend');
+	assert.match(await refused('add', 'host', 'at', '1000,1'), /refused: cell 1000,1 lies 849 cells east of the diagram \(cells -5\.\.151, 1\.\.4\)/, 'still refused past the staged extent\'s reach');
+	assert.equal((await stored()).nodes.length, 4, 'nothing committed yet');
+	await run('draft', 'discard');
+	assert.match(await refused('add', 'host', 'at', '60,1'), /refused: cell 60,1 lies 55 cells east of the diagram \(cells -5\.\.5, 1\.\.4\)/, 'the draft gone, the committed board is measured again');
+}));
+
+test('H29.1 (the targeted check): at pitch 80 the cells shown and the far rule read the stored pitch, never 60', () => withBoard(async ({ run, refused }) => {
+	assert.match(await run('get', 'nodes', 'edge'), /edge\s+router\s+160\s+80\s+2,1/, 'edge at 160,80 px, cell 2,1 by 80');
+	assert.deepEqual(JSON.parse(await run('get', 'nodes', 'edge', '--json'))[0].cell, { cx: 2, cy: 1 });
+	assert.match(await run('get', 'zones'), /site\s+-440\s+120\s+240\s+240\s+-5,2 \.\. -3,4/, 'the zone\'s cells by 80');
+	assert.match(await run('about', 'edge'), /at\s+160,80 px \(cell 2,1\)/);
+	await run('lock');
+	assert.match(await refused('add', 'server', 'at', '320,240'), /refused: cell 320,240 lies 315 cells south-east of the diagram \(cells -5\.\.5, 1\.\.4\); as pixels it is cell 4,3/, 'pixels read by 80');
+	assert.doesNotMatch(await refused('add', 'server', 'at', '240,180'), /as pixels/, '240,180 is pixels at 60, not at 80');
+	assert.match(await run('add', 'server', 'at', '7,1', '--name', 'near-1'), /at cell 7,1 = 560,80 px/);
+}, 80));
