@@ -1,0 +1,144 @@
+{
+	"id": "t1-find",
+	"tags": [
+		"map",
+		"read"
+	],
+	"fixture": "fixtures/t1-find",
+	"task": "Find the device named `vault-7` on the diagram, and write its cell, as `cx,cy` and nothing else, to a file named `answer.txt` in this folder.",
+	"properties": [
+		{
+			"id": "success",
+			"type": "adherence",
+			"decidedBy": "code",
+			"key": "answer.txt's first line holds vault-7's cell",
+			"scale": [
+				0,
+				1
+			],
+			"measure": "score"
+		},
+		{
+			"id": "draw-calls",
+			"type": "precision",
+			"decidedBy": "code",
+			"key": "every ./draw call",
+			"scale": [
+				0,
+				1000
+			],
+			"measure": "score"
+		},
+		{
+			"id": "map-calls",
+			"type": "precision",
+			"decidedBy": "code",
+			"key": "map reads that answered",
+			"scale": [
+				0,
+				1000
+			],
+			"measure": "score"
+		},
+		{
+			"id": "wrong-reads",
+			"type": "precision",
+			"decidedBy": "code",
+			"key": "map reads, before every target was shown, that showed no new target and came no nearer to one",
+			"scale": [
+				0,
+				1000
+			],
+			"measure": "score"
+		},
+		{
+			"id": "reads-to-target",
+			"type": "precision",
+			"decidedBy": "code",
+			"key": "map reads until every target was shown",
+			"scale": [
+				0,
+				1000
+			],
+			"measure": "score"
+		},
+		{
+			"id": "target-reads",
+			"type": "precision",
+			"decidedBy": "code",
+			"key": "map reads whose window held a target",
+			"scale": [
+				0,
+				1000
+			],
+			"measure": "score"
+		},
+		{
+			"id": "saw-targets",
+			"type": "precision",
+			"decidedBy": "code",
+			"key": "1 when every target was shown by some map read",
+			"scale": [
+				0,
+				1
+			],
+			"measure": "score"
+		},
+		{
+			"id": "senses-followed",
+			"type": "precision",
+			"decidedBy": "code",
+			"key": "map reads of a chunk an earlier map printed as a sense command",
+			"scale": [
+				0,
+				1000
+			],
+			"measure": "score"
+		},
+		{
+			"id": "followed-content",
+			"type": "precision",
+			"decidedBy": "code",
+			"key": "of those, reads whose sense named something there",
+			"scale": [
+				0,
+				1000
+			],
+			"measure": "score"
+		},
+		{
+			"id": "other-reads",
+			"type": "precision",
+			"decidedBy": "code",
+			"key": "answered calls of verbs that tell positions without the map",
+			"scale": [
+				0,
+				1000
+			],
+			"measure": "score"
+		},
+		{
+			"id": "refused",
+			"type": "precision",
+			"decidedBy": "code",
+			"key": "calls of verbs the task does not allow",
+			"scale": [
+				0,
+				1000
+			],
+			"measure": "score"
+		},
+		{
+			"id": "intact",
+			"type": "precision",
+			"decidedBy": "code",
+			"key": "1 when the shim, its door and its policy are as built",
+			"scale": [
+				0,
+				1
+			],
+			"measure": "score"
+		}
+	],
+	"notes": "Scored by hooks/score.mjs against data/answers.json; the workspace is fixtures/t1-find (tools/build-fixture.mjs)."
+}

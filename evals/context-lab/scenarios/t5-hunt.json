@@ -1,0 +1,166 @@
+{
+	"id": "t5-hunt",
+	"tags": [
+		"map",
+		"map-only"
+	],
+	"fixture": "fixtures/t5-hunt",
+	"task": "Somewhere on this diagram is exactly one VXLAN device. Find it with `./draw map`, write its name and cell, as `name cx,cy` on one line, to a file named `answer.txt` in this folder, then add a host named `h-west` in the cell directly west of it -- one cell to its left. Change nothing else on the diagram. For this task `./draw` answers only these verbs: map, add, place, move, rm, rename, undo, redo, lock, unlock, diagrams, use, context, status, types, layouts and help.",
+	"properties": [
+		{
+			"id": "success",
+			"type": "adherence",
+			"decidedBy": "code",
+			"key": "both found and placed",
+			"scale": [
+				0,
+				1
+			],
+			"measure": "score"
+		},
+		{
+			"id": "found",
+			"type": "adherence",
+			"decidedBy": "code",
+			"key": "answer.txt's first line names the vxlan and holds its cell",
+			"scale": [
+				0,
+				1
+			],
+			"measure": "score"
+		},
+		{
+			"id": "placed",
+			"type": "adherence",
+			"decidedBy": "code",
+			"key": "one host h-west added in the cell west of the vxlan, and nothing else changed",
+			"scale": [
+				0,
+				1
+			],
+			"measure": "score"
+		},
+		{
+			"id": "draw-calls",
+			"type": "precision",
+			"decidedBy": "code",
+			"key": "every ./draw call",
+			"scale": [
+				0,
+				1000
+			],
+			"measure": "score"
+		},
+		{
+			"id": "map-calls",
+			"type": "precision",
+			"decidedBy": "code",
+			"key": "map reads that answered",
+			"scale": [
+				0,
+				1000
+			],
+			"measure": "score"
+		},
+		{
+			"id": "wrong-reads",
+			"type": "precision",
+			"decidedBy": "code",
+			"key": "map reads, before every target was shown, that showed no new target and came no nearer to one",
+			"scale": [
+				0,
+				1000
+			],
+			"measure": "score"
+		},
+		{
+			"id": "reads-to-target",
+			"type": "precision",
+			"decidedBy": "code",
+			"key": "map reads until every target was shown",
+			"scale": [
+				0,
+				1000
+			],
+			"measure": "score"
+		},
+		{
+			"id": "target-reads",
+			"type": "precision",
+			"decidedBy": "code",
+			"key": "map reads whose window held a target",
+			"scale": [
+				0,
+				1000
+			],
+			"measure": "score"
+		},
+		{
+			"id": "saw-targets",
+			"type": "precision",
+			"decidedBy": "code",
+			"key": "1 when every target was shown by some map read",
+			"scale": [
+				0,
+				1
+			],
+			"measure": "score"
+		},
+		{
+			"id": "senses-followed",
+			"type": "precision",
+			"decidedBy": "code",
+			"key": "map reads of a chunk an earlier map printed as a sense command",
+			"scale": [
+				0,
+				1000
+			],
+			"measure": "score"
+		},
+		{
+			"id": "followed-content",
+			"type": "precision",
+			"decidedBy": "code",
+			"key": "of those, reads whose sense named something there",
+			"scale": [
+				0,
+				1000
+			],
+			"measure": "score"
+		},
+		{
+			"id": "other-reads",
+			"type": "precision",
+			"decidedBy": "code",
+			"key": "answered calls of verbs that tell positions without the map",
+			"scale": [
+				0,
+				1000
+			],
+			"measure": "score"
+		},
+		{
+			"id": "refused",
+			"type": "precision",
+			"decidedBy": "code",
+			"key": "calls of verbs the task does not allow",
+			"scale": [
+				0,
+				1000
+			],
+			"measure": "score"
+		},
+		{
+			"id": "intact",
+			"type": "precision",
+			"decidedBy": "code",
+			"key": "1 when the shim, its door and its policy are as built",
+			"scale": [
+				0,
+				1
+			],
+			"measure": "score"
+		}
+	],
+	"notes": "Scored by hooks/score.mjs against data/answers.json; the workspace is fixtures/t5-hunt (tools/build-fixture.mjs)."
+}

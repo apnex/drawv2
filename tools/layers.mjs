@@ -335,6 +335,9 @@ export const FOLDERS = [
 
 export const UNSCANNED = {
 	deploy: 'gitignored: how ONE instance is hosted, not part of the repository (.gitignore says why); a fresh clone has no deploy/',
+	// H28.3 (B440): an experiment ON draw, as tools/ is work on it, but never imported by draw nor importing it -- its shim loads draw's
+	// tree at a pinned revision by path, from evals/context-lab/fixtures/ (gitignored), a copy of the folders scanned here
+	evals: 'context-lab packs: experiments run against draw at a pinned revision (evals/context-lab/README.md), importing no module of draw\'s and imported by none; fixtures/ holds a gitignored copy of draw\'s own tree',
 };
 
 /*

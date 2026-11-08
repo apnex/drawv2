@@ -1,0 +1,8 @@
+{
+	"t1-find": null,
+	"t2-trace": null,
+	"t3-place": null,
+	"t4-wire": null,
+	"t5-hunt": ["diagrams", "use", "context", "status", "types", "layouts", "map", "lock", "unlock", "lock status", "add", "place", "move", "rm", "rename", "undo", "redo"],
+	"t6-count": ["diagrams", "use", "context", "status", "types", "layouts", "map"]
+}

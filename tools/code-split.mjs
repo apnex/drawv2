@@ -256,7 +256,8 @@ function measure(tree, files, { installed, checkPins = false } = {}) {
 	for (const f of files) {
 		if (!js(f) && !(under('tests')(f) && testCode(f))) continue;
 		if (under('tests')(f)) { tests += codeLines(read(tree, f)); continue; }
-		if (under('tools')(f)) { tools += codeLines(read(tree, f)); continue; }
+		// H28.3 (B440): an evaluation pack under evals/ is work on draw, as tools/ is, and counted with it -- no product part claims it
+		if (under('tools')(f) || under('evals')(f)) { tools += codeLines(read(tree, f)); continue; }
 		const kind = kindOf(f), group = kind ? GROUPS[kind] : UNCLAIMED;
 		if (kind && !group) throw new Error(`code-split: ${f} is claimed by a part of kind ${kind}, which no group holds`);
 		if (!kind) unclaimed.push(f);

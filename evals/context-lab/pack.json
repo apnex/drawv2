@@ -1,0 +1,216 @@
+{
+	"schema": "context-lab.pack/1",
+	"id": "draw-map",
+	"sources": [
+		{
+			"id": "draw-cli",
+			"path": "../../cli",
+			"addresses": []
+		},
+		{
+			"id": "pack",
+			"path": ".",
+			"addresses": []
+		}
+	],
+	"variants": [
+		{
+			"id": "cli-a",
+			"source": "draw-cli",
+			"canaries": [
+				"The kettle in the north room is blue."
+			],
+			"include": [
+				"verbs.mjs"
+			],
+			"transform": "arm-cli",
+			"revision": "8f29b519cd8c2881adbf96eda90bf60c5a56865b"
+		},
+		{
+			"id": "cli-b",
+			"source": "draw-cli",
+			"canaries": [
+				"The kettle in the south room is green."
+			],
+			"include": [
+				"verbs.mjs"
+			],
+			"transform": "arm-cli",
+			"revision": "8f29b519cd8c2881adbf96eda90bf60c5a56865b"
+		},
+		{
+			"id": "cli-c",
+			"source": "draw-cli",
+			"canaries": [
+				"The kettle in the east room is grey."
+			],
+			"include": [
+				"verbs.mjs"
+			],
+			"transform": "arm-cli",
+			"revision": "8f29b519cd8c2881adbf96eda90bf60c5a56865b"
+		}
+	],
+	"arms": [
+		{
+			"id": "a",
+			"deliver": [
+				{
+					"variant": "cli-a",
+					"file": ".draw/runtime/cli/verbs.mjs",
+					"as": "folder-file"
+				}
+			]
+		},
+		{
+			"id": "b",
+			"deliver": [
+				{
+					"variant": "cli-b",
+					"file": ".draw/runtime/cli/verbs.mjs",
+					"as": "folder-file"
+				}
+			]
+		},
+		{
+			"id": "c",
+			"deliver": [
+				{
+					"variant": "cli-c",
+					"file": ".draw/runtime/cli/verbs.mjs",
+					"as": "folder-file"
+				}
+			]
+		},
+		{
+			"id": "a2",
+			"deliver": [
+				{
+					"variant": "cli-a",
+					"file": ".draw/runtime/cli/verbs.mjs",
+					"as": "folder-file"
+				}
+			]
+		}
+	],
+	"population": [
+		{
+			"id": "c",
+			"family": "claude",
+			"runtime": "opencode",
+			"model": "litellm-nexus/claude-opus-5-5",
+			"settings": {
+				"outputTokenMax": 1048576
+			}
+		},
+		{
+			"id": "a",
+			"family": "gemini",
+			"runtime": "opencode",
+			"model": "litellm-nexus/gemini-4-argon",
+			"settings": {
+				"outputTokenMax": 1048576
+			}
+		},
+		{
+			"id": "f",
+			"family": "gemini",
+			"runtime": "opencode",
+			"model": "litellm-nexus/gemini-3.8-flash",
+			"settings": {
+				"outputTokenMax": 1048576
+			}
+		},
+		{
+			"id": "x",
+			"family": "grok",
+			"runtime": "opencode",
+			"model": "litellm-nexus/grok-4.20-non-reasoning",
+			"settings": {
+				"outputTokenMax": 1048576
+			}
+		},
+		{
+			"id": "o",
+			"family": "gpt",
+			"runtime": "codex",
+			"model": "gpt-6-astra",
+			"settings": {
+				"reasoningEffort": "high"
+			}
+		}
+	],
+	"hooks": [
+		{
+			"id": "arm-cli",
+			"kind": "variant-transform",
+			"file": "hooks/arm-cli.mjs",
+			"timeLimitSeconds": 120
+		},
+		{
+			"id": "score",
+			"kind": "outcome-measure",
+			"file": "hooks/score.mjs",
+			"timeLimitSeconds": 60
+		}
+	],
+	"masks": {
+		"identifiers": []
+	},
+	"isolation": {
+		"leakProbes": [],
+		"forbidden": {
+			"paths": [
+				"../.."
+			],
+			"addresses": []
+		}
+	},
+	"experiments": [
+		"experiments/map-eval.json",
+		"experiments/map-pilot.json",
+		"experiments/map-smoke.json"
+	],
+	"suites": [
+		{
+			"id": "full",
+			"experiment": "map-eval",
+			"select": {
+				"allTags": [
+					"map"
+				]
+			}
+		},
+		{
+			"id": "pilot",
+			"experiment": "map-pilot",
+			"select": {
+				"allTags": [
+					"map"
+				]
+			}
+		},
+		{
+			"id": "smoke",
+			"experiment": "map-smoke",
+			"select": {
+				"scenarios": [
+					"t5-hunt"
+				]
+			}
+		}
+	],
+	"records": {
+		"path": "../../../drawv2-eval-runs/h28/map-eval"
+	},
+	"comparisons": [
+		{
+			"id": "noise",
+			"experiment": "map-eval",
+			"rule": "aa",
+			"base": "a",
+			"head": "a2",
+			"m": 14
+		}
+	]
+}

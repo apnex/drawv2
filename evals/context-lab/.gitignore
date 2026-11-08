@@ -1,0 +1,2 @@
+# the runtime copy and the workspaces built from it (tools/build-fixture.mjs) -- built at the pinned revision, never committed
+fixtures/

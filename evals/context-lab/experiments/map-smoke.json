@@ -1,0 +1,35 @@
+{
+	"id": "map-smoke",
+	"declaredStatus": "exploration",
+	"scenarios": [
+		"scenarios/t5-hunt.json"
+	],
+	"factors": {
+		"arms": [
+			"a",
+			"b",
+			"c",
+			"a2"
+		],
+		"population": [
+			"c"
+		]
+	},
+	"runsPerCell": 1,
+	"phases": [
+		{
+			"id": "work",
+			"session": "new"
+		}
+	],
+	"instructions": "You are working in a folder that holds draw, a diagramming tool on an unbounded grid, and one diagram, `estate`. Drive it only through its command-line tool, `./draw`: `./draw help` lists its verbs and `./draw help <verb>` explains one. Where draw prints a command beginning `draw `, run it as `./draw `. Positions on the grid are cells, written `cx,cy`; x grows to the east and y to the south. Do not read, search or change the files under `.draw/`: they are the tool's own, and reading them is not part of the task. Work alone without asking questions, and stop when the task is done.",
+	"maxAttemptsPerCell": 2,
+	"limits": {
+		"readerTimeLimitSeconds": 900,
+		"probeTimeLimitSeconds": 300
+	},
+	"judging": {
+		"judges": []
+	},
+	"notes": "The build's smoke: T5 under each arm on one model, one run, each score read by hand against the stored state and the answer. pack digest 2c78697abc333aae15f4d204b68ef8c144041ce0d83fabea8ed4b541836aed3c."
+}

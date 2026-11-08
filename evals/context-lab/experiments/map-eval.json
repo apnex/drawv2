@@ -1,0 +1,49 @@
+{
+	"id": "map-eval",
+	"declaredStatus": "result",
+	"scenarios": [
+		"scenarios/t1-find.json",
+		"scenarios/t2-trace.json",
+		"scenarios/t3-place.json",
+		"scenarios/t4-wire.json",
+		"scenarios/t5-hunt.json",
+		"scenarios/t6-count.json"
+	],
+	"factors": {
+		"arms": [
+			"a",
+			"b",
+			"c",
+			"a2"
+		],
+		"population": [
+			"c",
+			"a",
+			"f",
+			"x",
+			"o"
+		]
+	},
+	"runsPerCell": 3,
+	"phases": [
+		{
+			"id": "work",
+			"session": "new"
+		}
+	],
+	"instructions": "You are working in a folder that holds draw, a diagramming tool on an unbounded grid, and one diagram, `estate`. Drive it only through its command-line tool, `./draw`: `./draw help` lists its verbs and `./draw help <verb>` explains one. Where draw prints a command beginning `draw `, run it as `./draw `. Positions on the grid are cells, written `cx,cy`; x grows to the east and y to the south. Do not read, search or change the files under `.draw/`: they are the tool's own, and reading them is not part of the task. Work alone without asking questions, and stop when the task is done.",
+	"maxAttemptsPerCell": 2,
+	"limits": {
+		"readerTimeLimitSeconds": 900,
+		"probeTimeLimitSeconds": 300
+	},
+	"judging": {
+		"judges": []
+	},
+	"variation": {
+		"difference": 0.25,
+		"scope": "property"
+	},
+	"default": "no change to the map's chunk or its senses indicated",
+	"notes": "draw's H28.3 (B440), H28-2: four arms -- a, 31 by 17 as shipped; b, 17 by 17; c, 31 by 17 without the senses; a2, identical to a, so the gap between a and a2 measures chance -- over six tasks on one diagram some fifteen chunks of 31 by 17 wide, every model, three runs. Every property is decided by code (hooks/score.mjs); tools/report.mjs prints the result per arm, model and task. pack digest 2c78697abc333aae15f4d204b68ef8c144041ce0d83fabea8ed4b541836aed3c."
+}

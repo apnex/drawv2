@@ -1,0 +1,102 @@
+{
+	"diagram": "8a502481cccfba5f",
+	"t1-find": {
+		"name": "vault-7",
+		"cell": [
+			68,
+			16
+		],
+		"targets": [
+			[
+				68,
+				16
+			]
+		]
+	},
+	"t2-trace": {
+		"from": "edge-gw",
+		"name": "spine-4",
+		"cell": [
+			52,
+			-18
+		],
+		"targets": [
+			[
+				-3,
+				3
+			],
+			[
+				52,
+				-18
+			]
+		]
+	},
+	"t3-place": {
+		"beside": "fw-north-3",
+		"at": [
+			-50,
+			-18
+		],
+		"free": [
+			[
+				-49,
+				-18
+			],
+			[
+				-50,
+				-19
+			]
+		],
+		"name": "sw-new",
+		"type": "server",
+		"targets": [
+			[
+				-50,
+				-18
+			]
+		]
+	},
+	"t4-wire": {
+		"a": "db-west-2",
+		"b": "app-east-5",
+		"targets": [
+			[
+				-66,
+				6
+			],
+			[
+				57,
+				-4
+			]
+		]
+	},
+	"t5-hunt": {
+		"name": "tun-q7",
+		"cell": [
+			-62,
+			-20
+		],
+		"place": [
+			-63,
+			-20
+		],
+		"host": "h-west",
+		"type": "host",
+		"targets": [
+			[
+				-62,
+				-20
+			]
+		]
+	},
+	"t6-count": {
+		"area": [
+			20,
+			-20,
+			70,
+			10
+		],
+		"count": 16,
+		"targets": "area"
+	}
+}

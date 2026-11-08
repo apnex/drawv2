@@ -1,0 +1,835 @@
+{
+	"meta": {
+		"id": "8a502481cccfba5f",
+		"name": "estate",
+		"version": 94,
+		"schema": 4,
+		"owner": "",
+		"grants": {},
+		"public": false,
+		"plugins": [
+			"layouts",
+			"zones",
+			"groups",
+			"devices",
+			"the simulation",
+			"the network"
+		]
+	},
+	"layouts": [
+		{
+			"id": "layout-000001",
+			"name": "grid",
+			"pitch": 60
+		}
+	],
+	"nodes": [
+		{
+			"id": "node-1f2c04",
+			"name": "edge-gw",
+			"type": "router",
+			"x": -180,
+			"y": 180,
+			"order": 1
+		},
+		{
+			"id": "node-f63beb",
+			"name": "vault-1",
+			"type": "host",
+			"x": -600,
+			"y": -300,
+			"order": 2
+		},
+		{
+			"id": "node-f48af2",
+			"name": "lb-c1",
+			"type": "loadbalancer",
+			"x": 0,
+			"y": -120,
+			"order": 3
+		},
+		{
+			"id": "node-b02e0b",
+			"name": "web-c1",
+			"type": "host",
+			"x": 300,
+			"y": 300,
+			"order": 4
+		},
+		{
+			"id": "node-72fba8",
+			"name": "web-c2",
+			"type": "host",
+			"x": 360,
+			"y": -360,
+			"order": 5
+		},
+		{
+			"id": "node-924788",
+			"name": "rtr-c1",
+			"type": "router",
+			"x": -480,
+			"y": 420,
+			"order": 6
+		},
+		{
+			"id": "node-1c5575",
+			"name": "app-c1",
+			"type": "server",
+			"x": 540,
+			"y": 60,
+			"order": 7
+		},
+		{
+			"id": "node-e500ee",
+			"name": "fw-c1",
+			"type": "firewall",
+			"x": -840,
+			"y": 0,
+			"order": 8
+		},
+		{
+			"id": "node-a58024",
+			"name": "spine-2",
+			"type": "router",
+			"x": -2400,
+			"y": 300,
+			"order": 9
+		},
+		{
+			"id": "node-19a9b8",
+			"name": "db-west-1",
+			"type": "server",
+			"x": -1800,
+			"y": -1200,
+			"order": 10
+		},
+		{
+			"id": "node-cd6ee2",
+			"name": "vault-3",
+			"type": "host",
+			"x": -2700,
+			"y": 900,
+			"order": 11
+		},
+		{
+			"id": "node-de919e",
+			"name": "web-w1",
+			"type": "host",
+			"x": -1500,
+			"y": 0,
+			"order": 12
+		},
+		{
+			"id": "node-ddb0c7",
+			"name": "web-w2",
+			"type": "host",
+			"x": -2100,
+			"y": -360,
+			"order": 13
+		},
+		{
+			"id": "node-c85a17",
+			"name": "lb-w1",
+			"type": "loadbalancer",
+			"x": -1680,
+			"y": 600,
+			"order": 14
+		},
+		{
+			"id": "node-259c96",
+			"name": "fw-north-1",
+			"type": "firewall",
+			"x": -1320,
+			"y": -960,
+			"order": 15
+		},
+		{
+			"id": "node-0f63e1",
+			"name": "app-w1",
+			"type": "server",
+			"x": -2280,
+			"y": 1200,
+			"order": 16
+		},
+		{
+			"id": "node-59f172",
+			"name": "fw-north-3",
+			"type": "firewall",
+			"x": -3000,
+			"y": -1080,
+			"order": 17
+		},
+		{
+			"id": "node-bb4a4f",
+			"name": "log-n1",
+			"type": "host",
+			"x": -3060,
+			"y": -1080,
+			"order": 18
+		},
+		{
+			"id": "node-2f49f1",
+			"name": "log-n2",
+			"type": "host",
+			"x": -3000,
+			"y": -1020,
+			"order": 19
+		},
+		{
+			"id": "node-de6792",
+			"name": "tun-q7",
+			"type": "vxlan",
+			"x": -3720,
+			"y": -1200,
+			"order": 20
+		},
+		{
+			"id": "node-7d4ad9",
+			"name": "db-west-2",
+			"type": "server",
+			"x": -3960,
+			"y": 360,
+			"order": 21
+		},
+		{
+			"id": "node-bf7364",
+			"name": "db-west-3",
+			"type": "server",
+			"x": -4200,
+			"y": 1200,
+			"order": 22
+		},
+		{
+			"id": "node-a5edc8",
+			"name": "vault-5",
+			"type": "host",
+			"x": -4200,
+			"y": -480,
+			"order": 23
+		},
+		{
+			"id": "node-09d096",
+			"name": "spine-5",
+			"type": "router",
+			"x": -3600,
+			"y": 1080,
+			"order": 24
+		},
+		{
+			"id": "node-b99384",
+			"name": "web-fw1",
+			"type": "host",
+			"x": -3300,
+			"y": 0,
+			"order": 25
+		},
+		{
+			"id": "node-077901",
+			"name": "lb-fw1",
+			"type": "loadbalancer",
+			"x": -3900,
+			"y": -720,
+			"order": 26
+		},
+		{
+			"id": "node-5aecb1",
+			"name": "app-fw1",
+			"type": "server",
+			"x": -3480,
+			"y": 600,
+			"order": 27
+		},
+		{
+			"id": "node-776876",
+			"name": "spine-3",
+			"type": "router",
+			"x": -240,
+			"y": -1080,
+			"order": 28
+		},
+		{
+			"id": "node-4a7e0c",
+			"name": "web-n1",
+			"type": "host",
+			"x": 480,
+			"y": -900,
+			"order": 29
+		},
+		{
+			"id": "node-556610",
+			"name": "app-n1",
+			"type": "server",
+			"x": -480,
+			"y": -1200,
+			"order": 30
+		},
+		{
+			"id": "node-b6ef99",
+			"name": "web-s1",
+			"type": "host",
+			"x": 0,
+			"y": 900,
+			"order": 31
+		},
+		{
+			"id": "node-09e26f",
+			"name": "lb-s1",
+			"type": "loadbalancer",
+			"x": 600,
+			"y": 1200,
+			"order": 32
+		},
+		{
+			"id": "node-049479",
+			"name": "app-s1",
+			"type": "server",
+			"x": -720,
+			"y": 1080,
+			"order": 33
+		},
+		{
+			"id": "node-4ace1e",
+			"name": "fw-north-2",
+			"type": "firewall",
+			"x": 1800,
+			"y": -1200,
+			"order": 34
+		},
+		{
+			"id": "node-4e416c",
+			"name": "vault-2",
+			"type": "host",
+			"x": 1500,
+			"y": 600,
+			"order": 35
+		},
+		{
+			"id": "node-ec5a89",
+			"name": "vault-4",
+			"type": "host",
+			"x": 2700,
+			"y": -360,
+			"order": 36
+		},
+		{
+			"id": "node-401709",
+			"name": "app-east-4",
+			"type": "server",
+			"x": 2400,
+			"y": 1080,
+			"order": 37
+		},
+		{
+			"id": "node-5eeffb",
+			"name": "spine-1",
+			"type": "router",
+			"x": 2400,
+			"y": 1200,
+			"order": 38
+		},
+		{
+			"id": "node-2447c0",
+			"name": "lb-e1",
+			"type": "loadbalancer",
+			"x": 2100,
+			"y": -600,
+			"order": 39
+		},
+		{
+			"id": "node-c2825d",
+			"name": "lb-e2",
+			"type": "loadbalancer",
+			"x": 2100,
+			"y": 0,
+			"order": 40
+		},
+		{
+			"id": "node-b49d16",
+			"name": "srv-e1",
+			"type": "server",
+			"x": 1680,
+			"y": -180,
+			"order": 41
+		},
+		{
+			"id": "node-0f7e0c",
+			"name": "web-e1",
+			"type": "host",
+			"x": 1200,
+			"y": -1200,
+			"order": 42
+		},
+		{
+			"id": "node-5c99eb",
+			"name": "web-e2",
+			"type": "host",
+			"x": 1140,
+			"y": 0,
+			"order": 43
+		},
+		{
+			"id": "node-aa8455",
+			"name": "web-e3",
+			"type": "host",
+			"x": 1260,
+			"y": -1260,
+			"order": 44
+		},
+		{
+			"id": "node-fac4f5",
+			"name": "web-e4",
+			"type": "host",
+			"x": 1320,
+			"y": 660,
+			"order": 45
+		},
+		{
+			"id": "node-4dffa3",
+			"name": "spine-4",
+			"type": "router",
+			"x": 3120,
+			"y": -1080,
+			"order": 46
+		},
+		{
+			"id": "node-2020d1",
+			"name": "app-east-5",
+			"type": "server",
+			"x": 3420,
+			"y": -240,
+			"order": 47
+		},
+		{
+			"id": "node-39f8d2",
+			"name": "app-east-6",
+			"type": "server",
+			"x": 4200,
+			"y": -1200,
+			"order": 48
+		},
+		{
+			"id": "node-3f3a86",
+			"name": "vault-6",
+			"type": "host",
+			"x": 3960,
+			"y": -900,
+			"order": 49
+		},
+		{
+			"id": "node-3af07a",
+			"name": "vault-7",
+			"type": "host",
+			"x": 4080,
+			"y": 960,
+			"order": 50
+		},
+		{
+			"id": "node-6c5d22",
+			"name": "fw-north-4",
+			"type": "firewall",
+			"x": 3600,
+			"y": -720,
+			"order": 51
+		},
+		{
+			"id": "node-ab655f",
+			"name": "srv-fe1",
+			"type": "server",
+			"x": 2880,
+			"y": 300,
+			"order": 52
+		},
+		{
+			"id": "node-b296a2",
+			"name": "srv-fe2",
+			"type": "server",
+			"x": 3720,
+			"y": 120,
+			"order": 53
+		},
+		{
+			"id": "node-53a384",
+			"name": "web-fe1",
+			"type": "host",
+			"x": 4260,
+			"y": 0,
+			"order": 54
+		},
+		{
+			"id": "node-756313",
+			"name": "lb-fe1",
+			"type": "loadbalancer",
+			"x": 3300,
+			"y": 720,
+			"order": 55
+		},
+		{
+			"id": "node-1208a6",
+			"name": "web-fe2",
+			"type": "host",
+			"x": 3900,
+			"y": 480,
+			"order": 56
+		},
+		{
+			"id": "node-ceb589",
+			"name": "rtr-fe1",
+			"type": "router",
+			"x": 3000,
+			"y": -480,
+			"order": 57
+		},
+		{
+			"id": "node-838788",
+			"name": "node-838788",
+			"x": 1200,
+			"y": 180,
+			"order": 58
+		},
+		{
+			"id": "node-cefac5",
+			"name": "node-cefac5",
+			"x": 1200,
+			"y": -840,
+			"order": 59
+		},
+		{
+			"id": "node-c7e355",
+			"name": "node-c7e355",
+			"x": 3120,
+			"y": -840,
+			"order": 60
+		},
+		{
+			"id": "node-dee004",
+			"name": "node-dee004",
+			"x": -2700,
+			"y": 600,
+			"order": 61
+		}
+	],
+	"zones": [
+		{
+			"id": "zone-27be4e",
+			"name": "dmz",
+			"x": 570,
+			"y": -390,
+			"w": 1260,
+			"h": 660,
+			"order": 1
+		},
+		{
+			"id": "zone-ce35a1",
+			"name": "core",
+			"x": -1230,
+			"y": -270,
+			"w": 960,
+			"h": 660,
+			"order": 2
+		},
+		{
+			"id": "zone-62a8b9",
+			"name": "west-dc",
+			"x": -4350,
+			"y": 90,
+			"w": 780,
+			"h": 660,
+			"order": 3
+		},
+		{
+			"id": "zone-ec11c4",
+			"name": "east-dc",
+			"x": 2970,
+			"y": -690,
+			"w": 900,
+			"h": 720,
+			"order": 4
+		},
+		{
+			"id": "zone-e6b516",
+			"name": "north-edge",
+			"x": -1830,
+			"y": -1350,
+			"w": 1020,
+			"h": 660,
+			"order": 5
+		},
+		{
+			"id": "zone-fa8e1d",
+			"name": "south-lab",
+			"x": 1770,
+			"y": 690,
+			"w": 1140,
+			"h": 660,
+			"order": 6
+		}
+	],
+	"groups": [],
+	"links": [
+		{
+			"id": "link-c55e09",
+			"name": "link-c55e09",
+			"src": "node-1f2c04",
+			"dst": "node-4dffa3",
+			"via": [
+				"node-838788",
+				"node-cefac5",
+				"node-c7e355"
+			],
+			"order": 1
+		},
+		{
+			"id": "link-a83787",
+			"name": "link-a83787",
+			"src": "node-1f2c04",
+			"dst": "node-a58024",
+			"order": 2
+		},
+		{
+			"id": "link-98d25b",
+			"name": "link-98d25b",
+			"src": "node-1f2c04",
+			"dst": "node-776876",
+			"order": 3
+		},
+		{
+			"id": "link-2a2b4c",
+			"name": "link-2a2b4c",
+			"src": "node-a58024",
+			"dst": "node-de919e",
+			"order": 4
+		},
+		{
+			"id": "link-8ea3a6",
+			"name": "link-8ea3a6",
+			"src": "node-a58024",
+			"dst": "node-19a9b8",
+			"order": 5
+		},
+		{
+			"id": "link-8a47e6",
+			"name": "link-8a47e6",
+			"src": "node-776876",
+			"dst": "node-4a7e0c",
+			"order": 6
+		},
+		{
+			"id": "link-bb1d95",
+			"name": "link-bb1d95",
+			"src": "node-776876",
+			"dst": "node-556610",
+			"order": 7
+		},
+		{
+			"id": "link-3b0b38",
+			"name": "link-3b0b38",
+			"src": "node-4dffa3",
+			"dst": "node-6c5d22",
+			"order": 8
+		},
+		{
+			"id": "link-352ad5",
+			"name": "link-352ad5",
+			"src": "node-4dffa3",
+			"dst": "node-39f8d2",
+			"order": 9
+		},
+		{
+			"id": "link-dd4e83",
+			"name": "link-dd4e83",
+			"src": "node-6c5d22",
+			"dst": "node-3f3a86",
+			"order": 10
+		},
+		{
+			"id": "link-6ae451",
+			"name": "link-6ae451",
+			"src": "node-2020d1",
+			"dst": "node-b296a2",
+			"order": 11
+		},
+		{
+			"id": "link-913602",
+			"name": "link-913602",
+			"src": "node-2020d1",
+			"dst": "node-ceb589",
+			"order": 12
+		},
+		{
+			"id": "link-472977",
+			"name": "link-472977",
+			"src": "node-7d4ad9",
+			"dst": "node-5aecb1",
+			"order": 13
+		},
+		{
+			"id": "link-8b5f28",
+			"name": "link-8b5f28",
+			"src": "node-7d4ad9",
+			"dst": "node-077901",
+			"order": 14
+		},
+		{
+			"id": "link-4b7045",
+			"name": "link-4b7045",
+			"src": "node-09d096",
+			"dst": "node-bf7364",
+			"order": 15
+		},
+		{
+			"id": "link-50b2a3",
+			"name": "link-50b2a3",
+			"src": "node-09d096",
+			"dst": "node-b99384",
+			"order": 16
+		},
+		{
+			"id": "link-ab141b",
+			"name": "link-ab141b",
+			"src": "node-59f172",
+			"dst": "node-bb4a4f",
+			"order": 17
+		},
+		{
+			"id": "link-a29f76",
+			"name": "link-a29f76",
+			"src": "node-59f172",
+			"dst": "node-077901",
+			"order": 18
+		},
+		{
+			"id": "link-fc328b",
+			"name": "link-fc328b",
+			"src": "node-f48af2",
+			"dst": "node-b02e0b",
+			"order": 19
+		},
+		{
+			"id": "link-0bb55e",
+			"name": "link-0bb55e",
+			"src": "node-f48af2",
+			"dst": "node-72fba8",
+			"order": 20
+		},
+		{
+			"id": "link-75b48b",
+			"name": "link-75b48b",
+			"src": "node-f48af2",
+			"dst": "node-1c5575",
+			"order": 21
+		},
+		{
+			"id": "link-61207e",
+			"name": "link-61207e",
+			"src": "node-e500ee",
+			"dst": "node-f48af2",
+			"order": 22
+		},
+		{
+			"id": "link-c5e9db",
+			"name": "link-c5e9db",
+			"src": "node-e500ee",
+			"dst": "node-de919e",
+			"order": 23
+		},
+		{
+			"id": "link-fed60e",
+			"name": "link-fed60e",
+			"src": "node-2447c0",
+			"dst": "node-b49d16",
+			"order": 24
+		},
+		{
+			"id": "link-824db9",
+			"name": "link-824db9",
+			"src": "node-c2825d",
+			"dst": "node-b49d16",
+			"order": 25
+		},
+		{
+			"id": "link-135d1c",
+			"name": "link-135d1c",
+			"src": "node-5eeffb",
+			"dst": "node-401709",
+			"order": 26
+		},
+		{
+			"id": "link-ad3762",
+			"name": "link-ad3762",
+			"src": "node-5eeffb",
+			"dst": "node-09e26f",
+			"order": 27
+		},
+		{
+			"id": "link-600439",
+			"name": "link-600439",
+			"src": "node-09e26f",
+			"dst": "node-b6ef99",
+			"order": 28
+		},
+		{
+			"id": "link-fb8afc",
+			"name": "link-fb8afc",
+			"src": "node-049479",
+			"dst": "node-b6ef99",
+			"order": 29
+		},
+		{
+			"id": "link-36567e",
+			"name": "link-36567e",
+			"src": "node-cd6ee2",
+			"dst": "node-c85a17",
+			"via": [
+				"node-dee004"
+			],
+			"order": 30
+		},
+		{
+			"id": "link-41f7e7",
+			"name": "link-41f7e7",
+			"src": "node-ab655f",
+			"dst": "node-c2825d",
+			"order": 31
+		}
+	],
+	"pipes": [
+		{
+			"id": "pipe-1f2c04-838788",
+			"a": "node-1f2c04",
+			"b": "node-838788",
+			"laid": "link"
+		},
+		{
+			"id": "pipe-838788-cefac5",
+			"a": "node-838788",
+			"b": "node-cefac5",
+			"laid": "link"
+		},
+		{
+			"id": "pipe-c7e355-cefac5",
+			"a": "node-c7e355",
+			"b": "node-cefac5",
+			"laid": "link"
+		},
+		{
+			"id": "pipe-4dffa3-c7e355",
+			"a": "node-4dffa3",
+			"b": "node-c7e355",
+			"laid": "link"
+		},
+		{
+			"id": "pipe-cd6ee2-dee004",
+			"a": "node-cd6ee2",
+			"b": "node-dee004",
+			"laid": "link"
+		},
+		{
+			"id": "pipe-c85a17-dee004",
+			"a": "node-c85a17",
+			"b": "node-dee004",
+			"laid": "link"
+		}
+	],
+	"selection": []
+}
