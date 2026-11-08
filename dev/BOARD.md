@@ -1638,14 +1638,14 @@ AMENDED 2026-11-08: every clause holds -- B7 built in part and live with B450 (H
 
 ---
 
-## H29 -- the CLI names its units, measured again - `TODO`
+## H29 -- the CLI names its units, measured again - `WIP`
 
 Opened 2026-11-08 by the director (`dev/DECISIONS.md` H29), on H28.3's one measured failure: the CLI shows positions in pixels and takes cells, naming neither (B453).
 
 | # | Item | Cites | Sev | State |
 |---|---|---|---|---|
-| H29.1 | Every CLI verb that shows a position shows its cell beside its pixels, each named, in text and `--json`, and its help says so; a write whose cell lies far outside the diagram is refused, naming the likely mix-up, with a flag to place it there anyway | **B453** | S4 | `TODO` |
-| H29.2 | H28.3's arm A run again on H29.1's change, the same four models and three runs, its pixel failures compared with the full run's; the change pushed to the agents only on the director's approval | **B453** | S4 | `TODO` |
+| H29.1 | Every CLI verb that shows a position shows its cell beside its pixels, each named, in text and `--json`, and its help says so; a write whose cell lies far outside the diagram is refused, naming the likely mix-up, with a flag to place it there anyway; built (`c4f9916`, `cef7d67`) and passed by one targeted check, three of its minor findings fixed in `cef7d67` and one held (B455); to the agents when pushed, on the director's approval | **B453** | S4 | `WIP` |
+| H29.2 | H28.3's arm A run again on H29.1's change, the same four models and three runs, its pixel failures compared with the full run's; the change pushed to the agents only on the director's approval; run 2026-11-08 (`map-units`, 72 cells, every probe passing): success 0.83 to 0.93, failed answers holding pixels 17 to 0, every failure left grok's and none in pixels (`~/taceng/drawv2-eval-runs/h28/MAP-EVAL-RESULT.md` section 5) | feature | S4 | `DONE` |
 
 **Exit:** no agent in the re-run answers or writes in pixels where a cell is asked, or the change revised until none does.
 
@@ -1720,7 +1720,8 @@ Scored so the comparison is a judgement, not an omission.\
 | **B451** | S5 | Five small edges after H28: refused hops drawn until a chain ends, a switch's flags on an error, a painter's throw at a commit (H28) | a person reports a chain that kept drawing refused hops, a drag that stuck or a snapshot that loaded mid-drag, or the next change to the hold or to the preview's projection. |
 | **B7** | **S2** | A drag's preview writes the shared Model: the zone handle's reshape and a link drag's placed waypoints, the remainder after H28.5 | a remote change is seen fighting a drag, or the next change to how a drag previews. |
 | **B452** | S5 | The frame meter's test fails under machine load, two wall-clock medians compared to half a frame (H28) | S1 fails on a machine running nothing else or in CI, or the next change to the frame meter. |
-| **B454** | S5 | gpt's 72 cells of H28.3's evaluation, owed while its quota is out (H28) | gpt's codex quota returns (2026-11-14 or later), when `map-supplement-o` is run and its cells pooled with the full run's, or a change to the CLI's map or units is measured again. |
+| **B454** | S5 | gpt's 72 cells of H28.3's evaluation, owed while its quota is out (H28) | gpt's codex quota returns (2026-11-14 or later), or a change to the CLI's map or units is measured again. |
+| **B455** | S5 | A `get --json` entity put back through `commit --ops` refused for its `cell` field (H29) | an agent or a person is refused for a `cell` field it copied from `get`, or the next change to `get`'s `--json` or to `commit --ops`. |
 | **B347** | S4 | The towerless-combat timing test failed once under machine load | it fails a second time, or B333's flake ledger is built. |
 | **B282** | S3 | Anchors along a wide device, and which one a link ends at (WD1; the pack half closed at H21.3) | a wide device needs links at more than one point (WD1). |
 | **B79** | S3 | The connection walk's apparatus is outside the repository; the false record is corrected, the rest held with B127 | B127 revives, or another decision is taken on the walk's findings. |
