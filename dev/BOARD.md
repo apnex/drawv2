@@ -1638,6 +1638,19 @@ AMENDED 2026-11-08: every clause holds -- B7 built in part and live with B450 (H
 
 ---
 
+## H29 -- the CLI names its units, measured again - `TODO`
+
+Opened 2026-11-08 by the director (`dev/DECISIONS.md` H29), on H28.3's one measured failure: the CLI shows positions in pixels and takes cells, naming neither (B453).
+
+| # | Item | Cites | Sev | State |
+|---|---|---|---|---|
+| H29.1 | Every CLI verb that shows a position shows its cell beside its pixels, each named, in text and `--json`, and its help says so; a write whose cell lies far outside the diagram is refused, naming the likely mix-up, with a flag to place it there anyway | **B453** | S4 | `TODO` |
+| H29.2 | H28.3's arm A run again on H29.1's change, the same four models and three runs, its pixel failures compared with the full run's; the change pushed to the agents only on the director's approval | **B453** | S4 | `TODO` |
+
+**Exit:** no agent in the re-run answers or writes in pixels where a cell is asked, or the change revised until none does.
+
+---
+
 ## Held -- on the record, not on the board
 
 Open `BACKLOG` rows whose trigger has not fired.\
@@ -1748,11 +1761,10 @@ The deployment that fired its trigger is also the one that answered it: object s
 ## Decisions required
 
 B163, the last entry, was ratified and closed on 2026-10-01: the standing goals framework is `VISION.md`.\
-B399 and B400 were ruled on 2026-11-01 (H26-21) and left this table; B415 was ruled on 2026-11-07 (H27-2) and left it; B7 and B450 were ruled the same day (H28-1) and left it.
+B399 and B400 were ruled on 2026-11-01 (H26-21) and left this table; B415 was ruled on 2026-11-07 (H27-2) and left it; B7 and B450 were ruled the same day (H28-1) and left it; B453 was ruled on 2026-11-08 (H29) and left it; none is owed now.
 
 | Row | Decision owed | Why it cannot be settled without you |
 |---|---|---|
-| **B453** | The CLI's units: every verb in cells, or each naming its unit, and a far-off write refused or warned | It changes what every agent reads and writes at the CLI (H28.3's measure) |
 
 **R13 reads this table in both directions**, which is what `Held` has had since B123 and this section never did.\
 A row recording `RULING-OWED` must appear here, so a decision cannot wait unseen; an entry here must still be `RULING-OWED`, so a ruling that has landed cannot keep asserting itself.\
