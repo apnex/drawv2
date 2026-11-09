@@ -1673,6 +1673,20 @@ AMENDED 2026-11-09: holds -- the loss reproduced (an undo behind the forking wri
 AMENDED 2026-11-09: the home button made 26 pixels on its own layout at scale 1, held to a glyph socket's size with the header's controls, the whole button active and its words "Move to 0,0 (h)", at the director's questions (`dev/DECISIONS.md` H30-1), on the light path; live in production (`draw-00251-kvv`, `43cf033`).\
 AMENDED 2026-11-10: at the director's word, the browser's "undo history is full" notice removed, agents still told by the history door (H30-2); a selected link lighting every ring of its waypoints, a junction's and a bend's with the endpoint's (H30-3); and the product page's header holding no grid size field, the CLI and the agent door setting it, the lab's field kept (H30-3); each on the light path, live in production together (`draw-00252-466`, `8cc07a4`).
 
+
+---
+
+## H31 -- what of zorg's components draw could use in place of its own code - `TODO`
+
+Opened 2026-11-10 by the director (`dev/DECISIONS.md` H31): a read-only assessment of the components the zorg programme registered in mission-kit (C3 to C10 and the draft C15) against draw's own code, each side described before they are compared; no adoption without a ruling on the result.
+
+| # | Item | Cites | Sev | State |
+|---|---|---|---|---|
+| H31.1 | Draw's duties that overlap described in draw's terms, and each component described from its own contract, at pinned revisions | feature | S4 | `TODO` |
+| H31.2 | The comparison: per component, the draw duty it would take, fit and gaps, the cost of adopting and what a person or an agent would see change; draw's register of mission-kit standings (`tools/layers.mjs` `MISSION_KIT`) refreshed | feature | S4 | `TODO` |
+
+**Exit:** a result the director can rule on -- each component adopted, adjusted upstream, or held with its reason -- and draw's register true to mission-kit.
+
 ---
 
 ## Held -- on the record, not on the board
