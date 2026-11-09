@@ -2456,3 +2456,5 @@ Director: "continue"\
 Shown: dev/BOARD.md@f158a69\
 Affects: dev/BOARD.md\
 Recorder: shown the board re-triaged after H29 closed -- production's log clean; B396, the `forked` handler emptying the outbox so a commit queued behind a template's forking write reaches neither the server nor the tab, its trigger fired in substance at H28.4, which lets a chain run on across the fork; B7's trigger restated last -- and offered H30 as proposed (recommended), H30 with B395 alongside, or a held feature instead. So H30 runs as proposed: B396 measured on a chain across a fork, then fixed with a test failing first, or held again if no hop is lost; to production on the director's approval (H26-24).
+
+AMENDED 2026-11-09 by the director, H30: "continue" -- shown B396 reproduced (an undo behind a template's forking write lost with everything drawn after it, a chain alone losing nothing) and fixed, passed by a targeted check and a check of its reload fix, and offered production (recommended) or holding it. So draw went live as `draw-00250-mgd` at `934df3c`, and H30 closed.

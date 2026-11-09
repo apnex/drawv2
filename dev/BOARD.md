@@ -1653,7 +1653,7 @@ AMENDED 2026-11-08: holds -- no failed answer and no write in pixels in the re-r
 
 ---
 
-## H30 -- after H29: an edit lost across a template's fork, made likelier by H28.4 - `WIP`
+## H30 -- after H29: an edit lost across a template's fork, made likelier by H28.4 - `DONE`
 
 Proposed 2026-11-09 by the re-triage after H29 closed, at the director's "Lets refresh the board"; selected as proposed the same day (`dev/DECISIONS.md` H30).\
 The order, by the board's rule (the higher of impact and principle breach): B396 alone -- the page's `forked` handler empties its outbox, so a commit queued behind a template's forking write reaches neither the server nor the tab; held at `S4` since 2026-10-18 as a rare first-moments edge, it is by impact an accepted edit silently discarded, and H28.4 widened it by letting a chain run on across the fork, its hops queued behind the forking write while the person draws; measured first, then fixed.\
@@ -1664,11 +1664,12 @@ Not legal until the director opens them, each held: paths and flows (B327), the 
 | # | Item | Cites | Sev | State |
 |---|---|---|---|---|
 | H30.1 | Re-triage the board after H29, the order selected by the director and recorded here (H30) | feature | S3 | `DONE` |
-| H30.2 | B396 reproduced -- a link chain started on a template, each hop's arrival on the fork counted against the hops drawn -- then fixed so a commit queued behind the forking write reaches the fork, with a test failing first; to the lab on its builder's gate, one targeted check, production on the director's approval; reproduced and fixed 2026-11-09 (`c627407`) -- a chain alone lost nothing, but an undo behind the forking write was dropped with everything drawn after it, and a dropped socket put the person back on the template; `forked` now keeps the outbox and sends it to the fork; passed by one targeted check, whose reload finding -- a reload under a live chain landing on the template -- was fixed in `934df3c`, the URL and the last-opened diagram set on `forked` and one reopen owed; three older edges held (B458) | **B396** | S1 | `WIP` |
+| H30.2 | B396 reproduced -- a link chain started on a template, each hop's arrival on the fork counted against the hops drawn -- then fixed so a commit queued behind the forking write reaches the fork, with a test failing first; to the lab on its builder's gate, one targeted check, production on the director's approval; reproduced and fixed 2026-11-09 (`c627407`) -- a chain alone lost nothing, but an undo behind the forking write was dropped with everything drawn after it, and a dropped socket put the person back on the template; `forked` now keeps the outbox and sends it to the fork; passed by one targeted check, whose reload finding -- a reload under a live chain landing on the template -- was fixed in `934df3c`, the URL and the last-opened diagram set on `forked` and one reopen owed; three older edges held (B458); live in production (`draw-00250-mgd`, `934df3c`) 2026-11-09 | **B396** | S1 | `DONE` |
 
-AMENDED 2026-11-09: H30.2 in the lab (`draw-lab-00228-nrr`, `934df3c`) on its builder's gate, 2,890 of 2,890; passed by its targeted check and a targeted check of the reload fix, a reload in Chrome under a live chain landing on the fork with every hop and no second fork. Production awaits the director.
+AMENDED 2026-11-09: H30.2 in the lab (`draw-lab-00228-nrr`, `934df3c`) on its builder's gate, 2,890 of 2,890; passed by its targeted check and a targeted check of the reload fix, a reload in Chrome under a live chain landing on the fork with every hop and no second fork; live in production at the director's "continue" (`draw-00250-mgd`, `934df3c`), its boot clean on 36 diagrams and the published SVG and favicons byte-identical before and after.
 
-**Exit:** no edit drawn on a template in its first moments, a chain's among them, is lost; or B396 shown unreachable by a measurement and held again.
+**Exit:** no edit drawn on a template in its first moments, a chain's among them, is lost; or B396 shown unreachable by a measurement and held again.\
+AMENDED 2026-11-09: holds -- the loss reproduced (an undo behind the forking write, and everything after it) and fixed, live in production; three older edges of a template's first moments held as B458 (H30 closed).
 
 ---
 
