@@ -487,7 +487,7 @@ export class Sync {
 			this.hydrated = true;
 			this.locked = !!b.locked;
 			this.changes.setCounts({ canUndo: b.canUndo, canRedo: b.canRedo, version: b.version,
-				undoTop: b.undoTop, truncated: b.truncated, truncatedHuman: b.truncatedHuman });
+				undoTop: b.undoTop });   // H30-2: no eviction count -- the page shows none
 			this.appliedVersion = b.version || 0;          // `resume` found us in step
 			this.replayOutbox({ reapply: false });
 			this.emitState({});
@@ -568,7 +568,7 @@ export class Sync {
 		if (msg.cmd === 'change') {
 			const b = msg.body || {};
 			this.changes.setCounts({ canUndo: b.canUndo, canRedo: b.canRedo, version: b.version,
-				undoTop: b.undoTop, truncated: b.truncated, truncatedHuman: b.truncatedHuman });
+				undoTop: b.undoTop });   // H30-2: no eviction count -- the page shows none
 			if (this.deferInbound && this.deferInbound()) { this.deferred.push(msg); return; }
 			this.applyChange(b);
 			this.emitState({});
@@ -682,7 +682,7 @@ export class Sync {
 		*/
 		const version = b.replayed ? undefined : b.version;
 		this.changes.setCounts({ canUndo: b.canUndo, canRedo: b.canRedo, version, undoLabel: b.label,
-			undoTop: b.undoTop, truncated: b.truncated, truncatedHuman: b.truncatedHuman, actor: b.actor });
+			undoTop: b.undoTop, actor: b.actor });   // H30-2: no eviction count -- the page shows none
 		if (typeof version === 'number') this.appliedVersion = version;   // our own ops are already in the model
 		const sent = this.outbox.find((m) => m.txnId === b.acked);
 		const knewAnswered = sent?.answered === true;   // B251: whether the tab already knew this request had landed
@@ -829,7 +829,7 @@ export class Sync {
 			this.principal = typeof msg.body.principal === 'string' ? msg.body.principal : null;
 			if (this.locked) this.lockShownAt = Date.now();
 			this.changes.setCounts({ canUndo: msg.body.canUndo, canRedo: msg.body.canRedo, version: msg.body.version,
-				undoTop: msg.body.undoTop, truncated: msg.body.truncated, truncatedHuman: msg.body.truncatedHuman });
+				undoTop: msg.body.undoTop });   // H30-2: no eviction count -- the page shows none
 			this.appliedVersion = msg.body.version || 0;   // the model IS this document
 			if (Array.isArray(msg.body.agents)) this.agents = msg.body.agents;
 			try { localStorage.setItem(LAST_DIAGRAM_KEY, doc.meta.id); } catch { /* private mode */ }

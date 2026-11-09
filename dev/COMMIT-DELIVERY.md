@@ -376,7 +376,7 @@ CS5's gate green; `diagrams.bak` still present.
 |---|---|
 | **D21 - `undo {to: seq}`** | Both transports. One transaction, one version bump, one broadcast. The browser offers *"undo all N changes by `<actor>`"* when the top run is not the human's - readable only because `actor` shipped at CS1. ~25 lines reusing the primitive in a bounded loop. |
 | **Durability wording into `SCOPE.md` and the README** | *"Undo survives a **process** restart; a machine-level kill can lose the last 200 ms of ws work - doc and log together, consistent, never corrupt."* There is no `fsync` anywhere in the server `[V, exhaustive grep: 0 hits across server/, document/, engine/, kernel/, app/, cli/]`; CS2's gate wording is what would otherwise reach the README as a stronger claim than the code makes (**X2**, **B6**). |
-| **Eviction floor** | Never evict below the newest human-authored record, subject to the hard ceiling; when the ceiling forces it, `truncated` is set **and surfaced in the browser undo affordance**, not only in the API (I14). |
+| **Eviction floor** | Never evict below the newest human-authored record, subject to the hard ceiling; when the ceiling forces it, `truncated` is set **and surfaced in the browser undo affordance**, not only in the API (I14). AMENDED 2026-11-09 (H30-2): not shown in the browser any more; the history door reports it to agents. |
 | rest | `expect` -> 409 with the recovery records in the body; undo/redo labels with attribution in the readout (*"undid `<actor>`'s move"*); CLI `draw undo` / `draw redo`. |
 
 #### Verification gate
@@ -384,7 +384,7 @@ CS5's gate green; `diagrams.bak` still present.
 | # | must be green |
 |---|---|
 | 1 | `undo {to: seq}` reverses a run in one action, one version bump, one broadcast (**GR11**). |
-| 2 | **I14** eviction floor active and `truncated` surfaced in the browser undo affordance. |
+| 2 | **I14** eviction floor active and `truncated` surfaced in the browser undo affordance. AMENDED 2026-11-09 (H30-2): the browser shows it no more; the history door reports it. |
 | 3 | CAS 409 on a moved top; the 409 body carries the recovery records. `GET .../history` attribution end-to-end. |
 | 4 | `SCOPE.md:217` (now `dev/DECISIONS.md`), `:225` amended - or the write-CLI question is answered *no* and the exclusion stands (**GR10**); the durability wording carried into `SCOPE.md` and the README. |
 | 5 | **`diagrams.bak` may be deleted only after this gate is green** `[V, X4 / GR7 - it is the only copy of 17 untracked files, .gitignore:4]`. |

@@ -168,8 +168,8 @@ export class Changes {
 		this.coalesceMs = coalesceMs;
 		this.now = now;
 		this.subs = [];
-		this.state = { canUndo: false, canRedo: false, undoLabel: '', version: 0,
-			undoTop: null, truncated: false, truncatedHuman: false };
+		// H30-2 (dev/DECISIONS.md): no count of what the log evicted -- the page shows none; the history door reports it to agents
+		this.state = { canUndo: false, canRedo: false, undoLabel: '', version: 0, undoTop: null };
 		this.actor = null;       // our server-side session id, learned from the first ack we author
 		this.window = null;      // { label, ops, until }
 	}
@@ -281,14 +281,12 @@ export class Changes {
 	}
 
 	// the server is authoritative about what is undoable; the UI just reflects it
-	setCounts({ canUndo, canRedo, version, undoLabel, undoTop, truncated, truncatedHuman, actor }) {
+	setCounts({ canUndo, canRedo, version, undoLabel, undoTop, actor }) {
 		if (canUndo !== undefined) this.state.canUndo = canUndo;
 		if (canRedo !== undefined) this.state.canRedo = canRedo;
 		if (version !== undefined) this.state.version = version;
 		if (undoLabel !== undefined) this.state.undoLabel = undoLabel;
 		if (undoTop !== undefined) this.state.undoTop = undoTop;
-		if (truncated !== undefined) this.state.truncated = truncated;
-		if (truncatedHuman !== undefined) this.state.truncatedHuman = truncatedHuman;
 		if (actor) this.actor = actor;   // our own session id, so we can tell our run from theirs
 	}
 

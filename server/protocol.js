@@ -102,10 +102,8 @@ export function snapshotBody(model, store, locks, principal = null, hub = null) 
 		version: log ? log.version : 0,
 		canUndo: !!log?.canUndo(),
 		canRedo: !!log?.canRedo(),
-		// I14 — a bounded loss no actor can perceive is not a bounded loss, so it rides on
-		// hydration too, not only on the change that caused it
-		truncated: !!log?.truncated,
-		truncatedHuman: !!log?.truncatedHuman,
+		// H30-2 (dev/DECISIONS.md): no count of what the log evicted rides the socket -- the page shows none, the log being first in,
+		// first out by design; `GET .../history` reports it to an agent (I14, amended)
 		undoTop: topRun(log),
 		/*
 		B105 -- the agent indicator carries STATE, so it must arrive with the snapshot.
@@ -131,8 +129,6 @@ function syncBody(model, store, locks) {
 		version: log ? log.version : 0,
 		canUndo: !!log?.canUndo(),
 		canRedo: !!log?.canRedo(),
-		truncated: !!log?.truncated,
-		truncatedHuman: !!log?.truncatedHuman,
 		undoTop: topRun(log),
 		locked: locks ? locks.locked(id) : false
 	};
@@ -182,8 +178,7 @@ export function changeBody(change, store, id) {
 		...('reveal' in change ? { reveal: change.reveal } : {}),
 		version: log ? log.version : change.seq,
 		durableVersion: store.durableVersion(id),
-		canUndo: !!log?.canUndo(), canRedo: !!log?.canRedo(), truncated: !!log?.truncated,
-		truncatedHuman: !!log?.truncatedHuman, undoTop: topRun(log),
+		canUndo: !!log?.canUndo(), canRedo: !!log?.canRedo(), undoTop: topRun(log),   // H30-2: no eviction count
 	};
 }
 
@@ -203,8 +198,7 @@ export function reversalBody(store, id, { ops, version }, { by, actor, label, re
 		// attribution: WHOSE change was reversed, so a readout can say "undid agent-1's move"
 		reversed: reversed ? { seq: reversed.seq, actor: reversed.actor, label: reversed.label } : null,
 		durableVersion: store.durableVersion(id),
-		canUndo: !!log?.canUndo(), canRedo: !!log?.canRedo(),
-		truncated: !!log?.truncated, truncatedHuman: !!log?.truncatedHuman,
+		canUndo: !!log?.canUndo(), canRedo: !!log?.canRedo(),   // H30-2: no eviction count
 		undoTop: topRun(log),
 	};
 }

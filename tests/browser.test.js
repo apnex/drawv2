@@ -2349,6 +2349,24 @@ test('H25.3: a drag on empty canvas draws the selection rectangle with the class
 });
 
 /*
+H30-2 (dev/DECISIONS.md; amends I14 and CS6) -- THE PAGE SHOWS NO NOTICE THAT THE UNDO LOG DROPPED ITS OLDEST CHANGES: the log is first in,
+first out by design, so its loss is no news. Driven as the socket drove the banner before: the counts saying a person's change was
+evicted, handed to the page's history as the socket's answers handed them, then a status render -- the banner holds the diagram's tally,
+never "undo history is full". tests/undo-eviction-notice.test.js holds that the socket carries no such count now, and the history door does.
+*/
+test('H30-2: the product page shows no "undo history is full" notice, whatever counts of an eviction it is handed', { skip: SKIP }, async () => {
+	const t = await freshTab();
+	try {
+		await t.eval(`(draw.history.setCounts({ truncated: true, truncatedHuman: true }), draw.sync.emitState({}), 1)`);
+		const banner = await t.eval(`document.getElementById('banner').textContent`);
+		assert.ok(banner.length > 0, 'precondition: the status rendered, the banner holding the tally');
+		assert.doesNotMatch(banner, /undo history is full/, `no notice of the eviction (${banner})`);
+	} finally {
+		await t.close();
+	}
+});
+
+/*
 B324 (H20.2) -- A TEST LEAVES NO TAB BEHIND. `t.ws.close()` closed the debugging socket and left the tab open and connected, so by
 the palette drop test four tabs were live editors of its diagram; each test's tab is closed now (`close`, above).
 */

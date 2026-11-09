@@ -21,7 +21,8 @@ batch would otherwise push the user's own last change out of a 100-record ring â
 un-undoable because someone else was busy, which is not a bound the user can perceive or predict.
 The floor only ever binds when everything newer than that record is agent work, which is exactly
 the case it exists for. A hard ceiling still overrides it, because unbounded memory is a worse
-failure than a lost undo step; when it does, `evictedHuman` counts it and the browser says so.
+failure than a lost undo step; when it does, `evictedHuman` counts it and the history door reports it to an agent
+(`GET .../history`) -- the browser shows nothing, the log being first in, first out by design (H30-2, dev/DECISIONS.md).
 */
 
 export const LOG_MAX = 100;

@@ -809,9 +809,11 @@ const sync = new Sync({
 		/*
 		I14/D21 — the undo affordance.
 
-		Two things the user cannot otherwise know: that someone ELSE is on top of the undo stack
-		(so Ctrl+Z will reverse their work, not yours), and that the ring dropped a change you
-		made. A bounded, designed loss that no actor can perceive is not a bounded loss.
+		What the user cannot otherwise know: that someone ELSE is on top of the undo stack (so Ctrl+Z
+		will reverse their work, not yours). RESTATED at H30-2 (dev/DECISIONS.md): that the ring dropped
+		a change you made is shown no more -- the log is bounded first in, first out by design, so its
+		loss is no news, and the notice stood for good on a diagram of any age; an agent asking how far
+		it can undo still reads it from the history door (`GET .../history`, `evictedHuman`).
 		*/
 		const run = history.foreignRun && history.foreignRun();
 		// B298: the network's last word, unless the undo log's top has changed hands since it was said
@@ -823,9 +825,6 @@ const sync = new Sync({
 			menu.banner.title = `top of the log: "${run.label || run.by}" by ${run.actor}`;
 		} else {
 			menu.banner.title = '';
-		}
-		if (history.state && history.state.truncatedHuman) {
-			menu.banner.textContent = '! undo history is full -- your oldest changes are no longer undoable';
 		}
 		// D28/I16 — no submitted request is discarded without a user-visible notice.
 		if (error) menu.banner.textContent = `✗ ${error}`;
