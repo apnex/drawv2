@@ -1670,7 +1670,8 @@ AMENDED 2026-11-09: H30.2 in the lab (`draw-lab-00228-nrr`, `934df3c`) on its bu
 
 **Exit:** no edit drawn on a template in its first moments, a chain's among them, is lost; or B396 shown unreachable by a measurement and held again.\
 AMENDED 2026-11-09: holds -- the loss reproduced (an undo behind the forking write, and everything after it) and fixed, live in production; three older edges of a template's first moments held as B458 (H30 closed).\
-AMENDED 2026-11-09: the home button made 26 pixels on its own layout at scale 1, held to a glyph socket's size with the header's controls, the whole button active and its words "Move to 0,0 (h)", at the director's questions (`dev/DECISIONS.md` H30-1), on the light path; live in production (`draw-00251-kvv`, `43cf033`).
+AMENDED 2026-11-09: the home button made 26 pixels on its own layout at scale 1, held to a glyph socket's size with the header's controls, the whole button active and its words "Move to 0,0 (h)", at the director's questions (`dev/DECISIONS.md` H30-1), on the light path; live in production (`draw-00251-kvv`, `43cf033`).\
+AMENDED 2026-11-10: at the director's word, the browser's "undo history is full" notice removed, agents still told by the history door (H30-2); a selected link lighting every ring of its waypoints, a junction's and a bend's with the endpoint's (H30-3); and the product page's header holding no grid size field, the CLI and the agent door setting it, the lab's field kept (H30-3); each on the light path, live in production together (`draw-00252-466`, `8cc07a4`).
 
 ---
 
