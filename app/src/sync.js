@@ -97,6 +97,7 @@ export class Sync {
 		*/
 		this.onLoaded = onLoaded;
 		this.forkedTo = null;
+		this.forkReopenOwed = false;   // B396 (H30.2): `forked` heard and the fork not yet asked for -- asked once the outbox has gone out
 		this.onAnswered = onAnswered;
 		this.onChanged = onChanged;
 		this.onRefused = onRefused;
@@ -259,6 +260,16 @@ export class Sync {
 			msg.sent = true;
 			msg.attempted = true;   // since the last snapshot -- what B183 counts (replayOutbox)
 		}
+		// B396 (H30.2): every request has gone out, so the fork's reopen owed since `forked` is asked now -- behind them all, and answered
+		// after them all
+		if (this.forkReopenOwed) this.reopenFork();
+	}
+
+	// B396 (H30.2): ask for the fork the session was moved to -- the snapshot a template's first write owes (`forked`)
+	reopenFork() {
+		this.forkReopenOwed = false;
+		this.requestSentAt = Date.now();   // B177 -- this reply is a snapshot and carries a clock
+		this.net.send('open', { id: this.diagramId });
 	}
 
 	pruneOutbox(durableVersion) {
@@ -287,7 +298,8 @@ export class Sync {
 			const pending = this.outbox.filter((m) => !m.verb).map(({ ops, label, txnId, tries, answered, version }) =>
 				({ ops, label, txnId, tries: tries || 0, ...(answered ? { answered, version } : {}) }));
 			if (!pending.length) localStorage.removeItem(OUTBOX_KEY);
-			else localStorage.setItem(OUTBOX_KEY, JSON.stringify({ diagram: this.model.state.meta.id, msgs: pending }));
+			// B396 (H30.2): the diagram the session writes to -- a template's fork as soon as `forked` is heard, before the model is the fork's
+			else localStorage.setItem(OUTBOX_KEY, JSON.stringify({ diagram: this.diagramId ?? this.model.state.meta.id, msgs: pending }));
 		} catch { /* private mode: the outbox is still correct in memory */ }
 	}
 
@@ -501,16 +513,23 @@ export class Sync {
 		`resync` rather than a local id swap: the fork is a document this client has never seen, and
 		the server's snapshot is the authoritative answer for what it contains. Guessing its content
 		from the template plus one applied op is the kind of derivation that drifts.
+
+		B396 (H30.2; dev/DECISIONS.md H30) -- THE OUTBOX IS KEPT, now the fork's. The server sends `forked` before the forking write's
+		own answer, so an undo pressed after that write still waits for its answer (B294) and every request made meanwhile waits behind
+		the undo, unsent; emptying the outbox here dropped them all, reaching neither the fork nor the tab, which the fork's snapshot then
+		replaced. Each now names the fork, where the session is, and the fork is reopened only once all of them have gone out (`drain`),
+		so the server answers every one before the snapshot and none is in flight to be sent again when it loads -- an undo sent twice
+		is refused as a version conflict, having no id the server remembers.
 		*/
 		if (msg.cmd === 'forked') {
 			this.say('forked a copy -- templates are read-only');
 			this.diagramId = msg.body.diagram;
 			this.forkedTo = msg.body.diagram;   // H26.6's move 10: its snapshot is the template's document under a new id
-			this.outbox = [];            // it belonged to the template, which we are no longer editing
+			for (const m of this.outbox) m.diagram = this.diagramId;
 			this.persistOutbox();
 			this.expectLoad = true;
-			this.requestSentAt = Date.now();   // B177 -- this reply is a snapshot and carries a clock
-			this.net.send('open', { id: msg.body.diagram });
+			this.forkReopenOwed = true;
+			this.drain();
 			return;
 		}
 		/*
@@ -786,6 +805,7 @@ export class Sync {
 			this.expectLoad = false;
 			this.switchAsked = false;
 			this.resyncAsked = false;   // the snapshot asked for has come
+			this.forkReopenOwed = false;   // B396: and the fork's, whichever asked for it
 			this.diagramId = doc.meta.id;
 			this.onLoaded?.(doc.meta.id, { forked: this.forkedTo === doc.meta.id });   // H26.6's move 10 (PZ23)
 			this.forkedTo = null;
@@ -831,7 +851,13 @@ export class Sync {
 		this.resyncAsked = true;
 		this.expectLoad = true;
 		this.requestSentAt = Date.now();   // B177 -- a resync is the commonest source of a late snapshot
-		this.net.send('open', { id: this.model.state.meta.id });
+		/*
+		B396 (H30.2): the diagram the session is on, which the tab's model names until a template's fork is loaded -- a refusal heard
+		between `forked` and the fork's snapshot asked for the template, and moved the session back onto it. It is the fork's reopen too,
+		owed or not.
+		*/
+		this.forkReopenOwed = false;
+		this.net.send('open', { id: this.diagramId });
 	}
 
 	// A change from another writer. `from` is the version it applied to: equal to ours means we are
@@ -966,9 +992,12 @@ export class Sync {
 				*/
 				for (const m of this.outbox) if (!m.answered) m.sent = false;
 				this.resyncAsked = false;   // a snapshot asked for on the dropped socket will not come
+				if (this.forkedTo) this.forkReopenOwed = true;   // B396: nor the fork's, asked again once the outbox has gone out
 				this.requestSentAt = Date.now();   // H12.4 -- same on reconnect
+				// B396 (H30.2): the diagram the session was on -- a template's fork once `forked` was heard, before the model is the
+				// fork's -- or a reconnect in that moment resumed the template, and refused the outbox, which names the fork
 				this.net.send('resume', {
-					diagram: this.model.state.meta.id,
+					diagram: this.diagramId ?? this.model.state.meta.id,
 					version: this.changes.state.version
 				});
 			}
@@ -1006,6 +1035,7 @@ export class Sync {
 		this.hydrated = false;
 		this.expectLoad = true;
 		this.switchAsked = true;   // H28.4: the person's own act, which loads under a live gesture
+		this.forkReopenOwed = false;   // B396: the person left the fork before it was asked for, so it is asked for no more
 		this.outbox = [];
 		this.persistOutbox();
 		this.requestSentAt = Date.now();   // B177 -- switching diagrams answers with a snapshot too
@@ -1019,6 +1049,7 @@ export class Sync {
 		this.hydrated = false;
 		this.expectLoad = true;
 		this.switchAsked = true;   // H28.4: the person's own act, which loads under a live gesture
+		this.forkReopenOwed = false;   // B396: the person left the fork before it was asked for, so it is asked for no more
 		this.outbox = [];
 		this.persistOutbox();
 		this.net.send('create', {});
@@ -1030,6 +1061,7 @@ export class Sync {
 		this.hydrated = false;
 		this.expectLoad = true;
 		this.switchAsked = true;   // H28.4: the person's own act, which loads under a live gesture
+		this.forkReopenOwed = false;   // B396: the person left the fork before it was asked for, so it is asked for no more
 		this.outbox = [];
 		this.persistOutbox();
 		this.net.send('delete', { id: this.model.state.meta.id });

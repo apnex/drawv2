@@ -34,11 +34,11 @@ import fs from 'node:fs';
 import { Model } from '../model/model.mjs';
 import { Changes } from '../app/src/changes.js';
 import { Sync, bindGestureDefer } from '../app/src/sync.js';
-import { deleteSelection, renameEntity, nudgeSelection, moveEntities } from '../app/src/commands.js';
+import { deleteSelection, renameEntity, nudgeSelection, moveEntities, createEntity } from '../app/src/commands.js';
 import { Session } from '../server/protocol.js';
 import { Hub, announceAccess } from '../server/hub.js';
 import { OWNER, openStore } from './fixtures/app.mjs';
-import { makeInput, pointer } from './fixtures/client-harness.mjs';
+import { makeInput, pointer, key } from './fixtures/client-harness.mjs';
 import { productKinds } from '../product/kinds.mjs';
 import { NETWORK_ROWS } from '../plugins/network/kinds.mjs';
 import { createNetwork as netFor } from '../plugins/network/network.mjs';
@@ -676,6 +676,169 @@ test('H28.4 (B450): a chaining commit with a snapshot held -- the release keeps 
 		assert.deepEqual([h.input.isGesturing(), w.sync.deferred.length, w.tab.get('node', X).name], [false, 0, 'renamed-by-other'], 'the chain ended, then the snapshot loaded');
 		w.pump();
 		assert.deepEqual(linkPairs(w.server()), [[A, B], [B, C]], 'both hops landed');
+		assert.deepEqual(w.diff(), [], CONVERGED);
+	});
+});
+
+/*
+H30.2 (B396; dev/DECISIONS.md H30) -- NOTHING QUEUED BEHIND A TEMPLATE'S FORKING WRITE IS LOST. The server answers the first write to a
+template with `forked` before that write's own answer, so an undo pressed after it still waits for that answer (B294), and every request
+the tab makes meanwhile waits behind the undo, unsent. The page emptied its outbox on `forked`: the undo and all behind it reached neither
+the fork nor the tab, which the fork's snapshot then replaced -- a chain drawn after the Ctrl+Z vanishing whole when it ended. The outbox is
+kept now, the fork's, and the fork is reopened once all of it has gone out, so the fork's snapshot holds every request and none is sent
+twice. Measured on the code before: a chain sent at any moment around the fork lost nothing; an undo behind the forking write was lost,
+with each commit and each hop behind it.
+*/
+const N1 = { id: 'node-0001a1', name: 'n1', type: 'host', x: 720, y: 0 };
+const N2 = { id: 'node-0001a2', name: 'n2', type: 'host', x: 720, y: 240 };
+const ctrlZ = (h) => h.capture.onKeyDown(key('z', { ctrlKey: true }));
+// a hop released with Shift held: the segment committed, and the chain going on from `to`
+const hopOn = (h, to, [x, y]) => {
+	h.capture.onMove(on(h, to, x, y, { buttons: 0 }));
+	h.capture.onDown(on(h, to, x, y));
+	h.capture.onUp(on(h, to, x, y, { shiftKey: true, buttons: 0 }));
+};
+// every answer the tab is handed, kept as it is delivered, and the requests it sent, by txnId
+const watchAnswers = (w) => {
+	const got = [], deliver = w.deliver;
+	w.deliver = () => { const m = deliver(); if (m) got.push(m); return m; };
+	return got;
+};
+const sentTwice = (w) => {
+	const ids = w.sent.filter((m) => ['commit', 'undo', 'redo'].includes(m.cmd)).map((m) => m.body.txnId);
+	return ids.filter((id, i) => ids.indexOf(id) !== i);
+};
+// the fork the tab followed, holding everything it sent, nothing sent twice and nothing refused, and the tab equal to it
+const onTheFork = (w, answers) => {
+	const fork = w.sync.diagramId;
+	assert.notEqual(fork, w.id, 'the tab follows the fork');
+	assert.deepEqual([sentTwice(w), answers.filter((m) => m.cmd === 'error').map((m) => m.body.code)], [[], []], 'nothing sent twice, nothing refused');
+	assert.deepEqual([w.server(w.id).all('link').length, w.server(w.id).get('node', N1.id) ?? null], [0, null], 'the template as it was');
+	assert.deepEqual(w.diff(), [], CONVERGED);
+	return w.server(fork);
+};
+
+test('H30.2 (B396): an undo pressed behind a template\'s forking write lands on the fork -- the write it undoes gone from the fork and the tab', async () => {
+	await throughInput(CHAIN, { template: true }, async (h, w) => {
+		const answers = watchAnswers(w);
+		h.history.commit(createEntity('node', N1));   // the first write: it forks the template
+		ctrlZ(h);                                     // waits for that write's answer (B294)
+		assert.deepEqual(w.sync.outbox.map((m) => m.verb ?? (m.sent ? 'sent' : 'unsent')), ['sent', 'undo'], 'precondition: the undo waits behind the forking write');
+		w.pump();
+		const fork = onTheFork(w, answers);
+		assert.equal(fork.get('node', N1.id), undefined, 'the undo reversed the forking write on the fork');
+		assert.equal(w.tab.get('node', N1.id), undefined, 'and on the tab');
+	});
+});
+
+test('H30.2 (B396): a commit queued behind an undo behind the forking write lands on the fork after the undo', async () => {
+	await throughInput(CHAIN, { template: true }, async (h, w) => {
+		const answers = watchAnswers(w);
+		h.history.commit(createEntity('node', N1));
+		ctrlZ(h);
+		h.history.commit(createEntity('node', N2));   // queued behind the waiting undo, unsent
+		assert.deepEqual(w.sync.outbox.map((m) => m.verb ?? (m.sent ? 'sent' : 'unsent')), ['sent', 'undo', 'unsent'], 'precondition: the commit queued behind the undo');
+		w.pump();
+		const fork = onTheFork(w, answers);
+		assert.deepEqual([fork.get('node', N1.id) ?? null, fork.get('node', N2.id)?.name], [null, 'n2'], 'n1 undone, n2 on the fork');
+	});
+});
+
+test('H30.2 (B396): a chain drawn behind an undo behind the forking write -- every hop drawn is stored on the fork, and still drawn once the fork loads', async () => {
+	await throughInput(CHAIN, { template: true }, async (h, w) => {
+		const answers = watchAnswers(w);
+		h.history.commit(createEntity('node', N1));
+		ctrlZ(h);
+		chainTo(h, A, [0, 0], B, [240, 0]); hopOn(h, C, [240, 240]); hopTo(h, X, [-240, -240]);   // three hops, each queued behind the undo
+		assert.deepEqual([h.input.isGesturing(), linkPairs(w.tab).length], [false, 3], 'precondition: three hops drawn, the chain ended');
+		w.pump();
+		const fork = onTheFork(w, answers);
+		assert.deepEqual(linkPairs(fork), [[A, B], [B, C], [C, X]], 'every hop on the fork');
+		assert.deepEqual([linkPairs(w.tab).length, w.tab.get('node', N1.id) ?? null], [3, null], 'and on the tab, n1 undone');
+	});
+});
+
+test('H30.2 (B396): the forking chain, a Ctrl+Z, then a second chain -- the undo reverses the forking chain\'s last hop, and the second chain lands whole', async () => {
+	await throughInput(CHAIN, { template: true }, async (h, w) => {
+		const answers = watchAnswers(w);
+		chainTo(h, A, [0, 0], B, [240, 0]); hopTo(h, C, [240, 240]);    // two hops, the first forking
+		ctrlZ(h);                                                          // waits behind both
+		chainTo(h, X, [-240, -240], W, [-480, 240]); hopTo(h, A, [0, 0]);  // two more, behind the undo
+		w.pump();
+		const fork = onTheFork(w, answers);
+		assert.deepEqual(linkPairs(fork), [[A, B], [W, A], [X, W]].sort((a, b) => (a.join() < b.join() ? -1 : 1)), 'b-c undone, both later hops on the fork');
+	});
+});
+
+test('H30.2 (B396): what waits behind the forking write is kept when `forked` is heard, persisted as the fork\'s, each request naming the fork', async () => {
+	await throughInput(CHAIN, { template: true }, async (h, w) => {
+		h.history.commit(createEntity('node', N1));
+		ctrlZ(h);
+		h.history.commit(createEntity('node', N2));
+		w.serve();
+		w.deliverTo('forked');
+		const fork = w.sync.diagramId;
+		const kept = JSON.parse(globalThis.localStorage.getItem('draw.outbox') ?? 'null');
+		assert.deepEqual([kept?.diagram, kept?.msgs.map((m) => m.ops[0].entity.id)], [fork, [N1.id, N2.id]], 'the outbox kept, under the fork');
+		assert.deepEqual(w.sync.outbox.map((m) => m.diagram), [fork, fork, fork], 'each request now names the fork');
+	});
+});
+
+test('H30.2 (B396): a socket dropped between `forked` and the fork\'s reopen -- the reconnect resumes the fork, and the undo and the commit behind the forking write land there', async () => {
+	await throughInput(CHAIN, { template: true }, async (h, w) => {
+		const answers = watchAnswers(w);
+		h.history.commit(createEntity('node', N1));
+		ctrlZ(h);
+		h.history.commit(createEntity('node', N2));
+		w.serve();
+		w.deliverTo('forked');
+		const fork = w.sync.diagramId;
+		w.reconnect();                                // the forking write's answer lost with the socket
+		assert.deepEqual(w.up.filter((m) => m.cmd === 'resume').map((m) => m.body.diagram), [fork], 'the reconnect resumes the fork');
+		w.pump();
+		// the undo, sent after the replayed answer's resync asked for the fork (B251), is sent again when that snapshot lands and refused
+		// as a version conflict, having landed once: every snapshot answering an `open` sent before an undo does so, fork or not
+		assert.equal(answers.some((m) => m.body?.code === 'moved'), false, 'nothing refused as made on a diagram the session left');
+		assert.deepEqual([w.sync.diagramId, w.tab.state.meta.id], [fork, fork], 'the tab on the fork, holding its document');
+		assert.deepEqual([w.server(fork).get('node', N1.id) ?? null, w.server(fork).get('node', N2.id)?.name], [null, 'n2'], 'n1 undone, n2 on the fork');
+		assert.deepEqual(w.diff(), [], CONVERGED);
+	});
+});
+
+test('H30.2 (B396): a socket dropped once the forking write is answered and the fork asked for -- the reconnect asks for the fork again, and the tab loads it', async () => {
+	await throughInput(CHAIN, { template: true }, async (h, w) => {
+		const answers = watchAnswers(w);
+		chainTo(h, A, [0, 0], B, [240, 0]); hopTo(h, C, [240, 240]);   // two hops, the first forking
+		w.serve();
+		w.deliverAll();                               // `forked` and both answers: the fork asked for
+		const fork = w.sync.diagramId;
+		assert.deepEqual([w.up.map((m) => m.cmd), w.tab.state.meta.id], [['open'], w.id], 'precondition: the reopen sent, the tab still the template\'s');
+		w.reconnect();                                // the reopen lost with the socket; the tab in step with the fork, so resumed with `sync`
+		w.pump();
+		assert.deepEqual(answers.filter((m) => m.cmd === 'error').map((m) => m.body.code), [], 'nothing refused');
+		assert.deepEqual([w.sync.diagramId, w.tab.state.meta.id], [fork, fork], 'the tab on the fork, holding its document');
+		assert.deepEqual(linkPairs(w.server(fork)), [[A, B], [B, C]], 'both hops on the fork');
+		assert.deepEqual(w.diff(), [], CONVERGED);
+	});
+});
+
+/*
+H30.2 (B396): the outbox kept means a refused forking write is found in it, and its refusal asks for the document again -- of the fork,
+which the session is on, where it asked for the diagram the tab's model still named, the template, and moved the session back onto it.
+The undo that waited on the refused write goes with it and says so, as B294 rules.
+*/
+test('H30.2 (B396): a forking write the server refuses -- the tab stays on the fork, the undo behind it dropped with it, and a commit behind both lands', async () => {
+	await throughInput(CHAIN, { template: true }, async (h, w) => {
+		const answers = watchAnswers(w);
+		h.history.commit(createEntity('node', { ...N1, x: 240, y: 0 }));   // onto b's cell: the planner refuses it, here and on the server (B112), and the template forks all the same
+		ctrlZ(h);
+		h.history.commit(createEntity('node', N2));
+		w.pump();
+		const fork = w.sync.diagramId;
+		assert.notEqual(fork, w.id, 'the tab follows the fork');
+		assert.deepEqual(w.sent.filter((m) => m.cmd === 'open').map((m) => m.body.id), [fork], 'one reopen, of the fork -- never the template');
+		assert.deepEqual(answers.filter((m) => m.cmd === 'error').map((m) => m.body.message.includes('the undo pressed after it')), [true], 'the refusal names the undo that waited on it');
+		assert.deepEqual([w.server(fork).get('node', N1.id) ?? null, w.server(fork).get('node', N2.id)?.name], [null, 'n2'], 'n1 refused, n2 on the fork');
 		assert.deepEqual(w.diff(), [], CONVERGED);
 	});
 });
