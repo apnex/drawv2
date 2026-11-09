@@ -38,3 +38,6 @@ deploy/
 key
 # B250: the TAP record `npm test` writes for tools/scan-skips.mjs -- regenerated on every run
 .test-results.tap
+
+# H31-1: drafts another project writes for draw arrive here, and are committed only as a copy draw records as received (upstream/README.md).
+upstream/incoming/

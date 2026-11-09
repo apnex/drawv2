@@ -335,6 +335,8 @@ export const FOLDERS = [
 ];
 
 export const UNSCANNED = {
+	// H31-1: correspondence with the projects whose mission-kit components draw takes or shapes, laid out as zorg's; it imports nothing and is imported by nothing
+	upstream: 'draw\'s correspondence with other projects (upstream/README.md): letters sent and received, read by people and agents, never by draw\'s code; incoming/ is gitignored',
 	deploy: 'gitignored: how ONE instance is hosted, not part of the repository (.gitignore says why); a fresh clone has no deploy/',
 	// H28.3 (B440): an experiment ON draw, as tools/ is work on it, but never imported by draw nor importing it -- its shim loads draw's
 	// tree at a pinned revision by path, from evals/context-lab/fixtures/ (gitignored), a copy of the folders scanned here
