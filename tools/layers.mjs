@@ -223,42 +223,43 @@ candidate it takes or would take (dev/design/unification/MISSION-KIT-ALIGNMENT.m
 composing it would change). AMENDED by H26.1: the anchored core composes its first component, `snap-grid`, through the lattice
 (COMPONENTS above); AMENDED by H26.2: and its second, `input-binding`, through the rules part; AMENDED by H26.3: and its third,
 `input-capture`, through the canvas part; AMENDED by H26.4: and its fourth, `vector-scene`, through the renderer part, the export and
-the primitives drawing through it; AMENDED by H26.12: the four admitted to mission-kit's component registry, C11 to C14; every other
-mapping is still a candidate's.
+the primitives drawing through it; AMENDED by H26.12: the four admitted to mission-kit's component registry, C11 to C14; AMENDED by H31: each standing read
+again on 2026-11-10, zorg's eight registered as C3 to C10 and its change planner as the draft C15, none yet taken by draw
+(~/taceng/drawv2-eval-runs/h31-reuse/COMPARISON.md); every other mapping is still a candidate's.
 MISSION_KIT holds each component's or candidate's standing as read on MISSION_KIT_READ -- standings move, and are read again before
 a design that composes one is asked. tools/generate-architecture.mjs renders the register into the target's section 9.3 and fails
 on a part that is no part, a name MISSION_KIT does not hold, or an entry of MISSION_KIT no part aligns to.
 */
-export const MISSION_KIT_READ = '2026-11-06';
+export const MISSION_KIT_READ = '2026-11-10';
 export const MISSION_KIT = {
 	agp: 'registered in mission-kit, C1',
 	'snap-grid': 'registered in mission-kit, C11; released from its own repository, composed (H26-4)',
-	'shape-check': 'proposed in zorg, certified',
-	'entity-store': 'proposed in zorg, certified',
-	'caller-identity': 'proposed in zorg, certified',
-	'entity-api': 'proposed in zorg, certified',
-	'operation-command': 'proposed in zorg, certified',
-	'credential-issuer': 'proposed in zorg, no code',
-	'change-planner': 'candidate, zorg D32, steered in D35',
+	'shape-check': 'registered in mission-kit, C3 (its own contract still says draft); public, no release, Node 24; not composed (H31)',
+	'entity-store': 'registered in mission-kit, C4 (its contract says draft); public, no release, Node 24; storage port synchronous, names required, no multi-item change -- B344\'s trigger unmet (H31)',
+	'caller-identity': 'registered in mission-kit, C7 (its contract says draft); public, no release, Node 24; session evidence from AGP only (H31)',
+	'entity-api': 'registered in mission-kit, C6 (its contract says draft); public, no release, Node 24; over operation-call and AGP; its dated local view deferred, zorg D64 (H31)',
+	'operation-command': 'registered in mission-kit, C9 (its contract says draft); public, no release, Node 24; needs operation-call and shape-check installed (H31)',
+	'credential-issuer': 'registered in mission-kit, C10 (its contract says draft); built, public, no release, Node 24; issues single-use AGP admission keys (H31)',
+	'change-planner': 'realised as entity-graph, mission-kit C15, draft, no code; one component or three still owed (its D5) (H31)',
 	'input-binding': 'registered in mission-kit, C12; released from its own repository, composed (H26-6)',
 	'input-capture': 'registered in mission-kit, C13; released from its own repository, composed (H26-8)',
 	'vector-scene': 'registered in mission-kit, C14; released from its own repository, composed (H26-11); a candidate in zorg D32, steered in D35',
 	// H26.4 (VECTOR-SCENE.md section 5.3): the editing duty, declared inside draw as the `editing` part, extracted when a second app needs it
 	'canvas-editing': 'a drawv2 candidate by H26-10, B389',
-	'entity-view': 'candidate, zorg D32',
-	'write-outbox': 'candidate, zorg D32',
-	'resource-lease': 'candidate, zorg D32',
-	'static-host': 'candidate, zorg D32',
-	'access-grants': 'candidate, zorg BL20',
+	'entity-view': 'candidate, zorg D32; inside entity-graph C15 unless its D5 splits it out (H31)',
+	'write-outbox': 'candidate, zorg D32; not registered in mission-kit (H31)',
+	'resource-lease': 'candidate, zorg D32; not registered in mission-kit (H31)',
+	'static-host': 'candidate, zorg D32; not registered in mission-kit (H31)',
+	'access-grants': 'candidate, zorg BL20; not registered in mission-kit (H31)',
 };
 export const ALIGNMENT = {
 	lattice: { to: ['snap-grid'], waits: 'composed (H26-4); its grid arithmetic moved onto it at H26.1' },
-	'kind-contract': { to: ['shape-check'], waits: 'OD-3; the target\'s section 4.3' },
+	'kind-contract': { to: ['shape-check'], waits: 'shape-check released in H26-2\'s form; B425 (H31)' },
 	document: { to: ['entity-store'], waits: 'OD-1' },
 	store: { to: ['entity-store'], waits: 'OD-1' },
 	primitives: { to: ['vector-scene'], waits: 'draw\'s shapes, drawn through vector-scene (H26-11)' },
 	rules: { to: ['input-binding'], waits: 'composed (H26-6); its matcher and gesture session moved onto it at H26.2' },
-	planner: { to: ['change-planner'], waits: 'a contract; OD-3' },
+	planner: { to: ['change-planner'], waits: 'entity-graph has code (C15); OD-1 (H31)' },
 	canvas: { to: ['input-binding', 'input-capture'], waits: 'consumes input-binding through rules (H26-6) and input-capture itself (H26-8); its rows and gesture bodies stay draw\'s (B389)' },
 	renderer: { to: ['vector-scene'], waits: 'composed (H26-11); its drawing loop moved onto it at H26.4' },
 	sync: { to: ['entity-view', 'write-outbox'], waits: 'OD-2; OD-3' },

@@ -1676,14 +1676,15 @@ AMENDED 2026-11-10: at the director's word, the browser's "undo history is full"
 
 ---
 
-## H31 -- what of zorg's components draw could use in place of its own code - `TODO`
+## H31 -- what of zorg's components draw could use in place of its own code - `WIP`
 
 Opened 2026-11-10 by the director (`dev/DECISIONS.md` H31): a read-only assessment of the components the zorg programme registered in mission-kit (C3 to C10 and the draft C15) against draw's own code, each side described before they are compared; no adoption without a ruling on the result.
 
 | # | Item | Cites | Sev | State |
 |---|---|---|---|---|
-| H31.1 | Draw's duties that overlap described in draw's terms, and each component described from its own contract, at pinned revisions | feature | S4 | `TODO` |
-| H31.2 | The comparison: per component, the draw duty it would take, fit and gaps, the cost of adopting and what a person or an agent would see change; draw's register of mission-kit standings (`tools/layers.mjs` `MISSION_KIT`) refreshed | feature | S4 | `TODO` |
+| H31.1 | Draw's duties that overlap described in draw's terms, and each component described from its own contract, at pinned revisions; done 2026-11-10 (`~/taceng/drawv2-eval-runs/h31-reuse/DRAW-SIDE.md` at `a11e317`, `COMPONENT-SIDE.md`) | feature | S4 | `DONE` |
+| H31.2 | The comparison: per component, the draw duty it would take, fit and gaps, the cost of adopting and what a person or an agent would see change; draw's register of mission-kit standings (`tools/layers.mjs` `MISSION_KIT`) refreshed; done 2026-11-10 (`COMPARISON.md`): none of the nine can be taken today -- none has a release, each declares Node 24, each depends on a local checkout, and draw's vocabulary guard would refuse each -- so all are held but entity-graph (C15), whose design is open and drawn from draw's planner, and the register read again; B346's AGP claim corrected | feature | S4 | `DONE` |
+| H31.3 | The director's ruling on the result: whether draw records its planner requirement in entity-graph's contract, the 1,044-case planner corpus offered as its acceptance oracle (mission-kit's `0117`, which binds a project keeping its own planner) | feature | S4 | `TODO` |
 
 **Exit:** a result the director can rule on -- each component adopted, adjusted upstream, or held with its reason -- and draw's register true to mission-kit.
 

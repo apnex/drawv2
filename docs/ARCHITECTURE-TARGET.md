@@ -336,22 +336,22 @@ Each part below is mapped to the component it composes or the candidate it would
 Why each mapping fits, and the rulings composing it would change, are `dev/design/unification/MISSION-KIT-ALIGNMENT.md`, sections 3 and 7.2.
 
 <!-- BEGIN GENERATED: architecture-target-alignment. Run tools/generate-architecture.mjs; do not edit by hand. -->
-| Part | Aligns to | Standing, read 2026-11-06 | Composing it waits on |
+| Part | Aligns to | Standing, read 2026-11-10 | Composing it waits on |
 |---|---|---|---|
 | `lattice` | `snap-grid` | snap-grid: registered in mission-kit, C11; released from its own repository, composed (H26-4) | composed (H26-4); its grid arithmetic moved onto it at H26.1 |
-| `kind-contract` | `shape-check` | shape-check: proposed in zorg, certified | OD-3; the target's section 4.3 |
-| `document` | `entity-store` | entity-store: proposed in zorg, certified | OD-1 |
-| `store` | `entity-store` | entity-store: proposed in zorg, certified | OD-1 |
+| `kind-contract` | `shape-check` | shape-check: registered in mission-kit, C3 (its own contract still says draft); public, no release, Node 24; not composed (H31) | shape-check released in H26-2's form; B425 (H31) |
+| `document` | `entity-store` | entity-store: registered in mission-kit, C4 (its contract says draft); public, no release, Node 24; storage port synchronous, names required, no multi-item change -- B344's trigger unmet (H31) | OD-1 |
+| `store` | `entity-store` | entity-store: registered in mission-kit, C4 (its contract says draft); public, no release, Node 24; storage port synchronous, names required, no multi-item change -- B344's trigger unmet (H31) | OD-1 |
 | `primitives` | `vector-scene` | vector-scene: registered in mission-kit, C14; released from its own repository, composed (H26-11); a candidate in zorg D32, steered in D35 | draw's shapes, drawn through vector-scene (H26-11) |
 | `rules` | `input-binding` | input-binding: registered in mission-kit, C12; released from its own repository, composed (H26-6) | composed (H26-6); its matcher and gesture session moved onto it at H26.2 |
-| `planner` | `change-planner` | change-planner: candidate, zorg D32, steered in D35 | a contract; OD-3 |
+| `planner` | `change-planner` | change-planner: realised as entity-graph, mission-kit C15, draft, no code; one component or three still owed (its D5) (H31) | entity-graph has code (C15); OD-1 (H31) |
 | `canvas` | `input-binding`, `input-capture` | input-binding: registered in mission-kit, C12; released from its own repository, composed (H26-6); input-capture: registered in mission-kit, C13; released from its own repository, composed (H26-8) | consumes input-binding through rules (H26-6) and input-capture itself (H26-8); its rows and gesture bodies stay draw's (B389) |
 | `renderer` | `vector-scene` | vector-scene: registered in mission-kit, C14; released from its own repository, composed (H26-11); a candidate in zorg D32, steered in D35 | composed (H26-11); its drawing loop moved onto it at H26.4 |
-| `sync` | `entity-view`, `write-outbox` | entity-view: candidate, zorg D32; write-outbox: candidate, zorg D32 | OD-2; OD-3 |
-| `server` | `static-host` | static-host: candidate, zorg D32 | a contract |
-| `access` | `caller-identity`, `credential-issuer`, `access-grants` | caller-identity: proposed in zorg, certified; credential-issuer: proposed in zorg, no code; access-grants: candidate, zorg BL20 | OD-2 |
-| `hub` | `entity-api`, `agp`, `resource-lease` | entity-api: proposed in zorg, certified; agp: registered in mission-kit, C1; resource-lease: candidate, zorg D32 | OD-2 |
-| `cli` | `operation-command` | operation-command: proposed in zorg, certified | OD-3 |
+| `sync` | `entity-view`, `write-outbox` | entity-view: candidate, zorg D32; inside entity-graph C15 unless its D5 splits it out (H31); write-outbox: candidate, zorg D32; not registered in mission-kit (H31) | OD-2; OD-3 |
+| `server` | `static-host` | static-host: candidate, zorg D32; not registered in mission-kit (H31) | a contract |
+| `access` | `caller-identity`, `credential-issuer`, `access-grants` | caller-identity: registered in mission-kit, C7 (its contract says draft); public, no release, Node 24; session evidence from AGP only (H31); credential-issuer: registered in mission-kit, C10 (its contract says draft); built, public, no release, Node 24; issues single-use AGP admission keys (H31); access-grants: candidate, zorg BL20; not registered in mission-kit (H31) | OD-2 |
+| `hub` | `entity-api`, `agp`, `resource-lease` | entity-api: registered in mission-kit, C6 (its contract says draft); public, no release, Node 24; over operation-call and AGP; its dated local view deferred, zorg D64 (H31); agp: registered in mission-kit, C1; resource-lease: candidate, zorg D32; not registered in mission-kit (H31) | OD-2 |
+| `cli` | `operation-command` | operation-command: registered in mission-kit, C9 (its contract says draft); public, no release, Node 24; needs operation-call and shape-check installed (H31) | OD-3 |
 | `export` | `vector-scene` | vector-scene: registered in mission-kit, C14; released from its own repository, composed (H26-11); a candidate in zorg D32, steered in D35 | draws through it with no root (H26-11) |
 | `editing` | `canvas-editing` | canvas-editing: a drawv2 candidate by H26-10, B389 | declared inside draw (H26-10); its gestures' bodies joined it at H26.8; extracted when a second app needs it (B389) |
 <!-- END GENERATED: architecture-target-alignment -->
