@@ -11,6 +11,12 @@ rather than on the canvas sits visibly left of the thing it narrates, and a seco
 would drift the day the rail changes.
 */
 :root { --rail: 72px; --rail-border: 1px; }
+/*
+H30-1 (dev/DECISIONS.md): ONE VALUE, 26 pixels, a glyph socket's size (kernel/spec.mjs `STD.socket`) on the chrome's layout of its own at
+scale 1 -- the header's control height (B156, below) and the home button's side (`#view-home`), so the two agree by design and not by
+coincidence. Declared here, where both read it; tests/chrome-socket.test.js holds it equal to `STD.socket`.
+*/
+:root { --control-h: 26px; }
 
 /* ---- app frame ---- */
 html, body { margin: 0; height: 100%; background: var(--tok-page); font-family: monospace; overflow: hidden; }
@@ -24,13 +30,12 @@ indicators near 17px, `#lockstate` near 19px, and the two bare spans at whatever
 to. A row of controls that do not share a top and bottom edge reads as clutter however carefully
 each one is aligned, and B155 settled the horizontal geometry while leaving the vertical unstated.
 
-`--control-h` is the single number, and `box-sizing: border-box` is what makes it honest: with it,
+`--control-h` is the single number (declared at `:root` since H30-1, the home button's side too), and `box-sizing: border-box` is what makes it honest: with it,
 padding and border are inside the declared height, so the figure here is the height on screen rather
 than a starting point every element adds to differently. Vertical padding is zeroed at each site all
 the same, because with a fixed height it buys nothing and can only squeeze the text.
 */
 #menu {
-	--control-h: 26px;
 	flex: 0 0 40px; display: flex; align-items: center; gap: 10px; padding: 0 14px;
 	background: var(--tok-surface); border-bottom: 1px solid var(--tok-divider); color: var(--tok-accent); user-select: none;
 }
@@ -341,18 +346,22 @@ H26.6's move 10 (dev/design/components/PAN-ZOOM.md section 3.7, PZ6): THE RETICL
 right beside `#container`, as the tester's sits over its pane's: a ring and a cross drawn by the button's own two boxes, in the chrome's
 tokens; its press brings the view's centre to 0,0, the level kept, as `h` does. In the chrome's sheet, never the canvas's: the export reads
 the canvas's to draw (server/svg-style.mjs), and no part of this is the drawing's.
+RESTATED at H30-1 (dev/DECISIONS.md): chrome on a layout of its own at scale 1, floating over the zooming canvas and never zooming with it --
+`--control-h` square, the header buttons' side (`:root`), in the header buttons' border and greys (`#menu button`: `--tok-input-border`,
+`--tok-ink` at rest, the accent on hover, a 1 pixel border and a 4 pixel radius), 12 pixels from the corner as before. Its ring, 12 pixels
+across, and its cross, 18, sit on the 24 pixel box inside the border, both centred on its middle; their lines are 2 pixels, so each falls
+on whole pixels about that middle at 1x and stays crisp. The whole square takes the pointer -- its hover, its click, and run mode's click
+on its corner, the button's (H30-1). The ring-only rule (`c8c71bf`) is gone with its reason: the square took the wheel and a pinch from the
+canvas beneath, which the page now hands on to the canvas's capture (app/src/main.js, lab/src/root.js), so the canvas's own wheel row zooms
+about the pointer over the button as anywhere on the canvas.
 */
 #stage { position: relative; }
-#view-home { position: absolute; right: 12px; bottom: 12px; width: 30px; height: 30px; padding: 0; border: 1px solid var(--tok-edge); border-radius: 4px;
-	background: var(--tok-panel); color: var(--tok-ink-muted); cursor: pointer; }
+#view-home { position: absolute; right: 12px; bottom: 12px; width: var(--control-h); height: var(--control-h); box-sizing: border-box; padding: 0;
+	border: 1px solid var(--tok-input-border); border-radius: 4px; background: var(--tok-panel); color: var(--tok-ink); cursor: pointer; }
 #view-home:hover { border-color: var(--tok-accent); color: var(--tok-accent); }
-#view-home::before { content: ''; position: absolute; inset: 8px; border: 1.5px solid currentColor; border-radius: 50%; }
-/* the production gate of moves 9 to 12 (a low): the button's 30 pixel square took the wheel, a pinch and run mode's clicks from the canvas
-   beneath its corner; its box lets them through, and only its ring, 14 pixels across, takes a press -- its click kept, its hover too */
-#view-home { pointer-events: none; }
-#view-home::before { pointer-events: auto; }
-#view-home::after { content: ''; position: absolute; inset: 4px;
-	background: linear-gradient(currentColor, currentColor) center / 1.5px 100% no-repeat, linear-gradient(currentColor, currentColor) center / 100% 1.5px no-repeat; }
+#view-home::before { content: ''; position: absolute; inset: 6px; border: 2px solid currentColor; border-radius: 50%; }
+#view-home::after { content: ''; position: absolute; inset: 3px;
+	background: linear-gradient(currentColor, currentColor) center / 2px 100% no-repeat, linear-gradient(currentColor, currentColor) center / 100% 2px no-repeat; }
 
 #kdefs { position: absolute; width: 0; height: 0; }
 

@@ -2377,12 +2377,43 @@ test('H26.6 move 10: on the product page the view keys and the reticle, the view
 		await press('h', 'KeyH', 72);
 		assert.deepEqual(await view(), { x: 0, y: 0, level: 2 }, 'h: home, the zoom kept');
 		await t.eval(`(draw.view.set({ x: 900, y: 120, level: 3 }), 1)`);
-		const [bx, by] = JSON.parse(await t.eval(`JSON.stringify((() => { const r = document.getElementById('view-home').getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; })())`));
+		/*
+		RESTATED at H30-1 (dev/DECISIONS.md): the home button is 26 pixels square, a glyph socket's side on the chrome's own layout at scale
+		1, and the whole square takes the pointer -- its corner, two pixels in, as its middle: the hover, the click, and run mode's click,
+		the button's. A trusted wheel over that corner still zooms the canvas one level about the pointer, the page scrolling nothing.
+		*/
+		const box = JSON.parse(await t.eval(`JSON.stringify((() => { const b = document.getElementById('view-home'), r = b.getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height, title: b.title, label: b.getAttribute('aria-label') }; })())`));
+		assert.deepEqual([box.w, box.h, box.title, box.label], [26, 26, 'Move to 0,0 (h)', 'Move to 0,0'], 'the button: 26 by 26, its words');
 		const at = JSON.parse(await t.eval(`JSON.stringify((() => { const s = document.getElementById('stage').getBoundingClientRect(), b = document.getElementById('view-home').getBoundingClientRect(); return [s.right - b.right, s.bottom - b.bottom]; })())`));
-		assert.ok(at[0] >= 0 && at[0] < 40 && at[1] >= 0 && at[1] < 40, `the reticle sits over the canvas's lower right (${at})`);
-		for (const type of ['mousePressed', 'mouseReleased']) await t.send('Input.dispatchMouseEvent', { type, x: bx, y: by, button: 'left', clickCount: 1, buttons: type === 'mousePressed' ? 1 : 0 });
-		assert.deepEqual(await view(), { x: 0, y: 0, level: 3 }, 'the reticle: home, the zoom kept');
+		assert.deepEqual(at, [12, 12], 'it sits 12 pixels in from the canvas\'s lower right');
+		const corner = { x: box.x + 2, y: box.y + 2 };
+		const tint = () => t.eval(`getComputedStyle(document.getElementById('view-home')).borderTopColor`);
+		await t.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: corner.x - 200, y: corner.y - 200, buttons: 0 });   // off the button first
+		for (let i = 0; i < 10 && (await t.eval(`document.getElementById('view-home').matches(':hover')`)); i++) await sleep(30);
+		const rest = await tint();
+		await t.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: corner.x, y: corner.y, buttons: 0 });
+		for (let i = 0; i < 10 && (await tint()) === rest; i++) await sleep(30);   // the hover's style is applied on a following frame
+		assert.deepEqual([await t.eval(`document.elementFromPoint(${corner.x}, ${corner.y}).id`), (await tint()) !== rest], ['view-home', true], 'its corner is the button\'s, and takes the hover');
+		const click = async (p) => { for (const type of ['mousePressed', 'mouseReleased']) await t.send('Input.dispatchMouseEvent', { type, x: p.x, y: p.y, button: 'left', clickCount: 1, buttons: type === 'mousePressed' ? 1 : 0 }); };
+		await click(corner);
+		assert.deepEqual(await view(), { x: 0, y: 0, level: 3 }, 'a click on its corner: home, the zoom kept');
 		assert.notEqual(await t.eval(`document.activeElement?.id ?? null`), 'view-home', 'and it gives the focus back');
+		await t.eval(`(draw.view.set({ x: 0, y: 0, level: 1 }), 1)`);
+		const under = () => t.eval(`JSON.stringify(draw.scene.toDrawing({ x: ${corner.x}, y: ${corner.y} }))`);
+		const before = JSON.parse(await under());
+		await t.send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: corner.x, y: corner.y, deltaX: 0, deltaY: -120 });
+		await sleep(50);
+		const after = JSON.parse(await under()), zoomed = await view();
+		assert.equal(zoomed.level, 0.5, `a trusted wheel over the button zooms the canvas one level, by its own wheel row (${JSON.stringify(zoomed)})`);
+		assert.ok(Math.abs(after.x - before.x) < 1 && Math.abs(after.y - before.y) < 1, `about the pointer (${JSON.stringify([before, after])})`);
+		assert.deepEqual(JSON.parse(await t.eval(`JSON.stringify([document.scrollingElement.scrollTop, document.getElementById('stage').scrollTop, document.getElementById('stage').scrollLeft])`)), [0, 0, 0], 'and the page scrolls nothing');
+		await press('r', 'KeyR', 82);
+		assert.equal(await t.eval(`document.getElementById('container').classList.contains('run-mode')`), true, 'precondition: run mode');
+		await t.eval(`(draw.view.set({ x: 600, y: -300, level: 2 }), 1)`);
+		await click(corner);
+		assert.deepEqual([await view(), await t.eval(`document.getElementById('container').classList.contains('run-mode')`)], [{ x: 0, y: 0, level: 2 }, true], 'in run mode a click on its corner is the button\'s');
+		await press('r', 'KeyR', 82);
+		assert.equal(await t.eval(`document.getElementById('container').classList.contains('run-mode')`), false, 'run mode left');
 		await press('!', 'Digit1', 49, 8);
 		const fit = JSON.parse(await t.eval(`JSON.stringify({ v: draw.view.view, b: draw.input.diagramBounds() })`));
 		assert.deepEqual([fit.v.x, fit.v.y], [(fit.b.x0 + fit.b.x1) / 2, (fit.b.y0 + fit.b.y1) / 2], 'Shift+1: the diagram centred');

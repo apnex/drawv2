@@ -1091,7 +1091,9 @@ test('B156: every header control takes its height from one declaration', () => {
 	const css = fs.readFileSync(path.join(root, 'app/style.css'), 'utf8');
 	const header = css.slice(css.indexOf('#menu {'), css.indexOf('#content {'));
 
-	assert.match(header, /#menu\s*\{[^}]*--control-h:\s*\d+px/, 'the single number is a custom property on #menu');
+	// RESTATED at H30-1: declared once, at `:root`, the home button's side too (tests/chrome-socket.test.js holds it to STD.socket)
+	assert.deepEqual(css.match(/--control-h:\s*\d+px/g)?.length, 1, 'the single number is declared once');
+	assert.match(css, /^:root\s*\{\s*--control-h:\s*\d+px;\s*\}/m, 'a custom property at :root, which #menu\'s controls read');
 	assert.match(header, /#menu > \*\s*\{[^}]*height:\s*var\(--control-h\)/, 'and every child takes it');
 	assert.match(header, /#menu > \*\s*\{[^}]*box-sizing:\s*border-box/,
 		'border-box is what makes the figure the height on screen rather than one each element adds to');

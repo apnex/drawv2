@@ -87,7 +87,11 @@ const unlaid = CANVAS_LAYERS.filter((id, i) => document.getElementById(id) !== s
 if (unlaid.length) throw new Error(`the lab's canvas did not lay out: ${unlaid.join(', ')}`);
 // H26.6's move 7 (PAN-ZOOM.md section 3.7): the canvas resized is told to the view part, as the product page tells it
 new ResizeObserver(() => view.resized()).observe(svg);
-document.getElementById('view-home').addEventListener('click', (e) => { view.home(); e.currentTarget.blur(); });   // H26.6's move 10 (PZ6): the reticle
+// H26.6's move 10 (PZ6): the reticle. H30-1: the whole button takes the pointer, and a wheel or a pinch over it is the canvas's, handed to
+// the canvas's capture as the product page hands it (app/src/main.js)
+const viewHome = document.getElementById('view-home');
+viewHome.addEventListener('click', (e) => { view.home(); e.currentTarget.blur(); });
+viewHome.addEventListener('wheel', (e) => { if (!svg.dispatchEvent(new WheelEvent('wheel', e))) e.preventDefault(); }, { passive: false });
 // H26.6's move 9 (dev/design/components/PAN-ZOOM.md, PZ11): the frame time of each view step, its median and 90th percentile in the footer
 const frames = viewFrameMeter({ scene, host: window, shown: (text) => { document.getElementById('lab-frames').textContent = text; } });
 document.getElementById('lab-frames-reset').addEventListener('click', () => frames.reset());

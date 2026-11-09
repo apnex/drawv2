@@ -89,8 +89,12 @@ const { scene, view, model, history, renderer, states, selection, labels, readou
 	runRules: RUN_PRESSES,
 	viewStore,   // H26.6's move 10: each diagram's view, remembered
 });
-// H26.6's move 10 (PZ6): the reticle brings the view home, as `h` does, and gives the focus back, so the next key reaches the canvas
-document.getElementById('view-home').addEventListener('click', (e) => { view.home(); e.currentTarget.blur(); });
+// H26.6's move 10 (PZ6): the reticle brings the view home, as `h` does, and gives the focus back, so the next key reaches the canvas.
+// H30-1: the whole button takes the pointer, and a wheel or a pinch over it is the canvas's -- the browser's own event handed to the
+// canvas's capture, whose wheel row zooms about the pointer there as anywhere; the page's scroll and zoom prevented when the capture claims it
+const viewHome = document.getElementById('view-home');
+viewHome.addEventListener('click', (e) => { view.home(); e.currentTarget.blur(); });
+viewHome.addEventListener('wheel', (e) => { if (!svg.dispatchEvent(new WheelEvent('wheel', e))) e.preventDefault(); }, { passive: false });
 // H26.6's move 10 (PZ23): a save still waiting is written when the page hides, so a view moved just before the tab goes is kept
 document.addEventListener('visibilitychange', () => { if (document.hidden) view.flush(); });
 window.addEventListener('pagehide', () => view.flush());

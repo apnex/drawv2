@@ -553,25 +553,46 @@ test('H26.6 move 10: in the lab the reticle brings the view home and the lab rem
 
 /*
 The production gate of moves 9 to 12 (a low): the reticle's 30 pixel square took the wheel, a pinch and run mode's clicks from the canvas
-beneath its corner. Its box passes them through and its ring alone takes a press (app/style.css): under trusted input, a wheel over the
-square's corner pans the view, and a click on its ring still brings the view home. RESTATED at H27.5 (H27-1): the wheel there zooms the view.
+beneath its corner, so its box passed them through and only its ring took a press. RESTATED at H30-1 (dev/DECISIONS.md): the button is
+26 pixels square and the whole of it is the button's -- its corner takes the hover and the click -- while a trusted wheel over it still
+zooms the canvas one level about the pointer, the page handing the wheel to the canvas's capture (lab/src/root.js); a middle drag pressed
+on it is the button's, pans nothing and leaves no pan waiting (B447's root), the next plain move over the canvas moving nothing.
 */
-test('the gate\'s low: the reticle\'s corner passes the wheel to the canvas, and its ring keeps the click', { skip: SKIP }, async () => {
+test('H30-1: the home button\'s whole square is the button\'s, a wheel over it still zooms the canvas about the pointer, and a pan pressed on it pans nothing', { skip: SKIP }, async () => {
 	const t = await theTab();
 	try {
 		await t.send('Emulation.setDeviceMetricsOverride', { width: 1366, height: 576, deviceScaleFactor: 1, mobile: false });
 		await open('bend');
-		const r = JSON.parse(await t.run(`JSON.stringify((() => { const b = document.getElementById('view-home').getBoundingClientRect(); return { x: b.left, y: b.top, w: b.width, h: b.height }; })())`));
-		const corner = { x: Math.round(r.x + 3), y: Math.round(r.y + 3) }, ring = { x: r.x + r.w / 2, y: r.y + 8.5 };
-		assert.deepEqual(JSON.parse(await t.run(`JSON.stringify([document.elementFromPoint(${corner.x}, ${corner.y}).closest('#container') !== null, document.elementFromPoint(${ring.x}, ${ring.y}).id])`)),
-			[true, 'view-home'], 'the square\'s corner is the canvas\'s; its ring is the button\'s');
+		const r = JSON.parse(await t.run(`JSON.stringify((() => { const b = document.getElementById('view-home'), q = b.getBoundingClientRect(); return { x: q.left, y: q.top, w: q.width, h: q.height, title: b.title, label: b.getAttribute('aria-label') }; })())`));
+		assert.deepEqual([r.w, r.h, r.title, r.label], [26, 26, 'Move to 0,0 (h)', 'Move to 0,0'], 'the button: 26 by 26, its words');
+		const corner = { x: Math.round(r.x + 2), y: Math.round(r.y + 2) };
+		const tint = () => t.run(`getComputedStyle(document.getElementById('view-home')).borderTopColor`);
+		await t.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: corner.x - 200, y: corner.y - 200, buttons: 0 });   // off the button first
+		for (let i = 0; i < 10 && (await t.run(`document.getElementById('view-home').matches(':hover')`)); i++) await sleep(30);
+		const rest = await tint();
+		await t.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: corner.x, y: corner.y, buttons: 0 });
+		for (let i = 0; i < 10 && (await tint()) === rest; i++) await sleep(30);   // the hover's style is applied on a following frame
+		assert.deepEqual([await t.run(`document.elementFromPoint(${corner.x}, ${corner.y}).id`), (await tint()) !== rest], ['view-home', true], 'the square\'s corner is the button\'s, and takes the hover');
 		await t.run(`(lab.view.set({ x: 0, y: 0, level: 1 }), 1)`);
+		const under = () => t.run(`JSON.stringify(lab.input.scene.toDrawing({ x: ${corner.x}, y: ${corner.y} }))`);
+		const before = JSON.parse(await under());
 		await t.send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: corner.x, y: corner.y, deltaX: 0, deltaY: 120 });
 		await sleep(50);
-		const zoomed = JSON.parse(await t.run('JSON.stringify(lab.view.view)'));
-		assert.ok(zoomed.level === 2, `a wheel over the corner reaches the canvas, which zooms the view (${JSON.stringify(zoomed)})`);
-		for (const type of ['mousePressed', 'mouseReleased']) await t.send('Input.dispatchMouseEvent', { type, x: ring.x, y: ring.y, button: 'left', clickCount: 1, buttons: type === 'mousePressed' ? 1 : 0 });
-		assert.deepEqual(JSON.parse(await t.run('JSON.stringify(lab.view.view)')), { x: 0, y: 0, level: 2 }, 'a click on the ring brings the view home, its level kept (PZ6)');
+		const zoomed = JSON.parse(await t.run('JSON.stringify(lab.view.view)')), after = JSON.parse(await under());
+		assert.equal(zoomed.level, 2, `a wheel over the button reaches the canvas, which zooms the view one level (${JSON.stringify(zoomed)})`);
+		assert.ok(Math.abs(after.x - before.x) < 1 && Math.abs(after.y - before.y) < 1, `about the pointer (${JSON.stringify([before, after])})`);
+		assert.deepEqual(JSON.parse(await t.run(`JSON.stringify([document.scrollingElement.scrollTop, document.getElementById('stage').scrollTop])`)), [0, 0], 'and the page scrolls nothing');
+		for (const type of ['mousePressed', 'mouseReleased']) await t.send('Input.dispatchMouseEvent', { type, x: corner.x, y: corner.y, button: 'left', clickCount: 1, buttons: type === 'mousePressed' ? 1 : 0 });
+		assert.deepEqual(JSON.parse(await t.run('JSON.stringify(lab.view.view)')), { x: 0, y: 0, level: 2 }, 'a click on its corner brings the view home, its level kept (PZ6)');
+		// a middle drag pressed on the button, dragged out over the canvas and released there
+		await t.run(`(lab.view.set({ x: 300, y: -120, level: 2 }), 1)`);
+		const held = JSON.parse(await t.run('JSON.stringify(lab.view.view)'));
+		await t.send('Input.dispatchMouseEvent', { type: 'mousePressed', x: corner.x, y: corner.y, button: 'middle', clickCount: 1, buttons: 4 });
+		for (let i = 1; i <= 4; i++) await t.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: corner.x - 60 * i, y: corner.y - 30 * i, button: 'middle', buttons: 4 });
+		await t.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: corner.x - 240, y: corner.y - 120, button: 'middle', clickCount: 1, buttons: 0 });
+		assert.deepEqual([JSON.parse(await t.run('JSON.stringify(lab.view.view)')), await t.run('lab.input.isGesturing()')], [held, false], 'a middle drag pressed on the button pans nothing, and leaves no gesture live');
+		await t.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: corner.x - 400, y: corner.y - 200, buttons: 0 });
+		assert.deepEqual(JSON.parse(await t.run('JSON.stringify(lab.view.view)')), held, 'nor a pan waiting: the next plain move over the canvas moves nothing');
 	} finally { await t.send('Emulation.clearDeviceMetricsOverride'); }
 });
 
