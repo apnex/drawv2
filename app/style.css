@@ -53,7 +53,7 @@ characters of a text field is a smaller harm than an unreadable control. The ind
 and the lock never move.
 */
 #menu > * { height: var(--control-h); box-sizing: border-box; flex: 0 0 auto; }
-#diagram-name, #diagram-list, #diagram-grid { flex: 0 1 auto; min-width: 4ch; }
+#diagram-name, #diagram-list { flex: 0 1 auto; min-width: 4ch; }   /* H30-3: the grid field gone from the header */
 /*
 B157: a single-glyph button is SQUARE, and by construction rather than by luck.
 

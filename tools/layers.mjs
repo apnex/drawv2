@@ -450,7 +450,7 @@ export const ENTRIES = {
 			'product/kinds.mjs',   // the product's composition (O-d): the anchor and the shipped plugins, with the network's rows
 			'plugins/zones/zone-kind.mjs', 'plugins/layouts/layout-kind.mjs', 'plugins/zones/make-zone.mjs',   // O-b1 (H19.19): the zones plugin -- its row, extent and factory
 			'plugins/layouts/size-change.mjs',   // H26.6's move 15: the size change, the layout row's tenant
-			'plugins/layouts/size-notice.mjs',   // H26.6's move 15: the grid field's sizes and the notice it flashes
+			// plugins/layouts/size-notice.mjs left the product page at H30-3 (dev/DECISIONS.md): its header holds no grid field; the lab's does
 			'plugins/zones/zone-painter.mjs', 'product/canvas.mjs',   // C-a (H19.29): the zones plugin's painter, and the product's canvas parts
 			'plugins/zones/zone-gestures.mjs',   // C-d (H19.32): the zones plugin's press row and handles
 			'plugins/devices/device-gestures.mjs',   // C-d (H19.32): the devices plugin's text box row

@@ -256,10 +256,11 @@ test('GR4 (H26.6 move 15): the page\'s composition at 80 and 120 -- the grid fie
 			void pointer;
 		} finally { h.restore(); }
 	}
-	// the page wires the field: its sizes, its commit, the notice from its own commit
+	// RESTATED at H30-3 (dev/DECISIONS.md; amends PZ29): the product page holds no grid field -- a diagram's grid size is set by the CLI
+	// (`draw grid`) and the agent door (its commit of a size), each held by its test above; the lab's footer keeps its field
 	const main = fs.readFileSync(new URL('../app/src/main.js', import.meta.url), 'utf8');
-	assert.match(main, /attachGridField\(menu\.grid, \{ model, commit: \(edit\) => history\.commit\(edit\), flash: \(text\) => readout\.flash\(text, 4000\) \}\)/, 'the header\'s field commits as any edit and flashes the notice');
-	assert.match(fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf8'), /<select id="diagram-grid"/, 'the header holds the field');
+	const page = fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf8');
+	assert.deepEqual([/attachGridField|diagram-grid/.test(main.replace(/\/\*[\s\S]*?\*\//g, '')), /<select id="diagram-grid"/.test(page)], [false, false], 'the product page holds no grid field');
 	assert.match(fs.readFileSync(new URL('../lab/src/root.js', import.meta.url), 'utf8'), /attachGridField\(document\.getElementById\('lab-grid'\), \{ model, commit: \(edit\) => history\.commit\(edit\), flash: say \}\)/, 'and the lab\'s footer');
 });
 

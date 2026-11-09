@@ -35,8 +35,8 @@ const gridEdit = (size) => ({ label: `grid ${size}`, entries: setGridOps(size).m
 const gridSizeOf = (model) => model.get('layout', GRID_ID)?.pitch ?? null;
 
 /*
-THE GRID FIELD (PZ29: "a field in the header's menu"), wired once for each page that shows one -- the product page's header and the
-lab's footer: its options the sizes the row admits, its value the diagram's size as the model holds it, a choice committed as the page's
+THE GRID FIELD (PZ29: "a field in the header's menu"), wired for the page that shows one -- the lab's footer; the product page's header
+holds none since H30-3 (dev/DECISIONS.md), a diagram's grid size set there by the CLI and the agent door. Its options the sizes the row admits, its value the diagram's size as the model holds it, a choice committed as the page's
 own edit (`commit`, the page's history) and its notice handed to `flash`. Given the element; it reads no global.
 */
 export function attachGridField(select, { model, commit, flash }) {
