@@ -1664,7 +1664,7 @@ Not legal until the director opens them, each held: paths and flows (B327), the 
 | # | Item | Cites | Sev | State |
 |---|---|---|---|---|
 | H30.1 | Re-triage the board after H29, the order selected by the director and recorded here (H30) | feature | S3 | `DONE` |
-| H30.2 | B396 reproduced -- a link chain started on a template, each hop's arrival on the fork counted against the hops drawn -- then fixed so a commit queued behind the forking write reaches the fork, with a test failing first; to the lab on its builder's gate, one targeted check, production on the director's approval | **B396** | S1 | `TODO` |
+| H30.2 | B396 reproduced -- a link chain started on a template, each hop's arrival on the fork counted against the hops drawn -- then fixed so a commit queued behind the forking write reaches the fork, with a test failing first; to the lab on its builder's gate, one targeted check, production on the director's approval; reproduced and fixed 2026-11-09 (`c627407`) -- a chain alone lost nothing, but an undo behind the forking write was dropped with everything drawn after it, and a dropped socket put the person back on the template; `forked` now keeps the outbox and sends it to the fork | **B396** | S1 | `WIP` |
 
 **Exit:** no edit drawn on a template in its first moments, a chain's among them, is lost; or B396 shown unreachable by a measurement and held again.
 
@@ -1741,6 +1741,7 @@ Scored so the comparison is a judgement, not an omission.\
 | **B454** | S5 | gpt's 72 cells of H28.3's evaluation, owed while its quota is out (H28) | gpt's codex quota returns (2026-11-14 or later), or a change to the CLI's map or units is measured again. |
 | **B455** | S5 | A `get --json` entity put back through `commit --ops` refused for its `cell` field (H29) | an agent or a person is refused for a `cell` field it copied from `get`, or the next change to `get`'s `--json` or to `commit --ops`. |
 | **B456** | S5 | CI's image job failed on GitHub answering a release download with 504 (H29) | a release download fails CI outside a GitHub incident, or B388's trigger fires, the components moving to the npm registry. |
+| **B457** | S4 | An undo in flight across a snapshot sent twice and refused as a conflict (H30) | a person reports an undo refused that took effect, or the next change to how a snapshot replays the outbox. |
 | **B347** | S4 | The towerless-combat timing test failed once under machine load | it fails a second time, or B333's flake ledger is built. |
 | **B282** | S3 | Anchors along a wide device, and which one a link ends at (WD1; the pack half closed at H21.3) | a wide device needs links at more than one point (WD1). |
 | **B79** | S3 | The connection walk's apparatus is outside the repository; the false record is corrected, the rest held with B127 | B127 revives, or another decision is taken on the walk's findings. |
