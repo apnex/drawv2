@@ -61,7 +61,7 @@ import { Grids } from './grids.js';   // WD-b2: the grids, from the open diagram
 Returns every part, the opened scene among them, and `listen()`, which starts event capture and answers its `{ close }`
 (app/src/capture.js `captureCanvas`, H26.3).
 */
-export function composeCanvas({ svg, scene: declared, defs, host, network = null, kinds = undefined, parts = [], readoutEl = null, tools = false, help = null, now, plugins = [], runRules = [], viewStore = null }) {
+export function composeCanvas({ svg, scene: declared, defs, host, network = null, kinds = undefined, parts = [], readoutEl = null, tools = false, help = null, now, plugins = [], runRules = [], viewStore = null, homeButton = null }) {
 	// the kernel's glyph and frame defs: the kernel owns the look
 	defs.innerHTML = sharedDefs(undefined, undefined, parts.map((p) => p.defs).filter(Boolean).join('\n'));
 	// H26.4: the canvas's scene, its layers appended to the root -- opened, or refused naming each problem. H26.6's move 7
@@ -132,6 +132,14 @@ export function composeCanvas({ svg, scene: declared, defs, host, network = null
 	// the platform's events, as input-capture's facts (dev/design/input/GESTURE-SYSTEM.md, L0; H26.3, H26.8) -- once the root's own listeners are in
 	// C-b: the plugins' picks; H26.8's picks move: read by item, each item's drawer the renderer's -- and run mode's regions from the same
 	const listen = () => (capture ??= captureCanvas({ svg, scene, host, sink: input, picks: picksOf(parts), drawerOf: (id) => renderer.drawerOf(id) }));
+	/*
+	H30-1 (dev/DECISIONS.md): THE HOME BUTTON, page chrome over the canvas's lower right, handed in by each page (`homeButton`) and wired here
+	once for both: its click brings the view home, as `h` does, and gives the focus back, so the next key reaches the canvas (PZ6); the whole
+	square is the button's, and a wheel or a pinch over it is the canvas's -- the browser's own event handed to the canvas's capture, whose
+	wheel row zooms about the pointer there as anywhere, the page's scroll and zoom prevented when the capture claims it.
+	*/
+	homeButton?.addEventListener('click', (e) => { view.home(); e.currentTarget.blur(); });
+	homeButton?.addEventListener('wheel', (e) => { if (!svg.dispatchEvent(new WheelEvent('wheel', e))) e.preventDefault(); }, { passive: false });
 	return { scene, view, model, history, renderer, states, selection, labels, readout: shownReadout, snap, tools: heldTools, input, listen };
 }
 

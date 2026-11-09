@@ -254,7 +254,9 @@ const SCENE_READS = {
 	// its four region finds (`regionOf`), what a press landed on read by item since (app/src/pick.js), 7 to 3
 	'app/src/capture.js': 3,
 	// app/src/compose-canvas.js held 2 -- the foreign layers' element and its lookup by id, for a pipe's states (foreignStates) -- until
-	// H26.8's pipes move made the pipes a painted kind (3.3's table: 0 from the pipes move)
+	// H26.8's pipes move made the pipes a painted kind (3.3's table: 0 from the pipes move). It holds 2 again since H30-1, of no element the
+	// scene made: the two listeners on the home button, page chrome each page hands in -- its click, and a wheel over it handed to the capture
+	'app/src/compose-canvas.js': 2,
 	// app/src/pick.js held 1 -- a pick's find from the target up -- until H26.8's picks move read every pick by item; it holds 1 again, of
 	// another kind: the description's `children`, walked down the target's path in the scene's items to the shape it names (`shapesOn`),
 	// the word of the descriptions 3.3's limit counts where it is read -- where its table names 0 (an erratum of the picks move's build)
