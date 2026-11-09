@@ -114,8 +114,18 @@ A waypoint on a SELECTED path takes the selection green, so the path and its anc
 `#aed581` is the same green `.link.selected` uses -- one selection colour, not a second one that
 drifts. Ranked above `.armed` deliberately: arming is a threat and must still shout red over a
 selection.
+
+RESTATED at H30-3 (dev/DECISIONS.md): EVERY RING of such a waypoint takes it -- the junction's ring
+(`wp-junction`) and the anchor ring (`wp-anchor`, a bend's only ring) with the endpoint's pad
+(`wp-ring`). The rule was written for ends and bends alike before B199 split a waypoint into its
+anchor ring and the layers on top and B200 added the junction's ring, and neither was added to it,
+so beside a green path those two stayed the link's colour. Only the strokes: the junction's ring
+keeps its opaque fill. The transit ring (`wp-transit`) is a declaration, as an armed spawner's red
+is, and keeps its own colour; `.spawning` and `.armed`, below, still win over a selection.
 */
-.waypoint.on-selected-path .wp-ring { stroke: var(--tok-accent); stroke-opacity: 1; }
+.waypoint.on-selected-path .wp-ring,
+.waypoint.on-selected-path .wp-junction,
+.waypoint.on-selected-path .wp-anchor { stroke: var(--tok-accent); stroke-opacity: 1; }
 .waypoint.on-selected-path .wp-dot { fill: var(--tok-accent); }
 /*
 H12.8 -- an armed spawner reads as armed in EVERY mode, and never moves in author view.

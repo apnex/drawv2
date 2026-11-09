@@ -596,6 +596,42 @@ test('H30-1: the home button\'s whole square is the button\'s, a wheel over it s
 	} finally { await t.send('Emulation.clearDeviceMetricsOverride'); }
 });
 
+/*
+H30-3 (dev/DECISIONS.md) -- A SELECTED LINK LIGHTS EVERY RING OF ITS WAYPOINTS. The selection green reached a waypoint's endpoint pad
+(`wp-ring`) and centre dot alone, the rule written before B199 gave every waypoint its anchor ring (`wp-anchor`, a bend's only ring) and
+B200 gave a junction its own (`wp-junction`): beside a green path those two stayed the link's colour. On the `tri` board -- three links
+meeting at w5 -- a fourth link is drawn from a lone waypoint through a bend to w5: selected, the junction's ring, the bend's anchor ring and
+the endpoint's pad each take the accent, as the computed style reads them; the rings of a waypoint on no selected link keep their colour;
+and an armed endpoint on the selected link still shows red, arming winning over a selection as the sheet orders it.
+*/
+test('H30-3: a selected link lights every ring of its waypoints -- the junction\'s ring, the bend\'s anchor ring and the endpoint\'s pad', { skip: SKIP }, async () => {
+	const t = await open('tri');
+	const JUNCTION = 'node-000005', BEND = 'node-0000b1', END = 'node-0000e1', LINK = 'link-0000d1';
+	await t.run(`(lab.history.commit({ label: 'h30-3', entries: [
+		{ op: 'put', kind: 'node', entity: { id: '${END}', name: 'we', x: -600, y: 300 } },
+		{ op: 'put', kind: 'node', entity: { id: '${BEND}', name: 'wb', x: -360, y: 300 } },
+		{ op: 'put', kind: 'link', entity: { id: '${LINK}', name: 'd', src: '${END}', dst: '${JUNCTION}', via: ['${BEND}'] } },
+	] }), lab.input.selection.set([]), 1)`);
+	const ring = (id, cls) => `(() => { const c = document.getElementById('${id}')?.querySelector('.${cls}'); if (!c) return null; const s = getComputedStyle(c); return s.stroke + ' ' + s.strokeOpacity; })()`;
+	const rings = async () => JSON.parse(await t.run(`JSON.stringify({ junction: ${ring(JUNCTION, 'wp-junction')}, bend: ${ring(BEND, 'wp-anchor')}, pad: ${ring(END, 'wp-ring')} })`));
+	const accent = JSON.parse(await t.run(`JSON.stringify((() => { const p = document.createElementNS('http://www.w3.org/2000/svg', 'circle'); p.style.stroke = 'var(--tok-accent)';
+		document.getElementById('container').appendChild(p); const s = getComputedStyle(p).stroke; p.remove(); return s; })())`)) + ' 1';
+	const rest = await rings();
+	assert.ok(rest.junction && rest.bend && rest.pad, `precondition: the junction's ring, the bend's anchor ring and the endpoint's pad drawn (${JSON.stringify(rest)})`);
+	assert.ok(![rest.junction, rest.bend, rest.pad].includes(accent), `precondition: none of them the accent unselected (${JSON.stringify(rest)}, accent ${accent})`);
+	await t.run(`(lab.input.selection.set(['${LINK}']), 1)`);
+	assert.deepEqual(await rings(), { junction: accent, bend: accent, pad: accent }, 'the selected link lights every ring of its waypoints');
+	await t.run(`(lab.input.selection.set(['link-000001']), 1)`);   // a: A to the junction -- the bend and the endpoint on no selected link
+	const other = await rings();
+	assert.deepEqual([other.junction, other.bend, other.pad], [accent, rest.bend, rest.pad], 'another link selected: its junction lit, the rings of waypoints on no selected link as they were');
+	await t.run(`(lab.input.selection.set(['${LINK}']), lab.input.states.setState('${END}', 'armed', true), 1)`);
+	const armed = await rings();
+	const danger = JSON.parse(await t.run(`JSON.stringify(getComputedStyle(document.getElementById('${END}').querySelector('.wp-dot')).fill)`));
+	assert.equal(armed.pad, `${danger} 1`, 'an armed endpoint on the selected link still shows red -- arming wins over a selection');
+	assert.notEqual(danger, accent.split(' 1')[0], 'precondition: the armed red is not the accent');
+	await t.run(`(lab.input.states.setState('${END}', 'armed', false), lab.input.selection.set([]), 1)`);
+});
+
 test('H26.6 move 10: the keys step the levels, zoom-levels.mjs\'s scale and label figures and 3.7\'s dots at 3x reproduced from the lab page at 1366 and 1920 wide -- and move 11\'s labels rule', { skip: SKIP }, async () => {
 	const t = await theTab();
 	const FIGURES = {
