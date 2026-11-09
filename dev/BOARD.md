@@ -1669,7 +1669,8 @@ Not legal until the director opens them, each held: paths and flows (B327), the 
 AMENDED 2026-11-09: H30.2 in the lab (`draw-lab-00228-nrr`, `934df3c`) on its builder's gate, 2,890 of 2,890; passed by its targeted check and a targeted check of the reload fix, a reload in Chrome under a live chain landing on the fork with every hop and no second fork; live in production at the director's "continue" (`draw-00250-mgd`, `934df3c`), its boot clean on 36 diagrams and the published SVG and favicons byte-identical before and after.
 
 **Exit:** no edit drawn on a template in its first moments, a chain's among them, is lost; or B396 shown unreachable by a measurement and held again.\
-AMENDED 2026-11-09: holds -- the loss reproduced (an undo behind the forking write, and everything after it) and fixed, live in production; three older edges of a template's first moments held as B458 (H30 closed).
+AMENDED 2026-11-09: holds -- the loss reproduced (an undo behind the forking write, and everything after it) and fixed, live in production; three older edges of a template's first moments held as B458 (H30 closed).\
+AMENDED 2026-11-09: the home button made 26 pixels on its own layout at scale 1, held to a glyph socket's size with the header's controls, the whole button active and its words "Move to 0,0 (h)", at the director's questions (`dev/DECISIONS.md` H30-1), on the light path; live in production (`draw-00251-kvv`, `43cf033`).
 
 ---
 
