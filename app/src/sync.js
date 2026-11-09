@@ -268,6 +268,9 @@ export class Sync {
 	// B396 (H30.2): ask for the fork the session was moved to -- the snapshot a template's first write owes (`forked`)
 	reopenFork() {
 		this.forkReopenOwed = false;
+		// a snapshot asked for: a resync asked while it is on the wire waits for it (H19.15), or a second open of the fork followed it --
+		// the targeted check of c627407
+		this.resyncAsked = true;
 		this.requestSentAt = Date.now();   // B177 -- this reply is a snapshot and carries a clock
 		this.net.send('open', { id: this.diagramId });
 	}
@@ -525,6 +528,13 @@ export class Sync {
 			this.say('forked a copy -- templates are read-only');
 			this.diagramId = msg.body.diagram;
 			this.forkedTo = msg.body.diagram;   // H26.6's move 10: its snapshot is the template's document under a new id
+			/*
+			B396 (the targeted check of c627407): the address bar and the last opened diagram name the fork now, not when its snapshot loads
+			-- a live chain holds that snapshot until it ends (H28.4), and a reload meanwhile opened the template, left the outbox saved
+			under the fork unrestored, and forked the template again at the next edit
+			*/
+			try { localStorage.setItem(LAST_DIAGRAM_KEY, this.diagramId); } catch { /* private mode */ }
+			this.setUrl(this.diagramId);
 			for (const m of this.outbox) m.diagram = this.diagramId;
 			this.persistOutbox();
 			this.expectLoad = true;

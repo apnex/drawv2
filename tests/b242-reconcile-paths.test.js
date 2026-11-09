@@ -118,14 +118,16 @@ async function world(seed, { tab: given = null, disk: kept = true, template = fa
 	const w = {
 		id, up, down, sent,
 		// a page: its Model, Changes and Sync, wired as app/src/main.js wires them, hydrated by `hello`
-		mount(parts = null) {
+		// `pageHello`: the page's own hello (app/src/sync.js onStatus) -- the diagram in its address bar, or the last one it opened --
+		// where the world says hello for the seeded diagram itself
+		mount(parts = null, { pageHello = false } = {}) {
 			w.tab = parts?.model || new Model({ kinds: PAGE_KINDS, attached: { network: aNetwork() }});   // the kinds the product page composes (S-b, G1)
 			// a window that never closes by itself: a test closes it, standing in for the 600 ms timer
 			w.changes = parts?.changes || new Changes(w.tab, { coalesceMs: 3_600_000 });
 			w.sync = new Sync({ model: w.tab, net, history: w.changes, selection: parts?.selection || { subscribe() {}, list: () => [] }, onState() {} });
 			w.changes.onCommit((request) => w.sync.submit(request));   // app/src/main.js:752
 			connect();
-			server.take('hello', { diagram: id });
+			if (pageHello) { status('open'); w.serve(); } else server.take('hello', { diagram: id });
 			w.deliverAll();
 			assert.equal(w.sync.hydrated, true, 'the page loaded the seeded diagram');
 		},
@@ -157,6 +159,12 @@ async function world(seed, { tab: given = null, disk: kept = true, template = fa
 			up.length = 0; down.length = 0;
 			server.close();
 			w.mount();
+		},
+		// H30.2 (B396): the page reloads as a browser reloads it -- a new tab saying hello for the diagram its address bar or its storage names
+		reloadPage() {
+			up.length = 0; down.length = 0;
+			server.close();
+			w.mount(null, { pageHello: true });
 		},
 		// the server process dies before its flush and boots again on the same directory
 		async restart() {
@@ -818,6 +826,74 @@ test('H30.2 (B396): a socket dropped once the forking write is answered and the 
 		assert.deepEqual(answers.filter((m) => m.cmd === 'error').map((m) => m.body.code), [], 'nothing refused');
 		assert.deepEqual([w.sync.diagramId, w.tab.state.meta.id], [fork, fork], 'the tab on the fork, holding its document');
 		assert.deepEqual(linkPairs(w.server(fork)), [[A, B], [B, C]], 'both hops on the fork');
+		assert.deepEqual(w.diff(), [], CONVERGED);
+	});
+});
+
+/*
+H30.2 (B396; the targeted check of c627407) -- A RELOAD IN A FORK'S FIRST MOMENTS LANDS ON THE FORK. The address bar and the last opened
+diagram followed the fork only when its snapshot loaded, which a live chain holds until it ends (H28.4): a reload meanwhile opened the
+template, the outbox saved under the fork was not restored, and the next edit forked the template again. They name the fork as soon as
+`forked` is heard. The address bar stands in for the browser's (`location`, `history`), as the page reads and writes it.
+*/
+test('H30.2 (B396): a reload while the fork\'s snapshot is held behind a live chain lands on the fork -- the hop in flight restored there, and the next edit forks nothing', async () => {
+	const address = { search: '', pathname: '/template-0b4501' };
+	globalThis.location = address;
+	globalThis.history = { replaceState: (state, title, url) => { address.pathname = url; } };
+	try {
+		await throughInput(CHAIN, { template: true }, async (h, w) => {
+			chainTo(h, A, [0, 0], B, [240, 0]);          // the first hop: it forks the template, the chain live from b
+			w.serve(); w.deliverAll();                    // `forked` and its answer: the fork asked for
+			w.serve(); w.deliverAll();                    // the fork's snapshot, held behind the chain
+			const fork = w.sync.diagramId;
+			assert.deepEqual([h.input.isGesturing(), w.sync.deferred.map((m) => m.cmd), w.tab.state.meta.id], [true, ['snapshot'], w.id],
+				'precondition: the chain live, the fork\'s snapshot held, the tab still the template\'s');
+			hopOn(h, C, [240, 240]);                      // the next hop, sent and not answered when the page reloads
+			assert.deepEqual([address.pathname, globalThis.localStorage.getItem('draw.diagram')], [`/${fork}`, fork], 'the address bar and the last opened name the fork');
+			w.reloadPage();                               // the hop on the wire lost with the page; kept in the outbox saved under the fork
+			w.pump();
+			assert.deepEqual([w.sync.diagramId, w.tab.state.meta.id], [fork, fork], 'the reload lands on the fork');
+			assert.deepEqual(linkPairs(w.server(fork)), [[A, B], [B, C]], 'both hops on the fork, the second restored from the outbox and sent');
+			w.changes.commit(createEntity('node', N2));
+			w.pump();
+			assert.deepEqual([w.sync.diagramId, w.server(fork).get('node', N2.id)?.name, w.server(w.id).get('node', N2.id) ?? null], [fork, 'n2', null], 'the next edit lands on the fork, forking nothing');
+			assert.deepEqual(w.diff(), [], CONVERGED);
+		});
+	} finally {
+		delete globalThis.location;
+		delete globalThis.history;
+	}
+});
+
+/*
+H30.2 (B396; the targeted check of c627407) -- ONE REOPEN OF THE FORK. The fork's reopen is a snapshot the tab asked for, so a resync
+asked while it is on the wire waits for it (H19.15, one at a time): an answer that does not confirm what the tab applied, heard before the
+fork's snapshot (B304), sent a second `open` of the fork. A resync asked before `forked` was heard named the template, so it never stands
+for the fork's reopen, which is still owed then.
+*/
+test('H30.2 (B396): a resync asked while the fork\'s reopen is on the wire waits for it -- one open of the fork, and the tab converges', async () => {
+	await throughInput(CHAIN, { template: true }, async (h, w) => {
+		h.history.commit(createEntity('node', N1));
+		ctrlZ(h);
+		h.history.commit(createEntity('node', N2));   // planned with n1 there; the server plans it with n1 undone, so its answer differs (B304)
+		w.pump();
+		const fork = w.sync.diagramId;
+		assert.deepEqual(w.sent.filter((m) => m.cmd === 'open').map((m) => m.body.id), [fork], 'one open, of the fork');
+		assert.deepEqual([w.server(fork).get('node', N1.id) ?? null, w.server(fork).get('node', N2.id)?.name], [null, 'n2'], 'n1 undone, n2 on the fork');
+		assert.deepEqual(w.diff(), [], CONVERGED);
+	});
+});
+
+test('H30.2 (B396): a resync asked of the template before `forked` is heard does not stand for the fork\'s reopen -- the tab ends on the fork', async () => {
+	await throughInput(CHAIN, { template: true }, async (h, w) => {
+		h.history.commit(createEntity('node', { ...N1, x: 240, y: 0 }));   // refused by the planner, the template forked all the same
+		h.history.commit(createEntity('node', N2));                        // sent naming the template, taken on the fork
+		ctrlZ(h);                                                          // waits, so the fork's reopen is still owed when the refusal asks again
+		w.sync.requestResync();                                            // asked before `forked` is heard, as an access message asks: of the template
+		w.pump();
+		const fork = w.sync.diagramId;
+		assert.notEqual(fork, w.id, 'the tab follows the fork');
+		assert.deepEqual([w.tab.state.meta.id, w.server(fork).get('node', N2.id)?.name], [fork, 'n2'], 'and ends holding it, n2 there');
 		assert.deepEqual(w.diff(), [], CONVERGED);
 	});
 });
