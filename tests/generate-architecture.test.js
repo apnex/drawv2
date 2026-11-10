@@ -141,7 +141,7 @@ const alignmentWith = (edit) => {
 
 test('H21.9 A-0: the target renders each part\'s alignment from tools/layers.mjs -- the control', () => {
 	const doc = fs.readFileSync(path.join(ROOT, 'docs/ARCHITECTURE-TARGET.md'), 'utf8');
-	assert.match(doc, /\| `document` \| `entity-store` \| entity-store: registered in mission-kit, C4 [^|]*\| OD-1 \|/);   // the standing read again at H31
+	assert.match(doc, /\| `document` \| `entity-store` \| entity-store: registered in mission-kit, C4[^|]*\| OD-1 \|/);   // the standing read again at H31
 	assert.equal(run('--check').status, 0);
 });
 
