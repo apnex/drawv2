@@ -38,6 +38,7 @@ const KEPT = {
 	'docs/spec/TRANSACTIONS.md': 'locked rulings, changed only by a dated amendment in the file; the Slides binding marked retired by one',
 	'tools/copies-ceiling.json': 'the frozen ceiling of H25.0, its hash pinned by tests/scan-copies.test.js',
 	'tools/scan-docrefs.mjs': 'allows the purged paths the records above cite',
+	'package.json': 'H31-6: `gate:records` names this test, tests/retired-slides.test.js, among the tests that read records',
 	'tests/retired-slides.test.js': 'this guard',
 };
 
