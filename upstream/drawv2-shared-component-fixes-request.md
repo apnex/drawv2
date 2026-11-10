@@ -1,6 +1,6 @@
 # drawv2 to zorg: shared fixes that let every project take the mission-kit components zorg maintains
 
-**Status: draft, for the director's ruling (draw's `dev/DECISIONS.md` H31-1: one ruling per move); not yet sent.**
+**Status: sent to zorg by the director's decision, 2026-11-10 (draw's `dev/DECISIONS.md` H31-2).**
 **From:** drawv2, under H31 (`dev/DECISIONS.md` H31 and H31-1), after a read-only assessment of C3 to C10 and C15 against draw.\
 **Read against:** shape-check `a4f4e28`, entity-store `d7f1797`, operation-call `8dd7be0`, entity-api `4feb3e8`, caller-identity `5bc1022`, operation-proxy `9527ca7`, operation-command `bb75e3b`, credential-issuer `9247b25` (each `origin/main` on 2026-11-10); mission-kit `c82c9f6`; drawv2 `2df1fb4`.
 
