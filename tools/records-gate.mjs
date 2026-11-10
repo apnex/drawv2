@@ -22,6 +22,7 @@ import { isRecordPath } from './push-scope.mjs';
 export const RECORDS_GATE_EXCUSED = {
 	'tests/code-split.test.js': 'writes its own fixture tree, `dev/record.md` among it, in a scratch folder',
 	'tests/deploy-browser.test.js': 'names `dev` and `docs` to leave them out of the tree it copies',
+	'tests/scan-layers-mutants.test.js': 'runs each copy\'s own tools/scan-layers.mjs over copies of the code folders, package.json and the pages -- no `dev/`, so its cites check, which reads the records, never runs; the K0 runs that copy the records in stay in tests/scan-layers.test.js',
 	'tests/server.test.js': '`CONTRACT.md` is a request path asked of the vendor mount, refused, never a file read',
 	'tests/static.test.js': 'writes its own `node_modules/@apnex/kit/README.md` in a scratch folder, to be refused by the vendor mount',
 };
