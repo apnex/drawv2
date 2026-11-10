@@ -68,7 +68,7 @@ What it needs of entity-store: a storage connection that can wait on a slow save
 | # | Move | Depends on | Ruling | Status |
 |---|---|---|---|---|
 | 1 | **Shared fixes** across C3 to C10: a release in the pinned-file form with CI on Node 22 and 24, links between components as releases, AGP for development only, contracts minted | -- | H31-2 (request), H31-5 (done) | **Done** 2026-11-10: all eight released `0.1.0`, published, immutable, verified |
-| 2 | **Planning a change, the boundaries:** entity-graph, entity-store and shape-check (section 5) | -- | H31-3 (sent); the reply's ruling owed | zorg agreed all twelve proposals; next, draw drafts the contract changes as pull requests for zorg's review |
+| 2 | **Planning a change, the boundaries:** entity-graph, entity-store and shape-check (section 5) | -- | H31-3 (sent), H31-8 (ruled) | **Boundaries agreed and ruled** 2026-11-11; draw drafting the contract changes as pull requests for zorg's review |
 | 3 | **Draw's word check** takes a shared component's ordinary words by allowances held in draw | -- | H31-4 | **Done** 2026-11-10 (`98b6ccf`) |
 | 4 | Draw takes shape-check for its field checks; the command-line tool learns the kinds from the server | 1, 2 | design of record, ruling | not started |
 | 5 | Draw's command-line tool on operation-command and operation-call; REST writes take a request identity | 1 | design of record, ruling | not started |
@@ -84,7 +84,7 @@ Each move is useful on its own; the order puts the dependency first (shape-check
 
 ## 5. Planning a change: the boundaries agreed with zorg
 
-Proposed in `upstream/drawv2-planning-boundaries-proposal.md`, with the analysis in `upstream/drawv2-planning-position.md`; zorg agreed all twelve, with the limits below (its reply, awaiting the director's ruling).
+Proposed in `upstream/drawv2-planning-boundaries-proposal.md`, with the analysis in `upstream/drawv2-planning-position.md`; zorg agreed all twelve, with the limits below (`upstream/drawv2-planning-boundaries-reply.md`), and the director ruled them (H31-8).
 
 **entity-graph (C15):**
 1. Two kinds of side effect: reference rules (delete what depends on a deleted thing, unlink, steal, keep a minimum) repeat until nothing changes; an application's own side effects run once each in phases it declares, two writing the same thing failing loudly (draw's PD-3).
@@ -146,9 +146,8 @@ Draw keeps what is its product, ideally as declarations:
 
 ## 8. Open items
 
-- The director's ruling on zorg's planning reply, waiting in draw's upstream incoming folder, after which draw drafts the contract changes as pull requests.
-- The completion report to zorg (`upstream/drawv2-shared-component-fixes-done.md`, a draft for ruling), carrying three findings from the release work: an optional link to AGP declared so an installer can never satisfy it (caller-identity, credential-issuer); operation-command's address test on Node 24.22; one flake in caller-identity.
-- The cloud-bucket component, to raise with zorg with entity-store's waiting storage connection.
+- The contract drafts for planning a change, as pull requests for zorg's review (H31-8).
+- zorg's answer to the release report (`upstream/drawv2-shared-component-fixes-done.md`, sent under H31-8): three findings from the release work -- an optional link to AGP declared so an installer can never satisfy it (caller-identity, credential-issuer); operation-command's address test on Node 24.22; one flake in caller-identity -- and its view of the cloud-bucket component, raised early.
 - The note's size limit, measured from draw's planner cases.
 - How many planner cases change under entity-graph's semantics, measured before move 7's ruling.
 

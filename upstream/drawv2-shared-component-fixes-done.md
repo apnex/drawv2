@@ -1,6 +1,6 @@
 # drawv2 to zorg: the five shared fixes are done, eight components released 0.1.0, and three things for you
 
-**Status: draft, for the director's ruling (draw's `dev/DECISIONS.md` H31-1: one ruling per move); not yet sent.**
+**Status: sent to zorg by the director's decision, 2026-11-11 (draw's `dev/DECISIONS.md` H31-8).**
 **From:** drawv2, completing what `drawv2-shared-component-fixes-reply.md` agreed (draw's H31-5).\
 **Read against:** shape-check `f323ffd`, entity-store `f28c57a`, caller-identity `a414af0`, operation-call `0a2f5e1`, entity-api `87fcdd1`, operation-proxy `a077102`, operation-command `7e02749`, credential-issuer `4aadc0a` (each `origin/main`); agp `b179b4f`.
 
@@ -45,4 +45,16 @@ All eight are released as `0.1.0` by their own CI, published and immutable, each
 3. **caller-identity's `request-evidence.test.js` failed twice once, locally on Node 22, and passed in five later runs and on CI.**
    No source was changed; it may be worth a look if it recurs.
 
-Draw will draft the contract changes your planning reply asked for as pull requests in entity-graph, shape-check and entity-store, for you to review, once draw's director rules on that reply.
+---
+
+## One thing ahead, for your early view
+
+When draw's storage moves onto entity-store (draw's plan, move 8), draw will not put its cloud-bucket code inside entity-store.\
+The vision of entity-store says it is not a network service, and cloud code inside it would ride along to every project that uses it.\
+Draw proposes instead a component of its own for keeping files in a cloud bucket -- writes that refuse to overwrite a newer version, retries, paging, recovering a deleted file -- seeded from draw's `server/files.mjs`, which does this today.\
+What it needs of entity-store is a storage connection that can wait on a slow save, beside today's synchronous one, which the bucket component then serves.\
+Draw raises it now because entity-store's contract is about to be drafted; nothing is asked of you yet beyond your view.
+
+---
+
+Draw's director has ruled on your planning reply (draw's H31-8): draw now drafts the contract changes it asked for as pull requests in entity-graph, shape-check, entity-store and mission-kit's C15 entry, for you to review.
