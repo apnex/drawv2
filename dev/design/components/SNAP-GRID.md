@@ -408,6 +408,8 @@ The words are test data in `tools/`, never in `src/` and never in a release, one
 - the gesture tester: `keyboard`, `keycap`.
 
 Ordinary words a component needs -- `group`, `route`, `draw`, `mouse`, `key`, `bend` -- are on no list; a listed word a component genuinely needs is allowed by name in its decision record, never by loosening the match.\
+*(Amended 2026-11-10, `H31-4`)* -- in draw's gate the allowance is held in draw, not in the component's record, which nothing read: `tools/scan-components.mjs` `VOCABULARY_ALLOWANCES`, per component and per word, the lines found when it was made and the component's own term cited.\
+A count may only fall, a rise failing and a fall said until the allowance is lowered; draw's four extracted components take none, their own gates carrying draw's list; an allowance for a component draw does not take fails; and the match is never loosened.\
 A word check cannot prove that a component holds none of a consumer's policy; that stays the independent verifier's question at every build.\
 Draw's gate also runs the same check, with draw's list, over every installed component's `dist/`, so a release that leaks draw's words cannot reach draw's pages.
 

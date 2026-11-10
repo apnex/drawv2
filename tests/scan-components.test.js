@@ -110,3 +110,84 @@ test('F1: every other text field of a map is read; its mappings are not text, an
 	assert.equal(broken.status, 1);
 	assert.match(broken.stdout, /index\.js\.map is not JSON -- a source map's inlined sources cannot be read/);
 });
+
+/*
+H31-4 (dev/DECISIONS.md; amends SNAP-GRID.md section 7.2 and G3) -- A SHARED COMPONENT'S ORDINARY USE OF A LISTED WORD PASSES BY AN
+ALLOWANCE HELD IN DRAW (tools/scan-components.mjs `VOCABULARY_ALLOWANCES`): per component and word, the lines found when it was made and
+the component's own term. A count at or below it passes, a fall said until the allowance is lowered; a rise fails, naming the lines; a
+word with none fails as before. Draw's four extracted components take none, and an allowance for a package draw does not take fails. The
+match is not touched. Each case on a copy of the install holding a shared component draw takes (`@apnex/peer-fixture`), its table handed
+in for the copy (`--allowances`) as draw's own is read for the real tree.
+*/
+const PEER = '@apnex/peer-fixture';
+function withPeer(lines) {
+	const dir = install();
+	const pkg = JSON.parse(fs.readFileSync(path.join(dir, 'package.json'), 'utf8'));
+	pkg.dependencies[PEER] = '0.0.0';
+	fs.writeFileSync(path.join(dir, 'package.json'), JSON.stringify(pkg));
+	const at = path.join(dir, 'node_modules', ...PEER.split('/'));
+	fs.mkdirSync(path.join(at, 'dist'), { recursive: true });
+	fs.writeFileSync(path.join(at, 'package.json'), JSON.stringify({ name: PEER, version: '0.0.0' }));
+	fs.writeFileSync(path.join(at, 'dist/index.js'), `${lines.join('\n')}\n`);
+	return dir;
+}
+const runWith = (root, table) => {
+	const file = path.join(root, 'allowances.json');
+	fs.writeFileSync(file, JSON.stringify(table));
+	return spawnSync(process.execPath, [TOOL, '--root', root, '--allowances', file], { encoding: 'utf8' });
+};
+const NODE_LINES = ['// a peer of the network is its node', 'export const nodeOf = (peer) => peer;', 'export const nodes = [];'];
+const ALLOW_NODE = (lines) => ({ [PEER]: { node: { lines, term: 'the fixture\'s peer on its network, as AGP names one' } } });
+
+test('H31-4: a shared component\'s word within its allowance passes -- 2 lines allowed, 2 found', () => {
+	const r = runWith(withPeer(NODE_LINES.slice(0, 2)), ALLOW_NODE(2));
+	assert.equal(r.status, 0, r.stdout);
+	assert.match(r.stdout, /scan-components: PASS -- 5 component\(s\), \d+ file\(s\) of dist\/, no word of draw's vocabulary beyond 1 allowance\(s\), 2 line\(s\) allowed/);
+});
+
+test('H31-4: a rise past the allowance fails, naming the lines -- 2 allowed, 3 found', () => {
+	const r = runWith(withPeer(NODE_LINES), ALLOW_NODE(2));
+	assert.equal(r.status, 1, r.stdout);
+	assert.match(r.stdout, /@apnex\/peer-fixture\/dist\/index\.js:3 {2}"nodes" \(draw: node\)/, 'the third line named');
+	assert.match(r.stdout, /\u2717 @apnex\/peer-fixture "node": 3 line\(s\), allowed 2 -- RISE/);
+});
+
+test('H31-4: a fall below the allowance passes and says to lower it -- 2 allowed, 1 found', () => {
+	const r = runWith(withPeer(NODE_LINES.slice(1, 2)), ALLOW_NODE(2));
+	assert.equal(r.status, 0, r.stdout);
+	assert.match(r.stdout, /@apnex\/peer-fixture "node": 1 line\(s\), allowed 2 -- FALL: lower the allowance in this commit, so the progress is written down/);
+});
+
+test('H31-4: a word with no allowance still fails, beside one allowed', () => {
+	const r = runWith(withPeer([...NODE_LINES.slice(0, 2), 'export const zoneOf = 1;']), ALLOW_NODE(2));
+	assert.equal(r.status, 1, r.stdout);
+	assert.ok(foundIn(r.stdout).some((f) => f.endsWith(' zone')), r.stdout);
+	assert.ok(!foundIn(r.stdout).some((f) => f.endsWith(' node')), 'the allowed word not reported as a finding');
+});
+
+test('H31-4: an allowance for a component draw extracted from itself fails -- its own gate carries draw\'s list', () => {
+	for (const name of ['@apnex/snap-grid', '@apnex/input-binding', '@apnex/input-capture', '@apnex/vector-scene']) {
+		const r = runWith(install(), { [name]: { node: { lines: 1, term: 'none' } } });
+		assert.equal(r.status, 1, `${name}: ${r.stdout}`);
+		assert.match(r.stdout, new RegExp(`\u2717 an allowance for ${name.replace('/', '\\/')}, a component draw extracted from itself`));
+	}
+});
+
+test('H31-4: an allowance for a package draw does not take fails, and a malformed one', () => {
+	const dead = runWith(install(), { '@apnex/not-taken': { node: { lines: 1, term: 'a peer' } } });
+	assert.equal(dead.status, 1, dead.stdout);
+	assert.match(dead.stdout, /\u2717 an allowance for @apnex\/not-taken, which draw does not depend on/);
+	for (const [entry, why] of [[{ lines: 0, term: 'a peer' }, /lines is not a positive whole number/], [{ lines: 2, term: '' }, /names no term of the component's own/], [{ lines: 2, term: 'a peer', extra: 1 }, /holds a field other than lines and term/]]) {
+		const r = runWith(withPeer(NODE_LINES.slice(0, 2)), { [PEER]: { node: entry } });
+		assert.equal(r.status, 1, r.stdout);
+		assert.match(r.stdout, why);
+	}
+	const unlisted = runWith(withPeer(NODE_LINES.slice(0, 2)), { [PEER]: { node: { lines: 2, term: 'a peer' }, peer: { lines: 1, term: 'a peer' } } });
+	assert.match(unlisted.stdout, /"peer", which is no word of draw's/);
+});
+
+test('H31-4: the real tree passes with draw\'s table empty -- its four components clean, no allowance held', () => {
+	const r = run(null);
+	assert.equal(r.status, 0, r.stdout);
+	assert.match(r.stdout, /no word of draw's vocabulary beyond 0 allowance\(s\), 0 line\(s\) allowed/);
+});
