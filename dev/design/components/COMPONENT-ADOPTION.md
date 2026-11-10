@@ -3,7 +3,7 @@
 The plan by which draw moves its general machinery onto the components mission-kit registers, and helps adjust those components so every project gains (`dev/DECISIONS.md` H31, its correction, and H31-1).\
 It names each component draw would adopt, what each would take over in draw, the moves in order with the ruling each needs, what is done, and what draw keeps as its own.
 
-**Standing:** draft, for the director's approval as H31's plan of record, 2026-11-11.\
+**Standing:** approved by the director as H31's plan of record, 2026-11-11 (`dev/DECISIONS.md` H31-7); its status columns are kept current as each move lands.\
 Its first drafts were analyses outside the repository (`~/taceng/drawv2-eval-runs/h31-reuse/`: `DRAW-SIDE.md`, `COMPONENT-SIDE.md`, `COMPARISON.md` under a correction banner, `REASSESSMENT.md`); this document carries everything a reader needs from them.
 
 ---
