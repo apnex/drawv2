@@ -375,8 +375,12 @@ const docs = [];
 		Skipped by NAME rather than by reading .gitignore, because a scanner that silently follows an
 		ignore file would change scope whenever that file changed, and the scope of a proof should be
 		stated where the proof is.
+
+		H31-1: `upstream/` is skipped too. It is correspondence with other projects, each letter read against the pinned trees it
+		names in its own "Read against" line -- a path in it is the other project's, or draw's at that pin -- and a received copy is
+		never edited, so a path that later moves cannot be repointed in it.
 		*/
-		if (e.isDirectory()) { if (e.name !== 'node_modules' && e.name !== 'deploy' && !e.name.startsWith('.')) walk(p); }
+		if (e.isDirectory()) { if (e.name !== 'node_modules' && e.name !== 'deploy' && e.name !== 'upstream' && !e.name.startsWith('.')) walk(p); }
 		else if (e.name.endsWith('.md')) docs.push(p);
 	}
 })('.');
