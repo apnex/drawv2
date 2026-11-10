@@ -8,6 +8,15 @@
 # hand. Not a re-listing of the steps: a workflow that enumerates the scanners itself would drift
 # from package.json silently, and tests/gate.test.js already asserts that script contains every
 # component GR1 names.
+#
+# AMENDED H31-6 (dev/DECISIONS.md): the same DECISION the hook makes, then the same command. The
+# `scope` job asks tools/push-scope.mjs -- the decider the pre-push hook asks too (tools/pre-push.mjs)
+# -- about the push's `before`..`after`, or a pull request's base..head: `records` when every changed
+# path is a record or document, and the gate job runs `npm run gate:records`, the records checkers and
+# the tests that read documents; `full` for anything else or any doubt (no `before`, a rewrite, a
+# merge), and it runs `npm run gate`. The image job is skipped for a records-only push. No check is
+# required on `main` (no branch protection, no ruleset, 2026-11-11); were one required, a job skipped
+# by its `if` reports success to it, so nothing would be left pending.
 name: gate
 
 on:
@@ -17,7 +26,23 @@ on:
   workflow_dispatch:
 
 jobs:
+  # H31-6: what this push needs checked, decided once for both jobs below
+  scope:
+    runs-on: ubuntu-latest
+    outputs:
+      scope: ${{ steps.decide.outputs.scope }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0              # both ends of the range, and the history between them
+      - id: decide
+        env:
+          BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          HEAD: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        run: node tools/push-scope.mjs "$BASE" "$HEAD" --output "$GITHUB_OUTPUT"
+
   gate:
+    needs: scope
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -37,7 +62,12 @@ jobs:
         with:
           repository: apnex/mission-kit
           path: .mission-kit
+      - run: npm run gate:records
+        if: needs.scope.outputs.scope == 'records'
+        env:
+          MISSION_KIT: ${{ github.workspace }}/.mission-kit
       - run: npm run gate
+        if: needs.scope.outputs.scope != 'records'
         env:
           MISSION_KIT: ${{ github.workspace }}/.mission-kit
 
@@ -57,7 +87,13 @@ jobs:
   # A SEPARATE JOB, and CI-only by nature - see X17. A local pre-push hook cannot build an image on
   # every push, so `npm run gate` is no longer the whole proof. That asymmetry is deliberate and
   # recorded rather than left to be discovered.
+  #
+  # H31-6: skipped for a records-only push, which changes nothing the image runs -- the Dockerfile copies
+  # none of dev/, docs/ or upstream/, and a markdown file it copies under a code folder is a file served
+  # and run by nothing.
   image:
+    needs: scope
+    if: needs.scope.outputs.scope != 'records'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

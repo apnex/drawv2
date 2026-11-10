@@ -47,6 +47,12 @@ const ALLOW = {
 	// H26.10: read as live only by a name the scan matched -- tools/probe/measure.mjs called its list of Chrome binaries `CHROME` -- until the
 	// probe took the shared findChrome, headless-chromium's since H26-19's second amendment; judged then, and kept
 	'kernel/theme.mjs:CHROME': 'the chrome roles resolved to values, beside TOKENS, for code that draws with them; no product module reads it today, and the tests that hold a painted colour against its role read it (tests/gate.test.js among them), so the role and the value cannot drift apart unseen.',
+	// H31-6 (dev/DECISIONS.md): the records gate's completeness check, whose one reader is the test that holds it -- tests/push-scope.test.js
+	// fails on a test reading a record that gate:records neither runs nor excuses, and runs in both gates
+	'tools/records-gate.mjs:RECORDS_GATE_EXCUSED': 'H31-6: the tests excused from the records gate by name, read by tests/push-scope.test.js, whose completeness check is the module`s purpose',
+	'tools/records-gate.mjs:recordsReaders': 'H31-6: every test reading a record or document, mechanically -- read by tests/push-scope.test.js, which holds the records gate complete',
+	'tools/records-gate.mjs:recordsGateTests': 'H31-6: the tests `npm run gate:records` runs, read from its script by tests/push-scope.test.js',
+	'tools/records-gate.mjs:missingFromRecordsGate': 'H31-6: a reader neither listed nor excused -- tests/push-scope.test.js asserts none, and catches a planted one',
 	'tools/scan-skips.mjs:skipsIn': 'the TAP parser behind B250`s skip check. Its production caller is the CLI half of the same file, so the export earns its keep from tests/scan-skips.test.js, which drives it on written TAP -- nested subtests, todo, reasons -- without needing a machine that lacks Chrome.',
 	// K12 (2026-10-01): exports the deleted barrels had hidden, each kept for its own reason; the rest were deleted or un-exported.
 	'plugins/simulation/kinds.mjs:MOVERS': 'the mover kinds table; `moverFor` reads it in this module. Exported so tests/rules.test.js asserts every kind against the table itself rather than a copy that would drift.',

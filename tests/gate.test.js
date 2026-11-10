@@ -16,6 +16,9 @@ What this file can and cannot prove:
         missing and a shell `-f` chain reports only a non-zero exit.
   CAN   the hook, IF installed, actually invokes the gate — a stale or neutered hook is worse than
         no hook, because it looks like enforcement.
+        AMENDED H31-6 (dev/DECISIONS.md): the hook calls tools/pre-push.mjs, which asks the decider CI
+        asks too (tools/push-scope.mjs) and runs `npm run gate:records` for a push of records and
+        documents alone, `npm run gate` for anything else or any doubt (tests/push-scope.test.js).
   CAN   that this clone is gated AT ALL. It could not until H7: `.git/hooks/` is never tracked, so
         a fresh clone had no hook, and with no remote there was no CI either — GR1's claim held
         only where someone had run `npm run gate:install` by hand. X14 accepted that and time-boxed
@@ -121,7 +124,9 @@ test('GR1: gate:install RESOLVES the hook path instead of hardcoding .git/hooks'
 	// And it must never install into a hooks dir shared with the machine's other repositories: a
 	// hook running `npm run gate` fails every push from any repo without that script.
 	assert.ok(body.includes('core.hooksPath'), 'the installer does not confine itself to this repository');
-	assert.ok(body.includes('npm run gate'), 'the installer writes a hook that does not run the gate');
+	// RESTATED at H31-6: the hook it writes calls the versioned pre-push script, which runs the gate the push needs
+	assert.match(body, /printf '#!\/bin\/sh\\nexec node "\$\(git rev-parse --show-toplevel\)\/tools\/pre-push\.mjs" "\$@"\\n'/, 'the installer writes a hook that does not call tools/pre-push.mjs');
+	assert.match(fs.readFileSync(path.join(root, 'tools/pre-push.mjs'), 'utf8'), /spawnSync\('npm', \['run', script\]/, 'and that script runs a gate');
 	assert.ok(body.includes('chmod +x'), 'the installer writes a hook it never makes executable');
 });
 
@@ -140,7 +145,8 @@ test('GR1: an installed hook actually invokes the gate — a neutered hook is wo
 	assert.ok(fs.existsSync(p),
 		`no pre-push hook at ${p} — this clone is UNGATED. \`npm install\` installs it; \`npm run gate:install\` repairs it.`);
 	const body = fs.readFileSync(p, 'utf8');
-	assert.ok(body.includes('npm run gate'), 'a pre-push hook is installed but does not run the gate — it looks like enforcement and is not');
+	// RESTATED at H31-6: it calls tools/pre-push.mjs, which runs `npm run gate:records` or `npm run gate`, by the push
+	assert.ok(body.includes('tools/pre-push.mjs'), 'a pre-push hook is installed but does not run the gate -- it looks like enforcement and is not; `npm run gate:install` repairs it');
 	assert.ok((fs.statSync(p).mode & 0o111) !== 0, 'the pre-push hook is not executable, so git silently skips it');
 });
 

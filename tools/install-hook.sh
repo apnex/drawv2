@@ -45,6 +45,9 @@ case "$abs" in
 esac
 
 mkdir -p "$(dirname "$abs")"
-printf '#!/bin/sh\nnpm run gate\n' > "$abs"
+# H31-6 (dev/DECISIONS.md): the hook is a thin call into tools/pre-push.mjs, which hands git's ranges to the decider
+# (tools/push-scope.mjs) and runs `npm run gate:records` for a records-only push, else `npm run gate` -- what a push is checked by
+# stays versioned and reviewable, never written into a file git does not track
+printf '#!/bin/sh\nexec node "$(git rev-parse --show-toplevel)/tools/pre-push.mjs" "$@"\n' > "$abs"
 chmod +x "$abs"
 echo "pre-push hook installed at $abs"
