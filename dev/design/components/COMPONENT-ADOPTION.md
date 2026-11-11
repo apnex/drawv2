@@ -68,7 +68,7 @@ What it needs of entity-store: a storage connection that can wait on a slow save
 | # | Move | Depends on | Ruling | Status |
 |---|---|---|---|---|
 | 1 | **Shared fixes** across C3 to C10: a release in the pinned-file form with CI on Node 22 and 24, links between components as releases, AGP for development only, contracts minted | -- | H31-2 (request), H31-5 (done) | **Done** 2026-11-10: all eight released `0.1.0`, published, immutable, verified |
-| 2 | **Planning a change, the boundaries:** entity-graph, entity-store and shape-check (section 5) | -- | H31-3 (sent), H31-8 (ruled) | **Boundaries agreed and ruled** 2026-11-11; the contract drafts open as pull requests (entity-graph #3, mission-kit #21, shape-check #1, entity-store #2), awaiting zorg's review |
+| 2 | **Planning a change, the boundaries:** entity-graph, entity-store and shape-check (section 5) | -- | H31-3 (sent), H31-8 (ruled), H31-9 (building) | **Boundaries agreed and ruled** 2026-11-11; the four contracts merged by zorg (its D76); shape-check's dialect 2 and entity-store's additions being built; entity-graph's build plan owed the director |
 | 3 | **Draw's word check** takes a shared component's ordinary words by allowances held in draw | -- | H31-4 | **Done** 2026-11-10 (`98b6ccf`) |
 | 4 | Draw takes shape-check for its field checks; the command-line tool learns the kinds from the server | 1, 2 | design of record, ruling | not started |
 | 5 | Draw's command-line tool on operation-command and operation-call; REST writes take a request identity | 1 | design of record, ruling | not started |
@@ -106,7 +106,7 @@ Proposed in `upstream/drawv2-planning-boundaries-proposal.md`, with the analysis
 
 **zorg's limits:**
 - A many-change save holds 1 to 2,000 changes and at most 8 MiB, one change per thing (draw's planner merges several changes to one thing first).
-- The note is at most 64 KiB, or 512 KiB if undo's reversals for 2,000 changes need it; measured, a realistic 2,000-change edit's undo record is about 244 KiB, so draw proposes 512 KiB, an edit whose record would not fit refused and split.
+- The note is at most 512 KiB, settled by zorg from draw's measurement (a realistic 2,000-change edit's undo record is about 244 KiB); an edit whose record would not fit is refused and split.
 - zorg's stored logs read unchanged: the note is left out when absent.
 - The stopping rule: reference rules to a fixed point, then each phase once in order, the reference rules again after each, a finished phase never re-entered.
 - Undo's replay recorded as entity-graph's decision `D7`; entity-graph stays one component.
@@ -146,9 +146,10 @@ Draw keeps what is its product, ideally as declarations:
 
 ## 8. Open items
 
-- zorg's review of the four contract drafts (`upstream/drawv2-planning-contract-drafts-review-request.md`), then the director's ruling on building.
-- zorg's answer to the release report (`upstream/drawv2-shared-component-fixes-done.md`, sent under H31-8): three findings from the release work -- an optional link to AGP declared so an installer can never satisfy it (caller-identity, credential-issuer); operation-command's address test on Node 24.22; one flake in caller-identity -- and its view of the cloud-bucket component, raised early.
-- The note's size limit: 512 KiB proposed from the measurement, for zorg to agree.
+- shape-check's dialect 2 and entity-store's additions, being built and released (H31-9).
+- caller-identity's and credential-issuer's AGP peer fixed in `0.1.1`, as zorg asked.
+- entity-graph's build plan, for the director's ruling before any code.
+- The cloud bucket as its own component: agreed by zorg, with an asynchronous storage port in entity-store at move 8.
 - How many planner cases change under entity-graph's semantics, measured before move 7's ruling.
 
 ---
