@@ -73,7 +73,7 @@ What it needs of entity-store: a storage connection that can wait on a slow save
 | 4 | Draw takes shape-check for its field checks; the command-line tool learns the kinds from the server | 1, 2 | design of record, ruling | not started |
 | 5 | Draw's command-line tool on operation-command and operation-call; REST writes take a request identity | 1 | design of record, ruling | not started |
 | 6 | Draw's identity checks on caller-identity, which learns ordinary web request evidence | 1 | design of record, ruling | not started |
-| 7 | entity-graph built and passing draw's 1,044 planner cases; draw's planner moves onto it, over draw's own storage | 2, 4 | design of record, ruling | not started |
+| 7 | entity-graph built and passing draw's 1,044 planner cases; draw's planner moves onto it, over draw's own storage | 2, 4 | build plan approved (H31-10); draw's adoption a design of record and ruling | **entity-graph's build begun** 2026-11-11: M1 of eight, about 32 agent-days in all; draw unchanged until its design is ruled |
 | 8 | Storage: entity-store's waiting storage connection, the cloud-bucket component, draw's diagrams moved in, production migrated in a freeze | 7 | design of record, ruling | not started |
 | 9 | Live updates: operation-call's web-page and HTTP delivery, entity-api's local view, draw's hub and sync moved onto entity-api | 5, 8 | design of record, ruling | not started |
 | 10 | Agents' codes on credential-issuer | 6, 9 | design of record, ruling | not started |
@@ -148,7 +148,7 @@ Draw keeps what is its product, ideally as declarations:
 
 - shape-check's dialect 2 and entity-store's additions, being built and released (H31-9).
 - caller-identity's and credential-issuer's AGP peer fixed in `0.1.1`, as zorg asked.
-- entity-graph's build plan, for the director's ruling before any code.
+- entity-graph's build, M1 to M8 (H31-10); entity-store's 2,000-write bound holds after consequences, so an edit past it is refused, where draw today bounds only the request.
 - The cloud bucket as its own component: agreed by zorg, with an asynchronous storage port in entity-store at move 8.
 - How many planner cases change under entity-graph's semantics, measured before move 7's ruling.
 

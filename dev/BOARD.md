@@ -1696,7 +1696,9 @@ Opened 2026-11-10 by the director (`dev/DECISIONS.md` H31); its plan of record i
 | H31.12 | caller-identity's and credential-issuer's optional `@agp/core` peer declared as a version range and released `0.1.1`, as zorg asked (H31-9) | feature | S4 | `WIP` |
 | H31.13 | shape-check's dialect 2 built -- `minimum`, `maximum`, `uniqueItems` -- its corpus cases written by an agent other than its implementer, checked independently, released (H31-9) | feature | S4 | `WIP` |
 | H31.14 | entity-store's many-write `change` (1 to 2,000 writes, 8 MiB, one write per entity), `expectedPosition` and the optional `note` (512 KiB, omitted when absent) built, checked independently, released (H31-9) | feature | S4 | `WIP` |
-| H31.15 | entity-graph's build plan -- modules, the mechanism taken from draw's planner, the neutral corpus written by another agent, CI, how draw's 1,044 cases run against it, milestones and effort -- drafted for the director's ruling before any code (H31-9) | feature | S4 | `WIP` |
+| H31.15 | entity-graph's build plan -- modules, the mechanism taken from draw's planner, the neutral corpus written by another agent, CI, how draw's 1,044 cases run against it, milestones and effort -- drafted for the director's ruling before any code (H31-9); approved 2026-11-11 (H31-10): eight milestones, about 32 agent-days | feature | S4 | `DONE` |
+| H31.16 | entity-graph M1: the scaffold, CI on Node 22 and 24 and a Node 22 floor, the dated view and its reference index (`referrersOf`, `targetsOf`, `ownerOf`, `reachable`), the build plan carried into its repository; through a pull request with an independent check (H31-10) | feature | S4 | `WIP` |
+| H31.17 | entity-graph's neutral corpus, batch 1 (the dated view and references), written from the contract by an agent other than its implementer, ahead of M1's implementation (H31-10) | feature | S4 | `WIP` |
 
 **Exit:** a result the director can rule on -- each component adopted, adjusted upstream, or held with its reason -- and draw's register true to mission-kit.
 
