@@ -43,8 +43,8 @@ Each adoption adds a ledger row, so the change is measured, not claimed.
 | ID | Component | What it would take over in draw | Draw's code there today | Component status | Move |
 |---|---|---|---|---|---|
 | C15 | entity-graph | Working out a change: references between things, side effects, checks across several things, undo | the planner, about 560 engine lines plus the plugins' rules | draft, no code; boundaries agreed with zorg | 2, 7 |
-| C4 | entity-store | First, under entity-graph: the order of changes, the conflict check, undo's stored records. Later: where diagrams are kept | part of the planner; then `server/store.js` and its files, about 1,000 lines | released 0.1.0 | 2, 8 |
-| C3 | shape-check | Checks that a single thing is well formed: types, lengths, ranges, required fields, as data | `planner/validate.js` and the rows' field checks, about 300 lines | released 0.1.0 | 2, 4 |
+| C4 | entity-store | First, under entity-graph: the order of changes, the conflict check, undo's stored records. Later: where diagrams are kept | part of the planner; then `server/store.js` and its files, about 1,000 lines | released 0.2.0 | 2, 8 |
+| C3 | shape-check | Checks that a single thing is well formed: types, lengths, ranges, required fields, as data | `planner/validate.js` and the rows' field checks, about 300 lines | released 0.2.0 | 2, 4 |
 | C9 | operation-command | The command-line tool's command handling: options, help, exit codes that say why a command failed | `cli/draw.mjs`, about 160 lines | released 0.1.0 | 5 |
 | C5 | operation-call | Matching a request to its reply, with time limits; beneath operation-command, and later beneath live updates | the `txnId` and `ack` pairing in `app/src/sync.js` | released 0.1.0 | 5, 9 |
 | C7 | caller-identity | Who a request comes from: a person through Google sign-in, an agent through a code | `server/identity.mjs`, about 110 lines | released 0.1.0 | 6 |
@@ -68,7 +68,7 @@ What it needs of entity-store: a storage connection that can wait on a slow save
 | # | Move | Depends on | Ruling | Status |
 |---|---|---|---|---|
 | 1 | **Shared fixes** across C3 to C10: a release in the pinned-file form with CI on Node 22 and 24, links between components as releases, AGP for development only, contracts minted | -- | H31-2 (request), H31-5 (done) | **Done** 2026-11-10: all eight released `0.1.0`, published, immutable, verified |
-| 2 | **Planning a change, the boundaries:** entity-graph, entity-store and shape-check (section 5) | -- | H31-3 (sent), H31-8 (ruled), H31-9 (building) | **Boundaries agreed and ruled** 2026-11-11; the four contracts merged by zorg (its D76); shape-check's dialect 2 and entity-store's additions being built; entity-graph's build plan owed the director |
+| 2 | **Planning a change, the boundaries:** entity-graph, entity-store and shape-check (section 5) | -- | H31-3 (sent), H31-8 (ruled), H31-9 (building) | **Boundaries agreed and ruled** 2026-11-11; the four contracts merged by zorg (its D76); shape-check `0.2.0` (dialect 2) and entity-store `0.2.0` (the many-write change, expected position, note) released 2026-11-11; entity-graph being built (move 7) |
 | 3 | **Draw's word check** takes a shared component's ordinary words by allowances held in draw | -- | H31-4 | **Done** 2026-11-10 (`98b6ccf`) |
 | 4 | Draw takes shape-check for its field checks; the command-line tool learns the kinds from the server | 1, 2 | design of record, ruling | not started |
 | 5 | Draw's command-line tool on operation-command and operation-call; REST writes take a request identity | 1 | design of record, ruling | not started |
@@ -146,8 +146,7 @@ Draw keeps what is its product, ideally as declarations:
 
 ## 8. Open items
 
-- shape-check's dialect 2 and entity-store's additions, being built and released (H31-9).
-- caller-identity's and credential-issuer's AGP peer fixed in `0.1.1`, as zorg asked.
+- A letter to zorg: shape-check `0.2.0`, entity-store `0.2.0`, caller-identity and credential-issuer `0.1.1` released; notes for zorg (shape-check's memory on large arrays of one shared object, its stack on about 2,000 nested `items`, pre-existing; a stale local AGP build behind caller-identity's flaky test; entity-store's page bound and its one-way log format once `change` writes; mission-kit's C4 entry to regenerate).
 - entity-graph's build, M1 to M8 (H31-10); entity-store's 2,000-write bound holds after consequences, so an edit past it is refused, where draw today bounds only the request.
 - The cloud bucket as its own component: agreed by zorg, with an asynchronous storage port in entity-store at move 8.
 - How many planner cases change under entity-graph's semantics, measured before move 7's ruling.
