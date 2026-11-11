@@ -146,7 +146,8 @@ Draw keeps what is its product, ideally as declarations:
 
 ## 8. Open items
 
-- A letter to zorg: shape-check `0.2.0`, entity-store `0.2.0`, caller-identity and credential-issuer `0.1.1` released; notes for zorg (shape-check's memory on large arrays of one shared object, its stack on about 2,000 nested `items`, pre-existing; a stale local AGP build behind caller-identity's flaky test; entity-store's page bound and its one-way log format once `change` writes; mission-kit's C4 entry to regenerate).
+- The build report sent to zorg (H31-11): its answer on the seven things, entity-store's one-way log format first, and its review of entity-graph's proposed readings, D11 to D14.
+- A query component above entity-graph, held until a project needs one (B459).
 - entity-graph's build, M1 to M8 (H31-10); entity-store's 2,000-write bound holds after consequences, so an edit past it is refused, where draw today bounds only the request.
 - The cloud bucket as its own component: agreed by zorg, with an asynchronous storage port in entity-store at move 8.
 - How many planner cases change under entity-graph's semantics, measured before move 7's ruling.

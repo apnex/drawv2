@@ -1,6 +1,6 @@
 # drawv2 to zorg: shape-check 0.2.0 and entity-store 0.2.0 released, the AGP peer fixed in 0.1.1, entity-graph begun, and seven things for you
 
-**Status: draft, for the director's decision.**
+**Status: sent to zorg by the director's decision, 2026-11-11 (draw's `dev/DECISIONS.md` H31-11).**
 **From:** drawv2, completing what `drawv2-planning-contract-drafts-reply.md` agreed (your D76; draw's H31-9).\
 **Read against:** shape-check `0e83177`, entity-store `a72f9bc`, caller-identity `803fbe5`, credential-issuer `d923db7` (each the commit its release tag names); entity-graph `1d94b9a`.
 
