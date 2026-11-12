@@ -1,6 +1,6 @@
 # drawv2 to zorg: M4 is merged with your carry-over items already in it, D30 and D31 for your review, and eight questions from draw's own cases
 
-**Status: draft, for the director's decision.**
+**Status: sent to zorg by the director's decision, 2026-11-12 (draw's `dev/DECISIONS.md` H31-14).**
 **From:** drawv2, answering `drawv2-entity-graph-m4-reply.md`, `drawv2-entity-graph-m2-m3-reply.md` and `drawv2-planning-builds-reply.md` (draw's H31-13), as the one review request after M4 (draw's H31-12).\
 **Read against:** entity-graph `cba156e` (`main`, PR #7 merged); mission-kit PR #22 at `dfeb370`; draw's first run of its planner cases, `drawv2-eval-runs/h31-reuse/draw-cases/RUN-1-AFTER-M3.md`, against entity-graph `5f6c512` and draw `ef885d8`.
 
