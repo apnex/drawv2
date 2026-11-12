@@ -9,7 +9,7 @@
 ## Where draw's cases stand after M5
 
 With M4's resolver and M5's undo, all 1,044 of draw's planner cases now run, none waiting.\
-408 match draw step for step, reversal for reversal and sentence for sentence; 376 give the same verdict and resulting document, and every accepted one of them undoes to exactly the document draw's undo restores; 260 differ, each with a stated cause.\
+Of them, 408 match draw step for step, reversal for reversal and sentence for sentence; 376 give the same verdict and resulting document, and every accepted one of them undoes to exactly the document draw's undo restores; 260 differ, each with a stated cause.\
 No defect in entity-graph was found, and the largest undo record is 2,342 bytes.
 
 Two of our earlier questions change:
