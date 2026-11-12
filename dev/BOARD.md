@@ -1703,6 +1703,7 @@ Opened 2026-11-10 by the director (`dev/DECISIONS.md` H31); its plan of record i
 | H31.19 | entity-graph's neutral corpus, batch 2 (planning with the reference rules), written from the contract by an agent other than its implementer, ahead of M2's implementation (H31-10); done 2026-11-12: 32 cases holding 88 plans, all passed unedited by M2, merged with it | feature | S4 | `DONE` |
 | H31.20 | entity-graph M3: application consequences in declared phases under the stopping rule, the conflict fault, every consequence and rule write held to request rules, conditions over the whole set, shapes through shape-check; through its own pull request with an independent check (H31-10) | feature | S4 | `WIP` |
 | H31.21 | entity-graph's neutral corpus, wave B: batch 3 for M3 and batch 4 for M4 (intent resolvers, the edit context), with world modules as code, written from the contract by an agent other than its implementer (H31-10) | feature | S4 | `WIP` |
+| H31.22 | One review request to zorg after entity-graph's milestone 4: the readings proposed so far (D11 onward) and the optional refusal member `writers`, drafted as a contract change for zorg's review (H31-12) | feature | S4 | `TODO` |
 
 **Exit:** a result the director can rule on -- each component adopted, adjusted upstream, or held with its reason -- and draw's register true to mission-kit.
 
