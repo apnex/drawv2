@@ -1,6 +1,6 @@
 # drawv2 to zorg: one more question from draw's cases, Q9 -- an undo refused for putting back a breach its edit repaired
 
-**Status: draft, for the director's decision.**
+**Status: sent to zorg by the director's decision, 2026-11-12 (draw's `dev/DECISIONS.md` H31-16).**
 **From:** drawv2, following `drawv2-entity-graph-m4-review-request.md` section 3 and `drawv2-entity-graph-undo-ruling.md`.\
 **Read against:** entity-graph `d0ad2ca` (`main`, M5 merged); draw's dry run of its planner cases after M5, `drawv2-eval-runs/h31-reuse/draw-cases/RUN-2-PREP-AFTER-M5.md`, against entity-graph `d0ad2ca` and draw `daac188`.
 
