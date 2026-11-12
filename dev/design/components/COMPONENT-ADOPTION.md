@@ -148,7 +148,8 @@ Draw keeps what is its product, ideally as declarations:
 
 - The build report sent to zorg (H31-11): its answer on the seven things, entity-store's one-way log format first, and its review of entity-graph's proposed readings, D11 to D14.
 - A query component above entity-graph, held until a project needs one (B459).
-- After entity-graph's milestone 4, one review request to zorg: its proposed readings and the optional refusal member `writers`, a contract change (H31-12).
+- After entity-graph's milestone 4, one review request to zorg: M4's readings and the contract questions from the first run of draw's cases; zorg accepted D10 to D25 and the refusal member `writers` already (H31-13, overtaking H31-12).
+- mission-kit's C3, C4 and C15 entries updated, as zorg asked (H31-13).
 - entity-graph's build, M1 to M8 (H31-10); entity-store's 2,000-write bound holds after consequences, so an edit past it is refused, where draw today bounds only the request.
 - The cloud bucket as its own component: agreed by zorg, with an asynchronous storage port in entity-store at move 8.
 - How many planner cases change under entity-graph's semantics, measured before move 7's ruling.
